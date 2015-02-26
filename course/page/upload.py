@@ -61,8 +61,9 @@ class FileUploadForm(StyledForm):
         if self.mime_types is not None and self.mime_types == ["application/pdf"]:
             filetype=uploaded_file.read()[:4]
             if filetype == "%PDF" or filetype== "%DOC" or filetype== "DOCX":
+                    pass
             else:
-                raise forms.ValidationError("上传的文件必须是Word文档.")
+                    raise forms.ValidationError("上传的文件必须是Word文档.")
 
         return uploaded_file
 
