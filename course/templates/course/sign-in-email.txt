@@ -1,7 +1,7 @@
 {% if user.first_name %}Dear {{user.first_name}},
 {% else %}Dear {{user.email}},
 {% endif %}
-Welcome to RELATE! Please click this link to sign in:
+Welcome to CNSBA E-learning! Please click this link to sign in:
 
 {{ sign_in_uri }}
 
@@ -12,4 +12,4 @@ address into the RELATE web site at
 
 If this was not you, it is safe to disregard this email.
 
-- RELATE staff
+- CNSBA E-learning staff
