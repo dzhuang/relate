@@ -58,13 +58,17 @@ class FileUploadForm(StyledForm):
                     % (filesizeformat(self.max_file_size),
                         filesizeformat(uploaded_file._size)))
 
-        if self.mime_types is not None and self.mime_types in ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]:
-            filetype=uploaded_file.read()[:4]
-            if not filetype in ["%PDF", "%DOC", "DOCX"]:
-                raise forms.ValidationError("上传的文件必须是Word文档.")
+        if self.mime_types is not None and self.mime_types == ["application/pdf"]:
+            if uploaded_file.read()[:4] != "%PDF":
 
         return uploaded_file
 
+#        if self.mime_types is not None and self.mime_types in ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]:
+#            filetype=uploaded_file.read()[:4]
+#            if not filetype in ["%PDF", "%DOC", "DOCX"]:
+#                raise forms.ValidationError("上传的文件必须是Word文档.")
+#
+#        return uploaded_file
 
 class FileUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         PageBaseWithHumanTextFeedback, PageBaseWithCorrectAnswer):
@@ -104,6 +108,9 @@ class FileUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         that the question will accept.
         Only ``application/pdf`` is allowed for the moment.
 
+        The value ``"application/octet-stream"`` will allow any file at all
+        to be uploaded.
+
     .. attribute:: maximum_megabytes
 
         Required.
@@ -131,8 +138,12 @@ class FileUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
 
     ALLOWED_MIME_TYPES = [
             "application/pdf",
+<<<<<<< HEAD
             "application/msword",
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+=======
+            "application/octet-stream",
+>>>>>>> upstream/master
             ]
 
     def __init__(self, vctx, location, page_desc):
