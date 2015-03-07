@@ -60,7 +60,7 @@ class FileUploadForm(StyledForm):
 
         if self.mime_types is not None and self.mime_types == ["application/pdf"]:
             if uploaded_file.read()[:4] != "%PDF":
-
+               raise forms.ValidationError("上传的文件必须是Word文档.")
         return uploaded_file
 
 #        if self.mime_types is not None and self.mime_types in ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]:
@@ -138,12 +138,9 @@ class FileUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
 
     ALLOWED_MIME_TYPES = [
             "application/pdf",
-<<<<<<< HEAD
             "application/msword",
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-=======
             "application/octet-stream",
->>>>>>> upstream/master
             ]
 
     def __init__(self, vctx, location, page_desc):
