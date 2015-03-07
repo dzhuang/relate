@@ -50,6 +50,8 @@ class FileUploadForm(StyledForm):
     def clean_uploaded_file(self):
         uploaded_file = self.cleaned_data['uploaded_file']
         from django.template.defaultfilters import filesizeformat
+        
+        #print uploaded_file.read()[:5]
 
         if uploaded_file._size > self.max_file_size:
             raise forms.ValidationError(
@@ -61,10 +63,13 @@ class FileUploadForm(StyledForm):
         if self.mime_types is not None and self.mime_types == ["application/pdf"]:
             if uploaded_file.read()[:4] != "%PDF":
                raise forms.ValidationError("上传的文件必须是pdf文档.")
-        if self.mime_types is not None and self.mime_types in ["application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]:
-            filetype=uploaded_file.read()[:4]
-            if not filetype in ["%DOC", "DOCX"]:
-               raise forms.ValidationError("上传的文件必须是Word文档.")
+#        if self.mime_types is not None and self.mime_types == ["application/msword"]:
+#            print uploaded_file.read()[:4]
+#            if uploaded_file.read()[:4] != "%DOC":
+#               raise forms.ValidationError("上传的文件必须是Word97-2003文档.")
+#        if self.mime_types is not None and self.mime_types == ["application/vnd.openxmlformats-officedocument.wordprocessingml.document"]:            
+#            if uploaded_file.read()[:5] != "%DOCX":                 
+#               raise forms.ValidationError("上传的文件必须是Word2007以上版本的文档.")
         return uploaded_file
 
 #        if self.mime_types is not None and self.mime_types in ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]:
@@ -142,8 +147,8 @@ class FileUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
 
     ALLOWED_MIME_TYPES = [
             "application/pdf",
-            "application/msword",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+#            "application/msword",
+#            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             "application/octet-stream",
             ]
 
