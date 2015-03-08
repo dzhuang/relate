@@ -225,6 +225,29 @@ class FileUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
     def answer_data(self, page_context, page_data, form, files_data):
         return self.files_data_to_answer_data(files_data)
 
+# added by dzhuang for upload require none submit button
+
+class FileUploadQuestionNoSubmit(FileUploadQuestion):
+    def __init__(self):
+        super(FileUploadQuestionNoSubmit, self).__init__()
+
+    def form_to_html(self, request, page_context, form, answer_data):
+        ctx = {"form": form}
+        if answer_data is not None:
+            ctx["mime_type"] = answer_data["mime_type"]
+            ctx["data_url"] = "data:%s;base64,%s" % (
+                answer_data["mime_type"],
+                answer_data["base64_data"],
+                )
+
+        from django.template import RequestContext
+        from django.template.loader import render_to_string
+        return render_to_string(
+                "course/file-upload-form.html",
+                RequestContext(request, ctx))
+    
+
+
 # }}}
 
 
