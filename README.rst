@@ -1,7 +1,11 @@
 RELATE
 ======
 
-Relate is an Environment for Learning And TEaching (formerly known as CourseFlow)
+Relate is an Environment for Learning And TEaching
+
++----------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------+
+| .. image:: https://raw.githubusercontent.com/inducer/relate/master/doc/images/screenshot.png | .. image:: https://raw.githubusercontent.com/inducer/relate/master/doc/images/screenshot-2.png |
++----------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------+
 
 RELATE is a web-based courseware package.  It is set apart by the following
 features:
@@ -37,6 +41,9 @@ features:
   easy-to-use support for integrating HTML5 video into course content
   without the need for third-party content hosting.
 
+Links
+-----
+
 More information around the web:
 
 * `Documentation <http://documen.tician.de/relate>`_
@@ -50,7 +57,7 @@ See the `installation guide <http://documen.tician.de/relate/misc.html#installat
 License
 -------
 
-Copyright (C) 2014 Andreas Kloeckner
+Copyright (C) 2014-15 Andreas Kloeckner
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
