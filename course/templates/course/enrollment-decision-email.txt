@@ -1,9 +1,10 @@
-{% if user.first_name %}Dear {{user.first_name}},
-{% elif user.email %}Dear {{user.email}},
-{% else %}Dear UN {{user.username}},
+{% if user.first_name %}尊敬的{{user.first_name}}同学,
+{% else %}尊敬的{{user.email}}用户,
+
+{% else %}尊敬的{{user.username}},
 {% endif %}
 {% if approved %}Welcome! Your request to join the course 
-'{{course.identifier}}' has been approved.
+'{{course.identifier}}' has been 通过. 
 
 Find the course web page here:
 
@@ -11,12 +12,7 @@ Find the course web page here:
 
 Welcome, and we hope you have a productive class!
 {% else %}We're sorry to let you know that your request to join the course 
-'{{course.identifier}}' has been denied. Please get in touch with the course
-staff (for example by replying to this email) to state your case.
-
-One common reason for this may be that you may have used your personal email
-(such as a GMail or Yahoo account) rather than your official university account
-to sign in. If that is the case, please use the official account and
-try again.
+'{{course.identifier}}' has been 拒绝. Please get in touch with the course
+staff (for example by replying to this email) to state your case. 
 {% endif %}
-- RELATE staff
+- CNSBA E-learning staff

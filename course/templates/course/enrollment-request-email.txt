@@ -1,7 +1,7 @@
 Dear course staff of {{ course.identifier }},
 
 User '{{user}}' has requested permission to enroll in your course.
-Please go to
+ Please go to
 
 {{ admin_uri }}
 
@@ -9,4 +9,4 @@ to approve or deny the request. To do so, select the course participations
 in question and use the "Approve enrollment" or "Deny enrollment" admin
 actions.
 
-- RELATE staff
+- CNSBA E-learning staff

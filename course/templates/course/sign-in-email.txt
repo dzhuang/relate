@@ -1,15 +1,11 @@
-{% if user.first_name %}Dear {{user.first_name}},
-{% else %}Dear {{user.email}},
-{% endif %}
-Welcome to CNSBA E-learning! Please click this link to sign in:
+{% if user.first_name %}尊敬的{{user.first_name}}同学,
+{% else %}尊敬的{{user.email}}用户,
+{% endif %}欢迎使用 CNSBA E-learning 网站! 请点击以下链接登陆网站:
 
 {{ sign_in_uri }}
 
-You have received this email because someone (maybe you) entered your email
-address into the RELATE web site at
+。你收到此邮件可能是因为有人（或者就是你）在CNSBA E-learning 网站
 
-{{ home_uri }}
+{{ home_uri }}。如果不是如此，请忽略此邮件。
 
-If this was not you, it is safe to disregard this email.
-
-- CNSBA E-learning staff
+- CNSBA E-learning
