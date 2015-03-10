@@ -26,6 +26,7 @@ THE SOFTWARE.
 
 
 import django.forms as forms
+from django.views.decorators.csrf import csrf_exempt
 
 from course.page.base import (
         PageBaseWithTitle, PageBaseWithValue, PageBaseWithHumanTextFeedback,
@@ -50,8 +51,6 @@ class FileUploadForm(StyledForm):
     def clean_uploaded_file(self):
         uploaded_file = self.cleaned_data['uploaded_file']
         from django.template.defaultfilters import filesizeformat
-        
-        #print uploaded_file.read()[:5]
 
         if uploaded_file._size > self.max_file_size:
             raise forms.ValidationError(
@@ -72,12 +71,6 @@ class FileUploadForm(StyledForm):
 #               raise forms.ValidationError("上传的文件必须是Word2007以上版本的文档.")
         return uploaded_file
 
-#        if self.mime_types is not None and self.mime_types in ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]:
-#            filetype=uploaded_file.read()[:4]
-#            if not filetype in ["%PDF", "%DOC", "DOCX"]:
-#                raise forms.ValidationError("上传的文件必须是Word文档.")
-#
-#        return uploaded_file
 
 class FileUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         PageBaseWithHumanTextFeedback, PageBaseWithCorrectAnswer):
@@ -228,9 +221,7 @@ class FileUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
 # added by dzhuang for upload require none submit button
 
 class FileUploadQuestionNoSubmit(FileUploadQuestion):
-    def __init__(self):
-        super(FileUploadQuestionNoSubmit, self).__init__()
-
+    #@csrf_exempt
     def form_to_html(self, request, page_context, form, answer_data):
         ctx = {"form": form}
         if answer_data is not None:
@@ -243,7 +234,7 @@ class FileUploadQuestionNoSubmit(FileUploadQuestion):
         from django.template import RequestContext
         from django.template.loader import render_to_string
         return render_to_string(
-                "course/file-upload-form.html",
+                "course/file-upload-form-no-submit.html",
                 RequestContext(request, ctx))
     
 
