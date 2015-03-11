@@ -26,6 +26,7 @@ THE SOFTWARE.
 
 
 import django.forms as forms
+import os
 from django.views.decorators.csrf import csrf_exempt
 
 from course.page.base import (
@@ -41,6 +42,7 @@ from relate.utils import StyledForm
 
 class FileUploadForm(StyledForm):
     uploaded_file = forms.FileField(required=True)
+    #print uploaded_file.name
 
     def __init__(self, maximum_megabytes, mime_types, *args, **kwargs):
         super(FileUploadForm, self).__init__(*args, **kwargs)
@@ -50,6 +52,7 @@ class FileUploadForm(StyledForm):
 
     def clean_uploaded_file(self):
         uploaded_file = self.cleaned_data['uploaded_file']
+        #print uploaded_file.name
         from django.template.defaultfilters import filesizeformat
 
         if uploaded_file._size > self.max_file_size:
@@ -62,6 +65,19 @@ class FileUploadForm(StyledForm):
         if self.mime_types is not None and self.mime_types == ["application/pdf"]:
             if uploaded_file.read()[:4] != "%PDF":
                raise forms.ValidationError("上传的文件必须是pdf文档.")
+        if self.mime_types is not None and self.mime_types == ["application/vnd.ms-word.document.macroEnabled.12"]:
+            if uploaded_file:
+                thefilename=uploaded_file.name
+                ext = os.path.splitext(thefilename)[1]
+                ext = ext.lower()
+                print thefilename
+                print ext
+                if ext !=".docm":
+                    raise forms.ValidationError("文件类型不支持！请上传后缀为docm的文档！")
+                #else:
+                    #raise forms.ValidationError("上传成功")
+            #if uploaded_file.read()[:4] != "%PDF":
+               #raise forms.ValidationError("上传的文件必须是docm文档.")
 #        if self.mime_types is not None and self.mime_types == ["application/msword"]:
 #            print uploaded_file.read()[:4]
 #            if uploaded_file.read()[:4] != "%DOC":
@@ -142,6 +158,7 @@ class FileUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
             "application/pdf",
 #            "application/msword",
 #            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.ms-word.document.macroEnabled.12",
             "application/octet-stream",
             ]
 
