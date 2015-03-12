@@ -1,9 +1,7 @@
-{% if user.first_name %}尊敬的{{user.first_name}}同学,
-{% else %}尊敬的{{user.email}}用户,
-{% endif %}
+Dear {{ participation.user.first_name }},
 
 You have a new notification regarding your work on the problem
- with title
+with title
 
   {{ page_title }}
 
