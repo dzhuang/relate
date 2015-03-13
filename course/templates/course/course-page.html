@@ -30,9 +30,10 @@
 
   {% if not user.is_authenticated %}
     <div class="well">
-      You're not currently signed in.
+        {# You're not currently signed in. #}
+        你尚未登录，
       <a class="btn btn-primary" href="{% url student_sign_in_view %}"
-        role="button">Sign in &raquo;</a>
+        role="button">{# Sign in #}登录 &raquo;</a>
     </div>
   {% else %}
 
@@ -41,7 +42,7 @@
         <form method="POST" action="{% url "course.enrollment.enroll" course.identifier %}">
           {% csrf_token %}
           <button type="submit" name="enroll" class="btn btn-primary">
-            Enroll &raquo;
+              {# Enroll #} 申请加入课程 &raquo;
           </button>
         </form>
       </div>
