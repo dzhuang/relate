@@ -10,9 +10,9 @@
   <ul>
     {% if not user.is_authenticated %}
     <li>
-    <div><a href="{% url student_sign_in_view %}">Sign in</a>.你尚未登录，对资源的访问被限制。由于网站对于你具体是谁并不清楚，它禁止了你的访问。如果你已经登陆，
+    <div><b><a href="{% url student_sign_in_view %}">Sign in</a>.你尚未登录，对资源的访问被限制。由于网站对于你具体是谁并不清楚，它禁止了你的访问。如果你已经登陆，
       请通过 <a href="{% url "course.views.home" %}">主页</a> 返回课程页面，然后尝试你的上一次
-      操作。</div>
+      操作。</b></div>
 
       You're not currently signed in. Access to the resource is restricted,
       and since the site has no way of knowing who you are, it denied you accesss.
@@ -24,8 +24,8 @@
     </li>
     {% endif %}
     <li>
-    <div>请在完成你的加入课程申请(enrollment)。如果你并未申请课程，在课程页面上方有一个大的"Enroll now"按钮，
-    请点击之，然后按指引操作，并完成你的上一次操作。</div>
+    <div><b>请完成你的加入课程申请(enrollment)。如果你并未申请课程，在课程页面上方有一个大的"Enroll now"按钮，
+    请点击之，然后按指引操作，并完成你的上一次操作。</b></div>
     Complete your enrollment in your course. If you're not enrolled, a large
     "Enroll now" button will show up at the top of your course page. Click that,
     follow the indicated steps, and then retry your last action.
@@ -33,7 +33,7 @@
 
     </li>
     <li>
-    <div>如果上面的步骤都无法完成，请浏览回你的课程页面<a href="{% url "course.views.home" %}">主页</a>，并联系课程人员。</div>
+    <div><b>如果上面的步骤都无法完成，请浏览回你的课程页面<a href="{% url "course.views.home" %}">主页</a>，并联系课程人员。</b></div>
         If none of the above steps help, please navigate back to your course from the
     <a href="{% url "course.views.home" %}">home page</a> and contact your course
     staff.
@@ -42,7 +42,7 @@
     </li>
   </ul>
 
-  <p>抱歉，并对你的耐心表示感谢！</p><p>Sorry, and thanks for your patience! </p>
+  <p><b>抱歉，并对你的耐心表示感谢！</b></p><p>Sorry, and thanks for your patience! </p>
 
 {% endblock %}
 

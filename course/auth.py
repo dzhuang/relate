@@ -432,7 +432,7 @@ def reset_password_stage2(request, user_id, sign_in_key):
 
     if not check_sign_in_key(user_id=int(user_id), token=sign_in_key):
         messages.add_message(request, messages.ERROR,
-                "Invalid sign-in token. Perhaps you've used an old token email?")
+                "无效的访问口令，可能你使用了旧的访问口令？如果是，上次访问的口令已经过期，请通过email重新获取口令，并及时修改用户名和密码。Invalid sign-in token. Perhaps you've used an old token email?")
         raise PermissionDenied("invalid sign-in token")
 
     if request.method == 'POST':
@@ -552,7 +552,7 @@ def sign_in_stage2_with_token(request, user_id, sign_in_key):
     user = authenticate(user_id=int(user_id), token=sign_in_key)
     if user is None:
         messages.add_message(request, messages.ERROR,
-                "Invalid sign-in token. Perhaps you've used an old token email?")
+                "无效的访问口令，可能你使用了旧的访问口令？如果是，上次访问的口令已经过期，请通过email重新获取口令，并及时修改用户名和密码。Invalid sign-in token. Perhaps you've used an old token email?")
         raise PermissionDenied("invalid sign-in token")
 
     if not user.is_active:
