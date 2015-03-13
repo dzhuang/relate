@@ -3,19 +3,19 @@
 {% load crispy_forms_tags %}
 
 {% block content %}
-  <h1>Sign in</h1>
+  <h1>登录网站{# Sign in #}</h1>
 
   {% if "user_pw" not in student_sign_in_view %}
     <div class="alert alert-warning">
-      If you have a not been assigned a password, you should use the
-      <a href="{% url student_sign_in_view %}">standard sign-in process</a>.
+        {# If you have a not been assigned a password, you should use the <a href="{% url student_sign_in_view %}">standard sign-in process</a>. #}
+      如果你尚未设定密码，请使用 <a href="{% url student_sign_in_view %}">标准方式(Email口令)</a> 登录。<b>注意：每个口令在登出后即失效，下一次登录需重新申请！</b>
     </div>
   {% else %}
     <div class="alert alert-warning">
-      If you do not have an account,
-      <a href="{% url "course.auth.sign_up" %}">sign up</a>.
-      If you do not remember your password,
-      <a href="{% url "course.auth.reset_password" %}">reset your password</a>.
+      {# If you do not have an account, #}如果你还没有帐户，请
+      <a href="{% url "course.auth.sign_up" %}">注册{# sign up #}</a>。
+        {# If you do not remember your password, #} 如果你忘记了密码，请
+      <a href="{% url "course.auth.reset_password" %}">重置密码{# reset your password #}</a>。
     </div>
   {% endif %}
 

@@ -291,14 +291,18 @@ def sign_up(request):
             if User.objects.filter(
                     username=form.cleaned_data["username"]).count():
                 messages.add_message(request, messages.ERROR,
-                        "That user name is already taken.")
+                        "该用户名已经被注册。"
+                        #"(That user name is already taken.)"
+                        )
 
             elif User.objects.filter(
                     email__iexact=form.cleaned_data["email"]).count():
                 messages.add_message(request, messages.ERROR,
-                        "That email address is already in use. "
-                        "Would you like to "
-                        "<a href='%s'>reset your password</a> instead?"
+                        "此电子邮件已经被使用，"
+                        #"That email address is already in use. "
+                        #"Would you like to "
+                        #"<a href='%s'>reset your password</a> instead?"
+                        "你是否要<a href='%s'>重置密码</a>?"
                         % reverse(
                             "course.auth.reset_password")),
             else:
@@ -334,7 +338,9 @@ def sign_up(request):
                         settings.ROBOT_EMAIL_FROM, recipient_list=[email])
 
                 messages.add_message(request, messages.INFO,
-                        "Email sent. Please check your email and click the link.")
+                        #"Email sent. Please check your email and click the link."
+                        "邮件已发送，请检查邮件并点击链接。"
+                        )
 
                 return redirect("course.views.home")
 
@@ -359,7 +365,10 @@ class ResetPasswordForm(StyledForm):
 
 def reset_password(request):
     if settings.STUDENT_SIGN_IN_VIEW != "course.auth.sign_in_by_user_pw":
-        raise SuspiciousOperation("password-based sign-in is not being used")
+        raise SuspiciousOperation(
+                #"password-based sign-in is not being used"
+                "未启用密码登录方式"
+                )
 
     if request.method == 'POST':
         form = ResetPasswordForm(request.POST)
@@ -374,7 +383,10 @@ def reset_password(request):
 
             if user is None:
                 messages.add_message(request, messages.ERROR,
-                        "Email address is not known.")
+                        #"Email address is not known."
+                        "电子邮件地址未知。"
+
+                        )
 
             from course.models import get_user_status
             ustatus = get_user_status(user)
@@ -395,7 +407,9 @@ def reset_password(request):
                     settings.ROBOT_EMAIL_FROM, recipient_list=[email])
 
             messages.add_message(request, messages.INFO,
-                    "Email sent. Please check your email and click the link.")
+                    #"Email sent. Please check your email and click the link."
+                    "邮件已发送，请检查邮件并点击链接。"
+                    )
 
             return redirect("course.views.home")
     else:
@@ -432,8 +446,13 @@ def reset_password_stage2(request, user_id, sign_in_key):
 
     if not check_sign_in_key(user_id=int(user_id), token=sign_in_key):
         messages.add_message(request, messages.ERROR,
-                "无效的访问口令，可能你使用了旧的访问口令？如果是，上次访问的口令已经过期，请通过email重新获取口令，并及时修改用户名和密码。Invalid sign-in token. Perhaps you've used an old token email?")
-        raise PermissionDenied("invalid sign-in token")
+                "无效的登录口令，可能你使用了旧的访问口令？如果是，上次访问的口令已经过期，请通过email重新获取口令，并及时修改用户名和密码。"
+                #"Invalid sign-in token. Perhaps you've used an old token email?"
+                )
+        raise PermissionDenied(
+                "无效的登录口令"
+                #"invalid sign-in token"
+                )
 
     if request.method == 'POST':
         form = ResetPasswordStage2Form(request.POST)
@@ -441,12 +460,21 @@ def reset_password_stage2(request, user_id, sign_in_key):
             from django.contrib.auth import authenticate, login
             user = authenticate(user_id=int(user_id), token=sign_in_key)
             if user is None:
-                raise PermissionDenied("invalid sign-in token")
+                raise PermissionDenied(
+                        "无效的登录口令"
+                        #"invalid sign-in token"
+                        )
 
             if not user.is_active:
                 messages.add_message(request, messages.ERROR,
-                        "Account disabled.")
-                raise PermissionDenied("invalid sign-in token")
+                        #"Account disabled."
+                        "帐户已被禁用。"
+                        )
+
+                raise PermissionDenied(
+                        #"invalid sign-in token"
+                        "无效的登录口令"
+                        )
 
             user.set_password(form.cleaned_data["password"])
             user.save()
@@ -456,21 +484,27 @@ def reset_password_stage2(request, user_id, sign_in_key):
             if (not (user.first_name and user.last_name)
                     or "to_profile" in request.GET):
                 messages.add_message(request, messages.INFO,
-                        "Successfully signed in. "
-                        "Please complete your registration information below.")
+                        #"Successfully signed in. "
+                        "成功登录。"
+                        "Please complete your registration information below."
+                        "请在下面完善你的注册信息。"
+                        )
 
                 return redirect(
                        reverse("course.auth.user_profile")+"?first_login=1")
             else:
                 messages.add_message(request, messages.INFO,
-                        "Successfully signed in.")
+                        #"Successfully signed in."
+                        "成功登录。"
+                        )
 
                 return redirect("course.views.home")
     else:
         form = ResetPasswordStage2Form()
 
     return render(request, "generic-form.html", {
-        "form_description": "Reset Password",
+        #"form_description": "Reset Password",
+        "form_description": "重置密码",
         "form": form
         })
 
@@ -486,13 +520,15 @@ class SignInByEmailForm(StyledForm):
         super(SignInByEmailForm, self).__init__(*args, **kwargs)
 
         self.helper.add_input(
-                Submit("submit", "Send sign-in email",
+                Submit(#"submit", "Send sign-in email",
+                    "submit", "发送注册邮件",
                     css_class="col-lg-offset-2"))
 
 
 def sign_in_by_email(request):
     if settings.STUDENT_SIGN_IN_VIEW != "course.auth.sign_in_by_email":
-        raise SuspiciousOperation("email-based sign-in is not being used")
+#        raise SuspiciousOperation("email-based sign-in is not being used")
+        raise SuspiciousOperation("邮件登录未被启用")
 
     if request.method == 'POST':
         form = SignInByEmailForm(request.POST)
@@ -528,11 +564,13 @@ def sign_in_by_email(request):
                 "home_uri": request.build_absolute_uri(reverse("course.views.home"))
                 })
             from django.core.mail import send_mail
-            send_mail("Your CNSBA E-learning sign-in link", message,
+#            send_mail("Your CNSBA E-learning sign-in link", message,
+            send_mail("你的CNSBA E-learning登录链接", message,
                     settings.ROBOT_EMAIL_FROM, recipient_list=[email])
 
             messages.add_message(request, messages.INFO,
-                    "Email sent. Please check your email and click the link.")
+#                    "Email sent. Please check your email and click the link.")
+                    "邮件已发送，请检查邮件并点击链接。")
 
             return redirect("course.views.home")
     else:
@@ -546,32 +584,44 @@ def sign_in_by_email(request):
 
 def sign_in_stage2_with_token(request, user_id, sign_in_key):
     if settings.STUDENT_SIGN_IN_VIEW != "course.auth.sign_in_by_email":
-        raise SuspiciousOperation("email-based sign-in is not being used")
+        #raise SuspiciousOperation("email-based sign-in is not being used")
+        raise SuspiciousOperation("邮件式登录未启用")
 
     from django.contrib.auth import authenticate, login
     user = authenticate(user_id=int(user_id), token=sign_in_key)
     if user is None:
         messages.add_message(request, messages.ERROR,
-                "无效的访问口令，可能你使用了旧的访问口令？如果是，上次访问的口令已经过期，请通过email重新获取口令，并及时修改用户名和密码。Invalid sign-in token. Perhaps you've used an old token email?")
+                "无效的访问口令，可能你使用了旧的访问口令？如果是，上次访问的口令已经过期，请通过email重新获取口令，并及时修改用户名和密码。"
+                #Invalid sign-in token. Perhaps you've used an old token email?"
+                )
         raise PermissionDenied("invalid sign-in token")
 
     if not user.is_active:
         messages.add_message(request, messages.ERROR,
-                "Account disabled.")
-        raise PermissionDenied("invalid sign-in token")
+                #"Account disabled."
+                "帐户已禁用。"
+                )
+        raise PermissionDenied(
+                "invalid sign-in token"
+                "无效的登录指令"
+                )
 
     login(request, user)
 
     if not (user.first_name and user.last_name):
         messages.add_message(request, messages.INFO,
-                "Successfully signed in. "
-                "Please complete your registration information below.")
+                #"Successfully signed in. "
+                #"Please complete your registration information below.")
+                "成功登录。"
+                "请在下面完善你的注册信息。")
 
         return redirect(
                reverse("course.auth.user_profile")+"?first_login=1")
     else:
         messages.add_message(request, messages.INFO,
-                "Successfully signed in.")
+#                "Successfully signed in.")
+                "成功登录。")
+
 
         return redirect("course.views.home")
 
@@ -623,7 +673,8 @@ def user_profile(request):
                 user_form.save()
 
                 messages.add_message(request, messages.INFO,
-                        "Profile data saved.")
+                        #"Profile data saved.")
+                        "个人资料已保存。")
                 if request.GET.get("first_login"):
                     return redirect("course.views.home")
 
@@ -633,7 +684,8 @@ def user_profile(request):
             if user_status_form.is_valid():
                 user_status_form.save()
                 messages.add_message(request, messages.INFO,
-                        "Profile data saved.")
+                        #"Profile data saved.")
+                        "个人资料已保存。")
                 if request.GET.get("first_login"):
                     return redirect("course.views.home")
 
