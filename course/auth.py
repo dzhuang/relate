@@ -334,7 +334,8 @@ def sign_up(request):
                     })
 
                 from django.core.mail import send_mail
-                send_mail("[CNSBA E-learning] Verify your email", message,
+#                send_mail("[CNSBA E-learning] Verify your email", message,
+                send_mail("[CNSBA E-learning] 验证你的邮箱", message,
                         settings.ROBOT_EMAIL_FROM, recipient_list=[email])
 
                 messages.add_message(request, messages.INFO,
@@ -348,7 +349,8 @@ def sign_up(request):
         form = SignUpForm()
 
     return render(request, "generic-form.html", {
-        "form_description": "Sign up",
+        #"form_description": "Sign up",
+        "form_description": "注册",
         "form": form
         })
 
@@ -685,6 +687,7 @@ def user_profile(request):
                 user_status_form.save()
                 messages.add_message(request, messages.INFO,
                         #"Profile data saved.")
+                
                         "个人资料已保存。")
                 if request.GET.get("first_login"):
                     return redirect("course.views.home")
