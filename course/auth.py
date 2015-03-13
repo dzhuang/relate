@@ -330,7 +330,7 @@ def sign_up(request):
                     })
 
                 from django.core.mail import send_mail
-                send_mail("[RELATE] Verify your email", message,
+                send_mail("[CNSBA E-learning] Verify your email", message,
                         settings.ROBOT_EMAIL_FROM, recipient_list=[email])
 
                 messages.add_message(request, messages.INFO,
@@ -391,7 +391,7 @@ def reset_password(request):
                 "home_uri": request.build_absolute_uri(reverse("course.views.home"))
                 })
             from django.core.mail import send_mail
-            send_mail("[RELATE] Password reset", message,
+            send_mail("[CNSBA E-learning] Password reset", message,
                     settings.ROBOT_EMAIL_FROM, recipient_list=[email])
 
             messages.add_message(request, messages.INFO,
@@ -528,7 +528,7 @@ def sign_in_by_email(request):
                 "home_uri": request.build_absolute_uri(reverse("course.views.home"))
                 })
             from django.core.mail import send_mail
-            send_mail("Your RELATE sign-in link", message,
+            send_mail("Your CNSBA E-learning sign-in link", message,
                     settings.ROBOT_EMAIL_FROM, recipient_list=[email])
 
             messages.add_message(request, messages.INFO,
