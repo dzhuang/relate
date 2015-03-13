@@ -7,9 +7,11 @@
   <div class="well">
     {% crispy user_form %}
   </div>
+{% comment "editor mode commented by dzhuang" %}
   <div class="well">
     {% crispy user_status_form %}
   </div>
+{% endcomment %}
   <div class="well">
     <a href="{% url "django.contrib.auth.views.logout" %}" class="btn btn-default col-lg-offset-2">Sign out</a>
   </div>
