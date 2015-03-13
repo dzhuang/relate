@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="">
     <meta name="author" content="">
-    <link rel="shortcut icon" href="../../assets/ico/favicon.ico">
+    <link rel="shortcut icon" href="/static/images/favicon.ico">
 
     <title>{%block title %}CNSBA E-learning{% endblock %}</title>
 
@@ -82,7 +82,8 @@
           <ul class="nav navbar-nav navbar-right">
             {% if user.is_authenticated %}
               <li>
-                <a href="{% url "course.auth.user_profile" %}">Signed in as {{user.username}}</a>
+                  {# <a href="{% url "course.auth.user_profile" %}">Signed in as {{user.username}}</a> #}
+                <a href="{% url "course.auth.user_profile" %}">当前登录： {{user.username}}</a>                  
               </li>
               {% if currently_impersonating %}
                 <li>
@@ -95,7 +96,8 @@
               {# Error pages don't seem to run template context processors, so #}
               {# this variable might not be available... #}
               {% if student_sign_in_view %}
-                <li><a href="{% url student_sign_in_view %}">Sign in</a></li>
+              {# <li><a href="{% url student_sign_in_view %}">Sign in</a></li> #}
+              <li><a href="{% url student_sign_in_view %}">登录网站</a></li>
               {% endif %}
             {% endif %}
           </ul>
