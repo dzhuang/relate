@@ -8,7 +8,7 @@
   {% if "user_pw" not in student_sign_in_view %}
     <div class="alert alert-warning">
         {# If you have a not been assigned a password, you should use the <a href="{% url student_sign_in_view %}">standard sign-in process</a>. #}
-      如果你尚未设定密码，请使用 <a href="{% url student_sign_in_view %}">标准方式(Email口令)</a> 登录。<b>注意：每个口令在登出后即失效，下一次登录需重新申请！</b>
+      如果你尚未设定密码，请使用 <a href="{% url student_sign_in_view %}">标准方式(Email口令)</a> 登录。
     </div>
   {% else %}
     <div class="alert alert-warning">
