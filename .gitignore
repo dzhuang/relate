@@ -13,23 +13,3 @@ components
 build
 
 *.pyz
-/course/migrations/0034_help_text_changes.py
-/course/migrations/0035_remove_flowsession_for_credit.py
-/course/migrations/0036_rename_access_rules_id_to_tag.py
-/course/migrations/0037_flowruleexception.py
-/course/migrations/0038_add_participations_related_name_on_course.py
-/course/migrations/0039_flow_start_rules.py
-/course/migrations/0040_rename_is_submitted_answer.py
-/course/migrations/0041_remove_participation_temporary_role.py
-/course/migrations/0042_rename_from_email.py
-/course/migrations/0043_add_notify_email.py
-/course/migrations/0044_require_notify_email.py
-/course/migrations/0045_add_course_listed.py
-/course/migrations/0046_allow_null_page_data_ordinals.py
-/course/migrations/0047_remove_page_data_ordinal_uniqueness.py
-/course/migrations/0048_default_listed_to_true.py
-/course/migrations/0049_course_accepts_enrollment.py
-/course/migrations/0050_userstatus_editor_mode.py
-/course/migrations/0051_add_participation_tags.py
-/course/migrations/0052_allow_blank_tags.py
-/course/migrations/__init__.py
