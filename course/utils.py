@@ -209,9 +209,21 @@ def get_session_access_rule(session, role, flow_desc, now_datetime):
 
         permissions = set(rule.permissions)
 
+        if "modify" in permissions:
+            permissions.remove("modify")
+            permissions.update([
+                flow_permission.submit_answer,
+                flow_permission.end_session,
+                ])
+
         # Remove 'modify' permission from not-in-progress sessions
-        if not session.in_progress and flow_permission.modify in permissions:
-            permissions.remove(flow_permission.modify)
+        if not session.in_progress:
+            for perm in [
+                    flow_permission.submit_answer,
+                    flow_permission.end_session,
+                    ]:
+                if perm in permissions:
+                    permissions.remove(perm)
 
         return FlowSessionAccessRule(
                 permissions=frozenset(permissions),
@@ -285,7 +297,7 @@ class CoursePageContext(object):
 
 
 class FlowContext(object):
-    def __init__(self, repo, course, flow_identifier,
+    def __init__(self, repo, course, flow_id,
             participation=None, flow_session=None):
         """*participation* and *flow_session* are not stored and only used
         to figure out versioning of the flow content.
@@ -293,7 +305,7 @@ class FlowContext(object):
 
         self.repo = repo
         self.course = course
-        self.flow_identifier = flow_identifier
+        self.flow_id = flow_id
 
         from django.core.exceptions import ObjectDoesNotExist
 
@@ -302,7 +314,7 @@ class FlowContext(object):
 
         try:
             self.flow_desc = get_flow_desc(self.repo, self.course,
-                    flow_identifier, self.course_commit_sha)
+                    flow_id, self.course_commit_sha)
         except ObjectDoesNotExist:
             raise http.Http404()
 
@@ -315,9 +327,9 @@ class FlowPageContext(FlowContext):
     which is used for in the page API.
     """
 
-    def __init__(self, repo, course, flow_identifier, ordinal,
+    def __init__(self, repo, course, flow_id, ordinal,
              participation, flow_session):
-        FlowContext.__init__(self, repo, course, flow_identifier,
+        FlowContext.__init__(self, repo, course, flow_id,
                 participation, flow_session=flow_session)
 
         from course.content import adjust_flow_session_page_data
@@ -364,13 +376,13 @@ class FlowPageContext(FlowContext):
 def instantiate_flow_page_with_ctx(fctx, page_data):
     from course.content import get_flow_page_desc
     page_desc = get_flow_page_desc(
-            fctx.flow_identifier, fctx.flow_desc,
+            fctx.flow_id, fctx.flow_desc,
             page_data.group_id, page_data.page_id)
 
     from course.content import instantiate_flow_page
     return instantiate_flow_page(
             "course '%s', flow '%s', page '%s/%s'"
-            % (fctx.course.identifier, fctx.flow_identifier,
+            % (fctx.course.identifier, fctx.flow_id,
                 page_data.group_id, page_data.page_id),
             fctx.repo, page_desc, fctx.course_commit_sha)
 
@@ -425,10 +437,10 @@ def render_course_page(pctx, template_name, args,
 class PageInstanceCache(object):
     """Caches instances of :class:`course.page.Page`."""
 
-    def __init__(self, repo, course, flow_identifier):
+    def __init__(self, repo, course, flow_id):
         self.repo = repo
         self.course = course
-        self.flow_identifier = flow_identifier
+        self.flow_id = flow_id
         self.flow_desc_cache = {}
         self.page_cache = {}
 
@@ -437,7 +449,7 @@ class PageInstanceCache(object):
             return self.flow_desc_cache[commit_sha]
         except KeyError:
             flow_desc = get_flow_desc(self.repo, self.course,
-                    self.flow_identifier, commit_sha)
+                    self.flow_id, commit_sha)
             self.flow_desc_cache[commit_sha] = flow_desc
             return flow_desc
 
@@ -449,13 +461,13 @@ class PageInstanceCache(object):
 
             from course.content import get_flow_page_desc, instantiate_flow_page
             page_desc = get_flow_page_desc(
-                    self.flow_identifier,
+                    self.flow_id,
                     self.get_flow_desc_from_cache(commit_sha),
                     group_id, page_id)
 
             page = instantiate_flow_page(
                     location="flow '%s', group, '%s', page '%s'"
-                    % (self.flow_identifier, group_id, page_id),
+                    % (self.flow_id, group_id, page_id),
                     repo=self.repo, page_desc=page_desc,
                     commit_sha=commit_sha)
 

@@ -568,6 +568,11 @@ def validate_flow_rules(ctx, location, rules):
 
 def validate_flow_permission(ctx, location, permission):
     from course.constants import FLOW_PERMISSION_CHOICES
+    if permission == "modify":
+        ctx.add_warning(location, "Uses deprecated 'modify' permission--"
+                "replace by 'submit_answer' and 'end_session'")
+        return
+
     if permission not in dict(FLOW_PERMISSION_CHOICES):
         raise ValidationError("%s: invalid flow permission '%s'"
                 % (location, permission))
@@ -705,6 +710,15 @@ def validate_course_content(repo, course_file, events_file,
         for entry in flows_tree.items():
             if not entry.path.endswith(".yml"):
                 continue
+
+            from course.constants import FLOW_ID_REGEX
+            flow_id = entry.path[:-4]
+            match = re.match("^"+FLOW_ID_REGEX+"$", flow_id)
+            if match is None:
+                raise ValidationError("%s: invalid flow name. "
+                        "Flow names may only contain (roman) "
+                        "letters, numbers, "
+                        "dashes and underscores." % entry.path)
 
             location = "flows/%s" % entry.path
             flow_desc = get_yaml_from_repo_safely(repo, location,
