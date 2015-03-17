@@ -846,30 +846,30 @@ def will_receive_feedback(permissions):
 def add_buttons_to_form(form, fpctx, flow_session, permissions):
     from crispy_forms.layout import Submit
     form.helper.add_input(
-            Submit("save", "Save answer",
+            Submit("save", "保存回答", #"Save answer",
                 css_class="col-lg-offset-2 relate-save-button"))
 
     if will_receive_feedback(permissions):
         if flow_permission.change_answer in permissions:
             form.helper.add_input(
                     Submit(
-                        "submit", "Submit answer for grading",
+                        "submit", "提交用于评分的回答", #"Submit answer for grading",
                         accesskey="g", css_class="relate-save-button"))
         else:
             form.helper.add_input(
-                    Submit("submit", "Submit final answer",
+                    Submit("submit", "提交最终回答", #"Submit final answer",
                         css_class="relate-save-button"))
     else:
         # Only offer 'save and move on' if student will receive no feedback
         if fpctx.page_data.ordinal + 1 < flow_session.page_count:
             form.helper.add_input(
                     Submit("save_and_next",
-                        mark_safe("Save answer and move on &raquo;"),
+                        mark_safe("保存并继续 &raquo;"), #("Save answer and move on &raquo;"),
                         css_class="relate-save-button"))
         else:
             form.helper.add_input(
                     Submit("save_and_finish",
-                        mark_safe("Save answer and finish &raquo;"),
+                        mark_safe("保存并结束答题 &raquo;"), #("Save answer and finish &raquo;"),
                         css_class="relate-save-button"))
 
     return form
@@ -903,8 +903,8 @@ def view_flow_page(pctx, flow_session_id, ordinal):
 
     if flow_session is None:
         messages.add_message(request, messages.WARNING,
-                "No in-progress session record found for this flow. "
-                "Redirected to flow start page.")
+                "本flow中没有正在进行的Session" #"No in-progress session record found for this flow. "
+                "跳转到本flow的起始页") #"Redirected to flow start page.")
 
         return redirect("course.flow.view_start_flow",
                 pctx.course.identifier,
@@ -974,7 +974,7 @@ def view_flow_page(pctx, flow_session_id, ordinal):
                     and flow_permission.change_answer
                         not in permissions):
                 messages.add_message(request, messages.ERROR,
-                        "Already have final answer.")
+                        "错误：你已经提交了最终回答。") #"Already have final answer.")
                 submission_allowed = False
 
             form = fpctx.page.post_form(
@@ -987,7 +987,7 @@ def view_flow_page(pctx, flow_session_id, ordinal):
                 # {{{ form validated, process answer
 
                 messages.add_message(request, messages.INFO,
-                        "Answer saved.")
+                        "回答已保存")#"Answer saved.")
 
                 page_visit = FlowPageVisit()
                 page_visit.flow_session = flow_session

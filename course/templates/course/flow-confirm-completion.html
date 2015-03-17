@@ -5,30 +5,38 @@
 {% endblock %}
 
 {% block content %}
-  <h1>End Session '{{flow_desc.title}}'?</h1>
+  <h1>结束本Session '{{flow_desc.title}}'?</h1>
 
   {% if unanswered_count %}
     <div class="alert alert-warning">
-      You have left questions unanswered.
+      <!-- You have left questions unanswered. -->
+      你还有问题尚未回答。
     </div>
   {% endif %}
 
   {% if total_count %}
     <p>
-    There were {{total_count}} questions.
+    <!-- There were {{total_count}} questions. -->
+    一共有 {{total_count}} 个问题，
     {% if answered_count == total_count %}
-      You have provided an answer for all of them.
+      <!-- You have provided an answer for all of them. -->
+        你回答了全部问题。
     {% else %}
-      You have answered {{answered_count}} and left {{unanswered_count}} unanswered.
+      <!-- You have answered {{answered_count}} and left {{unanswered_count}} unanswered.-->
+        你回答了{{answered_count}}个，还有{{unanswered_count}}个未回答。
     {% endif %}
     </p>
   {% endif %}
 
-  If you choose to end your session, the following things will happen:
+  <!-- If you choose to end your session, the following things will happen:-->
+  如果你确定结束本Session，会有以下后果：
   <ul>
-    <li>You will be prevented from making further changes to your answers.</li>
+    <!-- <li>You will be prevented from making further changes to your answers.</li>
     <li>All your currently saved answers, if not graded already, will be graded.</li>
-    <li>If possible, a final grade will be computed from all saved, graded answers.</li>
+    <li>If possible, a final grade will be computed from all saved, graded answers.</li> -->
+    <li>你<b>不能</b>对已做出的回答做进一步的修改；</li>
+    <li>你目前已保存的尚未得到评分的结果，将会得到评分；</li>
+    <li>对所有已保存且已评分的回答将会计算出一个最终评分。</li>
   </ul>
 
   <div class="well flow-well">
@@ -37,9 +45,9 @@
 
       <a class="btn btn-default"
         href="{% url "course.flow.view_flow_page" course.identifier flow_session.id last_page_nr %}"
-        role="button">&laquo; Go back</a>
+        role="button">&laquo; 返回<!-- Go back--></a>
 
-      <button type="submit" name="submit" class="btn btn-primary">Confirm: Submit answers and end session</button>
+      <button type="submit" name="submit" class="btn btn-primary">确认：提交全部回答并终止本Session<!-- Confirm: Submit answers and end session --></button>
     </form>
   </div>
 

@@ -14,16 +14,24 @@
 
     {% if past_sessions_and_properties %}
       <div class="well">
-        <h3 class="start-well-title">Past sessions</h3>
+        <h3 class="start-well-title">过去的session<!-- Past sessions --></h3>
 
         <table class="past-flow-session-table">
           <tr>
-            <th>Start time</th>
+<!--            <th>Start time</th>
             <th>State</th>
             <th>Grading rules</th>
             <th>Due</th>
             <th>Result</th>
             <th>Actions</th>
+-->
+            <th>开始时间</th>
+            <th>状态</th>
+            <th>评分规则</th>
+            <th>截止时间</th>
+            <th>结果</th>
+            <th>操作</th>
+
           </tr>
           {% for flow_session, session_properties in past_sessions_and_properties %}
             <tr>
@@ -38,7 +46,8 @@
                 {% if session_properties.grade_description %}
                   {{ session_properties.grade_description }}
                 {% else %}
-                  (no description)
+                  <!-- (no description) -->
+                  (未定义)
                 {% endif %}
               </td>
               <td>
@@ -54,7 +63,7 @@
 
                   (<b>{{ flow_session.points_percentage|floatformat }}%</b>)
                 {% else %}
-                  (none)
+                  (尚无)<!-- (none) -->
                 {% endif %}
 
               </td>
@@ -62,9 +71,9 @@
                 {% if session_properties.may_view %}
                   <a href="{% url "course.flow.view_flow_page" course.identifier flow_session.id 0 %}" class="btn btn-primary btn-xs">
                     {% if session_properties.may_modify %}
-                      Resume &raquo;
+                      继续<!-- Resume --> &raquo;
                     {% else %}
-                      Review &raquo;
+                      回顾<!-- Review --> &raquo;
                     {% endif %}
                   </a>
                 {% endif %}
@@ -83,7 +92,7 @@
 
     {% if may_start %}
       <button type="submit" name="start" class="btn btn-primary">
-        Start &raquo;
+        <!-- Start --> 开始 &raquo;
       </button>
     {% endif %}
 

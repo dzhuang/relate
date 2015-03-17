@@ -96,9 +96,9 @@ class flow_session_expiration_mode:
     roll_over = "roll_over"
 
 FLOW_SESSION_EXPIRATION_MODE_CHOICES = (
-        (flow_session_expiration_mode.end, "End session and grade"),
+        (flow_session_expiration_mode.end, "结束Session并评分"), #"End session and grade"),
         (flow_session_expiration_mode.roll_over,
-            "Keep session and apply new rules"),
+            "保持本Session并使用新的规则",) # "Keep session and apply new rules"),
         )
 
 
@@ -110,7 +110,7 @@ def is_expiration_mode_allowed(expmode, permissions):
     elif expmode == flow_session_expiration_mode.end:
         return True
     else:
-        raise ValueError("unknown expiration mode")
+        raise ValueError("未知的过期方式")#"unknown expiration mode")
 
     return False
 
@@ -148,14 +148,23 @@ class flow_permission:
     set_roll_over_expiration_mode = "set_roll_over_expiration_mode"
 
 FLOW_PERMISSION_CHOICES = (
-        (flow_permission.view, "View the flow"),
-        (flow_permission.submit_answer, "Submit answers"),
-        (flow_permission.end_session, "End session"),
-        (flow_permission.change_answer, "Change already-graded answer"),
-        (flow_permission.see_correctness, "See whether an answer is correct"),
-        (flow_permission.see_answer, "See the correct answer"),
+#        (flow_permission.view, "View the flow"),
+#        (flow_permission.submit_answer, "Submit answers"),
+#        (flow_permission.end_session, "End session"),
+#        (flow_permission.change_answer, "Change already-graded answer"),
+#        (flow_permission.see_correctness, "See whether an answer is correct"),
+#        (flow_permission.see_answer, "See the correct answer"),
+#        (flow_permission.set_roll_over_expiration_mode,
+#            "Set the session to 'roll over' expiration mode"),
+        (flow_permission.view, "查看flow"),
+        (flow_permission.submit_answer, "提交回答"),
+        (flow_permission.end_session, "结束Session"),
+        (flow_permission.change_answer, "修改已评分的回答"),
+        (flow_permission.see_correctness, "查看回答是否正确"),
+        (flow_permission.see_answer, "查看正确的答案"),
         (flow_permission.set_roll_over_expiration_mode,
             "Set the session to 'roll over' expiration mode"),
+
         )
 
 
@@ -196,21 +205,21 @@ class grade_aggregation_strategy:
         Use the last of the achieved grades for each attempt.
     """
 
-    max_grade = "max_grade"
-    avg_grade = "avg_grade"
-    min_grade = "min_grade"
+    max_grade = "最高分" #"max_grade"
+    avg_grade = "平均分" #"avg_grade"
+    min_grade = "最低分" #"min_grade"
 
-    use_earliest = "use_earliest"
-    use_latest = "use_latest"
+    use_earliest = "最早提交的回答" #"use_earliest"
+    use_latest = "最迟提交的回答" #"use_latest"
 
 
 GRADE_AGGREGATION_STRATEGY_CHOICES = (
-        (grade_aggregation_strategy.max_grade, "Use the max grade"),
-        (grade_aggregation_strategy.avg_grade, "Use the avg grade"),
-        (grade_aggregation_strategy.min_grade, "Use the min grade"),
+        (grade_aggregation_strategy.max_grade, "使用最高分"), #"Use the max grade"),
+        (grade_aggregation_strategy.avg_grade, "使用平均分"), #"Use the avg grade"),
+        (grade_aggregation_strategy.min_grade, "使用最低分"), #"Use the min grade"),
 
-        (grade_aggregation_strategy.use_earliest, "Use the earliest grade"),
-        (grade_aggregation_strategy.use_latest, "Use the latest grade"),
+        (grade_aggregation_strategy.use_earliest, "使用最早提交的回答"), #"Use the earliest grade"),
+        (grade_aggregation_strategy.use_latest, "使用最迟提交的回答"), #"Use the latest grade"),
         )
 
 
@@ -226,14 +235,14 @@ class grade_state_change_types:
 
 
 GRADE_STATE_CHANGE_CHOICES = (
-        (grade_state_change_types.grading_started, 'Grading started'),
-        (grade_state_change_types.graded, 'Graded'),
-        (grade_state_change_types.retrieved, 'Retrieved'),
-        (grade_state_change_types.unavailable, 'Unavailable'),
-        (grade_state_change_types.extension, 'Extension'),
-        (grade_state_change_types.report_sent, 'Report sent'),
-        (grade_state_change_types.do_over, 'Do-over'),
-        (grade_state_change_types.exempt, 'Exempt'),
+        (grade_state_change_types.grading_started, "评分已开始"), #'Grading started'),
+        (grade_state_change_types.graded, "已评分"), #'Graded'),
+        (grade_state_change_types.retrieved, "已恢复"), #'Retrieved'),
+        (grade_state_change_types.unavailable, "不可获取"), #'Unavailable'),
+        (grade_state_change_types.extension, "延伸"), #'Extension'),
+        (grade_state_change_types.report_sent, "报告已发送"), #'Report sent'),
+        (grade_state_change_types.do_over, "Do-over"), #'Do-over'),
+        (grade_state_change_types.exempt, "排除"), #'Exempt'),
         )
 
 FLOW_ID_REGEX = "(?P<flow_id>[-_a-zA-Z0-9]+)"
