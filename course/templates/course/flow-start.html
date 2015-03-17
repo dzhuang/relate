@@ -88,6 +88,10 @@
             </tr>
           {% endfor %}
         </table>
+          {# % if session_properties.grade_strategy % #}
+          {# <h4>最终得分方式：{{ session_properties.grade_strategy }}</h4> #}
+          {# % endif % #}
+          
       </div>
     {% endif %}
       
@@ -95,7 +99,7 @@
 
     {% if may_start %}
       {% if past_sessions_and_properties %}
-      <button type="submit" name="start" class="btn btn-primary">
+      <button type="submit" name="startagain" class="btn btn-primary">
         <!-- Start --> 再来一次 &raquo;          
       </button>
 
@@ -119,7 +123,7 @@
         <ul>
         {% if not user.is_authenticated %}
     <li>
-    <div><b><a href="{% url student_sign_in_view %}">Sign in</a>.你尚未登录，对资源的访问被限制。由于网站对于你具体是谁并不清楚，它禁止了你的访问。如果你已经登陆，
+    <div><b><a href="{% url student_sign_in_view %}">登录</a>.你尚未登录，对资源的访问被限制。由于网站对于你具体是谁并不清楚，它禁止了你的访问。如果你已经登陆，
       请通过 <a href="{% url "course.views.home" %}">主页</a> 返回课程页面，然后尝试你的上一次
       操作。</b></div>
 
@@ -133,7 +137,7 @@
     </li>
         {% endif %}
     <li>
-    <div><b>请完成你的加入课程申请(enrollment)。如果你并未申请课程，在课程页面上方有一个大的"Enroll now"按钮，
+    <div><b>请完成你的加入课程申请(enrollment)。如果你并未申请课程，在课程页面上方有一个大的<b>"申请加入课程"</b>按钮，
     请点击之，然后按指引操作，并完成你的上一次操作。</b></div>
     Complete your enrollment in your course. If you're not enrolled, a large
     "Enroll now" button will show up at the top of your course page. Click that,
