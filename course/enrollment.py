@@ -135,13 +135,15 @@ def enroll(request, course_identifier):
                 recipient_list=[course.notify_email])
 
         messages.add_message(request, messages.INFO,
-                "Enrollment request sent. You will receive notifcation "
-                "by email once your request has been acted upon.")
+                #"Enrollment request sent. You will receive notifcation "
+                #"by email once your request has been acted upon.")
+                "课程加入申请已经发送，如果你的要求被批准，你将收到邮件通知。")
     else:
         enroll(participation_status.active, role)
 
         messages.add_message(request, messages.SUCCESS,
-                "Successfully enrolled.")
+                #"Successfully enrolled.")
+                "已成功加入课程。")
 
     return redirect("course.views.course_page", course_identifier)
 

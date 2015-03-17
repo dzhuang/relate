@@ -1,19 +1,19 @@
 {% extends "course/course-base.html" %}
 
 {% block title %}
-  Grade book: {{ opportunity.name }} - Courseflow
+  成绩册：{# --Grade book: #} {{ opportunity.name }} - CNSBA E-learning  {# - Courseflow  #}
 {% endblock %}
 
 {% block content %}
-  <h1>Understand a grade: {{ opportunity.name }} </h1>
+  <h1>成绩：<!--Understand a grade:--> {{ opportunity.name }} </h1>
 
   <table class="table table-condensed">
     <thead>
-      <th>Property</th><th>Value</th>
+      <th>属性<!--Property--></th><th>值<!--Value--></th>
     </thead>
     <tbody>
     <tr>
-      <td>Participant</td>
+      <td>参与人<!--Participant--></td>
       <td>
         {{ grade_participation.user.last_name }}, {{ grade_participation.user.first_name }}
         ({{ grade_participation.user.username }})
@@ -24,20 +24,21 @@
     </tr>
     {% if opportunity.due_time != None %}
       <tr>
-        <td>Due</td><td><tt>{{ opportunity.due_time }}</tt></td>
+        <td>截止日期<!--Due--></td><td><tt>{{ opportunity.due_time }}</tt></td>
       </tr>
     {% endif %}
     {% if opportunity.flow_id %}
     <tr>
-      <td>Flow</td><td><tt><a href="{% url "course.flow.view_start_flow" course.identifier opportunity.flow_id %}">{{ opportunity.flow_id }}</a></tt></td>
+      <td>Flow名</td><td><tt><a href="{% url "course.flow.view_start_flow" course.identifier opportunity.flow_id %}">{{ opportunity.flow_id }}</a></tt></td>
     </tr>
     {% endif %}
     <tr>
-      <td>Average grade</td>
+      <td>平均分<!--Average grade--></td>
       <td>
         {% if avg_grade_percentage != None %}
-          {{ avg_grade_percentage|floatformat }}%
-          (out of {{ avg_grade_population }} grades)
+          <!--{{ avg_grade_percentage|floatformat }}%
+          (out of {{ avg_grade_population }} grades)-->
+          {{ avg_grade_population }}次评分的平均成绩为{{ avg_grade_percentage|floatformat }}%
         {% else %}
           <i>(no data)</i>
         {% endif %}
@@ -47,16 +48,16 @@
 
   {# {{{ grade history #}
 
-  <h2>Grade history</h2>
+  <h2>得分历史<!--Grade history--></h2>
   {% if not grade_changes%}
-    (no grade data available)
+    (无数据)<!--(no grade data available)-->
   {% else %}
     <table class="table table-condensed table-striped">
       <thead>
-        <th>Date</th>
+        <th>日期<!--Date--></th>
         <th>What</th>
-        <th>Grade</th>
-        <th>Further Information</th>
+        <th>得分<!--Grade--></th>
+        <th>更多信息<!--Further Information--></th>
       </thead>
       <tbody>
         {% for gchange in grade_changes %}
@@ -116,14 +117,14 @@
         <thead>
           <tr>
             <th>ID</th>
-            <th>State</th>
-            <th>Due</th>
-            <th>Result</th>
+            <th>状态<!--State--></th>
+            <th>截止<!--Due--></th>
+            <th>结果<!--Result--></th>
             {% if show_privileged_info %}
-              <th>Pages</th>
+              <th>页面<!--Pages--></th>
             {% endif %}
             {% if allow_session_actions %}
-              <th>Actions</th>
+              <th>操作<!--Actions--></th>
             {% endif %}
           </tr>
         </thead>
@@ -136,25 +137,25 @@
                 <hr>
                 {% if flow_session.access_rules_tag %}
                   <p>
-                    <b>Grading rules:</b>
+                    <b>评分规则：<!--Grading rules:--></b>
                     {% if session_properties.grade_description %}
                       {{ session_properties.grade_description }}
                     {% endif %}
                   </p>
                 {% endif %}
                 <p>
-                  <b>Expiration mode:</b>
+                  <b>逾期方式：<!--Expiration mode:--></b>
                   <tt>{{ flow_session.expiration_mode  }}</tt>
                 </p>
                 <p>
-                  <b>Started:</b> {{ flow_session.start_time }}
+                  <b>开始时间：<!--Started:--></b> {{ flow_session.start_time }}
                 </p>
                 {% if not flow_session.in_progress %}
                   <p>
-                    <b>Completed:</b> {{ flow_session.completion_time }}
+                    <b>完成时间：<!--Completed:--></b> {{ flow_session.completion_time }}
                   </p>
                   <p>
-                    <b>Last activity:</b> {{ flow_session.last_activity }}
+                    <b>最后操作：<!--Last activity:--></b> {{ flow_session.last_activity }}
                   </p>
                 {% endif %}
               </td>
@@ -174,15 +175,15 @@
 
                     (<b>{{ flow_session.points_percentage|floatformat }}%</b>)
                   {% else %}
-                    (grade not available)
+                    (尚无评分)<!--(grade not available)-->
                     ({{ flow_session.max_points|floatformat:1 }} points achievable)
                   {% endif %}
                 {% else %}
-                  (none)
+                  (无)<!--(none)-->
                 {% endif %}
                 {% if show_privileged_info and flow_session.result_comment %}
                   <p>
-                  <b> Notes:</b>
+                  <b> 注：<!--Notes:--></b>
                   {{ flow_session.result_comment|linebreaks }}
                   </p>
                 {% endif %}

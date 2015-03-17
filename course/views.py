@@ -130,8 +130,9 @@ def course_page(pctx):
         show_enroll_button = False
 
         messages.add_message(pctx.request, messages.INFO,
-                "Your enrollment request is pending. You will be "
-                "notified once it has been acted upon.")
+                #"Your enrollment request is pending. You will be "
+                #"notified once it has been acted upon.")
+                "你的课程申请正在等待处理，请耐心等待通知。")
 
     return render_course_page(pctx, "course/course-page.html", {
         "chunks": chunks,

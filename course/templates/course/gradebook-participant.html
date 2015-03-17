@@ -3,7 +3,7 @@
 {% load static %}
 
 {% block title %}
-  My Grades - Courseflow
+  我的成绩 - CNSBA-Elearning<!--My Grades - Courseflow-->
 {% endblock %}
 
 {% block header_extra %}
@@ -17,9 +17,9 @@
 
 {% block content %}
   {% if grade_participation.pk == participation.pk %}
-    <h1>My Grades</h1>
+    <h1>我的成绩<!--My Grades--></h1>
   {% else %}
-    <h1>Grades</h1>
+    <h1>分数<!--Grades--></h1>
 
     <table class="table table-condensed">
       <thead>
@@ -41,9 +41,9 @@
 
   <table class="gradebook-single">
     <thead>
-      <th>Name</th>
-      <th>Grade</th>
-      <th>Date</th>
+      <th>Flow名称<!--Name--></th>
+      <th>得分<!--Grade--></th>
+      <th>日期<!--Date--></th>
     </thead>
     <tbody>
       {% for grade_info in grade_table %}

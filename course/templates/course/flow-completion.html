@@ -1,7 +1,7 @@
 {% extends "course/course-base.html" %}
 
 {% block title %}
-  {{flow_desc.title}} - RELATE
+  {{flow_desc.title}} - CNSBA E-learning {#  - RELATE #}
 {% endblock %}
 
 {% block content %}
@@ -10,7 +10,7 @@
   <div class="well flow-well">
     <a class="btn btn-default"
       href="{% url "course.flow.view_start_flow" course.identifier flow_identifier %}"
-      role="button">&laquo; Back to start page</a>
+      role="button">&laquo; 回到Session起始页面<!--Back to start page--></a>
   </div>
 
 {% endblock %}

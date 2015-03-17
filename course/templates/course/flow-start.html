@@ -1,10 +1,11 @@
 {% extends "course/course-base.html" %}
 
 {% block title %}
-  {{flow_desc.title}} - RELATE
+  {{flow_desc.title}} - CNSBA E-learning {#  - RELATE #}
 {% endblock %}
 
 {% block content %}
+  <h1>Flow: {{flow_desc.title}}</h1>
   {% if flow_desc.description %}
   {{flow_desc.description_html|safe}}
   {% endif %}
@@ -80,7 +81,7 @@
 
                 {% if not flow_session.in_progress %}
                   <a href="{% url "course.flow.finish_flow_session_view" course.identifier flow_session.id %}" class="btn btn-primary btn-xs">
-                    Results
+                    结果<!--Results-->
                   </a>
                 {% endif %}
               </td>
@@ -89,11 +90,21 @@
         </table>
       </div>
     {% endif %}
+      
+    
 
     {% if may_start %}
+      {% if past_sessions_and_properties %}
       <button type="submit" name="start" class="btn btn-primary">
-        <!-- Start --> 开始 &raquo;
+        <!-- Start --> 再来一次 &raquo;          
       </button>
+
+      {% else %}
+      <button type="submit" name="start" class="btn btn-primary">
+        <!-- Start --> 开始 &raquo;          
+      </button>
+      {% endif %}
+      
     {% endif %}
 
     {% if may_start or past_sessions_and_properties %}

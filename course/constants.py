@@ -205,12 +205,12 @@ class grade_aggregation_strategy:
         Use the last of the achieved grades for each attempt.
     """
 
-    max_grade = "最高分" #"max_grade"
-    avg_grade = "平均分" #"avg_grade"
-    min_grade = "最低分" #"min_grade"
+    max_grade = "max_grade"
+    avg_grade = "avg_grade"
+    min_grade = "min_grade"
 
-    use_earliest = "最早提交的回答" #"use_earliest"
-    use_latest = "最迟提交的回答" #"use_latest"
+    use_earliest = "use_earliest"
+    use_latest = "use_latest"
 
 
 GRADE_AGGREGATION_STRATEGY_CHOICES = (
