@@ -1,7 +1,7 @@
 {% extends "course/course-base.html" %}
 
 {% block title %}
-  {{flow_desc.title}} - CNSBA E-learning {#  - RELATE #}
+  {{flow_desc.title}} - CNSBA E-learning 
 {% endblock %}
 
 {% block content %}
@@ -14,24 +14,16 @@
 
     {% if past_sessions_and_properties %}
       <div class="well">
-        <h3 class="start-well-title">过去的session<!-- Past sessions --></h3>
+        <h3 class="start-well-title">Past sessions</h3>
 
         <table class="past-flow-session-table">
           <tr>
-<!--            <th>Start time</th>
+            <th>Start time</th>
             <th>State</th>
             <th>Grading rules</th>
             <th>Due</th>
             <th>Result</th>
             <th>Actions</th>
--->
-            <th>开始时间</th>
-            <th>状态</th>
-            <th>评分规则</th>
-            <th>截止时间</th>
-            <th>结果</th>
-            <th>操作</th>
-
           </tr>
           {% for flow_session, session_properties in past_sessions_and_properties %}
             <tr>
@@ -46,8 +38,7 @@
                 {% if session_properties.grade_description %}
                   {{ session_properties.grade_description }}
                 {% else %}
-                  <!-- (no description) -->
-                  (未定义)
+                  (no description)
                 {% endif %}
               </td>
               <td>
@@ -63,7 +54,7 @@
 
                   (<b>{{ flow_session.points_percentage|floatformat }}%</b>)
                 {% else %}
-                  (尚无)<!-- (none) -->
+                  (none)
                 {% endif %}
 
               </td>
@@ -71,16 +62,16 @@
                 {% if session_properties.may_view %}
                   <a href="{% url "course.flow.view_flow_page" course.identifier flow_session.id 0 %}" class="btn btn-primary btn-xs">
                     {% if session_properties.may_modify %}
-                      继续<!-- Resume --> &raquo;
+                      Resume &raquo;
                     {% else %}
-                      回顾<!-- Review --> &raquo;
+                      Review &raquo;
                     {% endif %}
                   </a>
                 {% endif %}
 
                 {% if not flow_session.in_progress %}
                   <a href="{% url "course.flow.finish_flow_session_view" course.identifier flow_session.id %}" class="btn btn-primary btn-xs">
-                    结果<!--Results-->
+                    Results
                   </a>
                 {% endif %}
               </td>
@@ -89,8 +80,6 @@
         </table>
       </div>
     {% endif %}
-      
-    
 
     {% if may_start %}
       <div class="alert alert-info">
@@ -174,37 +163,28 @@
         Check the following:
         <ul>
         {% if not user.is_authenticated %}
-    <li>
-    <div><b><a href="{% url student_sign_in_view %}">登录</a>.你尚未登录，对资源的访问被限制。由于网站对于你具体是谁并不清楚，它禁止了你的访问。如果你已经登陆，
-      请通过 <a href="{% url "course.views.home" %}">主页</a> 返回课程页面，然后尝试你的上一次
-      操作。</b></div>
+        <li>
+        <a href="{% url student_sign_in_view %}">Sign in</a>.
 
-      You're not currently signed in. Access to the resource is restricted,
-      and since the site has no way of knowing who you are, it denied you accesss.
-      Once you're signed in, navigate back to your course from the
-      <a href="{% url "course.views.home" %}">home page</a> and retry your last
-      action.
-        
-      
-    </li>
+          You're not currently signed in. Access to the resource is restricted,
+          and since the site has no way of knowing who you are, it may have denied
+          you accesss.
+          Once you're signed in, navigate back to your course from the
+          <a href="{% url "course.views.home" %}">home page</a> and retry your last
+          action.
+        </li>
         {% endif %}
-    <li>
-    <div><b>请完成你的加入课程申请(enrollment)。如果你并未申请课程，在课程页面上方有一个大的<b>"申请加入课程"</b>按钮，
-    请点击之，然后按指引操作，并完成你的上一次操作。</b></div>
-    Complete your enrollment in your course. If you're not enrolled, a large
-    "Enroll now" button will show up at the top of your course page. Click that,
-    follow the indicated steps, and then retry your last action.
-    
-
-    </li>
-    <li>
-    <div><b>如果上面的步骤都无法完成，请浏览回你的课程页面<a href="{% url "course.views.home" %}">主页</a>，并联系课程人员。</b></div>
+        <li>
+        Complete your enrollment in your course. If you're not enrolled, a large
+        "Enroll now" button will show up at the top of your course page. Click that,
+        follow the indicated steps, and then retry your last action.
+        </li>
+        <li>
         If none of the above steps help, please navigate back to your course from the
-    <a href="{% url "course.views.home" %}">home page</a> and contact your course
-    staff.
-    
-    
-    </li>
+        <a href="{% url "course.views.home" %}">home page</a> and contact your course
+        staff.
+        </li>
+
         </ul>
       </div>
     {% endif %}
