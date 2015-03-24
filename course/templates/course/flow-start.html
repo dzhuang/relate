@@ -18,12 +18,20 @@
 
         <table class="past-flow-session-table">
           <tr>
+<!--
             <th>Start time</th>
             <th>State</th>
             <th>Grading rules</th>
             <th>Due</th>
             <th>Result</th>
             <th>Actions</th>
+-->
+            <th>开始时间</th>
+            <th>状态</th>
+            <th>评分规则</th>
+            <th>截止</th>
+            <th>结果</th>
+            <th>操作</th>
           </tr>
           {% for flow_session, session_properties in past_sessions_and_properties %}
             <tr>
@@ -38,7 +46,7 @@
                 {% if session_properties.grade_description %}
                   {{ session_properties.grade_description }}
                 {% else %}
-                  (no description)
+                  <!--(no description)-->(未定义)
                 {% endif %}
               </td>
               <td>
@@ -48,13 +56,16 @@
               </td>
               <td>
                 {% if flow_session.points_percentage %}
+<!--
                   <b>{{ flow_session.points|floatformat }}</b>
                   out of
                   {{ flow_session.max_points|floatformat }}
-
+-->
+                  {{ flow_session.max_points|floatformat }}分 中的 <b>{{ flow_session.points|floatformat }}</b>分
+                  
                   (<b>{{ flow_session.points_percentage|floatformat }}%</b>)
                 {% else %}
-                  (none)
+                  <!--(none)-->(未定义)
                 {% endif %}
 
               </td>
@@ -62,16 +73,16 @@
                 {% if session_properties.may_view %}
                   <a href="{% url "course.flow.view_flow_page" course.identifier flow_session.id 0 %}" class="btn btn-primary btn-xs">
                     {% if session_properties.may_modify %}
-                      Resume &raquo;
+                      <!--Resume-->继续 &raquo;
                     {% else %}
-                      Review &raquo;
+                      <!--Review-->回顾 &raquo;
                     {% endif %}
                   </a>
                 {% endif %}
 
                 {% if not flow_session.in_progress %}
                   <a href="{% url "course.flow.finish_flow_session_view" course.identifier flow_session.id %}" class="btn btn-primary btn-xs">
-                    Results
+                    <!--Results-->结果
                   </a>
                 {% endif %}
               </td>
@@ -84,27 +95,41 @@
     {% if may_start %}
       <div class="alert alert-info">
         {% if new_session_grading_rule.grade_identifier %}
-          If you start a new session, the following rules will apply:
+<!--          If you start a new session, the following rules will apply:-->
+          如果你开始一个新的sessioin，下面的规则将生效：
           <ul>
             {% if new_session_grading_rule.description %}
-              <li>Your session will be a '<b>{{ new_session_grading_rule.description }}</b>'.</li>
+<!--              <li>Your session will be a '<b>{{ new_session_grading_rule.description }}</b>'.</li>-->
+              <li>你的session将是 '<b>{{ new_session_grading_rule.description }}</b>'.</li>
             {% endif %}
             {% if new_session_grading_rule.due %}
-              <li>Your session will be due on <b>{{ new_session_grading_rule.due }}</b>.</li>
+<!--              <li>Your session will be due on <b>{{ new_session_grading_rule.due }}</b>.</li>-->
+              <li>你的session将于 <b>{{ new_session_grading_rule.due }}</b> 截止.</li>              
             {% endif %}
+<!--
             <li>You will receive <b>{{ new_session_grading_rule.credit_percent|floatformat }}% credit</b>
               for your work.
+-->
+            <li>你的得分将按应得分的 <b>{{ new_session_grading_rule.credit_percent|floatformat }}% </b>
+              计算.
             {% if past_sessions_and_properties %}
+<!--
               <li>This is not your first session. If you start another one,
                 for your overall grade we will '<b>{{ grade_aggregation_strategy_descr }}</b>'
                 among all your sessions.
               </li>
+-->
+              <li> 这不是你的第1个session. 如果你开始新的session，你的得分将在所有的session中采用 '<b>{{ grade_aggregation_strategy_descr }}</b>'
+                规则.
+              </li>                
             {% endif%}
           </ul>
         {% else %}
-          If you start a new session, no permanent grade will be recorded for it.
+<!--          If you start a new session, no permanent grade will be recorded for it.-->
+          如果你开始新的session，则这个session不会记分。        
           {% if new_session_grading_rule.description %}
-            Your session will be a '<b>{{ new_session_grading_rule.description }}</b>'.
+<!--            Your session will be a '<b>{{ new_session_grading_rule.description }}</b>'.-->
+          你的session将是 '<b>{{ new_session_grading_rule.description }}</b>'.
           {% endif %}
         {% endif %}
       </div>
@@ -113,15 +138,15 @@
 
       {% if start_may_decrease_grade %}
         <a id="pre-start-button" class="btn btn-primary">
-          Start &raquo;
+          <!--Start-->开始 &raquo;
         </a>
         <button id="start-button" type="submit" name="start" class="btn btn-danger"
           style="display:none"
-          data-content="I understand that starting a new session could lower my overall grade."
+          data-content="我明白，开始一个新的session可能会使总体评分降低."          
           data-container="body"
           data-placement="right"
           >
-            I am sure &raquo;
+            <!--I am sure-->我确认 &raquo;
         </button>
 
         <script type="text/javascript">
@@ -156,33 +181,45 @@
     {% else %}
       <div class="alert alert-info">
         <p>
+<!--
         You do not have any existing sessions and are not allowed to start
         a new one.
+-->
+        你没有可用的session，不允许开始新的session.
         </p>
 
-        Check the following:
+<!--        Check the following:-->
+          检查以下项目：
         <ul>
         {% if not user.is_authenticated %}
-        <li>
-        <a href="{% url student_sign_in_view %}">Sign in</a>.
+    <li>
+    <div><b><a href="{% url student_sign_in_view %}">登录</a>.你尚未登录，对资源的访问被限制。由于网站对于你具体是谁并不清楚，它禁止了你的访问。如果你已经登陆，
+      请通过 <a href="{% url "course.views.home" %}">主页</a> 返回课程页面，然后尝试你的上一次
+      操作。</b></div>
 
-          You're not currently signed in. Access to the resource is restricted,
-          and since the site has no way of knowing who you are, it may have denied
-          you accesss.
-          Once you're signed in, navigate back to your course from the
-          <a href="{% url "course.views.home" %}">home page</a> and retry your last
-          action.
-        </li>
+      You're not currently signed in. Access to the resource is restricted,
+      and since the site has no way of knowing who you are, it denied you accesss.
+      Once you're signed in, navigate back to your course from the
+      <a href="{% url "course.views.home" %}">home page</a> and retry your last
+      action.
+        
+      
+    </li>
         {% endif %}
-        <li>
-        Complete your enrollment in your course. If you're not enrolled, a large
-        "Enroll now" button will show up at the top of your course page. Click that,
-        follow the indicated steps, and then retry your last action.
-        </li>
-        <li>
+    <li>
+    <div><b>请完成你的加入课程申请(enrollment)。如果你并未申请课程，在课程页面上方有一个大的<b>"申请加入课程"</b>按钮，
+    请点击之，然后按指引操作，并完成你的上一次操作。</b></div>
+    Complete your enrollment in your course. If you're not enrolled, a large
+    "Enroll now" button will show up at the top of your course page. Click that,
+    follow the indicated steps, and then retry your last action.
+    
+
+    </li>
+    <li>
+    <div><b>如果上面的步骤都无法完成，请浏览回你的课程页面<a href="{% url "course.views.home" %}">主页</a>，并联系课程人员。</b></div>
         If none of the above steps help, please navigate back to your course from the
-        <a href="{% url "course.views.home" %}">home page</a> and contact your course
-        staff.
+    <a href="{% url "course.views.home" %}">home page</a> and contact your course
+    staff.
         </li>
 
         </ul>

@@ -65,7 +65,7 @@ class FileUploadForm(StyledForm):
         if self.mime_types is not None and self.mime_types == ["application/pdf"]:
             if uploaded_file.read()[:4] != "%PDF":
                raise forms.ValidationError("上传的文件必须是pdf文档.")
-        if self.mime_types is not None and self.mime_types == ["application/vnd.ms-word.document.macroEnabled.12"]:
+        elif self.mime_types is not None and self.mime_types == ["application/vnd.ms-word.document.macroEnabled.12"]:
             if uploaded_file:
                 thefilename=uploaded_file.name
                 ext = os.path.splitext(thefilename)[1]
@@ -74,6 +74,15 @@ class FileUploadForm(StyledForm):
                 print ext
                 if ext !=".docm":
                     raise forms.ValidationError("文件类型不支持！请上传后缀为docm的文档！")
+        elif self.mime_types is not None and self.mime_types == ["text/plain"]:
+            if uploaded_file:
+                thefilename=uploaded_file.name
+                ext = os.path.splitext(thefilename)[1]
+                ext = ext.lower()
+                print thefilename
+                print ext
+                if ext !=".txt":
+                    raise forms.ValidationError("请txt文件！")
                 #else:
                     #raise forms.ValidationError("上传成功")
             #if uploaded_file.read()[:4] != "%PDF":
@@ -156,8 +165,9 @@ class FileUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
 
     ALLOWED_MIME_TYPES = [
             "application/pdf",
-#            "application/msword",
-#            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "text/plain",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             "application/vnd.ms-word.document.macroEnabled.12",
             "application/octet-stream",
             ]
@@ -254,6 +264,7 @@ class FileUploadQuestionNoSubmit(FileUploadQuestion):
                 "course/file-upload-form-no-submit.html",
                 RequestContext(request, ctx))
     
+
 
 
 # }}}

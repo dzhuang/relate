@@ -35,7 +35,8 @@ from course.page.choice import ChoiceQuestion, SurveyChoiceQuestion
 from course.page.code import (
         PythonCodeQuestion, PythonCodeQuestionWithHumanTextFeedback)
 from course.page.upload import FileUploadQuestion
-from course.page.upload import FileUploadQuestionNoSubmit
+#from course.page.upload import FileUploadQuestionNoSubmit
+#from course.page.uploadcustomized import FileUploadQuestionTwoFiles
 
 __all__ = (
         "PageBase", "AnswerFeedback", "PageContext",
