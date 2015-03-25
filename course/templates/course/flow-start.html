@@ -96,7 +96,7 @@
       <div class="alert alert-info">
         {% if new_session_grading_rule.grade_identifier %}
 <!--          If you start a new session, the following rules will apply:-->
-          如果你开始一个新的sessioin，下面的规则将生效：
+          如果你开始一个新的session，下面的规则将生效：
           <ul>
             {% if new_session_grading_rule.description %}
 <!--              <li>Your session will be a '<b>{{ new_session_grading_rule.description }}</b>'.</li>-->
@@ -126,7 +126,7 @@
           </ul>
         {% else %}
 <!--          If you start a new session, no permanent grade will be recorded for it.-->
-          如果你开始新的session，则这个session不会记分。        
+          本session不会计分。
           {% if new_session_grading_rule.description %}
 <!--            Your session will be a '<b>{{ new_session_grading_rule.description }}</b>'.-->
           你的session将是 '<b>{{ new_session_grading_rule.description }}</b>'.
@@ -138,7 +138,7 @@
 
       {% if start_may_decrease_grade %}
         <a id="pre-start-button" class="btn btn-primary">
-          <!--Start-->开始 &raquo;
+          <!--Start-->开始(再来一次) &raquo;
         </a>
         <button id="start-button" type="submit" name="start" class="btn btn-danger"
           style="display:none"
@@ -169,7 +169,7 @@
 
       {% else %}
         <button type="submit" name="start" class="btn btn-primary">
-          Start &raquo;
+          <!--Start-->开始 &raquo;
         </button>
       {% endif %}
 
