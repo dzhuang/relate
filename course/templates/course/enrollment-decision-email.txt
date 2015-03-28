@@ -14,4 +14,4 @@ Welcome, and we hope you have a productive class!
 '{{course.identifier}}' has been denied. Please get in touch with the course
 staff (for example by replying to this email) to state your case. 
 {% endif %}
-- CNSBA E-learning staff
+- LearningWhat.com staff

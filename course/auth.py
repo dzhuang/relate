@@ -334,8 +334,8 @@ def sign_up(request):
                     })
 
                 from django.core.mail import send_mail
-#                send_mail("[CNSBA E-learning] Verify your email", message,
-                send_mail("[CNSBA E-learning] 验证你的邮箱", message,
+#                send_mail("[LearningWhat.com] Verify your email", message,
+                send_mail("[LearningWhat.com] 验证你的邮箱", message,
                         settings.ROBOT_EMAIL_FROM, recipient_list=[email])
 
                 messages.add_message(request, messages.INFO,
@@ -405,7 +405,7 @@ def reset_password(request):
                 "home_uri": request.build_absolute_uri(reverse("course.views.home"))
                 })
             from django.core.mail import send_mail
-            send_mail("[CNSBA E-learning] Password reset", message,
+            send_mail("[LearningWhat.com] Password reset", message,
                     settings.ROBOT_EMAIL_FROM, recipient_list=[email])
 
             messages.add_message(request, messages.INFO,
@@ -566,8 +566,8 @@ def sign_in_by_email(request):
                 "home_uri": request.build_absolute_uri(reverse("course.views.home"))
                 })
             from django.core.mail import send_mail
-#            send_mail("Your CNSBA E-learning sign-in link", message,
-            send_mail("你的CNSBA E-learning登录链接", message,
+#            send_mail("Your LearningWhat.com sign-in link", message,
+            send_mail("你的LearningWhat.com登录链接", message,
                     settings.ROBOT_EMAIL_FROM, recipient_list=[email])
 
             messages.add_message(request, messages.INFO,

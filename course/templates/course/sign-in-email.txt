@@ -1,15 +1,15 @@
 {% if user.first_name %}Dear {{user.first_name}},
 {% else %}Dear {{user.email}},
 {% endif %}
-Welcome to CNSBA E-learning! Please click this link to sign in:
+Welcome to LearningWhat.com! Please click this link to sign in:
 
 {{ sign_in_uri }}
 
 You have received this email because someone (maybe you) entered your email
-address into the CNSBA E-learning web site at
+address into the LearningWhat.com web site at
 
 {{ home_uri }}
 
 If this was not you, it is safe to disregard this email.
 
-- CNSBA E-learning staff
+- LearningWhat.com staff
