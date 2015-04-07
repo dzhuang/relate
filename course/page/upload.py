@@ -82,7 +82,16 @@ class FileUploadForm(StyledForm):
                 print thefilename
                 print ext
                 if ext !=".txt":
-                    raise forms.ValidationError("请txt文件！")
+                    raise forms.ValidationError("请上传txt文件！")
+        elif self.mime_types is not None and self.mime_types == ["application/zip"]:
+            if uploaded_file:
+                thefilename=uploaded_file.name
+                ext = os.path.splitext(thefilename)[1]
+                ext = ext.lower()
+                print thefilename
+                print ext
+                if ext !=".zip":
+                    raise forms.ValidationError("请压缩成zip文件后上传！")
                 #else:
                     #raise forms.ValidationError("上传成功")
             #if uploaded_file.read()[:4] != "%PDF":
@@ -170,6 +179,7 @@ class FileUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             "application/vnd.ms-word.document.macroEnabled.12",
             "application/octet-stream",
+            "application/zip",
             ]
 
     def __init__(self, vctx, location, page_desc):
