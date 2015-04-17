@@ -92,6 +92,7 @@ BOWER_INSTALLED_APPS = (
     "jqueryui",
     "datatables",
     "datatables-fixedcolumns",
+    "viewerjs",
     )
 
 CODEMIRROR_PATH = "codemirror"
