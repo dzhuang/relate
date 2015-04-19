@@ -4,9 +4,9 @@
   <div id="file_upload_viewer_div">
   </div>
   <div class="col-lg-offset-2" style="margin-bottom:2ex">
-     <a href="{{ data_url }}" id="file_upload_donwload_link">查看已上传的文件</a>
-    <!-- &middot;
-    <a href="javascript:file_upload_embed_viewer()">Embed viewer</a> -->
+     <a href="{{ data_url }}" id="file_upload_donwload_link">检查已上传的文件</a>
+     &middot;
+    <a href="javascript:file_upload_embed_viewer()">在线预览</a> 
   </div>
 
   <script type="text/javascript">
@@ -16,7 +16,8 @@
 
       $("#file_upload_viewer_div").html(
         "<object data='" + data_url + "' type='{{ mime_type }}' width='100%' height='800px' align='middle'>"
-        + '<p>(Your browser reported itself unable to render <tt>{{ mime_type }}</tt> inline.)</p>'
+        //+ '<p>(Your browser reported itself unable to render <tt>{{ mime_type }}</tt> inline.)</p>'
+        + '<p>(你的浏览器不支持 <tt>{{ mime_type }}</tt> 类型文件的在线预览.)</p>'
         + '</object><hr>');
     }
 
