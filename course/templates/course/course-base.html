@@ -139,4 +139,37 @@
       {% endif %}
     </div>
   {% endif %}
+
+  {# {{{ pdf.js for pdf #}
+
+  <script type="text/javascript">
+    function embed_viewer()
+      {
+          // alert on brower which is below IE 9
+          var div = document.createElement("div");
+          div.innerHTML = "<!--[if lt IE 9]><i></i><![endif]-->";
+          var isIeLessThan9 = (div.getElementsByTagName("i").length == 1);
+          if (isIeLessThan9) {
+              alert("ie10以下的版本的浏览器不支持预览");
+              }
+          else
+          {
+              var viewpath = $("#download_link").attr("href");
+              $("#pdfviewer_div").html(
+                  "<iframe src = '/static/pdf.js/web/viewer.html?file=" + viewpath + "' width='600' height='450' allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe>"
+              );
+              $("#online_pdfviewer").attr("href","javascript:close_viewer()").html("关闭在线查看");
+          }
+      }
+    function close_viewer()
+      {
+          $("#pdfviewer_div").html("");
+          $("#online_pdfviewer").attr("href","javascript:embed_viewer()").html("在线查看");
+      }      
+      
+          
+  </script>
+
+  {# }}} #}
+
 {% endblock %}
