@@ -9,6 +9,7 @@
 {% endblock %}
 
 {% block content %}
+    <link href="/static/bootstrap/bootstrap_customized/css/bootstrap.css" rel="stylesheet"> 
   <form
     action="{% url "course.flow.view_flow_page" course.identifier flow_session.id page_data.ordinal %}"
     class="navigation-form"

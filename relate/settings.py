@@ -48,6 +48,7 @@ INSTALLED_APPS = (
 
 MIDDLEWARE_CLASSES = (
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.locale.LocaleMiddleware",    
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -151,3 +152,7 @@ SESSION_COOKIE_AGE = 12096000  # 20 weeks
 for name, val in local_settings.items():
     if not name.startswith("_"):
         globals()[name] = val
+        
+LOCALE_PATHS = (
+    BASE_DIR+ '/locale',    
+)
