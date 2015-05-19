@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+锘縶% extends "base.html" %}
 {% load i18n %}
 
 {% block title %}
@@ -152,7 +152,7 @@
           div.innerHTML = "<!--[if lt IE 9]><i></i><![endif]-->";
           var isIeLessThan9 = (div.getElementsByTagName("i").length == 1);
           if (isIeLessThan9) {
-              alert("ie10以下的版本的浏览器不支持预览");
+              alert("ie10浠ヤ笅鐨勭増鏈殑娴忚鍣ㄤ笉鏀寔棰勮");
               }
           else
           {
@@ -160,13 +160,13 @@
               $("#pdfviewer_div").html(
                   "<iframe src = '/static/pdf.js/web/viewer.html?file=" + viewpath + "' width='600' height='450' allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe>"
               );
-              $("#online_pdfviewer").attr("href","javascript:close_viewer()").html("关闭在线查看");
+              $("#online_pdfviewer").attr("href","javascript:close_viewer()").html("鍏抽棴鍦ㄧ嚎鏌ョ湅");
           }
       }
     function close_viewer()
       {
           $("#pdfviewer_div").html("");
-          $("#online_pdfviewer").attr("href","javascript:embed_viewer()").html("在线查看");
+          $("#online_pdfviewer").attr("href","javascript:embed_viewer()").html("鍦ㄧ嚎鏌ョ湅");
       }      
       
           
