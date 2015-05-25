@@ -95,6 +95,7 @@ BOWER_INSTALLED_APPS = (
     "datatables",
     "datatables-fixedcolumns",
     "jstree",
+    "https://github.com/mozilla/pdf.js.git",
     )
 
 CODEMIRROR_PATH = "codemirror"
