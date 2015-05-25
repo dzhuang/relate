@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-05-19 21:16+0800\n"
+"POT-Creation-Date: 2015-05-25 08:58+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -138,11 +138,11 @@ msgstr "已经模拟了某个用户. "
 msgid "Now impersonating '%s'."
 msgstr "正在模拟用户\"%s\". "
 
-#: .\course\auth.py:167 .\relate\templates\base.html:78
+#: .\course\auth.py:167 .\relate\templates\base.html:86
 msgid "Impersonate user"
 msgstr "用户模拟"
 
-#: .\course\auth.py:177 .\relate\templates\base.html:76
+#: .\course\auth.py:177 .\relate\templates\base.html:84
 msgid "Stop impersonating"
 msgstr "停止模拟用户"
 
@@ -161,7 +161,7 @@ msgstr "停止模拟用户"
 #: .\course\auth.py:271 .\course\templates\course\course-page.html:38
 #: .\course\templates\course\flow-start.html:186
 #: .\course\templates\course\login.html:7 .\relate\templates\403.html:14
-#: .\relate\templates\base.html:104
+#: .\relate\templates\base.html:112
 msgid "Sign in"
 msgstr "登录"
 
@@ -213,7 +213,7 @@ msgstr "该电子邮件已经注册, 您是否需要 <a href='%s'>重置密码</
 #: .\course\templates\course\sandbox-page.html:17
 #: .\course\templates\course\sign-in-email.txt:18
 #: .\relate\templates\admin\base_site.html:5 .\relate\templates\base.html:15
-#: .\relate\templates\base.html.py:60 .\relate\templates\maintenance.html:6
+#: .\relate\templates\base.html.py:68 .\relate\templates\maintenance.html:6
 msgid "RELATE"
 msgstr "LearningWhat"
 
@@ -1384,7 +1384,7 @@ msgstr "申请加入课程的电子邮件地址必须有的后缀"
 msgid ""
 "This email address will be used in the 'From' line of automated emails sent "
 "by RELATE."
-msgstr "这个电子邮件地址用于RELATE自动发送电子邮件时的发件人. "
+msgstr "这个电子邮件地址用于LearningWhat自动发送电子邮件时的发件人. "
 
 #: .\course\models.py:214
 msgid "From email"
@@ -2866,35 +2866,35 @@ msgstr "返回"
 msgid "Confirm: Submit answers and end session"
 msgstr "确定：提交所有回答并结束本session"
 
-#: .\course\templates\course\flow-page.html:25
-#: .\course\templates\course\flow-page.html:29
+#: .\course\templates\course\flow-page.html:26
+#: .\course\templates\course\flow-page.html:30
 msgctxt "Preivious page/item in a flow"
 msgid "Previous"
 msgstr "上一页"
 
-#: .\course\templates\course\flow-page.html:34
+#: .\course\templates\course\flow-page.html:35
 msgctxt "Next page/item in a flow"
 msgid "Next"
 msgstr "下一页"
 
-#: .\course\templates\course\flow-page.html:36
-#: .\course\templates\course\flow-page.html:40
+#: .\course\templates\course\flow-page.html:37
+#: .\course\templates\course\flow-page.html:41
 msgid "End session"
 msgstr "结束session"
 
 #. Translators: the string is followed by "what will happen" at deadline.
-#: .\course\templates\course\flow-page.html:48
+#: .\course\templates\course\flow-page.html:49
 msgid "At deadline:"
 msgstr "截止时间："
 
-#: .\course\templates\course\flow-page.html:85
+#: .\course\templates\course\flow-page.html:86
 #, python-format
 msgid "%(max_points)s point"
 msgid_plural "%(max_points)s points"
 msgstr[0] "%(max_points)s分"
 msgstr[1] "%(max_points)s分"
 
-#: .\course\templates\course\flow-page.html:101
+#: .\course\templates\course\flow-page.html:102
 msgid "(You may still change your answer after you submit it.)"
 msgstr "(您仍然可以在提交<b>本问题</b>后修改回答)"
 
@@ -3360,7 +3360,7 @@ msgstr "欢迎来到%(RELATE)s "
 
 #: .\course\templates\course\home.html:8
 msgid "RELATE is an Environment for Learning And TEaching"
-msgstr ""
+msgstr " "
 
 #: .\course\templates\course\home.html:10
 msgid "Learn more"
@@ -3839,7 +3839,7 @@ msgstr "恢复正常"
 msgid "only staff may set fake time"
 msgstr "只有课程管理人员(staff)及以上可以设置虚拟时间"
 
-#: .\course\views.py:288 .\relate\templates\base.html:80
+#: .\course\views.py:288 .\relate\templates\base.html:88
 msgid "Set fake time"
 msgstr "设置虚拟时间"
 
@@ -4099,24 +4099,24 @@ msgid ""
 "(fake_time)s."
 msgstr "您现在正在预览这个网站在时间为%(fake_time)s时的样子. "
 
-#: .\relate\templates\base.html:70
+#: .\relate\templates\base.html:78
 msgid "Staff"
 msgstr "高级管理"
 
-#: .\relate\templates\base.html:72
+#: .\relate\templates\base.html:80
 msgid "Admin site"
 msgstr "管理网站"
 
-#: .\relate\templates\base.html:74
+#: .\relate\templates\base.html:82
 msgid "Test/Troubleshoot"
 msgstr "测试/发现问题"
 
-#: .\relate\templates\base.html:89
+#: .\relate\templates\base.html:97
 #, python-format
 msgid "Signed in as %(username)s"
 msgstr "登录用户： %(username)s"
 
-#: .\relate\templates\base.html:96
+#: .\relate\templates\base.html:104
 msgid "(impersonated)"
 msgstr "(正在模拟用户)"
 

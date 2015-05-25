@@ -5,10 +5,12 @@
   <div class="jumbotron">
     {% trans "RELATE" as RELATE %}
     <h1>{% blocktrans %} Welcome to {{ RELATE }} {% endblocktrans %}</h1>
+      {% comment %}
     <p>{% trans "RELATE is an Environment for Learning And TEaching" %}</p>
     <p>
     <a class="btn btn-lg btn-primary" href="https://github.com/inducer/relate" role="button">{% trans "Learn more" %} &raquo;</a>
     </p>
+      {% endcomment %}
   </div>
 
   {% if courses_and_descs_and_invalid_flags %}
