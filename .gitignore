@@ -2,7 +2,6 @@
 *~
 .*.sw[opn]
 .sw[ophijklm]
-local_settings.py
 *.sqlite3
 *.py[co]
 .sw[opn]
