@@ -90,7 +90,7 @@ urlpatterns = [
 
     # {{{ course
 
-    url(r'^$', 'course.views.home', name='relate-home'),
+    url(r'^$', course.views.home, name='relate-home'),
 
     url(r"^course"
         "/(?P<course_identifier>[-a-zA-Z0-9]+)"
@@ -238,11 +238,6 @@ urlpatterns = [
 
     # {{{ calendar
 
-    url(r"^course"
-        "/(?P<course_identifier>[-a-zA-Z0-9]+)"
-        "/check-events/$",
-        course.calendar.check_events,
-        name="relate-check_events"),
     url(r"^course"
         "/(?P<course_identifier>[-a-zA-Z0-9]+)"
         "/create-recurring-events/$",
