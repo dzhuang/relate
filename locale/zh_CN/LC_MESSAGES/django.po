@@ -2138,7 +2138,7 @@ msgstr "选项%(idx)d: 无法转换为字符串"
 #: .\course\page\choice.py:220
 #, python-format
 msgid "A correct answer is: %s"
-msgstr "正确答案是\"%s\". "
+msgstr "正确答案是: %s"
 
 #: .\course\page\code.py:609
 msgid "code question execution failed"
@@ -2263,7 +2263,7 @@ msgstr "对于普通文本型回答, 无法提供匹配"
 #: .\course\page\text.py:767
 #, python-format
 msgid "A correct answer is: '%s'."
-msgstr "正确答案是\"%s\". "
+msgstr "正确答案是“%s”. "
 
 #: .\course\page\upload.py:43
 msgid "Uploaded file"
