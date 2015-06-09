@@ -3939,7 +3939,7 @@ msgstr ""
 
 #: .\course\views.py:720
 msgid "Exception only applies to sessions with the above tag"
-msgstr "只有tag为\"%s\"的session才能采取破例措施. "
+msgstr "只有有以上tag的session才能采取破例措施. "
 
 #: .\course\views.py:739
 msgid "If set, the 'Due' field will be disregarded."
