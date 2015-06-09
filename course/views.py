@@ -708,23 +708,23 @@ class ExceptionStage3Form(StyledForm):
         tags = getattr(rules, "tags", [])
 
         layout = [Div("access_expires", css_class="well")]
-    #if tags:
-        tags = [NONE_SESSION_TAG] + tags
-        self.fields["set_access_rules_tag"] = forms.ChoiceField(
-                [(tag, tag) for tag in tags],
-                initial=(base_session_tag
-                    if base_session_tag is not None
-                    else NONE_SESSION_TAG),
-                label=_("Set access rules tag"))
-        self.fields["restrict_to_same_tag"] = forms.BooleanField(
-                label=_("Exception only applies to sessions "
-                "with the above tag"),
-                required=False,
-                initial=default_data.get("restrict_to_same_tag", True))
+        if tags:
+            tags = [NONE_SESSION_TAG] + tags
+            self.fields["set_access_rules_tag"] = forms.ChoiceField(
+                    [(tag, tag) for tag in tags],
+                    initial=(base_session_tag
+                        if base_session_tag is not None
+                        else NONE_SESSION_TAG),
+                    label=_("Set access rules tag"))
+            self.fields["restrict_to_same_tag"] = forms.BooleanField(
+                    label=_("Exception only applies to sessions "
+                    "with the above tag"),
+                    required=False,
+                    initial=default_data.get("restrict_to_same_tag", True))
 
-        layout.append(
-                Div("set_access_rules_tag", "restrict_to_same_tag",
-                    css_class="well"))
+            layout.append(
+                    Div("set_access_rules_tag", "restrict_to_same_tag",
+                        css_class="well"))
 
         permission_ids = []
         for key, name in FLOW_PERMISSION_CHOICES:
