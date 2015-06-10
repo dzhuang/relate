@@ -2877,7 +2877,7 @@ msgstr "结束session"
 #. Translators: the string is followed by "what will happen" at deadline.
 #: course/templates/course/flow-page.html:49
 msgid "At deadline:"
-msgstr "截止时间："
+msgstr "到截止时间的操作："
 
 #: course/templates/course/flow-page.html:86
 #, python-format
