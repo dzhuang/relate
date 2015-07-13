@@ -354,6 +354,8 @@ class ModifySessionsForm(StyledForm):
         self.helper.add_input(
                 Submit("end", _("End sessions and grade")))
         self.helper.add_input(
+                Submit("end2", _("End sessions with last activity time and grade")))
+        self.helper.add_input(
                 Submit("regrade", _("Regrade ended sessions")))
         self.helper.add_input(
                 Submit("recalculate", _("Recalculate grades of ended sessions")))
@@ -401,6 +403,33 @@ def finish_in_progress_sessions(repo, course, flow_id, rule_tag, now_datetime,
         if finish_flow_session_standalone(repo, course, session,
                 now_datetime=now_datetime, past_due_only=past_due_only):
             count += 1
+
+    return count
+
+@transaction.atomic
+def finish_in_progress_sessions_with_last_time(repo, course, flow_id, rule_tag, now_datetime,
+        past_due_only):
+    sessions = (FlowSession.objects
+            .filter(
+                course=course,
+                flow_id=flow_id,
+                participation__isnull=False,
+                access_rules_tag=rule_tag,
+                in_progress=True,
+                ))
+
+    count = 0
+
+    from course.flow import finish_flow_session_standalone
+    for session in sessions:
+        
+        now_datetime = session.last_activity()
+        if now_datetime is None:
+            now_datetime = session.start_time
+        print session.id, now_datetime
+#        if finish_flow_session_standalone(repo, course, session,
+#                now_datetime=now_datetime, past_due_only=past_due_only):
+#            count += 1
 
     return count
 
@@ -491,6 +520,8 @@ def view_grades_by_opportunity(pctx, opp_id):
                 op = "expire"
             elif "end" in request.POST:
                 op = "end"
+            elif "end2" in request.POST:
+                op = "end2"
             elif "regrade" in request.POST:
                 op = "regrade"
             elif "recalculate" in request.POST:
@@ -522,7 +553,16 @@ def view_grades_by_opportunity(pctx, opp_id):
 
                         messages.add_message(pctx.request, messages.SUCCESS,
                                 _("%d session(s) ended.") % count)
+                        
+                    elif op == "end2":
+                        count = finish_in_progress_sessions_with_last_time(
+                                pctx.repo, pctx.course, opportunity.flow_id,
+                                rule_tag, now_datetime,
+                                past_due_only=past_due_only)
 
+                        messages.add_message(pctx.request, messages.SUCCESS,
+                                _("%d session(s) ended.") % count)
+                        
                     elif op == "regrade":
                         count = regrade_ended_sessions(
                                 pctx.repo, pctx.course, opportunity.flow_id,
