@@ -682,6 +682,14 @@ def expire_flow_session_standalone(repo, course, session, now_datetime,
     from course.utils import FlowContext
 
     fctx = FlowContext(repo, course, session.flow_id, flow_session=session)
+    
+    now_datetime = None
+    
+    now_datetime = session.last_activity()
+    #print session.id, session.start_time, end_time
+    if now_datetime is None:
+        #print session.id
+        now_datetime = session.start_time
 
     grading_rule = get_session_grading_rule(
             session, session.participation.role, fctx.flow_desc, now_datetime)

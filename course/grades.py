@@ -422,11 +422,10 @@ def finish_in_progress_sessions_with_last_time(repo, course, flow_id, rule_tag, 
 
     from course.flow import finish_flow_session_standalone
     for session in sessions:
-        
         now_datetime = session.last_activity()
         if now_datetime is None:
             now_datetime = session.start_time
-        print session.id, now_datetime
+        #print session.id, now_datetime
         if finish_flow_session_standalone(repo, course, session,
                 now_datetime=now_datetime, past_due_only=past_due_only):
             count += 1
