@@ -14,6 +14,9 @@ ul[id^="auto"],li[id^="auto"]{
 	display: none;	
 }
 
+li[id^="encrypt"]{
+	display: none;	
+}
 
 
 li.autonumber, li.autonumber+ul, li.literature{

@@ -88,7 +88,7 @@ following command::
 
     django-admin makemessages -l de
 
-This will generate a message file for German, where the locale name ``de`` 
+This will generate a message file for German, where the locale name ``de``
 stands for Germany. The message file located in the ``locale`` directory
 of your RELATE installation. For example, the above command will generate
 a message file ``django.po`` in ``/project/root/locale/de/LC_MESSAGES``.
