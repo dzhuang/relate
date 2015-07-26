@@ -211,7 +211,7 @@ msgstr "该电子邮件已经注册, 您是否需要 <a href='%s'>重置密码</
 #: .\relate\templates\admin\base_site.html:5 .\relate\templates\base.html:15
 #: .\relate\templates\base.html.py:68 .\relate\templates\maintenance.html:6
 msgid "RELATE"
-msgstr "RELATE"
+msgstr "LearningWhat"
 
 #: .\course\auth.py:354
 msgid "Verify your email"
@@ -2865,13 +2865,11 @@ msgstr "(您仍然可以在提交<b>本问题</b>后修改回答)"
 
 #: .\course\templates\course\flow-page.html:175
 msgid "You have unsaved changes on this page."
-msgstr ""
+msgstr "您在本页还有未保存的修订. "
 
 #: .\course\templates\course\flow-page.html:233
-#, fuzzy
-#| msgid "Save"
 msgid "Saved."
-msgstr "保存"
+msgstr "已保存"
 
 #: .\course\templates\course\flow-session-state.html:3
 msgid "in progress"
@@ -4071,32 +4069,3 @@ msgstr "用户信息"
 #: .\relate\templates\user-profile-form.html:15
 msgid "Sign out"
 msgstr "退出登录"
-
-#~ msgid "Can't open multiple sessions at once"
-#~ msgstr "不能同时打开多个session."
-
-#~ msgid "Check events"
-#~ msgstr "检查event"
-
-#~ msgid "RELATE is an Environment for Learning And TEaching"
-#~ msgstr " "
-
-#~ msgid "Learn more"
-#~ msgstr "了解更多"
-
-#~ msgid ""
-#~ "Course content validated, creation succeeded. You may want to view the "
-#~ "events used in the course content and create them. "
-#~ msgstr ""
-#~ "课程内容有效性验证通过, 创建成功. 您也许需要查看/创建本课程中的使用的"
-#~ "event. "
-
-#~ msgctxt "View/create events"
-#~ msgid "Check"
-#~ msgstr "检查"
-
-#~ msgid ""
-#~ "Update applied. You may want to view the events used in the course "
-#~ "content and check that they are recognized. "
-#~ msgstr ""
-#~ "更新已应用. 您可能需要查看本课程内容中使用的event, 并确定它们是可用的. "
