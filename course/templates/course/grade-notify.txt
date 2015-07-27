@@ -5,4 +5,4 @@ You have a new notification regarding your work on the problem with title {{ pag
 {{ feedback_text }}
 -------------------------------------------------------------------
 {% endblocktrans %}
-{% blocktrans with RELATE="RELATE" %}- {{ RELATE }} staff {% endblocktrans %}
+{% blocktrans %}- RELATE staff {% endblocktrans %}
