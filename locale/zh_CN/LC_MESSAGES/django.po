@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-07-27 08:15+0800\n"
+"POT-Creation-Date: 2015-07-27 17:28+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -138,7 +138,8 @@ msgstr "正在模拟用户\"%s\". "
 msgid "Impersonate user"
 msgstr "用户模拟"
 
-#: .\course\auth.py:178 .\relate\templates\base.html:84
+#: .\course\auth.py:178 .\relate\templates\base-page-top.html:32
+#: .\relate\templates\base.html:84
 msgid "Stop impersonating"
 msgstr "停止模拟用户"
 
@@ -3773,7 +3774,8 @@ msgstr "恢复正常"
 msgid "only staff may set fake time"
 msgstr "只有课程管理人员(staff)及以上可以设置虚拟时间"
 
-#: .\course\views.py:288 .\relate\templates\base.html:88
+#: .\course\views.py:288 .\relate\templates\base-page-top.html:22
+#: .\relate\templates\base.html:88
 msgid "Set fake time"
 msgstr "设置虚拟时间"
 
@@ -4036,6 +4038,11 @@ msgid ""
 "You are currently seeing a preview of what the site would look like at %"
 "(fake_time)s."
 msgstr "您现在正在预览这个网站在时间为%(fake_time)s时的样子. "
+
+#: .\relate\templates\base-page-top.html:29
+msgid ""
+"Now impersonating %(first_name)s %(last_name)s (%(username)s, %(email)s)."
+msgstr "正在模拟用户 %(last_name)s%(first_name)s (%(username)s, %(email)s)."
 
 #: .\relate\templates\base.html:78
 msgid "Staff"
