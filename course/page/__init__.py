@@ -32,7 +32,7 @@ from course.page.static import Page
 from course.page.text import (
         TextQuestion, SurveyTextQuestion, HumanGradedTextQuestion)
 from course.page.choice import (
-    ChoiceQuestion, SurveyChoiceQuestion, MultipleChoiceQuestion)
+        ChoiceQuestion, MultipleChoiceQuestion, SurveyChoiceQuestion)
 from course.page.code import (
         PythonCodeQuestion, PythonCodeQuestionWithHumanTextFeedback)
 from course.page.upload import FileUploadQuestion

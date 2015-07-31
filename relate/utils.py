@@ -99,6 +99,15 @@ def format_datetime_local(datetime, format='medium'):
     return format_datetime(datetime, format, locale=settings.LANGUAGE_CODE)
 
 
+def format_datetime_local(datetime, format='medium'):
+    """Format the output of a datetime object to a localized string"""    
+    from babel.dates import format_datetime
+    from django.conf import settings
+    # See http://babel.pocoo.org/docs/api/dates/#date-and-time-formatting 
+    # for customizing the output format.
+    return format_datetime(datetime, format, locale=settings.LANGUAGE_CODE)
+
+
 # {{{ dict_to_struct
 
 class Struct(object):
