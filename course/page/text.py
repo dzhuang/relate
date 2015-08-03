@@ -858,3 +858,139 @@ class HumanGradedTextQuestion(TextQuestionBase, PageBaseWithValue,
 # }}}
 
 # vim: foldmethod=marker
+
+
+# {{{ survey text question
+class TextAnswerForm(StyledForm):
+    @staticmethod
+    def get_text_widget(widget_type, read_only=False, check_only=False,
+            interaction_mode=None):
+        """Returns None if no widget found."""
+
+        if widget_type in [None, "text_input"]:
+            if check_only:
+                return True
+
+            widget = forms.TextInput()
+            widget.attrs["autofocus"] = None
+            if read_only:
+                widget.attrs["readonly"] = None
+            return widget, None
+
+        elif widget_type == "textarea":
+            if check_only:
+                return True
+
+            widget = forms.Textarea()
+            # widget.attrs["autofocus"] = None
+            if read_only:
+                widget.attrs["readonly"] = None
+            return widget, None
+
+        elif widget_type in ["editor:markdown", "editor:yaml"]:
+            if check_only:
+                return True
+
+            from course.utils import get_codemirror_widget
+            cm_widget, cm_help_text = get_codemirror_widget(
+                    language_mode=widget_type[widget_type.find(":")+1:],
+                    interaction_mode=interaction_mode,
+                    read_only=read_only)
+
+            return cm_widget, cm_help_text
+
+        else:
+            return None, None
+
+    def __init__(self, read_only, interaction_mode, validators, *args, **kwargs):
+        widget_type = kwargs.pop("widget_type", "text_input")
+
+        super(TextAnswerForm, self).__init__(*args, **kwargs)
+        widget, help_text = self.get_text_widget(
+                    widget_type, read_only,
+                    interaction_mode=interaction_mode)
+        self.validators = validators
+        self.fields["answer"] = forms.CharField(
+                required=True,
+                widget=widget,
+                help_text=help_text,
+                label=_("Answer"))
+
+    def clean(self):
+        cleaned_data = super(TextAnswerForm, self).clean()
+
+        answer = cleaned_data.get("answer", "")
+        for validator in self.validators:
+            validator.validate(answer)
+            
+class MultipleTextQuestion(TextQuestionBase):
+
+    def get_validators(self):
+        return []
+
+    def allowed_attrs(self):
+        return super(MultipleTextQuestion, self).allowed_attrs() + (
+                ("answer_comment", "markup"),
+                )
+    
+    def make_form(self, page_context, page_data,
+            answer_data, answer_is_final):
+        read_only = answer_is_final
+
+        if answer_data is not None:
+            answer = {"answer": answer_data["answer"]}
+            form = TextAnswerForm(
+                    read_only,
+                    get_editor_interaction_mode(page_context),
+                    self.get_validators(), answer,
+                    widget_type=getattr(self.page_desc, "widget", None))
+        else:
+            answer = None
+            form = TextAnswerForm(
+                    read_only,
+                    get_editor_interaction_mode(page_context),
+                    self.get_validators(),
+                    widget_type=getattr(self.page_desc, "widget", None))
+
+        return form
+
+    def post_form(self, page_context, page_data, post_data, files_data):
+        read_only = False
+        return TextAnswerForm(
+                read_only,
+                get_editor_interaction_mode(page_context),
+                self.get_validators(), post_data, files_data,
+                widget_type=getattr(self.page_desc, "widget", None))
+
+
+    def form_to_html(self, request, page_context, form, answer_data):
+        """Returns an HTML rendering of *form*."""
+
+        from django.template import loader, RequestContext
+        from django import VERSION as django_version
+
+        if django_version >= (1, 9):
+            return loader.render_to_string(
+                    "course/crispy-form2.html",
+                    context={"form": form},
+                    request=request)
+        else:
+            context = RequestContext(request)
+            context.update({"form": form})
+            return loader.render_to_string(
+                    "course/crispy-form2.html",
+                    context_instance=context)
+
+    def correct_answer(self, page_context, page_data, answer_data, grade_data):
+        if hasattr(self.page_desc, "answer_comment"):
+            return markup_to_html(page_context, self.page_desc.answer_comment)
+        else:
+            return None
+
+    def expects_answer(self):
+        return True
+
+    def is_answer_gradable(self):
+        return False
+
+# }}}

@@ -58,16 +58,12 @@ def settings_context_processor(request):
         }
 
 
-def as_local_time(datetime, formatted=False):
+def as_local_time(datetime):
     """Takes an timezone-aware datetime and applies the server timezone."""
     from django.conf import settings
     from pytz import timezone
     tz = timezone(settings.TIME_ZONE)
-    if formatted:
-        from babel.dates import format_datetime
-        return format_datetime(datetime.astimezone(tz), locale=settings.LANGUAGE_CODE)
-    else:
-        return datetime.astimezone(tz)
+    return datetime.astimezone(tz)
 
 
 def localize_datetime(datetime):
@@ -78,34 +74,27 @@ def localize_datetime(datetime):
     return tz.localize(datetime)
 
 
-def local_now(formatted=False):
+def local_now():
     from django.conf import settings
     from pytz import timezone
     tz = timezone(settings.TIME_ZONE)
     from datetime import datetime
-    if formatted:
-        from babel.dates import format_datetime
-        return format_datetime(tz.localize(datetime.now()), locale=settings.LANGUAGE_CODE)
-    else:
-        return tz.localize(datetime.now())
+    return tz.localize(datetime.now())
 
 
 def format_datetime_local(datetime, format='medium'):
     """Format the output of a datetime object to a localized string"""    
-    from babel.dates import format_datetime
+    from babel.dates import format_datetime #, ValueError    
     from django.conf import settings
+    from django.utils.translation.trans_real import to_locale
     # See http://babel.pocoo.org/docs/api/dates/#date-and-time-formatting 
     # for customizing the output format.
-    return format_datetime(datetime, format, locale=settings.LANGUAGE_CODE)
-
-
-def format_datetime_local(datetime, format='medium'):
-    """Format the output of a datetime object to a localized string"""    
-    from babel.dates import format_datetime
-    from django.conf import settings
-    # See http://babel.pocoo.org/docs/api/dates/#date-and-time-formatting 
-    # for customizing the output format.
-    return format_datetime(datetime, format, locale=settings.LANGUAGE_CODE)
+    try:
+        result = format_datetime(datetime, format, locale=to_locale(settings.LANGUAGE_CODE))
+    except ValueError:
+        result = format_datetime(datetime, format, locale="en_US")
+        
+    return result
 
 
 # {{{ dict_to_struct
