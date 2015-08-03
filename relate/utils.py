@@ -95,6 +95,8 @@ def format_datetime_local(datetime, format='medium'):
         result = format_datetime(datetime, format, locale="en_US")
         
     return result
+
+
 # {{{ dict_to_struct
 
 class Struct(object):
