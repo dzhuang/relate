@@ -30,7 +30,7 @@ from django.utils.translation import (
 from course.validation import validate_struct, ValidationError
 import django.forms as forms
 
-from relate.utils import StyledForm, Struct
+from relate.utils import StyledForm, Struct, StyledInlineForm
 from course.page.base import (
         AnswerFeedback, PageBaseWithTitle, PageBaseWithValue, markup_to_html,
         PageBaseWithHumanTextFeedback, PageBaseWithCorrectAnswer,
@@ -860,64 +860,45 @@ class HumanGradedTextQuestion(TextQuestionBase, PageBaseWithValue,
 # vim: foldmethod=marker
 
 
-# {{{ survey text question
-class TextAnswerForm(StyledForm):
-    @staticmethod
-    def get_text_widget(widget_type, read_only=False, check_only=False,
-            interaction_mode=None):
-        """Returns None if no widget found."""
+# {{{ multiple text question
 
-        if widget_type in [None, "text_input"]:
-            if check_only:
-                return True
+from crispy_forms.layout import Submit, Layout, Div, Fieldset, MultiField, HTML
+#from crispy_forms.helper import FormHelper
 
-            widget = forms.TextInput()
-            widget.attrs["autofocus"] = None
-            if read_only:
-                widget.attrs["readonly"] = None
-            return widget, None
-
-        elif widget_type == "textarea":
-            if check_only:
-                return True
-
-            widget = forms.Textarea()
-            # widget.attrs["autofocus"] = None
-            if read_only:
-                widget.attrs["readonly"] = None
-            return widget, None
-
-        elif widget_type in ["editor:markdown", "editor:yaml"]:
-            if check_only:
-                return True
-
-            from course.utils import get_codemirror_widget
-            cm_widget, cm_help_text = get_codemirror_widget(
-                    language_mode=widget_type[widget_type.find(":")+1:],
-                    interaction_mode=interaction_mode,
-                    read_only=read_only)
-
-            return cm_widget, cm_help_text
-
-        else:
-            return None, None
+class MultipleTextAnswerForm(StyledInlineForm):
 
     def __init__(self, read_only, interaction_mode, validators, *args, **kwargs):
         widget_type = kwargs.pop("widget_type", "text_input")
 
-        super(TextAnswerForm, self).__init__(*args, **kwargs)
-        widget, help_text = self.get_text_widget(
-                    widget_type, read_only,
-                    interaction_mode=interaction_mode)
+
+        super(MultipleTextAnswerForm, self).__init__(*args, **kwargs)
+        widget, help_text = None, None
         self.validators = validators
         self.fields["answer"] = forms.CharField(
-                required=True,
-                widget=widget,
-                help_text=help_text,
+                #required=True,
+                widget=None,
+                help_text=None,
                 label=_("Answer"))
+        self.fields["answer2"] = forms.CharField(
+                #required=True,
+                widget=None,
+                help_text=None,
+                label=_("Answer2"))
+        self.fields["answer3"] = forms.CharField(
+                #required=True,
+                widget=None,
+                help_text=None,
+                label=_("Answer3"))
+        self.helper.layout = Layout(
+            Fieldset(
+                'first arg is the legend of the fieldset',
+                'answer',
+                'answer2',
+                'answer3',
+            ))
 
     def clean(self):
-        cleaned_data = super(TextAnswerForm, self).clean()
+        cleaned_data = super(MultipleTextAnswerForm, self).clean()
 
         answer = cleaned_data.get("answer", "")
         for validator in self.validators:
@@ -939,28 +920,28 @@ class MultipleTextQuestion(TextQuestionBase):
 
         if answer_data is not None:
             answer = {"answer": answer_data["answer"]}
-            form = TextAnswerForm(
+            form = MultipleTextAnswerForm(
                     read_only,
                     get_editor_interaction_mode(page_context),
                     self.get_validators(), answer,
-                    widget_type=getattr(self.page_desc, "widget", None))
+                    widget_type=None)
         else:
             answer = None
-            form = TextAnswerForm(
+            form = MultipleTextAnswerForm(
                     read_only,
                     get_editor_interaction_mode(page_context),
                     self.get_validators(),
-                    widget_type=getattr(self.page_desc, "widget", None))
+                    widget_type=None)
 
         return form
 
     def post_form(self, page_context, page_data, post_data, files_data):
         read_only = False
-        return TextAnswerForm(
+        return MultipleTextAnswerForm(
                 read_only,
                 get_editor_interaction_mode(page_context),
                 self.get_validators(), post_data, files_data,
-                widget_type=getattr(self.page_desc, "widget", None))
+                widget_type=None)
 
 
     def form_to_html(self, request, page_context, form, answer_data):

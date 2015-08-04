@@ -30,7 +30,7 @@ from course.page.base import (
         markup_to_html)
 from course.page.static import Page
 from course.page.text import (
-        TextQuestion, SurveyTextQuestion, HumanGradedTextQuestion)
+        TextQuestion, MultipleTextQuestion, SurveyTextQuestion, HumanGradedTextQuestion)
 from course.page.choice import (
         ChoiceQuestion, MultipleChoiceQuestion, SurveyChoiceQuestion)
 from course.page.code import (
@@ -42,8 +42,8 @@ __all__ = (
         "get_auto_feedback",
         "markup_to_html",
         "Page",
-        "TextQuestion", "SurveyTextQuestion", "HumanGradedTextQuestion",
-        "ChoiceQuestion", "SurveyChoiceQuestion", "MultipleChoiceQuestion",
+        "TextQuestion", "MultipleTextQuestion", "SurveyTextQuestion", "HumanGradedTextQuestion",
+        "ChoiceQuestion", "SurveyChoiceQuestion",
         "PythonCodeQuestion", "PythonCodeQuestionWithHumanTextFeedback",
         "FileUploadQuestion",
         )
