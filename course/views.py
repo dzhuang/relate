@@ -48,7 +48,7 @@ mark_safe_lazy = lazy(mark_safe, six.text_type)
 
 from django.views.decorators.cache import cache_control
 
-from crispy_forms.layout import Submit, Layout, Div
+from crispy_forms.layout import Submit, Layout, Div, Fieldset, MultiField, HTML
 
 from relate.utils import StyledForm
 from bootstrap3_datetime.widgets import DateTimePicker
@@ -707,7 +707,7 @@ class ExceptionStage3Form(StyledForm):
         rules = getattr(flow_desc, "rules", object())
         tags = getattr(rules, "tags", [])
 
-        layout = [Div("access_expires", css_class="well")]
+        layout = [Fieldset(HTML(" "), "access_expires", HTML("""abcefg"""), "access_expires", HTML("""<p>abcefg</p>"""))]
         if tags:
             tags = [NONE_SESSION_TAG] + tags
             self.fields["set_access_rules_tag"] = forms.ChoiceField(

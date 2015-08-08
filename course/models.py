@@ -619,18 +619,19 @@ class FlowPageVisit(models.Model):
             # submitted answer fit for grading.
             verbose_name=_('Is submitted answer'))
 
-    def __unicode__(self):
-        # Translators: flow page visit
+    def __unicode__(self):        
         result = (
-                _("'%(group_id)s/%(page_id)s' in '%(session)s' on %(time)s")
+                # Translators: flow page visit
+                _("'%(group_id)s/%(page_id)s' in '%(session)s' "
+                "on %(time)s")
                 % {"group_id": self.page_data.group_id,
                     "page_id": self.page_data.page_id,
                     "session": self.flow_session,
                     "time": self.visit_time})
 
         if self.answer is not None:
-            # Translators: flow page visit: if the answer is provided by user
-            # then append the string.
+            # Translators: flow page visit: if an answer is 
+            # provided by user then append the string.
             result += unicode(_(" (with answer)"))
 
         return result
@@ -842,9 +843,9 @@ class FlowAccessException(models.Model):
     comment = models.TextField(blank=True, null=True,
             verbose_name=_('Comment'))
 
-    def __unicode__(self):
-        # Translators: flow access exception in admin (deprecated)
+    def __unicode__(self):        
         return (
+                # Translators: flow access exception in admin (deprecated)
                 _("Access exception for '%(user)s' to '%(flow_id)s' "
                 "in '%(course)s'") %
                 {
@@ -1007,9 +1008,9 @@ class GradingOpportunity(models.Model):
         ordering = ("course", "due_time", "identifier")
         unique_together = (("course", "identifier"),)
 
-    def __unicode__(self):
-        # Translators: For GradingOpportunity
+    def __unicode__(self):        
         return (
+                # Translators: For GradingOpportunity
                 _("%(opportunity_name)s (%(opportunity_id)s) in %(course)s")
                 % {
                     "opportunity_name": self.name,

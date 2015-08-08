@@ -214,6 +214,9 @@ class FileUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
 
         from django.template import RequestContext
         from django.template.loader import render_to_string
+        print render_to_string(
+                "course/file-upload-form.html",
+                RequestContext(request, ctx))
         return render_to_string(
                 "course/file-upload-form.html",
                 RequestContext(request, ctx))

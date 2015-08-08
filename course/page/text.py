@@ -98,6 +98,8 @@ class TextAnswerForm(StyledForm):
 
     def clean(self):
         cleaned_data = super(TextAnswerForm, self).clean()
+        
+        #print "cleaned_data", cleaned_data
 
         answer = cleaned_data.get("answer", "")
         for validator in self.validators:
@@ -428,11 +430,11 @@ def get_matcher_class(location, matcher_type, pattern_type):
 
             if matcher_class.pattern_type != pattern_type:
                 raise ValidationError(
-                    # Translators: a "matcher" is used to determine if the
-                    # answer to text question (blank filling question) is
-                    # correct.
                     string_concat(
                         "%(location)s: ",
+                        # Translators: a "matcher" is used to determine
+                        # if the answer to text question (blank filling
+                        # question) is correct.
                         _("%(matcherclassname)s only accepts "
                             "'%(matchertype)s' patterns"))
                         % {
@@ -862,68 +864,244 @@ class HumanGradedTextQuestion(TextQuestionBase, PageBaseWithValue,
 
 # {{{ multiple text question
 
-from crispy_forms.layout import Submit, Layout, Div, Fieldset, MultiField, HTML
-#from crispy_forms.helper import FormHelper
+from crispy_forms.layout import Layout, Div, Fieldset, MultiField, HTML
+
+from crispy_forms.bootstrap import InlineField
 
 class MultipleTextAnswerForm(StyledInlineForm):
 
-    def __init__(self, read_only, interaction_mode, validators, *args, **kwargs):
+    def __init__(self, read_only, interaction_mode, validators, tuple_for_form, *args, **kwargs):
         widget_type = kwargs.pop("widget_type", "text_input")
 
 
         super(MultipleTextAnswerForm, self).__init__(*args, **kwargs)
         widget, help_text = None, None
+        self.tuple_for_form = tuple_for_form
         self.validators = validators
-        self.fields["answer"] = forms.CharField(
-                #required=True,
-                widget=None,
-                help_text=None,
-                label=_("Answer"))
-        self.fields["answer2"] = forms.CharField(
-                #required=True,
-                widget=None,
-                help_text=None,
-                label=_("Answer2"))
-        self.fields["answer3"] = forms.CharField(
-                #required=True,
-                widget=None,
-                help_text=None,
-                label=_("Answer3"))
-        self.helper.layout = Layout(
-            Fieldset(
-                'first arg is the legend of the fieldset',
-                'answer',
-                'answer2',
-                'answer3',
-            ))
+        self.HTML_list = tuple_for_form[0]
+        self.field_list = tuple_for_form[1]
+        print self.field_list
+        self.helper.layout=(Layout())
+
+        i = 0
+        for idx, blank in enumerate(self.HTML_list):
+
+            if self.HTML_list[idx] <> "":
+                self.helper.layout.extend([
+                        HTML(self.HTML_list[idx])])
+
+            if self.field_list[idx] <> "":
+                i = i + 1
+                self.fields["answer"+str(idx+1)] = forms.CharField(
+                    required=False,
+                    widget=None,
+                    help_text=None,
+                    label=string_concat(_("Answer"), str(i)))
+
+                self.helper.layout.extend([                            
+                        InlineField("answer"+str(i))]
+                )
+
+        self.helper.layout.extend([                            
+                        HTML("<br/><br/>")]
+                )
+
 
     def clean(self):
         cleaned_data = super(MultipleTextAnswerForm, self).clean()
+        
+        #print len(cleaned_data)
+        
+        
+        #print "cleaned_data", cleaned_data
+        
+        #answer = [cleaned_data.get("answer"+str(idx+1), "") for idx in range(len(self.field_list))]
 
-        answer = cleaned_data.get("answer", "")
-        for validator in self.validators:
-            validator.validate(answer)
-            
+        #answer = cleaned_data.get("answer", "")
+#        print "try:", answer
+#        for validator in self.validators:
+#            validator.validate(answer)
+
+        #print "try:", [answer in ["answer"+str(idx+1)] for idx in range(1, len(self.field_list))]
+        #answer = [cleaned_data.get("answer"+str(idx+1), "") for idx in range(len(self.field_list))]
+        
+        #print answer
+        
+        
+        
+        
+#        for answer in answers
+#        print answer
+        
+
+
 class MultipleTextQuestion(TextQuestionBase):
+    
+    def __init__(self, vctx, location, page_desc):
+        super(MultipleTextQuestion, self).__init__(vctx, location, page_desc)
+        
+        self.value = 0
+        
+        self.question = page_desc.question
+        
+        # format of answer block
+        # 1 ~:~ SHORTANSWER ~:~ <plain>correct answer ~#~ <plain> another correct answer 
+        # 1 is the value of the answer
+        # SHORTANSWER is the type of the answer (TODO: add other type of answer, like choice)
+        # "~:~" is the seperator between value, type, and correct answers
+        # "~#~" is the seperator between correct answers
+        
+        
+        # make sure if all answer blocks are removed, no "{{" or "}}" in the question text
+        embeded_list_with_brackets = re.findall(
+                r"[^{](?=({{[^{}]*}}))[^}]", self.question)
+        embeded_list = re.findall(
+                r"[^{](?={{([^{}]*)}})[^}]", self.question)
+        
+        embeded_removed = self.question
+        for embeded in embeded_list_with_brackets:
+            embeded_removed = embeded_removed.replace(embeded, "")
+            
+        
+             
+        for bracket in ["{{", "}}"]:
+            if bracket in embeded_removed:
+                raise ValidationError(
+                    string_concat(
+                        "%s: ",
+                        _("have unclosed brackets"),
+                        " '%s'.")
+                    % (location, bracket))
+
+        # make sure if all answer blocks are removed, no "{{" or 
+        # "}}" present in the question text
+        for idx, embeded in enumerate(embeded_list):
+            try:
+                value, question_type, answer_str = embeded.split("~:~")
+                self.value += float(value)
+            except ValueError:
+                raise ValidationError(
+                    string_concat(
+                        "%s %s: ",
+                        _("need to provide "
+                          "'value~:~question_type~:~answer'"))
+                    % (location, "blank "+str(idx+1)))
+            
+            try:
+                value=float(value.strip())
+
+            except ValueError:
+                raise ValidationError(
+                    string_concat(
+                        "%s %s: ",
+                        _("point value is invalid."))
+                    % (location, "blank "+str(idx+1)))
+
+
+            if answer_str.strip()=="":
+                raise ValidationError(
+                        string_concat(
+                            "%s %s: ",
+                            _("at least one answer must be provided"))
+                        % (location, "blank "+str(idx+1)))
+
+            answers = answer_str.split("~#~")
+            answers = [item.strip() for item in answers]            
+
+            self.matchers = [
+                parse_matcher(
+                    vctx,
+                    "%s, %s, answer %d" % (
+                        location, "blank "+str(idx+1), i+1),
+                    answer)
+            for i, answer in enumerate(answers)]
+            
+            print [matcher.correct_answer_text() 
+                    for matcher in self.matchers]
+            
+            if not any(matcher.correct_answer_text() is not None
+                    for matcher in self.matchers):
+                raise ValidationError(
+                        string_concat(
+                            "%s %s: ",
+                            _("no matcher is able to provide a plain-text "
+                            "correct answer"))
+                        % (location, "blank "+str(idx+1)))
 
     def get_validators(self):
-        return []
+        return self.matchers
+        #return []
+
+    def required_attrs(self):
+        return super(MultipleTextQuestion, self).required_attrs() + (
+                ("question", "markup"),
+                )
+
+    def max_points(self, page_data):
+        return self.value
 
     def allowed_attrs(self):
         return super(MultipleTextQuestion, self).allowed_attrs() + (
                 ("answer_comment", "markup"),
                 )
-    
+
+    def get_question_HTML(self, page_context):
+
+        question_HTML = markup_to_html(page_context, self.question)
+
+        # for correct render of questions with more tha on paragraph
+        # remove heading <p> tags and change </p> to line break.        
+        question_HTML = question_HTML \
+                .replace("<p>","").replace("</p>","<br/>")
+        
+        return question_HTML
+                
+
+
+    def body(self, page_context, page_data):
+        return markup_to_html(page_context, self.page_desc.prompt)
+
+    def get_tuple_for_form(self, page_context):
+
+        question_str_remainder = self.get_question_HTML(page_context)
+
+        html_list=[]
+        field_list=[]
+        while question_str_remainder <> "":
+
+            temp_array = question_str_remainder.split("}}",1)
+            [string_i, question_str_remainder] = temp_array
+
+            array_i = string_i.split("{{")
+
+            html_list.append(array_i[0])
+            field_list.append(array_i[1])
+            
+            if "}}" not in question_str_remainder:
+                html_list.append(question_str_remainder)
+                field_list.append("")
+                break
+        
+        return (html_list, field_list)
+        
+        
     def make_form(self, page_context, page_data,
             answer_data, answer_is_final):
         read_only = answer_is_final
+        
+        tuple_for_form = self.get_tuple_for_form(page_context)
+        
+        #print "answer_data", answer_data
 
         if answer_data is not None:
-            answer = {"answer": answer_data["answer"]}
+            #print "answer_data", answer_data
+            answer = answer_data["answer"]
             form = MultipleTextAnswerForm(
                     read_only,
                     get_editor_interaction_mode(page_context),
-                    self.get_validators(), answer,
+                    self.get_validators(),
+                    tuple_for_form,
+                    answer,
                     widget_type=None)
         else:
             answer = None
@@ -931,47 +1109,74 @@ class MultipleTextQuestion(TextQuestionBase):
                     read_only,
                     get_editor_interaction_mode(page_context),
                     self.get_validators(),
+                    tuple_for_form,
                     widget_type=None)
 
         return form
 
     def post_form(self, page_context, page_data, post_data, files_data):
         read_only = False
+        tuple_for_form = self.get_tuple_for_form(page_context)
+        
+        print post_data
         return MultipleTextAnswerForm(
                 read_only,
                 get_editor_interaction_mode(page_context),
-                self.get_validators(), post_data, files_data,
+                self.get_validators(), 
+                tuple_for_form,
+                post_data, files_data,
                 widget_type=None)
 
 
-    def form_to_html(self, request, page_context, form, answer_data):
-        """Returns an HTML rendering of *form*."""
+#    def form_to_html(self, request, page_context, form, answer_data):
+#        """Returns an HTML rendering of *form*."""
+#
+#        from django.template import loader, RequestContext
+#        from django import VERSION as django_version
+#
+#        if django_version >= (1, 9):
+#            return loader.render_to_string(
+#                    "course/crispy-form.html",
+#                    context={"form": form},
+#                    request=request)
+#        else:
+#            context = RequestContext(request)
+#            context.update({"form": form})
+#            return loader.render_to_string(
+#                    "course/crispy-form.html",
+#                    context_instance=context)
 
-        from django.template import loader, RequestContext
-        from django import VERSION as django_version
-
-        if django_version >= (1, 9):
-            return loader.render_to_string(
-                    "course/crispy-form2.html",
-                    context={"form": form},
-                    request=request)
-        else:
-            context = RequestContext(request)
-            context.update({"form": form})
-            return loader.render_to_string(
-                    "course/crispy-form2.html",
-                    context_instance=context)
-
-    def correct_answer(self, page_context, page_data, answer_data, grade_data):
+    def correct_answer(self, page_context, page_data, 
+            answer_data, grade_data):
         if hasattr(self.page_desc, "answer_comment"):
-            return markup_to_html(page_context, self.page_desc.answer_comment)
+            return markup_to_html(page_context, 
+                    self.page_desc.answer_comment)
         else:
             return None
+        
+    def answer_data(self, page_context, page_data, form, files_data):
+        return {"answer": form.cleaned_data}
 
     def expects_answer(self):
         return True
 
     def is_answer_gradable(self):
-        return False
+        return True
+    
+    def grade(self, page_context, page_data, answer_data, grade_data):
+        if answer_data is None:
+            return AnswerFeedback(correctness=0,
+                    feedback=ugettext("No answer provided."))
+        
+        print "answer_data", answer_data
+
+#        answer = answer_data["answer"]
+
+#        correctness, correct_answer_text = max(
+#                (matcher.grade(answer), matcher.correct_answer_text())
+#                for matcher in self.matchers)
+
+        #return AnswerFeedback(correctness=correctness)
+        return AnswerFeedback(correctness=1)
 
 # }}}
