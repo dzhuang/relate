@@ -3,6 +3,6 @@ Bad news! A code question with ID '{{ page_id }}' in '{{ course_identifier }}' h
 Details of the problem are below:
 {{ error_message }}
 {% endblocktrans %}
-{% blocktrans %}- RELATE staff {% endblocktrans %}
+- {% trans "RELATE" %}
 
 

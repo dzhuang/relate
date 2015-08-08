@@ -45,9 +45,6 @@ class ChoiceAnswerForm(StyledForm):
         # Translators: "choice" in Choice Answer Form in a single-choice question.
         self.fields["choice"].label = _("Choice")
 
-class MultipleChoiceAnswerForm(StyledForm):
-    def __init__(self, field, *args, **kwargs):
-        super(MultipleChoiceAnswerForm, self).__init__(*args, **kwargs)
 
 class MultipleChoiceAnswerForm(StyledForm):
     def __init__(self, field, *args, **kwargs):

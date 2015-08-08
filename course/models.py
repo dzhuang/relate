@@ -843,7 +843,7 @@ class FlowAccessException(models.Model):
     comment = models.TextField(blank=True, null=True,
             verbose_name=_('Comment'))
 
-    def __unicode__(self):        
+    def __unicode__(self):
         return (
                 # Translators: flow access exception in admin (deprecated)
                 _("Access exception for '%(user)s' to '%(flow_id)s' "
@@ -1008,7 +1008,7 @@ class GradingOpportunity(models.Model):
         ordering = ("course", "due_time", "identifier")
         unique_together = (("course", "identifier"),)
 
-    def __unicode__(self):        
+    def __unicode__(self):
         return (
                 # Translators: For GradingOpportunity
                 _("%(opportunity_name)s (%(opportunity_id)s) in %(course)s")
