@@ -99,8 +99,6 @@ class TextAnswerForm(StyledForm):
     def clean(self):
         cleaned_data = super(TextAnswerForm, self).clean()
         
-        #print "cleaned_data", cleaned_data
-
         answer = cleaned_data.get("answer", "")
         for validator in self.validators:
             validator.validate(answer)
@@ -365,6 +363,8 @@ class FloatMatcher(TextAnswerMatcher):
     type = "float"
     is_case_sensitive = False
     pattern_type = "struct"
+    
+    import math
 
     def __init__(self, vctx, location, matcher_desc):
         self.matcher_desc = matcher_desc
@@ -375,33 +375,65 @@ class FloatMatcher(TextAnswerMatcher):
                 matcher_desc,
                 required_attrs=(
                     ("type", str),
-                    ("value", (int, float)),
+                    ("value", (int, float, str)),
                     ),
                 allowed_attrs=(
-                    ("rtol", (int, float)),
-                    ("atol", (int, float)),
+                    ("rtol", (int, float, str)),
+                    ("atol", (int, float, str)),
                     ),
                 )
+        
+        def validate_attr(attr):
+            
+            attr_value=self.matcher_desc.__getattribute__(attr)
+            
+            try:
+                eval(attr_value)
+            except:
+                raise ValidationError(
+                        string_concat(
+                            "%(location)s: ",
+                            _("attribute '%(attr)s' "
+                              "should be an instances "
+                              "of 'int', 'float' "
+                              "or a caculable string"))
+                        % {
+                            'location': location,
+                            'attr': attr})
+        
+        validate_attr("value")
+        
+        if hasattr(self.matcher_desc, "atol"):
+            validate_attr("atol")
+            
+        if hasattr(self.matcher_desc, "rtol"):
+            validate_attr("rtol")
+            
 
     def validate(self, s):
+        
         try:
-            float(s)
+            float(eval(s))
         except:
             tp, e, _ = sys.exc_info()
             raise forms.ValidationError("%(err_type)s: %(err_str)s"
                     % {"err_type": tp.__name__, "err_str": str(e)})
 
     def grade(self, s):
-        answer_float = float(s)
+        answer_float = float(eval(s))
+        
+        default_atol = 0.01
+        default_rtol = 0.01
 
         if hasattr(self.matcher_desc, "atol"):
-            if (abs(answer_float - self.matcher_desc.value)
-                    >= self.matcher_desc.atol):
+            if (abs(answer_float - eval(self.matcher_desc.value))
+                    >= eval(self.matcher_desc.atol)):
                 return 0
+            
         if hasattr(self.matcher_desc, "rtol"):
-            if (abs(answer_float - self.matcher_desc.value)
-                    / abs(self.matcher_desc.value)
-                    >= self.matcher_desc.rtol):
+            if (abs(answer_float - eval(self.matcher_desc.value))
+                    / abs(eval(self.matcher_desc.value))
+                    >= eval(self.matcher_desc.rtol)):
                 return 0
 
         return 1
@@ -732,6 +764,7 @@ class TextQuestion(TextQuestionBase, PageBaseWithValue):
                     "%s, answer %d" % (location, i+1),
                     answer)
                 for i, answer in enumerate(page_desc.answers)]
+        
 
         if not any(matcher.correct_answer_text() is not None
                 for matcher in self.matchers):
@@ -756,6 +789,9 @@ class TextQuestion(TextQuestionBase, PageBaseWithValue):
                     feedback=ugettext("No answer provided."))
 
         answer = answer_data["answer"]
+        
+        #print max((matcher.grade(answer), matcher.correct_answer_text()) for matcher in self.matchers)
+        #print [(matcher.grade(answer), matcher.correct_answer_text()) for matcher in self.matchers]
 
         correctness, correct_answer_text = max(
                 (matcher.grade(answer), matcher.correct_answer_text())
@@ -880,7 +916,7 @@ class MultipleTextAnswerForm(StyledInlineForm):
         self.validators = validators
         self.HTML_list = tuple_for_form[0]
         self.field_list = tuple_for_form[1]
-        print self.field_list
+        self.field_width_list = tuple_for_form[2]
         self.helper.layout=(Layout())
 
         i = 0
@@ -892,14 +928,17 @@ class MultipleTextAnswerForm(StyledInlineForm):
 
             if self.field_list[idx] <> "":
                 i = i + 1
-                self.fields["answer"+str(idx+1)] = forms.CharField(
+                self.fields["blank"+str(idx+1)] = forms.CharField(
                     required=False,
                     widget=None,
                     help_text=None,
-                    label=string_concat(_("Answer"), str(i)))
+                    label=""
+                    #label=string_concat(_("Blank"), str(i))
+                )
 
                 self.helper.layout.extend([                            
-                        InlineField("answer"+str(i))]
+                        #InlineField("blank"+str(i))]
+                        InlineField("blank"+str(i), style="width: "+self.field_width_list[i-1])]
                 )
 
         self.helper.layout.extend([                            
@@ -910,31 +949,161 @@ class MultipleTextAnswerForm(StyledInlineForm):
     def clean(self):
         cleaned_data = super(MultipleTextAnswerForm, self).clean()
         
-        #print len(cleaned_data)
-        
-        
-        #print "cleaned_data", cleaned_data
-        
-        #answer = [cleaned_data.get("answer"+str(idx+1), "") for idx in range(len(self.field_list))]
-
-        #answer = cleaned_data.get("answer", "")
-#        print "try:", answer
-#        for validator in self.validators:
-#            validator.validate(answer)
-
-        #print "try:", [answer in ["answer"+str(idx+1)] for idx in range(1, len(self.field_list))]
-        #answer = [cleaned_data.get("answer"+str(idx+1), "") for idx in range(len(self.field_list))]
-        
-        #print answer
-        
-        
-        
-        
-#        for answer in answers
-#        print answer
+        answer = cleaned_data.get("answer", "")
+        print self.validators
+        for validator in self.validators:
+            validator.validate(answer)
         
 
 
+ALLOWED_LENGTH_UNIT = ["%", "em", "px", "pt", "cm", "mm"]
+
+def length_to_em(vctx, location, length_tuple, default_width, minimun_width):
+    length, unit = length_tuple
+        
+    if not unit in ALLOWED_LENGTH_UNIT:
+        raise ValidationError(
+                string_concat(
+                    "%s: ",
+                    _("unsupported length unit '%s'"))
+                % (location, unit))
+    elif unit == "%":
+        return str(max(float(length)*default_width/100, minimun_width)) + "em"
+    elif unit == "em":
+        return str(max(float(length), minimun_width)) + "em"
+    elif unit == "px":
+        return str(max(float(length)/12, minimun_width)) + "em"
+    elif unit == "pt":
+        return str(max(float(length)/16, minimun_width)) + "em"
+    elif unit == "cm":
+        return str(max(float(length)/0.1513, minimun_width)) + "em"
+    elif unit == "mm":
+        return str(max(float(length)/3.5146, minimun_width)) + "em"
+    
+    
+    
+class BaseTextAnswerItem(object):
+    """Basice class for answer items.
+
+    .. attribute:: type
+    .. attribute:: value
+    .. attribute:: width
+    .. attribute:: correct_answer
+
+    """
+
+    def __init__(self, vctx, location, name, answer_set):
+        
+        self.name = name
+        
+        try:
+            self.value = answer_set.__getattribute__("value")
+        except AttributeError:
+            raise ValidationError(
+                string_concat(
+                    "%s: ",
+                    _("should have a point value assigned to  %s."))
+                % (location, name))
+            
+        try:
+            self.value=float(self.value)
+
+        except ValueError:
+            raise ValidationError(
+                string_concat(
+                    "%s %s: ",
+                    _("point value is invalid."))
+                % (location, name))
+            
+        try:
+            self.width = answer_set.__getattribute__("width")
+        except AttributeError:
+            self.width = None
+
+        
+        self.RE_PATTERN = "^(\d*\.\d+|\d+)\s*(.*)$"
+        width_pattern=re.compile(self.RE_PATTERN)
+        
+        # unit is "em"
+        self.default_width=10
+        self.minimun_width=4
+        
+        if self.width is not None:
+            if isinstance(self.width, (int, float)):
+                self.width = str(self.width) + "em"
+                
+            else:
+                width_match = width_pattern.match(self.width)
+                if width_match:
+                    length_tuple=(
+                        width_match.group(1),
+                        width_match.group(2))
+                    self.width=length_to_em(
+                        vctx, location,length_tuple,
+                        self.default_width, self.minimun_width)
+        else:
+            self.width = str(self.default_width) + "em"
+            
+        
+            
+        try:
+            self.correct_answer = answer_set.__getattribute__("correct_answer")
+            #print self.correct_answer
+            if self.correct_answer is None:
+                raise ValidationError(
+                    string_concat(
+                        "%s %s: ",
+                        _("at least one answer must be provided"))
+                    % (location, name))
+        except AttributeError:
+            raise ValidationError(
+                string_concat(
+                    "%s %s: ",
+                    _("at least one answer must be provided"))
+                % (location, name))
+        
+        
+        
+        self.matchers = [
+                parse_matcher(
+                    vctx,
+                    "%s, answer %d" % (location, i+1),
+                    answer)
+                for i, answer in enumerate(self.correct_answer)]
+        
+        if not any(matcher.correct_answer_text() is not None
+                for matcher in self.matchers):
+            raise ValidationError(
+                    string_concat(
+                        "%s: ",
+                        _("no matcher is able to provide a plain-text "
+                        "correct answer"))
+                    % location)
+
+
+    def get_correct_answer_text(self):
+
+        for matcher in self.matchers:
+            unspec_correct_answer_text = matcher.correct_answer_text()
+            if unspec_correct_answer_text is not None:
+                break
+
+        assert unspec_correct_answer_text
+        
+        return unspec_correct_answer_text
+
+    def get_correctness(self, answer):
+
+        correctness, correct_answer_text = max(
+                (matcher.grade(answer), matcher.correct_answer_text())
+                for matcher in self.matchers)        
+        return correctness
+    
+    def get_single_q_credit(self, answer):
+        
+        return self.value * self.get_correctness(answer)
+    
+    
 class MultipleTextQuestion(TextQuestionBase):
     
     def __init__(self, vctx, location, page_desc):
@@ -944,97 +1113,81 @@ class MultipleTextQuestion(TextQuestionBase):
         
         self.question = page_desc.question
         
-        # format of answer block
-        # 1 ~:~ SHORTANSWER ~:~ <plain>correct answer ~#~ <plain> another correct answer 
-        # 1 is the value of the answer
-        # SHORTANSWER is the type of the answer (TODO: add other type of answer, like choice)
-        # "~:~" is the seperator between value, type, and correct answers
-        # "~#~" is the seperator between correct answers
+        
+        from relate.utils import dict_to_struct, struct_to_dict
+        
+        answer_struct = page_desc.answers
+    
+        q_list = struct_to_dict(page_desc.answers).keys()
+        
+        self.embeded_q_list_with_brackets = re.findall(
+                r"[^{](?=(\[\[[^\[\]]*\]\]))[^}]", self.question)
+        embeded_q_list = re.findall(
+                r"[^{](?=\[\[([^\[\]]*)\]\])[^}]", self.question)
         
         
-        # make sure if all answer blocks are removed, no "{{" or "}}" in the question text
-        embeded_list_with_brackets = re.findall(
-                r"[^{](?=({{[^{}]*}}))[^}]", self.question)
-        embeded_list = re.findall(
-                r"[^{](?={{([^{}]*)}})[^}]", self.question)
-        
-        embeded_removed = self.question
-        for embeded in embeded_list_with_brackets:
-            embeded_removed = embeded_removed.replace(embeded, "")
+        if len(set(embeded_q_list)) < len(embeded_q_list):
+               duplicated = list(
+                    set([x for x in embeded_q_list 
+                         if embeded_q_list.count(x) > 1]))
+               raise ValidationError(
+                    string_concat(
+                        "%s: ", 
+                        _("embeded question name %s not unique."))
+                    % (location, ", ".join(duplicated)))
             
+        no_answer_set = set(embeded_q_list) - set(q_list)
         
-             
-        for bracket in ["{{", "}}"]:
-            if bracket in embeded_removed:
+        if len(no_answer_set) > 0:
+           raise ValidationError(
+                string_concat(
+                    "%s: ", 
+                    _("answers not provided for %s."))
+                % (location, ", ".join(list(no_answer_set))))
+
+        no_question_set = set(q_list) - set(embeded_q_list)
+        
+        if len(no_question_set) > 0:
+           raise ValidationError(
+                string_concat(
+                    "%s: ", 
+                    _("answers provided for non-exist question(s) %s."))
+                % (location, ", ".join(list(no_question_set))))
+        
+        
+        embeded_q_removed = self.question
+        for embeded in self.embeded_q_list_with_brackets:
+            embeded_q_removed = embeded_q_removed.replace(embeded, "")
+        
+        for bracket in ["[[", "]]"]:
+            if bracket in embeded_q_removed:
                 raise ValidationError(
                     string_concat(
                         "%s: ",
-                        _("have unclosed brackets"),
+                        _("have unclosed "),
                         " '%s'.")
                     % (location, bracket))
 
-        # make sure if all answer blocks are removed, no "{{" or 
-        # "}}" present in the question text
-        for idx, embeded in enumerate(embeded_list):
-            try:
-                value, question_type, answer_str = embeded.split("~:~")
-                self.value += float(value)
-            except ValueError:
-                raise ValidationError(
-                    string_concat(
-                        "%s %s: ",
-                        _("need to provide "
-                          "'value~:~question_type~:~answer'"))
-                    % (location, "blank "+str(idx+1)))
+        self.answer_group = []
+        self.correct_answer_list=[]
+        self.width_list=[]
+        
+        for idx, name in enumerate(embeded_q_list):
             
-            try:
-                value=float(value.strip())
-
-            except ValueError:
-                raise ValidationError(
-                    string_concat(
-                        "%s %s: ",
-                        _("point value is invalid."))
-                    % (location, "blank "+str(idx+1)))
-
-
-            if answer_str.strip()=="":
-                raise ValidationError(
-                        string_concat(
-                            "%s %s: ",
-                            _("at least one answer must be provided"))
-                        % (location, "blank "+str(idx+1)))
-
-            answers = answer_str.split("~#~")
-            answers = [item.strip() for item in answers]            
-
-            self.matchers = [
-                parse_matcher(
-                    vctx,
-                    "%s, %s, answer %d" % (
-                        location, "blank "+str(idx+1), i+1),
-                    answer)
-            for i, answer in enumerate(answers)]
+            question_i = getattr(page_desc.answers, name)
+            self.answer_group.append(BaseTextAnswerItem(vctx, location, name, question_i))
+            self.correct_answer_list.append(self.answer_group[idx].get_correct_answer_text())
+            self.value += self.answer_group[idx].value
+            self.width_list.append(self.answer_group[idx].width)
             
-            print [matcher.correct_answer_text() 
-                    for matcher in self.matchers]
-            
-            if not any(matcher.correct_answer_text() is not None
-                    for matcher in self.matchers):
-                raise ValidationError(
-                        string_concat(
-                            "%s %s: ",
-                            _("no matcher is able to provide a plain-text "
-                            "correct answer"))
-                        % (location, "blank "+str(idx+1)))
+    
 
     def get_validators(self):
-        return self.matchers
-        #return []
+        return []
 
     def required_attrs(self):
         return super(MultipleTextQuestion, self).required_attrs() + (
-                ("question", "markup"),
+                ("question", "markup"), ("answers", Struct),
                 )
 
     def max_points(self, page_data):
@@ -1042,14 +1195,14 @@ class MultipleTextQuestion(TextQuestionBase):
 
     def allowed_attrs(self):
         return super(MultipleTextQuestion, self).allowed_attrs() + (
-                ("answer_comment", "markup"),
+                ("answer_comment", "markup"), ("question", "markup")
                 )
 
     def get_question_HTML(self, page_context):
 
         question_HTML = markup_to_html(page_context, self.question)
 
-        # for correct render of questions with more tha on paragraph
+        # for correct render of question with more tha on paragraph
         # remove heading <p> tags and change </p> to line break.        
         question_HTML = question_HTML \
                 .replace("<p>","").replace("</p>","<br/>")
@@ -1065,24 +1218,26 @@ class MultipleTextQuestion(TextQuestionBase):
 
         question_str_remainder = self.get_question_HTML(page_context)
 
-        html_list=[]
-        field_list=[]
+        html_list = []
+        field_list = []        
         while question_str_remainder <> "":
 
-            temp_array = question_str_remainder.split("}}",1)
+            temp_array = question_str_remainder.split("]]",1)
             [string_i, question_str_remainder] = temp_array
 
-            array_i = string_i.split("{{")
+            array_i = string_i.split("[[")
 
             html_list.append(array_i[0])
             field_list.append(array_i[1])
             
-            if "}}" not in question_str_remainder:
+            if "]]" not in question_str_remainder:
                 html_list.append(question_str_remainder)
                 field_list.append("")
                 break
         
-        return (html_list, field_list)
+        
+        
+        return (html_list, field_list, self.width_list)
         
         
     def make_form(self, page_context, page_data,
@@ -1118,7 +1273,7 @@ class MultipleTextQuestion(TextQuestionBase):
         read_only = False
         tuple_for_form = self.get_tuple_for_form(page_context)
         
-        print post_data
+        #print post_data
         return MultipleTextAnswerForm(
                 read_only,
                 get_editor_interaction_mode(page_context),
@@ -1128,31 +1283,39 @@ class MultipleTextQuestion(TextQuestionBase):
                 widget_type=None)
 
 
-#    def form_to_html(self, request, page_context, form, answer_data):
-#        """Returns an HTML rendering of *form*."""
-#
-#        from django.template import loader, RequestContext
-#        from django import VERSION as django_version
-#
-#        if django_version >= (1, 9):
-#            return loader.render_to_string(
-#                    "course/crispy-form.html",
-#                    context={"form": form},
-#                    request=request)
-#        else:
-#            context = RequestContext(request)
-#            context.update({"form": form})
-#            return loader.render_to_string(
-#                    "course/crispy-form.html",
-#                    context_instance=context)
+    def form_to_html(self, request, page_context, form, answer_data):
+        """Returns an HTML rendering of *form*."""
 
-    def correct_answer(self, page_context, page_data, 
-            answer_data, grade_data):
-        if hasattr(self.page_desc, "answer_comment"):
-            return markup_to_html(page_context, 
-                    self.page_desc.answer_comment)
+        from django.template import loader, RequestContext
+        from django import VERSION as django_version
+
+        if django_version >= (1, 9):
+            return loader.render_to_string(
+                    "course/crispy-form2.html",
+                    context={"form": form},
+                    request=request)
         else:
-            return None
+            context = RequestContext(request)
+            context.update({"form": form})
+            return loader.render_to_string(
+                    "course/crispy-form2.html",
+                    context_instance=context)
+        
+        
+    def correct_answer(self, page_context, page_data, answer_data, grade_data):
+        # FIXME: Could use 'best' match to answer
+        
+        cor_answer_output = self.question
+        
+        for idx, bracket in enumerate(self.embeded_q_list_with_brackets):
+            cor_answer_output = cor_answer_output.replace(
+                bracket,
+                "<strong>" + self.correct_answer_list[idx] + "</strong>")
+
+        CA_PATTERN = string_concat(_("A correct answer is"), ": <br/> %s")  # noqa
+
+        return CA_PATTERN % cor_answer_output
+
         
     def answer_data(self, page_context, page_data, form, files_data):
         return {"answer": form.cleaned_data}
@@ -1168,15 +1331,39 @@ class MultipleTextQuestion(TextQuestionBase):
             return AnswerFeedback(correctness=0,
                     feedback=ugettext("No answer provided."))
         
-        print "answer_data", answer_data
+        print "answer_data", answer_data        
 
-#        answer = answer_data["answer"]
+        answer = answer_data["answer"]
+        
+        total_credit = 0
+        
+        for idx, q in enumerate(self.answer_group):
+            print q.name
+            print answer[q.name]
+            print q.get_single_q_credit(answer[q.name])
+            total_credit += q.get_single_q_credit(answer[q.name])
+            print total_credit
+            
+        correctness = total_credit/self.value
 
-#        correctness, correct_answer_text = max(
-#                (matcher.grade(answer), matcher.correct_answer_text())
-#                for matcher in self.matchers)
+        return AnswerFeedback(correctness=correctness)
+    
+    def normalized_answer(self, page_context, page_data, answer_data):
+        if answer_data is None:
+            return None
+        
+        print answer_data
 
-        #return AnswerFeedback(correctness=correctness)
-        return AnswerFeedback(correctness=1)
+        nml_answer_output = self.question
+
+        return None
+#        for idx, bracket in enumerate(self.embeded_q_list_with_brackets):
+#            nml_answer_output = nml_answer_output.replace(
+#                bracket,
+#                "<strong>" + answer_data[idx] + "</strong>")
+#
+#        CA_PATTERN = string_concat(_("A correct answer is"), ": <br/> %s")  # noqa
+
+         
 
 # }}}

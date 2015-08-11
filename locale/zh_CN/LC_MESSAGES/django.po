@@ -2152,7 +2152,7 @@ msgstr "选项%(idx)d: 无法转换为字符串"
 #: .\course\page\choice.py:234
 #, python-format
 msgid "A correct answer is: %s"
-msgstr "一个可参考的正确答案是: %s"
+msgstr "正确答案是: %s"
 
 #: .\course\page\choice.py:368
 msgid "The correct answer is: %s"
@@ -2279,12 +2279,12 @@ msgstr "至少要提供一个回答"
 
 #: .\course\page\text.py:741 .\course\page\text.py:1027
 msgid "no matcher is able to provide a plain-text correct answer"
-msgstr "对于普通文本型回答, 无法提供匹配"
+msgstr "现有的匹配类无法提供一个普通文本型的标准答案"
 
 #: .\course\page\text.py:769
 #, python-format
 msgid "A correct answer is: '%s'."
-msgstr "正确答案是“%s”. "
+msgstr "一个可参考的正确答案是“%s”. "
 
 #: .\course\page\text.py:972
 msgid "have unclosed brackets"
