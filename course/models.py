@@ -619,7 +619,7 @@ class FlowPageVisit(models.Model):
             # submitted answer fit for grading.
             verbose_name=_('Is submitted answer'))
 
-    def __unicode__(self):        
+    def __unicode__(self):
         result = (
                 # Translators: flow page visit
                 _("'%(group_id)s/%(page_id)s' in '%(session)s' "
