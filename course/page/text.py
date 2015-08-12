@@ -359,9 +359,16 @@ class SymbolicExpressionMatcher(TextAnswerMatcher):
         return self.pattern
 
 
+def float_or_sympy_evalf(s):
+    if isinstance(s, (int, float)):
+        return s
+
+    # return a float type value, expression not allowed
+    return float(parse_sympy(s).evalf())
+
 def _is_valid_float(s):
     try:
-        float(s)
+        float_or_sympy_evalf(s)
     except:
         return False
     else:
@@ -372,7 +379,6 @@ class FloatMatcher(TextAnswerMatcher):
     type = "float"
     is_case_sensitive = False
     pattern_type = "struct"
-    import math
 
     def __init__(self, vctx, location, matcher_desc):
         self.matcher_desc = matcher_desc
@@ -390,58 +396,37 @@ class FloatMatcher(TextAnswerMatcher):
                     ("atol", (int, float, str)),
                     ),
                 )
-        if (
-                not hasattr(matcher_desc, "atol")
-                and
-                not hasattr(matcher_desc, "rtol")):
-            vctx.add_warning(location,
-                    _("Float match should have either rtol or atol--"
-                        "otherwise it will match any number"))
 
-        def validate_attr(attr):
+        try:
+            self.matcher_desc.value = \
+                    float_or_sympy_evalf(matcher_desc.value)
+        except:
+            raise ValidationError(
+                    string_concat(
+                        "%s: ",
+                        _("'value' is not a valid float literal"))
+                    % location)           
 
-            attr_value=getattr(self.matcher_desc, attr)
-            
-            #print attr_value
-            
-            #eval(attr_value)
-
+        if hasattr(matcher_desc, "rtol"):
             try:
-                eval(str(attr_value))
+                self.matcher_desc.rtol = \
+                        float_or_sympy_evalf(matcher_desc.rtol)
             except:
                 raise ValidationError(
                         string_concat(
-                            "%(location)s: ",
-                            _("attribute '%(attr)s' "
-                              "should be an instances "
-                              "of 'int', 'float' "
-                              "or a caculable string"))
-                        % {
-                            'location': location,
-                            'attr': attr})
-
-        validate_attr("value")
-
-        if hasattr(self.matcher_desc, "atol"):
-            validate_attr("atol")
-
-        if hasattr(self.matcher_desc, "rtol"):
-            validate_attr("rtol")
-
-        if (hasattr(matcher_desc, "rtol")
-                and not _is_valid_float(matcher_desc.rtol)):
-            raise ValidationError(
-                    string_concat(
-                        "%s: ",
-                        _("rtol is not a valid float literal"))
-                    % location)
-        if (hasattr(matcher_desc, "atol")
-                and not _is_valid_float(matcher_desc.atol)):
-            raise ValidationError(
-                    string_concat(
-                        "%s: ",
-                        _("atol is not a valid float literal"))
-                    % location)
+                            "%s: ",
+                            _("'rtol' is not a valid float literal"))
+                        % location)
+        if hasattr(matcher_desc, "atol"):
+            try:
+                self.matcher_desc.atol = \
+                        float_or_sympy_evalf(matcher_desc.atol)
+            except:
+                raise ValidationError(
+                        string_concat(
+                            "%s: ",
+                            _("'atol' is not a valid float literal"))
+                        % location)
 
         if (
                 not hasattr(matcher_desc, "atol")
@@ -452,29 +437,30 @@ class FloatMatcher(TextAnswerMatcher):
             vctx.add_warning(location,
                     _("Float match should have either rtol or atol--"
                         "otherwise it will match any number"))
+            
+    
+            
 
     def validate(self, s):
+
         try:
-            float(eval(s))
+            float_or_sympy_evalf(s)
         except:
             tp, e, _ = sys.exc_info()
             raise forms.ValidationError("%(err_type)s: %(err_str)s"
                     % {"err_type": tp.__name__, "err_str": str(e)})
 
     def grade(self, s):
-        answer_float = float(eval(s))
-        
-        default_atol = 0.01
-        default_rtol = 0.01
+        answer_float = float_or_sympy_evalf(s)
 
         if hasattr(self.matcher_desc, "atol"):
-            if (abs(answer_float - eval(self.matcher_desc.value))
-                    >= eval(self.matcher_desc.atol)):
+            if (abs(answer_float - self.matcher_desc.value)
+                    >= self.matcher_desc.atol):
                 return 0
         if hasattr(self.matcher_desc, "rtol"):
-            if (abs(answer_float - eval(self.matcher_desc.value))
-                    / abs(eval(self.matcher_desc.value))
-                    >= eval(self.matcher_desc.rtol)):
+            if (abs(answer_float - self.matcher_desc.value)
+                    / abs(self.matcher_desc.value)
+                    >= self.matcher_desc.rtol):
                 return 0
 
         return 1
@@ -889,7 +875,7 @@ class TextQuestion(TextQuestionBase, PageBaseWithValue):
     def correct_answer(self, page_context, page_data, answer_data, grade_data):
         # FIXME: Could use 'best' match to answer
 
-        CA_PATTERN = _("A correct answer is: '%s'.")  # noqa
+        CA_PATTERN = string_concat(_("A correct answer is"), ": '%s'.")  # noqa
 
         for matcher in self.matchers:
             unspec_correct_answer_text = matcher.correct_answer_text()
