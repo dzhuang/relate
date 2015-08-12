@@ -359,6 +359,15 @@ class SymbolicExpressionMatcher(TextAnswerMatcher):
         return self.pattern
 
 
+def _is_valid_float(s):
+    try:
+        float(s)
+    except:
+        return False
+    else:
+        return True
+
+
 class FloatMatcher(TextAnswerMatcher):
     type = "float"
     is_case_sensitive = False
@@ -418,6 +427,31 @@ class FloatMatcher(TextAnswerMatcher):
 
         if hasattr(self.matcher_desc, "rtol"):
             validate_attr("rtol")
+
+        if (hasattr(matcher_desc, "rtol")
+                and not _is_valid_float(matcher_desc.rtol)):
+            raise ValidationError(
+                    string_concat(
+                        "%s: ",
+                        _("rtol is not a valid float literal"))
+                    % location)
+        if (hasattr(matcher_desc, "atol")
+                and not _is_valid_float(matcher_desc.atol)):
+            raise ValidationError(
+                    string_concat(
+                        "%s: ",
+                        _("atol is not a valid float literal"))
+                    % location)
+
+        if (
+                not hasattr(matcher_desc, "atol")
+                and
+                not hasattr(matcher_desc, "rtol")
+                and
+                vctx is not None):
+            vctx.add_warning(location,
+                    _("Float match should have either rtol or atol--"
+                        "otherwise it will match any number"))
 
     def validate(self, s):
         try:
