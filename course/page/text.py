@@ -98,7 +98,7 @@ class TextAnswerForm(StyledForm):
 
     def clean(self):
         cleaned_data = super(TextAnswerForm, self).clean()
-        
+
         answer = cleaned_data.get("answer", "")
         for validator in self.validators:
             validator.validate(answer)
@@ -363,7 +363,6 @@ class FloatMatcher(TextAnswerMatcher):
     type = "float"
     is_case_sensitive = False
     pattern_type = "struct"
-    
     import math
 
     def __init__(self, vctx, location, matcher_desc):
@@ -382,13 +381,24 @@ class FloatMatcher(TextAnswerMatcher):
                     ("atol", (int, float, str)),
                     ),
                 )
-        
+        if (
+                not hasattr(matcher_desc, "atol")
+                and
+                not hasattr(matcher_desc, "rtol")):
+            vctx.add_warning(location,
+                    _("Float match should have either rtol or atol--"
+                        "otherwise it will match any number"))
+
         def validate_attr(attr):
+
+            attr_value=getattr(self.matcher_desc, attr)
             
-            attr_value=self.matcher_desc.__getattribute__(attr)
+            #print attr_value
             
+            #eval(attr_value)
+
             try:
-                eval(attr_value)
+                eval(str(attr_value))
             except:
                 raise ValidationError(
                         string_concat(
@@ -400,18 +410,16 @@ class FloatMatcher(TextAnswerMatcher):
                         % {
                             'location': location,
                             'attr': attr})
-        
+
         validate_attr("value")
-        
+
         if hasattr(self.matcher_desc, "atol"):
             validate_attr("atol")
-            
+
         if hasattr(self.matcher_desc, "rtol"):
             validate_attr("rtol")
-            
 
     def validate(self, s):
-        
         try:
             float(eval(s))
         except:
@@ -429,7 +437,6 @@ class FloatMatcher(TextAnswerMatcher):
             if (abs(answer_float - eval(self.matcher_desc.value))
                     >= eval(self.matcher_desc.atol)):
                 return 0
-            
         if hasattr(self.matcher_desc, "rtol"):
             if (abs(answer_float - eval(self.matcher_desc.value))
                     / abs(eval(self.matcher_desc.value))
@@ -996,36 +1003,63 @@ class MultipleTextAnswerForm(StyledInlineForm):
         cleaned_data = super(MultipleTextAnswerForm, self).clean()
         
         answer = cleaned_data.get("answer", "")
-        print self.validators
+        #print self.validators
         for validator in self.validators:
             validator.validate(answer)
         
 
 
-ALLOWED_LENGTH_UNIT = ["%", "em", "px", "pt", "cm", "mm"]
+ALLOWED_LENGTH_UNIT = ["%", "em", "pt", "cm", "mm", "in"]
 
-def length_to_em(vctx, location, length_tuple, default_width, minimun_width):
-    length, unit = length_tuple
-        
-    if not unit in ALLOWED_LENGTH_UNIT:
+
+# generate the length for input box, the unit is "em"
+def get_length_attr_em(location, default_width, width_attr):
+
+    if isinstance(width_attr, (int, float)):
+        return width_attr
+
+    if width_attr is None:
+        return None
+    
+    RE_PATTERN = "^(\d*\.\d+|\d+)\s*(.*)$"
+    pattern=re.compile(RE_PATTERN)
+
+    width_re_match = pattern.match(width_attr)
+    if width_re_match:
+        length_value = width_re_match.group(1)
+        length_unit = width_re_match.group(2)
+    else:
         raise ValidationError(
                 string_concat(
-                    "%s: ",
-                    _("unsupported length unit '%s'"))
-                % (location, unit))
-    elif unit == "%":
-        return str(max(float(length)*default_width/100, minimun_width)) + "em"
-    elif unit == "em":
-        return str(max(float(length), minimun_width)) + "em"
-    elif unit == "px":
-        return str(max(float(length)/12, minimun_width)) + "em"
-    elif unit == "pt":
-        return str(max(float(length)/16, minimun_width)) + "em"
-    elif unit == "cm":
-        return str(max(float(length)/0.1513, minimun_width)) + "em"
-    elif unit == "mm":
-        return str(max(float(length)/3.5146, minimun_width)) + "em"
+                    "%(location)s: ",
+                    _("unrecogonized width attribute string: '%(width_attr)s'"))
+                % {"location": location,
+                   "width_attr": width_attr
+                  })        
+
+    if not length_unit in ALLOWED_LENGTH_UNIT:
+        raise ValidationError(
+                string_concat(
+                    "%(location)s: ",
+                    _("unsupported length unit '%(length_unit)s', "
+                      "expected length unit can be %(allowed_length_unit)s", ))
+                % {"location": location,
+                   "length_unit": length_unit,
+                   "allowed_length_unit": ", ".join(ALLOWED_LENGTH_UNIT)
+                  })
     
+    elif length_unit == "%":
+        return float(length_value)*default_width/100.0
+    elif length_unit == "em":
+        return float(length_value)
+    elif length_unit == "pt":
+        return float(length_value)/10.00002
+    elif length_unit == "cm":
+        return float(length_value)/0.35146
+    elif length_unit == "mm":
+        return float(length_value)/3.5146
+    elif length_unit == "in":
+        return float(length_value)/0.13837
     
     
 class BaseTextAnswerItem(object):
@@ -1038,75 +1072,72 @@ class BaseTextAnswerItem(object):
 
     """
 
-    def __init__(self, vctx, location, name, answer_set):
+    def __init__(self, vctx, location, name, answers_desc):
         
         self.name = name
+        self.answers_desc = answers_desc
         
-        try:
-            self.value = answer_set.__getattribute__("value")
-        except AttributeError:
-            raise ValidationError(
-                string_concat(
-                    "%s: ",
-                    _("should have a point value assigned to  %s."))
-                % (location, name))
-            
-        try:
-            self.value=float(self.value)
-
-        except ValueError:
-            raise ValidationError(
-                string_concat(
-                    "%s %s: ",
-                    _("point value is invalid."))
-                % (location, name))
-            
-        try:
-            self.width = answer_set.__getattribute__("width")
-        except AttributeError:
-            self.width = None
+        validate_struct(
+                vctx,
+                location,
+                answers_desc,
+                required_attrs=(
+                    ("value", (int, float)),
+                    ("correct_answer", list)
+                    ),
+                allowed_attrs=(
+                    ("type", str), ("hint", str), 
+                    ("width", (str, int, float)),
+                    ),
+                )
 
         
+        self.value = self.answers_desc.value
+
+        self.correct_answer=self.answers_desc.correct_answer        
+        if len(self.correct_answer) == 0:
+            raise ValidationError(
+                    string_concat(
+                        "%s: ",
+                        _("at least one answer must be provided"))
+                    % location)
+        
+
+        self.hint = getattr(self.answers_desc, "hint", "")
+
+        self.width = getattr(self.answers_desc, "width", None)
+
         self.RE_PATTERN = "^(\d*\.\d+|\d+)\s*(.*)$"
         width_pattern=re.compile(self.RE_PATTERN)
         
-        # unit is "em"
-        self.default_width=10
-        self.minimun_width=4
+        # length unit used is "em"
+        default_width=10
+        minimun_width=4
         
-        if self.width is not None:
-            if isinstance(self.width, (int, float)):
-                self.width = str(self.width) + "em"
-                
-            else:
-                width_match = width_pattern.match(self.width)
-                if width_match:
-                    length_tuple=(
-                        width_match.group(1),
-                        width_match.group(2))
-                    self.width=length_to_em(
-                        vctx, location,length_tuple,
-                        self.default_width, self.minimun_width)
+        parsed_length = get_length_attr_em(location, default_width, self.width)
+        
+        if parsed_length is not None:
+            self.width = str(max(minimun_width, parsed_length)) + "em"
         else:
-            self.width = str(self.default_width) + "em"
-            
+            self.width = str(default_width) + "em"
+
         
             
-        try:
-            self.correct_answer = answer_set.__getattribute__("correct_answer")
-            #print self.correct_answer
-            if self.correct_answer is None:
-                raise ValidationError(
-                    string_concat(
-                        "%s %s: ",
-                        _("at least one answer must be provided"))
-                    % (location, name))
-        except AttributeError:
-            raise ValidationError(
-                string_concat(
-                    "%s %s: ",
-                    _("at least one answer must be provided"))
-                % (location, name))
+#        try:
+#            self.correct_answer = answers_desc.__getattribute__("correct_answer")
+#            #print self.correct_answer
+#            if self.correct_answer is None:
+#                raise ValidationError(
+#                    string_concat(
+#                        "%s %s: ",
+#                        _("at least one answer must be provided"))
+#                    % (location, name))
+#        except AttributeError:
+#            raise ValidationError(
+#                string_concat(
+#                    "%s %s: ",
+#                    _("at least one answer must be provided"))
+#                % (location, name))
         
         
         
@@ -1142,7 +1173,7 @@ class BaseTextAnswerItem(object):
 
         correctness, correct_answer_text = max(
                 (matcher.grade(answer), matcher.correct_answer_text())
-                for matcher in self.matchers)        
+                for matcher in self.matchers)
         return correctness
     
     def get_single_q_credit(self, answer):
@@ -1217,6 +1248,7 @@ class MultipleTextQuestion(TextQuestionBase):
         self.answer_group = []
         self.correct_answer_list=[]
         self.width_list=[]
+        self.hint_list=[]
         
         for idx, name in enumerate(embeded_q_list):
             
@@ -1225,6 +1257,8 @@ class MultipleTextQuestion(TextQuestionBase):
             self.correct_answer_list.append(self.answer_group[idx].get_correct_answer_text())
             self.value += self.answer_group[idx].value
             self.width_list.append(self.answer_group[idx].width)
+            self.hint_list.append(self.answer_group[idx].hint)
+            
             
     
 
@@ -1241,7 +1275,7 @@ class MultipleTextQuestion(TextQuestionBase):
 
     def allowed_attrs(self):
         return super(MultipleTextQuestion, self).allowed_attrs() + (
-                ("answer_comment", "markup"), ("question", "markup")
+                ("answer_comment", "markup"), 
                 )
 
     def get_question_HTML(self, page_context):
@@ -1281,7 +1315,7 @@ class MultipleTextQuestion(TextQuestionBase):
                 field_list.append("")
                 break
         
-        
+        #print self.width_list
         
         return (html_list, field_list, self.width_list)
         
@@ -1377,18 +1411,18 @@ class MultipleTextQuestion(TextQuestionBase):
             return AnswerFeedback(correctness=0,
                     feedback=ugettext("No answer provided."))
         
-        print "answer_data", answer_data        
+        #print "answer_data", answer_data        
 
         answer = answer_data["answer"]
         
         total_credit = 0
         
         for idx, q in enumerate(self.answer_group):
-            print q.name
-            print answer[q.name]
-            print q.get_single_q_credit(answer[q.name])
+            #print q.name
+            #print answer[q.name]
+            #print q.get_single_q_credit(answer[q.name])
             total_credit += q.get_single_q_credit(answer[q.name])
-            print total_credit
+            #print total_credit
             
         correctness = total_credit/self.value
 
@@ -1398,7 +1432,7 @@ class MultipleTextQuestion(TextQuestionBase):
         if answer_data is None:
             return None
         
-        print answer_data
+        #print answer_data
 
         nml_answer_output = self.question
 
