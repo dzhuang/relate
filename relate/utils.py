@@ -45,7 +45,8 @@ class StyledInlineForm(forms.Form):
         self.helper.form_class = "form-inline"
         self.helper.label_class = "sr-only"
         #self.helper.label_class = "col-lg-2"
-        self.helper.field_class = "col-xs-3"
+        #self.helper.field_class = "col-xs-3"
+        #self.helper.input_attr = {"data_toggle": "tooltip", "data_placement": "top"}
 
         super(StyledInlineForm, self).__init__(*args, **kwargs)
 
