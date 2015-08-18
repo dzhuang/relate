@@ -459,12 +459,8 @@ class FloatMatcher(TextAnswerMatcher):
             vctx.add_warning(location,
                     _("Float match should have either rtol or atol--"
                         "otherwise it will match any number"))
-            
-    
-            
 
     def validate(self, s):
-
         try:
             float_or_sympy_evalf(s)
         except:
@@ -665,7 +661,6 @@ class TextQuestionBase(PageBaseWithTitle):
                     widget_type=getattr(self.page_desc, "widget", None))
         else:
             answer = None
-            
             form = TextAnswerForm(
                     read_only,
                     get_editor_interaction_mode(page_context),
@@ -863,7 +858,6 @@ class TextQuestion(TextQuestionBase, PageBaseWithValue):
                     "%s, answer %d" % (location, i+1),
                     answer)
                 for i, answer in enumerate(page_desc.answers)]
-        
 
         if not any(matcher.correct_answer_text() is not None
                 for matcher in self.matchers):
@@ -888,7 +882,7 @@ class TextQuestion(TextQuestionBase, PageBaseWithValue):
                     feedback=ugettext("No answer provided."))
 
         answer = answer_data["answer"]
-        
+
         correctness, correct_answer_text = max(
                 (matcher.grade(answer), matcher.correct_answer_text())
                 for matcher in self.matchers)
