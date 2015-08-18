@@ -137,8 +137,8 @@ class ChoiceQuestion(PageBaseWithTitle, PageBaseWithValue):
             raise ValidationError(
                     string_concat(
                         "%(location)s: ",
-                        "one or more correct answer(s) "
-                        "expected, %(n_correct)d found")
+                        _("one or more correct answer(s) "
+                        "expected, %(n_correct)d found"))
                     % {
                         'location': location,
                         'n_correct': correct_choice_count})
