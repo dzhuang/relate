@@ -47,9 +47,9 @@ from crispy_forms.layout import Layout, Field, HTML
 
 
 class MultipleTextAnswerForm(StyledInlineForm):
+    do_not_offset_submit_buttons = True
 
     def __init__(self, read_only, dict_for_form, *args, **kwargs):
-
         super(MultipleTextAnswerForm, self).__init__(*args, **kwargs)
         html_list = dict_for_form["HTML_list"]
         self.answer_instance_list = answer_instance_list = \
@@ -146,11 +146,12 @@ class AnswerBase(object):
     def get_field_layout(self):
         return Field(
                 self.name,
-                data_toggle="popover",
-                data_placement="top",
-                data_html="true",
-                title=getattr(self.answers_desc, "hint_title", ""),
-                data_content=getattr(self.answers_desc, "hint", ""),
+                use_popover="true",
+                #data_toggle="popover",
+                #data_placement="top",
+                #data_html="true",
+                popover_title=getattr(self.answers_desc, "hint_title", ""),
+                popover_content=getattr(self.answers_desc, "hint", ""),
                 style=self.width_str
                 )
 
