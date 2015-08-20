@@ -55,7 +55,13 @@ class MultipleChoiceAnswerForm(StyledForm):
         # Translators: "Choice" in Choice Answer Form in a multiple
         # choice question in which multiple answers can be chosen.
         self.fields["choice"].label = _("Choices")
-
+        
+def markup_to_html_plain(page_context, s):
+    s = ''.join(['<td>', s.strip(), '</td>'])
+    s = markup_to_html(page_context, s)
+    print s
+    s = s[5:-5]
+    return s
 
 # {{{ choice question
 
@@ -105,7 +111,29 @@ class ChoiceQuestion(PageBaseWithTitle, PageBaseWithValue):
         if not isinstance(s, str):
             s = str(s)
         s = remove_prefix(cls.CORRECT_TAG, s)
-        s = markup_to_html(page_context, s)
+        
+        s = markup_to_html_plain(page_context, s)
+        
+        print s
+        
+#        s2 = markup_to_html(page_context, s)
+#        
+#        s3 = ''.join(['<td>', s, '</td>'])
+#        
+#        s4 = markup_to_html(page_context, s3)
+#        
+#        print s4[4:-5]
+#        
+#        #print s2
+#
+#        # return itself when s is a plaintext str
+#        s_wrapped = string_concat(
+#                "<p>", 
+#                unicode(s).strip(), 
+#                "</p>")
+#        if s2 <> s_wrapped:
+#            s = s2
+
         # allow HTML in option
         s = mark_safe(s)
 
@@ -362,7 +390,7 @@ class MultipleChoiceQuestion(ChoiceQuestion):
     def correct_answer(self, page_context, page_data, answer_data, grade_data):
         corr_idx_list = self.unpermuted_correct_indices()
 
-        return (string_concat(_("The correct answer is"), ": '%s'.")
+        return (string_concat(_("The correct answer is"), ": %s.")
                 % self.get_answer_html(page_context, corr_idx_list))
 
     def normalized_answer(self, page_context, page_data, answer_data):
