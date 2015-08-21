@@ -45,6 +45,7 @@ class StyledInlineForm(forms.Form):
         self.helper = FormHelper()
         self.helper.form_class = "form-inline"
         self.helper.label_class = "sr-only"
+        #self.helper.form_show_errors = True
 
         super(StyledInlineForm, self).__init__(*args, **kwargs)
 

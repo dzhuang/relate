@@ -88,12 +88,14 @@ class InlineMultiQuestionForm(StyledInlineForm):
                             answer_instance_list[idx].get_field_layout(
                                 correctness=correctness_list[idx])])
                 if read_only:
-                    if isinstance(self.fields[field_name].widget, forms.widgets.TextInput):
-                        self.fields[field_name].widget.attrs['readonly']="readonly"
-                    elif isinstance(self.fields[field_name].widget, forms.widgets.Select):
-                        self.fields[field_name].widget.attrs['disabled']="disabled"
-#                print self.fields[field_name].widget
-#                print isinstance(self.fields[field_name].widget, forms.widgets.TextInput)
+                    if isinstance(self.fields[field_name].widget, 
+                            forms.widgets.TextInput):
+                        self.fields[field_name].widget.attrs['readonly'] \
+                                = "readonly"
+                    elif isinstance(self.fields[field_name].widget, 
+                            forms.widgets.Select):
+                        self.fields[field_name].widget.attrs['disabled'] \
+                                = "disabled"
         self.helper.layout.extend([HTML("<br/><br/>")])
 
     def clean(self):
@@ -104,9 +106,24 @@ class InlineMultiQuestionForm(StyledInlineForm):
         for answer in cleaned_data.keys():
             idx = answer_name_list.index(answer)
             instance_idx = self.answer_instance_list[idx]
+            field_name_idx = instance_idx.name
+            print field_name_idx
             if hasattr(instance_idx, "matchers"):
                 for validator in instance_idx.matchers:
-                    validator.validate(cleaned_data[answer])
+                    try:
+                        validator.validate(cleaned_data[answer], 
+                                validate_only=True)
+                    except:
+                        from traceback import print_exc
+                        print_exc()
+
+                        import sys
+                        tp, e, _ = sys.exc_info()
+
+                        self.add_error(field_name_idx,
+                                       "%(err_type)s: %(err_str)s" % {
+                                            "err_type": tp.__name__,
+                                            "err_str": str(e)})
 
 
 def get_question_class(location, q_type, answers_desc):
@@ -572,10 +589,9 @@ class InlineMultiQuestion(TextQuestionBase, PageBaseWithValue):
         super(InlineMultiQuestion, self).__init__(
                 vctx, location, page_desc)
 
-        self.question = page_desc.question
         self.embeded_wrapped_name_list = WRAPPED_NAME_RE.findall(
-                self.question)
-        self.embeded_name_list = NAME_RE.findall(self.question)
+                page_desc.question)
+        self.embeded_name_list = NAME_RE.findall(page_desc.question)
 
         from relate.utils import struct_to_dict
         answers_name_list = struct_to_dict(page_desc.answers).keys()
@@ -653,11 +669,11 @@ class InlineMultiQuestion(TextQuestionBase, PageBaseWithValue):
         # paragraph, remove heading <p> tags and change </p>
         # to line break.
         from course.content import markup_to_html # noqa
-        remainder_html = markup_to_html(
+        self.question = remainder_html = markup_to_html(
                 course=None,
                 repo=None,
                 commit_sha=None,
-                text=self.question,
+                text=page_desc.question,
                 ).replace("<p>", "").replace("</p>", "<br/>")
 
         self.html_list = []
