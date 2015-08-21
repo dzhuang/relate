@@ -60,8 +60,6 @@ class InlineMultiQuestionForm(StyledInlineForm):
             correctness_list = dict_for_form["correctness_list"]
 
         self.helper.layout = Layout()
-        if read_only:
-            self.readonly = None
 
         # for question with only one field, the field is forced
         # to be "required".
@@ -89,7 +87,13 @@ class InlineMultiQuestionForm(StyledInlineForm):
                     self.helper.layout.extend([
                             answer_instance_list[idx].get_field_layout(
                                 correctness=correctness_list[idx])])
-
+                if read_only:
+                    if isinstance(self.fields[field_name].widget, forms.widgets.TextInput):
+                        self.fields[field_name].widget.attrs['readonly']="readonly"
+                    elif isinstance(self.fields[field_name].widget, forms.widgets.Select):
+                        self.fields[field_name].widget.attrs['disabled']="disabled"
+#                print self.fields[field_name].widget
+#                print isinstance(self.fields[field_name].widget, forms.widgets.TextInput)
         self.helper.layout.extend([HTML("<br/><br/>")])
 
     def clean(self):
@@ -731,7 +735,7 @@ class InlineMultiQuestion(TextQuestionBase, PageBaseWithValue):
             answer = None
             form = InlineMultiQuestionForm(
                     read_only,
-                    self.dict_for_form())
+                    self.get_dict_for_form())
 
         return form
 

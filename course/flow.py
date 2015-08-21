@@ -1103,11 +1103,10 @@ def view_flow_page(pctx, flow_session_id, ordinal):
                     return redirect("relate-finish_flow_session_view",
                             pctx.course.identifier, flow_session_id)
                 else:
-                    if getattr(fpctx.page, "allow_feedback_form", False):
-                        if show_correctness or show_answer:
-                            form = fpctx.page.make_feedback_form(
-                                page_context, page_data.data,
-                                page_visit.answer, not may_change_answer)
+                    if getattr(fpctx.page, "allow_feedback_form", False) and ( show_correctness or show_answer ):
+                        form = fpctx.page.make_feedback_form(
+                            page_context, page_data.data,
+                            page_visit.answer, not may_change_answer)
                     else:
                         form = fpctx.page.make_form(
                             page_context, page_data.data,
@@ -1187,11 +1186,10 @@ def view_flow_page(pctx, flow_session_id, ordinal):
             else:
                 feedback = None
 
-            if getattr(fpctx.page, "allow_feedback_form", False):
-                if show_correctness or show_answer:
-                    form = fpctx.page.make_feedback_form(
-                        page_context, page_data.data,
-                        answer_data, not may_change_answer)
+            if getattr(fpctx.page, "allow_feedback_form", False) and (show_correctness or show_answer):
+                form = fpctx.page.make_feedback_form(
+                    page_context, page_data.data,
+                    answer_data, not may_change_answer)
             else:
                 form = fpctx.page.make_form(
                     page_context, page_data.data,
