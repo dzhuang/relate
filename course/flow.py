@@ -1040,12 +1040,12 @@ def view_flow_page(pctx, flow_session_id, ordinal):
                 page_visit.is_submitted_answer = pressed_button == "submit"
                 page_visit.save()
 
-                answer_was_graded = page_visit.is_submitted_answer #####
+                answer_was_graded = page_visit.is_submitted_answer
                 may_change_answer = (
                     not answer_was_graded
                     or flow_permission.change_answer
                     in permissions)
-                    
+
             # {{{duplicate code
                 show_correctness = None
                 show_answer = None
@@ -1067,7 +1067,7 @@ def view_flow_page(pctx, flow_session_id, ordinal):
                             or
                             flow_permission.see_answer_after_submission in permissions)
             #}}}
-                
+
                 if fpctx.page.is_answer_gradable():
                     feedback = fpctx.page.grade(
                             page_context, page_data.data, page_visit.answer,
@@ -1108,13 +1108,10 @@ def view_flow_page(pctx, flow_session_id, ordinal):
                             form = fpctx.page.make_feedback_form(
                                 page_context, page_data.data,
                                 page_visit.answer, not may_change_answer)
-                            print "feedback form"
                     else:
                         form = fpctx.page.make_form(
                             page_context, page_data.data,
                             page_visit.answer, not may_change_answer)
-#                        print "default form"
-
 
                     # continue at common flow page generation below
 
@@ -1195,15 +1192,10 @@ def view_flow_page(pctx, flow_session_id, ordinal):
                     form = fpctx.page.make_feedback_form(
                         page_context, page_data.data,
                         answer_data, not may_change_answer)
-                    print "feedback form"
             else:
                 form = fpctx.page.make_form(
                     page_context, page_data.data,
                     answer_data, not may_change_answer)
-#                        print "default form"
-#            form = fpctx.page.make_form(
-#                    page_context, page_data.data,
-#                    answer_data, not may_change_answer)
         else:
             form = None
             feedback = None
@@ -1229,7 +1221,6 @@ def view_flow_page(pctx, flow_session_id, ordinal):
 
         if show_correctness or show_answer:
             shown_feedback = feedback
-
 
     elif fpctx.page.expects_answer() and not answer_was_graded:
         # Don't show answer yet
