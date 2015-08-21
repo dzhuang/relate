@@ -113,26 +113,6 @@ class ChoiceQuestion(PageBaseWithTitle, PageBaseWithValue):
         s = remove_prefix(cls.CORRECT_TAG, s)
         
         s = markup_to_html_plain(page_context, s)
-        
-        print s
-        
-#        s2 = markup_to_html(page_context, s)
-#        
-#        s3 = ''.join(['<td>', s, '</td>'])
-#        
-#        s4 = markup_to_html(page_context, s3)
-#        
-#        print s4[4:-5]
-#        
-#        #print s2
-#
-#        # return itself when s is a plaintext str
-#        s_wrapped = string_concat(
-#                "<p>", 
-#                unicode(s).strip(), 
-#                "</p>")
-#        if s2 <> s_wrapped:
-#            s = s2
 
         # allow HTML in option
         s = mark_safe(s)
@@ -213,6 +193,7 @@ class ChoiceQuestion(PageBaseWithTitle, PageBaseWithValue):
 
     def make_form(self, page_context, page_data,
             answer_data, answer_is_final):
+        
         if answer_data is not None:
             form_data = {"choice": answer_data["choice"]}
             form = self.make_choice_form(page_context, page_data, form_data)
