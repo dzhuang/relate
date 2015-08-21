@@ -471,7 +471,6 @@ class FloatMatcher(TextAnswerMatcher):
             float_or_sympy_evalf(s)
         except:
             tp, e, _ = sys.exc_info()
-            print tp.__name__, str(e)
             raise forms.ValidationError("%(err_type)s: %(err_str)s"
                     % {"err_type": tp.__name__, "err_str": str(e)})
 

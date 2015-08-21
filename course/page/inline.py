@@ -54,7 +54,7 @@ class InlineMultiQuestionForm(StyledInlineForm):
         html_list = dict_for_form["HTML_list"]
         self.answer_instance_list = answer_instance_list = \
                 dict_for_form["answer_instance_list"]
-        
+
         correctness_list = None
         if "correctness_list" in dict_for_form:
             correctness_list = dict_for_form["correctness_list"]
@@ -734,7 +734,7 @@ class InlineMultiQuestion(TextQuestionBase, PageBaseWithValue):
             dict_feedback_form = self.get_dict_for_form()
             answer_dict = answer_data["answer"]
             correctness_list = []
-        
+
             for answer_instance in self.answer_instance_list:
                 if answer_dict[answer_instance.name] is not None:
                     correctness_list.append(answer_instance.get_correctness(
@@ -754,7 +754,6 @@ class InlineMultiQuestion(TextQuestionBase, PageBaseWithValue):
                     self.get_dict_for_form())
 
         return form
-
 
     def make_form(self, page_context, page_data,
             answer_data, answer_is_final):
