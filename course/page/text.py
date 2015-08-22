@@ -145,7 +145,6 @@ class RELATEPageValidator(object):
                         % self.validator_desc.page_type)
 
         except:
-            import sys
             tp, e, _ = sys.exc_info()
 
             raise forms.ValidationError("%(err_type)s: %(err_str)s"
