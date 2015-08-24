@@ -507,7 +507,7 @@ NAME_VALIDATE_RE = re.compile("^[a-zA-Z]+[a-zA-Z0-9_]{0,}$")
 
 
 class InlineMultiQuestion(TextQuestionBase, PageBaseWithValue):
-    """
+    r"""
     An auto-graded page with cloze like questions.
 
     .. attribute:: id
@@ -540,7 +540,7 @@ class InlineMultiQuestion(TextQuestionBase, PageBaseWithValue):
     Here is an example of :class:`InlineMultiQuestion`::
 
         type: InlineMultiQuestion
-        id: excelbasictry3
+        id: inlinemulti
         value: 10
         prompt: |
 
@@ -551,7 +551,7 @@ class InlineMultiQuestion(TextQuestionBase, PageBaseWithValue):
         question: |
 
             Foo and [[blank1]] are often used in code examples, or
-            tutorials. The float weight of $\frac{1}{5}$ is [[blank_2]].
+            tutorials. The float value of $\frac{1}{5}$ is [[blank_2]].
 
             The correct answer for this choice question is [[choice_a]].
             The Upper case of "foo" is [[choice2]]
