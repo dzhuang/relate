@@ -15,7 +15,7 @@
 
   {% if courses_and_descs_and_invalid_flags %}
     {% if courses_and_descs_and_invalid_flags_open %}
-        <h2 class="page-header">Open courses</h2>
+        <h2 class="page-header">{% trans "Open courses" %}</h2>
         <div class="row">
           {% for course, desc, invalid in courses_and_descs_and_invalid_flags_open %}
             <div class="col-md-4">
@@ -32,7 +32,7 @@
         </div>
     {% endif %}
     {% if courses_and_descs_and_invalid_flags_inprogress %}
-        <h2 class="page-header">In-progress courses</h2>
+        <h2 class="page-header">{% trans "In-progress courses" %}</h2>
         <div class="row">
           {% for course, desc, invalid in courses_and_descs_and_invalid_flags_inprogress %}
             <div class="col-md-4">
@@ -49,7 +49,7 @@
         </div>
         {% endif %}
     {% if courses_and_descs_and_invalid_flags_ended %}
-        <h2 class="page-header">Ended courses</h2>
+        <h2 class="page-header">{% trans "Ended courses" %}</h2>
         <div class="row">
           {% for course, desc, invalid in courses_and_descs_and_invalid_flags_ended %}
             <div class="col-md-4">
