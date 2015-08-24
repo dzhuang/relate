@@ -121,6 +121,9 @@ class UserStatus(models.Model):
     status = models.CharField(max_length=50,
             choices=USER_STATUS_CHOICES,
             verbose_name=_('User status'))
+#    student_ID = models.CharField(max_length=30,
+#            null=True, unique=True, db_index=True, blank=True,
+#            verbose_name=_('Student ID'))
     sign_in_key = models.CharField(max_length=50,
             help_text=_("The sign in token sent out in email."),
             null=True, unique=True, db_index=True, blank=True,
@@ -413,6 +416,8 @@ class Participation(models.Model):
 class ParticipationPreapproval(models.Model):
     email = models.EmailField(max_length=254,
             verbose_name=_('Email'))
+#    student_ID = models.CharField(max_length=30,
+#            verbose_name=_('student ID'))
     course = models.ForeignKey(Course,
             verbose_name=_('Course identifier'))
     role = models.CharField(max_length=50,
@@ -425,7 +430,7 @@ class ParticipationPreapproval(models.Model):
             verbose_name=_('Creation time'))
 
     def __unicode__(self):
-        # Translators: somebody's email in some course in Particiaption
+        # Translators: somebody's email in some course in Participation
         # Preapproval
         return _("%(email)s in %(course)s") % {
                 "email": self.email, "course": self.course}
