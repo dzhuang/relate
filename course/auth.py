@@ -294,10 +294,27 @@ class SignUpForm(StyledModelForm):
                         ),
                     'invalid')
                 ])
+    
+#    student_ID = forms.CharField(required=True, max_length=30,
+#            label=_("student ID"),
+#            validators=[
+#                validators.RegexValidator('^[\\w.@+-]+$',
+#                    string_concat(
+#                        _('Enter a valid student_ID. '), 
+#                        _('This value may contain only letters, '
+#                          'numbers and @/./+/-/_ characters.')
+#                        ),
+#                    'invalid')
+#                ])
 
     class Meta:
         model = User
         fields = ("email",)
+        
+    def clean_email(self):
+        if self.cleaned_data["email"] == "":
+            from django.core.exceptions import ValidationError
+            raise ValidationError(_("This field is required."))
 
     def __init__(self, *args, **kwargs):
         super(SignUpForm, self).__init__(*args, **kwargs)
