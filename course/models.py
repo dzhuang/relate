@@ -50,6 +50,7 @@ from course.constants import (  # noqa
 
 from jsonfield import JSONField
 from yamlfield.fields import YAMLField
+from django.core import validators
 
 
 # {{{ facility
@@ -121,9 +122,6 @@ class UserStatus(models.Model):
     status = models.CharField(max_length=50,
             choices=USER_STATUS_CHOICES,
             verbose_name=_('User status'))
-#    student_ID = models.CharField(max_length=30,
-#            null=True, unique=True, db_index=True, blank=True,
-#            verbose_name=_('Student ID'))
     sign_in_key = models.CharField(max_length=50,
             help_text=_("The sign in token sent out in email."),
             null=True, unique=True, db_index=True, blank=True,
@@ -144,6 +142,21 @@ class UserStatus(models.Model):
             default="default",
             # Translators: the text editor used by participants
             verbose_name=_("Editor mode"))
+    
+#    student_ID = models.CharField(max_length=40, unique=True, 
+#            null=True, blank=True, db_index=True,
+#            verbose_name=_("student ID"),
+#            validators=[
+#                validators.RegexValidator('^[\\w.@+-]+$',
+#                    string_concat(
+#                        _('Enter a valid student ID. '), 
+#                        _('This value may contain only letters, '
+#                          'numbers and @/./+/-/_ characters.')
+#                        ),
+#                    'invalid')
+#                ],
+#            help_text=_("Filling so that your can enroll some "
+#                        "courses automatically."))
 
     class Meta:
         verbose_name = _("User status")
@@ -416,8 +429,6 @@ class Participation(models.Model):
 class ParticipationPreapproval(models.Model):
     email = models.EmailField(max_length=254,
             verbose_name=_('Email'))
-#    student_ID = models.CharField(max_length=30,
-#            verbose_name=_('student ID'))
     course = models.ForeignKey(Course,
             verbose_name=_('Course identifier'))
     role = models.CharField(max_length=50,
