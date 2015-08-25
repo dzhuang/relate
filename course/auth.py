@@ -644,8 +644,7 @@ class UserForm(StyledModelForm):
 class UserStatusForm(StyledModelForm):
     class Meta:
         model = UserStatus
-        #fields = ("student_ID", "editor_mode",)
-        fields = ("editor_mode",)
+        fields = ("student_ID", "editor_mode",)
 
     def __init__(self, *args, **kwargs):
         super(UserStatusForm, self).__init__(*args, **kwargs)

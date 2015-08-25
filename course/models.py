@@ -143,20 +143,20 @@ class UserStatus(models.Model):
             # Translators: the text editor used by participants
             verbose_name=_("Editor mode"))
     
-#    student_ID = models.CharField(max_length=40, unique=True, 
-#            null=True, blank=True, db_index=True,
-#            verbose_name=_("student ID"),
-#            validators=[
-#                validators.RegexValidator('^[\\w.@+-]+$',
-#                    string_concat(
-#                        _('Enter a valid student ID. '), 
-#                        _('This value may contain only letters, '
-#                          'numbers and @/./+/-/_ characters.')
-#                        ),
-#                    'invalid')
-#                ],
-#            help_text=_("Filling so that your can enroll some "
-#                        "courses automatically."))
+    student_ID = models.CharField(max_length=40, unique=True, 
+            null=True, blank=True, db_index=True,
+            verbose_name=_("student ID"),
+            validators=[
+                validators.RegexValidator('^[\\w.@+-]+$',
+                    string_concat(
+                        _('Enter a valid student ID. '), 
+                        _('This value may contain only letters, '
+                          'numbers and @/./+/-/_ characters.')
+                        ),
+                    'invalid')
+                ],
+            help_text=_("Filling so that your can enroll some "
+                        "courses automatically."))
 
     class Meta:
         verbose_name = _("User status")
