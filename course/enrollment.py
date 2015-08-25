@@ -117,6 +117,15 @@ def enroll(request, course_identifier):
         except ParticipationPreapproval.DoesNotExist:
             pass
 
+
+    if preapproval is None:
+        if ustatus.student_ID:
+            try:
+                preapproval = ParticipationPreapproval.objects.get(
+                        course=course, email__iexact=ustatus.student_ID)
+            except ParticipationPreapproval.DoesNotExist:
+                pass
+
     role = participation_role.student
 
     if preapproval is not None:
@@ -130,7 +139,8 @@ def enroll(request, course_identifier):
             "user": user,
             "course": course,
             "admin_uri": request.build_absolute_uri(
-                    reverse("admin:course_participation_changelist"))
+                    reverse("admin:course_participation_changelist")
+                    + "?status__exact=requested")
             })
         from django.core.mail import send_mail
         send_mail(
@@ -219,8 +229,9 @@ class BulkPreapprovalsForm(StyledForm):
             initial=participation_role.student,
             label=_("Role"))
     emails = forms.CharField(required=True, widget=forms.Textarea,
-            help_text=_("Enter fully qualified email addresses, one per line."),
-            label=_("Emails"))
+            help_text=_("Enter fully qualified email addresses or "
+                        "student ID, one per line."),
+            label=_("Emails or Student ID"))
 
     def __init__(self, *args, **kwargs):
         super(BulkPreapprovalsForm, self).__init__(*args, **kwargs)

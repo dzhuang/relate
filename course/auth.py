@@ -295,8 +295,14 @@ class SignUpForm(StyledModelForm):
                     'invalid')
                 ])
 
+    class Meta:
+        model = User
+        fields = ("email",)
+
     def __init__(self, *args, **kwargs):
         super(SignUpForm, self).__init__(*args, **kwargs)
+
+        self.fields["email"].required = True
 
         self.helper.add_input(
                 Submit("submit", _("Send email"),
@@ -440,8 +446,9 @@ def reset_password(request):
         form = ResetPasswordForm()
 
     return render(request, "generic-form.html", {
-        "form_description": _("Password reset on %(site_name)s")
-                % {"site_name": _("RELATE")},
+        "form_description":
+            _("Password reset on %(site_name)s")
+            % {"site_name": _("RELATE")},
         "form": form
         })
 
@@ -464,7 +471,7 @@ class ResetPasswordStage2Form(StyledForm):
         password = cleaned_data.get("password")
         password_repeat = cleaned_data.get("password_repeat")
         if password and password != password_repeat:
-            self.add_error("password_repeat", 
+            self.add_error("password_repeat",
                     _("The two password fields didn't match."))
 
 
@@ -513,8 +520,9 @@ def reset_password_stage2(request, user_id, sign_in_key):
         form = ResetPasswordStage2Form()
 
     return render(request, "generic-form.html", {
-        "form_description": _("Password reset on %(site_name)s")
-                % {"site_name": _("RELATE")},
+        "form_description":
+            _("Password reset on %(site_name)s")
+            % {"site_name": _("RELATE")},
         "form": form
         })
 
@@ -644,13 +652,26 @@ class UserForm(StyledModelForm):
 class UserStatusForm(StyledModelForm):
     class Meta:
         model = UserStatus
-        fields = ("student_ID", "editor_mode",)
+        fields = ("editor_mode",)
 
     def __init__(self, *args, **kwargs):
         super(UserStatusForm, self).__init__(*args, **kwargs)
 
         self.helper.add_input(
                 Submit("submit_user_status", _("Update"),
+                    css_class="col-lg-offset-2"))
+
+
+class UserStudentIDForm(StyledModelForm):
+    class Meta:
+        model = UserStatus
+        fields = ("student_ID",)
+
+    def __init__(self, *args, **kwargs):
+        super(UserStudentIDForm, self).__init__(*args, **kwargs)
+
+        self.helper.add_input(
+                Submit("submit_student_ID", _("Update"),
                     css_class="col-lg-offset-2"))
 
 
@@ -662,6 +683,7 @@ def user_profile(request):
     ustatus = get_user_status(request.user)
 
     user_form = None
+    user_student_ID_form = None
     user_status_form = None
 
     if request.method == "POST":
@@ -670,6 +692,16 @@ def user_profile(request):
             if user_form.is_valid():
                 user_form.save()
 
+                messages.add_message(request, messages.INFO,
+                        _("Profile data saved."))
+                if request.GET.get("first_login"):
+                    return redirect("relate-home")
+
+        if "submit_student_ID" in request.POST:
+            user_student_ID_form = UserStatusForm(
+                    request.POST, instance=ustatus)
+            if user_student_ID_form.is_valid():
+                user_student_ID_form.save()
                 messages.add_message(request, messages.INFO,
                         _("Profile data saved."))
                 if request.GET.get("first_login"):
@@ -687,11 +719,14 @@ def user_profile(request):
 
     if user_form is None:
         user_form = UserForm(instance=request.user)
+    if user_student_ID_form is None:
+        user_student_ID_form = UserStudentIDForm(instance=ustatus)
     if user_status_form is None:
         user_status_form = UserStatusForm(instance=ustatus)
 
     return render(request, "user-profile-form.html", {
         "user_form": user_form,
+        "user_student_ID_form": user_student_ID_form,
         "user_status_form": user_status_form,
         })
 
