@@ -295,17 +295,19 @@ class SignUpForm(StyledModelForm):
                     'invalid')
                 ])
     
-#    student_ID = forms.CharField(required=True, max_length=30,
-#            label=_("student ID"),
-#            validators=[
-#                validators.RegexValidator('^[\\w.@+-]+$',
-#                    string_concat(
-#                        _('Enter a valid student_ID. '), 
-#                        _('This value may contain only letters, '
-#                          'numbers and @/./+/-/_ characters.')
-#                        ),
-#                    'invalid')
-#                ])
+    student_ID = forms.CharField(required=False, max_length=30,
+            label=_("student ID"),
+            help_text=_("Filling so that your can enroll some "
+                        "courses automatically."),
+            validators=[
+                validators.RegexValidator('^[\\w.@+-]+$',
+                    string_concat(
+                        _('Enter a valid student_ID. '), 
+                        _('This value may contain only letters, '
+                          'numbers and @/./+/-/_ characters.')
+                        ),
+                    'invalid')
+                ])
 
     class Meta:
         model = User
@@ -315,6 +317,8 @@ class SignUpForm(StyledModelForm):
         if self.cleaned_data["email"] == "":
             from django.core.exceptions import ValidationError
             raise ValidationError(_("This field is required."))
+        else:
+            return self.cleaned_data
 
     def __init__(self, *args, **kwargs):
         super(SignUpForm, self).__init__(*args, **kwargs)
