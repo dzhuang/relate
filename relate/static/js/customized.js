@@ -1,5 +1,26 @@
 // {{{ pdfjs loader
 
+
+// decide indentation of ul or ol 
+// references: http://stackoverflow.com/a/7640666/3437454
+
+$(function () {
+    
+    
+    if (matchMedia('only screen and (max-width: 767px)').matches){
+
+    $("[id$=_pdfviewer_div]").each(function(){
+
+        $(this).parent('li').parent('ul').css('padding-left',0)
+        $(this).parent('li').parent('ul').parent('li').parent('ul').css('padding-left',0)
+        
+        $(this).parent('li').parent('ol').css('padding-left',0)
+        $(this).parent('li').parent('ol').parent('li').parent('ol').css('padding-left',0)
+    });
+    }
+});
+
+
 $(document).ready(generate_download_pdf_view());
 
 function generate_download_pdf_view() {
@@ -63,9 +84,10 @@ function embed_viewer(item) {
         var display_DIV_ID = item.id + "_pdfviewer_div";
 
         //alert(href);
-        $("#" + display_DIV_ID).css("height", "450").html(
-            "<iframe src = '/static/pdf.js/web/viewer.html?file=" + viewpath + "' width='100%' height='100%' allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe>"
+        $("#" + display_DIV_ID).html(
+            "<iframe src = '/static/pdf.js/web/viewer.html?file=" + viewpath + "' width='100%' height='450' allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe>"
         );
+        //$("#" + display_DIV_ID).parent('li').parent('ul').css('padding-left',0)
         $('html, body').animate({
             scrollTop: $(item).offset().top
         }, 1000);
@@ -97,6 +119,15 @@ $(function () {
 });
 $(".ui-state-disabled").unbind("click");
 
+
+
+//@media only screen and (max-width : 767px) {
+//    
+//    non_mobile {
+//        display: none !important;
+//    }
+//
+//}
 
 
 // }}}
