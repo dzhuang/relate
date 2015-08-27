@@ -1,0 +1,37 @@
+html {
+    padding: 0px;
+    margin: 0px;
+}
+
+body {
+    padding: 0px;
+    margin: 0px;
+    font-family: "Helvetica Neue", "Luxi Sans", "DejaVu Sans", Tahoma, "Hiragino Sans GB", "Microsoft Yahei", sans-serif;
+}
+
+ul[id^="auto"],li[id^="auto"]{
+	<!-- visibility: hidden; -->
+	display: none;	
+}
+
+li[id^="encrypt"]{
+	display: none;	
+}
+
+{
+	<!-- visibility: hidden; -->
+	display: none;	
+}
+
+li.autonumber, li.autonumber+ul, li.literature{
+	display: none;	
+}
+
+
+p.linenotices{
+	<!--display: none;-->
+	font-style:italic;
+	font-size:13px;
+	text-indent: 2em;
+	line-height: 0;
+}

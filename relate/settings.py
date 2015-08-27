@@ -95,7 +95,7 @@ BOWER_INSTALLED_APPS = (
     "datatables",
     "datatables-fixedcolumns",
     "jstree",
-    "https://github.com/mozilla/pdf.js.git",
+    "pdf.js=https://github.com/mozilla/pdf.js/releases/download/v1.1.215/pdfjs-1.1.215-dist.zip",
     )
 
 CODEMIRROR_PATH = "codemirror"

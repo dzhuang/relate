@@ -20,6 +20,7 @@
     <link rel="stylesheet" href="{% static "fontawesome/css/font-awesome.css" %}">
     <link rel="stylesheet" href="{% static "jstree/dist/themes/default/style.min.css" %}" />
     <link rel="stylesheet" href="/static/css/style.css" >
+    <link rel="stylesheet" href="/static/css/customized.css" >
 
     {# Don't be tempted to move all this JS stuff down to the end. #}
     {# The datepicker generates inline JS that relies on this being loaded. #}
@@ -43,14 +44,6 @@
     <script type="text/javascript">
       videojs.options.flash.swf = "{% static "videojs/dist/video-js/video-js.swf" %}"
     </script>
-    <script>
-        $(function() {$( ".accordion" ).accordion({
-            active: false,
-            collapsible: true,
-        });
-                     });
-        $(".ui-state-disabled").unbind("click");
-     </script>
   </head>
 
   <body>
@@ -137,6 +130,7 @@
     <!-- JavaScript
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
+    <script src="{% static "js/customized.js" %}"></script>
     <script type="text/javascript"
       src="{% static "MathJax/MathJax.js?config=TeX-AMS-MML_HTMLorMML" %}">
     </script>
