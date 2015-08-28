@@ -1,24 +1,30 @@
 // {{{ pdfjs loader
 
 
-// decide indentation of ul or ol 
+// Decide indentation of ul or ol
 // references: http://stackoverflow.com/a/7640666/3437454
 
 $(function () {
-    
-    
-    if (matchMedia('only screen and (max-width: 767px)').matches){
-
-    $("[id$=_pdfviewer_div]").each(function(){
-
-        $(this).parent('li').parent('ul').css('padding-left',0)
-        $(this).parent('li').parent('ul').parent('li').parent('ul').css('padding-left',0)
-        
-        $(this).parent('li').parent('ol').css('padding-left',0)
-        $(this).parent('li').parent('ol').parent('li').parent('ol').css('padding-left',0)
-    });
+    if (matchMedia('only screen and (max-width: 767px)').matches) {
+        $('.container').has('form').children('ul,ol').each(function () {
+            $(this).smallscreen_pdf_indent();
+        });
     }
 });
+
+// If a li contains id with pdfviewer_div, then all its sibling will have no 
+// indentation.
+$.fn.smallscreen_pdf_indent = function () {
+    var $this = $(this);
+    if ($this.find("[id$='pdfviewer_div']").length > 0) {
+        $this.css('padding-left', 0);
+        $this.children('ul,ol,li').each(function () {
+            console.log(this);
+            $(this).smallscreen_pdf_indent();
+        });
+    }
+}
+
 
 
 $(document).ready(generate_download_pdf_view());
@@ -29,9 +35,9 @@ function generate_download_pdf_view() {
         var element_i = all_li[i]
         var url_i = $(element_i).attr("href");
         var file_id = get_file_name(url_i);
-//        if ($(this).parent().is("li")) {
-//            $(this).parent().parent().addClass("pdf_list_block")
-//        }
+        //        if ($(this).parent().is("li")) {
+        //            $(this).parent().parent().addClass("pdf_list_block")
+        //        }
         //console.log(file_id);
         if ($(file_id).length == 0) {
             $('<a href="#" onclick="embed_viewer(this)" id="' + file_id + '">在线查看</a> <div id="' + file_id + '_pdfviewer_div"></div>').insertAfter($(element_i));
@@ -45,11 +51,11 @@ function generate_download_pdf_view() {
 
 // http://stackoverflow.com/a/2502890/3437454
 
-$.fn.splitUp=function(splitBy,wrapper) {
-    $all= $(this).find('>*');
-    var fragment=Math.ceil($all.length/splitBy);  
-    for(i=0; i< fragment; i++) 
-        $all.slice(splitBy*i,splitBy*(i+1)).wrapAll(wrapper);
+$.fn.splitUp = function (splitBy, wrapper) {
+    $all = $(this).find('>*');
+    var fragment = Math.ceil($all.length / splitBy);
+    for (i = 0; i < fragment; i++)
+        $all.slice(splitBy * i, splitBy * (i + 1)).wrapAll(wrapper);
     return $(this);
 }
 
@@ -60,9 +66,6 @@ $.fn.splitUp=function(splitBy,wrapper) {
 //
 //$('div#slides').splitUp(3,'&lt;div/&gt;')
 
-function move_view_div(){
-    
-}
 
 function get_file_name(url) {
     var filename = url.substring(url.lastIndexOf('/') + 1).replace(/\.[^/.]+$/, "");
@@ -83,10 +86,17 @@ function embed_viewer(item) {
         //var filename = viewpath.substring(viewpath.lastIndexOf('/')+1);
         var display_DIV_ID = item.id + "_pdfviewer_div";
 
-        //alert(href);
-        $("#" + display_DIV_ID).html(
-            "<iframe src = '/static/pdf.js/web/viewer.html?file=" + viewpath + "' width='100%' height='450' allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe>"
-        );
+        if (matchMedia('only screen and (max-width: 767px)').matches) {
+            $("#" + display_DIV_ID).html(
+                "<iframe src = '/static/pdf.js/web/viewer.html?file=" + viewpath + "' width='100%' height='450' allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe>"
+            );
+        }
+        else {
+            $("#" + display_DIV_ID).html(
+                "<iframe src = '/static/pdf.js/web/viewer.html?file=" + viewpath + "' width='800' height='450' allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe>"
+            );
+        }
+
         //$("#" + display_DIV_ID).parent('li').parent('ul').css('padding-left',0)
         $('html, body').animate({
             scrollTop: $(item).offset().top
@@ -108,7 +118,7 @@ function close_viewer(item) {
 
 // }}}
 
-// {{{ enable 
+// {{{ enable accordion
 
 
 $(function () {
@@ -119,15 +129,6 @@ $(function () {
 });
 $(".ui-state-disabled").unbind("click");
 
-
-
-//@media only screen and (max-width : 767px) {
-//    
-//    non_mobile {
-//        display: none !important;
-//    }
-//
-//}
 
 
 // }}}
