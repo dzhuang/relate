@@ -205,7 +205,7 @@ msgstr "用户名"
 
 #: .\course\auth.py:292 .\course\models.py:153
 msgid "This value may contain only letters, numbers and @/./+/-/_ characters."
-msgstr "Identifier只能包含英文字母, 数字, 和中划线（即减号\"-\"). "
+msgstr ""
 
 #: .\course\auth.py:308 .\course\auth.py:393
 msgid "Send email"
