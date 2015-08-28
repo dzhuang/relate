@@ -1,7 +1,7 @@
 // {{{ pdfjs loader
 
 
-// Decide indentation of ul or ol
+// Decide indentation of ul or ol on mobile phone
 // references: http://stackoverflow.com/a/7640666/3437454
 
 $(function () {
