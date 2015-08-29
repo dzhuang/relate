@@ -11,6 +11,11 @@
   {{flow_desc.description_html|safe}}
   {% endif %}
 
+  {% if flow_grade_rule %}
+    <h3>{% trans "Timing and Grading" %} </h3>
+  {{flow_grade_rule|safe}}
+  {% endif %}
+
   <form method="POST">
     {% csrf_token %}
 

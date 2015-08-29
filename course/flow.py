@@ -750,6 +750,19 @@ def recalculate_session_grade(repo, course, session):
 
 # {{{ view: start flow
 
+def get_grade_rule_view(rule_tuple):
+    displayed = ""
+    for rule in rule_tuple:
+        displayed += "<li>"
+        displayed += _("If completed before %s， ") % format_datetime_local(as_local_time(rule["complete_before"]))
+        displayed += _("you'll get %s of your grade.") % rule["credit_percent"]
+        displayed += "<li>"
+    
+    return "<ul>" + displayed + "</ul>"
+
+    
+    
+
 @transaction.atomic
 @course_view
 def view_start_flow(pctx, flow_id):
@@ -835,8 +848,11 @@ def view_start_flow(pctx, flow_id):
                     None,
                     grade_aggregation_strategy.max_grade,
                     grade_aggregation_strategy.use_earliest])
+        
+        flow_grade_rule = get_grade_rule_view(session_start_rule.date_grading_tuple)
 
         return render_course_page(pctx, "course/flow-start.html", {
+            "flow_grade_rule": flow_grade_rule,
             "flow_desc": fctx.flow_desc,
             "flow_identifier": flow_id,
 

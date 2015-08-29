@@ -59,6 +59,7 @@ class FlowSessionStartRule(FlowSessionRuleBase):
             "tag_session",
             "may_start_new_session",
             "may_list_existing_sessions",
+            "date_grading_tuple",
             ]
 
 
@@ -143,6 +144,29 @@ def get_session_start_rule(course, participation, role, flow_id, flow_desc,
                 dict_to_struct(dict(
                     may_start_new_session=True,
                     may_list_existing_sessions=False))])
+    
+    # {{{ this is used to generate strings in Start
+    grade_rules = get_flow_rules(flow_desc, flow_rule_kind.grading,
+        participation, flow_id, now_datetime,
+        default_rules_desc=[
+            dict_to_struct(dict(
+                grade_identifier=None,
+                ))])
+
+    date_grading_tuple = tuple()
+
+    for rule in grade_rules:
+        if hasattr(rule, "if_completed_before"):
+            ds = parse_date_spec(course, rule.if_completed_before)            
+        due = parse_date_spec(course, getattr(rule, "due", None))
+        credit_percent=getattr(rule, "credit_percent", 100)
+        date_grading_tuple += (
+            {"complete_before": ds, 
+             "due": due,
+             "credit_percent":credit_percent
+            },)
+
+    # }}}
 
     for rule in rules:
         if not _eval_generic_conditions(rule, course, role, now_datetime):
@@ -197,11 +221,13 @@ def get_session_start_rule(course, participation, role, flow_id, flow_desc,
                     rule, "may_start_new_session", True),
                 may_list_existing_sessions=getattr(
                     rule, "may_list_existing_sessions", True),
+                date_grading_tuple=date_grading_tuple,
                 )
 
     return FlowSessionStartRule(
             may_list_existing_sessions=False,
-            may_start_new_session=False)
+            may_start_new_session=False,
+            date_grading_tuple=date_grading_tuple)
 
 
 def get_session_access_rule(session, role, flow_desc, now_datetime,
