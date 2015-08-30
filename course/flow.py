@@ -42,7 +42,8 @@ from django import http
 
 from relate.utils import (
         StyledForm, local_now, as_local_time,
-        format_datetime_local)
+        format_datetime_local, format_date_local,
+        format_time_local)
 from crispy_forms.layout import Submit
 
 from course.constants import (
@@ -750,15 +751,62 @@ def recalculate_session_grade(repo, course, session):
 
 # {{{ view: start flow
 
-def get_grade_rule_view(rule_tuple):
-    displayed = ""
-    for rule in rule_tuple:
-        displayed += "<li>"
-        displayed += _("If completed before %s， ") % format_datetime_local(as_local_time(rule["complete_before"]))
-        displayed += _("you'll get %s of your grade.") % rule["credit_percent"]
-        displayed += "<li>"
+def get_grade_rule_view(rule_tuple, now_datetime):
+    from django.conf import settings
     
-    return "<ul>" + displayed + "</ul>"
+    flow_grade_rule = ""
+    
+    
+    for rule in rule_tuple:
+    
+        if as_local_time(rule["complete_before"]).year == \
+                as_local_time(now_datetime).year:
+            datetime_str = format_datetime_local(
+                    as_local_time(rule["complete_before"]))
+            
+            # for zh_CN or zh_Hans, another format
+            if settings.LANGUAGE_CODE.lower() in ['zh_cn', 'zh_hans']:
+                date_str = format_date_local(
+                    as_local_time(
+                        rule["complete_before"]))[5:]
+                time_str = format_time_local(
+                    as_local_time(
+                        rule["complete_before"]), "HH:mm")
+                datetime_str = date_str + time_str
+
+        else:
+            datetime_str = format_datetime_local(
+                    as_local_time(rule["complete_before"]))
+
+            # for zh_CN or zh_Hans, another format
+            if settings.LANGUAGE_CODE.lower() in ['zh_cn', 'zh_hans']:
+                date_str = format_date_local(
+                    as_local_time(
+                        rule["complete_before"]))
+                time_str = format_time_local(
+                    as_local_time(
+                        rule["complete_before"]), "HH:mm")
+                datetime_str = date_str + time_str
+
+        flow_grade_rule += string_concat(
+                "<li>",
+                _("If completed before %(time)s, you'll get "
+                "%(credit_percent)s%% of your grade."), 
+                "</li>") % {
+                        "time": datetime_str,
+                        "credit_percent": rule["credit_percent"]}
+
+    if flow_grade_rule != "":
+        flow_grade_rule = (
+            "<ul>" 
+            + flow_grade_rule
+            + string_concat("<li style='color:red'>",
+                            _("No grade will be granted for " 
+                            "submision later than %s."),
+                            "</li>") % datetime_str            
+            + "</ul>")
+        
+    return flow_grade_rule
 
     
     
@@ -775,6 +823,8 @@ def view_start_flow(pctx, flow_id):
     session_start_rule = get_session_start_rule(pctx.course, pctx.participation,
             pctx.role, flow_id, fctx.flow_desc, now_datetime,
             remote_address=pctx.remote_address)
+    
+    print "==============", session_start_rule.session_available_count
 
     if request.method == "POST":
         if "start" in request.POST:
@@ -849,10 +899,20 @@ def view_start_flow(pctx, flow_id):
                     grade_aggregation_strategy.max_grade,
                     grade_aggregation_strategy.use_earliest])
         
-        flow_grade_rule = get_grade_rule_view(session_start_rule.date_grading_tuple)
+        flow_grade_rule = get_grade_rule_view(session_start_rule.date_grading_tuple, now_datetime)
+        
+        if session_start_rule.session_available_count <= 2:
+            session_available_count_html = (
+                    "<b style='color:red'> %s </b>" %
+                    session_start_rule.session_available_count)
+        else:
+            session_available_count_html = (
+                    "<b style='color:green'> %s </b>" %
+                    session_start_rule.session_available_count)
 
         return render_course_page(pctx, "course/flow-start.html", {
             "flow_grade_rule": flow_grade_rule,
+            "session_available_count_html": session_available_count_html,
             "flow_desc": fctx.flow_desc,
             "flow_identifier": flow_id,
 

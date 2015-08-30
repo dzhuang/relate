@@ -60,6 +60,7 @@ class FlowSessionStartRule(FlowSessionRuleBase):
             "may_start_new_session",
             "may_list_existing_sessions",
             "date_grading_tuple",
+            "session_available_count",
             ]
 
 
@@ -154,17 +155,19 @@ def get_session_start_rule(course, participation, role, flow_id, flow_desc,
                 ))])
 
     date_grading_tuple = tuple()
+    
+    session_available_count = 0
 
     for rule in grade_rules:
         if hasattr(rule, "if_completed_before"):
-            ds = parse_date_spec(course, rule.if_completed_before)            
-        due = parse_date_spec(course, getattr(rule, "due", None))
-        credit_percent=getattr(rule, "credit_percent", 100)
-        date_grading_tuple += (
-            {"complete_before": ds, 
-             "due": due,
-             "credit_percent":credit_percent
-            },)
+            ds = parse_date_spec(course, rule.if_completed_before)
+            due = parse_date_spec(course, getattr(rule, "due", None))
+            credit_percent=getattr(rule, "credit_percent", 100)
+            date_grading_tuple += (
+                {"complete_before": ds, 
+                 "due": due,
+                 "credit_percent":credit_percent
+                },)
 
     # }}}
 
@@ -201,6 +204,8 @@ def get_session_start_rule(course, participation, role, flow_id, flow_desc,
                     participation=participation,
                     course=course,
                     flow_id=flow_id).count()
+            
+            session_available_count = rule.if_has_fewer_sessions_than - session_count
 
             if session_count >= rule.if_has_fewer_sessions_than:
                 continue
@@ -222,6 +227,7 @@ def get_session_start_rule(course, participation, role, flow_id, flow_desc,
                 may_list_existing_sessions=getattr(
                     rule, "may_list_existing_sessions", True),
                 date_grading_tuple=date_grading_tuple,
+                session_available_count=session_available_count,
                 )
 
     return FlowSessionStartRule(

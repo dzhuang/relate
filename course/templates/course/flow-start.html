@@ -16,6 +16,7 @@
   {{flow_grade_rule|safe}}
   {% endif %}
 
+
   <form method="POST">
     {% csrf_token %}
 
@@ -34,11 +35,20 @@
           </tr>
           {% for flow_session, session_properties in past_sessions_and_properties %}
             <tr>
-              <td>{{ flow_session.start_time }}</td>
+              <td>{% if flow_session.start_time.year == now.year %}
+                    {{ flow_session.start_time|date:"SHORT_DATETIME_FORMAT" }}
+                  {% else %}
+                    {{ flow_session.start_time }}
+                  {% endif %}
+              </td>
               <td>
                 {% include "course/flow-session-state.html" %}
                 {% if not flow_session.in_progress %}
-                  ({{ flow_session.completion_time }})
+                  {% if flow_session.completion_time.year == now.year %}
+                    ({{ flow_session.completion_time|date:"SHORT_DATETIME_FORMAT" }})
+                  {% else %}
+                    ({{ flow_session.completion_time }})
+                  {% endif %}
                 {% endif %}
               </td>
               <td>
@@ -50,7 +60,11 @@
               </td>
               <td>
                 {% if session_properties.due %}
-                  {{ session_properties.due }}
+                  {% if session_properties.due.year == now.year %}
+                    {{ session_properties.due|date:"SHORT_DATETIME_FORMAT" }}
+                  {% else %}
+                    {{ session_properties.due }}
+                  {% endif %}
                 {% endif %}
               </td>
               <td>
@@ -93,6 +107,9 @@
     {% if may_start %}
       {% if new_session_grading_rule.grade_identifier %}
         <div class="alert alert-info">
+          {% blocktrans trimmed with session_available_count=session_available_count_html|safe %} 
+            There are {{session_available_count}} chances for you to start a new session. 
+          {% endblocktrans %}
           {% trans "If you start a new session, the following rules will apply:" %}
           <ul>
             {% if new_session_grading_rule.description %}
@@ -112,7 +129,7 @@
             <li>
                 {% blocktrans trimmed with credit_percent=new_session_grading_rule.credit_percent|floatformat%}
                     You will receive <b>{{ credit_percent }}% credit</b>
-                    for your work.
+                    for your work, if submitted before required time.
                 {% endblocktrans %}
             </li>
             {% if past_sessions_and_properties %}

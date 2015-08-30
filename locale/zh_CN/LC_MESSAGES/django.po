@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-08-28 23:43+0800\n"
+"POT-Creation-Date: 2015-08-31 01:54+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -77,7 +77,7 @@ msgstr "参与者"
 msgid "Course"
 msgstr "课程"
 
-#: .\course\admin.py:489 .\course\flow.py:1439 .\course\models.py:462
+#: .\course\admin.py:489 .\course\flow.py:1515 .\course\models.py:462
 #: .\course\models.py:489 .\course\models.py:849 .\course\models.py:915
 #: .\course\models.py:1024
 #: .\course\templates\course\gradebook-opp-list.html:26
@@ -193,7 +193,7 @@ msgid "Stop impersonating user"
 msgstr "停止模拟用户"
 
 #: .\course\auth.py:273 .\course\templates\course\course-page.html:38
-#: .\course\templates\course\flow-start.html:186
+#: .\course\templates\course\flow-start.html:208
 #: .\course\templates\course\login.html:7 .\relate\templates\403.html:14
 #: .\relate\templates\base.html:105
 msgid "Sign in"
@@ -748,149 +748,160 @@ msgstr "新加入了%(n_created)d个预批准, 有%(n_exist)d个是之前已经�
 msgid "Create Participation Preapprovals"
 msgstr "用户加入课程预批准"
 
-#: .\course\flow.py:80
+#: .\course\flow.py:81
 msgid "cannot grade ungraded answer"
 msgstr "无法为未评分的回答进行评分"
 
-#: .\course\flow.py:463 .\course\flow.py:1370
+#: .\course\flow.py:464 .\course\flow.py:1446
 msgid "Can't end a session that's already ended"
 msgstr "无法结束已经结束的session"
 
-#: .\course\flow.py:497
+#: .\course\flow.py:498
 msgid "Can't expire a session that's not in progress"
 msgstr "无法将已经过期的session设为过期"
 
-#: .\course\flow.py:499
+#: .\course\flow.py:500
 msgid "Can't expire an anonymous flow session"
 msgstr "无法将匿名的session设为过期"
 
-#: .\course\flow.py:537
+#: .\course\flow.py:538
 #, python-format
 msgid "invalid expiration mode '%(mode)s' on flow session ID %(session_id)d"
 msgstr "flow session ID %(session_id)d的过期模式\"%(mode)s\"为无效"
 
 #. Translators: grade flow: calculating grade.
-#: .\course\flow.py:568
+#: .\course\flow.py:569
 #, python-format
 msgid "Counted at %(percent).1f%% of %(point).1f points"
 msgstr "计分为满分%(point).1f中的%(percent).1f%%"
 
-#: .\course\flow.py:634
+#: .\course\flow.py:635
 msgid "Can't reopen a session that's already in progress"
 msgstr "无法重新打开为正在进行中的session"
 
-#: .\course\flow.py:637
+#: .\course\flow.py:638
 msgid "Can't reopen anonymous sessions"
 msgstr "无法重新打开匿名的session"
 
-#: .\course\flow.py:645
+#: .\course\flow.py:646
 #, python-format
 msgid ""
 "Session reopened at %(now)s, previous completion time was '%(complete_time)"
 "s'."
 msgstr "在%(now)s重新打开Session, 上一次结束的时间为'%(complete_time)s. "
 
-#: .\course\flow.py:715
+#: .\course\flow.py:716
 #, python-format
 msgid "Session regraded at %(time)s."
 msgstr "Session在%(time)s已重新评分. "
 
-#: .\course\flow.py:733
+#: .\course\flow.py:734
 msgid "cannot recalculate grade on in-progress session"
 msgstr "无法为正在进行中的session重新计算得分"
 
-#: .\course\flow.py:738
+#: .\course\flow.py:739
 #, python-format
 msgid "Session grade recomputed at %(time)s."
 msgstr "本session的评分在%(time)s已重新计算. "
 
-#: .\course\flow.py:770
+#: .\course\flow.py:793
+#, python-format
+msgid ""
+"If completed before %(time)s, you'll get %(credit_percent)s%% of your grade."
+msgstr "在%(time)s前提交，将得到应得分的%(credit_percent)s%%."
+
+#: .\course\flow.py:804
+#, python-format
+msgid "No grade will be granted for submision later than %s."
+msgstr "迟于%s提交的作业将没有成绩."
+
+#: .\course\flow.py:833
 msgid "new session not allowed"
 msgstr "不允许开始新的session"
 
-#: .\course\flow.py:782
+#: .\course\flow.py:845
 msgid "unrecognized POST action"
 msgstr "无法识别的POST操作"
 
-#: .\course\flow.py:876
+#: .\course\flow.py:952
 msgid "may not view other people's sessions"
 msgstr "不允许查看其他人的session"
 
-#: .\course\flow.py:932
+#: .\course\flow.py:1008
 msgid "Save answer"
 msgstr "保存回答"
 
-#: .\course\flow.py:939
+#: .\course\flow.py:1015
 msgid "Submit answer for grading"
 msgstr "提交用于评分的回答"
 
-#: .\course\flow.py:943
+#: .\course\flow.py:1019
 msgid "Submit final answer"
 msgstr "提交最终回答"
 
-#: .\course\flow.py:952
+#: .\course\flow.py:1028
 msgid "Save answer and move on"
 msgstr "保存回答并继续"
 
-#: .\course\flow.py:960
+#: .\course\flow.py:1036
 msgid "Save answer and finish"
 msgstr "保存回答并结束"
 
-#: .\course\flow.py:973
+#: .\course\flow.py:1049
 msgid "could not find which button was pressed"
 msgstr "无法找到哪一个按钮被按下"
 
-#: .\course\flow.py:997
+#: .\course\flow.py:1073
 msgid ""
 "No in-progress session record found for this flow. Redirected to flow start "
 "page."
 msgstr "本flow没有找到正在进行中的session, 跳转到flow的起始页面. "
 
-#: .\course\flow.py:1029
+#: .\course\flow.py:1105
 msgid "not allowed to view flow"
 msgstr "不允许查看该flow"
 
-#: .\course\flow.py:1041
+#: .\course\flow.py:1117
 msgid "Answer submission not allowed."
 msgstr "不允许提交回答. "
 
-#: .\course\flow.py:1050
+#: .\course\flow.py:1126
 msgid "Already have final answer."
 msgstr "已经有最终的回答. "
 
-#: .\course\flow.py:1070
+#: .\course\flow.py:1146
 msgid "Answer saved."
 msgstr "回答保存成功. "
 
-#: .\course\flow.py:1154
+#: .\course\flow.py:1230
 msgid "Failed to submit answer."
 msgstr "回答提交失败."
 
-#: .\course\flow.py:1281
+#: .\course\flow.py:1357
 msgid "only POST allowed"
 msgstr "只允许POST操作"
 
-#: .\course\flow.py:1287
+#: .\course\flow.py:1363
 msgid "may only change your own flow sessions"
 msgstr "只允许更改您自己的flow session"
 
-#: .\course\flow.py:1290
+#: .\course\flow.py:1366
 msgid "may only change in-progress flow sessions"
 msgstr "只能更改正在进行中的session"
 
-#: .\course\flow.py:1295
+#: .\course\flow.py:1371
 msgid "invalid expiration mode"
 msgstr "无效的过期模式"
 
-#: .\course\flow.py:1366
+#: .\course\flow.py:1442
 msgid "odd POST parameters"
 msgstr "怪异的POST参数设置"
 
-#: .\course\flow.py:1374
+#: .\course\flow.py:1450
 msgid "not permitted to end session"
 msgstr "不允许结束session"
 
-#: .\course\flow.py:1442
+#: .\course\flow.py:1518
 msgid ""
 "If non-empty, limit the regrading to sessions started under this access "
 "rules tag."
@@ -898,40 +909,40 @@ msgstr ""
 "如果access rules的设置不为空, 则对该规则下开始的session进行重新评分受到该规则"
 "的限制. "
 
-#: .\course\flow.py:1444 .\course\models.py:501
+#: .\course\flow.py:1520 .\course\models.py:501
 msgid "Access rules tag"
 msgstr "访问规则tag"
 
-#: .\course\flow.py:1448
+#: .\course\flow.py:1524
 msgid "Regrade in-progress and not-in-progress sessions"
 msgstr "为进行中的和不在进行中的session重新评分"
 
-#: .\course\flow.py:1450
+#: .\course\flow.py:1526
 msgid "Regrade in-progress sessions only"
 msgstr "仅为进行中的session重新评分"
 
-#: .\course\flow.py:1452
+#: .\course\flow.py:1528
 msgid "Regrade not-in-progress sessions only"
 msgstr "仅为非进行中的session重新评分"
 
-#: .\course\flow.py:1454
+#: .\course\flow.py:1530
 msgid "Regraded session in progress"
 msgstr "为正在进行的session重新评分"
 
-#: .\course\flow.py:1457 .\course\templates\course\gradebook-single.html:248
+#: .\course\flow.py:1533 .\course\templates\course\gradebook-single.html:248
 msgid "Regrade"
 msgstr "重新评分"
 
-#: .\course\flow.py:1475
+#: .\course\flow.py:1551
 msgid "must be instructor to regrade flows"
 msgstr "只有任课老师(instructor)才能为flow重新评分"
 
-#: .\course\flow.py:1505
+#: .\course\flow.py:1581
 #, python-format
 msgid "%d sessions regraded."
 msgstr "%d个session已重新评分. "
 
-#: .\course\flow.py:1513
+#: .\course\flow.py:1589
 msgid ""
 "This regrading process is only intended for flows that donot show up in the "
 "grade book. If you would like to regradefor-credit flows, use the "
@@ -940,7 +951,7 @@ msgstr ""
 "这个重新评分的过程旨在针对不在“成绩册”中显示的的flow. 如果您想对计入成绩的"
 "flow重新评分, 请使用“成绩册”中的对应功能. "
 
-#: .\course\flow.py:1518
+#: .\course\flow.py:1594
 msgid "Regrade not-for-credit Flow Sessions"
 msgstr "为不计入成绩的flow session重新评分"
 
@@ -1553,7 +1564,7 @@ msgid "Ordinal of event"
 msgstr "event的序号(ordinal)"
 
 #: .\course\models.py:322 .\course\models.py:464 .\course\models.py:491
-#: .\course\templates\course\flow-start.html:23
+#: .\course\templates\course\flow-start.html:29
 msgid "Start time"
 msgstr "开始时间"
 
@@ -2051,7 +2062,7 @@ msgid "%(opportunity_name)s (%(opportunity_id)s) in %(course)s"
 msgstr "课程%(course)s中的评分机会%(opportunity_name)s (%(opportunity_id)s) "
 
 #. Translators: something like 'status'.
-#: .\course\models.py:1075 .\course\templates\course\flow-start.html:24
+#: .\course\models.py:1075 .\course\templates\course\flow-start.html:30
 #: .\course\templates\course\gradebook-single.html:135
 msgid "State"
 msgstr "状态"
@@ -2950,7 +2961,7 @@ msgid ""
 msgstr "您的浏览器不支持对<tt>%(mime_type)s</tt>类型文件的渲染. "
 
 #: .\course\templates\course\flow-completion-grade.html:12
-#: .\course\templates\course\flow-start.html:78
+#: .\course\templates\course\flow-start.html:97
 msgid "Results"
 msgstr "结果"
 
@@ -3100,106 +3111,119 @@ msgstr "进行中"
 msgid "finished"
 msgstr "已完成"
 
-#: .\course\templates\course\flow-start.html:19
+#: .\course\templates\course\flow-start.html:15
+msgid "Timing and Grading"
+msgstr "时间与评分"
+
+#: .\course\templates\course\flow-start.html:25
 msgid "Past sessions"
 msgstr "过往的session"
 
-#: .\course\templates\course\flow-start.html:25
+#: .\course\templates\course\flow-start.html:31
 msgid "Grading rules"
 msgstr "评分规则"
 
-#: .\course\templates\course\flow-start.html:26
+#: .\course\templates\course\flow-start.html:32
 #: .\course\templates\course\gradebook-by-opp.html:33
 #: .\course\templates\course\gradebook-single.html:31
 #: .\course\templates\course\gradebook-single.html:136
 msgid "Due"
 msgstr "截止"
 
-#: .\course\templates\course\flow-start.html:27
+#: .\course\templates\course\flow-start.html:33
 #: .\course\templates\course\gradebook-single.html:137
 msgid "Result"
 msgstr "结果"
 
-#: .\course\templates\course\flow-start.html:28
+#: .\course\templates\course\flow-start.html:34
 #: .\course\templates\course\gradebook-single.html:142
 msgid "Actions"
 msgstr "操作"
 
-#: .\course\templates\course\flow-start.html:43
+#: .\course\templates\course\flow-start.html:58
 msgid "(no description)"
 msgstr "(无描述)"
 
-#: .\course\templates\course\flow-start.html:53
+#: .\course\templates\course\flow-start.html:72
 #, python-format
 msgid "<b>%(points)s</b> out of %(max_points)s (<b>%(percentage)s%%</b>)"
 msgstr "%(max_points)s分中的<b>%(points)s分</b> (<b>%(percentage)s%%</b>)"
 
-#: .\course\templates\course\flow-start.html:61
+#: .\course\templates\course\flow-start.html:80
 #: .\course\templates\course\gradebook-single.html:200
 msgid "(none)"
 msgstr "(无)"
 
-#: .\course\templates\course\flow-start.html:69
+#: .\course\templates\course\flow-start.html:88
 msgid "Resume"
 msgstr "继续"
 
-#: .\course\templates\course\flow-start.html:71
+#: .\course\templates\course\flow-start.html:90
 msgid "Review"
 msgstr "回顾"
 
-#: .\course\templates\course\flow-start.html:91
+#: .\course\templates\course\flow-start.html:110
+msgid ""
+"There are %(session_available_count)s chances for you to start a new session."
+msgstr "您还有%(session_available_count)s次开始新session的机会. "
+
+#: .\course\templates\course\flow-start.html:113
 msgid "If you start a new session, the following rules will apply:"
 msgstr "如果您开始一个新的session, 以下的规则将会生效："
 
-#: .\course\templates\course\flow-start.html:95
+#: .\course\templates\course\flow-start.html:117
 #, python-format
 msgid "Your session will be a '<b>%(description)s</b>'."
 msgstr "您的session将采取\"<b>%(description)s</b>\"的评分规则. "
 
-#: .\course\templates\course\flow-start.html:102
+#: .\course\templates\course\flow-start.html:124
 #, python-format
 msgid "Your session will be due on <b>%(due)s</b>."
 msgstr "您的session将于<b>%(due)s</b>截止. "
 
-#: .\course\templates\course\flow-start.html:108
+#: .\course\templates\course\flow-start.html:130
 #, python-format
-msgid "You will receive <b>%(credit_percent)s%% credit</b> for your work."
-msgstr "您的得分将为应得分数的<b>%(credit_percent)s%%</b>. "
+msgid ""
+"You will receive <b>%(credit_percent)s%% credit</b> for your work, if "
+"submitted before required time."
+msgstr ""
+"如果在规定的时间前提交该session, 您的得分将为应得分数的<b>%(credit_percent)s%"
+"%</b>. "
 
-#: .\course\templates\course\flow-start.html:115
+#: .\course\templates\course\flow-start.html:137
 #, python-format
 msgid ""
 "This is not your first session. If you start another one, for your overall "
 "grade we will '<b>%(grade_aggregation_strategy_descr)s</b>' among all your "
 "sessions."
 msgstr ""
-"这不是您的第一个session, 如果您开始另一个session, 对于您的总评分, 我们将在您"
+"它不是您的第一个session, 如果您开始这个新的session, 对于您的总评分, 我们将在您"
 "所有的session中采取\"<b>%(grade_aggregation_strategy_descr)s</b>\"累积策略. "
 
-#: .\course\templates\course\flow-start.html:130
-#: .\course\templates\course\flow-start.html:162
+#: .\course\templates\course\flow-start.html:152
+#: .\course\templates\course\flow-start.html:184
 msgid "Start"
 msgstr "开始"
 
-#: .\course\templates\course\flow-start.html:134
+#: .\course\templates\course\flow-start.html:156
 msgid "I understand that starting a new session could lower my overall grade."
 msgstr "我已经知道开始一个新的session将有可能降低我的总体评分. "
 
 #. Translators: student should confirm to start another session.
-#: .\course\templates\course\flow-start.html:139
+#: .\course\templates\course\flow-start.html:161
 msgid "I am sure"
 msgstr "我确认"
 
-#: .\course\templates\course\flow-start.html:175
+#: .\course\templates\course\flow-start.html:197
 msgid ""
 "You do not have any existing sessions and are not allowed to start a new one."
 msgstr "您没有可以开始的session，不允许开始一个新session. "
 
-#: .\course\templates\course\flow-start.html:182
+#: .\course\templates\course\flow-start.html:204
 msgid "Check the following:"
 msgstr "检查以下项目："
 
-#: .\course\templates\course\flow-start.html:188
+#: .\course\templates\course\flow-start.html:210
 #, python-format
 msgid ""
 "You're not currently signed in. Access to the resource is restricted, and "
@@ -3211,11 +3235,11 @@ msgstr ""
 "旦您登录了网站，请通过 <b><a href=\"%(relate-home)s\">主页</a></b> 返回课程页"
 "面，然后尝试您的上一次操作。"
 
-#: .\course\templates\course\flow-start.html:199
+#: .\course\templates\course\flow-start.html:221
 msgid "Has the deadline for this assignment passed?"
 msgstr "作业的截止时间是否已经过了?"
 
-#: .\course\templates\course\flow-start.html:202
+#: .\course\templates\course\flow-start.html:224
 #: .\relate\templates\403.html:27
 msgid ""
 "Complete your enrollment in your course. If you're not enrolled, a large "
@@ -3225,7 +3249,7 @@ msgstr ""
 "请完成您的加入课程申请.  如果您还未加入, 在课程页面上有一个<b>“加入课程申"
 "请”</b>的按钮, 点击它, 并按指示步骤操作, 然后再重试您刚才的操作. "
 
-#: .\course\templates\course\flow-start.html:210
+#: .\course\templates\course\flow-start.html:232
 #: .\relate\templates\403.html:34
 #, python-format
 msgid ""
@@ -3749,15 +3773,15 @@ msgstr ""
 "%(home_uri)s\n"
 "输入了您的电子邮件. 如果不是您操作的, 可忽略此邮件. \n"
 
-#: .\course\utils.py:316
+#: .\course\utils.py:348
 msgid "grading rule determination was unable to find a grading rule"
 msgstr "无法为评分找到规则"
 
-#: .\course\utils.py:552
+#: .\course\utils.py:584
 msgid "Press F9 to toggle full-screen mode. "
 msgstr "按F9以打开/关闭全屏模式. "
 
-#: .\course\utils.py:553
+#: .\course\utils.py:585
 #, python-format
 msgid "Set editor mode in <a href='%s'>user profile</a>."
 msgstr "在 <a href='%s'>用户信息</a> 中设置编辑器模式. "
@@ -4351,3 +4375,6 @@ msgstr "用户信息"
 #: .\relate\templates\user-profile-form.html:18
 msgid "Sign out"
 msgstr "退出登录"
+
+#~ msgid "Number of new session allowed"
+#~ msgstr "可以开始新session的数量"
