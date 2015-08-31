@@ -200,7 +200,7 @@ table.gradebook-by-opportunity ul {
 }
 
 #content-wrapper {
-  padding-bottom: 60px;
+  padding-bottom: 30px;
 }
 
 /* {{{ footer */
@@ -217,14 +217,14 @@ html {
 }
 body {
   /* Margin bottom by footer height */
-  margin-bottom: 60px;
+  margin-bottom: 30px;
 }
 footer {
   position: absolute;
-  bottom: 0em;
+  bottom: 0;
   width: 100%;
   /* Set the fixed height of the footer here */
-  height: 60px;
+  height: 30px;
 }
 
 
@@ -267,7 +267,7 @@ footer .subFooter {
 	padding: 12px 0;
 	background-color: #e5e5e5;
 	border-top: 1px solid #ddd;
-    height: 60px;
+    height: 40px;
 }
 footer .subFooter a {
 	color: #777;
@@ -311,6 +311,14 @@ footer .subFooter ul > li a {
 		display: block;
 		margin-bottom: 4px;
 	}
+    
+    #content-wrapper {
+        padding-bottom: 30px;
+    }
+    
+    footer .subFooter {
+        height: 60px;
+    }
 }
 
 /* }}} */
