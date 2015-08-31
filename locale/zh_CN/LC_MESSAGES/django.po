@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-08-31 19:00+0800\n"
+"POT-Creation-Date: 2015-08-31 23:42+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -503,12 +503,12 @@ msgstr "已拒绝"
 #: .\course\constants.py:127
 msgctxt "Flow expiration mode"
 msgid "End session and grade"
-msgstr "结束session并评分"
+msgstr "结束并评分"
 
 #: .\course\constants.py:130
 msgctxt "Flow expiration mode"
 msgid "Keep session and apply new rules"
-msgstr "保持session并应用新的规则"
+msgstr "延期,使用新的评分规则"
 
 #: .\course\constants.py:142
 msgid "unknown expiration mode"
@@ -3082,7 +3082,7 @@ msgstr "结束session"
 #. Translators: the string is followed by "what will happen" at deadline.
 #: .\course\templates\course\flow-page.html:49
 msgid "At deadline:"
-msgstr "到截止时间的操作："
+msgstr "当截止时："
 
 #: .\course\templates\course\flow-page.html:86
 #, python-format

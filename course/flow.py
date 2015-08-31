@@ -823,8 +823,6 @@ def view_start_flow(pctx, flow_id):
     session_start_rule = get_session_start_rule(pctx.course, pctx.participation,
             pctx.role, flow_id, fctx.flow_desc, now_datetime,
             remote_address=pctx.remote_address)
-    
-    print "==============", session_start_rule.session_available_count
 
     if request.method == "POST":
         if "start" in request.POST:
