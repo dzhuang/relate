@@ -107,9 +107,15 @@
     {% if may_start %}
       {% if new_session_grading_rule.grade_identifier %}
         <div class="alert alert-info">
-          {% blocktrans trimmed with session_available_count=session_available_count_html|safe %} 
-            There are {{session_available_count}} chances for you to start a new session. 
-          {% endblocktrans %}
+          {% if session_available_count > 2 %}
+              {% blocktrans trimmed with count=session_available_count_html|safe %} 
+                You have {{count}} chances to start a new session. 
+              {% endblocktrans %}
+          {% else %}
+              {% blocktrans trimmed with count=session_available_count_html|safe %} 
+                You have only {{count}} chances to start a new session. 
+              {% endblocktrans %}
+          {% endif %}
           {% trans "If you start a new session, the following rules will apply:" %}
           <ul>
             {% if new_session_grading_rule.description %}
@@ -153,7 +159,18 @@
         </a>
         <button id="start-button" type="submit" name="start" class="btn btn-danger"
           style="display:none"
-          data-content='{% trans "I understand that starting a new session could lower my overall grade." %}'
+          data-content='<p>{% trans "I understand that starting a new session could lower my overall grade." %}</p>
+                        <button id="cancel-button" type="reset" name="cancel" class="btn btn-primary btn-sm" style="float: right;">
+                        {% trans "Cancel" %}</button>
+                        <script type="text/javascript">$("#cancel-button").on("click",
+                              function()
+                              {
+                                $("#pre-start-button").show();
+                                $("#start-button").hide().popover("hide");
+                                //$("#cancel-button").hide();
+                                    });
+                        </script>'
+          data-html="true"
           data-container="body"
           data-placement="right"
           >

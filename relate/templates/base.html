@@ -112,7 +112,7 @@
     </div>
 
     {% block root_container %}
-    <div class="container">
+    <div class="container" id="content-wrapper">
       {% include "base-page-top.html" %}
 
       {% block nav_recommendations %}
@@ -125,6 +125,50 @@
       {% endblock %}
 
     </div>
+    {% endblock %}
+    {% block footer %}
+      
+<footer>
+<!--
+		<div class="container footerWrap">
+			<div class="row">
+
+				<div class="col-xs-14 col-sm-3">
+					<h4>LearningWhat</h4>
+						<ul class="list-unstyled">
+							<li><a href="/#">Home</a></li>
+							<li><a href="/#">About Us</a></li>
+						</ul>
+				</div>
+				<div class="col-xs-12 col-sm-3">
+					<h4>Help &amp; Support</h4>
+					<ul class="list-unstyled">
+						<li><a href="/#">FAQ</a></li>
+						<li><a href="https://github.com/inducer/relate">Relate Project</a></li>
+					</ul>
+				</div>
+			</div>
+		</div>
+-->
+
+		<div class="subFooter">
+			<div class="container">
+				<div class="row">
+					<div class="col-xs-12">
+						<div class="pull-left">
+						&copy; 2015 <a href="/#" target="_blank">LearningWhat.com</a> /
+                        <a href="/#">{% trans "About Us" %}</a> /
+						<a href="/#">Licenses</a> / 
+						<a href="/#">Terms &amp; Conditions</a> / 
+						<a href="/#">Privacy Policy</a> /
+                        <a href="https://github.com/inducer/relate">Relate Project</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</footer>
+<!--wrapper-->
     {% endblock %}
 
     <!-- JavaScript

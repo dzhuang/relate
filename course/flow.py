@@ -758,7 +758,7 @@ def get_grade_rule_view(rule_tuple, now_datetime):
     
     
     for rule in rule_tuple:
-    
+
         if as_local_time(rule["complete_before"]).year == \
                 as_local_time(now_datetime).year:
             datetime_str = format_datetime_local(
@@ -912,6 +912,7 @@ def view_start_flow(pctx, flow_id):
 
         return render_course_page(pctx, "course/flow-start.html", {
             "flow_grade_rule": flow_grade_rule,
+            "session_available_count": session_start_rule.session_available_count,
             "session_available_count_html": session_available_count_html,
             "flow_desc": fctx.flow_desc,
             "flow_identifier": flow_id,

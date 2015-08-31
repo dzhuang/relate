@@ -199,6 +199,122 @@ table.gradebook-by-opportunity ul {
   margin-bottom: 0px;
 }
 
+#content-wrapper {
+  padding-bottom: 60px;
+}
+
+/* {{{ footer */
+
+/*********************************************************
+	FOOTER
+*********************************************************/
+
+
+html {
+  position: relative;
+  min-height: 100%;
+    width: 100%;
+}
+body {
+  /* Margin bottom by footer height */
+  margin-bottom: 60px;
+}
+footer {
+  position: absolute;
+  bottom: 0em;
+  width: 100%;
+  /* Set the fixed height of the footer here */
+  height: 60px;
+}
+
+
+footer {
+	background-color: #eee;
+    border-top: 1px solid #ddd;
+    color: #777;
+	font-size: 14px;
+}
+/*
+footer .footerWrap {
+	padding-top: 20px;
+	padding-bottom: 15px;
+}
+*/
+footer h4 {
+	border-bottom: 1px dotted #bbb;
+    font-family: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 18px;
+	font-weight: 400;
+    margin: 0 0 10px;
+    padding-bottom: 10px;
+}
+footer ul {
+	margin: 0;
+}
+footer ul li {
+	margin-bottom: 5px;
+}
+footer a {
+	color: #888;
+}
+footer a:hover,
+footer a:focus {
+    color: #222;
+}
+footer .subFooter {
+	color: #777777;
+	font-size: 12px;
+	padding: 12px 0;
+	background-color: #e5e5e5;
+	border-top: 1px solid #ddd;
+    height: 60px;
+}
+footer .subFooter a {
+	color: #777;
+}
+footer .subFooter a:hover,
+footer .subFooter a:focus {
+    color: #222;
+}
+footer .subFooter ul{
+	list-style: none outside none;
+	margin: 0;
+	padding: 0;
+}
+footer .subFooter ul > li {
+    float: left;
+}
+footer .subFooter ul > li {
+    display: block;
+    position: relative;
+	margin: 0;
+}
+footer .subFooter ul > li a {
+	margin-left: 15px;
+}
+
+
+@media (max-width: 767px) {
+	footer {
+		text-align: center;
+	}
+	footer .footerWrap ul {
+		margin-bottom: 30px;
+	}
+	footer .subFooter .left, footer .subFooter .right {
+		float: none;
+	}
+	footer .subFooter .right {
+		margin-top: 10px;
+	}
+	footer .subFooter .right a {
+		display: block;
+		margin-bottom: 4px;
+	}
+}
+
+/* }}} */
+
 /* Uncomment to blur out identifiable/grade-related data. Useful for demos on live data. */
 /*
 .sensitive {
