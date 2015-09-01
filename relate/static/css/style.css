@@ -296,8 +296,11 @@ footer .subFooter ul > li a {
 
 @media (max-width: 767px) {
 	footer {
+        
+        display: none !important;
 		text-align: center;
 	}
+/*
 	footer .footerWrap ul {
 		margin-bottom: 30px;
 	}
@@ -319,6 +322,7 @@ footer .subFooter ul > li a {
     footer .subFooter {
         height: 60px;
     }
+*/
 }
 
 /* }}} */
