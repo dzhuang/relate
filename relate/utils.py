@@ -25,6 +25,7 @@ THE SOFTWARE.
 """
 
 
+import six
 import django.forms as forms
 
 
@@ -65,6 +66,7 @@ def settings_context_processor(request):
     return {
         "student_sign_in_view": settings.STUDENT_SIGN_IN_VIEW,
         "maintenance_mode": settings.RELATE_MAINTENANCE_MODE,
+        "site_announcement": getattr(settings, "RELATE_SITE_ANNOUNCEMENT", None),
         }
 
 
@@ -97,7 +99,7 @@ def format_datetime_local(datetime, format='medium'):
     from babel.dates import format_datetime
     from django.conf import settings
     from django.utils.translation.trans_real import to_locale
-    # See http://babel.pocoo.org/docs/api/dates/#date-and-time-formatting 
+    # See http://babel.pocoo.org/docs/api/dates/#date-and-time-formatting
     # for customizing the output format.
     try:
         locale = to_locale(settings.LANGUAGE_CODE)
@@ -105,7 +107,7 @@ def format_datetime_local(datetime, format='medium'):
         locale="en_US"
 
     result = format_datetime(datetime, format, locale=locale)
-        
+
     return result
 
 def format_date_local(datetime, format='medium'):
@@ -146,8 +148,8 @@ def format_time_local(datetime, format='medium'):
 
 class Struct(object):
     def __init__(self, entries):
-        for name, val in entries.iteritems():
-            self.__dict__[name] = dict_to_struct(val)
+        for name, val in six.iteritems(entries):
+            self.__dict__[name] = val
 
     def __repr__(self):
         return repr(self.__dict__)
@@ -157,7 +159,7 @@ def dict_to_struct(data):
     if isinstance(data, list):
         return [dict_to_struct(d) for d in data]
     elif isinstance(data, dict):
-        return Struct(data)
+        return Struct({k: dict_to_struct(v) for k, v in six.iteritems(data)})
     else:
         return data
 

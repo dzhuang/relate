@@ -149,14 +149,18 @@ def grade_page_visit(visit, visit_grade_model=FlowPageVisitGrade,
 
 # {{{ start flow
 
-def start_flow(repo, course, participation, flow_id, flow_desc,
+def start_flow(repo, course, participation, user, flow_id, flow_desc,
         access_rules_tag, now_datetime):
     from course.content import get_course_commit_sha
     course_commit_sha = get_course_commit_sha(course, participation)
 
+    if participation:
+        assert participation.user == user
+
     session = FlowSession(
         course=course,
         participation=participation,
+        user=user,
         active_git_commit_sha=course_commit_sha.decode(),
         flow_id=flow_id,
         in_progress=True,
@@ -830,9 +834,14 @@ def view_start_flow(pctx, flow_id):
             if not session_start_rule.may_start_new_session:
                 raise PermissionDenied(_("new session not allowed"))
 
+            flow_user = pctx.request.user
+            if not flow_user.is_authenticated():
+                flow_user = None
+
             session = start_flow(
                     pctx.repo, pctx.course, pctx.participation,
-                    flow_id, fctx.flow_desc,
+                    user=flow_user,
+                    flow_id=flow_id, flow_desc=fctx.flow_desc,
                     access_rules_tag=session_start_rule.tag_session,
                     now_datetime=now_datetime)
 
@@ -947,7 +956,12 @@ def get_and_check_flow_session(pctx, flow_session_id):
             participation_role.observer,
             participation_role.auditor,
             participation_role.unenrolled]:
-        if pctx.participation != flow_session.participation:
+        if (pctx.participation != flow_session.participation
+                and flow_session.participation is not None):
+            raise PermissionDenied(_("may not view other people's sessions"))
+
+        if (flow_session.user is not None
+                and pctx.request.user != flow_session.user):
             raise PermissionDenied(_("may not view other people's sessions"))
     else:
         raise PermissionDenied()
@@ -964,7 +978,8 @@ def will_receive_feedback(permissions):
             or flow_permission.see_answer_after_submission in permissions)
 
 
-def get_page_behavior(page, permissions, session_in_progress, answer_was_graded):
+def get_page_behavior(page, permissions, session_in_progress, answer_was_graded,
+        has_grade_identifier, is_unenrolled_session):
     show_correctness = None
     show_answer = None
 
@@ -994,7 +1009,11 @@ def get_page_behavior(page, permissions, session_in_progress, answer_was_graded)
                     # can happen if no answer was ever saved
                     and session_in_progress
 
-                    and (flow_permission.submit_answer in permissions)))
+                    and (flow_permission.submit_answer in permissions)
+
+                    and (has_grade_identifier and not is_unenrolled_session
+                        or (not has_grade_identifier))
+                    ))
 
 
 def add_buttons_to_form(form, fpctx, flow_session, permissions):
@@ -1086,9 +1105,18 @@ def view_flow_page(pctx, flow_session_id, ordinal):
                 flow_session.id,
                 flow_session.page_count-1)
 
+    now_datetime = get_now_or_fake_time(request)
     access_rule = get_session_access_rule(
-            flow_session, pctx.role, fpctx.flow_desc, get_now_or_fake_time(request),
+            flow_session, pctx.role, fpctx.flow_desc, now_datetime,
             pctx.remote_address)
+
+    grading_rule = get_session_grading_rule(
+            flow_session, pctx.role, fpctx.flow_desc, now_datetime)
+    has_grade_identifier = (
+            getattr(grading_rule, "grade_identifier", None)
+            is not None)
+    del grading_rule
+
     permissions = fpctx.page.get_modified_permissions_for_page(
             access_rule.permissions)
 
@@ -1129,7 +1157,9 @@ def view_flow_page(pctx, flow_session_id, ordinal):
                     page=fpctx.page,
                     permissions=permissions,
                     session_in_progress=flow_session.in_progress,
-                    answer_was_graded=False)
+                    answer_was_graded=False,
+                    has_grade_identifier=has_grade_identifier,
+                    is_unenrolled_session=flow_session.participation is None)
 
             form = fpctx.page.process_form_post(
                     fpctx.page_context, fpctx.page_data.data,
@@ -1161,7 +1191,9 @@ def view_flow_page(pctx, flow_session_id, ordinal):
                         page=fpctx.page,
                         permissions=permissions,
                         session_in_progress=flow_session.in_progress,
-                        answer_was_graded=answer_was_graded)
+                        answer_was_graded=answer_was_graded,
+                        has_grade_identifier=has_grade_identifier,
+                        is_unenrolled_session=flow_session.participation is None)
 
                 if fpctx.page.is_answer_gradable():
                     feedback = fpctx.page.grade(
@@ -1242,7 +1274,9 @@ def view_flow_page(pctx, flow_session_id, ordinal):
                 page=fpctx.page,
                 permissions=permissions,
                 session_in_progress=flow_session.in_progress,
-                answer_was_graded=answer_was_graded)
+                answer_was_graded=answer_was_graded,
+                has_grade_identifier=has_grade_identifier,
+                is_unenrolled_session=flow_session.participation is None)
 
         if fpctx.page.expects_answer():
             if fpctx.prev_answer_visit is not None:
@@ -1294,6 +1328,39 @@ def view_flow_page(pctx, flow_session_id, ordinal):
     else:
         correct_answer = None
 
+    # {{{ FIXME: This warning should be deleted after October 2015
+
+    if (
+            flow_session.participation is None
+            and
+            fpctx.page.expects_answer()
+            ):
+        messages.add_message(request, messages.WARNING,
+                _("<p><b>WARNING!</b> What you enter on this page will not be "
+                    "associated with your user account, likely because "
+                    "you have not completed your enrollment in this course. "
+                    "Any data you enter here will not be retrievable later "
+                    "and will not be graded. If this is not what you intended, "
+                    "save your work on this session now (outside of RELATE), "
+                    "complete your enrollment in this course in RELATE, "
+                    "and restart your work on this flow.</p>"
+                    "<p> To confirm that you've "
+                    "completed your enrollment, make sure there is no 'Sign in' "
+                    "or 'Enroll' button at the top of the main course page.<p>"
+                    "<p><b>In addition, you should immediately bookmark this page "
+                    "to ensure you'll be able to return to your work.</b>"))
+
+    # }}}
+
+    if (has_grade_identifier
+            and flow_session.participation is None
+            and flow_permission.submit_answer in permissions):
+        messages.add_message(request, messages.INFO,
+                _("Changes to this session are being prevented "
+                    "because this session yields a permanent grade, but "
+                    "you have not completed your enrollment process in "
+                    "this course."))
+
     # {{{ render flow page
 
     if form is not None:
@@ -1329,9 +1396,9 @@ def view_flow_page(pctx, flow_session_id, ordinal):
         "show_correctness": page_behavior.show_correctness,
         "may_change_answer": page_behavior.may_change_answer,
         "may_change_graded_answer": (
-            (flow_permission.change_answer
-                        in permissions)
-            and flow_session.in_progress),
+            page_behavior.may_change_answer
+            and
+            (flow_permission.change_answer in permissions)),
         "will_receive_feedback": will_receive_feedback(permissions),
         "show_answer": page_behavior.show_answer,
 
@@ -1416,7 +1483,7 @@ def finish_flow_session_view(pctx, flow_session_id):
     from course.content import markup_to_html
     completion_text = markup_to_html(
             fctx.course, fctx.repo, pctx.course_commit_sha,
-            fctx.flow_desc.completion_text)
+            getattr(fctx.flow_desc, "completion_text", ""))
 
     (answered_count, unanswered_count) = count_answered_gradable(
             fctx, flow_session, answer_visits)

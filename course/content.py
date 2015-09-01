@@ -115,7 +115,11 @@ def get_repo_blob_data_cached(repo, full_name, commit_sha):
         return get_repo_blob(repo, full_name, commit_sha).data
 
     def_cache = cache.caches["default"]
-    result = def_cache.get(cache_key)
+
+    result = None
+    # Memcache is apparently limited to 250 characters.
+    if len(cache_key) < 240:
+        result = def_cache.get(cache_key)
     if result is not None:
         return result
 
@@ -128,24 +132,95 @@ def get_repo_blob_data_cached(repo, full_name, commit_sha):
 JINJA_YAML_RE = re.compile(
     r"^\[JINJA\]\s*$(.*?)^\[\/JINJA\]\s*$",
     re.MULTILINE | re.DOTALL)
+YAML_BLOCK_START_SCALAR_RE = re.compile(
+    r":\s*[|>](?:[0-9][-+]?|[-+][0-9]?)?(?:\s*\#.*)?$")
+GROUP_COMMENT_START = re.compile(r"^\s*#\s*\{\{\{")
+LEADING_SPACES_RE = re.compile(r"^( *)")
 
 
 def expand_yaml_macros(repo, commit_sha, yaml_str):
     if isinstance(yaml_str, six.binary_type):
         yaml_str = yaml_str.decode("utf-8")
 
-    def compute_replacement(match):
-        jinja_src = match.group(1)
+    from jinja2 import Environment, StrictUndefined
+    jinja_env = Environment(
+            loader=GitTemplateLoader(repo, commit_sha),
+            undefined=StrictUndefined)
 
-        from jinja2 import Environment, StrictUndefined
-        env = Environment(
-                loader=GitTemplateLoader(repo, commit_sha),
-                undefined=StrictUndefined)
-        template = env.from_string(jinja_src)
+    def compute_replacement(match):
+        template = jinja_env.from_string(match.group(1))
         return template.render()
 
-    result, _ = JINJA_YAML_RE.subn(compute_replacement, yaml_str)
-    return result
+    yaml_str, count = JINJA_YAML_RE.subn(compute_replacement, yaml_str)
+
+    if count:
+        # The file uses explicit YAML tags. Assume that it doesn't
+        # want anything else processed through YAML.
+        return yaml_str
+
+    # {{{ process non-block-scalar YAML lines through Jinja
+
+    block_var_num = [0]
+    block_vars = {}
+    block_name_template = "_RELATE_JINJA_BLOCK_SUB_%d"
+
+    lines = yaml_str.split("\n")
+    jinja_lines = []
+
+    def add_unprocessed_block(s):
+        my_block_num = block_var_num[0]
+        block_var_num[0] += 1
+
+        my_block_name = block_name_template % my_block_num
+        block_vars[my_block_name] = s
+        jinja_lines.append("{{ %s }}" % my_block_name)
+
+    i = 0
+    line_count = len(lines)
+
+    while i < line_count:
+        l = lines[i]
+        if GROUP_COMMENT_START.match(l):
+            add_unprocessed_block(l)
+            i += 1
+
+        elif YAML_BLOCK_START_SCALAR_RE.search(l):
+            unprocessed_block_lines = []
+            unprocessed_block_lines.append(l)
+
+            block_start_indent = len(LEADING_SPACES_RE.match(l).group(1))
+
+            i += 1
+
+            while i < line_count:
+                l = lines[i]
+
+                if not l.rstrip():
+                    unprocessed_block_lines.append(l)
+                    i += 1
+                    continue
+
+                line_indent = len(LEADING_SPACES_RE.match(l).group(1))
+                if line_indent <= block_start_indent:
+                    break
+                else:
+                    unprocessed_block_lines.append(l)
+                    i += 1
+
+            add_unprocessed_block("\n".join(unprocessed_block_lines))
+
+        else:
+            jinja_lines.append(l)
+            i += 1
+
+    jinja_str = "\n".join(jinja_lines)
+
+    template = jinja_env.from_string(jinja_str)
+    yaml_str = template.render(block_vars)
+
+    # }}}
+
+    return yaml_str
 
 
 def get_raw_yaml_from_repo(repo, full_name, commit_sha):
@@ -159,7 +234,10 @@ def get_raw_yaml_from_repo(repo, full_name, commit_sha):
 
     import django.core.cache as cache
     def_cache = cache.caches["default"]
-    result = def_cache.get(cache_key)
+    result = None
+    # Memcache is apparently limited to 250 characters.
+    if len(cache_key) < 240:
+        result = def_cache.get(cache_key)
     if result is not None:
         return result
 
@@ -189,7 +267,10 @@ def get_yaml_from_repo(repo, full_name, commit_sha, cached=True):
 
         import django.core.cache as cache
         def_cache = cache.caches["default"]
-        result = def_cache.get(cache_key)
+        result = None
+        # Memcache is apparently limited to 250 characters.
+        if len(cache_key) < 240:
+            result = def_cache.get(cache_key)
         if result is not None:
             return result
 
@@ -468,12 +549,16 @@ def markup_to_html(course, repo, commit_sha, text, reverse_func=None,
     if text.lstrip().startswith(JINJA_PREFIX):
         text = remove_prefix(JINJA_PREFIX, text.lstrip())
 
-        from jinja2 import Environment, StrictUndefined
-        env = Environment(
-                loader=GitTemplateLoader(repo, commit_sha),
-                undefined=StrictUndefined)
-        template = env.from_string(text)
-        text = template.render()
+    # {{{ process through Jinja
+
+    from jinja2 import Environment, StrictUndefined
+    env = Environment(
+            loader=GitTemplateLoader(repo, commit_sha),
+            undefined=StrictUndefined)
+    template = env.from_string(text)
+    text = template.render()
+
+    # }}}
 
     if validate_only:
         return
@@ -634,11 +719,13 @@ def parse_date_spec(course, datespec, vctx=None, location=None):
 
     match = DATE_RE.match(datespec)
     if match:
-        return apply_postprocs(
-                datetime.date(
-                    int(match.group(1)),
-                    int(match.group(2)),
-                    int(match.group(3))))
+        result = datetime.date(
+                int(match.group(1)),
+                int(match.group(2)),
+                int(match.group(3)))
+        result = localize_if_needed(
+                datetime.datetime.combine(result, datetime.time.min))
+        return apply_postprocs(result)
 
     match = TRAILING_NUMERAL_RE.match(datespec)
     if match:
@@ -761,12 +848,26 @@ def get_processed_course_chunks(course, repo, commit_sha,
             if chunk.shown]
 
 
-def get_flow_desc(repo, course, flow_id, commit_sha):
-    flow = get_yaml_from_repo(repo, "flows/%s.yml" % flow_id, commit_sha)
+def normalize_flow_desc(flow_desc):
+    if hasattr(flow_desc, "pages"):
+        pages = flow_desc.pages
+        from relate.utils import struct_to_dict, Struct
+        d = struct_to_dict(flow_desc)
+        del d["pages"]
+        d["groups"] = [Struct({"id": "main", "pages": pages})]
+        return Struct(d)
 
-    flow.description_html = markup_to_html(
-            course, repo, commit_sha, getattr(flow, "description", None))
-    return flow
+    return flow_desc
+
+
+def get_flow_desc(repo, course, flow_id, commit_sha):
+    flow_desc = get_yaml_from_repo(repo, "flows/%s.yml" % flow_id, commit_sha)
+
+    flow_desc = normalize_flow_desc(flow_desc)
+
+    flow_desc.description_html = markup_to_html(
+            course, repo, commit_sha, getattr(flow_desc, "description", None))
+    return flow_desc
 
 
 def get_flow_page_desc(flow_id, flow_desc, group_id, page_id):

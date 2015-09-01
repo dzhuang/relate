@@ -57,11 +57,13 @@ class PageContext(object):
     which is used internally by the flow views.
     """
 
-    def __init__(self, course, repo, commit_sha, flow_session):
+    def __init__(self, course, repo, commit_sha, flow_session,
+            in_sandbox=False):
         self.course = course
         self.repo = repo
         self.commit_sha = commit_sha
         self.flow_session = flow_session
+        self.in_sandbox = in_sandbox
 
 
 class PageBehavior(object):
@@ -266,7 +268,7 @@ class PageBase(object):
                     from course.validation import validate_flow_permission
                     for attr in ["add_permissions", "remove_permissions"]:
                         if hasattr(page_desc.access_rules, attr):
-                            for perm in page_desc.access_rules.add_permissions:
+                            for perm in getattr(page_desc.access_rules, attr):
                                 validate_flow_permission(
                                         vctx,
                                         "%s: %s" % (ar_loc, attr),
