@@ -269,6 +269,32 @@ def count_answered_gradable(fctx, flow_session, answer_visits):
 
     return (answered_count, unanswered_count)
 
+def count_answered_all(fctx, flow_session, answer_visits):
+    all_page_data = (FlowPageData.objects
+            .filter(
+                flow_session=flow_session,
+                ordinal__isnull=False)
+            .order_by("ordinal"))
+
+    answered_count = 0
+    unanswered_count = 0
+    for i, page_data in enumerate(all_page_data):
+        assert i == page_data.ordinal
+
+        if answer_visits[i] is not None:
+            answer_data = answer_visits[i].answer
+        else:
+            answer_data = None
+
+        page = instantiate_flow_page_with_ctx(fctx, page_data)
+        if page.expects_answer():
+            if answer_data is None:
+                unanswered_count += 1
+            else:
+                answered_count += 1
+
+    return (answered_count, unanswered_count)
+
 
 class GradeInfo(object):
     """An object to hold a tally of points and page counts of various types in a flow.
@@ -1017,6 +1043,19 @@ def get_page_behavior(page, permissions, session_in_progress, answer_was_graded,
 
 
 def add_buttons_to_form(form, fpctx, flow_session, permissions):
+    
+    # added by dzhuang
+    fctx = FlowContext(fpctx.repo, fpctx.course, flow_session.flow_id,
+            participation=flow_session.participation,
+            flow_session=flow_session)
+    answer_visits = assemble_answer_visits(flow_session)
+    (answered_count, unanswered_count) = count_answered_all(
+            fpctx, flow_session, answer_visits)
+    
+    print answered_count, unanswered_count
+
+    #print type(flow_session)
+    
     btn_offset = "col-lg-offset-2 "
     if getattr(form, "no_offset_labels", False):
         btn_offset = ""
@@ -1054,6 +1093,11 @@ def add_buttons_to_form(form, fpctx, flow_session, permissions):
                                 _("Save answer and finish"),
                                 " &raquo;")),
                         css_class="relate-save-button"))
+
+    if unanswered_count == 0:
+        form.helper.add_input(
+                Submit("finish", _("End session"),
+                    css_class="relate-save-button blink"))
 
     return form
 

@@ -272,6 +272,46 @@
 
   {# }}} #}
 
+  {# {{{ blinking button #}
+
+  <script type="text/javascript">
+      $(function ()
+        {          
+          blink($(".blink"), -1, 300);
+      });
+        
+    function blink(elem, times, speed)
+      {
+          if (times > 0 || times < 0) {
+              if ($(elem).hasClass("btn-primary"))
+              {
+                  $(elem).removeClass("btn-primary");
+                  $(elem).addClass("btn-info");
+              }
+              else
+              {
+                  $(elem).removeClass("btn-info");
+                  $(elem).addClass("btn-primary");
+              }
+          }
+          
+          clearTimeout(function () {
+              blink(elem, times, speed);
+          });
+
+          if (times > 0 || times < 0) {
+              setTimeout(function () {
+                  blink(elem, times, speed);
+              }, speed);
+              times -= .5;
+          }
+      }
+
+  </script>
+
+  {# }}} #}
+        
+
 {% endblock %}
 
 {# vim: set foldmethod=marker: #}
