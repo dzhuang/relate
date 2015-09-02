@@ -123,7 +123,6 @@ def enroll(request, course_identifier):
 
         return participation
 
-
     if preapproval is None:
         if ustatus.student_ID:
             try:
