@@ -41,7 +41,7 @@
         <button type="submit" name="finish" class="btn btn-default relate-nav-button">{% trans "End session" %}</button>
       </div>
       {% if flow_session.in_progress and expiration_mode_choice_count > 1 %}
-        <div class="flow-session-expiration-panel">
+      <div class="flow-session-expiration-panel" data-toggle="tooltip"  title="<p>{% trans 'Always neglect these options and use <b>End session</b> instead when you finish the session before deadline, or you will lose credit !!!' %} </p><p> {% trans 'These options will be activated <b>only</b> when you forget to end the session, or you want to roll over the session. Both options will reduce your credit ! ' %}</p>" >
           <span id="expiration_mode_change_progress">
           </span>
           <label for="id_expiration_mode">
@@ -49,17 +49,16 @@
             {% trans "At deadline:" %}
           </label>
           <select class="select form-control" id="id_expiration_mode"
-              name="expiration_mode"
-              popover-title='{% trans "Hint" %}'
-                  popover-content="<ul>
-                                   {% trans 'These options will be activated <b>only</b> when you forget to submit the session, or you want to roll over the session.' %}
-                                   <li><b>{% trans 'End session and grade' %}({% trans 'default' %}): </b>{% trans 'When hit deadline, this session will be ended and grade, and you cannot change your answer.' %}</li>
-                                   <li><b>{% trans 'Keep session and apply new rules' %}: </b>{% trans 'When hit deadline, this session will be roll-overed, remember that you will probably get a lower grade.' %}</li>
-                                   </ul>">
+              name="expiration_mode">
             {% for key, val in expiration_mode_choices %}
               <option value="{{ key }}"
                   {% if key == expiration_mode %}
                     selected
+                  {% endif %}
+                  {% if key == "end" %}
+                      title="({% trans 'Default' %}) {% trans 'When hit deadline, this session is going to be ended (manually by the tutor) and graded. However, if you have any activity after deadline while before it is ended and graded, the session will be treated as a roll-over session, which will reduce your credit.' %}"
+                  {% elif key == "roll_over" %}
+                      title="{% trans 'When hit deadline, this session will be roll-overed, remember that you are likely get a lower credit.' %}"
                   {% endif %}
               >{{ val }}</option>
             {% endfor %}
@@ -270,7 +269,7 @@
               function ()
               {
                 var cm = this.CodeMirror;
-                cm.refresh();
+                cm.refresh
               });
           }
       });
@@ -316,29 +315,19 @@
   </script>
 
   {# }}} #}
-        
+
   {# {{{ show tooltip on flow-session-expiration-panel #}
 
   <script type="text/javascript">
       $(function () {
-        
-    $('.flow-session-expiration-panel')
-            .popover({
-            container: "body",
-            trigger: "focus",
-            placement: "left",
-            html: true,
-            title: $('#id_expiration_mode').attr("popover-title"),
-            content: $('#id_expiration_mode').attr("popover-content")
-            })
-
-        // render TeX in popovers
-        .on("shown.bs.popover", function () {
-            $(".popover-content").each(function() {
-                    MathJax.Hub.Queue(["Typeset", MathJax.Hub, this]);
-                });
-            });
-        });      
+          $('[data-toggle="tooltip"]')
+              .tooltip({
+                    html: true,
+                    placement: "top"})
+              .on("shown.bs.tooltip", function () {
+          $('.tooltip-inner > p').css("text-align", "left")
+        });
+      })
   </script>
 
   {# }}} #}

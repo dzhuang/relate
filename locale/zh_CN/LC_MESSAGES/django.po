@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-09-02 18:57+0800\n"
+"POT-Creation-Date: 2015-09-03 02:53+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -1360,7 +1360,7 @@ msgstr "用户登录网站token的时间戳."
 msgid "Key time"
 msgstr "登录key的时间"
 
-#: .\course\models.py:138
+#: .\course\models.py:138 .\course\templates\course\flow-page.html:59
 msgid "Default"
 msgstr "默认"
 
@@ -3101,62 +3101,59 @@ msgctxt "Next page/item in a flow"
 msgid "Next"
 msgstr "下一页"
 
+#: .\course\templates\course\flow-page.html:44
+msgid ""
+"Always neglect these options and use <b>End session</b> instead when you "
+"finish the session before deadline, or you will lose credit !!!"
+msgstr ""
+"如果您在截止日期前完成了本session，请使用<b>结束session</b>，而不要依赖这里的"
+"选项，否则您很有可能会被扣分！！！"
+
+#: .\course\templates\course\flow-page.html:44
+msgid ""
+"These options will be activated <b>only</b> when you forget to end the "
+"session, or you want to roll over the session. Both options will reduce your "
+"credit ! "
+msgstr ""
+"这些选项<b>仅</b>在您忘记了提交session，或者您需要延期提交session时才起作用. "
+"无论哪个选项都将会让你的分数减少！ "
+
 #. Translators: the string is followed by "what will happen" at deadline.
 #: .\course\templates\course\flow-page.html:49
 msgid "At deadline:"
 msgstr "当截止时："
 
-#: .\course\templates\course\flow-page.html:53
-msgid "Hint"
-msgstr "提示"
-
-#: .\course\templates\course\flow-page.html:55
+#: .\course\templates\course\flow-page.html:59
 msgid ""
-"These options will be activated <b>only</b> when you forget to submit the "
-"session, or you want to roll over the session."
-msgstr "这些选项<b>仅</b>在您忘记了提交session，或者您需要延期提交时起作用."
+"When hit deadline, this session is going to be ended (manually by the tutor) "
+"and graded. However, if you have any activity after deadline while before it "
+"is ended and graded, the session will be treated as a roll-over session, "
+"which will reduce your credit."
+msgstr "到截止时间时，本session将会导师手动结束和评分. 然而，如果您在该session被结束和评分之前有任何操作的话，该session就会被视为一个延期的session，这意味着您将会被扣分."
 
-#: .\course\templates\course\flow-page.html:56
-msgid "End session and grade"
-msgstr "结束并评分"
-
-#: .\course\templates\course\flow-page.html:56
-msgid "default"
-msgstr "默认"
-
-#: .\course\templates\course\flow-page.html:56
+#: .\course\templates\course\flow-page.html:61
 msgid ""
-"When hit deadline, this session will be ended and grade, and you cannot "
-"change your answer."
-msgstr "到截止时间时，本session将被终止并评分，您将不能修改你的回答."
-
-#: .\course\templates\course\flow-page.html:57
-msgid "Keep session and apply new rules"
-msgstr "延期, 使用新的评分规则"
-
-#: .\course\templates\course\flow-page.html:57
-msgid ""
-"When hit deadline, this session will be roll-overed, remember that you will "
-"probably get a lower grade."
+"When hit deadline, this session will be roll-overed, remember that you are "
+"likely get a lower credit."
 msgstr ""
 "到截止时间时，本session将会被延期，需记住延期的提交将会按一定比例扣除得分."
 
-#: .\course\templates\course\flow-page.html:92
+#: .\course\templates\course\flow-page.html:91
 #, python-format
 msgid "%(max_points)s point"
 msgid_plural "%(max_points)s points"
 msgstr[0] "%(max_points)s分"
 msgstr[1] "%(max_points)s分"
 
-#: .\course\templates\course\flow-page.html:112
+#: .\course\templates\course\flow-page.html:111
 msgid "(You may still change your answer after you submit it.)"
 msgstr "(您仍然可以在提交<b>本问题</b>后修改回答)"
 
-#: .\course\templates\course\flow-page.html:185
+#: .\course\templates\course\flow-page.html:184
 msgid "You have unsaved changes on this page."
 msgstr "您在本页还有未保存的修订. "
 
-#: .\course\templates\course\flow-page.html:243
+#: .\course\templates\course\flow-page.html:242
 msgid "Saved."
 msgstr "已保存"
 
@@ -4458,6 +4455,23 @@ msgstr "用户信息"
 #: .\relate\templates\user-profile-form.html:18
 msgid "Sign out"
 msgstr "退出登录"
+
+#~ msgid "Hint"
+#~ msgstr "提示"
+
+#~ msgid "End session and grade"
+#~ msgstr "结束并评分"
+
+#~ msgid "default"
+#~ msgstr "默认"
+
+#~ msgid ""
+#~ "When hit deadline, this session will be ended and grade, and you cannot "
+#~ "change your answer."
+#~ msgstr "到截止时间时，本session将被终止并评分，您将不能修改你的回答."
+
+#~ msgid "Keep session and apply new rules"
+#~ msgstr "延期, 使用新的评分规则"
 
 #~ msgid "Number of new session allowed"
 #~ msgstr "可以开始新session的数量"
