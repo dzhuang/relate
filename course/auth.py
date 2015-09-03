@@ -668,7 +668,7 @@ class UserStudentIDForm(StyledModelForm):
         super(UserStudentIDForm, self).__init__(*args, **kwargs)
 
         self.helper.add_input(
-                Submit("submit_student_ID", _("Update"),
+                Submit("submit_student_ID", _("Confirm"),
                     css_class="col-lg-offset-2"))
 
 
