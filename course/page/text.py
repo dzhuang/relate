@@ -25,6 +25,7 @@ THE SOFTWARE.
 """
 
 
+import six
 from django.utils.translation import (
         ugettext_lazy as _, ugettext, string_concat)
 from course.validation import validate_struct, ValidationError
@@ -383,6 +384,15 @@ class SymbolicExpressionMatcher(TextAnswerMatcher):
 def float_or_sympy_evalf(s):
     if isinstance(s, (int, float)):
         return s
+
+    if not isinstance(s, six.string_types):
+        raise TypeError("expected string, int or float for floating point "
+                "literal")
+
+    try:
+        return float(s)
+    except ValueError:
+        pass
 
     # avoiding IO error if empty input when
     # the is field not required
