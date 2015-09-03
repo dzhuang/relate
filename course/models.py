@@ -134,6 +134,8 @@ class UserStatus(models.Model):
             verbose_name=_('Key time'))
 
     editor_mode = models.CharField(max_length=20,
+            help_text=_("Your favorite text editor mode for text "
+                        "block or code block."),
             choices=(
                 ("default", _("Default")),
                 ("sublime", "Sublime text"),
@@ -156,8 +158,25 @@ class UserStatus(models.Model):
                         ),
                     'invalid')
                 ],
-            help_text=_("Filling so that your can enroll some "
-                        "courses automatically."))
+            help_text=_("Not required. Filling so that your can "
+                        "enroll some courses automatically. Once "
+                        "confirmed it is not changable."))
+    student_ID_confirm = models.CharField(max_length=40, unique=True, 
+            null=True, blank=True, db_index=True,
+            verbose_name=_("student ID confirmation"),
+            validators=[
+                validators.RegexValidator('^[\\w.@+-]+$',
+                    string_concat(
+                        _('Enter a valid student ID. '), 
+                        _('This value may contain only letters, '
+                          'numbers and @/./+/-/_ characters.')
+                        ),
+                    'invalid')
+                ])
+    
+    No_ID = models.BooleanField(default=False,
+            help_text=_("I am not a student or I have no student ID."),
+            verbose_name=_('No student ID'))
 
     class Meta:
         verbose_name = _("User status")
