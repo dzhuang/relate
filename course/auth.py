@@ -670,7 +670,7 @@ class UserStudentIDForm(StyledModelForm):
         instance = getattr(self, 'instance', None)
         
         if instance and instance.pk:
-            if instance.student_ID != "":
+            if instance.student_ID:
                 self.fields['student_ID'].widget.attrs['readonly'] = True
                 self.fields['No_ID'].widget.attrs['disabled'] = True
             else:
