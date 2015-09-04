@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-09-03 15:24+0800\n"
+"POT-Creation-Date: 2015-09-03 23:33+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -297,7 +297,7 @@ msgid "Password confirmation"
 msgstr ""
 
 #: .\course\auth.py:463 .\course\auth.py:645 .\course\auth.py:658
-#: .\course\auth.py:671 .\course\templates\course\course-page.html:30
+#: .\course\auth.py:678 .\course\templates\course\course-page.html:30
 #: .\course\templates\course\home.html:27
 #: .\course\templates\course\home.html:44
 #: .\course\templates\course\home.html:61 .\course\versioning.py:388
@@ -343,7 +343,11 @@ msgstr "发送登录邮件"
 msgid "Your %(RELATE)s sign-in link"
 msgstr "您的%(RELATE)s登录链接"
 
-#: .\course\auth.py:693 .\course\auth.py:703 .\course\auth.py:713
+#: .\course\auth.py:700
+msgid "The two student_ID don't match."
+msgstr "输入的两个学号不匹配."
+
+#: .\course\auth.py:736 .\course\auth.py:746 .\course\auth.py:756
 msgid "Profile data saved."
 msgstr "用户信息已更新. "
 
@@ -1385,7 +1389,8 @@ msgstr "请输入有效的学号. "
 msgid ""
 "Not required. Filling so that your can enroll some courses automatically. "
 "Once confirmed it is not changable."
-msgstr "非必填项. 输入学号你将可以加入某些已预先批准加入的课程. 一旦确定，不能修改."
+msgstr ""
+"非必填项. 输入学号你将可以加入某些已预先批准加入的课程. 一经设定，不能修改."
 
 #: .\course\models.py:166
 msgid "student ID confirmation"

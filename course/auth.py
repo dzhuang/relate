@@ -663,56 +663,53 @@ class UserStudentIDForm(StyledModelForm):
     class Meta:
         model = UserStatus
         fields = ("student_ID", "student_ID_confirm", "No_ID")
+        widgets = {'student_ID_confirm': forms.HiddenInput()}
 
     def __init__(self, *args, **kwargs):
         super(UserStudentIDForm, self).__init__(*args, **kwargs)
         instance = getattr(self, 'instance', None)
+        
         if instance and instance.pk:
-            #pass
-            #self.fields['student_ID'].widget.attrs['readonly'] = True
-            self.helper.add_input(
-                    Submit("submit_student_ID", _("Update"),
-                        css_class="col-lg-offset-2"))
+            if instance.student_ID != "":
+                self.fields['student_ID'].widget.attrs['readonly'] = True
+                self.fields['No_ID'].widget.attrs['disabled'] = True
+            else:
+                self.helper.add_input(
+                        Submit("submit_student_ID", _("Update"),
+                            css_class="col-lg-offset-2"))
         else: 
             self.helper.add_input(
                     Submit("submit_student_ID", _("Update"),
                         css_class="col-lg-offset-2"))
         
-#    def clean_student_ID(self):
-#        instance = getattr(self, 'instance', None)
-#        if instance and instance.pk:
-#            return instance.student_ID
-#        else:
-#            return self.cleaned_data['student_ID']
-
     def clean(self):
         cleaned_data = super(UserStudentIDForm, self).clean()
+
+        instance = getattr(self, 'instance', None)
+        if instance and instance.pk and instance.student_ID:
+            student_ID = instance.student_ID
+            #No_ID = instance.No_ID
+            self.fields['student_ID'].widget.attrs['readonly'] = True
+        else:
+            student_ID = cleaned_data.get("student_ID")
         
-        student_ID = cleaned_data.get("student_ID")
-        student_ID_confirm = cleaned_data.get("student_ID_confirm")
         No_ID = cleaned_data.get("No_ID")
-        
-        print student_ID, student_ID_confirm
-        if student_ID != student_ID_confirm:
+
+        student_ID_confirm = cleaned_data.get("student_ID_confirm")
+
+        if No_ID:
             del cleaned_data["student_ID"]
             del cleaned_data["student_ID_confirm"]
+            
+        elif student_ID != student_ID_confirm:
+            del cleaned_data["student_ID"]
+            del cleaned_data["student_ID_confirm"]
+            self.fields['student_ID_confirm'].widget = forms.TextInput()
             raise forms.ValidationError(
                     _("The two student_ID don't match.")
                 )
-            
+
         return cleaned_data
-        
-#        if No_ID:
-#            self.fields["student_ID"].widget.attrs['readonly'] = True
-#            cleaned_data["student_ID"]=None
-#            self.fields["student_ID_confirm"].widget.attrs['readonly'] = True
-#            cleaned_data["student_ID_confirm"]=None
-#
-#        else:
-#            if student_ID is not None:
-#                self.fields["No_ID"].widget.attrs['disabled'] = True
-                
-#        return cleaned_data        
 
 
 def user_profile(request):
@@ -744,6 +741,8 @@ def user_profile(request):
                 user_student_ID_form.save()
                 messages.add_message(request, messages.INFO,
                         _("Profile data saved."))
+                user_student_ID_form = UserStudentIDForm(
+                    request.POST, instance=ustatus)
                 if request.GET.get("first_login"):
                     return redirect("relate-home")
 
