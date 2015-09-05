@@ -107,6 +107,7 @@
     {% if may_start %}
       {% if new_session_grading_rule.grade_identifier %}
         <div class="alert alert-info">
+          <i class="fa fa-info-circle"></i>
           {% if session_available_count > 2 %}
               {% blocktrans trimmed with count=session_available_count_html|safe %} 
                 You have {{count}} chances to start a new session. 
