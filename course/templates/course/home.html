@@ -22,7 +22,9 @@
               <h3>{{desc.number}} {{desc.run}}</h3>
               <p>{{desc.name}}</p>
               {% if invalid %}
-                <div class="alert alert-warning">{% trans "The course content has not yet been validated." %}</div>
+                <div class="alert alert-warning">
+                    <i class="fa fa-warning"></i>
+                    {% trans "The course content has not yet been validated." %}</div>
                 <p><a class="btn btn-default" href="{% url 'course.versioning.fetch_course_updates' course.identifier %}" role="button">{% trans "Update" %} &raquo;</a></p>
               {% else %}
                 <p><a class="btn btn-default" href="{% url 'course.views.course_page' course.identifier %}" role="button">{% trans "View" %} &raquo;</a></p>
@@ -39,7 +41,9 @@
               <h3>{{desc.number}} {{desc.run}}</h3>
               <p>{{desc.name}}</p>
               {% if invalid %}
-                <div class="alert alert-warning">{% trans "The course content has not yet been validated." %}</div>
+                <div class="alert alert-warning">
+                    <i class="fa fa-warning"></i>
+                    {% trans "The course content has not yet been validated." %}</div>
                 <p><a class="btn btn-default" href="{% url 'course.versioning.fetch_course_updates' course.identifier %}" role="button">{% trans "Update" %} &raquo;</a></p>
               {% else %}
                 <p><a class="btn btn-default" href="{% url 'course.views.course_page' course.identifier %}" role="button">{% trans "View" %} &raquo;</a></p>
@@ -56,7 +60,9 @@
               <h3>{{desc.number}} {{desc.run}}</h3>
               <p>{{desc.name}}</p>
               {% if invalid %}
-                <div class="alert alert-warning">{% trans "The course content has not yet been validated." %}</div>
+                <div class="alert alert-warning">
+                    <i class="fa fa-warning"></i>
+                    {% trans "The course content has not yet been validated." %}</div>
                 <p><a class="btn btn-default" href="{% url 'course.versioning.fetch_course_updates' course.identifier %}" role="button">{% trans "Update" %} &raquo;</a></p>
               {% else %}
                 <p><a class="btn btn-default" href="{% url 'course.views.course_page' course.identifier %}" role="button">{% trans "View" %} &raquo;</a></p>
