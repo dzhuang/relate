@@ -299,10 +299,15 @@ def get_session_access_rule(session, role, flow_desc, now_datetime,
                     ]:
                 if perm in permissions:
                     permissions.remove(perm)
+                    
+        message=getattr(rule, "message", None)
+        
+        if message is not None:
+            message = "<ul><li>" + message + "</li></ul>"
 
         return FlowSessionAccessRule(
                 permissions=frozenset(permissions),
-                message=getattr(rule, "message", None)
+                message=message
                 )
 
     return FlowSessionAccessRule(permissions=frozenset())
