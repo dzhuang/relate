@@ -270,6 +270,15 @@ def get_session_access_rule(session, role, flow_desc, now_datetime,
             if session.expiration_mode != rule.if_expiration_mode:
                 continue
 
+        if hasattr(rule, "if_session_duration_shorter_than_minutes"):
+            duration_min = (now_datetime - session.start_time).total_seconds() / 60
+
+            if session.participation is not None:
+                duration_min /= float(session.participation.time_factor)
+
+            if duration_min > rule.if_session_duration_shorter_than_minutes:
+                continue
+
         if hasattr(rule, "if_in_facility"):
             if not is_address_in_facility(remote_address, rule.if_in_facility):
                 continue
@@ -665,16 +674,12 @@ def is_address_in_facility(remote_address, facility_id):
     if remote_address is None:
         return False
 
-    from course.models import FacilityIPRange
-    try:
-        ip_ranges = (FacilityIPRange.objects
-                .filter(facility__identifier=facility_id))
-    except ObjectDoesNotExist:
-        return False
+    from django.conf import settings
+    ip_ranges = settings.RELATE_FACILITIES.get(facility_id, {}).get("ip_ranges", [])
 
     import ipaddr
     for ir in ip_ranges:
-        if remote_address in ipaddr.IPNetwork(ir.ip_range):
+        if remote_address in ipaddr.IPNetwork(ir):
             return True
 
     return False

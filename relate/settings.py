@@ -19,7 +19,6 @@ import os
 from os.path import join
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
-
 local_settings = {}
 try:
     with open(join(BASE_DIR, "local_settings.py")) as inf:
@@ -57,11 +56,14 @@ MIDDLEWARE_CLASSES = (
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "course.auth.ImpersonateMiddleware",
+    "course.exam.ExamFacilityMiddleware",
+    "course.exam.ExamLockdownMiddleware",
 )
 
 
 AUTHENTICATION_BACKENDS = (
     "course.auth.TokenBackend",
+    "course.exam.ExamTicketBackend",
     "django.contrib.auth.backends.ModelBackend",
     )
 
@@ -70,6 +72,7 @@ RELATE_EXTRA_CONTEXT_PROCESSORS = (
             "relate.utils.settings_context_processor",
             "course.auth.impersonation_context_processor",
             "course.views.fake_time_context_processor",
+            "course.exam.exam_lockdown_context_processor",
             )
 TEMPLATE_CONTEXT_PROCESSORS = (
         TEMPLATE_CONTEXT_PROCESSORS
@@ -151,6 +154,10 @@ STATIC_ROOT = join(BASE_DIR, "static")
 
 SESSION_COOKIE_NAME = 'relate_sessionid'
 SESSION_COOKIE_AGE = 12096000  # 20 weeks
+
+RELATE_FACILITIES = {}
+
+RELATE_CACHE_MAX_BYTES = 32768
 
 for name, val in local_settings.items():
     if not name.startswith("_"):

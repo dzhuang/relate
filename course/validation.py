@@ -496,6 +496,7 @@ def validate_session_access_rule(ctx, location, arule, tags):
                 ("if_in_progress", bool),
                 ("if_completed_before", datespec_types),
                 ("if_expiration_mode", str),
+                ("if_session_duration_shorter_than_minutes", (int, float)),
                 ("message", datespec_types),
                 ]
             )
@@ -844,14 +845,16 @@ def check_attributes_yml(vctx, repo, path, tree):
                 required_attrs=[],
                 allowed_attrs=[
                     ("public", list),
+                    ("in_exam", list),
                 ])
 
-        if hasattr(att_yml, "public"):
-            for i, l in enumerate(att_yml.public):
-                if not isinstance(l, (str, unicode)):
-                    raise ValidationError(
-                            "%s: entry %d in 'public' is not a string"
-                            % (loc, i+1))
+        for access_kind in ["public", "in_exam"]:
+            if hasattr(att_yml, access_kind):
+                for i, l in enumerate(att_yml.public):
+                    if not isinstance(l, (str, unicode)):
+                        raise ValidationError(
+                                "%s: entry %d in '%s' is not a string"
+                                % (loc, i+1, access_kind))
 
     import stat
     for entry in tree.items():

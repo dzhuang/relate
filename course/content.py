@@ -125,7 +125,9 @@ def get_repo_blob_data_cached(repo, full_name, commit_sha):
 
     result = get_repo_blob(repo, full_name, commit_sha).data
 
-    def_cache.add(cache_key, result, None)
+    if len(result) <= settings.RELATE_CACHE_MAX_BYTES:
+        def_cache.add(cache_key, result, None)
+
     return result
 
 
@@ -286,7 +288,7 @@ def get_yaml_from_repo(repo, full_name, commit_sha, cached=True):
     return result
 
 
-def is_repo_file_public(repo, commit_sha, path):
+def is_repo_file_accessible_as(access_kind, repo, commit_sha, path):
     from os.path import dirname, basename, join
     attributes_path = join(dirname(path), ".attributes.yml")
 
@@ -299,11 +301,11 @@ def is_repo_file_public(repo, commit_sha, path):
         return False
 
     path_basename = basename(path)
-    public_patterns = attributes.get("public", [])
+    access_patterns = attributes.get(access_kind, [])
 
     from fnmatch import fnmatch
-    if isinstance(public_patterns, list):
-        for pattern in attributes.get("public", []):
+    if isinstance(access_patterns, list):
+        for pattern in access_patterns:
             if isinstance(pattern, (str, unicode)):
                 if fnmatch(path_basename, pattern):
                     return True

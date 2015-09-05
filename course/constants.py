@@ -191,6 +191,10 @@ class flow_permission:  # noqa
 
         See :ref:`flow-life-cycle`.
 
+    .. attribute:: see_session_time
+
+        Allows the participant to see the duration for which the
+        session has been going on.
     """
     view = "view"
     end_session = "end_session"
@@ -200,6 +204,7 @@ class flow_permission:  # noqa
     see_answer_before_submission = "see_answer_before_submission"
     see_answer_after_submission = "see_answer_after_submission"
     set_roll_over_expiration_mode = "set_roll_over_expiration_mode"
+    see_session_time = "see_session_time"
 
 FLOW_PERMISSION_CHOICES = (
         (flow_permission.view,
@@ -222,6 +227,8 @@ FLOW_PERMISSION_CHOICES = (
         (flow_permission.set_roll_over_expiration_mode,
             pgettext_lazy("Flow permission",
                 "Set the session to 'roll over' expiration mode")),
+        (flow_permission.see_session_time,
+            pgettext_lazy("Flow permission", "See session time")),
         )
 
 
@@ -317,3 +324,18 @@ GRADE_STATE_CHANGE_CHOICES = (
             pgettext_lazy("Grade state change", "Exempt")),
         )
 
+
+class exam_ticket_states:  # noqa
+    valid = "valid"
+    used = "used"
+    revoked = "revoked"
+
+
+EXAM_TICKET_STATE_CHOICES = (
+        (exam_ticket_states.valid,
+            pgettext_lazy("Exam ticket state", "Valid")),
+        (exam_ticket_states.used,
+            pgettext_lazy("Exam ticket state", "Used")),
+        (exam_ticket_states.revoked,
+            pgettext_lazy("Exam ticket state", "Revoked")),
+        )

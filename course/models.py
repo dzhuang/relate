@@ -44,6 +44,7 @@ from course.constants import (  # noqa
         grade_aggregation_strategy, GRADE_AGGREGATION_STRATEGY_CHOICES,
         grade_state_change_types, GRADE_STATE_CHANGE_CHOICES,
         flow_rule_kind, FLOW_RULE_KIND_CHOICES,
+        exam_ticket_states, EXAM_TICKET_STATE_CHOICES,
 
         COURSE_ID_REGEX
         )
@@ -52,54 +53,6 @@ from course.constants import (  # noqa
 from jsonfield import JSONField
 from yamlfield.fields import YAMLField
 from django.core import validators
-
-
-# {{{ facility
-
-class Facility(models.Model):
-    """Data about a facility from where content may be accessed."""
-
-    identifier = models.CharField(max_length=50, unique=True,
-            help_text=_("Format is lower-case-with-hyphens. "
-            "Do not use spaces."),
-            verbose_name=_("Facility ID"))
-    description = models.CharField(max_length=100,
-            verbose_name=_("Facility description"))
-
-    class Meta:
-        verbose_name = _("Facility")
-        # Translators: plural form of facility
-        verbose_name_plural = _("Facilities")
-
-    def __unicode__(self):
-        return self.identifier
-
-
-class FacilityIPRange(models.Model):
-    """Network data about a facility from where content may be accessed."""
-
-    facility = models.ForeignKey(Facility, related_name="ip_ranges")
-
-    ip_range = models.CharField(
-            max_length=200,
-            verbose_name=_("IP range"))
-
-    description = models.CharField(max_length=100,
-            verbose_name=_('IP range description'))
-
-    class Meta:
-        verbose_name = _("Facility IP range")
-
-    def clean(self):
-        super(FacilityIPRange, self).clean()
-
-        import ipaddr
-        try:
-            ipaddr.IPNetwork(self.ip_range)
-        except Exception as e:
-            raise ValidationError({"ip_range": str(e)})
-
-# }}}
 
 
 # {{{ user status
@@ -329,7 +282,7 @@ class Event(models.Model):
     """
 
     course = models.ForeignKey(Course,
-            verbose_name=_('Course identifier'))
+            verbose_name=_('Course'))
     kind = models.CharField(max_length=50,
             # Translators: format of event kind in Event model
             help_text=_("Should be lower_case_with_underscores, no spaces "
@@ -371,7 +324,7 @@ class Event(models.Model):
 
 class ParticipationTag(models.Model):
     course = models.ForeignKey(Course,
-            verbose_name=_('Course identifier'))
+            verbose_name=_('Course'))
     name = models.CharField(max_length=100, unique=True,
             # Translators: name format of ParticipationTag
             help_text=_("Format is lower-case-with-hyphens. "
@@ -403,7 +356,7 @@ class Participation(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL,
             verbose_name=_('User ID'))
     course = models.ForeignKey(Course, related_name="participations",
-            verbose_name=_('Course identifier'))
+            verbose_name=_('Course'))
 
     enroll_time = models.DateTimeField(default=now,
             verbose_name=_('Enroll time'))
@@ -422,7 +375,7 @@ class Participation(models.Model):
             max_digits=10, decimal_places=2,
             default=1,
             help_text=_("Multiplier for time available on time-limited "
-            "flows (time-limited flows are currently unimplemented)."),
+            "flows"),
             verbose_name=_('Time factor'))
 
     preview_git_commit_sha = models.CharField(max_length=200, null=True,
@@ -450,7 +403,7 @@ class ParticipationPreapproval(models.Model):
     email = models.EmailField(max_length=254,
             verbose_name=_('Email'))
     course = models.ForeignKey(Course,
-            verbose_name=_('Course identifier'))
+            verbose_name=_('Course'))
     role = models.CharField(max_length=50,
             choices=PARTICIPATION_ROLE_CHOICES,
             verbose_name=_('Role'))
@@ -477,7 +430,7 @@ class ParticipationPreapproval(models.Model):
 
 class InstantFlowRequest(models.Model):
     course = models.ForeignKey(Course,
-            verbose_name=_('Course identifier'))
+            verbose_name=_('Course'))
     flow_id = models.CharField(max_length=200,
             verbose_name=_('Flow ID'))
     start_time = models.DateTimeField(default=now,
@@ -498,7 +451,7 @@ class FlowSession(models.Model):
     # This looks like it's redundant with 'participation', below--but it's not.
     # 'participation' is nullable.
     course = models.ForeignKey(Course,
-            verbose_name=_('Course identifier'))
+            verbose_name=_('Course'))
 
     participation = models.ForeignKey(Participation, null=True, blank=True,
             db_index=True,
@@ -1034,7 +987,7 @@ class FlowRuleException(models.Model):
 
 class GradingOpportunity(models.Model):
     course = models.ForeignKey(Course,
-            verbose_name=_('Course identifier'))
+            verbose_name=_('Course'))
 
     identifier = models.CharField(max_length=200, blank=False, null=False,
             # Translators: format of identifier for GradingOpportunity
@@ -1365,6 +1318,93 @@ class InstantMessage(models.Model):
 
     def __unicode__(self):
         return "%s: %s" % (self.participation, self.text)
+
+# }}}
+
+
+# {{{ exam tickets
+
+class Exam(models.Model):
+    course = models.ForeignKey(Course,
+            verbose_name=_('Course'))
+    description = models.CharField(max_length=200,
+            verbose_name=_('Description'))
+    flow_id = models.CharField(max_length=200,
+            verbose_name=_('Flow ID'))
+    active = models.BooleanField(
+            default=True,
+            verbose_name=_('Currently active'))
+
+    no_exams_before = models.DateTimeField(
+            verbose_name=_('No exams before'))
+    no_exams_after = models.DateTimeField(
+            null=True, blank=True,
+            verbose_name=_('No exams after'))
+
+    lock_down_sessions = models.BooleanField(
+            default=True,
+            verbose_name=_("Lock down sessions"),
+            help_text=_("Only allow access to exam content "
+                "(and no other content in this RELATE instance) "
+                "in sessions logged in through this exam"))
+
+    class Meta:
+        verbose_name = _("Exam")
+        verbose_name_plural = _("Exams")
+        ordering = ("course", "no_exams_before",)
+
+    def __unicode__(self):
+        return _("Exam  %(description)s in %(course)s") % {
+                'description': self.description,
+                'course': self.course,
+                }
+
+
+class ExamTicket(models.Model):
+    exam = models.ForeignKey(Exam,
+            verbose_name=_('Exam'))
+
+    participation = models.ForeignKey(Participation, db_index=True,
+            verbose_name=_('Participation'))
+
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
+            verbose_name=_('Creator'))
+    creation_time = models.DateTimeField(default=now,
+            verbose_name=_('Creation time'))
+    usage_time = models.DateTimeField(
+            verbose_name=_('Usage time'),
+            null=True, blank=True)
+
+    state = models.CharField(max_length=50,
+            choices=EXAM_TICKET_STATE_CHOICES,
+            verbose_name=_('Exam ticket state'))
+
+    code = models.CharField(max_length=50, db_index=True, unique=True)
+
+    permissions = (
+            ("can_issue_exam_tickets", _("Can issue exam tickets to student")),
+            )
+
+    class Meta:
+        verbose_name = _("Exam ticket")
+        verbose_name_plural = _("Exam tickets")
+        ordering = ("exam__course", "exam", "usage_time")
+
+    def __unicode__(self):
+        return _("Exam  ticket for %(participation)s in %(exam)s") % {
+                'participation': self.participation,
+                'exam': self.exam,
+                }
+
+    def clean(self):
+        super(ExamTicket, self).clean()
+
+        try:
+            if self.exam.course != self.participation.course:
+                raise ValidationError(_("Participation and exam must live "
+                        "in the same course"))
+        except ObjectDoesNotExist:
+            pass
 
 # }}}
 

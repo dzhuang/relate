@@ -25,7 +25,6 @@ THE SOFTWARE.
 from django.utils.translation import ugettext_lazy as _, string_concat
 from django.contrib import admin
 from course.models import (
-        Facility, FacilityIPRange,
         UserStatus,
         Course, Event,
         ParticipationTag,
@@ -34,10 +33,11 @@ from course.models import (
         FlowSession, FlowPageData,
         FlowPageVisit, FlowPageVisitGrade,
         FlowRuleException,
-        GradingOpportunity, GradeChange, InstantMessage)
+        GradingOpportunity, GradeChange, InstantMessage,
+        Exam, ExamTicket)
 from django import forms
 from course.enrollment import (approve_enrollment, deny_enrollment)
-from course.constants import participation_role
+from course.constants import participation_role, exam_ticket_states
 
 
 # {{{ permission helpers
@@ -69,28 +69,6 @@ def _filter_participation_linked_obj_for_user(queryset, user):
     return queryset.filter(
         participation__course__participations__user=user,
         participation__course__participations__role__in=admin_roles)
-
-# }}}
-
-
-# {{{ facility
-
-class FacilityIPRangeInline(admin.TabularInline):
-    model = FacilityIPRange
-    extra = 2
-
-
-class FacilityAdmin(admin.ModelAdmin):
-    inlines = (FacilityIPRangeInline,)
-
-    list_display = (
-            "identifier",
-            "description",
-            )
-
-    search_fields = list_display
-
-admin.site.register(Facility, FacilityAdmin)
 
 # }}}
 
@@ -814,6 +792,97 @@ class InstantMessageAdmin(admin.ModelAdmin):
     # }}}
 
 admin.site.register(InstantMessage, InstantMessageAdmin)
+
+# }}}
+
+
+# {{{ exam tickets
+
+class ExamAdmin(admin.ModelAdmin):
+    list_filter = (
+            "course",
+            "active",
+            )
+
+    list_display = (
+            "course",
+            "flow_id",
+            "active",
+            "no_exams_before",
+            )
+
+    search_fields = (
+            "flow_id",
+            )
+
+    date_hierarchy = "no_exams_before"
+
+    # {{{ permissions
+
+    def get_queryset(self, request):
+        qs = super(ExamAdmin, self).get_queryset(request)
+        return _filter_course_linked_obj_for_user(qs, request.user)
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "course":
+            kwargs["queryset"] = _filter_courses_for_user(
+                    Course.objects, request.user)
+        return super(ExamAdmin, self).formfield_for_foreignkey(
+                db_field, request, **kwargs)
+
+    # }}}
+
+admin.site.register(Exam, ExamAdmin)
+
+
+class ExamTicketAdmin(admin.ModelAdmin):
+    list_filter = (
+            "participation__course",
+            "state",
+            )
+
+    list_display = (
+            "exam",
+            "participation",
+            "state",
+            "usage_time",
+            )
+
+    date_hierarchy = "usage_time"
+
+    search_fields = (
+            "exam__course__identifier",
+            "exam__flow_id",
+            "exam__description",
+            "participation__user__username",
+            "participation__user__first_name",
+            "participation__user__last_name",
+            )
+
+    # {{{ permissions
+
+    def get_queryset(self, request):
+        qs = super(ExamTicketAdmin, self).get_queryset(request)
+        return _filter_participation_linked_obj_for_user(qs, request.user)
+
+    exclude = ("creator",)
+
+    def save_model(self, request, obj, form, change):
+        obj.creator = request.user
+        obj.save()
+
+    # }}}
+
+    def revoke_exam_tickets(self, request, queryset):  # noqa
+        queryset \
+                .filter(state=exam_ticket_states.valid) \
+                .update(state=exam_ticket_states.revoked)
+
+    revoke_exam_tickets.short_description = _("Revoke Exam Tickets")
+
+    actions = [revoke_exam_tickets]
+
+admin.site.register(ExamTicket, ExamTicketAdmin)
 
 # }}}
 
