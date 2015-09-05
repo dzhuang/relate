@@ -10,6 +10,10 @@ $(function () {
             $(this).smallscreen_pdf_indent();
         });
     }
+    
+    // for non_mobile tags, make it invisible for max-width: 767px
+    // http://www.w3schools.com/bootstrap/bootstrap_ref_css_helpers.asp
+    $('non_mobile').addClass("hidden-xs");
 });
 
 // If a li contains id with pdfviewer_div, then all its sibling will have no 

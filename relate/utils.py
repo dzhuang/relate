@@ -143,6 +143,39 @@ def format_time_local(datetime, format='medium'):
         
     return result
 
+def compact_local_datetime_str(datetime, now_datetime):
+    from django.conf import settings
+    if as_local_time(datetime).year == \
+            as_local_time(now_datetime).year:
+        datetime_str = format_datetime_local(
+                as_local_time(datetime))
+
+        # for zh_CN or zh_Hans, another format
+        if settings.LANGUAGE_CODE.lower() in ['zh_cn', 'zh_hans']:
+            date_str = format_date_local(
+                as_local_time(
+                    datetime))[5:]
+            time_str = format_time_local(
+                as_local_time(
+                    datetime), "HH:mm")
+            datetime_str = date_str + time_str
+
+    else:
+        datetime_str = format_datetime_local(
+                as_local_time(datetime))
+
+        # for zh_CN or zh_Hans, another format
+        if settings.LANGUAGE_CODE.lower() in ['zh_cn', 'zh_hans']:
+            date_str = format_date_local(
+                as_local_time(
+                    datetime))
+            time_str = format_time_local(
+                as_local_time(
+                    datetime), "HH:mm")
+            datetime_str = date_str + time_str
+
+    return datetime_str
+
 
 # {{{ dict_to_struct
 

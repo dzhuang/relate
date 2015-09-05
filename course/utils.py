@@ -28,7 +28,8 @@ from django.shortcuts import (  # noqa
         render, get_object_or_404)
 from django import http
 from django.core.exceptions import ObjectDoesNotExist
-from django.utils.translation import ugettext as _
+from django.utils.translation import (
+        ugettext_lazy as _, string_concat)
 
 from course.views import (
         get_role_and_participation
@@ -59,7 +60,7 @@ class FlowSessionStartRule(FlowSessionRuleBase):
             "tag_session",
             "may_start_new_session",
             "may_list_existing_sessions",
-            "date_grading_tuple",
+            "latest_start_datetime",
             "session_available_count",
             ]
 
@@ -132,6 +133,106 @@ def get_flow_rules(flow_desc, kind, participation, flow_id, now_datetime,
     return rules
 
 
+# {{{ generate stringified rules in flow start page
+
+def get_flow_rules_str(course, participation, flow_id, flow_desc,
+        now_datetime):
+
+    from relate.utils import dict_to_struct, compact_local_datetime_str
+    # {{{ get stringified latest_start_datetime
+    start_rules = get_flow_rules(flow_desc, flow_rule_kind.start,
+            participation, flow_id, now_datetime,
+            default_rules_desc=[
+                dict_to_struct(dict(
+                    may_start_new_session=True,
+                    may_list_existing_sessions=False))])
+
+    latest_start_datetime = None
+
+    for rule in start_rules:
+        if (hasattr(rule, "if_before") 
+            and hasattr(rule, "may_start_new_session")):
+
+            if getattr(rule, "may_start_new_session"):
+                latest_start_datetime = parse_date_spec(course, rule.if_before)
+
+    latest_start_datetime_str = None
+
+    if latest_start_datetime:
+        latest_start_datetime_str = compact_local_datetime_str(
+                latest_start_datetime, now_datetime)
+        
+    if latest_start_datetime_str:
+        latest_start_datetime_str = (
+            string_concat("<li><span class='h4'>",
+                          _("Latest start time"),
+                          "</span><ul><li class='text-danger'><strong>",
+                          _("Session(s) must start before %s."), 
+                          "</strong></li></ul></li>")
+            % latest_start_datetime_str )
+    # }}}
+
+    # {{{ get stringified grade_rule
+    grade_rules = get_flow_rules(flow_desc, flow_rule_kind.grading,
+        participation, flow_id, now_datetime,
+        default_rules_desc=[
+            dict_to_struct(dict(
+                grade_identifier=None,
+                ))])
+
+    date_grading_tuple = tuple()
+
+    for rule in grade_rules:
+        if hasattr(rule, "if_completed_before"):
+            ds = parse_date_spec(course, rule.if_completed_before)
+            due = parse_date_spec(course, getattr(rule, "due", None))
+            credit_percent=getattr(rule, "credit_percent", 100)
+            date_grading_tuple += (
+                {"complete_before": ds, 
+                 "due": due,
+                 "credit_percent":credit_percent
+                },)
+    
+    grade_rule_str = ""
+
+    for rule in date_grading_tuple:
+        datetime_str = compact_local_datetime_str(
+                rule["complete_before"],
+                now_datetime)
+        grade_rule_str += string_concat(
+                "<li>",
+                _("If completed before %(time)s, you'll get "
+                "%(credit_percent)s%% of your grade."), 
+                "</li>") % {
+                        "time": datetime_str,
+                        "credit_percent": rule["credit_percent"]}
+
+    if grade_rule_str:
+        grade_rule_str = (
+            string_concat("<li><span class='h4'>",
+                          _("Submission time and Grading"),
+                          "</span><ul>") 
+            + grade_rule_str
+            + string_concat("<li class='text-danger'><strong>",
+                            _("No grade will be granted for " 
+                            "submision later than %s."),
+                            "</strong></li></ul></li>") % datetime_str)
+
+    flow_rule_str = ""
+
+    if latest_start_datetime_str:
+        flow_rule_str += latest_start_datetime_str
+    if grade_rule_str:
+        flow_rule_str += grade_rule_str
+    
+    if flow_rule_str:
+        flow_rule_str = "<ul>" + flow_rule_str + "</ul>"
+
+    return flow_rule_str
+
+# }}}
+
+
 def get_session_start_rule(course, participation, role, flow_id, flow_desc,
         now_datetime, remote_address=None, for_rollover=False):
     """Return a :class:`FlowSessionStartRule` if a new session is
@@ -145,31 +246,20 @@ def get_session_start_rule(course, participation, role, flow_id, flow_desc,
                 dict_to_struct(dict(
                     may_start_new_session=True,
                     may_list_existing_sessions=False))])
-    
-    # {{{ this is used to generate strings in Start
-    grade_rules = get_flow_rules(flow_desc, flow_rule_kind.grading,
-        participation, flow_id, now_datetime,
-        default_rules_desc=[
-            dict_to_struct(dict(
-                grade_identifier=None,
-                ))])
 
-    date_grading_tuple = tuple()
-    
-    session_available_count = 0
+    latest_start_datetime = None
 
-    for rule in grade_rules:
-        if hasattr(rule, "if_completed_before"):
-            ds = parse_date_spec(course, rule.if_completed_before)
-            due = parse_date_spec(course, getattr(rule, "due", None))
-            credit_percent=getattr(rule, "credit_percent", 100)
-            date_grading_tuple += (
-                {"complete_before": ds, 
-                 "due": due,
-                 "credit_percent":credit_percent
-                },)
+    for rule in rules:
+        if (hasattr(rule, "if_before") 
+            and hasattr(rule, "may_start_new_session")):
+
+            if getattr(rule, "may_start_new_session"):
+                latest_start_datetime = parse_date_spec(course, rule.if_before)
+
 
     # }}}
+
+    session_available_count = 0
 
     for rule in rules:
         if not _eval_generic_conditions(rule, course, role, now_datetime):
@@ -204,8 +294,9 @@ def get_session_start_rule(course, participation, role, flow_id, flow_desc,
                     participation=participation,
                     course=course,
                     flow_id=flow_id).count()
-            
-            session_available_count = rule.if_has_fewer_sessions_than - session_count
+
+            session_available_count = (
+                    rule.if_has_fewer_sessions_than - session_count)
 
             if session_count >= rule.if_has_fewer_sessions_than:
                 continue
@@ -226,14 +317,14 @@ def get_session_start_rule(course, participation, role, flow_id, flow_desc,
                     rule, "may_start_new_session", True),
                 may_list_existing_sessions=getattr(
                     rule, "may_list_existing_sessions", True),
-                date_grading_tuple=date_grading_tuple,
+                latest_start_datetime=latest_start_datetime,
                 session_available_count=session_available_count,
                 )
 
     return FlowSessionStartRule(
             may_list_existing_sessions=False,
             may_start_new_session=False,
-            date_grading_tuple=date_grading_tuple)
+            latest_start_datetime=latest_start_datetime)
 
 
 def get_session_access_rule(session, role, flow_desc, now_datetime,
@@ -308,15 +399,10 @@ def get_session_access_rule(session, role, flow_desc, now_datetime,
                     ]:
                 if perm in permissions:
                     permissions.remove(perm)
-                    
-        message=getattr(rule, "message", None)
-        
-        if message is not None:
-            message = "<ul><li>" + message + "</li></ul>"
 
         return FlowSessionAccessRule(
                 permissions=frozenset(permissions),
-                message=message
+                message=getattr(rule, "message", None)
                 )
 
     return FlowSessionAccessRule(permissions=frozenset())

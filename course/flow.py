@@ -42,8 +42,7 @@ from django import http
 
 from relate.utils import (
         StyledForm, local_now, as_local_time,
-        format_datetime_local, format_date_local,
-        format_time_local)
+        format_datetime_local, compact_local_datetime_str)
 from crispy_forms.layout import Submit
 
 from course.constants import (
@@ -69,6 +68,7 @@ from course.utils import (
         get_session_start_rule,
         get_session_access_rule,
         get_session_grading_rule,
+        get_flow_rules_str,
         FlowSessionGradingRule)
 from course.views import get_now_or_fake_time
 
@@ -243,33 +243,8 @@ def assemble_answer_visits(flow_session):
     return answer_visits
 
 
-def count_answered_gradable(fctx, flow_session, answer_visits):
-    all_page_data = (FlowPageData.objects
-            .filter(
-                flow_session=flow_session,
-                ordinal__isnull=False)
-            .order_by("ordinal"))
-
-    answered_count = 0
-    unanswered_count = 0
-    for i, page_data in enumerate(all_page_data):
-        assert i == page_data.ordinal
-
-        if answer_visits[i] is not None:
-            answer_data = answer_visits[i].answer
-        else:
-            answer_data = None
-
-        page = instantiate_flow_page_with_ctx(fctx, page_data)
-        if page.expects_answer() and page.is_answer_gradable():
-            if answer_data is None:
-                unanswered_count += 1
-            else:
-                answered_count += 1
-
-    return (answered_count, unanswered_count)
-
-def count_answered_all(fctx, flow_session, answer_visits):
+def count_answered(fctx, flow_session, answer_visits,
+                   force_gradeable=True):
     all_page_data = (FlowPageData.objects
             .filter(
                 flow_session=flow_session,
@@ -288,12 +263,24 @@ def count_answered_all(fctx, flow_session, answer_visits):
 
         page = instantiate_flow_page_with_ctx(fctx, page_data)
         if page.expects_answer():
-            if answer_data is None:
-                unanswered_count += 1
-            else:
-                answered_count += 1
+            if force_gradeable and page.is_answer_gradable():
+                if answer_data is None:
+                    unanswered_count += 1
+                else:
+                    answered_count += 1
+            elif not force_gradeable:
+                if answer_data is None:
+                    unanswered_count += 1
+                else:
+                    answered_count += 1
 
     return (answered_count, unanswered_count)
+
+def count_answered_gradable(fctx, flow_session, answer_visits,
+                           force_gradeable=True):
+
+    return count_answered(fctx, flow_session, answer_visits,
+                           force_gradeable=True)
 
 
 class GradeInfo(object):
@@ -781,66 +768,6 @@ def recalculate_session_grade(repo, course, session):
 
 # {{{ view: start flow
 
-def get_grade_rule_view(rule_tuple, now_datetime):
-    from django.conf import settings
-    
-    flow_grade_rule = ""
-    
-    
-    for rule in rule_tuple:
-
-        if as_local_time(rule["complete_before"]).year == \
-                as_local_time(now_datetime).year:
-            datetime_str = format_datetime_local(
-                    as_local_time(rule["complete_before"]))
-            
-            # for zh_CN or zh_Hans, another format
-            if settings.LANGUAGE_CODE.lower() in ['zh_cn', 'zh_hans']:
-                date_str = format_date_local(
-                    as_local_time(
-                        rule["complete_before"]))[5:]
-                time_str = format_time_local(
-                    as_local_time(
-                        rule["complete_before"]), "HH:mm")
-                datetime_str = date_str + time_str
-
-        else:
-            datetime_str = format_datetime_local(
-                    as_local_time(rule["complete_before"]))
-
-            # for zh_CN or zh_Hans, another format
-            if settings.LANGUAGE_CODE.lower() in ['zh_cn', 'zh_hans']:
-                date_str = format_date_local(
-                    as_local_time(
-                        rule["complete_before"]))
-                time_str = format_time_local(
-                    as_local_time(
-                        rule["complete_before"]), "HH:mm")
-                datetime_str = date_str + time_str
-
-        flow_grade_rule += string_concat(
-                "<li>",
-                _("If completed before %(time)s, you'll get "
-                "%(credit_percent)s%% of your grade."), 
-                "</li>") % {
-                        "time": datetime_str,
-                        "credit_percent": rule["credit_percent"]}
-
-    if flow_grade_rule != "":
-        flow_grade_rule = (
-            "<ul>" 
-            + flow_grade_rule
-            + string_concat("<li style='color:red'>",
-                            _("No grade will be granted for " 
-                            "submision later than %s."),
-                            "</li>") % datetime_str            
-            + "</ul>")
-        
-    return flow_grade_rule
-
-    
-    
-
 @transaction.atomic
 @course_view
 def view_start_flow(pctx, flow_id):
@@ -931,20 +858,21 @@ def view_start_flow(pctx, flow_id):
                     None,
                     grade_aggregation_strategy.max_grade,
                     grade_aggregation_strategy.use_earliest])
-        
-        flow_grade_rule = get_grade_rule_view(session_start_rule.date_grading_tuple, now_datetime)
-        
+
+        flow_rule_str = get_flow_rules_str(pctx.course, pctx.participation, flow_id, 
+                                           fctx.flow_desc, now_datetime)
+
         if session_start_rule.session_available_count <= 2:
             session_available_count_html = (
-                    "<b style='color:red'> %s </b>" %
+                    "<strong class='text-danger h4'> %s </strong>" %
                     session_start_rule.session_available_count)
         else:
             session_available_count_html = (
-                    "<b style='color:green'> %s </b>" %
+                    "<strong class='h4'> %s </strong>" %
                     session_start_rule.session_available_count)
 
         return render_course_page(pctx, "course/flow-start.html", {
-            "flow_grade_rule": flow_grade_rule,
+            "flow_rule_str": flow_rule_str,
             "session_available_count": session_start_rule.session_available_count,
             "session_available_count_html": session_available_count_html,
             "flow_desc": fctx.flow_desc,
@@ -1043,19 +971,15 @@ def get_page_behavior(page, permissions, session_in_progress, answer_was_graded,
 
 
 def add_buttons_to_form(form, fpctx, flow_session, permissions):
-    
-    # added by dzhuang
+
+    # count unanswered questions
     fctx = FlowContext(fpctx.repo, fpctx.course, flow_session.flow_id,
             participation=flow_session.participation,
             flow_session=flow_session)
     answer_visits = assemble_answer_visits(flow_session)
-    (answered_count, unanswered_count) = count_answered_all(
-            fpctx, flow_session, answer_visits)
-    
-    print answered_count, unanswered_count
+    (answered_count, unanswered_count) = count_answered(
+            fpctx, flow_session, answer_visits, force_gradeable=False)
 
-    #print type(flow_session)
-    
     btn_offset = "col-lg-offset-2 "
     if getattr(form, "no_offset_labels", False):
         btn_offset = ""
@@ -1166,6 +1090,10 @@ def view_flow_page(pctx, flow_session_id, ordinal):
 
     if access_rule.message:
         messages.add_message(request, messages.INFO, access_rule.message)
+    
+    #stopped here!
+    messages.add_message(request, messages.WARNING, '快过期了！!',
+                     extra_tags='danger')
 
     page_context = fpctx.page_context
     page_data = fpctx.page_data
