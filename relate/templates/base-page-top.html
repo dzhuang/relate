@@ -37,7 +37,7 @@
     would look like at {{ fake_time }}.
     {% endblocktrans %}
     {% if user.is_staff %}
-    <a class="btn btn-primary" href="{% url "relate-set_fake_time" %}" role="button">
+    <a class="btn btn-default btn-sm" href="{% url "relate-set_fake_time" %}" role="button">
         {% trans "Set fake time" %} &raquo;</a>
     {% endif %}
   </div>
@@ -49,6 +49,6 @@
     {% blocktrans trimmed with username=user.username first_name=user.first_name last_name=user.last_name email=user.email %}
     Now impersonating {{ first_name }} {{ last_name }} ({{ username }}, {{ email }}).
     {% endblocktrans %}
-    <a class="btn btn-primary" href="{% url "relate-stop_impersonating" %}" role="button">{% trans "Stop impersonating" %} &raquo;</a>
+    <a class="btn btn-default btn-sm" href="{% url "relate-stop_impersonating" %}" role="button">{% trans "Stop impersonating" %} &raquo;</a>
   </div>
 {% endif %}

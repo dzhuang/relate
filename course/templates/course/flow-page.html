@@ -108,10 +108,13 @@
     </div>
   {% endif %}
 
-  <link href="/static/bootstrap/bootstrap_customized/css/bootstrap.css" rel="stylesheet">
+  <div>
+  <style scoped>
+      @import url("/static/css/body-scoped.css");
+  </style>
 
-  {{ body|safe }}
-
+    {{ body|safe }}
+  </div>
   {% if form_html %}
     <div class="well">
       {{ form_html|safe }}
