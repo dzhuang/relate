@@ -214,7 +214,7 @@ table.gradebook-by-opportunity ul {
 /* {{{ footer */
 
 /*********************************************************
-	FOOTER
+    FOOTER
 *********************************************************/
 
 
@@ -237,57 +237,57 @@ footer {
 
 
 footer {
-	background-color: #eee;
+    background-color: #eee;
     border-top: 1px solid #ddd;
     color: #777;
-	font-size: 14px;
+    font-size: 14px;
 }
 /*
 footer .footerWrap {
-	padding-top: 20px;
-	padding-bottom: 15px;
+    padding-top: 20px;
+    padding-bottom: 15px;
 }
 */
 footer h4 {
-	border-bottom: 1px dotted #bbb;
+    border-bottom: 1px dotted #bbb;
     font-family: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif;
     font-size: 18px;
-	font-weight: 400;
+    font-weight: 400;
     margin: 0 0 10px;
     padding-bottom: 10px;
 }
 footer ul {
-	margin: 0;
+    margin: 0;
 }
 footer ul li {
-	margin-bottom: 5px;
+    margin-bottom: 5px;
 }
 footer a {
-	color: #888;
+    color: #888;
 }
 footer a:hover,
 footer a:focus {
     color: #222;
 }
 footer .subFooter {
-	color: #777777;
-	font-size: 12px;
-	padding: 12px 0;
-	background-color: #e5e5e5;
-	border-top: 1px solid #ddd;
+    color: #777777;
+    font-size: 12px;
+    padding: 12px 0;
+    background-color: #e5e5e5;
+    border-top: 1px solid #ddd;
     height: 40px;
 }
 footer .subFooter a {
-	color: #777;
+    color: #777;
 }
 footer .subFooter a:hover,
 footer .subFooter a:focus {
     color: #222;
 }
 footer .subFooter ul{
-	list-style: none outside none;
-	margin: 0;
-	padding: 0;
+    list-style: none outside none;
+    margin: 0;
+    padding: 0;
 }
 footer .subFooter ul > li {
     float: left;
@@ -295,27 +295,27 @@ footer .subFooter ul > li {
 footer .subFooter ul > li {
     display: block;
     position: relative;
-	margin: 0;
+    margin: 0;
 }
 footer .subFooter ul > li a {
-	margin-left: 15px;
+    margin-left: 15px;
 }
 
 
 /*
-	footer .footerWrap ul {
-		margin-bottom: 30px;
-	}
-	footer .subFooter .left, footer .subFooter .right {
-		float: none;
-	}
-	footer .subFooter .right {
-		margin-top: 10px;
-	}
-	footer .subFooter .right a {
-		display: block;
-		margin-bottom: 4px;
-	}
+    footer .footerWrap ul {
+        margin-bottom: 30px;
+    }
+    footer .subFooter .left, footer .subFooter .right {
+        float: none;
+    }
+    footer .subFooter .right {
+        margin-top: 10px;
+    }
+    footer .subFooter .right a {
+        display: block;
+        margin-bottom: 4px;
+    }
     
     #content-wrapper {
         padding-bottom: 30px;

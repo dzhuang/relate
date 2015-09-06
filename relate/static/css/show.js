@@ -1,11 +1,11 @@
 function redtext()
 {
 if (navigator.cookieEnabled==true)
-	{
-	alert("已启用 cookie")
-	}
+    {
+    alert("已启用 cookie")
+    }
 else
-	{
-	alert("未启用 cookie")
-	}
+    {
+    alert("未启用 cookie")
+    }
 }

@@ -98,7 +98,7 @@ class UserStatus(models.Model):
             default="default",
             # Translators: the text editor used by participants
             verbose_name=_("Editor mode"))
-    
+
     student_ID = models.CharField(max_length=40, unique=True, 
             null=True, blank=True, db_index=True,
             verbose_name=_("student ID"),
@@ -126,7 +126,7 @@ class UserStatus(models.Model):
                         ),
                     'invalid')
                 ])
-    
+
     No_ID = models.BooleanField(default=False,
             help_text=_("I am not a student or I have no student ID."),
             verbose_name=_('No student ID'))

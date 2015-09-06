@@ -84,6 +84,8 @@ class FlowSessionGradingRule(FlowSessionRuleBase):
             "due",
             "description",
             "credit_percent",
+            "credit_next", # credit precent of next rule
+            "is_next_final", # next rule is deadline
             ]
 
 
@@ -248,6 +250,7 @@ def get_session_start_rule(course, participation, role, flow_id, flow_desc,
                     may_list_existing_sessions=False))])
 
     latest_start_datetime = None
+    session_available_count = 0
 
     for rule in rules:
         if (hasattr(rule, "if_before") 
@@ -256,12 +259,6 @@ def get_session_start_rule(course, participation, role, flow_id, flow_desc,
             if getattr(rule, "may_start_new_session"):
                 latest_start_datetime = parse_date_spec(course, rule.if_before)
 
-
-    # }}}
-
-    session_available_count = 0
-
-    for rule in rules:
         if not _eval_generic_conditions(rule, course, role, now_datetime):
             continue
 
@@ -416,8 +413,20 @@ def get_session_grading_rule(session, role, flow_desc, now_datetime):
                 dict_to_struct(dict(
                     grade_identifier=None,
                     ))])
+    
+    session_grading_rule = None
 
-    for rule in rules:
+    for i, rule in enumerate(rules):
+        credit_next = 100
+        is_next_final = False
+        if i < len(rules) - 2:
+            credit_next = getattr(rules[i+1], "credit_percent", 100)
+            is_next_final = False
+        else:
+            credit_next = 0
+            is_next_final = True
+          
+
         if hasattr(rule, "if_has_role"):
             if role not in rule.if_has_role:
                 continue
@@ -436,17 +445,25 @@ def get_session_grading_rule(session, role, flow_desc, now_datetime):
         due = parse_date_spec(session.course, getattr(rule, "due", None))
         if due is not None:
             assert due.tzinfo is not None
+            
+        #print rule, is_final_grading_rule(rule, now_datetime)
+            
+        if session_grading_rule is None:
+            session_grading_rule = FlowSessionGradingRule(
+                    grade_identifier=getattr(rule, "grade_identifier", None),
+                    grade_aggregation_strategy=getattr(
+                        rule, "grade_aggregation_strategy", None),
+                    due=due,
+                    description=getattr(rule, "description", None),
+                    credit_percent=getattr(rule, "credit_percent", 100),
+                    credit_next=credit_next,
+                    is_next_final=is_next_final)
+        
+    if session_grading_rule is None:
+        raise RuntimeError(_("grading rule determination was unable to find "
+                "a grading rule"))
 
-        return FlowSessionGradingRule(
-                grade_identifier=getattr(rule, "grade_identifier", None),
-                grade_aggregation_strategy=getattr(
-                    rule, "grade_aggregation_strategy", None),
-                due=due,
-                description=getattr(rule, "description", None),
-                credit_percent=getattr(rule, "credit_percent", 100))
-
-    raise RuntimeError(_("grading rule determination was unable to find "
-            "a grading rule"))
+    return session_grading_rule
 
 # }}}
 

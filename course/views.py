@@ -81,7 +81,7 @@ def home(request):
     courses_and_descs_and_invalid_flags = []
     courses_and_descs_and_invalid_flags_open = []
     courses_and_descs_and_invalid_flags_inprogress = []
-    courses_and_descs_and_invalid_flags_ended = []    
+    courses_and_descs_and_invalid_flags_ended = []
     for course in Course.objects.filter(listed=True):
         repo = get_course_repo(course)
         desc = get_course_desc(repo, course, course.active_git_commit_sha.encode())

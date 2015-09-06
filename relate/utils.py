@@ -123,7 +123,7 @@ def format_date_local(datetime, format='medium'):
         locale="en_US"
 
     result = format_date(datetime, format, locale=locale)
-        
+
     return result
 
 
@@ -140,8 +140,9 @@ def format_time_local(datetime, format='medium'):
         locale="en_US"
 
     result = format_time(datetime, format, locale=locale)
-        
+
     return result
+
 
 def compact_local_datetime_str(datetime, now_datetime):
     from django.conf import settings
@@ -175,6 +176,22 @@ def compact_local_datetime_str(datetime, now_datetime):
             datetime_str = date_str + time_str
 
     return datetime_str
+
+
+def format_timedelta_local(datetime, now_datetime):
+    from babel.dates import format_timedelta
+    from django.conf import settings
+    from django.utils.translation.trans_real import to_locale
+
+    try:
+        locale = to_locale(settings.LANGUAGE_CODE)
+    except ValueError:
+        locale="en_US"
+
+    return format_timedelta(
+            datetime - now_datetime,
+            threshold=1.1,
+            locale=locale)
 
 
 # {{{ dict_to_struct

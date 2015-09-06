@@ -26,7 +26,8 @@ THE SOFTWARE.
 
 from django.utils import six
 from django.utils.translation import (
-        ugettext_lazy as _, string_concat)
+        ugettext, ugettext_lazy as _,
+        string_concat)
 from django.utils.functional import lazy
 from django.shortcuts import (  # noqa
         render, get_object_or_404, redirect)
@@ -42,7 +43,8 @@ from django import http
 
 from relate.utils import (
         StyledForm, local_now, as_local_time,
-        format_datetime_local, compact_local_datetime_str)
+        format_datetime_local, compact_local_datetime_str,
+        format_timedelta_local)
 from crispy_forms.layout import Submit
 
 from course.constants import (
@@ -1083,6 +1085,52 @@ def view_flow_page(pctx, flow_session_id, ordinal):
     has_grade_identifier = (
             getattr(grading_rule, "grade_identifier", None)
             is not None)
+
+    flow_page_warning_message = None
+    flow_page_warning_message_next = None
+
+    session_due = getattr(grading_rule, "due", None)
+    credit_percent = getattr(grading_rule, "credit_percent", None)
+
+    credit_next = getattr(grading_rule, "credit_next", None)
+    is_next_final = getattr(grading_rule, "is_next_final", False)
+
+    if is_next_final:
+        flow_page_warning_message_next = (
+                ugettext("Session ended afterward will not receive grade."))
+    else:
+        flow_page_warning_message_next = (
+                _("Session ended afterward will receive no more than %d%% "
+                  "of your grade.") % credit_next)
+
+    if now_datetime and session_due:
+        time_delta = session_due - now_datetime
+        time_remain_str = format_timedelta_local(session_due, now_datetime)
+
+        if now_datetime < session_due:
+            flow_page_warning_message = (
+                string_concat(
+                    _("Your have %(time_remain)s (before %(session_due)s) to "
+                      "end this session to get %(credit_percent)d%% of your "
+                      "grade. ")) % {
+                        "time_remain": time_remain_str,
+                        "session_due": compact_local_datetime_str(
+                                session_due, now_datetime),
+                        "credit_percent": credit_percent}
+                + flow_page_warning_message_next)
+
+        from datetime import timedelta
+
+        if flow_page_warning_message and flow_page_warning_message_next:
+
+            if time_delta > timedelta(hours=48):
+                messages.add_message(request, messages.INFO, 
+                                     flow_page_warning_message)
+            else:
+                messages.add_message(request, messages.WARNING,
+                                     flow_page_warning_message,
+                                     extra_tags='danger')
+
     del grading_rule
 
     permissions = fpctx.page.get_modified_permissions_for_page(
@@ -1090,10 +1138,6 @@ def view_flow_page(pctx, flow_session_id, ordinal):
 
     if access_rule.message:
         messages.add_message(request, messages.INFO, access_rule.message)
-    
-    #stopped here!
-    messages.add_message(request, messages.WARNING, '快过期了！!',
-                     extra_tags='danger')
 
     page_context = fpctx.page_context
     page_data = fpctx.page_data
@@ -1143,7 +1187,7 @@ def view_flow_page(pctx, flow_session_id, ordinal):
             if submission_allowed and form.is_valid():
                 # {{{ form validated, process answer
 
-                messages.add_message(request, messages.INFO,
+                messages.add_message(request, messages.SUCCESS,
                         _("Answer saved."))
 
                 page_visit = FlowPageVisit()

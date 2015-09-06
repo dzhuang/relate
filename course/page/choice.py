@@ -55,13 +55,15 @@ class MultipleChoiceAnswerForm(StyledForm):
         # Translators: "Choice" in Choice Answer Form in a multiple
         # choice question in which multiple answers can be chosen.
         self.fields["choice"].label = _("Choices")
-        
+
+
 def markup_to_html_plain(page_context, s):
     s = ''.join(['<td>', s.strip(), '</td>'])
     s = markup_to_html(page_context, s)
     print s
     s = s[5:-5]
     return s
+
 
 # {{{ choice question
 
@@ -111,9 +113,7 @@ class ChoiceQuestion(PageBaseWithTitle, PageBaseWithValue):
         if not isinstance(s, str):
             s = str(s)
         s = remove_prefix(cls.CORRECT_TAG, s)
-        
         s = markup_to_html_plain(page_context, s)
-
         # allow HTML in option
         s = mark_safe(s)
 
