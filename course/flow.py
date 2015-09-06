@@ -1086,55 +1086,72 @@ def view_flow_page(pctx, flow_session_id, ordinal):
             getattr(grading_rule, "grade_identifier", None)
             is not None)
 
-    flow_page_warning_message = None
-    flow_page_warning_message_next = None
-
+    completed_before = getattr(grading_rule, "completed_before", None)
     session_due = getattr(grading_rule, "due", None)
     credit_percent = getattr(grading_rule, "credit_percent", None)
 
     credit_next = getattr(grading_rule, "credit_next", None)
     is_next_final = getattr(grading_rule, "is_next_final", False)
 
-    if is_next_final:
-        flow_page_warning_message_next = (
-                ugettext("Session ended afterward will not receive grade."))
-    else:
-        flow_page_warning_message_next = (
-                _("Session ended afterward will receive no more than %d%% "
-                  "of your grade.") % credit_next)
-
-    if now_datetime and session_due:
-        time_delta = session_due - now_datetime
-        time_remain_str = format_timedelta_local(session_due, now_datetime)
-
-        if now_datetime < session_due:
-            flow_page_warning_message = (
-                string_concat(
-                    _("Your have %(time_remain)s (before %(session_due)s) to "
-                      "end this session to get %(credit_percent)d%% of your "
-                      "grade. ")) % {
-                        "time_remain": time_remain_str,
-                        "session_due": compact_local_datetime_str(
-                                session_due, now_datetime),
-                        "credit_percent": credit_percent}
-                + flow_page_warning_message_next)
-
-        from datetime import timedelta
-
-        if flow_page_warning_message and flow_page_warning_message_next:
-
-            if time_delta > timedelta(hours=48):
-                messages.add_message(request, messages.INFO, 
-                                     flow_page_warning_message)
-            else:
-                messages.add_message(request, messages.WARNING,
-                                     flow_page_warning_message,
-                                     extra_tags='danger')
-
     del grading_rule
 
     permissions = fpctx.page.get_modified_permissions_for_page(
             access_rule.permissions)
+
+    if flow_permission.submit_answer in permissions:
+        flow_page_warning_message = ""
+        flow_page_warning_message_next = ""
+
+        if is_next_final:
+            flow_page_warning_message_next = (
+                    ugettext("Session ended afterward will not receive grade.")
+                    + " ")
+        else:
+            flow_page_warning_message_next = (
+                    string_concat(_("Session ended afterward will receive no "
+                                    "more than <b>%d%%</b> of your grade."), " ") %
+                    credit_next)
+
+        if now_datetime and completed_before:
+            time_delta = completed_before - now_datetime
+            time_remain_str = format_timedelta_local(completed_before, now_datetime)
+
+            if now_datetime < completed_before:
+                flow_page_warning_message = (
+                    string_concat(
+                        _("Your have <b>%(time_remain)s</b> (before <b>"
+                          "%(completed_before)s</b>) to end this session to "
+                          "get <b>%(credit_percent)d%%</b> of your grade."), " ") %
+                        {
+                            "time_remain": time_remain_str,
+                            "completed_before": compact_local_datetime_str(
+                                completed_before, now_datetime),
+                            "credit_percent": credit_percent}
+                        + flow_page_warning_message_next)
+
+            if session_due:
+                flow_page_warning_message += (
+                        string_concat(
+                            _("If you neither ended this session nor applied "
+                              "'Keep session and apply new rules' before <b>"
+                              "%(session_due)s</b>, your session will be "
+                              "ended later, which might also reduce your "
+                              "grade.")) %
+                            { "session_due": compact_local_datetime_str(
+                                session_due, now_datetime)}
+                            )
+
+            from datetime import timedelta
+
+            if flow_page_warning_message:
+
+                if time_delta > timedelta(hours=48):
+                    messages.add_message(request, messages.INFO, 
+                                         flow_page_warning_message)
+                else:
+                    messages.add_message(request, messages.WARNING,
+                                         flow_page_warning_message,
+                                         extra_tags='danger')
 
     if access_rule.message:
         messages.add_message(request, messages.INFO, access_rule.message)
