@@ -7,7 +7,7 @@ from django.db import models, migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('course', '0070_drop_facilities_from_db'),
+        ('course', '0071_merge_with_local'),
     ]
 
     operations = [
