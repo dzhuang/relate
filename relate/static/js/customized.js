@@ -44,7 +44,7 @@ function generate_download_pdf_view() {
         //        }
         //console.log(file_id);
         if ($(file_id).length == 0) {
-            $('<a href="#" onclick="embed_viewer(this)" id="' + file_id + '"><i class="fa fa-eye"></i>在线查看</a> <div id="' + file_id + '_pdfviewer_div"></div>').insertAfter($(element_i));
+            $('<a href="#" onclick="embed_viewer(this)" id="' + file_id + '"><i class="fa fa-eye" title="在线查看"></i></a> <div id="' + file_id + '_pdfviewer_div"></div>').insertAfter($(element_i));
             $(element_i)
                 .attr("id", file_id + "_download_link")
                 .after(" &middot; ");
@@ -105,7 +105,7 @@ function embed_viewer(item) {
         $('html, body').animate({
             scrollTop: $(item).offset().top
         }, 1000);
-        $(item).attr("onclick", "close_viewer(this);").html("<i class='fa fa-eye-slash'></i>关闭在线查看");
+        $(item).attr("onclick", "close_viewer(this);").attr("title", "关闭在线查看").html("<i class='fa fa-eye-slash'></i>");
     }
 }
 
@@ -114,7 +114,7 @@ function close_viewer(item) {
     $("#" + display_DIV_ID).html("");
     //$("#" + display_DIV_ID).slideUp("slow", function(){ $("#" + display_DIV_ID).html("");});
     //$("#" + display_DIV_ID).attr("style", "")
-    $(item).attr("onclick", "embed_viewer(this)").html("<i class='fa fa-eye'></i>在线查看");
+    $(item).attr("onclick", "embed_viewer(this)").attr("title", "在线查看").html("<i class='fa fa-eye'></i>");
     $('html, body').animate({
         scrollTop: $(item).offset().top
     }, 1000);
