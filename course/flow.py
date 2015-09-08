@@ -1393,7 +1393,10 @@ def view_flow_page(pctx, flow_session_id, ordinal):
                             "credit_percent": credit_percent}
                         + flow_page_warning_message_next)
 
-            if session_due and (len(expiration_mode_choices)>1):
+            if (session_due
+                and (len(expiration_mode_choices)>1)
+                and not is_next_final
+               ):
                 flow_page_warning_message += (
                         string_concat(
                             _("If you neither ended this session nor applied "
