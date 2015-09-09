@@ -188,18 +188,7 @@ def get_media(request, course_identifier, commit_sha, media_path):
     role, participation = get_role_and_participation(request, course)
 
     repo = get_course_repo(course)
-
-    from course.content import get_repo_blob_data_cached
-    try:
-        data = get_repo_blob_data_cached(
-                repo, "media/"+media_path, commit_sha.encode())
-    except ObjectDoesNotExist:
-        raise http.Http404()
-
-    from mimetypes import guess_type
-    content_type, _ = guess_type(media_path)
-
-    return http.HttpResponse(data, content_type=content_type)
+    return get_repo_file_response(repo, "media/" + media_path, commit_sha)
 
 
 def repo_file_etag_func(request, course_identifier, commit_sha, path):
@@ -213,28 +202,8 @@ def get_repo_file(request, course_identifier, commit_sha, path):
 
     role, participation = get_role_and_participation(request, course)
 
-    repo = get_course_repo(course)
-
-    access_kind = "public"
-    if request.relate_exam_lockdown:
-        access_kind = "in_exam"
-
-    from course.content import is_repo_file_accessible_as
-    if not is_repo_file_accessible_as(access_kind, repo, commit_sha, path):
-        raise PermissionDenied()
-
-    from course.content import get_repo_blob_data_cached
-
-    try:
-        data = get_repo_blob_data_cached(
-                repo, path, commit_sha.encode())
-    except ObjectDoesNotExist:
-        raise http.Http404()
-
-    from mimetypes import guess_type
-    content_type, _ = guess_type(path)
-
-    return http.HttpResponse(data, content_type=content_type)
+    return get_repo_file_backend(
+            request, course, role, participation, commit_sha, path)
 
 
 def current_repo_file_etag_func(request, course_identifier, path):
@@ -258,13 +227,16 @@ def get_current_repo_file(request, course_identifier, path):
     role, participation = get_role_and_participation(
             request, course)
 
-    from course.views import check_course_state
-    check_course_state(course, role)
-
     from course.content import get_course_commit_sha
     commit_sha = get_course_commit_sha(course, participation)
 
-    role, participation = get_role_and_participation(request, course)
+    return get_repo_file_backend(
+            request, course, role, participation, commit_sha, path)
+
+
+def get_repo_file_backend(request, course, role, participation, commit_sha, path):
+    from course.views import check_course_state
+    check_course_state(course, role)
 
     repo = get_course_repo(course)
 
@@ -276,6 +248,10 @@ def get_current_repo_file(request, course_identifier, path):
     if not is_repo_file_accessible_as(access_kind, repo, commit_sha, path):
         raise PermissionDenied()
 
+    return get_repo_file_response(repo, path, commit_sha)
+
+
+def get_repo_file_response(repo, path, commit_sha):
     from course.content import get_repo_blob_data_cached
 
     try:
@@ -286,6 +262,9 @@ def get_current_repo_file(request, course_identifier, path):
 
     from mimetypes import guess_type
     content_type, _ = guess_type(path)
+
+    if content_type is None:
+        content_type = "application/octet-stream"
 
     return http.HttpResponse(data, content_type=content_type)
 
@@ -305,7 +284,7 @@ class FakeTimeForm(StyledForm):
 
         self.helper.add_input(
                 # Translators: "set" fake time.
-                Submit("set", _("Set"), css_class="col-lg-offset-2"))
+                Submit("set", _("Set")))
         self.helper.add_input(
                 # Translators: "unset" fake time.
                 Submit("unset", _("Unset")))
@@ -390,8 +369,7 @@ class InstantFlowRequestForm(StyledForm):
         self.helper.add_input(
                 Submit(
                     "add",
-                    pgettext("Add an instant flow", "Add"),
-                    css_class="col-lg-offset-2"))
+                    pgettext("Add an instant flow", "Add")))
         self.helper.add_input(
                 Submit(
                     "cancel",
@@ -473,7 +451,7 @@ class FlowTestForm(StyledForm):
                         string_concat(
                             pgettext("Start an activity", "Go"),
                             " &raquo;")),
-                    css_class="col-lg-offset-2"))
+                    ))
 
 
 @course_view
@@ -548,8 +526,7 @@ class ExceptionStage1Form(StyledForm):
                     mark_safe_lazy(
                         string_concat(
                             pgettext("Next step", "Next"),
-                            " &raquo;")),
-                    css_class="col-lg-offset-2"))
+                            " &raquo;"))))
 
 
 @course_view
@@ -610,14 +587,12 @@ class CreateSessionForm(StyledForm):
             self.helper.add_input(
                     Submit(
                         "create_session",
-                        _("Create session (override rules)"),
-                        css_class="btn-danger col-lg-offset-2"))
+                        _("Create session (override rules)")))
         else:
             self.helper.add_input(
                     Submit(
                         "create_session",
-                        _("Create session"),
-                        css_class="col-lg-offset-2"))
+                        _("Create session")))
 
 
 class ExceptionStage2Form(StyledForm):
@@ -639,8 +614,7 @@ class ExceptionStage2Form(StyledForm):
                     mark_safe_lazy(
                         string_concat(
                             pgettext("Next step", "Next"),
-                            " &raquo;")),
-                    css_class="col-lg-offset-2"))
+                            " &raquo;"))))
 
 
 @course_view
@@ -842,8 +816,7 @@ class ExceptionStage3Form(StyledForm):
 
         self.helper.add_input(
                 Submit(
-                    "save", _("Save"),
-                    css_class="col-lg-offset-2"))
+                    "save", _("Save")))
 
         self.helper.layout = Layout(*layout)
 

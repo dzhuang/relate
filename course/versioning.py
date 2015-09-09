@@ -24,6 +24,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+import six
+
 from django.shortcuts import (  # noqa
         render, get_object_or_404, redirect)
 from django.contrib import messages
@@ -50,7 +52,6 @@ from course.models import (
 from course.utils import course_view, render_course_page
 import paramiko
 import paramiko.client
-import cgi
 
 
 class AutoAcceptPolicy(paramiko.client.MissingHostKeyPolicy):
@@ -104,7 +105,10 @@ def get_dulwich_client_and_remote_path_from_course(course):
 
     # Work around
     # https://bugs.launchpad.net/dulwich/+bug/1025886
-    client._fetch_capabilities.remove('thin-pack')
+    try:
+        client._fetch_capabilities.remove('thin-pack')
+    except KeyError:
+        pass
 
     return client, remote_path
 
@@ -130,8 +134,7 @@ class CourseCreationForm(StyledModelForm):
         super(CourseCreationForm, self).__init__(*args, **kwargs)
 
         self.helper.add_input(
-                Submit("submit", _("Validate and create"),
-                    css_class="col-lg-offset-2"))
+                Submit("submit", _("Validate and create")))
 
 
 @login_required
@@ -373,15 +376,8 @@ class GitUpdateForm(StyledForm):
     def __init__(self, may_update, previewing, *args, **kwargs):
         super(GitUpdateForm, self).__init__(*args, **kwargs)
 
-        first_button = [True]
-
         def add_button(desc, label):
-            if first_button[0]:
-                self.helper.add_input(
-                        Submit(desc, label, css_class="col-lg-offset-2"))
-                first_button[0] = False
-            else:
-                self.helper.add_input(Submit(desc, label))
+            self.helper.add_input(Submit(desc, label))
 
         if may_update:
             add_button("fetch_update", _("Fetch and update"))
@@ -468,6 +464,11 @@ def update_course(pctx):
                     "prevent_discarding_revisions": True,
                     })
 
+    if six.PY2:
+        from cgi import escape
+    else:
+        from html import escape
+
     text_lines = [
             string_concat(
                 "<b>",
@@ -475,7 +476,8 @@ def update_course(pctx):
                 ":</b> %(commit)s (%(message)s)")
             % {
                 'commit': repo.head(),
-                'message': cgi.escape(repo[repo.head()].message.strip())},
+                'message': escape(
+                    repo[repo.head()].message.strip().decode(errors="replace"))},
             string_concat(
                 "<b>",
                 ugettext("Public active git SHA"),
@@ -483,8 +485,8 @@ def update_course(pctx):
             % {
                 'commit': course.active_git_commit_sha,
                 'message': (
-                    cgi.escape(repo[course.active_git_commit_sha.encode()]
-                        .message.strip()))
+                    escape(repo[course.active_git_commit_sha.encode()]
+                        .message.strip().decode(errors="replace")))
                 },
             ]
     if participation is not None and participation.preview_git_commit_sha:
@@ -496,8 +498,8 @@ def update_course(pctx):
                 % {
                     'commit': participation.preview_git_commit_sha,
                     'message': (
-                        cgi.escape(repo[participation.preview_git_commit_sha
-                            .encode()].message.strip())),
+                        escape(repo[participation.preview_git_commit_sha
+                            .encode()].message.strip().decode(errors="replace"))),
                 })
     else:
         text_lines.append(
