@@ -170,6 +170,40 @@ $(function () {
         active: false,
         collapsible: true,
     });
+    
+    $("[id^='for_download_file_']").each(function () {
+        var file_name = $(this).attr('id');
+        var ext = file_name.split('.').pop().toLowerCase();
+        var fa_file_icon_class = "";
+        if (['xls', 'xlst', 'xlsm'].indexOf(ext) >= 0) {
+           fa_file_icon_class ="file-excel-o";
+        }
+        else if(['doc','docx','dot','dotm','docm'].indexOf(ext) >= 0) {
+            fa_file_icon_class ="file-word-o";
+        }
+        else if(['jpg','png','jpeg','gif','bmp'].indexOf(ext) >= 0) {
+            fa_file_icon_class ="file-image-o";
+        }
+        else if(['ppt','pptx','pot','potx','pps','ppsx'].indexOf(ext) >= 0) {
+            fa_file_icon_class ="file-powerpoint-o";
+        }
+        else if(['pdf'].indexOf(ext) >= 0) {
+            fa_file_icon_class ="file-pdf-o";
+        }
+        else if(['zip', 'rar'].indexOf(ext) >= 0) {
+            fa_file_icon_class ="file-zip-o";
+        }
+        else if(['text'].indexOf(ext) >= 0) {
+            fa_file_icon_class ="file-text-o";
+        }
+        else{
+            fa_file_icon_class ="file-o";
+        };
+        
+        $(this).addClass("fa fa-" + fa_file_icon_class);
+        
+    });
+    
 });
 $(".ui-state-disabled").unbind("click");
 
