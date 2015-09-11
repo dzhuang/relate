@@ -162,15 +162,23 @@ function detectIE() {
 //    
 //});
 
-// {{{ enable accordion
+function getAnchor(url)
+{
+    var index = url.lastIndexOf('#');
+    if (index != -1)
+        return url.substring(index);
+}
 
 
 $(function () {
+    // {{{ enable accordion deprecated
     $(".accordion").accordion({
         active: false,
         collapsible: true,
     });
+    // }}}
     
+    // {{{ enable file download filetype icon
     $("[id^='for_download_file_']").each(function () {
         var file_name = $(this).attr('id');
         var ext = file_name.split('.').pop().toLowerCase();
@@ -203,10 +211,26 @@ $(function () {
         $(this).addClass("fa fa-" + fa_file_icon_class);
         
     });
+    // }}}
+
+    // {{{ open accordion on getanchor
     
+//    var anchor = getAnchor(location.href);
+//    $(anchor).next().children('.collapse').show();
+    
+    // }}}
+
 });
+
+// deprecated
 $(".ui-state-disabled").unbind("click");
 
+function locationHashChanged() {
+    var anchor = getAnchor(location.href);
+    var collapse_block = $(anchor).next().children('.collapse');
+    collapse_block.collapse('show');
+    
+};
 
 
-// }}}
+window.onhashchange = locationHashChanged;
