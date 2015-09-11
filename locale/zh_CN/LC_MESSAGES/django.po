@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-09-09 11:05+0800\n"
+"POT-Creation-Date: 2015-09-11 11:54+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -179,12 +179,12 @@ msgstr "用户模拟"
 msgid "Already impersonating someone."
 msgstr "已经模拟了某个用户. "
 
-#: .\course\auth.py:176 .\relate\templates\base.html:80
+#: .\course\auth.py:176 .\relate\templates\base.html:78
 msgid "Impersonate user"
 msgstr "用户模拟"
 
 #: .\course\auth.py:186 .\relate\templates\base-page-top.html:52
-#: .\relate\templates\base.html:78
+#: .\relate\templates\base.html:76
 msgid "Stop impersonating"
 msgstr "停止模拟用户"
 
@@ -203,7 +203,7 @@ msgstr "停止模拟用户"
 #: .\course\auth.py:280 .\course\templates\course\course-page.html:40
 #: .\course\templates\course\flow-start.html:225
 #: .\course\templates\course\login.html:7 .\relate\templates\403.html:14
-#: .\relate\templates\base.html:115
+#: .\relate\templates\base.html:113
 msgid "Sign in"
 msgstr "登录"
 
@@ -267,8 +267,8 @@ msgstr "该电子邮件已经注册, 您是否需要 <a href='%s'>重置密码</
 #: .\course\templates\course\home.html:76
 #: .\course\templates\course\sandbox-page.html:17
 #: .\course\templates\course\sign-in-email.txt:2
-#: .\relate\templates\admin\base_site.html:5 .\relate\templates\base.html:15
-#: .\relate\templates\base.html.py:61 .\relate\templates\maintenance.html:7
+#: .\relate\templates\admin\base_site.html:5 .\relate\templates\base.html:13
+#: .\relate\templates\base.html.py:59 .\relate\templates\maintenance.html:7
 msgid "RELATE"
 msgstr "LearningWhat"
 
@@ -1618,7 +1618,7 @@ msgstr "课程根目录"
 msgid ""
 "Name of a YAML file in the git repository that contains the root course "
 "descriptor."
-msgstr "git仓库中包含了课程内容描述的YAML文件的文件名, 通常为course.xml. "
+msgstr "git仓库中包含了课程内容描述的YAML文件的文件名, 默认为course.yml. "
 
 #: .\course\models.py:213
 msgid "Course file"
@@ -1627,11 +1627,11 @@ msgstr "课程主页文件"
 #: .\course\models.py:216
 msgid ""
 "Name of a YAML file in the git repository that contains calendar information."
-msgstr "git仓库中包含了课程教学日历信息的YAML文件的文件名, 通常为event.xml. "
+msgstr "git仓库中包含了课程教学日历信息的YAML文件的文件名, 默认为events.yml. "
 
-#: .\course\models.py:218
+#: .\course\models.py:218 .\course\validation.py:886
 msgid "Events file"
-msgstr "event(事件)文件"
+msgstr "events(事件)文件"
 
 #: .\course\models.py:222
 msgid "If set, each enrolling student must be individually approved."
@@ -2325,7 +2325,7 @@ msgstr ""
 "容"
 
 #: .\course\models.py:1423 .\course\templates\course\course-base.html:74
-#: .\relate\templates\base.html:88
+#: .\relate\templates\base.html:86
 msgid "Exams"
 msgstr "测验"
 
@@ -4287,30 +4287,34 @@ msgstr "%s: 找不到page"
 msgid "group id '%(group_id)s' not unique"
 msgstr "group id \"%(group_id)s\" 应该是唯一的"
 
-#: .\course\validation.py:900
+#: .\course\validation.py:887
+#, python-format
+msgid "Your course repository does not have an events file named '%s'."
+msgstr "您课程的仓库中并不包含一个名为'%s'的事件文件."
+
+#: .\course\validation.py:906
 msgid ""
 "Your course repository has a 'media/' directory. Linking to media files "
 "using 'media:' is discouraged. Use the 'repo:' and 'repocur:' linkng schemes "
 "instead."
-msgstr ""
-#"你课程的仓库中有一个'media/'目录. 不建议使用'media:'来链接到媒体文件. 建议改"
-#"为使用'repo:'和'repocur:'来链接到你的方案(schemes)."
+msgstr "你课程的仓库中有一个'media/'目录. 不建议使用'media:'来链接到媒体文件. "
+"建议改为使用'repo:'和'repocur:'来链接到你的方案(schemes)."
 
-#: .\course\validation.py:922
+#: .\course\validation.py:928
 msgid ""
 "invalid flow name. Flow names may only contain (roman) letters, numbers, "
 "dashes and underscores."
 msgstr "无效的flow名称. flow的名称只能有英文字母、数字、减号和下划线. "
 
-#: .\course\validation.py:945
+#: .\course\validation.py:951
 msgid "flow uses more than one grade_identifier"
 msgstr "本flow中使用了多于1个grade_identifier"
 
-#: .\course\validation.py:952
+#: .\course\validation.py:958
 msgid "flow uses the same grade_identifier as another flow"
 msgstr "本flow使用了与另一个flow相同的grade_identifier"
 
-#: .\course\validation.py:1050
+#: .\course\validation.py:1056
 msgid "WARNINGS: "
 msgstr "警告："
 
@@ -4454,7 +4458,7 @@ msgid "only staff may set fake time"
 msgstr "只有课程管理人员(staff)及以上可以设置虚拟时间"
 
 #: .\course\views.py:342 .\relate\templates\base-page-top.html:41
-#: .\relate\templates\base.html:82
+#: .\relate\templates\base.html:80
 msgid "Set fake time"
 msgstr "设置虚拟时间"
 
@@ -4724,36 +4728,36 @@ msgid ""
 "Now impersonating %(first_name)s %(last_name)s (%(username)s, %(email)s)."
 msgstr "正在模拟用户 %(last_name)s%(first_name)s (%(username)s, %(email)s)."
 
-#: .\relate\templates\base.html:71
+#: .\relate\templates\base.html:69
 msgid "Staff"
 msgstr "高级管理"
 
-#: .\relate\templates\base.html:74
+#: .\relate\templates\base.html:72
 msgid "Admin site"
 msgstr "管理网站"
 
-#: .\relate\templates\base.html:76
+#: .\relate\templates\base.html:74
 msgid "Test/Troubleshoot"
 msgstr "测试/发现问题"
 
-#: .\relate\templates\base.html:89
+#: .\relate\templates\base.html:87
 msgid "Issue exam tickets"
 msgstr "发布测验ticket"
 
-#: .\relate\templates\base.html:90
+#: .\relate\templates\base.html:88
 msgid "Exam check-in"
 msgstr "登入测验"
 
-#: .\relate\templates\base.html:100
+#: .\relate\templates\base.html:98
 #, python-format
 msgid "Signed in as %(username)s"
 msgstr "登录用户： %(username)s"
 
-#: .\relate\templates\base.html:107
+#: .\relate\templates\base.html:105
 msgid "(impersonated)"
 msgstr "(正在模拟用户)"
 
-#: .\relate\templates\base.html:170
+#: .\relate\templates\base.html:168
 msgid "About Us"
 msgstr "关于我们"
 
