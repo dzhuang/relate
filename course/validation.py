@@ -1046,7 +1046,7 @@ def validate_course_on_filesystem_script_entrypoint():
     parser.add_argument('root', default=os.getcwd())
 
     args = parser.parse_args()
-    
+
     fake_repo = FileSystemFakeRepo(args.root)
     warnings = validate_course_content(
             fake_repo,
