@@ -201,10 +201,12 @@ class Course(models.Model):
             verbose_name=_('SSH private key'))
     course_root_path = models.CharField(max_length=200, blank=True,
             help_text=_(
-                'Subdirectory in git repository to use as '
-                'course root directory. Should not include trailing '
-                'slash.'),
-            verbose_name=_('Course root directory'))
+                'Subdirectory *within* the git repository to use as '
+                'course root directory. Not required, and usually blank. '
+                'Use only if your course content lives in a subdirectory '
+                'of your git repository. '
+                'Should not include trailing slash.'),
+            verbose_name=_('Course root in repository'))
 
     course_file = models.CharField(max_length=200,
             default="course.yml",
@@ -1003,8 +1005,10 @@ class FlowRuleException(models.Model):
                 self.flow_id, commit_sha)
 
         tags = None
+        grade_identifier = None
         if hasattr(flow_desc, "rules"):
             tags = getattr(flow_desc.rules, "tags", None)
+            grade_identifier = flow_desc.rules.grade_identifier
 
         try:
             if self.kind == flow_rule_kind.start:
@@ -1012,7 +1016,9 @@ class FlowRuleException(models.Model):
             elif self.kind == flow_rule_kind.access:
                 validate_session_access_rule(ctx, six.text_type(self), rule, tags)
             elif self.kind == flow_rule_kind.grading:
-                validate_session_grading_rule(ctx, six.text_type(self), rule, tags)
+                validate_session_grading_rule(
+                        ctx, six.text_type(self), rule, tags,
+                        grade_identifier)
             else:
                 # the rule refers to FlowRuleException rule
                 raise ValidationError(_("invalid rule kind: ")+self.kind)

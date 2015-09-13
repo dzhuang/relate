@@ -105,6 +105,10 @@ def get_repo_blob(repo, full_name, commit_sha):
 
 
 def get_repo_blob_data_cached(repo, full_name, commit_sha):
+
+    # Allow non-Ascii file name
+    full_name = full_name.encode('utf-8')
+
     from six.moves.urllib.parse import quote_plus
     cache_key = "%%%1".join((
         quote_plus(repo.controldir()), quote_plus(full_name), str(commit_sha)))
@@ -861,6 +865,22 @@ def normalize_flow_desc(flow_desc):
         del d["pages"]
         d["groups"] = [Struct({"id": "main", "pages": pages})]
         return Struct(d)
+
+    if hasattr(flow_desc, "rules"):
+        rules = flow_desc.rules
+        if not hasattr(rules, "grade_identifier"):
+            # Legacy content with grade_identifier in grading rule,
+            # move first found grade_identifier up to rules.
+
+            rules.grade_identifier = None
+            rules.grade_aggregation_strategy = None
+
+            for grule in rules.grading:
+                if grule.grade_identifier is not None:
+                    rules.grade_identifier = grule.grade_identifier
+                    rules.grade_aggregation_strategy = \
+                            grule.grade_aggregation_strategy
+                    break
 
     return flow_desc
 
