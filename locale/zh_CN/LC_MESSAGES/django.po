@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-09-13 18:24+0800\n"
+"POT-Creation-Date: 2015-09-13 22:57+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -67,7 +67,7 @@ msgid "Tags must belong to same course as participation."
 msgstr "Tags必须与同一课程中的participation一致. "
 
 #: .\course\admin.py:375 .\course\admin.py:496 .\course\admin.py:580
-#: .\course\admin.py:693 .\course\admin.py:768 .\course\exam.py:92
+#: .\course\admin.py:693 .\course\admin.py:768 .\course\exam.py:93
 #: .\course\templates\course\gradebook-single.html:17 .\course\views.py:520
 msgid "Participant"
 msgstr "参与者"
@@ -157,7 +157,7 @@ msgstr "虚拟用户时出现错误. "
 #. userfor impersonating. Customize how the name is
 #. shown, but leave email first to retain usability
 #. of form sorted by last name.
-#: .\course\auth.py:137 .\course\exam.py:69 .\course\views.py:498
+#: .\course\auth.py:137 .\course\exam.py:70 .\course\views.py:498
 #, python-format
 msgid "%(user_email)s - %(user_lastname)s, %(user_firstname)s"
 msgstr "%(user_lastname)s%(user_firstname)s(%(user_email)s)"
@@ -166,7 +166,7 @@ msgstr "%(user_lastname)s%(user_firstname)s(%(user_email)s)"
 msgid "Select user to impersonate."
 msgstr "选择您想模拟的用户. "
 
-#: .\course\auth.py:149 .\course\models.py:486
+#: .\course\auth.py:149 .\course\exam.py:179 .\course\models.py:486
 #: .\course\templates\course\grade-import-preview.html:19
 msgid "User"
 msgstr "用户"
@@ -789,28 +789,28 @@ msgstr "新加入了%(n_created)d个预批准, 有%(n_exist)d个是之前已经�
 msgid "Create Participation Preapprovals"
 msgstr "用户加入课程预批准"
 
-#: .\course\exam.py:90
+#: .\course\exam.py:91
 msgid "Select participant for whom ticket is to be issued."
 msgstr "选择发放ticket的的用户. "
 
-#: .\course\exam.py:99 .\course\exam.py:264 .\course\models.py:1428
+#: .\course\exam.py:100 .\course\exam.py:267 .\course\models.py:1428
 #: .\course\models.py:1444
 msgid "Exam"
 msgstr "测验"
 
-#: .\course\exam.py:102
+#: .\course\exam.py:103
 msgid "Revoke prior exam tickets for this user"
 msgstr "撤回之前发给这个用户的测验ticket"
 
-#: .\course\exam.py:109
+#: .\course\exam.py:110
 msgid "Issue ticket"
 msgstr "发布ticket"
 
-#: .\course\exam.py:128
+#: .\course\exam.py:129
 msgid "User is not enrolled in course."
 msgstr "用户未参与本课程. "
 
-#: .\course\exam.py:152
+#: .\course\exam.py:153
 #, python-format
 msgid ""
 "Ticket issued for <b>%(participation)s</b>. The ticket code is <b>%"
@@ -819,11 +819,76 @@ msgstr ""
 "发给用户<b>%(participation)s</b>的ticket. 该ticket的代码是<b>%(ticket_code)"
 "s</b>."
 
-#: .\course\exam.py:164
+#: .\course\exam.py:165
 msgid "Issue Exam Ticket"
 msgstr "发布测验ticket"
 
-#: .\course\exam.py:245
+#: .\course\exam.py:174
+msgid "List"
+msgstr "列表"
+
+#: .\course\exam.py:180 .\course\templates\course\gradebook-by-opp.html:98
+#: .\course\templates\course\gradebook-participant.html:35
+#: .\course\templates\course\gradebook.html:25
+msgctxt "real name of a user"
+msgid "Name"
+msgstr "姓名"
+
+#: .\course\exam.py:181 .\course\exam.py:228
+msgctxt "ticket code required to login exam"
+msgid "Code"
+msgstr "登录代码"
+
+#: .\course\exam.py:205
+msgid "Instructions for {{ ticket.exam.description }}"
+msgstr "对 {{ ticket.exam.description }} 的使用说明"
+
+#: .\course\exam.py:213
+msgid ""
+"If this is not you, please let the proctor know so that you can get the "
+"correct set of instructions."
+msgstr "如果这不是你，请与监考人联系，以保证你得到正确的使用说明."
+
+#: .\course\exam.py:216
+msgid ""
+"Please sit down at your workstation and open a browser at this location:"
+msgstr "请坐在您的电脑前，然后用web浏览器打开网站:"
+
+#: .\course\exam.py:219
+msgid "Exam URL"
+msgstr "测验URL"
+
+#: .\course\exam.py:221
+msgid ""
+"You should see boxes prompting for your user name and a one-time check-in "
+"code."
+msgstr "您应该会看到一个弹出盒子要求您输入用户名和一次性的登入代码."
+
+#: .\course\exam.py:224
+msgid "Enter the following information"
+msgstr "请输入以下信息"
+
+#: .\course\exam.py:226 .\course\exam.py:421
+msgid "User name"
+msgstr "用户名"
+
+#: .\course\exam.py:230
+msgid "You have one hour to complete the exam."
+msgstr "您有一个小时时间完成这个测验. "
+
+#: .\course\exam.py:232
+msgid "Good luck!"
+msgstr "祝你好运! "
+
+#: .\course\exam.py:209
+msgid ""
+"These are personalized instructions for {{ ticket.participation.user."
+"last_name }}, {{ ticket.participation.user.first_name }}."
+msgstr ""
+"以下是对 {{ ticket.participation.user.last_name }}{{ ticket.participation."
+"user.first_name }} 个人的说明."
+
+#: .\course\exam.py:248
 msgid ""
 "Enter <a href=\"http://documen.tician.de/relate/content.html#relate-markup"
 "\">RELATE markup</a> containing Django template statements to render your "
@@ -833,61 +898,63 @@ msgid ""
 "{{ tkt.exam.description }}</tt>, and <tt>{{ checkin_uri }}</tt> as "
 "placeholders. See the example for how to use this."
 msgstr ""
+"输入一段包含Django模板声明的<a href=\"http://documen.tician.de/relate/"
+"content.html#relate-markup\">RELATE markup</a>来渲染您的测验ticket. "
+"<tt>tickets</tt>包含了一个数据结构列表，这些结构包含了ticket的信息. 对于该列"
+"表中每项<tt>tkt</tt>，使用<tt>{{ tkt.participation.user.user_name }}</tt>, "
+"<tt>{{ tkt.code }}</tt>, <tt>{{ tkt.exam.description }}</tt>, 以及<tt>"
+"{{ checkin_uri }}</tt> 作为占位符. 请参考以上的例子."
 
-#: .\course\exam.py:266
+#: .\course\exam.py:269
 msgid "Ticket Format"
 msgstr "ticket格式"
 
-#: .\course\exam.py:272
+#: .\course\exam.py:275
 msgid "Revoke prior exam tickets"
 msgstr "撤回之前的测验ticket"
 
-#: .\course\exam.py:279
+#: .\course\exam.py:282
 msgid "Issue tickets"
 msgstr "发布ticket"
 
-#: .\course\exam.py:291
+#: .\course\exam.py:294
 msgid "must be instructor or TA to batch-issue tickets"
 msgstr "只有任课老师(instructor)和助理(TA)可以批量发布ticket"
 
-#: .\course\exam.py:343 .\course\exam.py:351
+#: .\course\exam.py:346 .\course\exam.py:354
 msgid "Template rendering failed"
 msgstr "模板渲染失败"
 
-#: .\course\exam.py:357
+#: .\course\exam.py:360
 #, python-format
 msgid "%d tickets issued."
 msgstr "%d个ticket已发布. "
 
-#: .\course\exam.py:365
+#: .\course\exam.py:368
 msgid "Batch-Issue Exam Tickets"
 msgstr "批量发布测验ticket"
 
-#: .\course\exam.py:418
-msgid "User name"
-msgstr "用户名"
-
-#: .\course\exam.py:421
+#: .\course\exam.py:424
 msgid "This is typically your full email address."
 msgstr "通常是你的完整电子邮件. "
 
-#: .\course\exam.py:422
+#: .\course\exam.py:425
 msgid "Code"
 msgstr "代码"
 
-#: .\course\exam.py:429
+#: .\course\exam.py:432
 msgid "Check in"
 msgstr "登入"
 
-#: .\course\exam.py:447
+#: .\course\exam.py:450
 msgid "Invalid check-in data."
 msgstr "无效的登入数据."
 
-#: .\course\exam.py:476
+#: .\course\exam.py:479
 msgid "Check in for Exam"
 msgstr "登入测验"
 
-#: .\course\exam.py:563
+#: .\course\exam.py:566
 msgid "Error while processing exam lockdown: ticket not found."
 msgstr "处理测验锁定时出错：未找到ticket. "
 
@@ -3738,13 +3805,6 @@ msgid ""
 "grading rules. </p>"
 msgstr ""
 
-#: .\course\templates\course\gradebook-by-opp.html:98
-#: .\course\templates\course\gradebook-participant.html:35
-#: .\course\templates\course\gradebook.html:25
-msgctxt "real name of a user"
-msgid "Name"
-msgstr "姓名"
-
 #: .\course\templates\course\gradebook-by-opp.html:100
 msgid "Sessions"
 msgstr ""
@@ -4822,8 +4882,17 @@ msgstr "用户信息"
 msgid "Sign out"
 msgstr "退出登录"
 
-#~ msgid "List"
-#~ msgstr "列表"
+#, fuzzy
+#~| msgctxt "Participation role"
+#~| msgid "Instructor"
+#~ msgid "Instructions for"
+#~ msgstr "任课老师"
+
+#, fuzzy
+#~| msgctxt "real name of a user"
+#~| msgid "Name"
+#~ msgid "Name"
+#~ msgstr "姓名"
 
 #~ msgid "Usage time"
 #~ msgstr "使用的时间"
