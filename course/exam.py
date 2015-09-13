@@ -169,13 +169,13 @@ def issue_exam_ticket(request):
 
 # {{{ batch-issue tickets
 
-INITIAL_EXAM_TICKET_TEMPLATE = _("""\
+INITIAL_EXAM_TICKET_TEMPLATE = ("""\
 # List
 
 <table class="table">
   <thead>
     <tr>
-      <th>User</th> <th>Name</th><th>Code</th>
+      <th>{% trans "User" %}</th> <th>{% trans "Name" %}</th><th>Code</th>
     </tr>
   </thead>
 
