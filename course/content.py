@@ -532,28 +532,31 @@ JINJA_PREFIX = "[JINJA]"
 
 
 def markup_to_html(course, repo, commit_sha, text, reverse_func=None,
-        validate_only=False):
+        validate_only=False, jinja_env={}):
     if reverse_func is None:
         from django.core.urlresolvers import reverse
         reverse_func = reverse
 
-    try:
-        import django.core.cache as cache
-    except ImproperlyConfigured:
-        cache_key = None
+    if not jinja_env:
+        try:
+            import django.core.cache as cache
+        except ImproperlyConfigured:
+            cache_key = None
+        else:
+            import hashlib
+            cache_key = ("markup:%s:%s"
+                    % (str(commit_sha),
+                        hashlib.md5(text.encode("utf-8")).hexdigest()))
+
+            def_cache = cache.caches["default"]
+            result = def_cache.get(cache_key)
+            if result is not None:
+                return result
+
+        if text.lstrip().startswith(JINJA_PREFIX):
+            text = remove_prefix(JINJA_PREFIX, text.lstrip())
     else:
-        import hashlib
-        cache_key = ("markup:%s:%s"
-                % (str(commit_sha),
-                    hashlib.md5(text.encode("utf-8")).hexdigest()))
-
-        def_cache = cache.caches["default"]
-        result = def_cache.get(cache_key)
-        if result is not None:
-            return result
-
-    if text.lstrip().startswith(JINJA_PREFIX):
-        text = remove_prefix(JINJA_PREFIX, text.lstrip())
+        cache_key = None
 
     # {{{ process through Jinja
 
@@ -562,7 +565,7 @@ def markup_to_html(course, repo, commit_sha, text, reverse_func=None,
             loader=GitTemplateLoader(repo, commit_sha),
             undefined=StrictUndefined)
     template = env.from_string(text)
-    text = template.render()
+    text = template.render(**jinja_env)
 
     # }}}
 
@@ -863,6 +866,22 @@ def normalize_flow_desc(flow_desc):
         d["groups"] = [Struct({"id": "main", "pages": pages})]
         return Struct(d)
 
+    if hasattr(flow_desc, "rules"):
+        rules = flow_desc.rules
+        if not hasattr(rules, "grade_identifier"):
+            # Legacy content with grade_identifier in grading rule,
+            # move first found grade_identifier up to rules.
+
+            rules.grade_identifier = None
+            rules.grade_aggregation_strategy = None
+
+            for grule in rules.grading:
+                if grule.grade_identifier is not None:
+                    rules.grade_identifier = grule.grade_identifier
+                    rules.grade_aggregation_strategy = \
+                            grule.grade_aggregation_strategy
+                    break
+
     return flow_desc
 
 
@@ -964,7 +983,10 @@ def instantiate_flow_page(location, repo, page_desc, commit_sha):
 
 
 def _adjust_flow_session_page_data_inner(repo, flow_session,
-        course_identifier, flow_desc, commit_sha):
+        course_identifier, flow_desc):
+    commit_sha = get_course_commit_sha(
+            flow_session.course, flow_session.participation)
+
     from course.models import FlowPageData
 
     def remove_page(fpd):
@@ -1110,11 +1132,15 @@ def _adjust_flow_session_page_data_inner(repo, flow_session,
 
 
 def adjust_flow_session_page_data(repo, flow_session,
-        course_identifier, flow_desc, commit_sha):
+        course_identifier, flow_desc):
+    # The atomicity is not done as a decorator above because we can't import
+    # django.db at the module level here. The relate-validate script wants to
+    # import this module, and it obviously has no database.
+
     from django.db import transaction
     with transaction.atomic():
         return _adjust_flow_session_page_data_inner(
-                repo, flow_session, course_identifier, flow_desc, commit_sha)
+                repo, flow_session, course_identifier, flow_desc)
 
 
 def get_course_commit_sha(course, participation):

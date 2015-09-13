@@ -53,7 +53,6 @@ from course.constants import (
         flow_session_expiration_mode,
         FLOW_SESSION_EXPIRATION_MODE_CHOICES,
         is_expiration_mode_allowed,
-        flow_rule_kind,
         grade_aggregation_strategy,
         GRADE_AGGREGATION_STRATEGY_CHOICES
         )
@@ -174,25 +173,23 @@ def start_flow(repo, course, participation, user, flow_id, flow_desc,
     # Create flow grading opportunity. This makes the flow
     # show up in the grade book.
 
-    from course.utils import get_flow_rules
-    from course.models import get_flow_grading_opportunity
-    for grading_rule in get_flow_rules(
-            flow_desc, flow_rule_kind.grading, participation,
-            flow_id, now_datetime, consider_exceptions=False):
-        identifier = getattr(grading_rule, "grade_identifier", None)
+    rules = getattr(flow_desc, "rules", None)
+    if rules is not None:
+        identifier = rules.grade_identifier
+
         if identifier is not None:
+            from course.models import get_flow_grading_opportunity
             get_flow_grading_opportunity(
                     course, flow_id, flow_desc,
                     FlowSessionGradingRule(
                         grade_identifier=identifier,
-                        grade_aggregation_strategy=getattr(
-                            grading_rule, "grade_aggregation_strategy"),
+                        grade_aggregation_strategy=rules.grade_aggregation_strategy,
                         ))
 
     # will implicitly modify and save the session if there are changes
     from course.content import adjust_flow_session_page_data
     adjust_flow_session_page_data(repo, session,
-            course.identifier, flow_desc, course_commit_sha)
+            course.identifier, flow_desc)
 
     return session
 
@@ -484,6 +481,10 @@ def finish_flow_session(fctx, flow_session, grading_rule,
 
     assert isinstance(grading_rule, FlowSessionGradingRule)
 
+    from course.content import adjust_flow_session_page_data
+    adjust_flow_session_page_data(fctx.repo, flow_session,
+            fctx.course.identifier, fctx.flow_desc)
+
     answer_visits = assemble_answer_visits(flow_session)
 
     (answered_count, unanswered_count) = count_answered_gradable(
@@ -566,6 +567,10 @@ def grade_flow_session(fctx, flow_session, grading_rule,
     grade change with the grade records subsystem.
     """
 
+    from course.content import adjust_flow_session_page_data
+    adjust_flow_session_page_data(fctx.repo, flow_session,
+            fctx.course.identifier, fctx.flow_desc)
+
     if answer_visits is None:
         answer_visits = assemble_answer_visits(flow_session)
 
@@ -600,6 +605,7 @@ def grade_flow_session(fctx, flow_session, grading_rule,
     # a grade record may *already* be saved, and that one might be mistaken
     # for the current one.
     if (grading_rule.grade_identifier
+            and grading_rule.generates_grade
             and is_graded_flow
             and flow_session.participation is not None):
         from course.models import get_flow_grading_opportunity
@@ -935,7 +941,7 @@ def will_receive_feedback(permissions):
 
 
 def get_page_behavior(page, permissions, session_in_progress, answer_was_graded,
-        has_grade_identifier, is_unenrolled_session):
+        generates_grade, is_unenrolled_session):
     show_correctness = None
     show_answer = None
 
@@ -967,8 +973,8 @@ def get_page_behavior(page, permissions, session_in_progress, answer_was_graded,
 
                     and (flow_permission.submit_answer in permissions)
 
-                    and (has_grade_identifier and not is_unenrolled_session
-                        or (not has_grade_identifier))
+                    and (generates_grade and not is_unenrolled_session
+                        or (not generates_grade))
                     ))
 
 
@@ -1082,9 +1088,10 @@ def view_flow_page(pctx, flow_session_id, ordinal):
 
     grading_rule = get_session_grading_rule(
             flow_session, pctx.role, fpctx.flow_desc, now_datetime)
-    has_grade_identifier = (
-            getattr(grading_rule, "grade_identifier", None)
-            is not None)
+    generates_grade = (
+            grading_rule.grade_identifier is not None
+            and
+            grading_rule.generates_grade)
 
     completed_before = getattr(grading_rule, "completed_before", None)
     session_due = getattr(grading_rule, "due", None)
@@ -1136,7 +1143,7 @@ def view_flow_page(pctx, flow_session_id, ordinal):
                     permissions=permissions,
                     session_in_progress=flow_session.in_progress,
                     answer_was_graded=False,
-                    has_grade_identifier=has_grade_identifier,
+                    generates_grade=generates_grade,
                     is_unenrolled_session=flow_session.participation is None)
 
             form = fpctx.page.process_form_post(
@@ -1170,7 +1177,7 @@ def view_flow_page(pctx, flow_session_id, ordinal):
                         permissions=permissions,
                         session_in_progress=flow_session.in_progress,
                         answer_was_graded=answer_was_graded,
-                        has_grade_identifier=has_grade_identifier,
+                        generates_grade=generates_grade,
                         is_unenrolled_session=flow_session.participation is None)
 
                 if fpctx.page.is_answer_gradable():
@@ -1253,7 +1260,7 @@ def view_flow_page(pctx, flow_session_id, ordinal):
                 permissions=permissions,
                 session_in_progress=flow_session.in_progress,
                 answer_was_graded=answer_was_graded,
-                has_grade_identifier=has_grade_identifier,
+                generates_grade=generates_grade,
                 is_unenrolled_session=flow_session.participation is None)
 
         if fpctx.page.expects_answer():
@@ -1306,7 +1313,7 @@ def view_flow_page(pctx, flow_session_id, ordinal):
     else:
         correct_answer = None
 
-    if (has_grade_identifier
+    if (generates_grade
             and flow_session.participation is None
             and flow_permission.submit_answer in permissions):
         messages.add_message(request, messages.INFO,

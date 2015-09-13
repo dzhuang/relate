@@ -83,6 +83,7 @@ class FlowSessionGradingRule(FlowSessionRuleBase):
             "grade_aggregation_strategy",
             "completed_before",
             "due",
+            "generates_grade",
             "description",
             "credit_percent",
             "credit_next", # credit precent of next rule
@@ -407,12 +408,14 @@ def get_session_access_rule(session, role, flow_desc, now_datetime,
 
 
 def get_session_grading_rule(session, role, flow_desc, now_datetime):
+    flow_desc_rules = getattr(flow_desc, "rules", None)
+
     from relate.utils import dict_to_struct
     rules = get_flow_rules(flow_desc, flow_rule_kind.grading,
             session.participation, session.flow_id, now_datetime,
             default_rules_desc=[
                 dict_to_struct(dict(
-                    grade_identifier=None,
+                    generates_grade=False,
                     ))])
 
     session_grading_rule = None
@@ -459,9 +462,8 @@ def get_session_grading_rule(session, role, flow_desc, now_datetime):
 
         if session_grading_rule is None:
             session_grading_rule = FlowSessionGradingRule(
-                    grade_identifier=getattr(rule, "grade_identifier", None),
-                    grade_aggregation_strategy=getattr(
-                        rule, "grade_aggregation_strategy", None),
+                grade_identifier=grade_identifier,
+                grade_aggregation_strategy=grade_aggregation_strategy,
                     completed_before=ds,
                     due=due,
                     generates_grade=generates_grade,
@@ -551,7 +553,7 @@ class FlowPageContext(FlowContext):
 
         from course.content import adjust_flow_session_page_data
         adjust_flow_session_page_data(repo, flow_session,
-                course.identifier, self.flow_desc, self.course_commit_sha)
+                course.identifier, self.flow_desc)
 
         if ordinal >= flow_session.page_count:
             raise PageOrdinalOutOfRange()
@@ -700,7 +702,7 @@ class PageInstanceCache(object):
 # {{{ codemirror config
 
 def get_codemirror_widget(language_mode, interaction_mode,
-        config=None, addon_css=(), addon_js=(),
+        config=None, addon_css=(), addon_js=(), dependencies=(),
         read_only=False):
     theme = "default"
     if read_only:
@@ -774,6 +776,7 @@ def get_codemirror_widget(language_mode, interaction_mode,
 
     return CodeMirrorTextarea(
                     mode=language_mode,
+                    dependencies=dependencies,
                     theme=theme,
                     addon_css=actual_addon_css,
                     addon_js=actual_addon_js,
