@@ -541,7 +541,7 @@ class FlowPageContext(FlowContext):
 
         from course.content import adjust_flow_session_page_data
         adjust_flow_session_page_data(repo, flow_session,
-                course.identifier, self.flow_desc, self.course_commit_sha)
+                course.identifier, self.flow_desc)
 
         if ordinal >= flow_session.page_count:
             raise PageOrdinalOutOfRange()
@@ -690,7 +690,7 @@ class PageInstanceCache(object):
 # {{{ codemirror config
 
 def get_codemirror_widget(language_mode, interaction_mode,
-        config=None, addon_css=(), addon_js=(),
+        config=None, addon_css=(), addon_js=(), dependencies=(),
         read_only=False):
     theme = "default"
     if read_only:
@@ -764,6 +764,7 @@ def get_codemirror_widget(language_mode, interaction_mode,
 
     return CodeMirrorTextarea(
                     mode=language_mode,
+                    dependencies=dependencies,
                     theme=theme,
                     addon_css=actual_addon_css,
                     addon_js=actual_addon_js,
