@@ -28,6 +28,10 @@ import re
 import datetime
 import six
 import sys
+reload(sys)
+sys.setdefaultencoding('utf8')
+
+
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.html import escape

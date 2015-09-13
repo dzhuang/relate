@@ -53,6 +53,10 @@ from course.utils import course_view, render_course_page
 import paramiko
 import paramiko.client
 
+import sys
+reload(sys)
+sys.setdefaultencoding('utf8')
+
 
 class AutoAcceptPolicy(paramiko.client.MissingHostKeyPolicy):
     def missing_host_key(self, client, hostname, key):
