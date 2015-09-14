@@ -207,16 +207,18 @@ Here's a commented example:
 
     .. attribute:: grade_aggregation_strategy
 
-        (Mandatory if :attr:`grade_identifier` is not ``null``)
+        (Required if :attr:`grade_identifier` is not ``null``)
 
         One of :class:`grade_aggregation_strategy`.
 
     .. attribute:: grading
 
+        (Required if grade_identifier is not ``null``)
         A list of :class:`FlowGradingRules`
 
         Rules are tested from top to bottom. The first rule
         whose conditions apply determines the access.
+
 
 .. class:: FlowStartRules
 
@@ -399,6 +401,14 @@ Here's a commented example:
         the lifetime of a flow. I.e. a flow that, at some point during its lifetime,
         *may* have been set to generate a grade must *always* be set to generate
         a grade. Defaults to ``true``.
+
+    .. attribute:: use_last_activity_as_completion_time
+
+        (Optional) A Boolean indicating whether the last time a participant made
+        a change to their flow should be used as the completion time.
+
+        Defaults to ``false`` to match past behavior. ``true`` is probably the more
+        sensible value for this.
 
     .. attribute:: description
 

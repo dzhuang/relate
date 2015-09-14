@@ -76,12 +76,20 @@ def get_course_repo(course):
 
 
 def get_repo_blob(repo, full_name, commit_sha):
+    """
+    :arg full_name: A Unicode string indicating the file name.
+    :arg commit_sha: A byte string containing the commit hash
+    """
+
     if isinstance(repo, SubdirRepoWrapper):
         # full_name must be non-empty
         full_name = repo.subdir + "/" + full_name
         repo = repo.repo
 
     names = full_name.split("/")
+
+    # Allow non-ASCII file name
+    full_name = full_name.encode('utf-8')
 
     tree_sha = repo[commit_sha].tree
     tree = repo[tree_sha]
@@ -105,17 +113,25 @@ def get_repo_blob(repo, full_name, commit_sha):
 
 
 def get_repo_blob_data_cached(repo, full_name, commit_sha):
+    """
+    :arg commit_sha: A byte string containing the commit hash
+    """
 
-    # Allow non-Ascii file name
-    full_name = full_name.encode('utf-8')
-
-    from six.moves.urllib.parse import quote_plus
-    cache_key = "%%%1".join((
-        quote_plus(repo.controldir()), quote_plus(full_name), str(commit_sha)))
+    if isinstance(commit_sha, six.binary_type):
+        from six.moves.urllib.parse import quote_plus
+        cache_key = "%%%1".join((
+            quote_plus(repo.controldir()),
+            quote_plus(full_name),
+            commit_sha.decode()))
+    else:
+        cache_key = None
 
     try:
         import django.core.cache as cache
     except ImproperlyConfigured:
+        cache_key = None
+
+    if cache_key is None:
         return get_repo_blob(repo, full_name, commit_sha).data
 
     def_cache = cache.caches["default"]
@@ -232,6 +248,8 @@ def expand_yaml_macros(repo, commit_sha, yaml_str):
 def get_raw_yaml_from_repo(repo, full_name, commit_sha):
     """Return decoded YAML data structure from
     the given file in *repo* at *commit_sha*.
+
+    :arg commit_sha: A byte string containing the commit hash
     """
 
     from six.moves.urllib.parse import quote_plus
@@ -293,6 +311,10 @@ def get_yaml_from_repo(repo, full_name, commit_sha, cached=True):
 
 
 def is_repo_file_accessible_as(access_kind, repo, commit_sha, path):
+    """
+    :arg commit_sha: A byte string containing the commit hash
+    """
+
     from os.path import dirname, basename, join
     attributes_path = join(dirname(path), ".attributes.yml")
 
@@ -537,15 +559,15 @@ def markup_to_html(course, repo, commit_sha, text, reverse_func=None,
         from django.core.urlresolvers import reverse
         reverse_func = reverse
 
-    if not jinja_env:
+    if course is not None and not jinja_env:
         try:
             import django.core.cache as cache
         except ImproperlyConfigured:
             cache_key = None
         else:
             import hashlib
-            cache_key = ("markup:%s:%s"
-                    % (str(commit_sha),
+            cache_key = ("markup:%d:%s:%s"
+                    % (course.id, str(commit_sha),
                         hashlib.md5(text.encode("utf-8")).hexdigest()))
 
             def_cache = cache.caches["default"]

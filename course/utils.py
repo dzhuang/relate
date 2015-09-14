@@ -86,6 +86,7 @@ class FlowSessionGradingRule(FlowSessionRuleBase):
             "generates_grade",
             "description",
             "credit_percent",
+            "use_last_activity_as_completion_time",
             "credit_next", # credit precent of next rule
             "is_next_final", # next rule is deadline
             ]
@@ -469,6 +470,8 @@ def get_session_grading_rule(session, role, flow_desc, now_datetime):
                     generates_grade=generates_grade,
                     description=getattr(rule, "description", None),
                     credit_percent=getattr(rule, "credit_percent", 100),
+                    use_last_activity_as_completion_time=getattr(
+                        rule, "use_last_activity_as_completion_time", False),
                     credit_next=credit_next,
                     is_next_final=is_next_final)
 
@@ -614,7 +617,9 @@ def instantiate_flow_page_with_ctx(fctx, page_data):
 def course_view(f):
     def wrapper(request, course_identifier, *args, **kwargs):
         pctx = CoursePageContext(request, course_identifier)
-        return f(pctx, *args, **kwargs)
+        response = f(pctx, *args, **kwargs)
+        pctx.repo.close()
+        return response
 
     from functools import update_wrapper
     update_wrapper(wrapper, f)

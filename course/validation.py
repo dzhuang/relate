@@ -558,6 +558,7 @@ def validate_session_grading_rule(ctx, location, grule, tags, grade_identifier):
                 ("if_completed_before", datespec_types),
 
                 ("credit_percent", (int, float)),
+                ("use_last_activity_as_completion_time", bool),
                 ("due", datespec_types),
                 ("generates_grade", bool),
                 ("description", str),
@@ -629,11 +630,11 @@ def validate_flow_rules(ctx, location, rules):
             rules,
             required_attrs=[
                 ("access", list),
-                ("grading", list),
                 ],
             allowed_attrs=[
                 # may not start with an underscore
                 ("start", list),
+                ("grading", list),
                 ("tags", list),
 
                 ("grade_identifier", (type(None), str)),
@@ -706,30 +707,39 @@ def validate_flow_rules(ctx, location, rules):
 
     # {{{ validate grading rules
 
-    has_conditionals = None
+    if not hasattr(rules, "grading"):
+        if rules.grade_identifier is not None:
+            raise ValidationError(
+                    string_concat("%(location)s: ",
+                        _("'grading' block is required if grade_identifier "
+                            "is not null/None.")
+                        % {'location': location}))
 
-    if len(rules.grading) == 0:
-        raise ValidationError(
-                string_concat(
-                    "%s, ",
-                    _("rules/grading: "
-                        "may not be an empty list"))
-                % location)
+    else:
+        has_conditionals = None
 
-    for i, grule in enumerate(rules.grading):
-        has_conditionals = validate_session_grading_rule(
-                ctx,
-                location="%s, rules/grading #%d"
-                % (location,  i+1), grule=grule, tags=tags,
-                grade_identifier=rules.grade_identifier)
+        if len(rules.grading) == 0:
+            raise ValidationError(
+                    string_concat(
+                        "%s, ",
+                        _("rules/grading: "
+                            "may not be an empty list"))
+                    % location)
 
-    if has_conditionals:
-        raise ValidationError(
-                string_concat(
-                    "%s, ",
-                    _("rules/grading: "
-                        "last grading rule must be unconditional"))
-                % location)
+        for i, grule in enumerate(rules.grading):
+            has_conditionals = validate_session_grading_rule(
+                    ctx,
+                    location="%s, rules/grading #%d"
+                    % (location,  i+1), grule=grule, tags=tags,
+                    grade_identifier=rules.grade_identifier)
+
+        if has_conditionals:
+            raise ValidationError(
+                    string_concat(
+                        "%s, ",
+                        _("rules/grading: "
+                            "last grading rule must be unconditional"))
+                    % location)
 
     # }}}
 
@@ -923,7 +933,9 @@ def check_attributes_yml(vctx, repo, path, tree):
         if stat.S_ISDIR(entry.mode):
             _, blob_sha = tree[entry.path]
             subtree = repo[blob_sha]
-            check_attributes_yml(vctx, repo, path+"/"+entry.path, subtree)
+            check_attributes_yml(
+                    vctx, repo,
+                    path+"/"+entry.path.decode("utf-8"), subtree)
 
 
 def validate_course_content(repo, course_file, events_file,
@@ -979,11 +991,12 @@ def validate_course_content(repo, course_file, events_file,
         used_grade_identifiers = set()
 
         for entry in flows_tree.items():
-            if not entry.path.endswith(".yml"):
+            entry_path = entry.path.decode("utf-8")
+            if not entry_path.endswith(".yml"):
                 continue
 
             from course.constants import FLOW_ID_REGEX
-            flow_id = entry.path[:-4]
+            flow_id = entry_path[:-4]
             match = re.match("^"+FLOW_ID_REGEX+"$", flow_id)
             if match is None:
                 raise ValidationError(
@@ -992,9 +1005,9 @@ def validate_course_content(repo, course_file, events_file,
                                 "Flow names may only contain (roman) "
                                 "letters, numbers, "
                                 "dashes and underscores."))
-                        % entry.path)
+                        % entry_path)
 
-            location = "flows/%s" % entry.path
+            location = "flows/%s" % entry_path
             flow_desc = get_yaml_from_repo_safely(repo, location,
                     commit_sha=validate_sha)
 
@@ -1038,6 +1051,9 @@ class FileSystemFakeRepo(object):
 
     def __str__(self):
         return "<FAKEREPO:%s>" % self.root
+
+    def decode(self):
+        return self
 
     @property
     def tree(self):
