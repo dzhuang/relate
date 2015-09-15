@@ -1062,7 +1062,7 @@ def add_buttons_to_form(form, fpctx, flow_session, permissions):
 
     if unanswered_count == 0:
         form.helper.add_input(
-                Submit("finish", _("End session"),
+                Submit("finish", _("Submit session for grading"),
                     css_class="relate-save-button blink"))
 
     return form
@@ -1428,7 +1428,7 @@ def view_flow_page(pctx, flow_session_id, ordinal):
                 flow_page_warning_message = (
                     string_concat(
                         _("Your have <b>%(time_remain)s</b> (before <b>"
-                          "%(completed_before)s</b>) to end this session to "
+                          "%(completed_before)s</b>) to submit this session to "
                           "get <b>%(credit_percent)d%%</b> of your grade."), " ") %
                         {
                             "time_remain": time_remain_str,
@@ -1443,8 +1443,8 @@ def view_flow_page(pctx, flow_session_id, ordinal):
                ):
                 flow_page_warning_message += (
                         string_concat(
-                            _("If you neither ended this session nor applied "
-                              "'Keep session and apply new rules' before <b>"
+                            _("If you neither submitted this session nor applied "
+                              "'Do not submit session for grading' before <b>"
                               "%(session_due)s</b>, your session will be "
                               "ended later, which might also reduce your "
                               "grade.")) %
