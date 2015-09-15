@@ -265,8 +265,7 @@ def get_interaction_kind(fctx, flow_session):
     return ikind
 
 
-def count_answered(fctx, flow_session, answer_visits,
-                   force_gradeable=True):
+def count_answered(fctx, flow_session, answer_visits, force_gradeable=True):
     all_page_data = (FlowPageData.objects
             .filter(
                 flow_session=flow_session,
@@ -298,9 +297,7 @@ def count_answered(fctx, flow_session, answer_visits,
 
     return (answered_count, unanswered_count)
 
-def count_answered_gradable(fctx, flow_session, answer_visits,
-                           force_gradeable=True):
-
+def count_answered_gradable(fctx, flow_session, answer_visits):
     return count_answered(fctx, flow_session, answer_visits,
                            force_gradeable=True)
 
