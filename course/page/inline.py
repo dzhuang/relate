@@ -377,14 +377,7 @@ class ChoicesAnswer(AnswerBase):
             s = str(s)
         s = remove_prefix(cls.CORRECT_TAG, s)
 
-#        from course.content import markup_to_html
         s_contain_p_tag = "<p>" in s
-#        s = markup_to_html(
-#                course=None,
-#                repo=None,
-#                commit_sha=None,
-#                text=s,
-#                )
         s = markup_to_html(page_context, s)
         # allow HTML in option
         if not s_contain_p_tag:
@@ -433,8 +426,6 @@ class ChoicesAnswer(AnswerBase):
                 correct_choice_count += 1
 
             if vctx is not None:
-                print dir(vctx)
-                print vctx.course
                 validate_markup(vctx, location,
                         remove_prefix(self.CORRECT_TAG, choice))
 
@@ -603,8 +594,6 @@ class InlineMultiQuestion(TextQuestionBase, PageBaseWithValue):
         super(InlineMultiQuestion, self).__init__(
                 vctx, location, page_desc)
 
-        #print dir(vctx)
-
         self.embeded_wrapped_name_list = WRAPPED_NAME_RE.findall(
                 page_desc.question)
         self.embeded_name_list = NAME_RE.findall(page_desc.question)
@@ -683,43 +672,36 @@ class InlineMultiQuestion(TextQuestionBase, PageBaseWithValue):
                             ["'" + item + "'"
                                 for item in redundant_answer_list]))
 
-        # validate
-        
         if vctx is not None:
+            print vctx.course
             validate_markup(vctx, location, page_desc.question)
 
-        from course.content import markup_to_html  # noqa
-        question = remainder_html = markup_to_html(
-                course=None,
-                repo=None,
-                commit_sha=None,
-                text=page_desc.question,
-                )
+            remainder_html = markup_to_html(vctx, page_desc.question)
 
-        html_list = []
-        for wrapped_name in self.embeded_wrapped_name_list:
-            [html, remainder_html] = remainder_html.split(wrapped_name)
-            html_list.append(html)
+            html_list = []
+            for wrapped_name in self.embeded_wrapped_name_list:
+                [html, remainder_html] = remainder_html.split(wrapped_name)
+                html_list.append(html)
 
-        if remainder_html != "":
-            html_list.append(remainder_html)
+            if remainder_html != "":
+                html_list.append(remainder_html)
 
-        # make sure all [[ and ]] are paired.
-        embeded_removed = " ".join(html_list)
+            # make sure all [[ and ]] are paired.
+            embeded_removed = " ".join(html_list)
 
-        for sep in ["[[", "]]"]:
-            if sep in embeded_removed:
-                raise ValidationError(
-                    string_concat(
-                        "%s: ",
-                        _("have unpaired '%s'."))
-                    % (location, sep))
+            for sep in ["[[", "]]"]:
+                if sep in embeded_removed:
+                    raise ValidationError(
+                        string_concat(
+                            "%s: ",
+                            _("have unpaired '%s'."))
+                        % (location, sep))
 
-        for idx, name in enumerate(self.embeded_name_list):
-            answers_desc = getattr(page_desc.answers, name)
+            for idx, name in enumerate(self.embeded_name_list):
+                answers_desc = getattr(page_desc.answers, name)
 
-            parsed_answer = parse_question(
-                    vctx, location, name, answers_desc)
+                parsed_answer = parse_question(
+                        vctx, location, name, answers_desc)
 
 
     def required_attrs(self):
@@ -739,15 +721,12 @@ class InlineMultiQuestion(TextQuestionBase, PageBaseWithValue):
         # for correct render of question with more than one
         # paragraph, remove heading <p> tags and change </p>
         # to line break.
-#        from course.content import markup_to_html  # noqa
         return markup_to_html(
                 page_context,
                 self.page_desc.question,
                 ).replace("<p>", "").replace("</p>", "<br/>")
 
     def get_dict_for_form(self, page_context):
-        print dir(page_context)
-        print page_context.course
         remainder_html = self.get_question(page_context)
 
         self.html_list = []
