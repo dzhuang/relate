@@ -46,7 +46,7 @@ import re
 from crispy_forms.layout import Layout, Field, HTML
 
 
-class InlineMultiQuestionForm(StyledInlineForm):    
+class InlineMultiQuestionForm(StyledInlineForm):
     def __init__(self, read_only, dict_for_form, page_context, *args, **kwargs):
         super(InlineMultiQuestionForm, self).__init__(*args, **kwargs)
         self.no_offset_labels = True
