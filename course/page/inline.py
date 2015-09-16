@@ -478,7 +478,8 @@ class ChoicesAnswer(AnswerBase):
 
     def get_form_field(self, page_context, force_required=False):
         choices = tuple(
-            (i,  self.process_choice_string(page_context, self.answers_desc.choices[i]))
+            (i,  self.process_choice_string(
+                page_context, self.answers_desc.choices[i]))
             for i, src_i in enumerate(self.answers_desc.choices))
         choices = (
                 (None, "-"*self.get_max_correct_answer_len(page_context)),
@@ -744,9 +745,8 @@ class InlineMultiQuestion(TextQuestionBase, PageBaseWithValue):
             if sep in embeded_removed:
                 raise ValidationError(
                     string_concat(
-                        "%s: ",
                         _("have unpaired '%s'."))
-                    % (location, sep))
+                    % (sep))
 
         self.answer_instance_list = []
 
