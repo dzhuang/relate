@@ -1,33 +1,50 @@
-html {
-    padding: 0px;
-    margin: 0px;
+/*空白段落、软回车、不间断空格*/
+#blankpar, #softenter, #nsspace {
+    color:slateblue;
+    background-color: khaki
 }
 
-body {
-    padding: 0px;
-    margin: 0px;
-    font-family: "Helvetica Neue", "Luxi Sans", "DejaVu Sans", Tahoma, "Hiragino Sans GB", "Microsoft Yahei", sans-serif;
+/*一二级段落前后间距*/
+#spacebeforeafter1, #spacebeforeafter2{
+    color:slateblue;
+    background-color: khaki
 }
 
-ul[id^="auto"],li[id^="auto"]{
-	<!-- visibility: hidden; -->
+
+/*页眉页脚*/
+#panel_headfoot{
+    color:slateblue;
+    background-color: khaki  
+}
+
+/*尾注*/
+#panel_notice{
+    color:slateblue;
+    background-color: khaki
+}
+
+
+/*段落自动编号*/
+.autonumber {
+    display: none;
+}
+
+/*参考文献自动编号*/
+.litautonumber{
 	display: none;	
 }
 
-li[id^="encrypt"]{
-	display: none;	
+/*交叉引用*/
+#panel_crossreference {
+    display: none;
 }
 
-
-li.autonumber, li.autonumber+ul, li.literature{
-	display: none;	
+/*理论分节符数（注释）*/
+#secsep_notice {
+    display: none;
 }
 
-
-p.linenotices{
-	<!--display: none;-->
-	font-style:italic;
-	font-size:13px;
-	text-indent: 2em;
-	line-height: 0;
+/*参考文献管理方式*/
+#litermethod{
+	display: none;	
 }
