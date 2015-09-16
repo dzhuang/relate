@@ -69,12 +69,12 @@ function get_file_name(){
 
 
 function changeJS(JSFile) {
-    var JS_path = "http://127.0.0.1:8000/static/JS/"
+    var JS_path = "http://www.learningwhat.com/static/JS/"
     $("#loadedJS").attr("src", JS_path+JSFile);
 }
 
 function changeCSS(CSSFile) {
-    var CSS_path = "http://127.0.0.1:8000/static/css/"
+    var CSS_path = "http://www.learningwhat.com/static/css/"
     $("#basicCSS").attr("href", CSS_path+CSSFile);
 }
 
