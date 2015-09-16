@@ -47,9 +47,10 @@ from crispy_forms.layout import Layout, Field, HTML
 
 
 class InlineMultiQuestionForm(StyledInlineForm):
+    no_offset_labels = True
+
     def __init__(self, read_only, dict_for_form, page_context, *args, **kwargs):
         super(InlineMultiQuestionForm, self).__init__(*args, **kwargs)
-        self.no_offset_labels = True
         html_list = dict_for_form["HTML_list"]
         self.answer_instance_list = answer_instance_list = \
                 dict_for_form["answer_instance_list"]
@@ -701,9 +702,7 @@ class InlineMultiQuestion(TextQuestionBase, PageBaseWithValue):
             for idx, name in enumerate(self.embeded_name_list):
                 answers_desc = getattr(page_desc.answers, name)
 
-                parsed_answer = parse_question(
-                        vctx, location, name, answers_desc)
-
+                parse_question(vctx, location, name, answers_desc)
 
     def required_attrs(self):
         return super(InlineMultiQuestion, self).required_attrs() + (
