@@ -722,12 +722,10 @@ class UserStudentIDForm(StyledModelForm):
                 self.fields['No_ID'].widget.attrs['disabled'] = True
             else:
                 self.helper.add_input(
-                        Submit("submit_student_ID", _("Update"),
-                            css_class="col-lg-offset-2"))
+                        Submit("submit_student_ID", _("Update"))
         else: 
             self.helper.add_input(
-                    Submit("submit_student_ID", _("Update"),
-                        css_class="col-lg-offset-2"))
+                    Submit("submit_student_ID", _("Update"))
         
     def clean(self):
         cleaned_data = super(UserStudentIDForm, self).clean()
