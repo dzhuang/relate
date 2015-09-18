@@ -163,8 +163,14 @@ def course_page(pctx):
             user=pctx.request.user,
             course=pctx.course,
             status=participation_status.requested).count():
-        show_enroll_button = False
+        show_enroll_button = True
 
+        from django.core.urlresolvers import reverse
+        messages.add_message(pctx.request, messages.WARNING,
+                _("If your filling the Student ID in <a href='%s'>user profile"
+                  "</a>，maybe you needn't wait for approvement.") 
+                % reverse("relate-user_profile"))
+                
         messages.add_message(pctx.request, messages.INFO,
                 _("Your enrollment request is pending. You will be "
                 "notified once it has been acted upon."))
