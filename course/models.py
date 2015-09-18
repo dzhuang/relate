@@ -417,6 +417,10 @@ class Participation(models.Model):
         unique_together = (("user", "course"),)
         ordering = ("course", "user")
 
+    def get_role_desc(self):
+        return dict(PARTICIPATION_ROLE_CHOICES).get(
+                self.role)
+
 
 class ParticipationPreapproval(models.Model):
     email = models.EmailField(max_length=254,
