@@ -166,9 +166,12 @@ def course_page(pctx):
         show_enroll_button = True
 
         from django.core.urlresolvers import reverse
+#        messages.add_message(pctx.request, messages.WARNING,
+#                _("If your fill in the Student ID in <a href='%s'>user profile"
+#                  "</a>，maybe you needn't wait for approvement.") 
+#                % reverse("relate-user_profile"))
         messages.add_message(pctx.request, messages.WARNING,
-                _("If your filling the Student ID in <a href='%s'>user profile"
-                  "</a>，maybe you needn't wait for approvement.") 
+                _("如果你在<a href='%s'>用户信息</a>中填入了学号，那你可能不需要等待老师的确认.") 
                 % reverse("relate-user_profile"))
                 
         messages.add_message(pctx.request, messages.INFO,
