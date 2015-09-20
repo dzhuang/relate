@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-09-18 23:02+0800\n"
+"POT-Creation-Date: 2015-09-21 01:26+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -680,26 +680,26 @@ msgstr "已撤回"
 msgid "resource '%s' not found"
 msgstr "未找到资源\"%s\""
 
-#: .\course\content.py:397
+#: .\course\content.py:400
 msgid "I have no idea what a processing instruction is."
 msgstr "我也不知道处理的指令是什么"
 
-#: .\course\content.py:701
+#: .\course\content.py:704
 #, python-format
 msgid "invalid period: %s"
 msgstr "无效的周期：%s"
 
-#: .\course\content.py:790 .\course\content.py:815
+#: .\course\content.py:793 .\course\content.py:818
 #, python-format
 msgid "unrecognized date/time specification: '%s' (interpreted as 'now')"
 msgstr "无法识别的日期/时间设定: '%s' (被解释为\"现在\")"
 
-#: .\course\content.py:935
+#: .\course\content.py:938
 #, python-format
 msgid "page '%(group_id)s/%(page_id)s' in flow '%(flow_id)s'"
 msgstr "page \"%(group_id)s/%(page_id)s\" (在flow \"%(flow_id)s\"中)"
 
-#: .\course\content.py:988
+#: .\course\content.py:991
 #, python-format
 msgid "repo page class must conist of two dotted components (invalid: '%s')"
 msgstr "repo类型的page必须包括两个dotted组件 (无效: \"%s\")"
@@ -740,52 +740,53 @@ msgstr "加入课程的申请已经发送, 如果您的要求被批准, 您将�
 msgid "Successfully enrolled."
 msgstr "成功加入课程"
 
-#: .\course\enrollment.py:200
-msgid "Your enrollment request"
-msgstr "对您加入课程申请的答复"
-
 #. Translators: how many enroll requests have ben processed.
-#: .\course\enrollment.py:212
+#: .\course\enrollment.py:193
 #, python-format
 msgid "%d requests processed."
 msgstr "%d个加入申请已处理. "
 
-#: .\course\enrollment.py:218
+#: .\course\enrollment.py:209
+msgid "Your enrollment request"
+msgstr "对您加入课程申请的答复"
+
+#: .\course\enrollment.py:221
 msgctxt "Admin"
 msgid "Approve enrollment"
 msgstr "批准加入"
 
-#: .\course\enrollment.py:224
+#: .\course\enrollment.py:227
 msgid "Deny enrollment"
 msgstr "拒绝加入"
 
-#: .\course\enrollment.py:235 .\course\models.py:432
+#: .\course\enrollment.py:238 .\course\models.py:432
 #: .\course\templates\course\gradebook-participant-list.html:28
 msgid "Role"
 msgstr "在课程中的角色"
 
-#: .\course\enrollment.py:237
+#: .\course\enrollment.py:240
 msgid "Enter fully qualified email addresses or student ID, one per line."
 msgstr "输入允许加入课程用户的Email或学号, 每行一个. "
 
-#: .\course\enrollment.py:239
+#: .\course\enrollment.py:242
 msgid "Emails or Student ID"
 msgstr "电子邮件 或 学号"
 
-#: .\course\enrollment.py:245
+#: .\course\enrollment.py:248
 msgid "Preapprove"
 msgstr "预先批准"
 
-#: .\course\enrollment.py:253
+#: .\course\enrollment.py:256
 msgid "only instructors may do that"
 msgstr "只有任课老师才有执行该操作的权限"
 
-#: .\course\enrollment.py:291
-#, python-format
-msgid "%(n_created)d preapprovals created, %(n_exist)d already existed."
-msgstr "新加入了%(n_created)d个预批准, 有%(n_exist)d个是之前已经批准的. "
+#: .\course\enrollment.py:312
+msgid ""
+"%(n_created)d preapprovals created, %(n_exist)d already existed, %"
+"(n_requested_approved)d pending requests approved."
+msgstr "新加入了%(n_created)d个预批准, 有%(n_exist)d个是之前已经批准的, 批准了%(n_requested_approved)d个之前已经提交的申请. "
 
-#: .\course\enrollment.py:302
+#: .\course\enrollment.py:327
 msgid "Create Participation Preapprovals"
 msgstr "用户加入课程预批准"
 
@@ -4564,7 +4565,7 @@ msgstr "只有任课老师(instructor)可能访问"
 #: .\course\views.py:170
 #, python-format
 msgid ""
-"If you fill in the Student ID in <a href='%s'>user profile</a>，maybe you "
+"If your fill in the Student ID in <a href='%s'>user profile</a>, maybe you "
 "needn't wait for approvement."
 msgstr ""
 "如果你在<a href='%s'>用户信息</a>中填入了学号，那你可能不需要等待老师的确认."
