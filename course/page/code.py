@@ -31,6 +31,8 @@ import django.forms as forms
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.html import escape
 from django.utils.translation import ugettext as _
+from django.utils import translation
+from django.conf import settings
 
 from relate.utils import StyledForm
 from course.page.base import (
@@ -74,7 +76,6 @@ class InvalidPingResponse(RuntimeError):
 def request_python_run(run_req, run_timeout, image=None):
     import json
     from six.moves import http_client
-    from django.conf import settings
     import docker
     import socket
     import errno
@@ -597,24 +598,24 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
 
             error_msg = "\n".join(error_msg_parts)
 
-            from django.template.loader import render_to_string
-            message = render_to_string("course/broken-code-question-email.txt", {
-                "page_id": self.page_desc.id,
-                "course": page_context.course,
-                "error_message": error_msg,
-                })
+            with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
+                from django.template.loader import render_to_string
+                message = render_to_string("course/broken-code-question-email.txt", {
+                    "page_id": self.page_desc.id,
+                    "course": page_context.course,
+                    "error_message": error_msg,
+                    })
 
-            if (
-                    not page_context.in_sandbox
-                    and
-                    not is_nuisance_failure(response_dict)):
-                from django.core.mail import send_mail
-                from django.conf import settings
-                send_mail("".join(["[%s] ", _("code question execution failed")])
-                        % page_context.course.identifier,
-                        message,
-                        settings.ROBOT_EMAIL_FROM,
-                        recipient_list=[page_context.course.notify_email])
+                if (
+                        not page_context.in_sandbox
+                        and
+                        not is_nuisance_failure(response_dict)):
+                    from django.core.mail import send_mail
+                    send_mail("".join(["[%s] ", _("code question execution failed")])
+                            % page_context.course.identifier,
+                            message,
+                            settings.ROBOT_EMAIL_FROM,
+                            recipient_list=[page_context.course.notify_email])
 
         # }}}
 
