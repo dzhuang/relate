@@ -260,6 +260,7 @@ def create_preapprovals(pctx):
 
             created_count = 0
             exist_count = 0
+            pending_proved_count = 0
 
             role = form.cleaned_data["role"]
             for l in form.cleaned_data["emails"].split("\n"):
