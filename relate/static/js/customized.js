@@ -96,9 +96,15 @@ function embed_viewer(item) {
             );
         }
         else {
-            $("#" + display_DIV_ID).html(
+            
+            if (viewpath.indexOf("non-slide") > 0){$("#" + display_DIV_ID).html(
+                "<iframe src = '/static/pdf.js/web/viewer.html?file=" + viewpath + "' width='630' height='860' allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe>"
+            );}
+            else {$("#" + display_DIV_ID).html(
                 "<iframe src = '/static/pdf.js/web/viewer.html?file=" + viewpath + "' width='800' height='450' allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe>"
-            );
+            );}
+            
+            
         }
 
         //$("#" + display_DIV_ID).parent('li').parent('ul').css('padding-left',0)
