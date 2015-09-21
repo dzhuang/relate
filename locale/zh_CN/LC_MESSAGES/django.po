@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-09-21 08:47+0800\n"
+"POT-Creation-Date: 2015-09-21 10:23+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -4262,7 +4262,8 @@ msgstr "无效的角色 \"%(role)s\""
 msgid ""
 "Name of facility not recognized: '%(fac_name)s'. Known facility names: '%"
 "(known_fac_names)s'"
-msgstr "设施名称无法识别: '%(fac_name)s'. 已知的设施名包括: '%(known_fac_names)s'"
+msgstr ""
+"设施名称无法识别: '%(fac_name)s'. 已知的设施名包括: '%(known_fac_names)s'"
 
 #: .\course\validation.py:137
 #, python-format
@@ -4880,9 +4881,8 @@ msgid ""
 msgstr "您现在正在预览这个网站在时间为%(fake_time)s时的样子. "
 
 #: .\relate\templates\base-page-top.html:49
-#, python-format
 msgid ""
-"Now impersonating %(first_name)s %(last_name)s (%(username)s, %(email)s)."
+"Now impersonating %(last_name)s, %(first_name)s (%(username)s, %(email)s)."
 msgstr "正在模拟用户 %(last_name)s%(first_name)s (%(username)s, %(email)s)."
 
 #: .\relate\templates\base.html:69
