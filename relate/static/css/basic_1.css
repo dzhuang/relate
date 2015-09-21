@@ -10,6 +10,11 @@
     background-color: khaki
 }
 
+/*目录内容 有目录 目录内容数量*/
+#toccontent{
+    color:slateblue;
+    background-color: khaki  
+}
 
 /*页眉页脚*/
 #panel_headfoot{
