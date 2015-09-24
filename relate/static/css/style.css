@@ -211,11 +211,38 @@ table.gradebook-by-opportunity ul {
   padding-bottom: 30px;
 }
 
+/*********************************************************
+    My customization
+*********************************************************/
+
+
+h1,
+.h1 {
+  font-family: "Microsoft YaHei" ! important;
+/*  font-size: 28px;*/
+}
+h2,
+.h2 {
+  font-family: "Microsoft YaHei" ! important;
+/*  font-size: 24px;*/
+}
+h3,
+.h3 {
+  font-family: "Microsoft YaHei" ! important;
+/*  font-size: 21px;*/
+}
+h4,
+.h4 {
+  font-family: "Microsoft YaHei" ! important;
+/*  font-size: 19px;*/
+}
+
 /* {{{ footer */
 
 /*********************************************************
     FOOTER
 *********************************************************/
+
 
 
 html {
