@@ -183,9 +183,14 @@
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
     <script src="{% static "js/customized.js" %}"></script>
+    <script src="//cdn.bootcss.com/mathjax/2.5.3/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<!--    if mathjax cdn not loaded-->
+    <script>window.MathJax || document.write('<script src="{% static "MathJax/MathJax.js?config=TeX-AMS-MML_HTMLorMML" %}"><\/script>');</script>
+<!--
     <script type="text/javascript"
       src="{% static "MathJax/MathJax.js?config=TeX-AMS-MML_HTMLorMML" %}">
     </script>
+-->
     <script type="text/x-mathjax-config">
       MathJax.Hub.Config({
         extensions: ["tex2jax.js", "TeX/boldsymbol.js"],
