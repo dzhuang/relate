@@ -44,7 +44,7 @@ function generate_download_pdf_view() {
         //        }
         //console.log(file_id);
         if ($(file_id).length == 0) {
-            $('<a href="#" onclick="embed_viewer(this)" id="' + file_id + '"><i class="fa fa-eye" title="在线查看"></i></a> <div id="' + file_id + '_pdfviewer_div"></div>').insertAfter($(element_i));
+            $('<a href="#" onclick="embed_viewer(this)" id="' + file_id + '"><i class="fa fa-eye" title="在线查看"></i></a> <div class="row"> <div class="embed-responsive col-md-8" id="' + file_id + '_pdfviewer_div"></div><div class="col-md-4"></div></div>').insertAfter($(element_i));
             $(element_i)
                 .attr("id", file_id + "_download_link")
                 .after(" &middot; ");
@@ -90,22 +90,30 @@ function embed_viewer(item) {
         //var filename = viewpath.substring(viewpath.lastIndexOf('/')+1);
         var display_DIV_ID = item.id + "_pdfviewer_div";
 
-        if (matchMedia('only screen and (max-width: 767px)').matches) {
-            $("#" + display_DIV_ID).html(
-                "<iframe src = '/static/pdf.js/web/viewer.html?file=" + viewpath + "' width='100%' height='450' allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe>"
-            );
-        }
-        else {
+//        if (matchMedia('only screen and (max-width: 767px)').matches) {
+//            $("#" + display_DIV_ID).html(
+//                "<iframe src = '/static/pdf.js/web/viewer.html?file=" + viewpath + "' width='100%' height='450' allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe>"
+//            );
+//        }
+//        else {
+//            
+//            if (viewpath.indexOf("non-slide") > 0){$("#" + display_DIV_ID).html(
+//                "<iframe src = '/static/pdf.js/web/viewer.html?file=" + viewpath + "' width='630' height='860' allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe>"
+//            );}
+//            else {$("#" + display_DIV_ID).html(
+//                "<iframe src = '/static/pdf.js/web/viewer.html?file=" + viewpath + "' width='800' height='450' allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe>"
+//            );}
+//   
+//            
+//        }
             
-            if (viewpath.indexOf("non-slide") > 0){$("#" + display_DIV_ID).html(
-                "<iframe src = '/static/pdf.js/web/viewer.html?file=" + viewpath + "' width='630' height='860' allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe>"
-            );}
-            else {$("#" + display_DIV_ID).html(
-                "<iframe src = '/static/pdf.js/web/viewer.html?file=" + viewpath + "' width='800' height='450' allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe>"
-            );}
-            
-            
-        }
+        if (viewpath.indexOf("non-slide") > 0){$("#" + display_DIV_ID).addClass("embed-responsive-a4");}
+        else {$("#" + display_DIV_ID).addClass("embed-responsive-4by3");}
+
+        $("#" + display_DIV_ID).html(
+                "<iframe src = '/static/pdf.js/web/viewer.html?file=" + viewpath + "' width='100%' allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe>"
+            ); 
+        
 
         //$("#" + display_DIV_ID).parent('li').parent('ul').css('padding-left',0)
         $('html, body').animate({
@@ -117,7 +125,7 @@ function embed_viewer(item) {
 
 function close_viewer(item) {
     var display_DIV_ID = item.id + "_pdfviewer_div";
-    $("#" + display_DIV_ID).html("");
+    $("#" + display_DIV_ID).html("").removeClass("embed-responsive-4by3").removeClass("embed-responsive-a4");
     //$("#" + display_DIV_ID).slideUp("slow", function(){ $("#" + display_DIV_ID).html("");});
     //$("#" + display_DIV_ID).attr("style", "")
     $(item).attr("onclick", "embed_viewer(this)").attr("title", "在线查看").html("<i class='fa fa-eye'></i>");
