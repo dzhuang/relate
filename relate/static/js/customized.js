@@ -98,7 +98,7 @@ function embed_viewer(item) {
         }
 
         $("#" + display_DIV_ID).html(
-            "<iframe src = '/static/pdf.js/web/viewer.html?file=" + viewpath + "' width='100%' allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe>"
+            "<iframe class='embed-responsive-item' src = '/static/pdf.js/web/viewer.html?file=" + viewpath + "' width='100%' allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe>"
         );
 
 
