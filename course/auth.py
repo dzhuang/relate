@@ -56,7 +56,6 @@ from course.models import (
         )
 
 from relate.utils import StyledForm, StyledModelForm
-from django_select2 import AutoSelect2Field
 from django_select2.widgets import Select2Widget
 
 
