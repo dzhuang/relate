@@ -128,7 +128,7 @@ class ImpersonateForm(StyledForm):
 
         impersonees = whom_may_impersonate(impersonator)
 
-        self.fields["user"] = AutoSelect2Field(
+        self.fields["user"] = forms.ChoiceField(
                 choices=[
                     (
                         # Translators: information displayed when selecting
