@@ -39,6 +39,7 @@ INSTALLED_APPS = (
     "jsonfield",
     "bootstrap3_datetime",
     "djangobower",
+    "django_select2",
 
     # message queue
     "djcelery",
@@ -97,6 +98,7 @@ BOWER_INSTALLED_APPS = (
     "datatables",
     "datatables-fixedcolumns",
     "jstree",
+    "select2-bootstrap-css",
     "pdf.js=https://github.com/mozilla/pdf.js/releases/download/v1.1.215/pdfjs-1.1.215-dist.zip",
     )
 
