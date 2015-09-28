@@ -168,6 +168,7 @@ def issue_exam_ticket(request):
 
 # }}}
 
+
 # {{{ batch-issue tickets
 
 INITIAL_EXAM_TICKET_TEMPLATE = string_concat("""\
@@ -320,7 +321,7 @@ def batch_issue_exam_tickets(pctx):
                             Participation.objects.filter(
                                 course=pctx.course,
                                 status=participation_status.active)
-                            .order_by("user__username")
+                            .order_by("user__last_name")
                             ):
                         ticket = ExamTicket()
                         ticket.exam = exam
@@ -584,10 +585,14 @@ class ExamLockdownMiddleware(object):
             from course.auth import user_profile
             from django.contrib.auth.views import logout
 
+            from course.exam import check_in_for_exam
+
             ok = False
             if resolver_match.func in [
                     get_repo_file,
                     get_current_repo_file,
+
+                    check_in_for_exam,
 
                     user_profile,
                     logout]:
