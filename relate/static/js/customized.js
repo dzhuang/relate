@@ -10,7 +10,7 @@ $(function () {
             $(this).smallscreen_pdf_indent();
         });
     }
-    
+
     // for non_mobile tags, make it invisible for max-width: 767px
     // http://www.w3schools.com/bootstrap/bootstrap_ref_css_helpers.asp
     $('non_mobile').addClass("hidden-xs");
@@ -90,42 +90,62 @@ function embed_viewer(item) {
         //var filename = viewpath.substring(viewpath.lastIndexOf('/')+1);
         var display_DIV_ID = item.id + "_pdfviewer_div";
 
-//        if (matchMedia('only screen and (max-width: 767px)').matches) {
-//            $("#" + display_DIV_ID).html(
-//                "<iframe src = '/static/pdf.js/web/viewer.html?file=" + viewpath + "' width='100%' height='450' allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe>"
-//            );
-//        }
-//        else {
-//            
-//            if (viewpath.indexOf("non-slide") > 0){$("#" + display_DIV_ID).html(
-//                "<iframe src = '/static/pdf.js/web/viewer.html?file=" + viewpath + "' width='630' height='860' allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe>"
-//            );}
-//            else {$("#" + display_DIV_ID).html(
-//                "<iframe src = '/static/pdf.js/web/viewer.html?file=" + viewpath + "' width='800' height='450' allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe>"
-//            );}
-//   
-//            
-//        }
-            
-        if (viewpath.indexOf("non-slide") > 0){$("#" + display_DIV_ID).addClass("embed-responsive-a4");}
-        else {$("#" + display_DIV_ID).addClass("embed-responsive-4by3");}
+
+        if (viewpath.indexOf("non-slide") > 0) {
+            $("#" + display_DIV_ID).addClass("embed-responsive-a4");
+        } else {
+            $("#" + display_DIV_ID).addClass("embed-responsive-4by3");
+        }
 
         $("#" + display_DIV_ID).html(
-                "<iframe src = '/static/pdf.js/web/viewer.html?file=" + viewpath + "' width='100%' allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe>"
-            ); 
-        
+            "<iframe class='embed-responsive-item' src = '/static/pdf.js/web/viewer.html?file=" + viewpath + "' width='100%' allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe>"
+        );
+
 
         //$("#" + display_DIV_ID).parent('li').parent('ul').css('padding-left',0)
         $('html, body').animate({
             scrollTop: $(item).offset().top
         }, 1000);
         $(item).attr("onclick", "close_viewer(this);").attr("title", "关闭在线查看").html("<i class='fa fa-eye-slash'></i>");
+
+
+        // if in large device in col-md-8
+        if (matchMedia('only screen and (max-width: 767px)').matches) {} else {
+
+            if ($("#" + display_DIV_ID).hasClass("col-md-8")) {
+
+                if ($("#" + display_DIV_ID).hasClass("embed-responsive-a4")) {
+
+                    $("#" + display_DIV_ID)
+                        .removeClass("embed-responsive-a4")
+                        .addClass("embed-responsive-a4-col-md-8");
+                } else if ($("#" + display_DIV_ID).hasClass("embed-responsive-4by3")) {
+
+                    $("#" + display_DIV_ID)
+                        .removeClass("embed-responsive-4by3")
+                        .addClass("embed-responsive-4by3-col-md-8");
+                } else if ($("#" + display_DIV_ID).hasClass("embed-responsive-16by9")) {
+
+                    $("#" + display_DIV_ID)
+                        .removeClass("embed-responsive-16by9")
+                        .addClass("embed-responsive-16by9-col-md-8");
+                }
+            }
+
+        }
+
     }
 }
 
 function close_viewer(item) {
     var display_DIV_ID = item.id + "_pdfviewer_div";
-    $("#" + display_DIV_ID).html("").removeClass("embed-responsive-4by3").removeClass("embed-responsive-a4");
+    $("#" + display_DIV_ID).html("")
+        .removeClass("embed-responsive-4by3")
+        .removeClass("embed-responsive-a4")
+        .removeClass("embed-responsive-16by9")
+        .removeClass("embed-responsive-a4-col-md-8")
+        .removeClass("embed-responsive-4by3-col-md-8")
+        .removeClass("embed-responsive-16by9-col-md-8");
     //$("#" + display_DIV_ID).slideUp("slow", function(){ $("#" + display_DIV_ID).html("");});
     //$("#" + display_DIV_ID).attr("style", "")
     $(item).attr("onclick", "embed_viewer(this)").attr("title", "在线查看").html("<i class='fa fa-eye'></i>");
@@ -158,8 +178,8 @@ function detectIE() {
 
     var edge = ua.indexOf('Edge/');
     if (edge > 0) {
-       // IE 12 => return version number
-       return parseInt(ua.substring(edge + 5, ua.indexOf('.', edge)), 10);
+        // IE 12 => return version number
+        return parseInt(ua.substring(edge + 5, ua.indexOf('.', edge)), 10);
     }
 
     // other browser
@@ -176,8 +196,7 @@ function detectIE() {
 //    
 //});
 
-function getAnchor(url)
-{
+function getAnchor(url) {
     var index = url.lastIndexOf('#');
     if (index != -1)
         return url.substring(index);
@@ -191,47 +210,40 @@ $(function () {
         collapsible: true,
     });
     // }}}
-    
+
     // {{{ enable file download filetype icon
     $("[id^='for_download_file_']").each(function () {
         var file_name = $(this).attr('id');
         var ext = file_name.split('.').pop().toLowerCase();
         var fa_file_icon_class = "";
         if (['xls', 'xlst', 'xlsm'].indexOf(ext) >= 0) {
-           fa_file_icon_class ="file-excel-o";
-        }
-        else if(['doc','docx','dot','dotm','docm'].indexOf(ext) >= 0) {
-            fa_file_icon_class ="file-word-o";
-        }
-        else if(['jpg','png','jpeg','gif','bmp'].indexOf(ext) >= 0) {
-            fa_file_icon_class ="file-image-o";
-        }
-        else if(['ppt','pptx','pot','potx','pps','ppsx'].indexOf(ext) >= 0) {
-            fa_file_icon_class ="file-powerpoint-o";
-        }
-        else if(['pdf'].indexOf(ext) >= 0) {
-            fa_file_icon_class ="file-pdf-o";
-        }
-        else if(['zip', 'rar'].indexOf(ext) >= 0) {
-            fa_file_icon_class ="file-zip-o";
-        }
-        else if(['text'].indexOf(ext) >= 0) {
-            fa_file_icon_class ="file-text-o";
-        }
-        else{
-            fa_file_icon_class ="file-o";
+            fa_file_icon_class = "file-excel-o";
+        } else if (['doc', 'docx', 'dot', 'dotm', 'docm'].indexOf(ext) >= 0) {
+            fa_file_icon_class = "file-word-o";
+        } else if (['jpg', 'png', 'jpeg', 'gif', 'bmp'].indexOf(ext) >= 0) {
+            fa_file_icon_class = "file-image-o";
+        } else if (['ppt', 'pptx', 'pot', 'potx', 'pps', 'ppsx'].indexOf(ext) >= 0) {
+            fa_file_icon_class = "file-powerpoint-o";
+        } else if (['pdf'].indexOf(ext) >= 0) {
+            fa_file_icon_class = "file-pdf-o";
+        } else if (['zip', 'rar'].indexOf(ext) >= 0) {
+            fa_file_icon_class = "file-zip-o";
+        } else if (['text'].indexOf(ext) >= 0) {
+            fa_file_icon_class = "file-text-o";
+        } else {
+            fa_file_icon_class = "file-o";
         };
-        
+
         $(this).addClass("fa fa-" + fa_file_icon_class);
-        
+
     });
     // }}}
 
     // {{{ open accordion on getanchor
-    
-//    var anchor = getAnchor(location.href);
-//    $(anchor).next().children('.collapse').show();
-    
+
+    //    var anchor = getAnchor(location.href);
+    //    $(anchor).next().children('.collapse').show();
+
     // }}}
 
 });
@@ -243,7 +255,7 @@ function locationHashChanged() {
     var anchor = getAnchor(location.href);
     var collapse_block = $(anchor).next().children('.collapse');
     collapse_block.collapse('show');
-    
+
 };
 
 

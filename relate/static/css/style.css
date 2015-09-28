@@ -243,6 +243,18 @@ h4,
   padding-bottom: 141.4285714285714%;
 }
 
+.embed-responsive-a4-col-md-8 {
+  padding-bottom: 94.28571428571429%;
+}
+
+.embed-responsive-4by3-col-md-8 {
+  padding-bottom: 50%;
+}
+
+.embed-responsive-16by9-col-md-8 {
+  padding-bottom: 37.5%;
+}
+
 /* {{{ footer */
 
 /*********************************************************
