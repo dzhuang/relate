@@ -984,22 +984,25 @@ def get_page_behavior(page, permissions, session_in_progress, answer_was_graded,
                 or
                 flow_permission.see_answer_after_submission in permissions)
 
+    may_change_answer = (
+            (not answer_was_graded
+                or (flow_permission.change_answer in permissions))
+
+            # can happen if no answer was ever saved
+            and session_in_progress
+
+            and (flow_permission.submit_answer in permissions)
+
+            and (generates_grade and not is_unenrolled_session
+                or (not generates_grade))
+            )
+
     from course.page.base import PageBehavior
     return PageBehavior(
             show_correctness=show_correctness,
             show_answer=show_answer,
-            may_change_answer=(
-                    (not answer_was_graded
-                        or (flow_permission.change_answer in permissions))
-
-                    # can happen if no answer was ever saved
-                    and session_in_progress
-
-                    and (flow_permission.submit_answer in permissions)
-
-                    and (generates_grade and not is_unenrolled_session
-                        or (not generates_grade))
-                    ))
+            may_change_answer=may_change_answer,
+            )
 
 
 def add_buttons_to_form(form, fpctx, flow_session, permissions):
@@ -1591,6 +1594,9 @@ def finish_flow_session_view(pctx, flow_session_id):
                 now_datetime=now_datetime)
 
         if is_graded_flow:
+            if flow_permission.cannot_see_flow_result in access_rule.permissions:
+                grade_info = None
+
             return render_finish_response(
                     "course/flow-completion-grade.html",
                     completion_text=completion_text,
@@ -1618,6 +1624,9 @@ def finish_flow_session_view(pctx, flow_session_id):
     elif not flow_session.in_progress:
         # Just reviewing: re-show grades.
         grade_info = gather_grade_info(fctx, flow_session, answer_visits)
+
+        if flow_permission.cannot_see_flow_result in access_rule.permissions:
+            grade_info = None
 
         return render_finish_response(
                 "course/flow-completion-grade.html",
