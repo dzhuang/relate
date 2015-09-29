@@ -50,5 +50,6 @@
 
 /*参考文献管理方式*/
 #litermethod{
-	display: none;
+    color:slateblue;
+    background-color: khaki
 }

@@ -17,9 +17,9 @@ function get_HTML_date(){
 
 
 
-var timeArray = ["2015/9/24 14:30:00", "2015/10/08 14:30:00", "2015/10/15 14:30:00", "2015/10/22 14:30:00"];
+var timeArray = ["2015/9/24 14:30:00", "2015/10/08 14:30:00", "2015/10/15 14:30:00", "2015/10/22 14:30:00", "2015/10/29 14:30:00"];
 
-var fileArray = ["basic.css", "basic_1.css", "basic_2.css", "basic_3.css"];
+var fileArray = ["basic.css", "basic_1.css", "basic_2.css", "basic_3.css", "basic_4.css"];
 
 //var fileArray = ["basic.js", "basic_1.js", "basic_2.js", "basic_3.js"];
 
