@@ -212,6 +212,8 @@ class ValidationContext(object):
 def validate_markup(ctx, location, markup_str):
     def reverse_func(*args, **kwargs):
         pass
+    
+    from jinja2.exceptions import UndefinedError
 
     from course.content import markup_to_html
     try:
@@ -222,17 +224,19 @@ def validate_markup(ctx, location, markup_str):
                 text=markup_str,
                 reverse_func=reverse_func,
                 validate_only=True)
+    except UndefinedError:
+        pass
     except:
-        from traceback import print_exc
-        print_exc()
+            from traceback import print_exc
+            print_exc()
 
-        tp, e, _ = sys.exc_info()
+            tp, e, _ = sys.exc_info()
 
-        raise ValidationError(
-                "%(location)s: %(err_type)s: %(err_str)s" % {
-                    'location': location,
-                    "err_type": tp.__name__,
-                    "err_str": str(e)})
+            raise ValidationError(
+                    "%(location)s: %(err_type)s: %(err_str)s" % {
+                        'location': location,
+                        "err_type": tp.__name__,
+                        "err_str": str(e)})
 
 
 def validate_chunk_rule(ctx, location, chunk_rule):
