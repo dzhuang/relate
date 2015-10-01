@@ -149,17 +149,11 @@ def check_course_state(course, role):
 
 @course_view
 def course_page(pctx):
-    from course.models import Event
-    events = list(Event.objects.filter(course=pctx.course))
-    now_time = get_now_or_fake_time(pctx.request)
-    
-    jinja_env = {"events": events, "now_time": now_time}
-    
     from course.content import get_processed_course_chunks
     chunks = get_processed_course_chunks(
             pctx.course, pctx.repo, pctx.course_commit_sha, pctx.course_desc,
             pctx.role, get_now_or_fake_time(pctx.request),
-            remote_address=pctx.remote_address, jinja_env=jinja_env)
+            remote_address=pctx.remote_address)
 
     show_enroll_button = (
             pctx.course.accepts_enrollment
