@@ -596,6 +596,12 @@ def markup_to_html(course, repo, commit_sha, text, reverse_func=None,
     env = Environment(
             loader=GitTemplateLoader(repo, commit_sha),
             undefined=StrictUndefined)
+
+    def parse_date_spec_jinja(datespec):
+        return parse_date_spec(course, datespec)
+
+    env.globals["parse_date_spec"] = parse_date_spec_jinja
+
     template = env.from_string(text)
     text = template.render(**jinja_env)
 
