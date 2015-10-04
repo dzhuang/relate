@@ -880,6 +880,40 @@ def compute_chunk_weight_and_shown(course, chunk, role, now_datetime,
 def get_course_desc(repo, course, commit_sha):
     return get_yaml_from_repo(repo, course.course_file, commit_sha)
 
+def get_collapsible_chunk_content(id, title, content, subtitle, sub_color):
+    def pre_string(id, title):
+        pre_string = (
+            '<div class="panel panel-default" style="margin-bottom:0"'
+            'markdown="block"><div class="panel-heading" >'
+            '<h3 class="panel-title">'
+            '<a data-toggle="collapse" href="#%(id)s_accordion" >'
+            % {"id": id})
+        pre_string += title
+
+        if subtitle:
+            from django.utils.translation import string_concat
+            pre_string +=(
+                string_concat(
+                    '<span style="font-size:x-small; color:%(sub_color)s">',
+                    '(',
+                    subtitle,
+                    ')</span>')
+                % {"sub_color": sub_color})
+
+        pre_string +=(
+            '</a></h3></div>'
+            '<div id="%(id)s_accordion" class="panel-collapse collapse"'
+            'markdown="block">'
+            '<div class="panel-body" markdown="block">'
+            % {"id": id})
+
+        return pre_string
+
+    def end_string(id, title):
+        end_string = '</div></div></div>'
+        return end_string
+
+    return pre_string(id, title) + content + end_string(id, title)
 
 def get_processed_course_chunks(course, repo, commit_sha,
         course_desc, role, now_datetime, remote_address, jinja_env):
@@ -889,6 +923,13 @@ def get_processed_course_chunks(course, repo, commit_sha,
                         course, chunk, role, now_datetime,
                         remote_address)
         chunk.html_content = markup_to_html(course, repo, commit_sha, chunk.content, jinja_env=jinja_env)
+
+        collapsible = getattr(chunk, "collapsible", False)
+        if collapsible:
+            subtitle = getattr(chunk, "subtitle", None)
+            sub_color = getattr(chunk, "sub_color", "black")
+            chunk.html_content = get_collapsible_chunk_content(
+                    chunk.id, chunk.title, chunk.html_content, subtitle, sub_color)
 
     course_desc.chunks.sort(key=lambda chunk: chunk.weight, reverse=True)
 

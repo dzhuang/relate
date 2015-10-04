@@ -304,7 +304,11 @@ def validate_chunk(ctx, location, chunk):
                 ("rules", list),
                 ("content", "markup"),
                 ],
-            allowed_attrs=[]
+            allowed_attrs=[
+                ("collapsible", bool),
+                ("subtitle", str),
+                ("sub_color", str),
+                ]
             )
 
     for i, rule in enumerate(chunk.rules):
