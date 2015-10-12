@@ -38,7 +38,6 @@ from django.conf import settings
 
 from course.constants import (  # noqa
         user_status, USER_STATUS_CHOICES,
-        course_status, COURSE_STATUS_CHOICES,
         participation_role, PARTICIPATION_ROLE_CHOICES,
         participation_status, PARTICIPATION_STATUS_CHOICES,
         flow_permission, FLOW_PERMISSION_CHOICES,
@@ -164,12 +163,34 @@ class Course(models.Model):
                         "numbers, and hypens ('-').")),
                     ]
             )
-    course_status = models.CharField(max_length=50,
-            default=course_status.open,
-            choices=COURSE_STATUS_CHOICES,
-            help_text=_("The current status of the course. If ended, only "
-            "Participants can see the course from his/her home page "),
-            verbose_name=_('Course status'))
+    name = models.CharField(
+            null=True, blank=False,
+            max_length=200,
+            help_text=_("A human-readable name for the course. "
+                "(e.g. 'Numerical Methods')"))
+    number = models.CharField(
+            null=True, blank=False,
+            max_length=200,
+            help_text=_("A human-readable course number/ID "
+                "for the course (e.g. 'CS123')"))
+    time_period = models.CharField(
+            null=True, blank=False,
+            max_length=200,
+            help_text=_("A human-readable description of the "
+                "time period for the course (e.g. 'Fall 2014')"))
+
+    start_date = models.DateField(
+            verbose_name=_('Start date'),
+            null=True, blank=True)
+    end_date = models.DateField(
+            verbose_name=_('End date'),
+            null=True, blank=True)
+    enroll_deadline = models.DateField(
+            verbose_name=_('Enrollment deadline'),
+            help_text=_("After which the course will not be displayed on home "
+            "page, and enrollment will not be allowed. Leave this field blank "
+            "if there's no deadline of enrollment."),
+            null=True, blank=True)
 
     hidden = models.BooleanField(
             default=True,
@@ -182,10 +203,6 @@ class Course(models.Model):
     accepts_enrollment = models.BooleanField(
             default=True,
             verbose_name=_('Accepts enrollment'))
-    valid = models.BooleanField(
-            default=True,
-            help_text=_("Whether the course content has passed validation."),
-            verbose_name=_('Valid'))
 
     git_source = models.CharField(max_length=200, blank=True,
             help_text=_("A Git URL from which to pull course updates. "
@@ -280,6 +297,12 @@ class Course(models.Model):
 
     def get_absolute_url(self):
         return reverse("relate-course_page", args=(self.identifier,))
+
+    def is_enrollment_expired(self, now_date):
+        if self.enroll_deadline >= now_date:
+            return False
+        else:
+            return True
 
 # }}}
 
@@ -1473,7 +1496,7 @@ class ExamTicket(models.Model):
     class Meta:
         verbose_name = _("Exam ticket")
         verbose_name_plural = _("Exam tickets")
-        ordering = ("exam__course", "exam", "usage_time")
+        ordering = ("exam__course", "-creation_time")
         permissions = (
                 ("can_issue_exam_tickets", _("Can issue exam tickets to student")),
                 )

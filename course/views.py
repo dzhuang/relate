@@ -56,7 +56,6 @@ from bootstrap3_datetime.widgets import DateTimePicker
 
 from course.auth import get_role_and_participation
 from course.constants import (
-        course_status,
         participation_role,
         participation_status,
         FLOW_PERMISSION_CHOICES,
@@ -68,7 +67,7 @@ from course.models import (
         FlowSession,
         FlowRuleException)
 
-from course.content import (get_course_repo, get_course_desc)
+from course.content import get_course_repo
 from course.utils import course_view, render_course_page
 
 
@@ -81,14 +80,13 @@ sys.setdefaultencoding('utf8')
 # {{{ home
 
 def home(request):
-    courses_and_descs_and_invalid_flags = []
-    courses_and_descs_and_invalid_flags_open = []
-    courses_and_descs_and_invalid_flags_inprogress = []
-    courses_and_descs_and_invalid_flags_ended = []
-    for course in Course.objects.filter(listed=True):
-        repo = get_course_repo(course)
-        desc = get_course_desc(repo, course, course.active_git_commit_sha.encode())
+    now_datetime = get_now_or_fake_time(request)
 
+    current_courses = []
+    inprogress_courses = []
+    past_courses = []
+
+    for course in Course.objects.filter(listed=True):
         role, participation = get_role_and_participation(request, course)
 
         show = True
@@ -97,35 +95,37 @@ def home(request):
                     participation_role.instructor]:
                 show = False
 
-        if not course.valid:
-            if role != participation_role.instructor:
-                show = False
-
         if show:
-            courses_and_descs_and_invalid_flags.append(
-                    (course, desc, not course.valid))
+            if (course.end_date is None
+                    or now_datetime.date() <= course.end_date):
+                if course.enroll_deadline is None:
+                    current_courses.append(course)
+                else:
+                    if now_datetime.date() <= course.enroll_deadline:
+                        current_courses.append(course)
+                    else:
+                        if participation:
+                            inprogress_courses.append(course)
+            else:
+                if participation:
+                    past_courses.append(course)
 
-    for (course, desc, invalid) in courses_and_descs_and_invalid_flags:
-        if course.course_status == course_status.open:
-            courses_and_descs_and_invalid_flags_open.append((course, desc, invalid))
-        elif role in [participation_role.teaching_assistant, participation_role.student,
-                    participation_role.instructor]:
-            if course.course_status == course_status.inprogress:
-                courses_and_descs_and_invalid_flags_inprogress.append((course, desc, invalid))
-            elif course.course_status == course_status.ended:
-                courses_and_descs_and_invalid_flags_ended.append((course, desc, invalid))
+    def course_sort_key_minor(course):
+        return course.number if course.number is not None else ""
 
-    def course_sort_key(entry):
-        course, desc, invalid_flag = entry
-        return course.identifier
+    def course_sort_key_major(course):
+        return (course.start_date
+                if course.start_date is not None else now_datetime.date())
 
-    courses_and_descs_and_invalid_flags.sort(key=course_sort_key)
+    current_courses.sort(key=course_sort_key_minor)
+    past_courses.sort(key=course_sort_key_minor)
+    current_courses.sort(key=course_sort_key_major, reverse=True)
+    past_courses.sort(key=course_sort_key_major, reverse=True)
 
     return render(request, "course/home.html", {
-        "courses_and_descs_and_invalid_flags": courses_and_descs_and_invalid_flags,
-        "courses_and_descs_and_invalid_flags_open": courses_and_descs_and_invalid_flags_open,
-        "courses_and_descs_and_invalid_flags_inprogress": courses_and_descs_and_invalid_flags_inprogress,
-        "courses_and_descs_and_invalid_flags_ended": courses_and_descs_and_invalid_flags_ended,
+        "current_courses": current_courses,
+        "inprogress_courses": inprogress_courses,
+        "past_courses": past_courses,
         })
 
 # }}}
@@ -142,19 +142,37 @@ def check_course_state(course, role):
         if role not in [participation_role.teaching_assistant,
                 participation_role.instructor]:
             raise PermissionDenied(_("only course staff have access"))
-    elif not course.valid:
-        if role != participation_role.instructor:
-            raise PermissionDenied(_("only the instructor has access"))
 
+def enroll_expire_or_ended_message(course, role, now_date):
+    message = None
+    if course.enroll_deadline:
+        if role == participation_role.unenrolled:
+            if now_date > course.enroll_deadline:
+                message = _("Enrollment has expired. ")
+            elif course.end_date is not None and now_date > course.end_date:
+                message = _("This course has ended. ")
+    
+    if message:
+        return string_concat(message,
+                             _("Access to this course has been closed for "
+                               "non-participants."))
+    else:
+        return None
 
 @course_view
 def course_page(pctx):
+    role, participation = get_role_and_participation(
+        pctx.request, pctx.course)
+    now_datetime = get_now_or_fake_time(pctx.request)
+    error_message = (
+            enroll_expire_or_ended_message(
+                pctx.course, role, now_datetime.date()))
     from course.content import get_processed_course_chunks
-    jinja_env = {"now": get_now_or_fake_time(pctx.request)}
+    jinja_env = {"now": now_datetime}
     chunks = get_processed_course_chunks(
             pctx.course, pctx.repo, pctx.course_commit_sha, pctx.course_desc,
             pctx.role, get_now_or_fake_time(pctx.request),
-            remote_address=pctx.remote_address,
+            facilities=pctx.request.relate_facilities,
             jinja_env=jinja_env)
 
     show_enroll_button = (
@@ -178,6 +196,7 @@ def course_page(pctx):
                 "notified once it has been acted upon."))
 
     return render_course_page(pctx, "course/course-page.html", {
+        "error_message": error_message,
         "chunks": chunks,
         "show_enroll_button": show_enroll_button,
         })
@@ -357,6 +376,82 @@ def set_fake_time(request):
 def fake_time_context_processor(request):
     return {
             "fake_time": get_fake_time(request),
+            }
+
+# }}}
+
+
+# {{{ space travel (i.e. pretend to be in facility)
+
+class FakeFacilityForm(StyledForm):
+    def __init__(self, *args, **kwargs):
+        from django.conf import settings
+
+        super(FakeFacilityForm, self).__init__(*args, **kwargs)
+
+        self.fields["facilities"] = forms.MultipleChoiceField(
+                choices=(
+                    (name, name)
+                    for name in settings.RELATE_FACILITIES),
+                widget=forms.CheckboxSelectMultiple,
+                required=False,
+                label=_("Facilities"),
+                help_text=_("Facilities you wish to pretend to be in"))
+
+        self.fields["custom_facilities"] = forms.CharField(
+                label=_("Custom facilities"),
+                required=False,
+                help_text=_("More (non-predefined) facility names, separated "
+                    "by commas, which would like to pretend to be in"))
+
+        self.helper.add_input(
+                # Translators: "set" fake facility.
+                Submit("set", _("Set")))
+        self.helper.add_input(
+                # Translators: "unset" fake facility.
+                Submit("unset", _("Unset")))
+
+
+def set_pretend_facilities(request):
+    if not request.user.is_staff:
+        raise PermissionDenied(_("only staff may set fake facility"))
+
+    if request.method == "POST":
+        form = FakeFacilityForm(request.POST)
+        do_set = "set" in form.data
+        if form.is_valid():
+            if do_set:
+                pretend_facilities = (
+                        form.cleaned_data["facilities"]
+                        + [s.strip()
+                            for s in (
+                                form.cleaned_data["custom_facilities"].split(","))
+                            if s.strip()])
+
+                request.session["relate_pretend_facilities"] = pretend_facilities
+            else:
+                request.session.pop("relate_pretend_facilities", None)
+
+    else:
+        if "relate_pretend_facilities" in request.session:
+            form = FakeFacilityForm({
+                "facilities": [],
+                "custom_facilities": ",".join(
+                    request.session["relate_pretend_facilities"])
+                })
+        else:
+            form = FakeFacilityForm()
+
+    return render(request, "generic-form.html", {
+        "form": form,
+        "form_description": _("Pretend to be in Facilities"),
+    })
+
+
+def pretend_facilities_context_processor(request):
+    return {
+            "pretend_facilities": request.session.get(
+                "relate_pretend_facilities", []),
             }
 
 # }}}
@@ -677,7 +772,8 @@ def grant_exception_stage_2(pctx, participation_id, flow_id):
     create_session_is_override = False
     if not session_start_rule.may_start_new_session:
         create_session_is_override = True
-        form_text += ("<div class='alert alert-info'>%s</div><i class='fa fa-info-circle'></i>" %
+        form_text += ("<div class='alert alert-info'>%s</div>"
+                "<i class='fa fa-info-circle'></i>" %
                 (_("Creating a new session is (technically) not allowed "
                 "by course rules. Clicking 'Create Session' anyway will "
                 "override this rule.")))

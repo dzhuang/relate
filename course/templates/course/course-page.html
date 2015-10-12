@@ -2,6 +2,7 @@
 {% load i18n %}
 
 {% block page_navbar %}
+  {% if not error_message %}
   <li class="dropdown">
     <a href="#" class="dropdown-toggle" data-toggle="dropdown">{% trans "Jump to" %}<b class="caret"></b></a>
     <ul class="dropdown-menu">
@@ -10,52 +11,60 @@
     {% endfor %}
     </ul>
   </li>
+  {% endif %}
 {% endblock %}
 
 {% block content %}
-  {% if course.hidden %}
-    <div class="alert alert-info">
-      <i class="fa fa-info-circle"></i>
-      {% trans "This course is only visible to course staff at the moment." %}
-      <a class="btn btn-default" href="{% url "admin:course_course_change" course.id %}"
-        role="button" target="_blank">{% trans "Change" context "change the visibility of a course" %}&nbsp;&raquo;</a>
-    </div>
-  {% endif %}
-  {% if not course.valid %}
-    <div class="alert alert-warning">
-      <i class="fa fa-warning"></i>
-      {% blocktrans trimmed %}
-      There may be a problem with the validity of course data, which may lead
-      to students encountering unexpected errors.
-      {% endblocktrans %}
-      <a class="btn btn-primary" href="{% url "relate-update_course" course.identifier %}"
-        role="button">{% trans "Update" %}&nbsp;&raquo;</a>
-    </div>
-  {% endif %}
+  {% if error_message %}
 
-  {% if not user.is_authenticated %}
-    <div class="well">
-      {% trans "You're not currently signed in." %}
-      <a class="btn-lg btn-primary" href="{% url student_sign_in_view %}"
-        role="button">{% trans "Sign in" %}&nbsp;&raquo;</a>
-    </div>
+      {% if not user.is_authenticated %}
+        <div class="well">
+          {% trans "You're not currently signed in." %}
+          <a class="btn-lg btn-primary" href="{% url student_sign_in_view %}"
+            role="button">{% trans "Sign in" %}&nbsp;&raquo;</a>
+        </div>
+      {% else %}
+        <div class="alert alert alert-danger">
+          <i class="fa fa-warning"></i>
+            {{ error_message }}
+        </div>
+      {% endif %}
+
   {% else %}
 
-    {% if show_enroll_button %}
-      <div class="well">
-        <form method="POST" action="{% url "relate-enroll" course.identifier %}">
-          {% csrf_token %}
-          <button type="submit" name="enroll" class="btn-lg btn-primary">
-            {% trans "Enroll" %}&nbsp;&raquo;
-          </button>
-        </form>
-      </div>
-    {% endif %}
+      {% if course.hidden %}
+        <div class="alert alert-info">
+          <i class="fa fa-info-circle"></i>
+          {% trans "This course is only visible to course staff at the moment." %}
+          <a class="btn btn-default" href="{% url "admin:course_course_change" course.id %}"
+            role="button" target="_blank">{% trans "Change" context "change the visibility of a course" %}&nbsp;&raquo;</a>
+        </div>
+      {% endif %}
+      {% if not user.is_authenticated %}
+        <div class="well">
+          {% trans "You're not currently signed in." %}
+          <a class="btn-lg btn-primary" href="{% url student_sign_in_view %}"
+            role="button">{% trans "Sign in" %}&nbsp;&raquo;</a>
+        </div>
+      {% else %}
+
+        {% if show_enroll_button %}
+          <div class="well">
+            <form method="POST" action="{% url "relate-enroll" course.identifier %}">
+              {% csrf_token %}
+              <button type="submit" name="enroll" class="btn-lg btn-primary">
+                {% trans "Enroll" %}&nbsp;&raquo;
+              </button>
+            </form>
+          </div>
+        {% endif %}
+
+      {% endif %}
+
+      {% for chunk in chunks %}
+      <a id="{{chunk.id}}"></a>
+        {{chunk.html_content|safe}}
+      {% endfor %}
 
   {% endif %}
-
-  {% for chunk in chunks %}
-  <a id="{{chunk.id}}"></a>
-    {{chunk.html_content|safe}}
-  {% endfor %}
 {% endblock %}

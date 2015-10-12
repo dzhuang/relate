@@ -323,15 +323,26 @@ def validate_course_desc_struct(ctx, location, course_desc):
             location,
             course_desc,
             required_attrs=[
-                ("name", str),
-                ("number", str),
-                ("run", str),
                 ("chunks", list),
                 ],
             allowed_attrs=[
                 ("grade_summary_code", str),
+
+                ("name", str),
+                ("number", str),
+                ("run", str),
                 ]
             )
+
+    if hasattr(course_desc, "name"):
+        ctx.add_warning(location, _("'name' is deprecated. "
+            "This information is now kept in the database."))
+    if hasattr(course_desc, "number"):
+        ctx.add_warning(location, _("'number' is deprecated. "
+            "This information is now kept in the database."))
+    if hasattr(course_desc, "run"):
+        ctx.add_warning(location, _("'run' is deprecated. "
+            "This information is now kept in the database."))
 
     for i, chunk in enumerate(course_desc.chunks):
         validate_chunk(ctx,
@@ -810,6 +821,7 @@ def validate_flow_desc(ctx, location, flow_desc):
                 ("rules", Struct),
                 ("groups", list),
                 ("pages", list),
+                ("notify_on_submit", list),
                 ]
             )
 
@@ -886,6 +898,13 @@ def validate_flow_desc(ctx, location, flow_desc):
     validate_markup(ctx, location, flow_desc.description)
     if hasattr(flow_desc, "completion_text"):
         validate_markup(ctx, location, flow_desc.completion_text)
+
+    if hasattr(flow_desc, "notify_on_submit"):
+        for i, item in enumerate(flow_desc.notify_on_submit):
+            if not isinstance(item, six.string_types):
+                raise ValidationError(
+                        "%s, notify_on_submit: item %d is not a string"
+                        % (location, i+1))
 
 # }}}
 
