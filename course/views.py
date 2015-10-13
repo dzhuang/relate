@@ -45,6 +45,8 @@ from django.utils.translation import (
 from django.utils.functional import lazy
 from django.contrib.auth.decorators import login_required
 
+from django_select2.forms import Select2Widget
+
 mark_safe_lazy = lazy(mark_safe, six.text_type)
 
 from django.views.decorators.cache import cache_control
@@ -620,7 +622,8 @@ class ExceptionStage1Form(StyledForm):
                 required=True,
                 help_text=_("Select participant for whom exception is to "
                 "be granted."),
-                label=_("Participant"))
+                label=_("Participant"),
+                widget=Select2Widget())
         self.fields["flow_id"] = forms.ChoiceField(
                 choices=[(fid, fid) for fid in flow_ids],
                 required=True,
@@ -776,7 +779,7 @@ def grant_exception_stage_2(pctx, participation_id, flow_id):
                 "<i class='fa fa-info-circle'></i>" %
                 (_("Creating a new session is (technically) not allowed "
                 "by course rules. Clicking 'Create Session' anyway will "
-                "override this rule.")))
+                "override this rule."))))
 
     default_tag = session_start_rule.tag_session
     if default_tag is None:
