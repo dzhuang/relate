@@ -1729,7 +1729,7 @@ def finish_flow_session_view(pctx, flow_session_id):
                 from django.core.mail import EmailMessage
                 msg = EmailMessage(
                         string_concat("[%(identifier)s:%(flow_id)s] ",
-                                      _("Submission by %(participation)s"))
+                            _("Submission by %(participation)s"))
                         % {'participation': flow_session.participation,
                             'identifier': fctx.course.identifier,
                             'flow_id': flow_session.flow_id},
