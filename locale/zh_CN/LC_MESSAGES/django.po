@@ -1703,11 +1703,11 @@ msgstr "SSH私有密钥"
 
 #: .\course\models.py:221
 msgid ""
-"Subdirectory *within* the git repository to use as course root directory. "
+"Subdirectory <b>within</b> the git repository to use as course root directory. "
 "Not required, and usually blank. Use only if your course content lives in a "
 "subdirectory of your git repository. Should not include trailing slash."
 msgstr ""
-"一个*在git仓库目录下*的子目录. 一般情况下不要求填写, 除非你的课程内容放git仓"
+"一个<b>在git仓库目录下</b>的子目录. 一般情况下不要求填写, 除非你的课程内容放git仓"
 "库的某个子目录下. 填写时不要包含斜杠."
 
 #: .\course\models.py:226
