@@ -2,14 +2,14 @@
 {% load i18n %}
 
 {% block title %}
-  {{ course.number}}:
+  {{ course.name}}:
   {{ course.time_period}}
   -
   {% trans "RELATE" %}
 {% endblock %}
 
 {% block brand %}
-  {{ course.number}}
+  {{ course.name}}
   {{ course.time_period}}
 {% endblock %}
 
