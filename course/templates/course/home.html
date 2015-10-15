@@ -19,8 +19,8 @@
       <div class="row">
         {% for course in current_courses %}
           <div class="col-md-4">
-            <h3>{{course.number}} {{course.time_period}}</h3>
-            <p>{{course.name}}</p>
+            <h3>{{course.name}} {{course.time_period}}</h3>
+            <p>{{course.number}}</p>
             <p><a class="btn btn-default" href="{% url 'course.views.course_page' course.identifier %}" role="button">{% trans "View" %} &raquo;</a></p>
           </div>
         {% endfor %}
@@ -31,8 +31,8 @@
       <div class="row">
         {% for course in inprogress_courses %}
           <div class="col-md-4">
-            <h3>{{course.number}} {{course.time_period}}</h3>
-            <p>{{course.name}}</p>
+            <h3>{{course.name}} {{course.time_period}}</h3>
+            <p>{{course.number}}</p>
             <p><a class="btn btn-default" href="{% url 'course.views.course_page' course.identifier %}" role="button">{% trans "View" %} &raquo;</a></p>
           </div>
         {% endfor %}
