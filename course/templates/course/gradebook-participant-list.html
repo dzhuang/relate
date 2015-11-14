@@ -26,6 +26,7 @@
       <th class="datacol">{% trans "First Name" %}</th>
       <th class="datacol">{% trans "student ID" %}</th>
       <th class="datacol">{% trans "Role" %}</th>
+      <th class="datacol">{% trans "Email" %}</th>
     </thead>
     <tbody>
       {% for participation in participations %}
@@ -35,6 +36,7 @@
         <td class="datacol"><span class="sensitive">{{ participation.user.first_name }}</span></td>
         <td class="datacol">{{ participation.get_role_desc }}</td>
         <td class="datacol"><span class="sensitive">{{ participation.user.user_status.student_ID }}</span></td>
+        <td class="datacol"><span class="sensitive">{{ participation.user.email }}</span></td>
       </tr>
       {% endfor %}
     </tbody>
