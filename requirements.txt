@@ -70,3 +70,6 @@ django-celery
 
 # For searchable select forms
 django_select2==5.0.3
+
+# For django-ckeditor
+ django-ckeditor

@@ -101,6 +101,7 @@ BOWER_INSTALLED_APPS = (
     "datatables-fixedcolumns",
     "jstree",
     "select2-bootstrap-css",
+    "django-ckeditor",
     "pdf.js=https://github.com/mozilla/pdf.js/releases/download/v1.1.215/pdfjs-1.1.215-dist.zip",
     )
 
