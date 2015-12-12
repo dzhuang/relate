@@ -1260,9 +1260,9 @@ def view_flow_page(pctx, flow_session_id, ordinal):
                 feedback = None
 
             try:
-            form = fpctx.page.make_form(
-                    page_context, page_data.data,
-                    answer_data, page_behavior)
+                form = fpctx.page.make_form(
+                        page_context, page_data.data,
+                        answer_data, page_behavior)
             except InvalidPageData as e:
                 messages.add_message(request, messages.ERROR,
                         ugettext(
