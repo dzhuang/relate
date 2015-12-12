@@ -26,8 +26,7 @@ THE SOFTWARE.
 
 from django.utils import six
 from django.utils.translation import (
-        ugettext, ugettext_lazy as _,
-        string_concat)
+        ugettext, ugettext_lazy as _, string_concat)
 from django.utils.functional import lazy
 from django.shortcuts import (  # noqa
         render, get_object_or_404, redirect)
@@ -75,6 +74,7 @@ from course.utils import (
         get_session_grading_rule,
         get_flow_rules_str,
         FlowSessionGradingRule)
+from course.page import InvalidPageData
 from course.views import get_now_or_fake_time
 from relate.utils import retry_transaction_decorator
 
@@ -696,10 +696,10 @@ def grade_flow_session(fctx, flow_session, grading_rule,
 def reopen_session(session, force=False, suppress_log=False):
     if session.in_progress:
         raise RuntimeError(
-                _("Can't reopen a session that's already in progress"))
+                _("Cannot reopen a session that's already in progress"))
     if session.participation is None:
         raise RuntimeError(
-                _("Can't reopen anonymous sessions"))
+                _("Cannot reopen anonymous sessions"))
 
     session.in_progress = True
     session.points = None
@@ -1259,9 +1259,22 @@ def view_flow_page(pctx, flow_session_id, ordinal):
             else:
                 feedback = None
 
+            try:
             form = fpctx.page.make_form(
                     page_context, page_data.data,
                     answer_data, page_behavior)
+            except InvalidPageData as e:
+                messages.add_message(request, messages.ERROR,
+                        ugettext(
+                            "The page data stored in the database was found "
+                            "to be invalid for the page as given in the "
+                            "course content. Likely the course content was "
+                            "changed in an incompatible way (say, by adding "
+                            "an option to a choice question) without changing "
+                            "the question ID. The precise error encountered "
+                            "was the following: "+str(e)))
+
+                return render_course_page(pctx, "course/course-base.html", {})
 
         else:
             form = None
@@ -1302,33 +1315,6 @@ def view_flow_page(pctx, flow_session_id, ordinal):
                     "because this session yields a permanent grade, but "
                     "you have not completed your enrollment process in "
                     "this course."))
-
-    # {{{ FIXME: This warning should be deleted after October 2015
-
-    elif (
-            flow_session.participation is None
-            and
-            fpctx.page.expects_answer()
-            and
-            page_behavior.may_change_answer
-            ):
-
-        messages.add_message(request, messages.WARNING,
-                _("<p><b>WARNING!</b> What you enter on this page will not be "
-                    "associated with your user account, likely because "
-                    "you have not completed your enrollment in this course. "
-                    "Any data you enter here will not be retrievable later "
-                    "and will not be graded. If this is not what you intended, "
-                    "save your work on this session now (outside of RELATE), "
-                    "complete your enrollment in this course in RELATE, "
-                    "and restart your work on this flow.</p>"
-                    "<p> To confirm that you've "
-                    "completed your enrollment, make sure there is no 'Sign in' "
-                    "or 'Enroll' button at the top of the main course page.<p>"
-                    "<p><b>In addition, you should immediately bookmark this page "
-                    "to ensure you'll be able to return to your work.</b>"))
-
-    # }}}
 
     # {{{ render flow page
 
