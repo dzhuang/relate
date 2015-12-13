@@ -73,4 +73,7 @@ django-celery
 django_select2==5.0.3
 
 # For django-ckeditor
- django-ckeditor
+django-ckeditor
+
+# For multiple image upload
+git+https://github.com/kalkehcoisa/django_multiuploader.git
