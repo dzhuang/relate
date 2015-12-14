@@ -43,7 +43,9 @@ INSTALLED_APPS = (
 
     # message queue
     "djcelery",
-    "kombu.transport.django"
+    "kombu.transport.django",
+    "ckeditor",
+    #"ckeditor_uploader",
 )
 
 MIDDLEWARE_CLASSES = (
@@ -103,6 +105,7 @@ BOWER_INSTALLED_APPS = (
     "select2-bootstrap-css",
     "django-ckeditor",
     "pdf.js=https://github.com/mozilla/pdf.js/releases/download/v1.1.215/pdfjs-1.1.215-dist.zip",
+    "jquery-file-upload",
     )
 
 CODEMIRROR_PATH = "codemirror"
@@ -221,3 +224,6 @@ TEMPLATES = [
 LOCALE_PATHS = (
     BASE_DIR + '/locale',
 )
+
+#MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+#CKEDITOR_UPLOAD_PATH = os.path.join(MEDIA_ROOT, "content", "ck_upload")
