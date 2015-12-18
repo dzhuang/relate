@@ -1047,38 +1047,49 @@ def get_page_behavior(page, permissions, session_in_progress, answer_was_graded,
 
 def add_buttons_to_form(form, fpctx, flow_session, permissions):
     from crispy_forms.layout import Submit
-    form.helper.add_input(
-            Submit("save", _("Save answer"),
-                css_class="relate-save-button"))
+    
+#    from course.page.upload import FileUploadForm
+#    print isinstance(form, FileUploadForm)
+#    
+#    from relate.utils import StyledForm
+#    print isinstance(form, StyledForm)
+    
+    from course.page.choice import MultipleChoiceAnswerForm
+    
+    if not isinstance(form, MultipleChoiceAnswerForm) or isinstance(form, MultipleChoiceAnswerForm):
+    
+        form.helper.add_input(
+                Submit("save", _("Save answer"),
+                    css_class="relate-save-button"))
 
-    if will_receive_feedback(permissions):
-        if flow_permission.change_answer in permissions:
-            form.helper.add_input(
-                    Submit(
-                        "submit", _("Submit answer for grading"),
-                        accesskey="g", css_class="relate-save-button"))
+        if will_receive_feedback(permissions):
+            if flow_permission.change_answer in permissions:
+                form.helper.add_input(
+                        Submit(
+                            "submit", _("Submit answer for grading"),
+                            accesskey="g", css_class="relate-save-button"))
+            else:
+                form.helper.add_input(
+                        Submit("submit", _("Submit final answer"),
+                            css_class="relate-save-button"))
         else:
-            form.helper.add_input(
-                    Submit("submit", _("Submit final answer"),
-                        css_class="relate-save-button"))
-    else:
-        # Only offer 'save and move on' if student will receive no feedback
-        if fpctx.page_data.ordinal + 1 < flow_session.page_count:
-            form.helper.add_input(
-                    Submit("save_and_next",
-                        mark_safe_lazy(
-                            string_concat(
-                                _("Save answer and move on"),
-                                " &raquo;")),
-                        css_class="relate-save-button"))
-        else:
-            form.helper.add_input(
-                    Submit("save_and_finish",
-                        mark_safe_lazy(
-                            string_concat(
-                                _("Save answer and finish"),
-                                " &raquo;")),
-                        css_class="relate-save-button"))
+            # Only offer 'save and move on' if student will receive no feedback
+            if fpctx.page_data.ordinal + 1 < flow_session.page_count:
+                form.helper.add_input(
+                        Submit("save_and_next",
+                            mark_safe_lazy(
+                                string_concat(
+                                    _("Save answer and move on"),
+                                    " &raquo;")),
+                            css_class="relate-save-button"))
+            else:
+                form.helper.add_input(
+                        Submit("save_and_finish",
+                            mark_safe_lazy(
+                                string_concat(
+                                    _("Save answer and finish"),
+                                    " &raquo;")),
+                            css_class="relate-save-button"))
 
     return form
 
@@ -1454,6 +1465,7 @@ def get_pressed_button(form):
     buttons = ["save", "save_and_next", "save_and_finish", "submit"]
     for button in buttons:
         if button in form.data:
+            print form.data
             return button
 
     raise SuspiciousOperation(_("could not find which button was pressed"))
