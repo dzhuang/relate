@@ -35,36 +35,149 @@ from course.page.base import (
 from course.validation import ValidationError
 
 from relate.utils import StyledForm
+from relate.utils import StyledModelForm
+
+from crispy_forms.helper import FormHelper
+from crispy_forms import layout, bootstrap
+
+from course.models import Image
 
 
 # {{{ upload question
 
-class ImageUploadForm(StyledForm):
-    uploaded_file = forms.FileField(required=True,
-            label=ugettext_lazy('Uploaded file'))
+class ImageUploadForm(StyledModelForm):
+    uploaded_image = forms.ImageField(widget=forms.HiddenInput(),)
+    
+    class Meta:
+        model = Image
+        fields = "__all__"
 
     def __init__(self, maximum_megabytes, mime_types, *args, **kwargs):
-        super(FileUploadForm, self).__init__(*args, **kwargs)
+        super(ImageUploadForm, self).__init__(*args, **kwargs)
 
         self.max_file_size = maximum_megabytes * 1024**2
         self.mime_types = mime_types
+        
+#        def __init__(self, *args, **kwargs):
+#        super(PhotoForm, self).__init__(*args, **kwargs)
 
-    def clean_uploaded_file(self):
-        uploaded_file = self.cleaned_data['uploaded_file']
-        from django.template.defaultfilters import filesizeformat
+        #self.helper = FormHelper()
+        self.helper.form_id="fileupload"
+        self.helper.form_action = "jfu_upload"
+        self.helper.form_method = "POST"
 
-        if uploaded_file._size > self.max_file_size:
-            raise forms.ValidationError(
-                    _("Please keep file size under %(allowedsize)s. "
-                    "Current filesize is %(uploadedsize)s.")
-                    % {'allowedsize': filesizeformat(self.max_file_size),
-                        'uploadedsize': filesizeformat(uploaded_file._size)})
+        self.helper.layout = layout.Layout(
+            layout.Fieldset(
+                u"表格",
+                layout.HTML(u"""{% load i18n %}
+                        <noscript>
+                            <input type="hidden" name="redirect" value="{{ request.path }}">
+                        </noscript>
 
-        if self.mime_types is not None and self.mime_types == ["application/pdf"]:
-            if uploaded_file.read()[:4] != b"%PDF":
-                raise forms.ValidationError(_("Uploaded file is not a PDF."))
 
-        return uploaded_file
+
+                        <div class="row fileupload-buttonbar">
+
+
+                            <div class="col-lg-7">
+
+                                <span class="btn btn-success fileinput-button">
+                                    <i class="glyphicon glyphicon-plus"></i>
+                                    <span>{% trans "Add files..." %}</span>
+
+                                    <input 
+                                        type="file" name="files[]" multiple
+
+                                        {% if accepted_mime_types %}
+                                            accept = '{{ accepted_mime_types|join:"," }}'
+                                        {% endif %}
+                                    >
+
+                                </span>
+
+
+                                <button type="submit" class="btn btn-primary start">
+                                    <i class="glyphicon glyphicon-upload"></i>
+                                    <span>{% trans "Start upload" %}</span>
+                                </button>
+                                <button type="reset" class="btn btn-warning cancel">
+                                    <i class="glyphicon glyphicon-ban-circle"></i>
+                                    <span>{% trans "Cancel upload" %}</span>
+                                </button>
+                                <button type="button" class="btn btn-danger delete">
+                                    <i class="glyphicon glyphicon-trash"></i>
+                                    <span>{% trans "Delete" %}</span>
+                                </button>
+                                <input type="checkbox" class="toggle">
+
+
+                            </div>
+
+                            <div class="col-lg-5 fileupload-progress fade">
+                                <div 
+                                    class="progress progress-striped active" 
+                                    role="progressbar" 
+                                    aria-valuemin="0" aria-valuemax="100"
+                                >
+                                    <div class="progress-bar progress-bar-success" style="width:0%;">
+                                    </div>
+                                </div>
+
+                                <div class="progress-extended">&nbsp;</div>
+                            </div>
+
+
+                        </div>
+
+
+
+
+
+                        <div class="fileupload-loading"></div>
+                        <br>
+
+
+                        <table role="presentation" class="table table-striped">
+                            <tbody class="files"></tbody>
+                        </table>
+
+
+                """),
+                
+#                layout.HTML("""
+#                
+#                <div class="row fileupload-buttonbar">
+#                
+#                <button type="submit" class="btn btn-primary start"> <i class="glyphicon glyphicon-upload"></i> <span>start</span> </button>
+#                
+#                </div>
+#                
+#                """),
+                
+                #"image_path",
+                #"delete_image",
+            ),
+#            bootstrap.FormActions(
+#                layout.Submit('submit', _('Save'), css_class="btn btn-primary"),
+#            )
+        )
+
+#    def clean_uploaded_image(self):
+#        uploaded_image = self.cleaned_data['uploaded_image']
+#        from django.template.defaultfilters import filesizeformat
+#
+#        if uploaded_image._size > self.max_file_size:
+#            raise forms.ValidationError(
+#                    _("Please keep file size under %(allowedsize)s. "
+#                    "Current filesize is %(uploadedsize)s.")
+#                    % {'allowedsize': filesizeformat(self.max_file_size),
+#                        'uploadedsize': filesizeformat(uploaded_image._size)})
+#
+#        if self.mime_types is not None and self.mime_types == ["application/pdf"]:
+#            if uploaded_image.read()[:4] != b"%PDF":
+#                raise forms.ValidationError(_("Uploaded file is not a PDF."))
+#
+#        return uploaded_image
 
 
 class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
@@ -134,8 +247,9 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
     """
 
     ALLOWED_MIME_TYPES = [
+            "image/jpeg",
+            "image/png",
             "application/pdf",
-            "application/octet-stream",
             ]
 
     def __init__(self, vctx, location, page_desc):
@@ -159,13 +273,13 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                         "assigned point value"))
 
     def required_attrs(self):
-        return super(FileUploadQuestion, self).required_attrs() + (
+        return super(ImageUploadQuestion, self).required_attrs() + (
                 ("prompt", "markup"),
                 ("maximum_megabytes", (int, float)),
                 )
 
     def allowed_attrs(self):
-        return super(FileUploadQuestion, self).allowed_attrs() + (
+        return super(ImageUploadQuestion, self).allowed_attrs() + (
                 ("correct_answer", "markup"),
                 ("mime_types", list),
                 )
@@ -180,13 +294,13 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         return markup_to_html(page_context, self.page_desc.prompt)
 
     def files_data_to_answer_data(self, files_data):
-        files_data["uploaded_file"].seek(0)
-        buf = files_data["uploaded_file"].read()
+        files_data["uploaded_image"].seek(0)
+        buf = files_data["uploaded_image"].read()
 
         if len(self.page_desc.mime_types) == 1:
             mime_type, = self.page_desc.mime_types
         else:
-            mime_type = files_data["uploaded_file"].content_type
+            mime_type = files_data["uploaded_image"].content_type
         from base64 import b64encode
         return {
                 "base64_data": b64encode(buf).decode(),
@@ -195,13 +309,13 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
 
     def make_form(self, page_context, page_data,
             answer_data, page_behavior):
-        form = FileUploadForm(
+        form = ImageUploadForm(
                 self.page_desc.maximum_megabytes, self.page_desc.mime_types)
         return form
 
     def process_form_post(self, page_context, page_data, post_data, files_data,
             page_behavior):
-        form = FileUploadForm(
+        form = ImageUploadForm(
                 self.page_desc.maximum_megabytes, self.page_desc.mime_types,
                 post_data, files_data)
         return form
@@ -218,7 +332,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         from django.template import RequestContext
         from django.template.loader import render_to_string
         return render_to_string(
-                "course/file-upload-form.html",
+                "course/image-upload-template.html",
                 RequestContext(request, ctx))
 
     def answer_data(self, page_context, page_data, form, files_data):

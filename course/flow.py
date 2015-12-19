@@ -1510,6 +1510,8 @@ def post_flow_page(flow_session, fpctx, request, permissions, generates_grade):
             page_behavior=page_behavior)
 
     pressed_button = get_pressed_button(form)
+    
+    print pressed_button
 
     if submission_allowed and form.is_valid():
         # {{{ form validated, process answer

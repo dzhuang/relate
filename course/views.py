@@ -1190,5 +1190,58 @@ def monitor_task(request, task_id):
 
 # }}}
 
+# {{{ jfu image upload
+
+from django.views.decorators.http import require_POST
+from jfu.http import upload_receive, UploadResponse, JFUResponse
+from course.models import Image
+import os
+
+@require_POST
+def upload( request ):
+    
+    from django.conf import settings
+    from django.core.urlresolvers import reverse
+    
+    file = upload_receive( request )
+
+    instance = Image( file = file )
+    instance.save()
+
+    basename = os.path.basename( instance.file.path )
+    
+    #print instance.pk
+    
+    file_dict = {
+        'name' : basename,
+        'size' : file.size,
+
+        'url': settings.MEDIA_URL + basename,
+        'thumbnailUrl': settings.MEDIA_URL + basename,
+
+        'deleteUrl': reverse('jfu_delete', kwargs = { 'pk': instance.pk }),
+        'deleteType': 'POST',
+    }
+
+    return UploadResponse( request, file_dict )
+
+@require_POST
+def upload_delete( request, pk ):
+    
+    
+    success = True
+    
+    print pk
+    
+    try:
+        instance = Image.objects.get( pk = pk )
+        os.unlink( instance.file.path )
+        instance.delete()
+    except Image.DoesNotExist:
+        success = False
+
+    return JFUResponse( request, success )
+
+# }}}
 
 # vim: foldmethod=marker

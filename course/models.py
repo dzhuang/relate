@@ -1525,4 +1525,8 @@ class ExamTicket(models.Model):
 
 # }}}
 
+class Image(models.Model):
+    
+    file = models.ImageField(upload_to = settings.MEDIA_ROOT)
+
 # vim: foldmethod=marker

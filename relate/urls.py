@@ -427,6 +427,19 @@ urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
 ]
 
+urlpatterns += [
+    #url( r'^$', views.Home.as_view(), name = 'home' ),
+    #url(r'^$', views.home, name='home'),
+
+    url(r'course/trytrytry/flow-session/3669/1/upload/', course.views.upload, name = 'jfu_upload' ),
+    url(r'course/trytrytry/flow-session/3669/1/delete/(?P<pk>\d+)$', course.views.upload_delete, name = 'jfu_delete' ),
+]
+
+#from django.conf.urls.static import static
+
+#urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+
 if settings.RELATE_MAINTENANCE_MODE:
     urlpatterns = [
         # course

@@ -38,6 +38,7 @@ from course.page.choice import (
 from course.page.code import (
         PythonCodeQuestion, PythonCodeQuestionWithHumanTextFeedback)
 from course.page.upload import FileUploadQuestion
+from course.page.imageupload import ImageUploadQuestion
 
 __all__ = (
         "InvalidPageData",
@@ -52,6 +53,8 @@ __all__ = (
         "ChoiceQuestion", "SurveyChoiceQuestion", "MultipleChoiceQuestion",
         "PythonCodeQuestion", "PythonCodeQuestionWithHumanTextFeedback",
         "FileUploadQuestion",
+        
+        "ImageUploadQuestion",
         )
 
 __doc__ = """
