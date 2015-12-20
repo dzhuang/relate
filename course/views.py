@@ -1214,6 +1214,9 @@ def upload( request ):
     from django.core.urlresolvers import reverse
     
     file = upload_receive( request )
+    
+    print "received"
+    print file
 
     instance = Image( file = file )
     instance.save()

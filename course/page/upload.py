@@ -214,6 +214,8 @@ class FileUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                 answer_data["mime_type"],
                 answer_data["base64_data"],
                 )
+            
+        print page_context
 
         from django.template import RequestContext
         from django.template.loader import render_to_string

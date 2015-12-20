@@ -1463,18 +1463,20 @@ def view_flow_page(pctx, flow_session_id, ordinal):
 
 def get_pressed_button(form):
     buttons = ["save", "save_and_next", "save_and_finish", "submit"]
+    print form.data
     for button in buttons:
         if button in form.data:
-            print form.data
             return button
 
-    raise SuspiciousOperation(_("could not find which button was pressed"))
+    #raise SuspiciousOperation(_("could not find which button was pressed"))
 
 
 @retry_transaction_decorator()
 def post_flow_page(flow_session, fpctx, request, permissions, generates_grade):
     page_context = fpctx.page_context
     page_data = fpctx.page_data
+    
+    print page_data
 
     prev_answer_visits = list(
             get_prev_answer_visits_qset(fpctx.page_data))
