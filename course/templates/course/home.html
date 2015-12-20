@@ -75,4 +75,15 @@
     <hr>
     <a class="btn btn-primary" href="{% url 'course.versioning.set_up_new_course' %}"" role="button">{% trans "Set up new course" %} &raquo;</a></p>
   {% endif %}
+                                                                                                                                 
+      <div class="container">
+
+      <div class="hero-unit">
+        {% load jfutags %}
+        {% jfu 'course/photo_upload_form2.html' %}
+      </div>
+                            
+     </div>
+ 
+                                                                                                                                 
 {% endblock %}

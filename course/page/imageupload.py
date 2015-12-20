@@ -144,22 +144,22 @@ class ImageUploadForm(StyledModelForm):
 
                 """),
                 
-#                layout.HTML("""
-#                
-#                <div class="row fileupload-buttonbar">
-#                
-#                <button type="submit" class="btn btn-primary start"> <i class="glyphicon glyphicon-upload"></i> <span>start</span> </button>
-#                
-#                </div>
-#                
-#                """),
+                layout.HTML("""
+                
+                <div class="row fileupload-buttonbar">
+                
+                <button type="submit" class="btn btn-primary start"> <i class="glyphicon glyphicon-upload"></i> <span>start</span> </button>
+                
+                </div>
+                
+                """),
                 
                 #"image_path",
                 #"delete_image",
             ),
-#            bootstrap.FormActions(
-#                layout.Submit('submit', _('Save'), css_class="btn btn-primary"),
-#            )
+            bootstrap.FormActions(
+                layout.Submit('submit', _('Save'), css_class="btn btn-primary"),
+            )
         )
 
 #    def clean_uploaded_image(self):

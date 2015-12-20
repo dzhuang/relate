@@ -1528,5 +1528,8 @@ class ExamTicket(models.Model):
 class Image(models.Model):
     
     file = models.ImageField(upload_to = settings.MEDIA_ROOT)
+    
+    class Meta:
+        verbose_name = _("Image")
 
 # vim: foldmethod=marker

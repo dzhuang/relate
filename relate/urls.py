@@ -431,8 +431,8 @@ urlpatterns += [
     #url( r'^$', views.Home.as_view(), name = 'home' ),
     #url(r'^$', views.home, name='home'),
 
-    url(r'course/trytrytry/flow-session/3669/1/upload/', course.views.upload, name = 'jfu_upload' ),
-    url(r'course/trytrytry/flow-session/3669/1/delete/(?P<pk>\d+)$', course.views.upload_delete, name = 'jfu_delete' ),
+    url(r'course/trytrytry/flow-session/74/1/upload/', course.views.upload, name = 'jfu_upload' ),
+    url(r'^delete/(?P<pk>\d+)$', course.views.upload_delete, name = 'jfu_delete' ),
 ]
 
 #from django.conf.urls.static import static
