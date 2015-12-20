@@ -1,0 +1,22 @@
+{% extends 'jfu/upload_form.html' %}
+
+
+
+{% block UPLOAD_FORM %}
+{% load i18n crispy_forms_tags %}
+{% crispy form %}
+{% endblock %}
+
+{% block JS_OPTS %}
+loadImageFileTypes: /^image\/(gif|jpeg|png|svg\+xml)$/,
+sequentialUploads: true,
+disableImageResize: /Android(?!.*Chrome)|Opera/
+    .test(window.navigator && navigator.userAgent),
+
+imageCrop: false, // Force cropped images
+acceptFileTypes: /(\.|\/)(png|gif|jpe?g)$/i,
+messages: {
+                acceptFileTypes: 'File type not allowed'
+            },
+imageOrientation: true
+{% endblock %}
