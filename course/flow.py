@@ -1463,7 +1463,6 @@ def view_flow_page(pctx, flow_session_id, ordinal):
 
 def get_pressed_button(form):
     buttons = ["save", "save_and_next", "save_and_finish", "submit"]
-    print form.data
     for button in buttons:
         if button in form.data:
             return button
@@ -1475,8 +1474,6 @@ def get_pressed_button(form):
 def post_flow_page(flow_session, fpctx, request, permissions, generates_grade):
     page_context = fpctx.page_context
     page_data = fpctx.page_data
-    
-    print page_data
 
     prev_answer_visits = list(
             get_prev_answer_visits_qset(fpctx.page_data))
@@ -1510,10 +1507,12 @@ def post_flow_page(flow_session, fpctx, request, permissions, generates_grade):
             fpctx.page_context, fpctx.page_data.data,
             post_data=request.POST, files_data=request.FILES,
             page_behavior=page_behavior)
+    
+    print "formdata:", form.data
 
     pressed_button = get_pressed_button(form)
     
-    print pressed_button
+    print "pressed_button:", pressed_button
 
     if submission_allowed and form.is_valid():
         # {{{ form validated, process answer

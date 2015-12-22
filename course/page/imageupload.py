@@ -45,12 +45,12 @@ from course.models import Image
 
 # {{{ upload question
 
-class ImageUploadForm(StyledModelForm):
-    uploaded_image = forms.ImageField(widget=forms.HiddenInput(),)
+class ImageUploadForm(StyledForm):
+    uploaded_image = forms.ImageField(required=True)
     
-    class Meta:
-        model = Image
-        fields = "__all__"
+#    class Meta:
+#        model = Image
+#        fields = "__all__"
 
     def __init__(self, maximum_megabytes, mime_types, page_context, *args, **kwargs):
         super(ImageUploadForm, self).__init__(*args, **kwargs)
@@ -58,20 +58,14 @@ class ImageUploadForm(StyledModelForm):
         self.max_file_size = maximum_megabytes * 1024**2
         self.mime_types = mime_types
         self.page_context = page_context
-        
-#        def __init__(self, *args, **kwargs):
-#        super(PhotoForm, self).__init__(*args, **kwargs)
-
-        #self.helper = FormHelper()
         self.helper.form_id="fileupload"
         #self.helper.form_action = "jfu_upload"
 
         from django.core.urlresolvers import reverse
 #        self.helper.form_action = reverse("relate-view_flow_page",
 #                            args=(course.identifier, flow_session.id, ordinal))
-        self.helper.form_action = self.page_context.page_uri
+        self.helper.form_action = "/course/trytrytry/flow-session/3669/1/"
         self.helper.form_method = "POST"
-
         self.helper.layout = layout.Layout(
             layout.Fieldset(
                 u"表格",
@@ -102,7 +96,7 @@ class ImageUploadForm(StyledModelForm):
                                 </span>
 
 
-                                <button type="submit" class="btn btn-primary start">
+                                <button type="submit" class="btn btn-primary start" name="upload_all_image">
                                     <i class="glyphicon glyphicon-upload"></i>
                                     <span>{% trans "Start upload" %}</span>
                                 </button>
@@ -154,7 +148,7 @@ class ImageUploadForm(StyledModelForm):
                 
                 <div class="row fileupload-buttonbar">
                 
-                <button type="submit" class="btn btn-primary start"> <i class="glyphicon glyphicon-upload"></i> <span>start</span> </button>
+                <button type="submit" class="btn btn-primary start" name="save_image"> <i class="glyphicon glyphicon-upload"></i> <span>start</span> </button>
                 
                 </div>
                 
@@ -163,27 +157,18 @@ class ImageUploadForm(StyledModelForm):
                 #"image_path",
                 #"delete_image",
             ),
-            bootstrap.FormActions(
-                layout.Submit('submit', _('Save'), css_class="btn btn-primary"),
-            )
+#            bootstrap.FormActions(
+#                layout.Submit('submit', _('Save'), css_class="btn btn-primary"),
+#            )
         )
 
-#    def clean_uploaded_image(self):
-#        uploaded_image = self.cleaned_data['uploaded_image']
-#        from django.template.defaultfilters import filesizeformat
-#
-#        if uploaded_image._size > self.max_file_size:
-#            raise forms.ValidationError(
-#                    _("Please keep file size under %(allowedsize)s. "
-#                    "Current filesize is %(uploadedsize)s.")
-#                    % {'allowedsize': filesizeformat(self.max_file_size),
-#                        'uploadedsize': filesizeformat(uploaded_image._size)})
-#
-#        if self.mime_types is not None and self.mime_types == ["application/pdf"]:
-#            if uploaded_image.read()[:4] != b"%PDF":
-#                raise forms.ValidationError(_("Uploaded file is not a PDF."))
-#
-#        return uploaded_image
+    def clean_uploaded_image(self):
+        uploaded_image = self.cleaned_data['uploaded_image']
+        
+        
+
+
+        return uploaded_image
 
 
 class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
@@ -318,8 +303,11 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         form = ImageUploadForm(
                 self.page_desc.maximum_megabytes, self.page_desc.mime_types,
                 page_context)
-        print page_context
-        print page_context.page_uri
+        #print page_context
+        #print page_context.page_uri
+        
+        
+        
         return form
 
     def process_form_post(self, page_context, page_data, post_data, files_data,
@@ -328,6 +316,9 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                 self.page_desc.maximum_megabytes, self.page_desc.mime_types,
                 page_context,
                 post_data, files_data)
+        
+        print form.as_p()
+        
         return form
 
     def form_to_html(self, request, page_context, form, answer_data):
@@ -338,8 +329,10 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                 answer_data["mime_type"],
                 answer_data["base64_data"],
                 )
+        
         ctx["JQ_OPEN" ]= '{%'
         ctx['JQ_CLOSE' ]= '%}'
+        ctx["accepted_mime_types"]= ['image/*']
 
         from django.template import RequestContext
         from django.template.loader import render_to_string

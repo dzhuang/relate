@@ -40,6 +40,7 @@ INSTALLED_APPS = (
     "bootstrap3_datetime",
     "djangobower",
     "django_select2",
+    #'debug_toolbar',
 
     # message queue
     "djcelery",

@@ -131,7 +131,7 @@ def home(request, image_id=None):
     from course.forms import ImageForm
     form = ImageForm(instance=instance)
     
-    print form
+    #print form
 
     return render(request, "course/home.html", {
         "current_courses": current_courses,
@@ -1211,6 +1211,37 @@ from course.models import Image
 import os
 
 @require_POST
+def upload_image(request):
+    
+    from django.conf import settings
+    from django.core.urlresolvers import reverse
+    
+    file = upload_receive(request)
+    
+    print "received"
+    print file
+
+    instance = Image(file = file)
+    instance.save()
+
+    basename = os.path.basename( instance.file.path )
+    
+    #print instance.pk
+    
+    file_dict = {
+        'name' : basename,
+        'size' : file.size,
+
+        'url': settings.MEDIA_URL + basename,
+        'thumbnailUrl': settings.MEDIA_URL + basename,
+
+        'deleteUrl': reverse('jfu_delete', kwargs = { 'pk': instance.pk }),
+        'deleteType': 'POST',
+    }
+
+    return UploadResponse(request, file_dict)
+
+@require_POST
 def upload( request ):
     
     from django.conf import settings
@@ -1238,6 +1269,8 @@ def upload( request ):
         'deleteUrl': reverse('jfu_delete', kwargs = { 'pk': instance.pk }),
         'deleteType': 'POST',
     }
+    
+    print "UploadResponse", UploadResponse(request, file_dict)
 
     return UploadResponse( request, file_dict )
 
