@@ -1291,6 +1291,24 @@ def upload_delete( request, pk ):
 
     return JFUResponse( request, success )
 
+
+def image_form_page(request, image_id=None):
+    
+    instance = None
+    from course.models import Image
+    if image_id:
+        instance = Image.objects.get(pk=image_id)
+    from course.forms import ImageForm
+    form = ImageForm(instance=instance)
+    
+
+    return render(request, "course/image-form.html", {
+        "form": form,
+        # try to add mime_types to form context
+        "accepted_mime_types": ['image/*']
+        })
+
+
 # }}}
 
 # vim: foldmethod=marker
