@@ -137,7 +137,10 @@ def home(request, image_id=None):
         "current_courses": current_courses,
         "inprogress_courses": inprogress_courses,
         "past_courses": past_courses,
-        "form": form
+        "form": form,
+            
+        # try to add mime_types to form context
+        "accepted_mime_types": ['image/*']
         })
 
 # }}}
