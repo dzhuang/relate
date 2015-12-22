@@ -52,18 +52,24 @@ class ImageUploadForm(StyledModelForm):
         model = Image
         fields = "__all__"
 
-    def __init__(self, maximum_megabytes, mime_types, *args, **kwargs):
+    def __init__(self, maximum_megabytes, mime_types, page_context, *args, **kwargs):
         super(ImageUploadForm, self).__init__(*args, **kwargs)
 
         self.max_file_size = maximum_megabytes * 1024**2
         self.mime_types = mime_types
+        self.page_context = page_context
         
 #        def __init__(self, *args, **kwargs):
 #        super(PhotoForm, self).__init__(*args, **kwargs)
 
         #self.helper = FormHelper()
         self.helper.form_id="fileupload"
-        self.helper.form_action = "jfu_upload"
+        #self.helper.form_action = "jfu_upload"
+
+        from django.core.urlresolvers import reverse
+#        self.helper.form_action = reverse("relate-view_flow_page",
+#                            args=(course.identifier, flow_session.id, ordinal))
+        self.helper.form_action = self.page_context.page_uri
         self.helper.form_method = "POST"
 
         self.helper.layout = layout.Layout(
@@ -310,13 +316,17 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
     def make_form(self, page_context, page_data,
             answer_data, page_behavior):
         form = ImageUploadForm(
-                self.page_desc.maximum_megabytes, self.page_desc.mime_types)
+                self.page_desc.maximum_megabytes, self.page_desc.mime_types,
+                page_context)
+        print page_context
+        print page_context.page_uri
         return form
 
     def process_form_post(self, page_context, page_data, post_data, files_data,
             page_behavior):
         form = ImageUploadForm(
                 self.page_desc.maximum_megabytes, self.page_desc.mime_types,
+                page_context,
                 post_data, files_data)
         return form
 
@@ -328,6 +338,8 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                 answer_data["mime_type"],
                 answer_data["base64_data"],
                 )
+        ctx["JQ_OPEN" ]= '{%'
+        ctx['JQ_CLOSE' ]= '%}'
 
         from django.template import RequestContext
         from django.template.loader import render_to_string
