@@ -1,0 +1,4 @@
+/* thumbnail setting for uploaded images */
+.preview img {
+    max-height:100px;
+}

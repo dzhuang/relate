@@ -4,6 +4,10 @@
 
 {% block JS_JQUERY %} {% comment %} jQuery (Override to keep it empty) {% endcomment %} {% endblock %}
 
+{% block CSS_EXTRA %}
+<link rel="stylesheet" href="{{ STATIC_URL }}css/jquery_file_upload_extra.css">
+{% endblock %}
+
 {% block JS_BOOTSTRAP %} {% comment %} BOOTSTRAP js (Override to keep it empty) {% endcomment %} {% endblock %}
 
 
@@ -13,6 +17,8 @@
 {% endblock %}
 
 {% block JS_OPTS %}
+imageMaxWidth: 900,
+imageMaxHeight: 900,
 loadImageFileTypes: /^image\/(gif|jpeg|png|svg\+xml)$/,
 sequentialUploads: true,
 disableImageResize: /Android(?!.*Chrome)|Opera/
