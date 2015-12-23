@@ -30,6 +30,8 @@
       if (is_webkit)
       {
         var data_url = $("#file_upload_download_link").attr("href");
+          
+        console.log(data_url)
 
         //take apart data URL
         var parts = data_url.match(/data:([^;]*)(;base64)?,([0-9A-Za-z+/]+)/);

@@ -31,3 +31,19 @@ messages: {
             },
 imageOrientation: true
 {% endblock %}
+
+
+{% block JS_EXTRA %}
+  <script type="text/javascript">
+    $(document).ready(function() {//"save", "save_and_next", "save_and_finish", "submit"
+        $("input[name='save']")
+            .attr("formaction", window.location.pathname)
+        $("input[name='submit']")
+            .attr("formaction", window.location.pathname)
+        $("input[name='save_and_next']")
+            .attr("formaction", window.location.pathname)
+        $("input[name='save_and_finish']")
+            .attr("formaction", window.location.pathname)
+    });
+  </script>
+{% endblock %}

@@ -46,7 +46,7 @@ from course.models import Image
 # {{{ upload question
 
 class ImageUploadForm(StyledForm):
-    uploaded_image = forms.ImageField(required=True)
+    uploaded_image = forms.ImageField(required=False)
     
 #    class Meta:
 #        model = Image
@@ -59,16 +59,17 @@ class ImageUploadForm(StyledForm):
         self.mime_types = mime_types
         self.page_context = page_context
         self.helper.form_id="fileupload"
-        #self.helper.form_action = "jfu_upload"
+        self.helper.form_action = "jfu_upload"
+        #self.helper.attrs={'onsubmit': 'return onsubmitform();'}
 
         from django.core.urlresolvers import reverse
 #        self.helper.form_action = reverse("relate-view_flow_page",
 #                            args=(course.identifier, flow_session.id, ordinal))
-        self.helper.form_action = "/course/trytrytry/flow-session/3669/1/"
+        #self.helper.form_action = "/course/trytrytry/flow-session/74/1/"
         self.helper.form_method = "POST"
         self.helper.layout = layout.Layout(
             layout.Fieldset(
-                u"表格",
+                u"图片上传",
                 layout.HTML(u"""{% load i18n %}
                         <noscript>
                             <input type="hidden" name="redirect" value="{{ request.path }}">
@@ -144,47 +145,47 @@ class ImageUploadForm(StyledForm):
 
                 """),
                 
-                layout.HTML("""
+#                layout.HTML("""
+#                
+#                <div class="row fileupload-buttonbar">
+#                
+#                <button type="submit" class="btn btn-primary start" name="save_image"> <i class="glyphicon glyphicon-upload"></i> <span>{% trans "Start upload" %}</span> </button>
+#                
+#                </div>
+#                
+#                """),
                 
-                <div class="row fileupload-buttonbar">
-                
-                <button type="submit" class="btn btn-primary start" name="save_image"> <i class="glyphicon glyphicon-upload"></i> <span>start</span> </button>
-                
-                </div>
-                
-                """),
-                
-                layout.HTML("""
-
-                <a data-toggle="modal" href="/image_upload/" data-target="#myModal">Click me !</a>
-
-                <!-- Modal -->
-                <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-
-                            </div>
-                            <div class="modal-body"><div class="te"></div></div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                                <button type="button" class="btn btn-primary">Save changes</button>
-                            </div>
-                        </div>
-                        <!-- /.modal-content -->
-                    </div>
-                    <!-- /.modal-dialog -->
-                </div>
-                <!-- /.modal -->                
-                """)
+#                layout.HTML("""
+#
+#                <a data-toggle="modal" href="/image_upload/" data-target="#myModal">Click me !</a>
+#
+#                <!-- Modal -->
+#                <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+#                    <div class="modal-dialog">
+#                        <div class="modal-content">
+#                            <div class="modal-header">
+#                                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+#
+#                            </div>
+#                            <div class="modal-body"><div class="te"></div></div>
+#                            <div class="modal-footer">
+#                                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+#                                <button type="button" class="btn btn-primary">Save changes</button>
+#                            </div>
+#                        </div>
+#                        <!-- /.modal-content -->
+#                    </div>
+#                    <!-- /.modal-dialog -->
+#                </div>
+#                <!-- /.modal -->                
+#                """)
                 
                 #"image_path",
                 #"delete_image",
             ),
-#            bootstrap.FormActions(
-#                layout.Submit('submit', _('Save'), css_class="btn btn-primary"),
-#            )
+            bootstrap.FormActions(
+                layout.Submit('submit', _('Save'), css_class="btn btn-primary"),
+            )
         )
 
     def clean_uploaded_image(self):
@@ -310,18 +311,20 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         return markup_to_html(page_context, self.page_desc.prompt)
 
     def files_data_to_answer_data(self, files_data):
-        files_data["uploaded_image"].seek(0)
-        buf = files_data["uploaded_image"].read()
-
-        if len(self.page_desc.mime_types) == 1:
-            mime_type, = self.page_desc.mime_types
-        else:
-            mime_type = files_data["uploaded_image"].content_type
-        from base64 import b64encode
-        return {
-                "base64_data": b64encode(buf).decode(),
-                "mime_type": mime_type,
-                }
+        print files_data
+        pass
+#        files_data["uploaded_image"].seek(0)
+#        buf = files_data["uploaded_image"].read()
+#
+#        if len(self.page_desc.mime_types) == 1:
+#            mime_type, = self.page_desc.mime_types
+#        else:
+#            mime_type = files_data["uploaded_image"].content_type
+#        from base64 import b64encode
+#        return {
+#                "base64_data": b64encode(buf).decode(),
+#                "mime_type": mime_type,
+#                }
 
     def make_form(self, page_context, page_data,
             answer_data, page_behavior):
