@@ -1330,6 +1330,7 @@ def view_flow_page(pctx, flow_session_id, ordinal):
     # {{{ render flow page
 
     if form is not None:
+        print "answer_data",answer_data
         form_html = fpctx.page.form_to_html(
                 pctx.request, page_context, form, answer_data)
     else:

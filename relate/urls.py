@@ -431,7 +431,7 @@ urlpatterns += [
     #url( r'^$', views.Home.as_view(), name = 'home' ),
     #url(r'^$', views.home, name='home'),
 
-    url(r'^upload/', course.views.upload, name = 'jfu_upload' ),
+    url(r'^/', course.views.upload, name = 'jfu_upload' ),
     url(r'^image_upload/', course.views.image_form_page, name = 'upload_image_page' ),
     url(r'^delete/(?P<pk>\d+)$', course.views.upload_delete, name = 'jfu_delete' ),
 ]

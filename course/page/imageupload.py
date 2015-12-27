@@ -369,6 +369,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                 RequestContext(request, ctx))
 
     def answer_data(self, page_context, page_data, form, files_data):
+        print "files_data", files_data
         return self.files_data_to_answer_data(files_data)
 
 # }}}
