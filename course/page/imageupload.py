@@ -58,6 +58,9 @@ class ImageUploadForm(StyledForm):
         self.max_file_size = maximum_megabytes * 1024**2
         self.mime_types = mime_types
         self.page_context = page_context
+        print type(page_context)
+        print dir(page_context)
+        print page_context.page_uri
         self.helper.form_id="fileupload"
         self.helper.form_action = "jfu_upload"
         #self.helper.attrs={'onsubmit': 'return onsubmitform();'}
@@ -75,13 +78,9 @@ class ImageUploadForm(StyledForm):
                             <input type="hidden" name="redirect" value="{{ request.path }}">
                         </noscript>
 
-
-
                         <div class="row fileupload-buttonbar">
 
-
                             <div class="col-lg-7">
-
                                 <span class="btn btn-success fileinput-button">
                                     <i class="glyphicon glyphicon-plus"></i>
                                     <span>{% trans "Add files..." %}</span>
@@ -96,7 +95,6 @@ class ImageUploadForm(StyledForm):
 
                                 </span>
 
-
                                 <button type="submit" class="btn btn-primary start" name="upload_all_image">
                                     <i class="glyphicon glyphicon-upload"></i>
                                     <span>{% trans "Start upload" %}</span>
@@ -110,7 +108,6 @@ class ImageUploadForm(StyledForm):
                                     <span>{% trans "Delete" %}</span>
                                 </button>
                                 <input type="checkbox" class="toggle">
-
 
                             </div>
 
@@ -129,19 +126,11 @@ class ImageUploadForm(StyledForm):
 
 
                         </div>
-
-
-
-
-
                         <div class="fileupload-loading"></div>
                         <br>
-
-
                         <table role="presentation" class="table table-striped">
                             <tbody class="files"></tbody>
                         </table>
-
 
                 """),
                 
@@ -190,9 +179,6 @@ class ImageUploadForm(StyledForm):
 
     def clean_uploaded_image(self):
         uploaded_image = self.cleaned_data['uploaded_image']
-        
-        
-
 
         return uploaded_image
 
@@ -311,7 +297,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         return markup_to_html(page_context, self.page_desc.prompt)
 
     def files_data_to_answer_data(self, files_data):
-        print files_data
+        print "files_data:", files_data
         pass
 #        files_data["uploaded_image"].seek(0)
 #        buf = files_data["uploaded_image"].read()
