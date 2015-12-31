@@ -61,7 +61,7 @@ class ImageUploadForm(StyledForm):
         print type(page_context)
         print dir(page_context)
         print page_context.page_uri
-        self.helper.form_id="fileupload"
+        self.helper.form_id = "fileupload"
         self.helper.form_action = "jfu_upload"
         #self.helper.attrs={'onsubmit': 'return onsubmitform();'}
 
@@ -86,7 +86,7 @@ class ImageUploadForm(StyledForm):
                                     <span>{% trans "Add files..." %}</span>
 
                                     <input 
-                                        type="file" name="files[]" multiple
+                                        type="file" name="file" multiple
 
                                         {% if accepted_mime_types %}
                                             accept = '{{ accepted_mime_types|join:"," }}'

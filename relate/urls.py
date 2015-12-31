@@ -431,15 +431,15 @@ urlpatterns += [
     #url( r'^$', views.Home.as_view(), name = 'home' ),
     #url(r'^$', views.home, name='home'),
 
-    url(r'^/', course.views.upload, name = 'jfu_upload' ),
-    url(r'^image_upload/', course.views.image_form_page, name = 'upload_image_page' ),
-    url(r'^delete/(?P<pk>\d+)$', course.views.upload_delete, name = 'jfu_delete' ),
+    #url(r'^image/upload/', course.views.upload, name = 'jfu_upload' ),
+    #url(r'^delete/(?P<pk>\d+)$', course.views.upload_delete, name = 'upload_delete' ),
+    url(r'^image-upload/', course.views.ImageCreateView.as_view(), name = 'jfu_upload'),
+    url(r'^image/delete/(?P<pk>\d+)$', course.views.ImageDeleteView.as_view(), name='upload-delete'),
 ]
 
 from django.conf.urls.static import static
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-
 
 if settings.RELATE_MAINTENANCE_MODE:
     urlpatterns = [

@@ -1211,37 +1211,6 @@ from course.models import Image
 import os
 
 @require_POST
-def upload_image(request):
-    
-    from django.conf import settings
-    from django.core.urlresolvers import reverse
-    
-    file = upload_receive(request)
-    
-    print "received"
-    print file
-
-    instance = Image(file = file)
-    instance.save()
-
-    basename = os.path.basename( instance.file.path )
-    
-    #print instance.pk
-    
-    file_dict = {
-        'name' : basename,
-        'size' : file.size,
-
-        'url': settings.MEDIA_URL + basename,
-        'thumbnailUrl': settings.MEDIA_URL + basename,
-
-        'deleteUrl': reverse('jfu_delete', kwargs = { 'pk': instance.pk }),
-        'deleteType': 'POST',
-    }
-
-    return UploadResponse(request, file_dict)
-
-@require_POST
 def upload( request ):
     
     from django.conf import settings
@@ -1249,8 +1218,8 @@ def upload( request ):
     
     file = upload_receive( request )
     
-    print "received"
-    print file
+#    print "received"
+#    print file
 
     instance = Image( file = file )
     instance.save()
@@ -1291,22 +1260,53 @@ def upload_delete( request, pk ):
 
     return JFUResponse( request, success )
 
+#===========================================CBV======================================
 
-def image_form_page(request, image_id=None):
-    
-    instance = None
-    from course.models import Image
-    if image_id:
-        instance = Image.objects.get(pk=image_id)
-    from course.forms import ImageForm
-    form = ImageForm(instance=instance)
-    
+import json
 
-    return render(request, "course/image-form.html", {
-        "form": form,
-        # try to add mime_types to form context
-        "accepted_mime_types": ['image/*']
-        })
+from django.http import HttpResponse
+from django.views.generic import CreateView, DeleteView, ListView
+from course.response import JSONResponse, response_mimetype
+from course.serialize import serialize
+
+
+class ImageCreateView(CreateView):
+    model = Image
+    fields = "__all__"
+
+    def form_valid(self, form):
+        self.object = form.save()
+        files = [serialize(self.object)]
+        data = {'files': files}
+        response = JSONResponse(data, mimetype=response_mimetype(self.request))
+        response['Content-Disposition'] = 'inline; filename=files.json'
+        print response
+        return response
+
+    def form_invalid(self, form):
+        data = json.dumps(form.errors)
+        return HttpResponse(content=data, status=400, content_type='application/json')
+
+class ImageDeleteView(DeleteView):
+    model = Image
+
+    def delete(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        self.object.delete()
+        response = JSONResponse(True, mimetype=response_mimetype(request))
+        response['Content-Disposition'] = 'inline; filename=files.json'
+        return response
+
+
+class ImageListView(ListView):
+    model = Image
+
+    def render_to_response(self, context, **response_kwargs):
+        files = [ serialize(p) for p in self.get_queryset() ]
+        data = {'files': files}
+        response = JSONResponse(data, mimetype=response_mimetype(self.request))
+        response['Content-Disposition'] = 'inline; filename=files.json'
+        return response
 
 
 # }}}
