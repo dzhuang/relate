@@ -1544,7 +1544,7 @@ class Image(models.Model):
     generic FileField instead.
     """
     
-    file = models.ImageField(upload_to = settings.MEDIA_ROOT)
+    file = models.ImageField(upload_to = "pictures")
     slug = models.SlugField(max_length=50, blank=True)
 
     def __unicode__(self):

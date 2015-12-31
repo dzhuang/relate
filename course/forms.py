@@ -76,7 +76,7 @@ class ImageForm(forms.ModelForm):
                                         The file input for the upload form.
                                     {% endcomment %}
                                     <input 
-                                        type="file" name="files[]" multiple
+                                        type="file" name="file" multiple
 
                                         {% if accepted_mime_types %}
                                             accept = '{{ accepted_mime_types|join:"," }}'

@@ -34,11 +34,11 @@ def serialize(instance, file_attr='file'):
     print settings.MEDIA_ROOT
     print obj.url
     return {
-        #'url': obj.url,
-        'url': "abc",
+        'url': obj.url,
+        #'url': "abc",
         'name': order_name(obj.name),
         'type': mimetypes.guess_type(obj.path)[0] or 'image/png',
-        'thumbnailUrl': "abc",
+        'thumbnailUrl': obj.url,
         'size': obj.size,
         'deleteUrl': reverse('upload-delete', args=[instance.pk]),
         'deleteType': 'DELETE',

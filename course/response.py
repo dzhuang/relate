@@ -14,7 +14,7 @@ def response_mimetype(request):
     request -- a HttpRequest instance.
 
     """
-    print request.META['HTTP_ACCEPT']
+    #print request.META['HTTP_ACCEPT']
 #    print request.META
     can_json = MIMEJSON in request.META['HTTP_ACCEPT']
 #    print can_json
@@ -37,7 +37,7 @@ class JSONResponse(HttpResponse):
 
     """
     def __init__(self, obj='', json_opts=None, mimetype=MIMEJSON, *args, **kwargs):
-        print "obj:", obj
+        #print "obj:", obj
         json_opts = json_opts if isinstance(json_opts, dict) else {}
         content = json.dumps(obj, **json_opts)
         super(JSONResponse, self).__init__(content, mimetype, *args, **kwargs)

@@ -433,8 +433,9 @@ urlpatterns += [
 
     #url(r'^image/upload/', course.views.upload, name = 'jfu_upload' ),
     #url(r'^delete/(?P<pk>\d+)$', course.views.upload_delete, name = 'upload_delete' ),
-    url(r'^image-upload/', course.views.ImageCreateView.as_view(), name = 'jfu_upload'),
+    url(r'^image/upload/', course.views.ImageCreateView.as_view(), name = 'jfu_upload'),
     url(r'^image/delete/(?P<pk>\d+)$', course.views.ImageDeleteView.as_view(), name='upload-delete'),
+    url(r'^image/view/$', course.views.ImageListView.as_view(), name='upload-view'),
 ]
 
 from django.conf.urls.static import static
