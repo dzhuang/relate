@@ -81,7 +81,7 @@ sys.setdefaultencoding('utf8')
 
 # {{{ home
 
-def home(request, image_id=None):
+def home(request):
     now_datetime = get_now_or_fake_time(request)
 
     current_courses = []
@@ -123,24 +123,11 @@ def home(request, image_id=None):
     past_courses.sort(key=course_sort_key_minor)
     current_courses.sort(key=course_sort_key_major, reverse=True)
     past_courses.sort(key=course_sort_key_major, reverse=True)
-    
-    instance = None
-    from course.models import Image
-    if image_id:
-        instance = Image.objects.get(pk=image_id)
-    from course.forms import ImageForm
-    form = ImageForm(instance=instance)
-    
-    #print form
 
     return render(request, "course/home.html", {
         "current_courses": current_courses,
         "inprogress_courses": inprogress_courses,
         "past_courses": past_courses,
-        "form": form,
-            
-        # try to add mime_types to form context
-        "accepted_mime_types": ['image/*']
         })
 
 # }}}
