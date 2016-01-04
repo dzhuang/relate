@@ -302,10 +302,12 @@ class Course(models.Model):
         return reverse("relate-course_page", args=(self.identifier,))
 
     def is_enrollment_expired(self, now_date):
-        if self.enroll_deadline >= now_date:
-            return False
-        else:
-            return True
+        if self.enroll_deadline:
+            if self.enroll_deadline >= now_date:
+                return False
+            else:
+                return True
+        return False
 
 # }}}
 
@@ -1546,6 +1548,8 @@ class Image(models.Model):
     
     file = models.ImageField(upload_to = "pictures")
     slug = models.SlugField(max_length=50, blank=True)
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
+        verbose_name=_('Creator'), on_delete=models.CASCADE)
 
     def __unicode__(self):
         return self.file.name

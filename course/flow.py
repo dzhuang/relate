@@ -1169,8 +1169,10 @@ def view_flow_page(pctx, flow_session_id, ordinal):
 
     answer_visit = None
     prev_visit_id = None
+    
+    print "ajax?", request.is_ajax()
 
-    if request.method == "POST":
+    if request.method == "POST" and not request.is_ajax():
         if "finish" in request.POST:
             return redirect("relate-finish_flow_session_view",
                     pctx.course.identifier, flow_session_id)
@@ -1192,7 +1194,7 @@ def view_flow_page(pctx, flow_session_id, ordinal):
 
             # continue at common flow page generation below
 
-    else:
+    elif request.method=="GET":
         create_flow_page_visit(request, flow_session, fpctx.page_data)
 
         prev_answer_visits = list(
@@ -1330,7 +1332,7 @@ def view_flow_page(pctx, flow_session_id, ordinal):
     # {{{ render flow page
 
     if form is not None:
-        print "answer_data",answer_data
+        #print "answer_data",answer_data
         form_html = fpctx.page.form_to_html(
                 pctx.request, page_context, form, answer_data)
     else:
@@ -1509,11 +1511,11 @@ def post_flow_page(flow_session, fpctx, request, permissions, generates_grade):
             post_data=request.POST, files_data=request.FILES,
             page_behavior=page_behavior)
     
-    print "formdata:", form.data
+    #print "formdata:", form.data
 
     pressed_button = get_pressed_button(form)
     
-    print "pressed_button:", pressed_button
+    #print "pressed_button:", pressed_button
 
     if submission_allowed and form.is_valid():
         # {{{ form validated, process answer

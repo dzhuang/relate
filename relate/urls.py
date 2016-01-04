@@ -428,12 +428,7 @@ urlpatterns = [
 ]
 
 urlpatterns += [
-    #url( r'^$', views.Home.as_view(), name = 'home' ),
-    #url(r'^$', views.home, name='home'),
-
-    #url(r'^image/upload/', course.views.upload, name = 'jfu_upload' ),
-    #url(r'^delete/(?P<pk>\d+)$', course.views.upload_delete, name = 'upload_delete' ),
-    url(r'^image/upload/', course.views.ImageCreateView.as_view(), name = 'jfu_upload'),
+    url(r'^course/trytrytry/flow-session/3669/1/image/upload/', course.views.ImageCreateView.as_view(), name = 'jfu_upload'),
     url(r'^image/delete/(?P<pk>\d+)$', course.views.ImageDeleteView.as_view(), name='upload-delete'),
     url(r'^image/view/$', course.views.ImageListView.as_view(), name='upload-view'),
 ]

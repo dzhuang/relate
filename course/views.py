@@ -1195,7 +1195,8 @@ def monitor_task(request, task_id):
 from course.models import Image
 from django.views.generic import CreateView, DeleteView, ListView
 from jfu.serialize import serialize
-
+import json
+from base64 import b64encode
 
 class ImageCreateView(CreateView):
     model = Image
@@ -1203,6 +1204,26 @@ class ImageCreateView(CreateView):
 
     def form_valid(self, form):
         self.object = form.save()
+        #print dir(self.object)
+        #print self.request.user
+        print self.request.FILES
+        print self.request.FILES['file']
+        print type(self.request.FILES['file'])
+        a = self.request.FILES['file']
+        a.seek(0)
+        buf = a.read()
+        #print buf
+        content=b64encode(buf).decode()
+        # print content
+        
+        
+#        files_data=self.request.FILES
+        #files_data['uploaded_image'].seek(0)
+        #buf = files_data["uploaded_image"].read()
+        #print buf
+        #print dir(form)
+        #print form.cleaned_data
+        #print "file:::::::::::", dir(form.cleaned_data['file'])
         files = [serialize(self.object)]
         data = {'files': files}
         response = http.JsonResponse(data)

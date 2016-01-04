@@ -58,9 +58,9 @@ class ImageUploadForm(StyledForm):
         self.max_file_size = maximum_megabytes * 1024**2
         self.mime_types = mime_types
         self.page_context = page_context
-        print type(page_context)
-        print dir(page_context)
-        print page_context.page_uri
+        #print type(page_context)
+        #print dir(page_context)
+        #print page_context.page_uri
         self.helper.form_id = "fileupload"
         self.helper.form_action = "jfu_upload"
         #self.helper.attrs={'onsubmit': 'return onsubmitform();'}
@@ -133,6 +133,19 @@ class ImageUploadForm(StyledForm):
                         </table>
 
                 """),
+                layout.HTML(u"""{% load i18n %}
+
+                        <div class="row fileupload-buttonbar">
+
+                            <div class="col-lg-7">
+                                <input type="submit" name="save" value="保存回答" class="btn btn-primary relate-save-button start" id="submit-id-save" formaction="/course/trytrytry/flow-session/3669/1/image/upload/">
+                                
+                                <input type="submit" name="submit" value="提交用于评分的回答" class="btn btn-primary relate-save-button start" id="submit-id-submit" accesskey="g" formaction="/course/trytrytry/flow-session/3669/1/image/upload/">
+
+                            </div>
+
+
+                """),
                 
 #                layout.HTML("""
 #                
@@ -172,9 +185,9 @@ class ImageUploadForm(StyledForm):
                 #"image_path",
                 #"delete_image",
             ),
-            bootstrap.FormActions(
-                layout.Submit('submit', _('Save'), css_class="btn btn-primary"),
-            )
+#            bootstrap.FormActions(
+#                layout.Submit('submit', _('Save'), css_class="btn btn-primary"),
+#            )
         )
 
     def clean_uploaded_image(self):

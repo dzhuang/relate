@@ -180,6 +180,7 @@ class FileUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         return markup_to_html(page_context, self.page_desc.prompt)
 
     def files_data_to_answer_data(self, files_data):
+        print files_data
         files_data["uploaded_file"].seek(0)
         buf = files_data["uploaded_file"].read()
 
