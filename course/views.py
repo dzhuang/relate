@@ -1251,10 +1251,14 @@ class ImageDeleteView(DeleteView):
 class ImageListView(ListView):
     model = Image
     
+    #http://stackoverflow.com/questions/6148757/django-1-3-passing-parameters-to-filter-of-class-based-generic-list-view-in-url
+    
     def get_queryset(self):
+        
         return Image.objects.filter(creator=self.request.user)
 
     def render_to_response(self, context, **response_kwargs):
+        print "context", context
         files = [ serialize(p) for p in self.get_queryset() ]
         data = {'files': files}
         response = http.JsonResponse(data)
