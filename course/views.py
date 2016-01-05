@@ -1200,10 +1200,13 @@ from base64 import b64encode
 
 class ImageCreateView(CreateView):
     model = Image
-    fields = "__all__"
+    fields = ("file", "slug")
 
     def form_valid(self, form):
         self.object = form.save()
+        self.object.creator = self.request.user
+        self.object.save()
+        print type(self.object)
         #print dir(self.object)
         #print self.request.user
         print self.request.FILES
@@ -1247,6 +1250,9 @@ class ImageDeleteView(DeleteView):
 
 class ImageListView(ListView):
     model = Image
+    
+    def get_queryset(self):
+        return Image.objects.filter(creator=self.request.user)
 
     def render_to_response(self, context, **response_kwargs):
         files = [ serialize(p) for p in self.get_queryset() ]

@@ -1172,7 +1172,7 @@ def view_flow_page(pctx, flow_session_id, ordinal):
     
     print "ajax?", request.is_ajax()
 
-    if request.method == "POST" and not request.is_ajax():
+    if request.method == "POST":
         if "finish" in request.POST:
             return redirect("relate-finish_flow_session_view",
                     pctx.course.identifier, flow_session_id)
@@ -1194,7 +1194,7 @@ def view_flow_page(pctx, flow_session_id, ordinal):
 
             # continue at common flow page generation below
 
-    elif request.method=="GET":
+    else:
         create_flow_page_visit(request, flow_session, fpctx.page_data)
 
         prev_answer_visits = list(
@@ -1470,7 +1470,7 @@ def get_pressed_button(form):
         if button in form.data:
             return button
 
-    #raise SuspiciousOperation(_("could not find which button was pressed"))
+    raise SuspiciousOperation(_("could not find which button was pressed"))
 
 
 @retry_transaction_decorator()

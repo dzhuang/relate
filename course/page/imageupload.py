@@ -46,7 +46,7 @@ from course.models import Image
 # {{{ upload question
 
 class ImageUploadForm(StyledForm):
-    uploaded_image = forms.ImageField(required=False)
+    file = forms.ImageField(required=False)
     
 #    class Meta:
 #        model = Image
@@ -133,19 +133,19 @@ class ImageUploadForm(StyledForm):
                         </table>
 
                 """),
-                layout.HTML(u"""{% load i18n %}
-
-                        <div class="row fileupload-buttonbar">
-
-                            <div class="col-lg-7">
-                                <input type="submit" name="save" value="保存回答" class="btn btn-primary relate-save-button start" id="submit-id-save" formaction="/course/trytrytry/flow-session/3669/1/image/upload/">
-                                
-                                <input type="submit" name="submit" value="提交用于评分的回答" class="btn btn-primary relate-save-button start" id="submit-id-submit" accesskey="g" formaction="/course/trytrytry/flow-session/3669/1/image/upload/">
-
-                            </div>
-
-
-                """),
+#                layout.HTML(u"""{% load i18n %}
+#
+#                        <div class="row fileupload-buttonbar">
+#
+#                            <div class="col-lg-7">
+#                                <input type="submit" name="save" value="保存回答" class="btn btn-primary relate-save-button start" id="submit-id-save" formaction="/course/trytrytry/flow-session/3669/1/image/upload/">
+#                                
+#                                <input type="submit" name="submit" value="提交用于评分的回答" class="btn btn-primary relate-save-button start" id="submit-id-submit" accesskey="g" formaction="/course/trytrytry/flow-session/3669/1/image/upload/">
+#
+#                            </div>
+#
+#
+#                """),
                 
 #                layout.HTML("""
 #                
@@ -327,6 +327,8 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
 
     def make_form(self, page_context, page_data,
             answer_data, page_behavior):
+        print page_data
+        print dir(page_context)
         form = ImageUploadForm(
                 self.page_desc.maximum_megabytes, self.page_desc.mime_types,
                 page_context)
