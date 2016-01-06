@@ -57,17 +57,18 @@ class ImageUploadForm(StyledForm):
 
         self.max_file_size = maximum_megabytes * 1024**2
         self.mime_types = mime_types
-        self.page_context = page_context
+        #self.page_context = page_context
+        #print self.page_context.flow_session.id
         #print type(page_context)
         #print dir(page_context)
         #print page_context.page_uri
         self.helper.form_id = "fileupload"
-        self.helper.form_action = "jfu_upload"
+        #self.helper.form_action = "jfu_upload"
         #self.helper.attrs={'onsubmit': 'return onsubmitform();'}
 
         from django.core.urlresolvers import reverse
-#        self.helper.form_action = reverse("relate-view_flow_page",
-#                            args=(course.identifier, flow_session.id, ordinal))
+        self.helper.form_action = reverse("jfu_upload",
+                            kwargs={'flow_session_id': page_context.flow_session.id, 'ordinal': page_context.ordinal})
         #self.helper.form_action = "/course/trytrytry/flow-session/74/1/"
         self.helper.form_method = "POST"
         self.helper.layout = layout.Layout(
@@ -310,7 +311,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         return markup_to_html(page_context, self.page_desc.prompt)
 
     def files_data_to_answer_data(self, files_data):
-        print "files_data:", files_data
+        #print "files_data:", files_data
         pass
 #        files_data["uploaded_image"].seek(0)
 #        buf = files_data["uploaded_image"].read()
@@ -327,12 +328,12 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
 
     def make_form(self, page_context, page_data,
             answer_data, page_behavior):
-        print page_data
-        print dir(page_context)
+        #print page_data
+        #print dir(page_context)
         form = ImageUploadForm(
                 self.page_desc.maximum_megabytes, self.page_desc.mime_types,
                 page_context)
-        #print page_context
+        #print "page_context:",dir(page_context)
         #print page_context.page_uri
         
         
@@ -362,6 +363,8 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         ctx["JQ_OPEN" ]= '{%'
         ctx['JQ_CLOSE' ]= '%}'
         ctx["accepted_mime_types"]= ['image/*']
+        ctx["flow_session_id"]=page_context.flow_session.id
+        ctx["ordinal"]=page_context.ordinal
 
         from django.template import RequestContext
         from django.template.loader import render_to_string

@@ -1194,40 +1194,48 @@ def monitor_task(request, task_id):
 
 from course.models import Image
 from django.views.generic import CreateView, DeleteView, ListView
-from jfu.serialize import serialize
+from course.serialize import serialize
 import json
 from base64 import b64encode
+from course.models import FlowPageData
+
 
 class ImageCreateView(CreateView):
     model = Image
     fields = ("file", "slug")
+    
+#    def get_queryset(self):
+#        order_by = self.request.GET.get('order_by') or '-created'
+#        qs = super(MyClassBasedView, self).get_queryset()
+#        return qs.order_by(order_by)
 
     def form_valid(self, form):
         self.object = form.save()
         self.object.creator = self.request.user
         self.object.save()
-        print type(self.object)
-        #print dir(self.object)
-        #print self.request.user
-        print self.request.FILES
-        print self.request.FILES['file']
-        print type(self.request.FILES['file'])
-        a = self.request.FILES['file']
-        a.seek(0)
-        buf = a.read()
-        #print buf
-        content=b64encode(buf).decode()
-        # print content
+        created_pk = self.object.id
         
+        ## get the cotent of the uploaded file.
+        #a = self.request.FILES['file']
+        #a.seek(0)
+        #buf = a.read()
+        #content=b64encode(buf).decode()
+        #print content
         
-#        files_data=self.request.FILES
-        #files_data['uploaded_image'].seek(0)
-        #buf = files_data["uploaded_image"].read()
-        #print buf
-        #print dir(form)
-        #print form.cleaned_data
-        #print "file:::::::::::", dir(form.cleaned_data['file'])
-        files = [serialize(self.object)]
+        # create records in page_data        
+        flow_session_id=self.kwargs["flow_session_id"]
+        ordinal=self.kwargs["ordinal"]
+        
+        fpd=FlowPageData.objects.get(
+            flow_session=flow_session_id, ordinal=ordinal)
+        page_data=fpd.data
+        if not "image_pk" in page_data:
+            page_data["image_pk"] = [created_pk]
+        else:
+            page_data["image_pk"].append(created_pk)            
+        fpd.save()
+        
+        files = [serialize(self.object, 'file', flow_session_id, ordinal)]
         data = {'files': files}
         response = http.JsonResponse(data)
         response['Content-Disposition'] = 'inline; filename=files.json'
@@ -1242,7 +1250,27 @@ class ImageDeleteView(DeleteView):
 
     def delete(self, request, *args, **kwargs):
         self.object = self.get_object()
-        self.object.delete()
+        delete_pk = self.object.id
+        self.object.delete()        
+        
+        flow_session_id=self.kwargs["flow_session_id"]
+        ordinal=self.kwargs["ordinal"]
+
+        # remove records in page_data        
+        flow_session_id=self.kwargs["flow_session_id"]
+        ordinal=self.kwargs["ordinal"]
+        
+        fpd=FlowPageData.objects.get(
+            flow_session=flow_session_id, ordinal=ordinal)
+        page_data=fpd.data
+        
+        if not "image_pk" in page_data:
+            pass
+        else:
+            image_pk_set = set(page_data["image_pk"])
+            page_data["image_pk"]=list(image_pk_set-set([delete_pk]))
+        fpd.save()
+
         response = http.JsonResponse(True, safe=False)
         response['Content-Disposition'] = 'inline; filename=files.json'
         return response
@@ -1255,11 +1283,26 @@ class ImageListView(ListView):
     
     def get_queryset(self):
         
-        return Image.objects.filter(creator=self.request.user)
+        # fetch records in page_data
+        flow_session_id=self.kwargs["flow_session_id"]
+        ordinal=self.kwargs["ordinal"]
+        
+        fpd=FlowPageData.objects.get(
+            flow_session=flow_session_id, ordinal=ordinal)
+        page_data=fpd.data
+        
+        if not "image_pk" in page_data:
+            return Image.objects.none()
+        else:
+            return Image.objects.filter(creator=self.request.user).filter(id__in=page_data["image_pk"])
 
     def render_to_response(self, context, **response_kwargs):
-        print "context", context
-        files = [ serialize(p) for p in self.get_queryset() ]
+        
+        flow_session_id=self.kwargs["flow_session_id"]
+        ordinal=self.kwargs["ordinal"]
+
+        
+        files = [ serialize(p, 'file', flow_session_id, ordinal) for p in self.get_queryset() ]
         data = {'files': files}
         response = http.JsonResponse(data)
         response['Content-Disposition'] = 'inline; filename=files.json'

@@ -438,16 +438,27 @@ urlpatterns = [
 #        name="relate-view_flow_page"),
 
 urlpatterns += [
-#    url(r"^user"
-#    "/flow-session"
-#    "/(?P<flow_session_id>[0-9]+)"
-#    "/(?P<ordinal>[0-9]+)"
-#    "/image/upload/$",
-#    course.views.ImageCreateView.as_view(),
-#    name = 'jfu_upload'),
+    url(r"^user"
+    "/flow-session"
+    "/(?P<flow_session_id>[0-9]+)"
+    "/(?P<ordinal>[0-9]+)"
+    "/image/upload/$",
+    course.views.ImageCreateView.as_view(),
+    name = 'jfu_upload'),
     url(r'^course/trytrytry/flow-session/3669/1/image/upload/', course.views.ImageCreateView.as_view(), name = 'jfu_upload'),
-    url(r'^image/delete/(?P<pk>\d+)$', course.views.ImageDeleteView.as_view(), name='upload-delete'),
-    url(r'^image/view/$', course.views.ImageListView.as_view(), name='upload-view'),
+    url(r"^user"
+    "/flow-session"
+    "/(?P<flow_session_id>[0-9]+)"
+    "/(?P<ordinal>[0-9]+)"
+    "/image/delete/(?P<pk>\d+)$",
+    course.views.ImageDeleteView.as_view(), name='jfu_delete'),
+#    url(r'^image/delete/(?P<pk>\d+)$', course.views.ImageDeleteView.as_view(), name='jfu_delete'),
+    url(r"^user"
+    "/flow-session"
+    "/(?P<flow_session_id>[0-9]+)"
+    "/(?P<ordinal>[0-9]+)"
+    "/image/view/$", course.views.ImageListView.as_view(), name='jfu_view'),
+#    url(r'^image/view/$', course.views.ImageListView.as_view(), name='jfu_view'),
 ]
 
 from django.conf.urls.static import static

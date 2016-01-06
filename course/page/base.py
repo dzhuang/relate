@@ -63,13 +63,14 @@ class PageContext(object):
     """
 
     def __init__(self, course, repo, commit_sha, flow_session,
-            in_sandbox=False, page_uri=None):
+            ordinal=None, in_sandbox=False, page_uri=None):
         self.course = course
         self.repo = repo
         self.commit_sha = commit_sha
         self.flow_session = flow_session
         self.in_sandbox = in_sandbox
         self.page_uri = page_uri
+        self.ordinal = ordinal
 
 
 class PageBehavior(object):
