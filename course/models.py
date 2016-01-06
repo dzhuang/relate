@@ -1539,6 +1539,9 @@ class ExamTicket(models.Model):
 
 # }}}
 
+from django.core.files.storage import FileSystemStorage
+sendfile_storage = FileSystemStorage(location=settings.SENDFILE_ROOT)
+
 class Image(models.Model):
     """The slug field is really not necessary, but makes the code simpler. 
     ImageField depends on PIL or pillow (where Pillow is easily installable
@@ -1546,7 +1549,8 @@ class Image(models.Model):
     generic FileField instead.
     """
     
-    file = models.ImageField(upload_to = "pictures")
+    #file = models.ImageField(upload_to = "pictures")
+    file = models.ImageField(upload_to='download', storage=sendfile_storage)
     slug = models.SlugField(max_length=50, blank=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
         verbose_name=_('Creator'), on_delete=models.CASCADE)
@@ -1554,9 +1558,10 @@ class Image(models.Model):
     def __unicode__(self):
         return self.file.name
 
-    @models.permalink
-    def get_absolute_url(self):
-        return ('jfu_upload', )
+#    @models.permalink
+#    def get_absolute_url(self):
+#        return ('jfu_upload', )
+#        # jfu_upload need two kwargs
 
     def save(self, *args, **kwargs):
         self.slug = self.file.name
@@ -1567,5 +1572,9 @@ class Image(models.Model):
         self.file.delete(False)
         super(Image, self).delete(*args, **kwargs)
         
+    @models.permalink
+    def get_absolute_url(self):
+        return ('download', [self.pk], {})
 
+        
 # vim: foldmethod=marker

@@ -29,12 +29,17 @@ def serialize(instance, file_attr='file', flow_session_id=None, ordinal=None):
     from django.conf.urls.static import static
 
     obj = getattr(instance, file_attr)
+    
+    print type(instance)
+    #print instance.get_absolute_url()
 
     return {
-        'url': obj.url,
+        #'url': obj.url,
+        'url': instance.get_absolute_url(),
         'name': order_name(obj.name),
         'type': mimetypes.guess_type(obj.path)[0] or 'image/png',
-        'thumbnailUrl': obj.url,
+        #'thumbnailUrl': obj.url,
+        'thumbnailUrl': instance.get_absolute_url(),
         'size': obj.size,
         'deleteUrl':
         reverse('jfu_delete', kwargs={'pk':instance.pk, 'flow_session_id':flow_session_id, 'ordinal':ordinal}),

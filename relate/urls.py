@@ -445,7 +445,7 @@ urlpatterns += [
     "/image/upload/$",
     course.views.ImageCreateView.as_view(),
     name = 'jfu_upload'),
-    url(r'^course/trytrytry/flow-session/3669/1/image/upload/', course.views.ImageCreateView.as_view(), name = 'jfu_upload'),
+    #url(r'^course/trytrytry/flow-session/3669/1/image/upload/', course.views.ImageCreateView.as_view(), name = 'jfu_upload'),
     url(r"^user"
     "/flow-session"
     "/(?P<flow_session_id>[0-9]+)"
@@ -459,11 +459,13 @@ urlpatterns += [
     "/(?P<ordinal>[0-9]+)"
     "/image/view/$", course.views.ImageListView.as_view(), name='jfu_view'),
 #    url(r'^image/view/$', course.views.ImageListView.as_view(), name='jfu_view'),
+    
+    url(r'(?P<download_id>\d+)/$', course.views.download, name='download'),
 ]
 
-from django.conf.urls.static import static
+#from django.conf.urls.static import static
 
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+#urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 if settings.RELATE_MAINTENANCE_MODE:
     urlpatterns = [
