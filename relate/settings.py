@@ -239,9 +239,13 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 MEDIA_URL = '/media/'
 
 # SENDFILE settings
-#SENDFILE_BACKEND = 'sendfile.backends.development'
-#SENDFILE_BACKEND = 'sendfile.backends.xsendfile'
-SENDFILE_BACKEND = 'sendfile.backends.nginx'
+
+if DEBUG:
+    SENDFILE_BACKEND = 'sendfile.backends.development'
+else:
+    #SENDFILE_BACKEND = 'sendfile.backends.xsendfile'
+    SENDFILE_BACKEND = 'sendfile.backends.nginx'
+
 SENDFILE_ROOT = os.path.join(BASE_DIR, 'protected')
 SENDFILE_URL = '/protected'
 

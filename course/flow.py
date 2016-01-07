@@ -1047,49 +1047,38 @@ def get_page_behavior(page, permissions, session_in_progress, answer_was_graded,
 
 def add_buttons_to_form(form, fpctx, flow_session, permissions):
     from crispy_forms.layout import Submit
-    
-#    from course.page.upload import FileUploadForm
-#    print isinstance(form, FileUploadForm)
-#    
-#    from relate.utils import StyledForm
-#    print isinstance(form, StyledForm)
-    
-    from course.page.choice import MultipleChoiceAnswerForm
-    
-    if not isinstance(form, MultipleChoiceAnswerForm) or isinstance(form, MultipleChoiceAnswerForm):
-    
-        form.helper.add_input(
-                Submit("save", _("Save answer"),
-                    css_class="relate-save-button"))
+    form.helper.add_input(
+            Submit("save", _("Save answer"),
+                css_class="relate-save-button"))
 
-        if will_receive_feedback(permissions):
-            if flow_permission.change_answer in permissions:
-                form.helper.add_input(
-                        Submit(
-                            "submit", _("Submit answer for grading"),
-                            accesskey="g", css_class="relate-save-button"))
-            else:
-                form.helper.add_input(
-                        Submit("submit", _("Submit final answer"),
-                            css_class="relate-save-button"))
+    if will_receive_feedback(permissions):
+        if flow_permission.change_answer in permissions:
+            form.helper.add_input(
+                    Submit(
+                        "submit", _("Submit answer for grading"),
+                        accesskey="g", css_class="relate-save-button"))
         else:
-            # Only offer 'save and move on' if student will receive no feedback
-            if fpctx.page_data.ordinal + 1 < flow_session.page_count:
-                form.helper.add_input(
-                        Submit("save_and_next",
-                            mark_safe_lazy(
-                                string_concat(
-                                    _("Save answer and move on"),
-                                    " &raquo;")),
-                            css_class="relate-save-button"))
-            else:
-                form.helper.add_input(
-                        Submit("save_and_finish",
-                            mark_safe_lazy(
-                                string_concat(
-                                    _("Save answer and finish"),
-                                    " &raquo;")),
-                            css_class="relate-save-button"))
+            form.helper.add_input(
+                    Submit("submit", _("Submit final answer"),
+                        css_class="relate-save-button"))
+    else:
+        # Only offer 'save and move on' if student will receive no feedback
+        if fpctx.page_data.ordinal + 1 < flow_session.page_count:
+            form.helper.add_input(
+                    Submit("save_and_next",
+                        mark_safe_lazy(
+                            string_concat(
+                                _("Save answer and move on"),
+                                " &raquo;")),
+                        css_class="relate-save-button"))
+        else:
+            form.helper.add_input(
+                    Submit("save_and_finish",
+                        mark_safe_lazy(
+                            string_concat(
+                                _("Save answer and finish"),
+                                " &raquo;")),
+                        css_class="relate-save-button"))
 
     return form
 
@@ -1169,8 +1158,6 @@ def view_flow_page(pctx, flow_session_id, ordinal):
 
     answer_visit = None
     prev_visit_id = None
-    
-    print "ajax?", request.is_ajax()
 
     if request.method == "POST":
         if "finish" in request.POST:
@@ -1332,7 +1319,6 @@ def view_flow_page(pctx, flow_session_id, ordinal):
     # {{{ render flow page
 
     if form is not None:
-        #print "answer_data",answer_data
         form_html = fpctx.page.form_to_html(
                 pctx.request, page_context, form, answer_data)
     else:
@@ -1510,12 +1496,8 @@ def post_flow_page(flow_session, fpctx, request, permissions, generates_grade):
             fpctx.page_context, fpctx.page_data.data,
             post_data=request.POST, files_data=request.FILES,
             page_behavior=page_behavior)
-    
-    #print "formdata:", form.data
 
     pressed_button = get_pressed_button(form)
-    
-    #print "pressed_button:", pressed_button
 
     if submission_allowed and form.is_valid():
         # {{{ form validated, process answer
