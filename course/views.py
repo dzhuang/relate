@@ -1196,7 +1196,6 @@ from course.models import Image
 from django.views.generic import CreateView, DeleteView, ListView
 from course.serialize import serialize
 import json
-from base64 import b64encode
 from course.models import FlowPageData
 
 
@@ -1204,21 +1203,17 @@ class ImageCreateView(CreateView):
     model = Image
     fields = ("file", "slug")
     
-#    def get_queryset(self):
-#        order_by = self.request.GET.get('order_by') or '-created'
-#        qs = super(MyClassBasedView, self).get_queryset()
-#        return qs.order_by(order_by)
-
     def form_valid(self, form):
-        self.object = form.save()
+        self.object = form.save(commit=False)
         self.object.creator = self.request.user
         self.object.save()
         created_pk = self.object.id
         
-        ## get the cotent of the uploaded file.
+        ## get the content of the uploaded file.
         #a = self.request.FILES['file']
         #a.seek(0)
         #buf = a.read()
+        #from base64 import b64encode
         #content=b64encode(buf).decode()
         #print content
         
@@ -1279,8 +1274,6 @@ class ImageDeleteView(DeleteView):
 class ImageListView(ListView):
     model = Image
     
-    #http://stackoverflow.com/questions/6148757/django-1-3-passing-parameters-to-filter-of-class-based-generic-list-view-in-url
-    
     def get_queryset(self):
         
         # fetch records in page_data
@@ -1294,7 +1287,9 @@ class ImageListView(ListView):
         if not "image_pk" in page_data:
             return Image.objects.none()
         else:
-            return Image.objects.filter(creator=self.request.user).filter(id__in=page_data["image_pk"])
+            return Image.objects.filter(
+                    creator=self.request.user
+                    ).filter(id__in=page_data["image_pk"])
 
     def render_to_response(self, context, **response_kwargs):
         
@@ -1302,7 +1297,9 @@ class ImageListView(ListView):
         ordinal=self.kwargs["ordinal"]
 
         
-        files = [ serialize(p, 'file', flow_session_id, ordinal) for p in self.get_queryset() ]
+        files = [
+                serialize(p, 'file', flow_session_id, ordinal)
+                for p in self.get_queryset()]
         data = {'files': files}
         response = http.JsonResponse(data)
         response['Content-Disposition'] = 'inline; filename=files.json'
@@ -1311,38 +1308,22 @@ class ImageListView(ListView):
 
 # }}}
 
-from django.http import HttpResponseForbidden
-from django.db.models import Q
-from django.template import RequestContext
-from django.core.exceptions import PermissionDenied
+
+# {{{ 
 from sendfile import sendfile
 
-
-def download(request, download_id):
+def download(request, creator_id, download_id):
     download = get_object_or_404(Image, pk=download_id)
-#    if download.is_public:
-#        return sendfile(request, download.file.path)
     return _auth_download(request, download)
 
 
 @login_required
 def _auth_download(request, download):
     if not (request.user==download.creator or request.user.is_staff):
-        raise PermissionDenied(_("may not view other people's sessions"))
-#        return HttpResponseForbidden('Sorry, you cannot access this file')
+        raise PermissionDenied(_("may not view other people's resource"))
     return sendfile(request, download.file.path)
 
 
-#def download_list(request):
-#    downloads = Image.objects.all()
-#    if request.user.is_authenticated():
-#        downloads = downloads.filter(Q(is_public=True) | Q(users=request.user))
-#    else:
-#        downloads = downloads.filter(is_public=True)
-#    return render_to_response('download/download_list.html',
-#                              {'download_list': downloads},
-#                              context_instance=RequestContext(request))
-
-
+# }}}
 
 # vim: foldmethod=marker

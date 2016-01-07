@@ -460,7 +460,7 @@ urlpatterns += [
     "/image/view/$", course.views.ImageListView.as_view(), name='jfu_view'),
 #    url(r'^image/view/$', course.views.ImageListView.as_view(), name='jfu_view'),
     
-    url(r'(?P<download_id>\d+)/$', course.views.download, name='download'),
+    url(r'^course/userfiles/(?P<creator_id>\d+)/(?P<download_id>\d+)/$', course.views.download, name='download'),
 ]
 
 #from django.conf.urls.static import static

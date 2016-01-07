@@ -1539,8 +1539,28 @@ class ExamTicket(models.Model):
 
 # }}}
 
+# {{{ uploaded images
+
 from django.core.files.storage import FileSystemStorage
-sendfile_storage = FileSystemStorage(location=settings.SENDFILE_ROOT)
+from django.utils.deconstruct import deconstructible
+
+@deconstructible
+class UserImageStorage(FileSystemStorage):    
+    def __init__(self):
+        super(UserImageStorage, self).__init__(location=settings.SENDFILE_ROOT)
+
+sendfile_storage = UserImageStorage()
+
+def user_directory_path(instance, filename):
+    # file will be uploaded to MEDIA_ROOT/user_<id>/<filename
+    
+    print instance.creator
+    
+    print dir(instance)
+    
+    print "filename", filename
+    
+    return 'userimages/user_{0}/{1}'.format(instance.creator_id, filename)
 
 class Image(models.Model):
     """The slug field is really not necessary, but makes the code simpler. 
@@ -1548,12 +1568,11 @@ class Image(models.Model):
     in a virtualenv. If you have problems installing pillow, use a more 
     generic FileField instead.
     """
-    
-    #file = models.ImageField(upload_to = "pictures")
-    file = models.ImageField(upload_to='download', storage=sendfile_storage)
-    slug = models.SlugField(max_length=50, blank=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
         verbose_name=_('Creator'), on_delete=models.CASCADE)
+    file = models.ImageField(upload_to=user_directory_path, storage=sendfile_storage)
+    slug = models.SlugField(max_length=256, blank=True)
+
 
     def __unicode__(self):
         return self.file.name
@@ -1564,7 +1583,9 @@ class Image(models.Model):
 #        # jfu_upload need two kwargs
 
     def save(self, *args, **kwargs):
-        self.slug = self.file.name
+        from os.path import basename
+        print "filename in slug:", basename(self.file.name)
+        self.slug = basename(self.file.name)
         super(Image, self).save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
@@ -1574,7 +1595,9 @@ class Image(models.Model):
         
     @models.permalink
     def get_absolute_url(self):
-        return ('download', [self.pk], {})
+        return ('download', [self.creator_id, self.pk], {})
+    
+# }}}
 
         
 # vim: foldmethod=marker
