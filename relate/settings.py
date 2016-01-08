@@ -94,8 +94,6 @@ BOWER_COMPONENTS_ROOT = os.path.join(BASE_DIR, "components")
 
 STATICFILES_FINDERS = tuple(STATICFILES_FINDERS) + (
     "djangobower.finders.BowerFinder",
-    'django.contrib.staticfiles.finders.FileSystemFinder',
-    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
     )
 
 BOWER_INSTALLED_APPS = (
@@ -110,11 +108,6 @@ BOWER_INSTALLED_APPS = (
     "datatables-fixedcolumns",
     "jstree",
     "select2-bootstrap-css",
-    #"django-ckeditor",
-    #"pdf.js=https://github.com/mozilla/pdf.js/releases/download/v1.1.215/pdfjs-1.1.215-dist.zip",
-    "jquery-file-upload",
-    "blueimp-gallery",
-    #"html5shiv",
     )
 
 CODEMIRROR_PATH = "codemirror"
@@ -234,19 +227,3 @@ TEMPLATES = [
 LOCALE_PATHS = (
     BASE_DIR + '/locale',
 )
-
-MEDIA_ROOT = os.path.join(BASE_DIR, "media")
-MEDIA_URL = '/media/'
-
-# SENDFILE settings
-
-if DEBUG:
-    SENDFILE_BACKEND = 'sendfile.backends.development'
-else:
-    #SENDFILE_BACKEND = 'sendfile.backends.xsendfile'
-    SENDFILE_BACKEND = 'sendfile.backends.nginx'
-
-SENDFILE_ROOT = os.path.join(BASE_DIR, 'protected')
-SENDFILE_URL = '/protected'
-
-#CKEDITOR_UPLOAD_PATH = os.path.join(MEDIA_ROOT, "content", "ck_upload")
