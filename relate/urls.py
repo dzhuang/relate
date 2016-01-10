@@ -461,11 +461,17 @@ urlpatterns += [
 #    url(r'^image/view/$', course.views.ImageListView.as_view(), name='jfu_view'),
     
     url(r'^course/userfiles/(?P<creator_id>\d+)/(?P<download_id>\d+)/$', course.views.download, name='download'),
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/flow-session"
+        "/(?P<flow_session_id>[0-9]+)"
+        "/(?P<ordinal>[0-9]+)"
+        "/submit"
+        "/$",
+        course.views.image_page_submit,
+        name="relate-submit_image_page"),
+
 ]
-
-#from django.conf.urls.static import static
-
-#urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 if settings.RELATE_MAINTENANCE_MODE:
     urlpatterns = [

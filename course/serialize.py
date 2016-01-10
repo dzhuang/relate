@@ -42,7 +42,10 @@ def serialize(instance, file_attr='file', flow_session_id=None, ordinal=None):
         'thumbnailUrl': instance.get_absolute_url(),
         'size': obj.size,
         'deleteUrl':
-        reverse('jfu_delete', kwargs={'pk':instance.pk, 'flow_session_id':flow_session_id, 'ordinal':ordinal}),
+        reverse('jfu_delete', kwargs={
+                'pk':instance.pk, 
+                'flow_session_id':flow_session_id, 
+                'ordinal':ordinal}),
         'deleteType': 'DELETE',
     }
 

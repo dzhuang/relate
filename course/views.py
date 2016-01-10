@@ -1202,7 +1202,8 @@ from course.models import FlowPageData
 class ImageCreateView(CreateView):
     model = Image
     fields = ("file", "slug")
-    
+
+    @transaction.atomic
     def form_valid(self, form):
         self.object = form.save(commit=False)
         self.object.creator = self.request.user
@@ -1243,10 +1244,16 @@ class ImageCreateView(CreateView):
 class ImageDeleteView(DeleteView):
     model = Image
 
+    @transaction.atomic
     def delete(self, request, *args, **kwargs):
+        
+        delete_pk_array = []
+        
         self.object = self.get_object()
-        delete_pk = self.object.id
-        self.object.delete()        
+
+        delete_pk_array.append(self.object.id)
+
+        self.object.delete()
         
         flow_session_id=self.kwargs["flow_session_id"]
         ordinal=self.kwargs["ordinal"]
@@ -1254,16 +1261,19 @@ class ImageDeleteView(DeleteView):
         # remove records in page_data        
         flow_session_id=self.kwargs["flow_session_id"]
         ordinal=self.kwargs["ordinal"]
-        
+
         fpd=FlowPageData.objects.get(
             flow_session=flow_session_id, ordinal=ordinal)
         page_data=fpd.data
-        
-        if not "image_pk" in page_data:
+
+        if not "image_pk" in fpd.data:
             pass
         else:
-            image_pk_set = set(page_data["image_pk"])
-            page_data["image_pk"]=list(image_pk_set-set([delete_pk]))
+            #image_pk_set = set(page_data["image_pk"])
+            #print "deleted:", delete_pk
+            print "fpd.data", fpd.data
+            print "delete_pk_array", delete_pk_array
+            fpd.data["image_pk"]=list(set(fpd.data["image_pk"])-set(delete_pk_array))
         fpd.save()
 
         response = http.JsonResponse(True, safe=False)
@@ -1274,6 +1284,7 @@ class ImageDeleteView(DeleteView):
 class ImageListView(ListView):
     model = Image
     
+    @transaction.atomic
     def get_queryset(self):
         
         # fetch records in page_data
@@ -1304,6 +1315,10 @@ class ImageListView(ListView):
         response = http.JsonResponse(data)
         response['Content-Disposition'] = 'inline; filename=files.json'
         return response
+    
+
+def image_page_submit(request, course_identifier, flow_session_id, ordinal):
+    return render_to_response("abcd")
 
 
 # }}}
@@ -1321,7 +1336,7 @@ def download(request, creator_id, download_id):
 def _auth_download(request, download):
     if not (request.user==download.creator or request.user.is_staff):
         raise PermissionDenied(_("may not view other people's resource"))
-    return sendfile(request, download.file.path)
+    return sendfile(request, download.file.path, attachment=True)
 
 
 # }}}

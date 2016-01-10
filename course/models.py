@@ -1583,9 +1583,10 @@ class Image(models.Model):
 #        # jfu_upload need two kwargs
 
     def save(self, *args, **kwargs):
-        from os.path import basename
-        print "filename in slug:", basename(self.file.name)
-        self.slug = basename(self.file.name)
+#        from os.path import basename
+#        print "filename in slug:", basename(self.file.name)
+#        self.slug = basename(self.file.name)
+        self.slug = self.file.name
         super(Image, self).save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
