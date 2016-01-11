@@ -1192,7 +1192,7 @@ def monitor_task(request, task_id):
 
 # {{{ jfu image upload
 
-from course.models import Image
+from course.models import Image, SessionPageImage
 from django.views.generic import CreateView, DeleteView, ListView
 from course.serialize import serialize
 import json
@@ -1200,36 +1200,25 @@ from course.models import FlowPageData
 
 
 class ImageCreateView(CreateView):
-    model = Image
+    model = SessionPageImage
     fields = ("file", "slug")
 
-    @transaction.atomic
+    #@transaction.atomic
     def form_valid(self, form):
         self.object = form.save(commit=False)
         self.object.creator = self.request.user
         self.object.save()
         created_pk = self.object.id
         
-        ## get the content of the uploaded file.
-        #a = self.request.FILES['file']
-        #a.seek(0)
-        #buf = a.read()
-        #from base64 import b64encode
-        #content=b64encode(buf).decode()
-        #print content
-        
-        # create records in page_data        
         flow_session_id=self.kwargs["flow_session_id"]
         ordinal=self.kwargs["ordinal"]
         
         fpd=FlowPageData.objects.get(
             flow_session=flow_session_id, ordinal=ordinal)
-        page_data=fpd.data
-        if not "image_pk" in page_data:
-            page_data["image_pk"] = [created_pk]
-        else:
-            page_data["image_pk"].append(created_pk)            
-        fpd.save()
+        page_id=fpd.page_id
+        self.object.flow_session_id=flow_session_id
+        self.object.image_page_id=fpd.page_id
+        self.object.save()
         
         files = [serialize(self.object, 'file', flow_session_id, ordinal)]
         data = {'files': files}
@@ -1242,39 +1231,12 @@ class ImageCreateView(CreateView):
         return http.HttpResponse(content=data, status=400, content_type='application/json')
 
 class ImageDeleteView(DeleteView):
-    model = Image
+    model = SessionPageImage
 
-    @transaction.atomic
     def delete(self, request, *args, **kwargs):
         
-        delete_pk_array = []
-        
         self.object = self.get_object()
-
-        delete_pk_array.append(self.object.id)
-
         self.object.delete()
-        
-        flow_session_id=self.kwargs["flow_session_id"]
-        ordinal=self.kwargs["ordinal"]
-
-        # remove records in page_data        
-        flow_session_id=self.kwargs["flow_session_id"]
-        ordinal=self.kwargs["ordinal"]
-
-        fpd=FlowPageData.objects.get(
-            flow_session=flow_session_id, ordinal=ordinal)
-        page_data=fpd.data
-
-        if not "image_pk" in fpd.data:
-            pass
-        else:
-            #image_pk_set = set(page_data["image_pk"])
-            #print "deleted:", delete_pk
-            print "fpd.data", fpd.data
-            print "delete_pk_array", delete_pk_array
-            fpd.data["image_pk"]=list(set(fpd.data["image_pk"])-set(delete_pk_array))
-        fpd.save()
 
         response = http.JsonResponse(True, safe=False)
         response['Content-Disposition'] = 'inline; filename=files.json'
@@ -1282,31 +1244,25 @@ class ImageDeleteView(DeleteView):
 
 
 class ImageListView(ListView):
-    model = Image
+    model = SessionPageImage
     
-    @transaction.atomic
     def get_queryset(self):
         
-        # fetch records in page_data
         flow_session_id=self.kwargs["flow_session_id"]
         ordinal=self.kwargs["ordinal"]
         
         fpd=FlowPageData.objects.get(
             flow_session=flow_session_id, ordinal=ordinal)
-        page_data=fpd.data
-        
-        if not "image_pk" in page_data:
-            return Image.objects.none()
-        else:
-            return Image.objects.filter(
-                    creator=self.request.user
-                    ).filter(id__in=page_data["image_pk"])
+
+        return SessionPageImage.objects.filter(
+                creator=self.request.user
+                ).filter(flow_session=flow_session_id
+                ).filter(image_page_id=fpd.page_id)
 
     def render_to_response(self, context, **response_kwargs):
         
         flow_session_id=self.kwargs["flow_session_id"]
         ordinal=self.kwargs["ordinal"]
-
         
         files = [
                 serialize(p, 'file', flow_session_id, ordinal)

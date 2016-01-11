@@ -1577,15 +1577,7 @@ class Image(models.Model):
     def __unicode__(self):
         return self.file.name
 
-#    @models.permalink
-#    def get_absolute_url(self):
-#        return ('jfu_upload', )
-#        # jfu_upload need two kwargs
-
     def save(self, *args, **kwargs):
-#        from os.path import basename
-#        print "filename in slug:", basename(self.file.name)
-#        self.slug = basename(self.file.name)
         self.slug = self.file.name
         super(Image, self).save(*args, **kwargs)
 
@@ -1597,6 +1589,15 @@ class Image(models.Model):
     @models.permalink
     def get_absolute_url(self):
         return ('download', [self.creator_id, self.pk], {})
+
+
+class SessionPageImage(Image):
+
+    flow_session  = models.ForeignKey(FlowSession, null=True, related_name="page_image_data",
+            verbose_name=_('Flow session'), on_delete=models.CASCADE)
+        
+    image_page_id = models.CharField(max_length=200, null=True,
+            verbose_name=_('Image Page ID'))
     
 # }}}
 

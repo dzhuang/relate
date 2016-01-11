@@ -30,7 +30,7 @@ def serialize(instance, file_attr='file', flow_session_id=None, ordinal=None):
 
     obj = getattr(instance, file_attr)
     
-    print type(instance)
+    #print type(instance)
     #print instance.get_absolute_url()
 
     return {
@@ -46,7 +46,7 @@ def serialize(instance, file_attr='file', flow_session_id=None, ordinal=None):
                 'pk':instance.pk, 
                 'flow_session_id':flow_session_id, 
                 'ordinal':ordinal}),
-        'deleteType': 'DELETE',
+        'deleteType': 'POST',
     }
 
 

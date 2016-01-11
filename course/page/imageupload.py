@@ -38,7 +38,7 @@ from relate.utils import StyledForm
 from relate.utils import StyledModelForm
 
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Layout, Fieldset, HTML
+from crispy_forms.layout import Layout, Fieldset, HTML, Field
 
 from course.models import Image
 
@@ -46,9 +46,9 @@ from course.models import Image
 # {{{ upload question
 
 class ImageUploadForm(StyledForm):
-    uploaded_image = forms.CharField(required=True,
+    #uploaded_image = forms.CharField(required=True,
 #                                     widget = forms.HiddenInput()
-                                     )
+    #                                 )
     
     def __init__(self, maximum_megabytes, mime_types, page_context, 
                  page_behavior, page_data, *args, **kwargs):
@@ -77,9 +77,9 @@ class ImageUploadForm(StyledForm):
         self.helper.form_method = "POST"
         
         self.helper.layout = Layout(
-                Fieldset('This is it', 'uploaded_image'), 
+                Field('uploaded_image'), 
                 HTML(
-                    "{% extends 'course/basic_upload_form.html' %}" 
+                    "{% extends 'course/basic_upload_form2.html' %}" 
                     + jfu_button_control
                     ),
                 )
