@@ -1,135 +1,129 @@
 {% load i18n %}
 
+{% csrf_token %}
+
     {% comment %}
-     The file upload form used as target for the file upload widget 
+        Redirect browsers with JavaScript disabled to the origin page 
     {% endcomment %}
-    <form id="fileupload" action="{{ upload_handler_url }}" method="POST" enctype="multipart/form-data">
+    <noscript> <input type="hidden" name="redirect" value="{{ request.path }}"> </noscript>
 
-        {% csrf_token %}
+    {% block UPLOAD_FORM_BUTTON_BAR %}
+        <div class="row fileupload-buttonbar">
+            {% comment %}
+                The fileupload-buttonbar contains buttons to add/delete files and
+                start/cancel the upload 
+            {% endcomment %}
 
-        {% comment %}
-            Redirect browsers with JavaScript disabled to the origin page 
-        {% endcomment %}
-        <noscript> <input type="hidden" name="redirect" value="{{ request.path }}"> </noscript>
-
-        {% block UPLOAD_FORM_BUTTON_BAR %}
-            <div class="row fileupload-buttonbar">
+            <div class="col-lg-7">
                 {% comment %}
-                    The fileupload-buttonbar contains buttons to add/delete files and
-                    start/cancel the upload 
+                    The fileinput-button span is used to style the file input field as button 
                 {% endcomment %}
 
-                <div class="col-lg-7">
-                    {% comment %}
-                        The fileinput-button span is used to style the file input field as button 
-                    {% endcomment %}
+                {% block UPLOAD_FORM_BUTTON_BAR_ADD %}
+                    <span class="btn btn-success fileinput-button">
+                        <i class="glyphicon glyphicon-plus"></i>
+                        <span>{% trans "Add files..." %}</span>
 
-                    {% block UPLOAD_FORM_BUTTON_BAR_ADD %}
-                        <span class="btn btn-success fileinput-button">
-                            <i class="glyphicon glyphicon-plus"></i>
-                            <span>{% trans "Add files..." %}</span>
+                        {% block UPLOAD_FORM_BUTTON_BAR_ADD_FILE_INPUT %}
+                            {% comment %}
+                                UPLOAD_FORM_BUTTON_BAR_ADD_FILE_INPUT and FILE_INPUT
+                                control the same block. 
 
-                            {% block UPLOAD_FORM_BUTTON_BAR_ADD_FILE_INPUT %}
+                                FILE_INPUT is the original and shorter block name that has
+                                been kept to function as a convenient alias as well as to
+                                allow backward-compatibility with dependent projects. 
+
+                                Note: Only one should be overriden in the inheriting templates.
+                            {% endcomment %}
+                            {% block FILE_INPUT %}
                                 {% comment %}
-                                    UPLOAD_FORM_BUTTON_BAR_ADD_FILE_INPUT and FILE_INPUT
-                                    control the same block. 
-
-                                    FILE_INPUT is the original and shorter block name that has
-                                    been kept to function as a convenient alias as well as to
-                                    allow backward-compatibility with dependent projects. 
-
-                                    Note: Only one should be overriden in the inheriting templates.
+                                    The file input for the upload form.
                                 {% endcomment %}
-                                {% block FILE_INPUT %}
-                                    {% comment %}
-                                        The file input for the upload form.
-                                    {% endcomment %}
-                                    <input type="file" name="file" multiple
+                                <input type="file" name="file" multiple
 
-                                        {% if accepted_mime_types %}
-                                            accept = '{{ accepted_mime_types|join:"," }}'
-                                        {% endif %}
-                                    >
-                                {% endblock %}
+                                    {% if accepted_mime_types %}
+                                        accept = '{{ accepted_mime_types|join:"," }}'
+                                    {% endif %}
+                                >
                             {% endblock %}
-
-                        </span>
-
-                        {% block UPLOAD_FORM_BUTTON_BAR_ADD_EXTRA %}
                         {% endblock %}
 
+                    </span>
+
+                    {% block UPLOAD_FORM_BUTTON_BAR_ADD_EXTRA %}
                     {% endblock %}
 
-                    {% block UPLOAD_FORM_BUTTON_BAR_CONTROL %}
-                        <button type="submit" class="btn btn-primary start">
-                            <i class="glyphicon glyphicon-upload"></i>
-                            <span>{% trans "Start upload" %}</span>
-                        </button>
-                        <button type="reset" class="btn btn-warning cancel">
-                            <i class="glyphicon glyphicon-ban-circle"></i>
-                            <span>{% trans "Cancel upload" %}</span>
-                        </button>
-                        <button type="button" class="btn btn-danger delete">
-                            <i class="glyphicon glyphicon-trash"></i>
-                            <span>{% trans "Delete" %}</span>
-                        </button>
-                        <input type="checkbox" class="toggle">
-                    {% endblock %}
-
-                    {% block UPLOAD_FORM_BUTTON_BAR_EXTRA %}
-                    {% endblock %}
-
-                </div>
-
-                {% block UPLOAD_FORM_PROGRESS_BAR %}
-                    {% comment %}
-                        The global progress information 
-                    {% endcomment %}
-                    <div class="col-lg-5 fileupload-progress fade">
-                        {% comment %}
-                            The global progress bar 
-                        {% endcomment %}
-                        <div 
-                            class="progress progress-striped active" 
-                            role="progressbar" 
-                            aria-valuemin="0" aria-valuemax="100"
-                        >
-                            <div class="progress-bar progress-bar-success" style="width:0%;">
-                            </div>
-                        </div>
-                        {% comment %}
-                            The extended global progress information 
-                        {% endcomment %}
-                        <div class="progress-extended">&nbsp;</div>
-                    </div>
                 {% endblock %}
 
-        </div>
-        {% endblock %}
+                {% block UPLOAD_FORM_BUTTON_BAR_CONTROL %}
+                    <button type="submit" class="btn btn-primary start">
+                        <i class="glyphicon glyphicon-upload"></i>
+                        <span>{% trans "Start upload" %}</span>
+                    </button>
+                    <button type="reset" class="btn btn-warning cancel">
+                        <i class="glyphicon glyphicon-ban-circle"></i>
+                        <span>{% trans "Cancel upload" %}</span>
+                    </button>
+                    <button type="button" class="btn btn-danger delete">
+                        <i class="glyphicon glyphicon-trash"></i>
+                        <span>{% trans "Delete" %}</span>
+                    </button>
+                    <input type="checkbox" class="toggle">
+                {% endblock %}
 
+                {% block UPLOAD_FORM_BUTTON_BAR_EXTRA %}
+                {% endblock %}
+
+            </div>
+
+            {% block UPLOAD_FORM_PROGRESS_BAR %}
+                {% comment %}
+                    The global progress information 
+                {% endcomment %}
+                <div class="col-lg-5 fileupload-progress fade">
+                    {% comment %}
+                        The global progress bar 
+                    {% endcomment %}
+                    <div 
+                        class="progress progress-striped active" 
+                        role="progressbar" 
+                        aria-valuemin="0" aria-valuemax="100"
+                    >
+                        <div class="progress-bar progress-bar-success" style="width:0%;">
+                        </div>
+                    </div>
+                    {% comment %}
+                        The extended global progress information 
+                    {% endcomment %}
+                    <div class="progress-extended">&nbsp;</div>
+                </div>
+            {% endblock %}
+
+    </div>
+    {% endblock %}
+
+    {% comment %}
+        The loading indicator is shown during file processing 
+    {% endcomment %}
+
+    {% block UPLOAD_FORM_LINDICATOR %}
+        <div class="fileupload-loading"></div>
+        <br>
+    {% endblock %}
+
+    {% block UPLOAD_FORM_LISTING %}
         {% comment %}
-            The loading indicator is shown during file processing 
+            The table listing the files available for upload/download 
         {% endcomment %}
+        <table role="presentation" class="table table-striped">
+            <tbody class="files"></tbody>
+        </table>
+    {% endblock %}
 
-        {% block UPLOAD_FORM_LINDICATOR %}
-            <div class="fileupload-loading"></div>
-            <br>
-        {% endblock %}
+    {% block UPLOAD_FORM_EXTRA %}
+    {% endblock %}
 
-        {% block UPLOAD_FORM_LISTING %}
-            {% comment %}
-                The table listing the files available for upload/download 
-            {% endcomment %}
-            <table role="presentation" class="table table-striped">
-                <tbody class="files"></tbody>
-            </table>
-        {% endblock %}
-
-        {% block UPLOAD_FORM_EXTRA %}
-        {% endblock %}
-
-
-    {% block JS_UPLOAD_TEMPLATE %}
+    {% block JS_UPLOAD_TEMPLATE_INSIDE %}
         <script id="template-upload" type="text/x-tmpl">
             {{ JQ_OPEN }} for (var i=0, file; file=o.files[i]; i++) { {{ JQ_CLOSE }}
 
@@ -185,8 +179,7 @@
         </script>
     {% endblock %}
 
-
-    {% block JS_DOWNLOAD_TEMPLATE %}
+    {% block JS_DOWNLOAD_TEMPLATE_INSIDE %}
         {% comment %}
             The template to display files available for download 
         {% endcomment %}
@@ -266,4 +259,3 @@
             {{ JQ_OPEN }} } {{ JQ_CLOSE }}
         </script>
     {% endblock %}
-

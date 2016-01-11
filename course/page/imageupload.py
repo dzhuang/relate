@@ -24,7 +24,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-
 import django.forms as forms
 from django.utils.translation import ugettext as _, ugettext_lazy, string_concat
 
@@ -40,15 +39,12 @@ from relate.utils import StyledModelForm
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Fieldset, HTML, Field
 
-from course.models import Image
+from course.models import SessionPageImage, FlowPageData
 
 
-# {{{ upload question
+# {{{ image upload question
 
 class ImageUploadForm(StyledForm):
-    #uploaded_image = forms.CharField(required=True,
-#                                     widget = forms.HiddenInput()
-    #                                 )
     
     def __init__(self, maximum_megabytes, mime_types, page_context, 
                  page_behavior, page_data, *args, **kwargs):
@@ -57,6 +53,7 @@ class ImageUploadForm(StyledForm):
         self.max_file_size = maximum_megabytes * 1024**2
         self.mime_types = mime_types
         self.page_behavior = page_behavior
+        self.page_context = page_context
         
         jfu_button_control = ""
         
@@ -77,18 +74,26 @@ class ImageUploadForm(StyledForm):
         self.helper.form_method = "POST"
         
         self.helper.layout = Layout(
-                Field('uploaded_image'), 
                 HTML(
-                    "{% extends 'course/basic_upload_form2.html' %}" 
+                    "{% extends 'course/image_upload/jfu_form.html' %}" 
                     + jfu_button_control
                     ),
                 )
 
-#    def clean_uploaded_image(self):
-#        uploaded_image = self.cleaned_data['uploaded_image']
-#
-#        return uploaded_image
+    def clean(self):
+        flow_session_id = self.page_context.flow_session.id
+        ordinal = self.page_context.ordinal
+        user = self.page_context.flow_session.user
+        fpd=FlowPageData.objects.get(
+            flow_session=flow_session_id, ordinal=ordinal)
 
+        qs = SessionPageImage.objects.filter(
+                creator=user
+                ).filter(flow_session=flow_session_id
+                ).filter(image_page_id=fpd.page_id)
+        
+        if len(qs) == 0:
+            raise forms.ValidationError(_("You have not upload image(s)!"))
 
 class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         PageBaseWithHumanTextFeedback, PageBaseWithCorrectAnswer):
@@ -206,15 +211,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
     def make_form(self, page_context, page_data,
             answer_data, page_behavior):
 
-        if page_data and len(page_data["image_pk"]) > 0:
-            answer = {"uploaded_image": ",".join(str(e) for e in page_data["image_pk"])}
-
-            form = ImageUploadForm(
-                self.page_desc.maximum_megabytes, self.page_desc.mime_types,
-                page_context, page_behavior, page_data, answer)
-        else:
-            answer = None
-            form = ImageUploadForm(
+        form = ImageUploadForm(
                 self.page_desc.maximum_megabytes, self.page_desc.mime_types,
                 page_context, page_behavior, page_data)
 
@@ -234,22 +231,33 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
     def form_to_html(self, request, page_context, form, answer_data):
         ctx = {"form": form}
         
-        ctx["JQ_OPEN" ]= '{%'
-        ctx['JQ_CLOSE' ]= '%}'
-        ctx["accepted_mime_types"]= ['image/*']
-        ctx["flow_session_id"]=page_context.flow_session.id
-        ctx["ordinal"]=page_context.ordinal
+        ctx["JQ_OPEN"] = '{%'
+        ctx['JQ_CLOSE'] = '%}'
+        ctx["accepted_mime_types"] = ['image/*']
+        ctx["flow_session_id"] = page_context.flow_session.id
+        ctx["ordinal"] = page_context.ordinal
 
         from django.template import RequestContext
         from django.template.loader import render_to_string
         return render_to_string(
-                "course/image-upload-template.html",
+                "course/image_upload/image-upload-template.html",
                 RequestContext(request, ctx))
 
     def answer_data(self, page_context, page_data, form, files_data):
-        if page_data:
-            if len(page_data["image_pk"]) > 0:                
-                return {"answer": ",".join(str(e) for e in page_data["image_pk"])}
+        flow_session_id = page_context.flow_session.id
+        ordinal = page_context.ordinal
+        user = page_context.flow_session.user
+        fpd=FlowPageData.objects.get(
+            flow_session=flow_session_id, ordinal=ordinal)
+
+        qs = SessionPageImage.objects.filter(
+                creator=user
+                ).filter(flow_session=flow_session_id
+                ).filter(image_page_id=fpd.page_id)
+        
+        if len(qs) > 0:
+            import json
+            return json.dumps(repr(qs))
         else:
             return None
 

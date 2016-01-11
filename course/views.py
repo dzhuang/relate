@@ -1292,7 +1292,7 @@ def download(request, creator_id, download_id):
 def _auth_download(request, download):
     if not (request.user==download.creator or request.user.is_staff):
         raise PermissionDenied(_("may not view other people's resource"))
-    return sendfile(request, download.file.path, attachment=True)
+    return sendfile(request, download.file.path)
 
 
 # }}}

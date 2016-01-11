@@ -1573,10 +1573,6 @@ class Image(models.Model):
     file = models.ImageField(upload_to=user_directory_path, storage=sendfile_storage)
     slug = models.SlugField(max_length=256, blank=True)
 
-
-    def __unicode__(self):
-        return self.file.name
-
     def save(self, *args, **kwargs):
         self.slug = self.file.name
         super(Image, self).save(*args, **kwargs)
@@ -1590,6 +1586,16 @@ class Image(models.Model):
     def get_absolute_url(self):
         return ('download', [self.creator_id, self.pk], {})
 
+    class Meta:
+        ordering = ("id",)
+
+    def __unicode__(self):
+        return _("Image %(url)s uploaded by %(creator)s") % {
+            'url': self.get_absolute_url(),
+            'creator': self.creator}
+
+    if six.PY3:
+        __str__ = __unicode__
 
 class SessionPageImage(Image):
 
@@ -1598,6 +1604,7 @@ class SessionPageImage(Image):
         
     image_page_id = models.CharField(max_length=200, null=True,
             verbose_name=_('Image Page ID'))
+
     
 # }}}
 
