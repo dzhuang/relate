@@ -75,9 +75,9 @@ from course.utils import course_view, render_course_page
 
 NONE_SESSION_TAG = "<<<NONE>>>"  # noqa
 
-import sys
-reload(sys)
-sys.setdefaultencoding('utf8')
+#import sys
+#reload(sys)
+#sys.setdefaultencoding('utf8')
 
 # {{{ home
 

@@ -27,9 +27,9 @@ THE SOFTWARE.
 import re
 import datetime
 import six
-import sys
-reload(sys)
-sys.setdefaultencoding('utf8')
+#import sys
+#reload(sys)
+#sys.setdefaultencoding('utf8')
 
 
 
