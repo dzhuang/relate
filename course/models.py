@@ -1562,6 +1562,8 @@ def user_directory_path(instance, filename):
     
     return 'userimages/user_{0}/{1}'.format(instance.creator_id, filename)
 
+from relate.utils import format_datetime_local, as_local_time
+
 class Image(models.Model):
     """The slug field is really not necessary, but makes the code simpler. 
     ImageField depends on PIL or pillow (where Pillow is easily installable
@@ -1572,6 +1574,7 @@ class Image(models.Model):
         verbose_name=_('Creator'), on_delete=models.CASCADE)
     file = models.ImageField(upload_to=user_directory_path, storage=sendfile_storage)
     slug = models.SlugField(max_length=256, blank=True)
+    creation_time = models.DateTimeField(default=now)
 
     def save(self, *args, **kwargs):
         self.slug = self.file.name
@@ -1582,15 +1585,24 @@ class Image(models.Model):
         self.file.delete(False)
         super(Image, self).delete(*args, **kwargs)
         
+    def get_creation_time(self, format='medium'):
+        if format == 'short':
+            format = getattr(settings, 'RELATE_SHORT_DATE_TIME_FORMAT', 'short')
+
+        return format_datetime_local(as_local_time(self.creation_time), format=format)
+
+
     @models.permalink
     def get_absolute_url(self):
         return ('download', [self.creator_id, self.pk], {})
 
     class Meta:
-        ordering = ("id",)
+        ordering = ("id", 
+                   "creation_time"
+                   )
 
     def __unicode__(self):
-        return _("Image %(url)s uploaded by %(creator)s") % {
+        return _("%(url)s uploaded by %(creator)s") % {
             'url': self.get_absolute_url(),
             'creator': self.creator}
 

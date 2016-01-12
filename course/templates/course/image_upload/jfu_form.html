@@ -226,6 +226,14 @@
 
                     </td>
                     {% endblock %}
+                    
+                    {% if SHOW_CREATION_TIME %}
+                        {% block JS_DOWNLOAD_TEMPLATE_TIME %}
+                        <td>
+                            <span class="time" title="{{ JQ_OPEN }}=file.creationTime{{ JQ_CLOSE }}">{{ JQ_OPEN }}=file.creationTimeShort{{ JQ_CLOSE }}</span>
+                        </td>
+                        {% endblock %}
+                    {% endif %}
 
                     {% block JS_DOWNLOAD_TEMPLATE_FSIZE %}
                     <td>

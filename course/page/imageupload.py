@@ -25,7 +25,7 @@ THE SOFTWARE.
 """
 
 import django.forms as forms
-from django.utils.translation import ugettext as _, ugettext_lazy, string_concat
+from django.utils.translation import ugettext as _, string_concat
 
 from course.page.base import (
         PageBaseWithTitle, PageBaseWithValue, PageBaseWithHumanTextFeedback,
@@ -34,10 +34,8 @@ from course.page.base import (
 from course.validation import ValidationError
 
 from relate.utils import StyledForm
-from relate.utils import StyledModelForm
 
-from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Layout, Fieldset, HTML, Field
+from crispy_forms.layout import Layout, HTML
 
 from course.models import SessionPageImage, FlowPageData
 
@@ -236,6 +234,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         ctx["accepted_mime_types"] = ['image/*']
         ctx["flow_session_id"] = page_context.flow_session.id
         ctx["ordinal"] = page_context.ordinal
+        ctx["SHOW_CREATION_TIME"] = True
 
         from django.template import RequestContext
         from django.template.loader import render_to_string
