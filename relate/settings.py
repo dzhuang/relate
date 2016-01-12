@@ -37,7 +37,6 @@ INSTALLED_APPS = (
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "course",
     "crispy_forms",
     "jsonfield",
     "bootstrap3_datetime",
@@ -48,6 +47,9 @@ INSTALLED_APPS = (
     # message queue
     "djcelery",
     "kombu.transport.django",
+
+    "accounts",
+    "course",
     "ckeditor",
     "jfu",
     #"ckeditor_uploader",
@@ -87,6 +89,8 @@ TEMPLATE_CONTEXT_PROCESSORS = (
         tuple(TEMPLATE_CONTEXT_PROCESSORS)
         + RELATE_EXTRA_CONTEXT_PROCESSORS
         )
+
+AUTH_USER_MODEL = 'accounts.User'
 
 # {{{ bower packages
 

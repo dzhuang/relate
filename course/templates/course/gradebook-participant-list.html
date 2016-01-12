@@ -19,6 +19,8 @@
 {% block content %}
   <h1>{% trans "List of Participants" %}</h1>
 
+  {% include "course/participation-table.html" with participations=participations %}
+
   <table class="gradebook-participants">
     <thead>
       <th class="datacol">{% trans "User ID" %}</th>
@@ -42,13 +44,5 @@
     </tbody>
   </table>
 
-  <script type="text/javascript">
-    var tbl = $("table.gradebook-participants").dataTable({
-        "scrollCollapse": true,
-        "paging": false,
-        "ordering": true,
         language:{url: '//cdn.datatables.net/plug-ins/1.10.8/i18n/Chinese.json'}
-    } );
-  </script>
-
 {% endblock %}

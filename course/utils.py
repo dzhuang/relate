@@ -62,6 +62,7 @@ class FlowSessionStartRule(FlowSessionRuleBase):
             "tag_session",
             "may_start_new_session",
             "may_list_existing_sessions",
+            "lock_down_as_exam_session",
             "latest_start_datetime",
             "session_available_count",
             ]
@@ -322,6 +323,8 @@ def get_session_start_rule(course, participation, role, flow_id, flow_desc,
                     rule, "may_start_new_session", True),
                 may_list_existing_sessions=getattr(
                     rule, "may_list_existing_sessions", True),
+                lock_down_as_exam_session=getattr(
+                    rule, "lock_down_as_exam_session", False),
                 latest_start_datetime=latest_start_datetime,
                 session_available_count=session_available_count,
                 )

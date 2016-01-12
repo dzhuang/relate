@@ -1,0 +1,32 @@
+{% extends "course/course-base.html" %}
+{% load i18n %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+  {% trans "Query Participations" %} - {% trans "RELATE" %}
+{% endblock %}
+
+{% block header_extra %}
+    {# the min.js version contains all dependencies #}
+    <script src="{% static "datatables/media/js/jquery.dataTables.min.js" %}"></script>
+    <link href="{% static "datatables/media/css/jquery.dataTables.min.css" %}" rel="stylesheet">
+
+    <script src="{% static "datatables-fixedcolumns/js/dataTables.fixedColumns.js" %}"></script>
+    <link href="{% static "datatables-fixedcolumns/css/dataTables.fixedColumns.css" %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+  <h1>{% trans "Query Participations" %}</h1>
+
+  <div class="well">
+    {% crispy form %}
+  </div>
+
+  {% if result %}
+    {% include "course/participation-table.html" with participations=result %}
+  {% elif result != None %}
+    {% trans "No matches" %}
+  {% endif %}
+
+{% endblock %}
