@@ -674,64 +674,11 @@ class UserForm(StyledModelForm):
                 Submit("submit_user", _("Update")))
 
 
-#class UserStudentIDForm(StyledModelForm):
-#    class Meta:
-#        model = UserStatus
-#        fields = ("student_ID", "student_ID_confirm", "No_ID")
-#        widgets = {'student_ID_confirm': forms.HiddenInput()}
-#
-#    def __init__(self, *args, **kwargs):
-#        super(UserStudentIDForm, self).__init__(*args, **kwargs)
-#        instance = getattr(self, 'instance', None)
-#        
-#        if instance and instance.pk:
-#            if instance.student_ID:
-#                self.fields['student_ID'].widget.attrs['readonly'] = True
-#                self.fields['No_ID'].widget.attrs['disabled'] = True
-#            else:
-#                self.helper.add_input(
-#                        Submit("submit_student_ID", _("Update")))
-#        else: 
-#            self.helper.add_input(
-#                    Submit("submit_student_ID", _("Update")))
-#        
-#    def clean(self):
-#        cleaned_data = super(UserStudentIDForm, self).clean()
-#
-#        instance = getattr(self, 'instance', None)
-#        if instance and instance.pk and instance.student_ID:
-#            student_ID = instance.student_ID
-#            #No_ID = instance.No_ID
-#            self.fields['student_ID'].widget.attrs['readonly'] = True
-#        else:
-#            student_ID = cleaned_data.get("student_ID")
-#        
-#        No_ID = cleaned_data.get("No_ID")
-#
-#        student_ID_confirm = cleaned_data.get("student_ID_confirm")
-#
-#        if No_ID:
-#            del cleaned_data["student_ID"]
-#            del cleaned_data["student_ID_confirm"]
-#            
-#        elif student_ID != student_ID_confirm:
-#            del cleaned_data["student_ID"]
-#            del cleaned_data["student_ID_confirm"]
-#            self.fields['student_ID_confirm'].widget = forms.TextInput()
-#            raise forms.ValidationError(
-#                    _("The two student_ID don't match.")
-#                )
-#
-#        return cleaned_data
-
-
 def user_profile(request):
     if not request.user.is_authenticated():
         raise PermissionDenied()
 
     user_form = None
-    user_student_ID_form = None
-    user_status_form = None
 
     if request.method == "POST":
         if "submit_user" in request.POST:
@@ -744,39 +691,11 @@ def user_profile(request):
                 if request.GET.get("first_login"):
                     return redirect("relate-home")
 
-        if "submit_student_ID" in request.POST:
-            user_student_ID_form = UserStudentIDForm(
-                    request.POST, instance=ustatus)
-            if user_student_ID_form.is_valid():
-                user_student_ID_form.save()
-                messages.add_message(request, messages.INFO,
-                        _("Profile data saved."))
-                user_student_ID_form = UserStudentIDForm(
-                    request.POST, instance=ustatus)
-                if request.GET.get("first_login"):
-                    return redirect("relate-home")
-
-        if "submit_user_status" in request.POST:
-            user_status_form = UserStatusForm(
-                    request.POST, instance=ustatus)
-            if user_status_form.is_valid():
-                user_status_form.save()
-                messages.add_message(request, messages.INFO,
-                        _("Profile data saved."))
-                if request.GET.get("first_login"):
-                    return redirect("relate-home")
-
     if user_form is None:
         user_form = UserForm(instance=request.user)
-    if user_student_ID_form is None:
-        user_student_ID_form = UserStudentIDForm(instance=ustatus)
-    if user_status_form is None:
-        user_status_form = UserStatusForm(instance=ustatus)
 
     return render(request, "user-profile-form.html", {
         "user_form": user_form,
-        "user_student_ID_form": user_student_ID_form,
-        "user_status_form": user_status_form,
         })
 
 # }}}
