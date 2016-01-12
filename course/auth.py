@@ -674,55 +674,55 @@ class UserForm(StyledModelForm):
                 Submit("submit_user", _("Update")))
 
 
-class UserStudentIDForm(StyledModelForm):
-    class Meta:
-        model = UserStatus
-        fields = ("student_ID", "student_ID_confirm", "No_ID")
-        widgets = {'student_ID_confirm': forms.HiddenInput()}
-
-    def __init__(self, *args, **kwargs):
-        super(UserStudentIDForm, self).__init__(*args, **kwargs)
-        instance = getattr(self, 'instance', None)
-        
-        if instance and instance.pk:
-            if instance.student_ID:
-                self.fields['student_ID'].widget.attrs['readonly'] = True
-                self.fields['No_ID'].widget.attrs['disabled'] = True
-            else:
-                self.helper.add_input(
-                        Submit("submit_student_ID", _("Update")))
-        else: 
-            self.helper.add_input(
-                    Submit("submit_student_ID", _("Update")))
-        
-    def clean(self):
-        cleaned_data = super(UserStudentIDForm, self).clean()
-
-        instance = getattr(self, 'instance', None)
-        if instance and instance.pk and instance.student_ID:
-            student_ID = instance.student_ID
-            #No_ID = instance.No_ID
-            self.fields['student_ID'].widget.attrs['readonly'] = True
-        else:
-            student_ID = cleaned_data.get("student_ID")
-        
-        No_ID = cleaned_data.get("No_ID")
-
-        student_ID_confirm = cleaned_data.get("student_ID_confirm")
-
-        if No_ID:
-            del cleaned_data["student_ID"]
-            del cleaned_data["student_ID_confirm"]
-            
-        elif student_ID != student_ID_confirm:
-            del cleaned_data["student_ID"]
-            del cleaned_data["student_ID_confirm"]
-            self.fields['student_ID_confirm'].widget = forms.TextInput()
-            raise forms.ValidationError(
-                    _("The two student_ID don't match.")
-                )
-
-        return cleaned_data
+#class UserStudentIDForm(StyledModelForm):
+#    class Meta:
+#        model = UserStatus
+#        fields = ("student_ID", "student_ID_confirm", "No_ID")
+#        widgets = {'student_ID_confirm': forms.HiddenInput()}
+#
+#    def __init__(self, *args, **kwargs):
+#        super(UserStudentIDForm, self).__init__(*args, **kwargs)
+#        instance = getattr(self, 'instance', None)
+#        
+#        if instance and instance.pk:
+#            if instance.student_ID:
+#                self.fields['student_ID'].widget.attrs['readonly'] = True
+#                self.fields['No_ID'].widget.attrs['disabled'] = True
+#            else:
+#                self.helper.add_input(
+#                        Submit("submit_student_ID", _("Update")))
+#        else: 
+#            self.helper.add_input(
+#                    Submit("submit_student_ID", _("Update")))
+#        
+#    def clean(self):
+#        cleaned_data = super(UserStudentIDForm, self).clean()
+#
+#        instance = getattr(self, 'instance', None)
+#        if instance and instance.pk and instance.student_ID:
+#            student_ID = instance.student_ID
+#            #No_ID = instance.No_ID
+#            self.fields['student_ID'].widget.attrs['readonly'] = True
+#        else:
+#            student_ID = cleaned_data.get("student_ID")
+#        
+#        No_ID = cleaned_data.get("No_ID")
+#
+#        student_ID_confirm = cleaned_data.get("student_ID_confirm")
+#
+#        if No_ID:
+#            del cleaned_data["student_ID"]
+#            del cleaned_data["student_ID_confirm"]
+#            
+#        elif student_ID != student_ID_confirm:
+#            del cleaned_data["student_ID"]
+#            del cleaned_data["student_ID_confirm"]
+#            self.fields['student_ID_confirm'].widget = forms.TextInput()
+#            raise forms.ValidationError(
+#                    _("The two student_ID don't match.")
+#                )
+#
+#        return cleaned_data
 
 
 def user_profile(request):

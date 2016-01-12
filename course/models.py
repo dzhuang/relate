@@ -58,90 +58,90 @@ from django.core import validators
 
 # {{{ user status
 
-def get_user_status(user):
-    try:
-        return user.user_status
-    except AttributeError:
-        ustatus = UserStatus()
-        ustatus.user = user
-        ustatus.status = user_status.unconfirmed
-        ustatus.save()
-
-        return ustatus
-
-
-class UserStatus(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, db_index=True,
-            related_name="user_status",
-            verbose_name=_('User ID'), on_delete=models.CASCADE)
-    status = models.CharField(max_length=50,
-            choices=USER_STATUS_CHOICES,
-            verbose_name=_('User status'))
-    sign_in_key = models.CharField(max_length=50,
-            help_text=_("The sign in token sent out in email."),
-            null=True, unique=True, db_index=True, blank=True,
-            # Translators: the sign in token of the user.
-            verbose_name=_('Sign in key'))
-    key_time = models.DateTimeField(default=now,
-            help_text=_("The time stamp of the sign in token."),
-            # Translators: the time when the token is sent out.
-            verbose_name=_('Key time'))
-
-    editor_mode = models.CharField(max_length=20,
-            help_text=_("Your favorite text editor mode for text "
-                        "block or code block."),
-            choices=(
-                ("default", _("Default")),
-                ("sublime", "Sublime text"),
-                ("emacs", "Emacs"),
-                ("vim", "Vim"),
-                ),
-            default="default",
-            # Translators: the text editor used by participants
-            verbose_name=_("Editor mode"))
-
-    student_ID = models.CharField(max_length=40, unique=True, 
-            null=True, blank=True, db_index=True,
-            verbose_name=_("student ID"),
-            validators=[
-                validators.RegexValidator('^[\\w.@+-]+$',
-                    string_concat(
-                        _('Enter a valid student ID. '), 
-                        _('This value may contain only letters, '
-                          'numbers and @/./+/-/_ characters.')
-                        ),
-                    'invalid')
-                ],
-            help_text=_("Not required. Filling so that your can "
-                        "enroll some courses automatically. Once "
-                        "confirmed it is not changable."))
-    student_ID_confirm = models.CharField(max_length=40, unique=True, 
-            null=True, blank=True, db_index=True,
-            verbose_name=_("student ID confirmation"),
-            validators=[
-                validators.RegexValidator('^[\\w.@+-]+$',
-                    string_concat(
-                        _('Enter a valid student ID. '), 
-                        _('This value may contain only letters, '
-                          'numbers and @/./+/-/_ characters.')
-                        ),
-                    'invalid')
-                ])
-
-    No_ID = models.BooleanField(default=False,
-            help_text=_("I am not a student or I have no student ID."),
-            verbose_name=_('No student ID'))
-
-    class Meta:
-        verbose_name = _("User status")
-        verbose_name_plural = _("User statuses")
-        ordering = ("key_time",)
-
-    def __unicode__(self):
-        return _("User status for %(user)s") % {'user': self.user}
-
-    if six.PY3:
-        __str__ = __unicode__
+#def get_user_status(user):
+#    try:
+#        return user.user_status
+#    except AttributeError:
+#        ustatus = UserStatus()
+#        ustatus.user = user
+#        ustatus.status = user_status.unconfirmed
+#        ustatus.save()
+#
+#        return ustatus
+#
+#
+#class UserStatus(models.Model):
+#    user = models.OneToOneField(settings.AUTH_USER_MODEL, db_index=True,
+#            related_name="user_status",
+#            verbose_name=_('User ID'), on_delete=models.CASCADE)
+#    status = models.CharField(max_length=50,
+#            choices=USER_STATUS_CHOICES,
+#            verbose_name=_('User status'))
+#    sign_in_key = models.CharField(max_length=50,
+#            help_text=_("The sign in token sent out in email."),
+#            null=True, unique=True, db_index=True, blank=True,
+#            # Translators: the sign in token of the user.
+#            verbose_name=_('Sign in key'))
+#    key_time = models.DateTimeField(default=now,
+#            help_text=_("The time stamp of the sign in token."),
+#            # Translators: the time when the token is sent out.
+#            verbose_name=_('Key time'))
+#
+#    editor_mode = models.CharField(max_length=20,
+#            help_text=_("Your favorite text editor mode for text "
+#                        "block or code block."),
+#            choices=(
+#                ("default", _("Default")),
+#                ("sublime", "Sublime text"),
+#                ("emacs", "Emacs"),
+#                ("vim", "Vim"),
+#                ),
+#            default="default",
+#            # Translators: the text editor used by participants
+#            verbose_name=_("Editor mode"))
+#
+#    student_ID = models.CharField(max_length=40, unique=True, 
+#            null=True, blank=True, db_index=True,
+#            verbose_name=_("student ID"),
+#            validators=[
+#                validators.RegexValidator('^[\\w.@+-]+$',
+#                    string_concat(
+#                        _('Enter a valid student ID. '), 
+#                        _('This value may contain only letters, '
+#                          'numbers and @/./+/-/_ characters.')
+#                        ),
+#                    'invalid')
+#                ],
+#            help_text=_("Not required. Filling so that your can "
+#                        "enroll some courses automatically. Once "
+#                        "confirmed it is not changable."))
+#    student_ID_confirm = models.CharField(max_length=40, unique=True, 
+#            null=True, blank=True, db_index=True,
+#            verbose_name=_("student ID confirmation"),
+#            validators=[
+#                validators.RegexValidator('^[\\w.@+-]+$',
+#                    string_concat(
+#                        _('Enter a valid student ID. '), 
+#                        _('This value may contain only letters, '
+#                          'numbers and @/./+/-/_ characters.')
+#                        ),
+#                    'invalid')
+#                ])
+#
+#    No_ID = models.BooleanField(default=False,
+#            help_text=_("I am not a student or I have no student ID."),
+#            verbose_name=_('No student ID'))
+#
+#    class Meta:
+#        verbose_name = _("User status")
+#        verbose_name_plural = _("User statuses")
+#        ordering = ("key_time",)
+#
+#    def __unicode__(self):
+#        return _("User status for %(user)s") % {'user': self.user}
+#
+#    if six.PY3:
+#        __str__ = __unicode__
 
 # }}}
 

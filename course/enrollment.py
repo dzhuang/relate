@@ -131,13 +131,13 @@ def enroll(request, course_identifier):
 
         return participation
 
-    if preapproval is None:
-        if ustatus.student_ID:
-            try:
-                preapproval = ParticipationPreapproval.objects.get(
-                        course=course, email__iexact=ustatus.student_ID)
-            except ParticipationPreapproval.DoesNotExist:
-                pass
+#    if preapproval is None:
+#        if ustatus.student_ID:
+#            try:
+#                preapproval = ParticipationPreapproval.objects.get(
+#                        course=course, email__iexact=ustatus.student_ID)
+#            except ParticipationPreapproval.DoesNotExist:
+#                pass
 
     role = participation_role.student
 

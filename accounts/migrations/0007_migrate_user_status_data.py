@@ -14,6 +14,7 @@ def forwards(apps, schema_editor):
         user.key_time = ustatus.key_time
         user.sign_in_key = ustatus.sign_in_key
         user.status = ustatus.status
+        user.institutional_id = ustatus.student_ID
         user.save()
 
 
