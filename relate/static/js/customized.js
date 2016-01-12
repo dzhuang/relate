@@ -27,7 +27,7 @@ $.fn.smallscreen_pdf_indent = function () {
             $(this).smallscreen_pdf_indent();
         });
     }
-}
+};
 
 
 
@@ -36,7 +36,7 @@ $(document).ready(generate_download_pdf_view());
 function generate_download_pdf_view() {
     var all_li = $(".file_download_view");
     for (var i = 0; i < all_li.length; i++) {
-        var element_i = all_li[i]
+        var element_i = all_li[i];
         var url_i = $(element_i).attr("href");
         var file_id = get_file_name(url_i);
         //        if ($(this).parent().is("li")) {
@@ -61,7 +61,7 @@ $.fn.splitUp = function (splitBy, wrapper) {
     for (i = 0; i < fragment; i++)
         $all.slice(splitBy * i, splitBy * (i + 1)).wrapAll(wrapper);
     return $(this);
-}
+};
 
 //usage:
 //

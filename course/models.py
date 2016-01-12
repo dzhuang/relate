@@ -302,10 +302,12 @@ class Course(models.Model):
         return reverse("relate-course_page", args=(self.identifier,))
 
     def is_enrollment_expired(self, now_date):
-        if self.enroll_deadline >= now_date:
-            return False
-        else:
-            return True
+        if self.enroll_deadline:
+            if self.enroll_deadline >= now_date:
+                return False
+            else:
+                return True
+        return False
 
 # }}}
 
@@ -495,6 +497,18 @@ class InstantFlowRequest(models.Model):
     class Meta:
         verbose_name = _("Instant flow request")
         verbose_name_plural = _("Instant flow requests")
+
+    def __unicode__(self):
+        return _("Instant flow request for "
+                "%(flow_id)s in %(course)s at %(start_time)s") \
+                % {
+                        "flow_id": self.flow_id,
+                        "course": self.course,
+                        "start_time": self.start_time,
+                        }
+
+    if six.PY3:
+        __str__ = __unicode__
 
 
 # {{{ flow session
@@ -1525,4 +1539,86 @@ class ExamTicket(models.Model):
 
 # }}}
 
+# {{{ uploaded images
+
+from django.core.files.storage import FileSystemStorage
+from django.utils.deconstruct import deconstructible
+
+@deconstructible
+class UserImageStorage(FileSystemStorage):    
+    def __init__(self):
+        super(UserImageStorage, self).__init__(location=settings.SENDFILE_ROOT)
+
+sendfile_storage = UserImageStorage()
+
+def user_directory_path(instance, filename):
+    # file will be uploaded to MEDIA_ROOT/user_<id>/<filename
+    
+    print instance.creator
+    
+    print dir(instance)
+    
+    print "filename", filename
+    
+    return 'userimages/user_{0}/{1}'.format(instance.creator_id, filename)
+
+from relate.utils import format_datetime_local, as_local_time
+
+class Image(models.Model):
+    """The slug field is really not necessary, but makes the code simpler. 
+    ImageField depends on PIL or pillow (where Pillow is easily installable
+    in a virtualenv. If you have problems installing pillow, use a more 
+    generic FileField instead.
+    """
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
+        verbose_name=_('Creator'), on_delete=models.CASCADE)
+    file = models.ImageField(upload_to=user_directory_path, storage=sendfile_storage)
+    slug = models.SlugField(max_length=256, blank=True)
+    creation_time = models.DateTimeField(default=now)
+
+    def save(self, *args, **kwargs):
+        self.slug = self.file.name
+        super(Image, self).save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        """delete -- Remove to leave file."""
+        self.file.delete(False)
+        super(Image, self).delete(*args, **kwargs)
+        
+    def get_creation_time(self, format='medium'):
+        if format == 'short':
+            format = getattr(settings, 'RELATE_SHORT_DATE_TIME_FORMAT', 'short')
+
+        return format_datetime_local(as_local_time(self.creation_time), format=format)
+
+
+    @models.permalink
+    def get_absolute_url(self):
+        return ('download', [self.creator_id, self.pk], {})
+
+    class Meta:
+        ordering = ("id", 
+                   "creation_time"
+                   )
+
+    def __unicode__(self):
+        return _("%(url)s uploaded by %(creator)s") % {
+            'url': self.get_absolute_url(),
+            'creator': self.creator}
+
+    if six.PY3:
+        __str__ = __unicode__
+
+class SessionPageImage(Image):
+
+    flow_session  = models.ForeignKey(FlowSession, null=True, related_name="page_image_data",
+            verbose_name=_('Flow session'), on_delete=models.CASCADE)
+        
+    image_page_id = models.CharField(max_length=200, null=True,
+            verbose_name=_('Image Page ID'))
+
+    
+# }}}
+
+        
 # vim: foldmethod=marker

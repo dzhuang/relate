@@ -24,9 +24,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-
 import django.forms as forms
-from django.utils.translation import ugettext as _, ugettext_lazy, string_concat
+from django.utils.translation import ugettext as _, string_concat
 
 from course.page.base import (
         PageBaseWithTitle, PageBaseWithValue, PageBaseWithHumanTextFeedback,
@@ -36,38 +35,65 @@ from course.validation import ValidationError
 
 from relate.utils import StyledForm
 
+from crispy_forms.layout import Layout, HTML
 
-# {{{ upload question
+from course.models import SessionPageImage, FlowPageData
 
-class FileUploadForm(StyledForm):
-    uploaded_file = forms.FileField(required=True,
-            label=ugettext_lazy('Uploaded file'))
 
-    def __init__(self, maximum_megabytes, mime_types, *args, **kwargs):
-        super(FileUploadForm, self).__init__(*args, **kwargs)
+# {{{ image upload question
+
+class ImageUploadForm(StyledForm):
+    
+    def __init__(self, maximum_megabytes, mime_types, page_context, 
+                 page_behavior, page_data, *args, **kwargs):
+        super(ImageUploadForm, self).__init__(*args, **kwargs)
 
         self.max_file_size = maximum_megabytes * 1024**2
         self.mime_types = mime_types
+        self.page_behavior = page_behavior
+        self.page_context = page_context
+        
+        jfu_button_control = ""
+        
+        if not self.page_behavior.may_change_answer:
+            jfu_button_control = (
+                "{% block UPLOAD_FORM_BUTTON_BAR %}{% endblock %}"
+                "{% block JS_UPLOAD_TEMPLATE_CONTROLS %}{% endblock %}"
+                "{% block JS_DOWNLOAD_TEMPLATE_DELETE %}{% endblock %}")
+        
+        self.helper.form_id = "fileupload"
 
-    def clean_uploaded_file(self):
-        uploaded_file = self.cleaned_data['uploaded_file']
-        from django.template.defaultfilters import filesizeformat
+        from django.core.urlresolvers import reverse
+        self.helper.form_action = reverse(
+                "jfu_upload",
+                kwargs={'flow_session_id': page_context.flow_session.id, 
+                    'ordinal': page_context.ordinal}
+                )
+        self.helper.form_method = "POST"
+        
+        self.helper.layout = Layout(
+                HTML(
+                    "{% extends 'course/image_upload/jfu_form.html' %}" 
+                    + jfu_button_control
+                    ),
+                )
 
-        if uploaded_file._size > self.max_file_size:
-            raise forms.ValidationError(
-                    _("Please keep file size under %(allowedsize)s. "
-                    "Current filesize is %(uploadedsize)s.")
-                    % {'allowedsize': filesizeformat(self.max_file_size),
-                        'uploadedsize': filesizeformat(uploaded_file._size)})
+    def clean(self):
+        flow_session_id = self.page_context.flow_session.id
+        ordinal = self.page_context.ordinal
+        user = self.page_context.flow_session.user
+        fpd=FlowPageData.objects.get(
+            flow_session=flow_session_id, ordinal=ordinal)
 
-        if self.mime_types is not None and self.mime_types == ["application/pdf"]:
-            if uploaded_file.read()[:4] != b"%PDF":
-                raise forms.ValidationError(_("Uploaded file is not a PDF."))
+        qs = SessionPageImage.objects.filter(
+                creator=user
+                ).filter(flow_session=flow_session_id
+                ).filter(image_page_id=fpd.page_id)
+        
+        if len(qs) == 0:
+            raise forms.ValidationError(_("You have not upload image(s)!"))
 
-        return uploaded_file
-
-
-class FileUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
+class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         PageBaseWithHumanTextFeedback, PageBaseWithCorrectAnswer):
     """
     A page allowing the submission of a file upload that will be
@@ -134,12 +160,13 @@ class FileUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
     """
 
     ALLOWED_MIME_TYPES = [
+            "image/jpeg",
+            "image/png",
             "application/pdf",
-            "application/octet-stream",
             ]
 
     def __init__(self, vctx, location, page_desc):
-        super(FileUploadQuestion, self).__init__(vctx, location, page_desc)
+        super(ImageUploadQuestion, self).__init__(vctx, location, page_desc)
 
         if not (set(page_desc.mime_types) <= set(self.ALLOWED_MIME_TYPES)):
             raise ValidationError(
@@ -159,15 +186,15 @@ class FileUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                         "assigned point value"))
 
     def required_attrs(self):
-        return super(FileUploadQuestion, self).required_attrs() + (
+        return super(ImageUploadQuestion, self).required_attrs() + (
                 ("prompt", "markup"),
-                ("mime_types", list),
                 ("maximum_megabytes", (int, float)),
                 )
 
     def allowed_attrs(self):
-        return super(FileUploadQuestion, self).allowed_attrs() + (
+        return super(ImageUploadQuestion, self).allowed_attrs() + (
                 ("correct_answer", "markup"),
+                ("mime_types", list),
                 )
 
     def human_feedback_point_value(self, page_context, page_data):
@@ -179,53 +206,59 @@ class FileUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
     def body(self, page_context, page_data):
         return markup_to_html(page_context, self.page_desc.prompt)
 
-    def files_data_to_answer_data(self, files_data):
-        print files_data
-        files_data["uploaded_file"].seek(0)
-        buf = files_data["uploaded_file"].read()
-
-        if len(self.page_desc.mime_types) == 1:
-            mime_type, = self.page_desc.mime_types
-        else:
-            mime_type = files_data["uploaded_file"].content_type
-        from base64 import b64encode
-        return {
-                "base64_data": b64encode(buf).decode(),
-                "mime_type": mime_type,
-                }
-
     def make_form(self, page_context, page_data,
             answer_data, page_behavior):
-        form = FileUploadForm(
-                self.page_desc.maximum_megabytes, self.page_desc.mime_types)
+
+        form = ImageUploadForm(
+                self.page_desc.maximum_megabytes, self.page_desc.mime_types,
+                page_context, page_behavior, page_data)
+
         return form
+
 
     def process_form_post(self, page_context, page_data, post_data, files_data,
             page_behavior):
-        form = FileUploadForm(
+        
+        form = ImageUploadForm(
                 self.page_desc.maximum_megabytes, self.page_desc.mime_types,
+                page_context, page_behavior, page_data,
                 post_data, files_data)
+        
         return form
 
     def form_to_html(self, request, page_context, form, answer_data):
         ctx = {"form": form}
-        if answer_data is not None:
-            ctx["mime_type"] = answer_data["mime_type"]
-            ctx["data_url"] = "data:%s;base64,%s" % (
-                answer_data["mime_type"],
-                answer_data["base64_data"],
-                )
-            
-        #print page_context
+        
+        ctx["JQ_OPEN"] = '{%'
+        ctx['JQ_CLOSE'] = '%}'
+        ctx["accepted_mime_types"] = ['image/*']
+        ctx["flow_session_id"] = page_context.flow_session.id
+        ctx["ordinal"] = page_context.ordinal
+        ctx["SHOW_CREATION_TIME"] = True
 
         from django.template import RequestContext
         from django.template.loader import render_to_string
         return render_to_string(
-                "course/file-upload-form.html",
+                "course/image_upload/image-upload-template.html",
                 RequestContext(request, ctx))
 
     def answer_data(self, page_context, page_data, form, files_data):
-        return self.files_data_to_answer_data(files_data)
+        flow_session_id = page_context.flow_session.id
+        ordinal = page_context.ordinal
+        user = page_context.flow_session.user
+        fpd=FlowPageData.objects.get(
+            flow_session=flow_session_id, ordinal=ordinal)
+
+        qs = SessionPageImage.objects.filter(
+                creator=user
+                ).filter(flow_session=flow_session_id
+                ).filter(image_page_id=fpd.page_id)
+        
+        if len(qs) > 0:
+            import json
+            return json.dumps(repr(qs))
+        else:
+            return None
 
 # }}}
 

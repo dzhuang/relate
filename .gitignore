@@ -12,3 +12,5 @@ components
 build
 
 *.pyz
+
+*.pem

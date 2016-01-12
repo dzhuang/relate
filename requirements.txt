@@ -1,4 +1,4 @@
-django>=1.8,<1.9
+django>=1.8,<2.0
 
 # Automatically renders Django forms in a pretty, Bootstrap-compatible way.
 django-crispy-forms>=1.5.1
@@ -27,7 +27,7 @@ pytz
 pyyaml
 
 # dulwich (git for Py3 support)
-git+https://github.com/jelmer/dulwich
+dulwich>=0.12
 ecdsa
 paramiko
 
@@ -73,4 +73,12 @@ django-celery
 django_select2==5.0.3
 
 # For django-ckeditor
-django-ckeditor
+# django-ckeditor
+
+# For django jquery file upload
+git+https://github.com/dzhuang/django-jfu.git
+
+# For serving permissions associated files
+django-sendfile
+
+ 

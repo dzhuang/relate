@@ -34,20 +34,13 @@
           </tr>
           {% for flow_session, session_properties in past_sessions_and_properties %}
             <tr>
-              <td>{% if flow_session.start_time.year == now.year %}
-                    {{ flow_session.start_time|date:"SHORT_DATETIME_FORMAT" }}
-                  {% else %}
-                    {{ flow_session.start_time }}
-                  {% endif %}
+              <td>
+                  <span title="{{ flow_session.start_time }}">{{ flow_session.start_time|date:"SHORT_DATETIME_FORMAT" }}</span>
               </td>
               <td>
                 {% include "course/flow-session-state.html" %}
                 {% if not flow_session.in_progress %}
-                  {% if flow_session.completion_time.year == now.year %}
-                    ({{ flow_session.completion_time|date:"SHORT_DATETIME_FORMAT" }})
-                  {% else %}
-                    ({{ flow_session.completion_time }})
-                  {% endif %}
+                    (<span title="{{ flow_session.completion_time }}">{{ flow_session.completion_time|date:"SHORT_DATETIME_FORMAT" }}</span>)
                 {% endif %}
               </td>
               <td>
@@ -59,11 +52,7 @@
               </td>
               <td>
                 {% if session_properties.due %}
-                  {% if session_properties.due.year == now.year %}
-                    {{ session_properties.due|date:"SHORT_DATETIME_FORMAT" }}
-                  {% else %}
-                    {{ session_properties.due }}
-                  {% endif %}
+                  <span title="{{ session_properties.due }}">{{ session_properties.due|date:"SHORT_DATETIME_FORMAT" }}</span>
                 {% endif %}
               </td>
               <td>

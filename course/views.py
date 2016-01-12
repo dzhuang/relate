@@ -1190,5 +1190,111 @@ def monitor_task(request, task_id):
 
 # }}}
 
+# {{{ jfu image upload
+
+from course.models import Image, SessionPageImage
+from django.views.generic import CreateView, DeleteView, ListView
+from course.serialize import serialize
+import json
+from course.models import FlowPageData
+
+
+class ImageCreateView(CreateView):
+    model = SessionPageImage
+    fields = ("file", "slug")
+
+    #@transaction.atomic
+    def form_valid(self, form):
+        self.object = form.save(commit=False)
+        self.object.creator = self.request.user
+        self.object.save()
+        created_pk = self.object.id
+        
+        flow_session_id=self.kwargs["flow_session_id"]
+        ordinal=self.kwargs["ordinal"]
+        
+        fpd=FlowPageData.objects.get(
+            flow_session=flow_session_id, ordinal=ordinal)
+        page_id=fpd.page_id
+        self.object.flow_session_id=flow_session_id
+        self.object.image_page_id=fpd.page_id
+        self.object.save()
+        
+        files = [serialize(self.object, 'file', flow_session_id, ordinal)]
+        data = {'files': files}
+        response = http.JsonResponse(data)
+        response['Content-Disposition'] = 'inline; filename=files.json'
+        return response
+
+    def form_invalid(self, form):
+        data = json.dumps(form.errors)
+        return http.HttpResponse(content=data, status=400, content_type='application/json')
+
+class ImageDeleteView(DeleteView):
+    model = SessionPageImage
+
+    def delete(self, request, *args, **kwargs):
+        
+        self.object = self.get_object()
+        self.object.delete()
+
+        response = http.JsonResponse(True, safe=False)
+        response['Content-Disposition'] = 'inline; filename=files.json'
+        return response
+
+
+class ImageListView(ListView):
+    model = SessionPageImage
+    
+    def get_queryset(self):
+        
+        flow_session_id=self.kwargs["flow_session_id"]
+        ordinal=self.kwargs["ordinal"]
+        
+        fpd=FlowPageData.objects.get(
+            flow_session=flow_session_id, ordinal=ordinal)
+
+        return SessionPageImage.objects.filter(
+                creator=self.request.user
+                ).filter(flow_session=flow_session_id
+                ).filter(image_page_id=fpd.page_id)
+
+    def render_to_response(self, context, **response_kwargs):
+        
+        flow_session_id=self.kwargs["flow_session_id"]
+        ordinal=self.kwargs["ordinal"]
+        
+        files = [
+                serialize(p, 'file', flow_session_id, ordinal)
+                for p in self.get_queryset()]
+        data = {'files': files}
+        response = http.JsonResponse(data)
+        response['Content-Disposition'] = 'inline; filename=files.json'
+        return response
+    
+
+def image_page_submit(request, course_identifier, flow_session_id, ordinal):
+    return render_to_response("abcd")
+
+
+# }}}
+
+
+# {{{ 
+from sendfile import sendfile
+
+def download(request, creator_id, download_id):
+    download = get_object_or_404(Image, pk=download_id)
+    return _auth_download(request, download)
+
+
+@login_required
+def _auth_download(request, download):
+    if not (request.user==download.creator or request.user.is_staff):
+        raise PermissionDenied(_("may not view other people's resource"))
+    return sendfile(request, download.file.path)
+
+
+# }}}
 
 # vim: foldmethod=marker

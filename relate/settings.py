@@ -15,9 +15,12 @@ import os
 from os.path import join
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
-local_settings = {}
+_local_settings_file = join(BASE_DIR, "local_settings.py")
+local_settings = {
+        "__file__": _local_settings_file,
+        }
 try:
-    with open(join(BASE_DIR, "local_settings.py")) as inf:
+    with open(_local_settings_file) as inf:
         local_settings_contents = inf.read()
 except IOError:
     pass
@@ -40,11 +43,13 @@ INSTALLED_APPS = (
     "bootstrap3_datetime",
     "djangobower",
     "django_select2",
+    #'debug_toolbar',
 
     # message queue
     "djcelery",
     "kombu.transport.django",
     "ckeditor",
+    "jfu",
     #"ckeditor_uploader",
 )
 
@@ -103,9 +108,6 @@ BOWER_INSTALLED_APPS = (
     "datatables-fixedcolumns",
     "jstree",
     "select2-bootstrap-css",
-    "django-ckeditor",
-    "pdf.js=https://github.com/mozilla/pdf.js/releases/download/v1.1.215/pdfjs-1.1.215-dist.zip",
-    "jquery-file-upload",
     )
 
 CODEMIRROR_PATH = "codemirror"
@@ -216,6 +218,7 @@ TEMPLATES = [
                 "django.template.context_processors.static",
                 "django.template.context_processors.tz",
                 "django.contrib.messages.context_processors.messages",
+                "django.core.context_processors.request",
                 ) + RELATE_EXTRA_CONTEXT_PROCESSORS,
             }
     },
@@ -224,6 +227,3 @@ TEMPLATES = [
 LOCALE_PATHS = (
     BASE_DIR + '/locale',
 )
-
-#MEDIA_ROOT = os.path.join(BASE_DIR, "media")
-#CKEDITOR_UPLOAD_PATH = os.path.join(MEDIA_ROOT, "content", "ck_upload")

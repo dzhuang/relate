@@ -1,0 +1,52 @@
+{% extends 'jfu/upload_form.html' %}
+
+{% block CSS_BOOTSTRAP %}{% comment %} BOOTSTRAP css (Override to keep it empty) {% endcomment %} {% endblock %}
+
+{% block JS_JQUERY %} {% comment %} jQuery (Override to keep it empty) {% endcomment %} {% endblock %}
+
+{% block CSS_EXTRA %}
+<link rel="stylesheet" href="{{ STATIC_URL }}css/jquery_file_upload_extra.css">
+{% endblock %}
+
+{% block JS_BOOTSTRAP %} {% comment %} BOOTSTRAP js (Override to keep it empty) {% endcomment %} {% endblock %}
+
+
+{% block UPLOAD_FORM %}
+{% load i18n crispy_forms_tags %}
+{% crispy form %}
+{% endblock %}
+
+{% block JS_OPTS %}
+imageMaxWidth: 900,
+imageMaxHeight: 900,
+loadImageFileTypes: /^image\/(gif|jpeg|png|svg\+xml)$/,
+sequentialUploads: true,
+disableImageResize: /Android(?!.*Chrome)|Opera/
+    .test(window.navigator && navigator.userAgent),
+
+imageCrop: false, // Force cropped images
+acceptFileTypes: /(\.|\/)(png|gif|jpe?g)$/i,
+messages: {
+                acceptFileTypes: '不允许的文件类型'
+            },
+imageOrientation: true
+{% endblock %}
+
+
+{% block JS_EXTRA %}
+  <script type="text/javascript">
+    $(document).ready(function() {//"save", "save_and_next", "save_and_finish", "submit"
+        $("input[name='save']")
+            .attr("formaction", window.location.pathname);
+        $("input[name='submit']")
+            .attr("formaction", window.location.pathname);
+        $("input[name='save_and_next']")
+            .attr("formaction", window.location.pathname);
+        $("input[name='save_and_finish']")
+            .attr("formaction", window.location.pathname);
+    });
+  </script>
+{% endblock %}
+
+{% block JS_UPLOAD_TEMPLATE %}{% endblock %}
+{% block JS_DOWNLOAD_TEMPLATE %}{% endblock %}
