@@ -79,11 +79,11 @@ def change_foreign_keys(apps, schema_editor, from_app, from_model_name, to_app, 
             new_field.column = fk_field.column
 
         show = lambda m: "{0}.{1}".format(m._meta.app_label, m.__name__)
-#        print("Fixing FK in {0}, col {1} -> {2}, from {3} -> {4}".format(
-#            show(fk_field.model),
-#            old_field.column, new_field.column,
-#            show(old_field.remote_field.to), show(new_field.remote_field.to),
-#        ))
+        print("Fixing FK in {0}, col {1} -> {2}, from {3} -> {4}".format(
+            show(fk_field.model),
+            old_field.column, new_field.column,
+            show(old_field.remote_field.to), show(new_field.remote_field.to),
+        ))
 
         schema_editor.alter_field(fk_field.model, old_field, new_field, strict=True)
 
@@ -95,7 +95,7 @@ class Migration(migrations.Migration):
         ('accounts', '0002_user_populate_migration'),
         ('admin', '0001_initial'),
         ('auth', '0006_require_contenttypes_0002'),
-        ('course', '0080_auto_20160112_1254'),
+        ('course', '0075_course_metadata'),
     ]
 
     operations = [
