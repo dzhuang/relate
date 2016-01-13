@@ -1817,12 +1817,12 @@ msgstr "SSH私有密钥"
 
 #: .\course\models.py:226
 msgid ""
-"Subdirectory <b>within</b> the git repository to use as course root "
+"Subdirectory <em>within</em> the git repository to use as course root "
 "directory. Not required, and usually blank. Use only if your course content "
 "lives in a subdirectory of your git repository. Should not include trailing "
 "slash."
 msgstr ""
-"一个<b>在git仓库目录下</b>的子目录. 一般情况下不要求填写, 除非你的课程内容放"
+"一个<em>在git仓库目录下</em>的子目录. 一般情况下不要求填写, 除非你的课程内容放"
 "git仓库的某个子目录下. 填写时不要包含斜杠."
 
 #: .\course\models.py:231
@@ -3994,7 +3994,7 @@ msgstr "输入新的反馈项目:"
 
 #: .\course\templates\course\grade-flow-page.html:285
 msgid "Add phrase"
-msgstr "添加阶段"
+msgstr "添加常用评语"
 
 #: .\course\templates\course\grade-flow-page.html:287
 #: .\course\templates\course\grade-flow-page.html:312

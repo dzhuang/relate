@@ -223,7 +223,7 @@ class Course(models.Model):
             verbose_name=_('SSH private key'))
     course_root_path = models.CharField(max_length=200, blank=True,
             help_text=_(
-                'Subdirectory <b>within</b> the git repository to use as '
+                'Subdirectory <em>within</em> the git repository to use as '
                 'course root directory. Not required, and usually blank. '
                 'Use only if your course content lives in a subdirectory '
                 'of your git repository. '
