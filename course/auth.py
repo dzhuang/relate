@@ -665,10 +665,14 @@ def sign_in_stage2_with_token(request, user_id, sign_in_key):
 from crispy_forms.layout import Layout, Div
 
 class UserForm(StyledModelForm):
-    confirm_institutional_id = forms.CharField(max_length=100,
-        label=_("Institutional ID Confirmation"),
-        required=False
-    )
+    confirm_institutional_id = forms.CharField(
+            max_length=100,
+            label=_("Institutional ID Confirmation"),
+            required=False)
+    no_institutional_id = forms.BooleanField(
+            label=_("I have no Institutional ID"),
+            required=False,
+            initial=False)
     
     class Meta:
         model = get_user_model()
@@ -677,43 +681,55 @@ class UserForm(StyledModelForm):
     def __init__(self, *args, **kwargs):
         super(UserForm, self).__init__(*args, **kwargs)
         
+        self.helper.form_id = "profile"
         self.helper.layout = Layout(
             "last_name",
             "first_name",
             "institutional_id",
-            "confirm_institutional_id",
+            #"no_institutional_id",
+            #"confirm_institutional_id",
             "editor_mode"
         )
         
+        self.fields["institutional_id"].help_text=_(
+            "The ID your university or school provided, which is used by some course "
+            "to grant enrollment. If you are not a student or you forget your "
+            "institutional id, you can check the following checkbox.")
 
-        if self.instance.institutional_id:
-            #self.helper.layout.pop(3)
-            #self.fields["institutional_id"].widget.attrs['disabled'] \
-                                #= "disabled"
-            pass
+        if not self.instance.institutional_id:
+            self.helper.layout.insert(3, "confirm_institutional_id")
+            self.helper.layout.insert(3, "no_institutional_id")
+        else:
+            self.fields["institutional_id"].required=True
+            #self.fields["confirm_institutional_id"].required=True
 
         self.helper.add_input(
                 Submit("submit_user", _("Update")))
 
-    def clean_institutional_id(self):
+    def clean(self):
         cleaned_data = super(UserForm, self).clean()
-        print cleaned_data.get("institutional_id")
-        #print inputed
+        inputed =  cleaned_data.get("institutional_id")
+        no_id = cleaned_data.get("no_institutional_id")
         
-#        if not inputed:
-#            raise forms.ValidationError(_("This is a requried field."))
+        if self.instance.institutional_id:
+            if no_id:
+                raise forms.ValidationError(_("You have set your institutional_id."))
+        if inputed and no_id:
+            raise forms.ValidationError(_("You have conflict in your input."))
+        
         return cleaned_data
     
-#    def clean_confirm_institutional_id(self):
-#        cleaned_data = super(UserForm, self).clean()
-#        if not self.instance.institutional_id:
-#            inputed = cleaned_data.get("institutional_id")
-#            confirmed = cleaned_data.get("confirm_institutional_id")
+    def clean_confirm_institutional_id(self):
+        cleaned_data = super(UserForm, self).clean()
+        confirmed = cleaned_data.get("confirm_institutional_id")
+
+        if not self.instance.institutional_id:
+            inputed = cleaned_data.get("institutional_id")
 #            if not confirmed:
-#                raise forms.ValidationError(_("This is a requried field."))
-#            if inputed == confirmed:
-#                raise forms.ValidationError(_("Input not match."))
-#        return cleaned_data
+#                raise forms.ValidationError(_("This field is required."))
+            if not inputed == confirmed:
+                raise forms.ValidationError(_("Input not match."))
+        return confirmed
 
 
 def user_profile(request):
