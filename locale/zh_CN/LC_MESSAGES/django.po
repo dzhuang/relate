@@ -1163,7 +1163,7 @@ msgid ""
 "to other parts of RELATE is not currently allowed. To abandon this exam, log "
 "out."
 msgstr ""
-"你的RELATE session目前被锁定到这个测验flow. 目前不允许浏览本网站的其它内容. "
+"你的session目前被锁定到这个测验flow. 目前不允许浏览本网站的其它内容. "
 "要舍弃这个测验，请登出."
 
 #: .\course\flow.py:87
@@ -1703,20 +1703,15 @@ msgid "Send instant message"
 msgstr "发送即时信息"
 
 #: .\course\models.py:153
-#, fuzzy
-#| msgid ""
-#| "A course identifier. Alphanumeric with dashes, no spaces. This is visible "
-#| "in URLs and determines the location on your file system where the "
-#| "course's git repository lives."
 msgid ""
 "A course identifier. Alphanumeric with dashes, no spaces. This is visible in "
 "URLs and determines the location on your file system where the course's git "
-"repository lives. This should *not* be changed after the course has been "
+"repository lives. This should <em>not</em> be changed after the course has been "
 "created without also moving the course's git on the server."
 msgstr ""
 "课程的ID, 只允许字母、数字、减号, 不能有空格. 它将显示在您的链接中, 并确定该"
 "课程的git仓库放在您的系统中的哪个文件夹下. 课程一经创建，除非把该课程在服务器"
-"上的git做相应的更改, 否则*不允许*修改这个值."
+"上的git做相应的更改, 否则<em>不允许</em>修改这个值."
 
 #: .\course\models.py:158
 msgid "Course identifier"
@@ -4403,7 +4398,7 @@ msgid ""
 "or password, <a href='%(relate-sign_in_choice)s'>please choose a different "
 "method to sign in</a>."
 msgstr ""
-"如果你不能或者不喜欢使用RELATE用户名密码方式登入，请<a href=\"%(relate-"
+"如果你不能或者不喜欢使用LearningWhat用户名密码方式登入，请<a href=\"%(relate-"
 "sign_in_choice)s\">使用别的方式登录</a>."
 
 #: .\course\templates\course\login.html:21
@@ -5353,7 +5348,7 @@ msgstr ""
 
 #: .\relate\templates\sign-in-choice.html:5
 msgid "Sign in to RELATE"
-msgstr "登录RELATE"
+msgstr "登录LearningWhat"
 
 #: .\relate\templates\sign-in-choice.html:14
 msgid "Sign in using your institution's login"
@@ -5373,7 +5368,7 @@ msgstr "使用测验ticket登录"
 
 #: .\relate\templates\sign-in-choice.html:49
 msgid "Sign in with a RELATE-specific user name and password"
-msgstr "使用RELATE用户名密码登录"
+msgstr "使用LearningWhat用户名密码登录"
 
 #: .\relate\templates\user-profile-form.html:7
 msgid "User Profile"
