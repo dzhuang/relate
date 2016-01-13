@@ -6,6 +6,8 @@
     <th class="datacol">{% trans "Last Name" %}</th>
     <th class="datacol">{% trans "First Name" %}</th>
     <th class="datacol">{% trans "Role" %}</th>
+    <th class="datacol">{% trans "Institutional ID" %}</th>
+    <th class="datacol">{% trans "Email" %}</th>
     <th class="datacol">{% trans "Tags" %}</th>
   </thead>
   <tbody>
@@ -15,6 +17,8 @@
       <td class="datacol"><span class="sensitive">{{ participation.user.last_name }}</span></td>
       <td class="datacol"><span class="sensitive">{{ participation.user.first_name }}</span></td>
       <td class="datacol">{{ participation.get_role_desc }}</td>
+      <td class="datacol"><span class="sensitive">{{ participation.user.institutional_id }}</span></td>
+      <td class="datacol"><span class="sensitive">{{ participation.user.email }}</span></td>
       <td class="datacol">
         {% for ptag in participation.tags.all %}
           <span class="label label-default">{{ ptag.name }}</span>
@@ -30,5 +34,6 @@
       "scrollCollapse": true,
       "paging": false,
       "ordering": true,
+      language:{url: '//cdn.datatables.net/plug-ins/1.10.8/i18n/Chinese.json'}
   } );
 </script>

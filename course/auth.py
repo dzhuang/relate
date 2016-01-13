@@ -662,16 +662,58 @@ def sign_in_stage2_with_token(request, user_id, sign_in_key):
 
 # {{{ user profile
 
+from crispy_forms.layout import Layout, Div
+
 class UserForm(StyledModelForm):
+    confirm_institutional_id = forms.CharField(max_length=100,
+        label=_("Institutional ID Confirmation"),
+        required=False
+    )
+    
     class Meta:
         model = get_user_model()
-        fields = ("first_name", "last_name", "editor_mode")
+        fields = ("last_name", "first_name", "institutional_id", "editor_mode")
 
     def __init__(self, *args, **kwargs):
         super(UserForm, self).__init__(*args, **kwargs)
+        
+        self.helper.layout = Layout(
+            "last_name",
+            "first_name",
+            "institutional_id",
+            "confirm_institutional_id",
+            "editor_mode"
+        )
+        
+
+        if self.instance.institutional_id:
+            #self.helper.layout.pop(3)
+            #self.fields["institutional_id"].widget.attrs['disabled'] \
+                                #= "disabled"
+            pass
 
         self.helper.add_input(
                 Submit("submit_user", _("Update")))
+
+    def clean_institutional_id(self):
+        cleaned_data = super(UserForm, self).clean()
+        print cleaned_data.get("institutional_id")
+        #print inputed
+        
+#        if not inputed:
+#            raise forms.ValidationError(_("This is a requried field."))
+        return cleaned_data
+    
+#    def clean_confirm_institutional_id(self):
+#        cleaned_data = super(UserForm, self).clean()
+#        if not self.instance.institutional_id:
+#            inputed = cleaned_data.get("institutional_id")
+#            confirmed = cleaned_data.get("confirm_institutional_id")
+#            if not confirmed:
+#                raise forms.ValidationError(_("This is a requried field."))
+#            if inputed == confirmed:
+#                raise forms.ValidationError(_("Input not match."))
+#        return cleaned_data
 
 
 def user_profile(request):

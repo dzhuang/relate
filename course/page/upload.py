@@ -180,7 +180,6 @@ class FileUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         return markup_to_html(page_context, self.page_desc.prompt)
 
     def files_data_to_answer_data(self, files_data):
-        print files_data
         files_data["uploaded_file"].seek(0)
         buf = files_data["uploaded_file"].read()
 
@@ -215,8 +214,6 @@ class FileUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                 answer_data["mime_type"],
                 answer_data["base64_data"],
                 )
-            
-        #print page_context
 
         from django.template import RequestContext
         from django.template.loader import render_to_string
