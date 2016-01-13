@@ -153,7 +153,7 @@ class Course(models.Model):
             help_text=_("A course identifier. Alphanumeric with dashes, "
             "no spaces. This is visible in URLs and determines the location "
             "on your file system where the course's git repository lives. "
-            "This should *not* be changed after the course has been created "
+            "This should <em>not</em> be changed after the course has been created "
             "without also moving the course's git on the server."),
             verbose_name=_('Course identifier'),
             db_index=True,
