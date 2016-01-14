@@ -664,6 +664,7 @@ def sign_in_stage2_with_token(request, user_id, sign_in_key):
 
 from crispy_forms.layout import Layout, Div, HTML
 
+
 class UserForm(StyledModelForm):
     confirm_institutional_id = forms.CharField(
             max_length=100,
@@ -686,6 +687,7 @@ class UserForm(StyledModelForm):
         self.helper.form_id = "profile-form"
         self.helper.form_action = reverse("relate-profile_form_submit")
         
+        from crispy_forms.bootstrap import InlineField
         self.helper.layout = Layout(
             Div("last_name",
             "first_name", css_class="well"),
@@ -700,37 +702,57 @@ class UserForm(StyledModelForm):
         if not self.instance.institutional_id:
             self.helper.layout[1].insert(1, "confirm_institutional_id")
             self.helper.layout[1].insert(0, "no_institutional_id")
-        else:
-            self.fields["institutional_id"].required=True
+#        else:
+#            self.fields["institutional_id"].required=False
             #self.fields["confirm_institutional_id"].required=True
 
         self.helper.add_input(
-                Submit("submit_user", _("Update")))
+            Submit("submit_user", _("Update")))
 
-    def clean(self):
-        cleaned_data = super(UserForm, self).clean()
-        inputed =  cleaned_data.get("institutional_id")
-        no_id = cleaned_data.get("no_institutional_id")
-        
-        if self.instance.institutional_id:
-            if no_id:
-                raise forms.ValidationError(_("You have set your institutional_id."))
-        if inputed and no_id:
-            raise forms.ValidationError(_("You have conflict in your input."))
-        
-        return cleaned_data
+#    def clean(self):
+#        cleaned_data = super(UserForm, self).clean()
+#        inputed =  cleaned_data.get("institutional_id")
+#        print "inputed", inputed
+#        no_id = cleaned_data.get("no_institutional_id")
+#
+#        if self.instance.institutional_id:
+#            if no_id:
+#                raise forms.ValidationError(_("You have set your institutional_id."))
+#        if inputed and no_id:
+#            raise forms.ValidationError(_("You have conflict in your input."))
+#            
+#        print "cleaned_data",cleaned_data
+
+        #return cleaned_data
     
+    def clean_institutional_id(self):
+        # http://stackoverflow.com/a/325038/3437454
+        if self.instance.institutional_id:
+            return self.instance.institutional_id
+        else:
+            return self.cleaned_data['institutional_id']
+
     def clean_confirm_institutional_id(self):
-        cleaned_data = super(UserForm, self).clean()
-        confirmed = cleaned_data.get("confirm_institutional_id")
+        confirmed = self.cleaned_data.get("confirm_institutional_id")
 
         if not self.instance.institutional_id:
-            inputed = cleaned_data.get("institutional_id")
-#            if not confirmed:
-#                raise forms.ValidationError(_("This field is required."))
+            inputed = self.cleaned_data.get("institutional_id")
+            if inputed and not confirmed:
+                raise forms.ValidationError(_("This field is required."))
             if not inputed == confirmed:
                 raise forms.ValidationError(_("Input not match."))
         return confirmed
+
+    def clean_no_institutional_id(self):
+        no_id = self.cleaned_data.get("no_institutional_id")
+        if no_id:
+            if self.instance.institutional_id:
+                raise forms.ValidationError(_("You have set your institutional id."))
+            else:
+                inputed = self.cleaned_data['institutional_id']
+                if inputed:
+                    raise forms.ValidationError(_("You have conflict in your input."))
+        return no_id
 
 
 def user_profile(request):
@@ -779,9 +801,15 @@ def user_profile_ajax(request):
         )
 
     context = RequestContext(request)
-    context.update({"form": user_form})
+    #context.update({"form": user_form})
     from django.template.loader import render_to_string
-    form_html = render_to_string("course/crispy-form.html", context_instance=context)
+    from crispy_forms.utils import render_crispy_form
+    from django.core.context_processors import csrf
+    
+    ctx = {}
+    ctx.update(csrf(request)) 
+    #form_html = render_to_string("course/crispy-form.html", context_instance=context)
+    form_html = render_crispy_form(user_form, context=ctx)
     response = JsonResponse({'success': False, 'form_html': form_html})
     response['content_type']="application/json"
 

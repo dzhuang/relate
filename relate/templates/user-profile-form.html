@@ -14,17 +14,18 @@
 
 
 <script type="text/javascript">
-    
+
     // toggle widget
     var url=window.location.href;
     var sub="?first_login=1";    
     if (url.indexOf(sub)==-1){
-        //if ($("#id_institutional_id").val().length==0)
-        {
-            disable_widget_noid();
-        };
+        disable_widget_noid();
     }
-    else{console.log("in")};
+    else{
+        if ($("#id_institutional_id").val().length > 0)
+        {$('#id_institutional_id').prop('disabled', true);}
+        //console.log("in")
+    };
     
     function disable_widget_noid(){
             $('#div_id_confirm_institutional_id').hide();
@@ -38,10 +39,12 @@
     }
 
 
-    $('#id_no_institutional_id').click(function() {
+    $(document).on('click', '#id_no_institutional_id', function(event) {
         // $this will contain a reference to the checkbox
         if (this.checked) {
             disable_widget_noid();
+            $('#id_institutional_id').val("");
+            $('#id_confirm_institutional_id').val("")
         } else {
             enable_widget_noid();
         }
@@ -52,11 +55,9 @@
     
     var profile_form = '#profile-form';
     
-    $(profile_form).on('submit', function(event){
+    $(document).on('submit', profile_form, function(event){
         event.preventDefault();
         sumbit_ajax();
-        
-        
     });
 
     function sumbit_ajax() {
@@ -66,18 +67,18 @@
             type : "POST", // http method
             data : $(profile_form).serialize(), // data sent with the post request
             success: function(data) {
-                console.log(data);
-                console.log(data['success']);
                 if (!(data['success'])) {
                     $(profile_form).replaceWith(data['form_html']);
                 }
                 else {
-                    console.log("successfully");
                     $('#div_id_confirm_institutional_id').hide();                    
-                    $("#id_no_institutional_id").prop('checked', false);
-                    $('#div_id_no_institutional_id').hide();
                     $('#id_institutional_id').prop('disabled', true);
-                }
+                    if ($("#id_institutional_id").val().length > 0){
+                        $('#div_id_no_institutional_id').hide();}
+                    else{
+                        $("#id_no_institutional_id").prop('checked', true);
+                    };
+                };
             },
 //            error: function (data) {
 //                $(profile_form).replaceWith(data['form_html']);
