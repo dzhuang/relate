@@ -76,6 +76,9 @@ urlpatterns = [
     url(r"^profile/$",
         course.auth.user_profile,
         name="relate-user_profile"),
+    url(r"^profile-form-submit/$",
+        course.auth.user_profile_ajax,
+        name="relate-profile_form_submit"),
 
     url(r"^generate-ssh-key/$",
         course.views.generate_ssh_keypair,
@@ -438,16 +441,6 @@ urlpatterns = [
 
     url(r'^admin/', include(admin.site.urls)),
 ]
-
-
-#    url(r"^course"
-#        "/" + COURSE_ID_REGEX +
-#        "/flow-session"
-#        "/(?P<flow_session_id>[0-9]+)"
-#        "/(?P<ordinal>[0-9]+)"
-#        "/$",
-#        course.flow.view_flow_page,
-#        name="relate-view_flow_page"),
 
 urlpatterns += [
     url(r"^user"

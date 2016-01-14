@@ -89,4 +89,5 @@ git+https://github.com/dzhuang/django-jfu.git
 # For serving permissions associated files
 django-sendfile
 
- 
+# django-jsonview decorator
+django-jsonview

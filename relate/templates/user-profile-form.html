@@ -9,11 +9,85 @@
     {% crispy user_form %}
   </div>
   <div class="well">
-    <a href="{% url "relate-logout" %}" class="btn btn-default col-lg-offset-2">{% trans "Sign out" %}</a>
+    <a href="{% url 'relate-logout' %}" class="btn btn-default col-lg-offset-2">{% trans "Sign out" %}</a>
   </div>
 
 
 <script type="text/javascript">
+    
+    // toggle widget
+    var url=window.location.href;
+    var sub="?first_login=1";    
+    if (url.indexOf(sub)==-1){
+        //if ($("#id_institutional_id").val().length==0)
+        {
+            disable_widget_noid();
+        };
+    }
+    else{console.log("in")};
+    
+    function disable_widget_noid(){
+            $('#div_id_confirm_institutional_id').hide();
+            $('#id_institutional_id').prop('disabled', true);
+            $("#id_no_institutional_id").prop('checked', true);
+    }
+        
+    function enable_widget_noid(){
+            $('#div_id_confirm_institutional_id').show();
+            $('#id_institutional_id').prop('disabled', false);            
+    }
+
+
+    $('#id_no_institutional_id').click(function() {
+        // $this will contain a reference to the checkbox
+        if (this.checked) {
+            disable_widget_noid();
+        } else {
+            enable_widget_noid();
+        }
+    });
+    
+    
+    // ajax form submit
+    
+    var profile_form = '#profile-form';
+    
+    $(profile_form).on('submit', function(event){
+        event.preventDefault();
+        sumbit_ajax();
+        
+        
+    });
+
+    function sumbit_ajax() {
+        console.log("create post is working!") // sanity check
+        $.ajax({
+            url : "{% url 'relate-profile_form_submit' %}", // the endpoint
+            type : "POST", // http method
+            data : $(profile_form).serialize(), // data sent with the post request
+            success: function(data) {
+                console.log(data);
+                console.log(data['success']);
+                if (!(data['success'])) {
+                    $(profile_form).replaceWith(data['form_html']);
+                }
+                else {
+                    console.log("successfully");
+                    $('#div_id_confirm_institutional_id').hide();                    
+                    $("#id_no_institutional_id").prop('checked', false);
+                    $('#div_id_no_institutional_id').hide();
+                    $('#id_institutional_id').prop('disabled', true);
+                }
+            },
+//            error: function (data) {
+//                $(profile_form).replaceWith(data['form_html']);
+//            }
+        })
+//        .done(function(data) {
+//          //$(profile_form).replaceWith(data['form_html']);
+//        });
+    };
+    
     
     
 

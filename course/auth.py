@@ -44,7 +44,7 @@ from django.contrib.auth.decorators import user_passes_test
 from django.core.urlresolvers import reverse
 from django.core import validators
 from django.utils.http import is_safe_url
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse, HttpResponse
 from django.template.response import TemplateResponse
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.cache import never_cache
@@ -662,7 +662,7 @@ def sign_in_stage2_with_token(request, user_id, sign_in_key):
 
 # {{{ user profile
 
-from crispy_forms.layout import Layout, Div
+from crispy_forms.layout import Layout, Div, HTML
 
 class UserForm(StyledModelForm):
     confirm_institutional_id = forms.CharField(
@@ -671,6 +671,8 @@ class UserForm(StyledModelForm):
             required=False)
     no_institutional_id = forms.BooleanField(
             label=_("I have no Institutional ID"),
+            help_text=_("Check the checkbox if you are not a student or you forget your "
+            "institutional id."),
             required=False,
             initial=False)
     
@@ -681,24 +683,23 @@ class UserForm(StyledModelForm):
     def __init__(self, *args, **kwargs):
         super(UserForm, self).__init__(*args, **kwargs)
         
-        self.helper.form_id = "profile"
+        self.helper.form_id = "profile-form"
+        self.helper.form_action = reverse("relate-profile_form_submit")
+        
         self.helper.layout = Layout(
-            "last_name",
-            "first_name",
-            "institutional_id",
-            #"no_institutional_id",
-            #"confirm_institutional_id",
-            "editor_mode"
+            Div("last_name",
+            "first_name", css_class="well"),
+            Div("institutional_id", css_class="well"),
+            Div("editor_mode", css_class="well")
         )
         
         self.fields["institutional_id"].help_text=_(
             "The ID your university or school provided, which is used by some course "
-            "to grant enrollment. If you are not a student or you forget your "
-            "institutional id, you can check the following checkbox.")
+            "to grant enrollment. <b>Once sumbitted, it can not be changed</b>.")
 
         if not self.instance.institutional_id:
-            self.helper.layout.insert(3, "confirm_institutional_id")
-            self.helper.layout.insert(3, "no_institutional_id")
+            self.helper.layout[1].insert(1, "confirm_institutional_id")
+            self.helper.layout[1].insert(0, "no_institutional_id")
         else:
             self.fields["institutional_id"].required=True
             #self.fields["confirm_institutional_id"].required=True
@@ -756,7 +757,35 @@ def user_profile(request):
         "user_form": user_form,
         })
 
-# }}}
+
+from crispy_forms.utils import render_crispy_form
+from django.template import loader, RequestContext
+import json
+
+def user_profile_ajax(request):
+    user_form = UserForm(request.POST or None, instance=request.user)
+    success = False
+    if user_form.is_valid():
+        user_form.save()
+        
+        messages.add_message(request, messages.INFO,
+                _("Profile data saved."))
+        if request.GET.get("first_login"):
+            return redirect("relate-home")
+
+        return HttpResponse(
+            json.dumps({'success': True}),
+            content_type="application/json"
+        )
+
+    context = RequestContext(request)
+    context.update({"form": user_form})
+    from django.template.loader import render_to_string
+    form_html = render_to_string("course/crispy-form.html", context_instance=context)
+    response = JsonResponse({'success': False, 'form_html': form_html})
+    response['content_type']="application/json"
+
+    return response
 
 
 def get_role_and_participation(request, course):
