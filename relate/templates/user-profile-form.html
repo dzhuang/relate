@@ -4,6 +4,7 @@
 {% load crispy_forms_tags %}
 
 {% block content %}
+  <div id="profile-form-info"> </div>
   <h1>{% trans "User Profile" %}</h1>
   <div class="well">
     {% crispy user_form %}
@@ -17,42 +18,43 @@
 
     // toggle widget
     var url=window.location.href;
-    var sub="?first_login=1";    
-    if (url.indexOf(sub)==-1){
-        disable_widget_noid();
+    var idx = url.indexOf("?first_login=1");
+    var first_login = false;
+    if (idx >= 0){first_login = true;}
+    
+    if(!first_login){
+        disable_widget_no_id();
     }
     else{
         if ($("#id_institutional_id").val().length > 0)
         {$('#id_institutional_id').prop('disabled', true);}
-        //console.log("in")
     };
-    
-    function disable_widget_noid(){
+
+    function disable_widget_no_id(){
             $('#div_id_confirm_institutional_id').hide();
             $('#id_institutional_id').prop('disabled', true);
             $("#id_no_institutional_id").prop('checked', true);
     }
-        
-    function enable_widget_noid(){
+
+    function enable_widget_no_id(){
             $('#div_id_confirm_institutional_id').show();
             $('#id_institutional_id').prop('disabled', false);            
     }
 
 
     $(document).on('click', '#id_no_institutional_id', function(event) {
-        // $this will contain a reference to the checkbox
         if (this.checked) {
-            disable_widget_noid();
+            disable_widget_no_id();
             $('#id_institutional_id').val("");
             $('#id_confirm_institutional_id').val("")
         } else {
-            enable_widget_noid();
+            enable_widget_no_id();
         }
     });
-    
-    
+
+
     // ajax form submit
-    
+
     var profile_form = '#profile-form';
     
     $(document).on('submit', profile_form, function(event){
@@ -61,9 +63,9 @@
     });
 
     function sumbit_ajax() {
-        console.log("create post is working!") // sanity check
+        //console.log("create post is working!") // sanity check
         $.ajax({
-            url : "{% url 'relate-profile_form_submit' %}", // the endpoint
+            url : "{% url 'relate-profile_form_ajax' %}", // the endpoint
             type : "POST", // http method
             data : $(profile_form).serialize(), // data sent with the post request
             success: function(data) {
@@ -78,19 +80,27 @@
                     else{
                         $("#id_no_institutional_id").prop('checked', true);
                     };
+                    if (data['success_messages']) {
+                        $("#profile-form-info")
+                            .addClass("alert alert-info")
+                            .html('<i class="fa fa-info-circle"></i> '+data['success_messages']);
+                        window.setTimeout(
+                            function() {
+                                $("#profile-form-info")
+                                    .fadeOut()
+                                    .removeClass("alert alert-info")
+                                    .html("")
+                                    .fadeIn();
+                                if (first_login){
+                                    window.location.replace('{% url "relate-home" %}');
+                                };
+                            },
+                            5000);
+                    };
                 };
             },
-//            error: function (data) {
-//                $(profile_form).replaceWith(data['form_html']);
-//            }
-        })
-//        .done(function(data) {
-//          //$(profile_form).replaceWith(data['form_html']);
-//        });
-    };
-    
-    
-    
+        });
+    }
 
 </script>
 {% endblock %}
