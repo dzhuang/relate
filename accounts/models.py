@@ -87,7 +87,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
 
     institutional_id = models.CharField(max_length=100,
-            unique=True, 
+            unique=True,
             verbose_name=_('Institutional ID'),
             blank=True, null=True, default=None)
     institutional_id_verified = models.BooleanField(
