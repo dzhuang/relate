@@ -28,7 +28,7 @@ else:
     exec(compile(local_settings_contents, "local_settings.py", "exec"),
             local_settings)
 
-# Application definition
+# {{{ django: apps
 
 INSTALLED_APPS = (
     "django.contrib.admin",
@@ -55,6 +55,13 @@ INSTALLED_APPS = (
     #"ckeditor_uploader",
 )
 
+if local_settings["RELATE_SIGN_IN_BY_SAML2_ENABLED"]:
+    INSTALLED_APPS = INSTALLED_APPS + ("djangosaml2",)
+
+# }}}
+
+# {{{ django: middleware
+
 MIDDLEWARE_CLASSES = (
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
@@ -70,6 +77,9 @@ MIDDLEWARE_CLASSES = (
     "course.exam.ExamLockdownMiddleware",
 )
 
+# }}}
+
+# {{{ django: auth
 
 AUTHENTICATION_BACKENDS = (
     "course.auth.TokenBackend",
@@ -77,20 +87,14 @@ AUTHENTICATION_BACKENDS = (
     "django.contrib.auth.backends.ModelBackend",
     )
 
-
-RELATE_EXTRA_CONTEXT_PROCESSORS = (
-            "relate.utils.settings_context_processor",
-            "course.auth.impersonation_context_processor",
-            "course.views.fake_time_context_processor",
-            "course.views.pretend_facilities_context_processor",
-            "course.exam.exam_lockdown_context_processor",
+if local_settings["RELATE_SIGN_IN_BY_SAML2_ENABLED"]:
+    AUTHENTICATION_BACKENDS = AUTHENTICATION_BACKENDS + (
+            'djangosaml2.backends.Saml2Backend',
             )
-TEMPLATE_CONTEXT_PROCESSORS = (
-        tuple(TEMPLATE_CONTEXT_PROCESSORS)
-        + RELATE_EXTRA_CONTEXT_PROCESSORS
-        )
 
 AUTH_USER_MODEL = 'accounts.User'
+
+# }}}
 
 # {{{ bower packages
 
@@ -122,15 +126,55 @@ ROOT_URLCONF = 'relate.urls'
 
 WSGI_APPLICATION = 'relate.wsgi.application'
 
+# {{{ templates
+
+# {{{ context processors
+
+RELATE_EXTRA_CONTEXT_PROCESSORS = (
+            "relate.utils.settings_context_processor",
+            "course.auth.impersonation_context_processor",
+            "course.views.fake_time_context_processor",
+            "course.views.pretend_facilities_context_processor",
+            "course.exam.exam_lockdown_context_processor",
+            )
+TEMPLATE_CONTEXT_PROCESSORS = (
+        tuple(TEMPLATE_CONTEXT_PROCESSORS)
+        + RELATE_EXTRA_CONTEXT_PROCESSORS
+        )
+
+# }}}
+
 CRISPY_TEMPLATE_PACK = "bootstrap3"
 
 TEMPLATE_DIRS = (
         join(BASE_DIR, "relate", "templates"),
         )
 
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "APP_DIRS": True,
+        "DIRS": (
+            join(BASE_DIR, "relate", "templates"),
+            ),
+        "OPTIONS": {
+            "context_processors": (
+                "django.contrib.auth.context_processors.auth",
+                "django.template.context_processors.debug",
+                "django.template.context_processors.i18n",
+                "django.template.context_processors.media",
+                "django.template.context_processors.static",
+                "django.template.context_processors.tz",
+                "django.contrib.messages.context_processors.messages",
+                "django.core.context_processors.request",
+                ) + RELATE_EXTRA_CONTEXT_PROCESSORS,
+            }
+    },
+]
 
-# Database
-# https://docs.djangoproject.com/en/dev/ref/settings/#databases
+# }}}
+
+# {{{ database
 
 # default, likely overriden by local_settings.py
 DATABASES = {
@@ -140,8 +184,9 @@ DATABASES = {
     }
 }
 
-# Internationalization
-# https://docs.djangoproject.com/en/dev/topics/i18n/
+# }}}
+
+# {{{ internationalization
 
 LANGUAGE_CODE = 'en-us'
 
@@ -151,10 +196,14 @@ USE_L10N = True
 
 USE_TZ = True
 
+# }}}
+
 LOGIN_REDIRECT_URL = "/"
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/dev/howto/static-files/
+
+# {{{ static
 
 STATICFILES_DIRS = (
         join(BASE_DIR, "relate", "static"),
@@ -164,8 +213,12 @@ STATIC_URL = '/static/'
 
 STATIC_ROOT = join(BASE_DIR, "static")
 
+# }}}
+
 SESSION_COOKIE_NAME = 'relate_sessionid'
 SESSION_COOKIE_AGE = 12096000  # 20 weeks
+
+# {{{ app defaults
 
 RELATE_FACILITIES = {}
 
@@ -174,6 +227,8 @@ RELATE_TICKET_MINUTES_VALID_AFTER_USE = 0
 RELATE_CACHE_MAX_BYTES = 32768
 
 RELATE_ADMIN_EMAIL_LOCALE = "en_US"
+
+# }}}
 
 for name, val in local_settings.items():
     if not name.startswith("_"):
@@ -206,28 +261,25 @@ if "CELERY_RESULT_BACKEND" not in globals():
 
 # }}}
 
-TEMPLATES = [
-    {
-        "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "APP_DIRS": True,
-        "DIRS": (
-            join(BASE_DIR, "relate", "templates"),
-            ),
-        "OPTIONS": {
-            "context_processors": (
-                "django.contrib.auth.context_processors.auth",
-                "django.template.context_processors.debug",
-                "django.template.context_processors.i18n",
-                "django.template.context_processors.media",
-                "django.template.context_processors.static",
-                "django.template.context_processors.tz",
-                "django.contrib.messages.context_processors.messages",
-                "django.core.context_processors.request",
-                ) + RELATE_EXTRA_CONTEXT_PROCESSORS,
-            }
-    },
-]
-
 LOCALE_PATHS = (
     BASE_DIR + '/locale',
 )
+
+# {{{ saml2
+
+# This makes SAML2 logins compatible with (and usable at the same time as)
+# email-based logins.
+SAML_DJANGO_USER_MAIN_ATTRIBUTE = 'email'
+
+SAML_CREATE_UNKNOWN_USER = True
+
+SAML_ATTRIBUTE_MAPPING = {
+    'uid': ('username', ),
+    'mail': ('email', ),
+    'cn': ('first_name', ),
+    'sn': ('last_name', ),
+}
+
+# }}}
+
+# vim: foldmethod=marker

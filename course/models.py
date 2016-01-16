@@ -99,12 +99,14 @@ class Course(models.Model):
     end_date = models.DateField(
             verbose_name=_('End date'),
             null=True, blank=True)
+    # {{{ added by zd
     enroll_deadline = models.DateField(
             verbose_name=_('Enrollment deadline'),
             help_text=_("After which the course will not be displayed on home "
             "page, and enrollment will not be allowed. Leave this field blank "
             "if there's no deadline of enrollment."),
             null=True, blank=True)
+    # }}}
 
     hidden = models.BooleanField(
             default=True,
@@ -212,6 +214,7 @@ class Course(models.Model):
     def get_absolute_url(self):
         return reverse("relate-course_page", args=(self.identifier,))
 
+    # {{{ added by zd
     def is_enrollment_expired(self, now_date):
         if self.enroll_deadline:
             if self.enroll_deadline >= now_date:
@@ -219,7 +222,7 @@ class Course(models.Model):
             else:
                 return True
         return False
-
+    # }}}
 # }}}
 
 
@@ -1445,7 +1448,7 @@ class ExamTicket(models.Model):
 
 # }}}
 
-# {{{ uploaded images
+# {{{ add by zd for uploaded images
 
 from django.core.files.storage import FileSystemStorage
 from django.utils.deconstruct import deconstructible

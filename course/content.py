@@ -284,12 +284,19 @@ class GitTemplateLoader(BaseTemplateLoader):
 
 
 class YamlBlockEscapingGitTemplateLoader(GitTemplateLoader):
+    # https://github.com/inducer/relate/issues/130
+
     def get_source(self, environment, template):
         source, path, is_up_to_date = \
                 super(YamlBlockEscapingGitTemplateLoader, self).get_source(
                         environment, template)
 
-        source = process_yaml_for_expansion(source)
+        from os.path import splitext
+        _, ext = splitext(template)
+        ext = ext.lower()
+
+        if ext in [".yml", ".yaml"]:
+            source = process_yaml_for_expansion(source)
 
         return source, path, is_up_to_date
 
@@ -300,9 +307,7 @@ def expand_yaml_macros(repo, commit_sha, yaml_str):
 
     from jinja2 import Environment, StrictUndefined
     jinja_env = Environment(
-            loader=GitTemplateLoader(repo, commit_sha),
-            # https://github.com/inducer/relate/issues/130
-            # loader=YamlBlockEscapingGitTemplateLoader(repo, commit_sha),
+            loader=YamlBlockEscapingGitTemplateLoader(repo, commit_sha),
             undefined=StrictUndefined)
 
     # {{{ process explicit [JINJA] tags (deprecated)
@@ -488,6 +493,11 @@ class LinkFixerTreeprocessor(Treeprocessor):
                 return self.reverse_func("relate-view_start_flow",
                             args=(self.get_course_identifier(), flow_id))
 
+            elif url.startswith("staticpage:"):
+                page_path = url[11:]
+                return self.reverse_func("relate-content_page",
+                            args=(self.get_course_identifier(), page_path))
+
             elif url.startswith("media:"):
                 media_path = url[6:]
                 return self.reverse_func("relate-get_media",
@@ -610,7 +620,7 @@ def markup_to_html(course, repo, commit_sha, text, reverse_func=None,
             cache_key = None
         else:
             import hashlib
-            cache_key = ("markup:%d:%s:%s"
+            cache_key = ("markup:v3:%d:%s:%s"
                     % (course.id, str(commit_sha),
                         hashlib.md5(text.encode("utf-8")).hexdigest()))
 
@@ -660,6 +670,20 @@ def markup_to_html(course, repo, commit_sha, text, reverse_func=None,
         def_cache.add(cache_key, result, None)
 
     return result
+
+
+TITLE_RE = re.compile(r"^\#+\s*(\w.*)", re.UNICODE)
+
+
+def extract_title_from_markup(markup_text):
+    lines = markup_text.split("\n")
+
+    for l in lines[:10]:
+        match = TITLE_RE.match(l)
+        if match is not None:
+            return match.group(1)
+
+    return None
 
 # }}}
 
@@ -870,6 +894,9 @@ def parse_date_spec(course, datespec, vctx=None, location=None):
 
 def compute_chunk_weight_and_shown(course, chunk, role, now_datetime,
         facilities):
+    if not hasattr(chunk, "rules"):
+        return 0, True
+
     for rule in chunk.rules:
         if hasattr(rule, "if_has_role"):
             if role not in rule.if_has_role:
@@ -954,14 +981,17 @@ def get_collapsible_chunk_content(id, title, content, subtitle, sub_color):
 
     return pre_string(id, title) + content + end_string(id, title)
 
-def get_processed_course_chunks(course, repo, commit_sha,
-        course_desc, role, now_datetime, facilities, jinja_env):
-    for chunk in course_desc.chunks:
+def get_processed_page_chunks(course, repo, commit_sha,
+        page_desc, role, now_datetime, facilities, jinja_env):
+    for chunk in page_desc.chunks:
         chunk.weight, chunk.shown = \
                 compute_chunk_weight_and_shown(
                         course, chunk, role, now_datetime,
                         facilities)
         chunk.html_content = markup_to_html(course, repo, commit_sha, chunk.content, jinja_env=jinja_env)
+        if not hasattr(chunk, "title"):
+            from course.content import extract_title_from_markup
+            chunk.title = extract_title_from_markup(chunk.content)
 
         collapsible = getattr(chunk, "collapsible", False)
         if collapsible:
@@ -970,9 +1000,9 @@ def get_processed_course_chunks(course, repo, commit_sha,
             chunk.html_content = get_collapsible_chunk_content(
                     chunk.id, chunk.title, chunk.html_content, subtitle, sub_color)
 
-    course_desc.chunks.sort(key=lambda chunk: chunk.weight, reverse=True)
+    page_desc.chunks.sort(key=lambda chunk: chunk.weight, reverse=True)
 
-    return [chunk for chunk in course_desc.chunks
+    return [chunk for chunk in page_desc.chunks
             if chunk.shown]
 
 
@@ -981,8 +1011,26 @@ def get_processed_course_chunks(course, repo, commit_sha,
 
 # {{{ repo desc getting
 
+def normalize_page_desc(page_desc):
+    if hasattr(page_desc, "content"):
+        content = page_desc.content
+        from relate.utils import struct_to_dict, Struct
+        d = struct_to_dict(page_desc)
+        del d["content"]
+        d["chunks"] = [Struct({"id": "main", "content": content})]
+        return Struct(d)
+
+    return page_desc
+
+
+def get_staticpage_desc(repo, course, commit_sha, filename):
+    page_desc = get_yaml_from_repo(repo, filename, commit_sha)
+    page_desc = normalize_page_desc(page_desc)
+    return page_desc
+
+
 def get_course_desc(repo, course, commit_sha):
-    return get_yaml_from_repo(repo, course.course_file, commit_sha)
+    return get_staticpage_desc(repo, course, commit_sha, course.course_file)
 
 
 def normalize_flow_desc(flow_desc):

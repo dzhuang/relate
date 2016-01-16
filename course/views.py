@@ -75,9 +75,6 @@ from course.utils import course_view, render_course_page
 
 NONE_SESSION_TAG = "<<<NONE>>>"  # noqa
 
-#import sys
-#reload(sys)
-#sys.setdefaultencoding('utf8')
 
 # {{{ home
 
@@ -85,9 +82,8 @@ def home(request):
     now_datetime = get_now_or_fake_time(request)
 
     current_courses = []
-    inprogress_courses = []
+    inprogress_courses = [] # added by zd
     past_courses = []
-
     for course in Course.objects.filter(listed=True):
         role, participation = get_role_and_participation(request, course)
 
@@ -100,6 +96,8 @@ def home(request):
         if show:
             if (course.end_date is None
                     or now_datetime.date() <= course.end_date):
+                ## current_courses.append(course)
+                # {{{ # added by zd
                 if course.enroll_deadline is None:
                     current_courses.append(course)
                 else:
@@ -108,7 +106,9 @@ def home(request):
                     else:
                         if participation:
                             inprogress_courses.append(course)
+                # }}}
             else:
+                ##past_courses.append(course)
                 if participation:
                     past_courses.append(course)
 
@@ -126,7 +126,7 @@ def home(request):
 
     return render(request, "course/home.html", {
         "current_courses": current_courses,
-        "inprogress_courses": inprogress_courses,
+        "inprogress_courses": inprogress_courses, # added by zd
         "past_courses": past_courses,
         })
 
@@ -137,7 +137,7 @@ def maintenance(request):
     return render(request, "maintenance.html")
 
 
-# {{{ course page
+# {{{ pages
 
 def check_course_state(course, role):
     if course.hidden:
@@ -169,13 +169,15 @@ def course_page(pctx):
     error_message = (
             enroll_expire_or_ended_message(
                 pctx.course, role, now_datetime.date()))
-    from course.content import get_processed_course_chunks
     jinja_env = {"now": now_datetime}
-    chunks = get_processed_course_chunks(
-            pctx.course, pctx.repo, pctx.course_commit_sha, pctx.course_desc,
+    from course.content import get_processed_page_chunks, get_course_desc
+    page_desc = get_course_desc(pctx.repo, pctx.course, pctx.course_commit_sha)
+
+    chunks = get_processed_page_chunks(
+            pctx.course, pctx.repo, pctx.course_commit_sha, page_desc,
             pctx.role, get_now_or_fake_time(pctx.request),
             facilities=pctx.request.relate_facilities,
-            jinja_env=jinja_env)
+            jinja_env=jinja_env) # added by zd
 
     show_enroll_button = (
             pctx.course.accepts_enrollment
@@ -187,20 +189,42 @@ def course_page(pctx):
             status=participation_status.requested).count():
         show_enroll_button = True
 
+        # {{{ added by zd to show institutional ID fillin.
         from django.core.urlresolvers import reverse
         messages.add_message(pctx.request, messages.WARNING,
                 _("If your fill in the Student ID in <a href='%s'>user profile"
                   "</a>, maybe you needn't wait for approvement.") 
                 % reverse("relate-user_profile"))
+        # }}}
 
         messages.add_message(pctx.request, messages.INFO,
                 _("Your enrollment request is pending. You will be "
                 "notified once it has been acted upon."))
 
     return render_course_page(pctx, "course/course-page.html", {
-        "error_message": error_message,
+        "error_message": error_message, # added by zd to display enroll error
         "chunks": chunks,
         "show_enroll_button": show_enroll_button,
+        })
+
+
+@course_view
+def static_page(pctx, page_path):
+    from course.content import get_staticpage_desc, get_processed_page_chunks
+    try:
+        page_desc = get_staticpage_desc(pctx.repo, pctx.course,
+                pctx.course_commit_sha, "staticpages/"+page_path+".yml")
+    except ObjectDoesNotExist:
+        raise http.Http404()
+
+    chunks = get_processed_page_chunks(
+            pctx.course, pctx.repo, pctx.course_commit_sha, page_desc,
+            pctx.role, get_now_or_fake_time(pctx.request),
+            facilities=pctx.request.relate_facilities)
+
+    return render_course_page(pctx, "course/static-page.html", {
+        "chunks": chunks,
+        "show_enroll_button": False,
         })
 
 # }}}

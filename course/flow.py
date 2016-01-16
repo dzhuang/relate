@@ -72,8 +72,9 @@ from course.utils import (
         get_session_start_rule,
         get_session_access_rule,
         get_session_grading_rule,
-        get_flow_rules_str,
-        FlowSessionGradingRule)
+        get_flow_rules_str, # added by zd
+        FlowSessionGradingRule,
+        )
 from course.page import InvalidPageData
 from course.views import get_now_or_fake_time
 from relate.utils import retry_transaction_decorator
@@ -887,6 +888,7 @@ def view_start_flow(pctx, flow_id):
                     grade_aggregation_strategy.max_grade,
                     grade_aggregation_strategy.use_earliest])
 
+        # {{{ added by zd
         flow_rule_str = get_flow_rules_str(pctx.course, pctx.participation, flow_id, 
                                            fctx.flow_desc, now_datetime)
 
@@ -898,11 +900,14 @@ def view_start_flow(pctx, flow_id):
             session_available_count_html = (
                     "<strong class='h4'> %s </strong>" %
                     session_start_rule.session_available_count)
+        # }}}
 
         return render_course_page(pctx, "course/flow-start.html", {
+            # {{{ added by zd
             "flow_rule_str": flow_rule_str,
             "session_available_count": session_start_rule.session_available_count,
             "session_available_count_html": session_available_count_html,
+            # }}}
             "flow_desc": fctx.flow_desc,
             "flow_identifier": flow_id,
 
@@ -1142,14 +1147,13 @@ def view_flow_page(pctx, flow_session_id, ordinal):
             grading_rule.grade_identifier is not None
             and
             grading_rule.generates_grade)
-
+    # {{{ added by zd
     completed_before = getattr(grading_rule, "completed_before", None)
     session_due = getattr(grading_rule, "due", None)
     credit_percent = getattr(grading_rule, "credit_percent", None)
-
     credit_next = getattr(grading_rule, "credit_next", None)
     is_next_final = getattr(grading_rule, "is_next_final", False)
-
+    # }}}
     del grading_rule
 
     permissions = fpctx.page.get_modified_permissions_for_page(
@@ -1348,7 +1352,7 @@ def view_flow_page(pctx, flow_session_id, ordinal):
         if flow_session.participation is not None:
             time_factor = flow_session.participation.time_factor
 
-    # {{{ sumbit info reminder in flow page
+    # {{{ add by zd to sumbit info reminder in flow page
     if flow_permission.submit_answer in permissions:
         flow_page_warning_message = ""
         flow_page_warning_message_next = ""

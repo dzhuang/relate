@@ -65,6 +65,10 @@ ipaddress
 # For localized datetime format
 babel
 
+# For interoperation with SAML2/Shibboleth
+pysaml2
+djangosaml2
+
 # A task queue, used to execute long-running tasks
 celery
 django-celery
@@ -88,6 +92,3 @@ git+https://github.com/dzhuang/django-jfu.git
 
 # For serving permissions associated files
 django-sendfile
-
-# django-jsonview decorator
-django-jsonview

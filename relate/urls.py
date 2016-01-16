@@ -27,7 +27,7 @@ THE SOFTWARE.
 from django.conf.urls import include, url
 from django.contrib import admin
 from django.conf import settings
-from course.constants import COURSE_ID_REGEX, FLOW_ID_REGEX
+from course.constants import COURSE_ID_REGEX, FLOW_ID_REGEX, STATICPAGE_PATH_REGEX
 
 import django.contrib.auth.views
 import course.auth
@@ -118,6 +118,13 @@ urlpatterns = [
         "/$",
         course.views.course_page,
         name="relate-course_page"),
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/page"
+        "/" + STATICPAGE_PATH_REGEX +
+        "/$",
+        course.views.static_page,
+        name="relate-content_page"),
     url(r"^course"
         "/" + COURSE_ID_REGEX +
         "/instant-message/$",
@@ -489,5 +496,15 @@ if settings.RELATE_MAINTENANCE_MODE:
         # course
         url(r'^.*$', 'course.views.maintenance'),
     ]
+
+if settings.RELATE_SIGN_IN_BY_SAML2_ENABLED:
+    urlpatterns.extend([
+        url(r'^saml2/', include('djangosaml2.urls')),
+        ])
+    if settings.DEBUG:
+        urlpatterns.extend([
+            # Keep commented unless debugging SAML2.
+            url(r'^saml2-test/', 'djangosaml2.views.echo_attributes'),
+            ])
 
 # vim: fdm=marker

@@ -30,14 +30,13 @@ from django.shortcuts import (  # noqa
         render, get_object_or_404)
 from django import http
 from django.core.exceptions import ObjectDoesNotExist
-from django.utils.translation import (
-        ugettext_lazy as _, string_concat)
+from django.utils.translation import ugettext as _, string_concat
 
 from course.views import (
         get_role_and_participation
         )
 from course.content import (
-        get_course_repo, get_course_desc, get_flow_desc,
+        get_course_repo, get_flow_desc,
         parse_date_spec, get_course_commit_sha)
 from course.constants import (
         participation_role,
@@ -63,8 +62,10 @@ class FlowSessionStartRule(FlowSessionRuleBase):
             "may_start_new_session",
             "may_list_existing_sessions",
             "lock_down_as_exam_session",
+            # {{{ added by zd
             "latest_start_datetime",
             "session_available_count",
+            # }}}
             ]
 
 
@@ -84,7 +85,7 @@ class FlowSessionGradingRule(FlowSessionRuleBase):
     __slots__ = [
             "grade_identifier",
             "grade_aggregation_strategy",
-            "completed_before",
+            "completed_before", # added by zd
             "due",
             "generates_grade",
             "description",
@@ -141,7 +142,7 @@ def get_flow_rules(flow_desc, kind, participation, flow_id, now_datetime,
     return rules
 
 
-# {{{ generate stringified rules in flow start page
+# {{{ added by zd to generate stringified rules in flow start page
 
 def get_flow_rules_str(course, participation, flow_id, flow_desc,
         now_datetime):
@@ -257,17 +258,19 @@ def get_session_start_rule(course, participation, role, flow_id, flow_desc,
                 dict_to_struct(dict(
                     may_start_new_session=True,
                     may_list_existing_sessions=False))])
-
+    # {{{ added by zd
     latest_start_datetime = None
     session_available_count = 0
+    # }}}
 
     for rule in rules:
+        # {{{ added by zd
         if (hasattr(rule, "if_before") 
             and hasattr(rule, "may_start_new_session")):
 
             if getattr(rule, "may_start_new_session"):
                 latest_start_datetime = parse_date_spec(course, rule.if_before)
-
+        # }}}
         if not _eval_generic_conditions(rule, course, role, now_datetime):
             continue
 
@@ -301,8 +304,10 @@ def get_session_start_rule(course, participation, role, flow_id, flow_desc,
                     course=course,
                     flow_id=flow_id).count()
 
+            # {{{ added by zd
             session_available_count = (
                     rule.if_has_fewer_sessions_than - session_count)
+            # }}}
 
             if session_count >= rule.if_has_fewer_sessions_than:
                 continue
@@ -325,14 +330,16 @@ def get_session_start_rule(course, participation, role, flow_id, flow_desc,
                     rule, "may_list_existing_sessions", True),
                 lock_down_as_exam_session=getattr(
                     rule, "lock_down_as_exam_session", False),
+                # {{{ added by zd
                 latest_start_datetime=latest_start_datetime,
                 session_available_count=session_available_count,
+                # }}}
                 )
 
     return FlowSessionStartRule(
             may_list_existing_sessions=False,
             may_start_new_session=False,
-            latest_start_datetime=latest_start_datetime)
+            latest_start_datetime=latest_start_datetime)     # added by zd
 
 
 def get_session_access_rule(session, role, flow_desc, now_datetime,
@@ -472,15 +479,16 @@ def get_session_grading_rule(session, role, flow_desc, now_datetime):
             session_grading_rule = FlowSessionGradingRule(
                 grade_identifier=grade_identifier,
                 grade_aggregation_strategy=grade_aggregation_strategy,
-                    completed_before=ds,
+                    completed_before=ds,     # added by zd
                     due=due,
                     generates_grade=generates_grade,
                     description=getattr(rule, "description", None),
                     credit_percent=getattr(rule, "credit_percent", 100),
                     use_last_activity_as_completion_time=getattr(
                         rule, "use_last_activity_as_completion_time", False),
-                    credit_next=credit_next,
-                    is_next_final=is_next_final)
+                    credit_next=credit_next,    # added by zd
+                    is_next_final=is_next_final,    # added by zd
+                    )
 
     if session_grading_rule is None:
         raise RuntimeError(_("grading rule determination was unable to find "
@@ -509,8 +517,6 @@ class CoursePageContext(object):
                 self.course, self.participation)
 
         self.repo = get_course_repo(self.course)
-        self.course_desc = get_course_desc(self.repo, self.course,
-                self.course_commit_sha)
 
 
 class FlowContext(object):
@@ -588,7 +594,7 @@ class FlowPageContext(FlowContext):
                     course=self.course, repo=self.repo,
                     commit_sha=self.course_commit_sha,
                     flow_session=flow_session,
-                    ordinal=ordinal,
+                    ordinal=ordinal,     # added by zd
                     page_uri=page_uri)
 
         self._prev_answer_visit = False
@@ -655,7 +661,6 @@ def render_course_page(pctx, template_name, args,
 
     args.update({
         "course": pctx.course,
-        "course_desc": pctx.course_desc,
         "participation": pctx.participation,
         "role": pctx.role,
         "participation_role": participation_role,
@@ -823,6 +828,5 @@ class FacilityFindingMiddleware(object):
         request.relate_facilities = frozenset(facilities)
 
 # }}}
-
 
 # vim: foldmethod=marker

@@ -101,7 +101,7 @@ class CourseAdmin(admin.ModelAdmin):
             "time_period",
             "start_date",
             "end_date",
-            "enroll_deadline",
+            "enroll_deadline", # added by zd
             "hidden",
             "listed",
             "accepts_enrollment")
@@ -110,7 +110,7 @@ class CourseAdmin(admin.ModelAdmin):
             "name",
             "time_period",
             "start_date",
-            "enroll_deadline",
+            "enroll_deadline", # added by zd
             "end_date",
             "hidden",
             "listed",
@@ -122,6 +122,12 @@ class CourseAdmin(admin.ModelAdmin):
             "listed",
             "accepts_enrollment")
     date_hierarchy = "start_date"
+
+    search_fields = (
+            "identifier",
+            "number",
+            "name",
+            "time_period")
 
     form = CourseAdminForm
 

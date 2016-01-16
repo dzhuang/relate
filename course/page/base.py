@@ -28,8 +28,6 @@ import six
 
 import django.forms as forms
 
-import re
-
 from course.validation import validate_struct, ValidationError
 from course.constants import MAX_EXTRA_CREDIT_FACTOR
 from relate.utils import StyledForm, Struct
@@ -70,7 +68,7 @@ class PageContext(object):
         self.flow_session = flow_session
         self.in_sandbox = in_sandbox
         self.page_uri = page_uri
-        self.ordinal = ordinal
+        self.ordinal = ordinal # added by zd
 
 
 class PageBehavior(object):
@@ -514,19 +512,6 @@ class PageBase(object):
 
 # {{{ utility base classes
 
-TITLE_RE = re.compile(r"^\#\s*(\w.*)", re.UNICODE)
-
-
-def extract_title_from_markup(markup_text):
-    lines = markup_text.split("\n")
-
-    for l in lines[:5]:
-        match = TITLE_RE.match(l)
-        if match is not None:
-            return match.group(1)
-
-    return None
-
 
 class PageBaseWithTitle(PageBase):
     def __init__(self, vctx, location, page_desc):
@@ -547,6 +532,7 @@ class PageBaseWithTitle(PageBase):
                         "markdown_body_for_title()")
                         % type(self).__name__)
             else:
+                from course.content import extract_title_from_markup
                 title = extract_title_from_markup(md_body)
 
         if title is None:

@@ -55,10 +55,6 @@ from course.utils import course_view, render_course_page
 import paramiko
 import paramiko.client
 
-#import sys
-#reload(sys)
-#sys.setdefaultencoding('utf8')
-
 
 class AutoAcceptPolicy(paramiko.client.MissingHostKeyPolicy):
     def missing_host_key(self, client, hostname, key):
@@ -171,7 +167,7 @@ class CourseCreationForm(StyledModelForm):
             "time_period",
             "start_date",
             "end_date",
-            "enroll_deadline",
+            "enroll_deadline", # added by zd
             "hidden", "listed",
             "accepts_enrollment",
             "git_source", "ssh_private_key", "course_root_path",
@@ -185,7 +181,7 @@ class CourseCreationForm(StyledModelForm):
         widgets = {
                 "start_date": DateTimePicker(options={"format": "YYYY-MM-DD"}),
                 "end_date": DateTimePicker(options={"format": "YYYY-MM-DD"}),
-                "enroll_deadline": DateTimePicker(options={"format": "YYYY-MM-DD"}),
+                "enroll_deadline": DateTimePicker(options={"format": "YYYY-MM-DD"}), # added by zd
                 }
 
     def __init__(self, *args, **kwargs):
@@ -440,8 +436,12 @@ class GitUpdateForm(StyledForm):
 
         def format_commit(commit):
             return "%s - %s" % (
-                    commit.id[:8],
-                    "".join(commit.message.split("\n")[:1]))
+                    commit.id[:8].decode(),
+                    "".join(
+                        commit.message
+                        .decode("utf-8", errors="replace")
+                        .split("\n")
+                        [:1]))
 
         def format_sha(sha):
             return format_commit(repo[sha])
@@ -449,7 +449,9 @@ class GitUpdateForm(StyledForm):
         self.fields["new_sha"] = forms.ChoiceField(
                 choices=([
                     (repo_refs[ref],
-                        "[%s] %s" % (ref, format_sha(repo_refs[ref])))
+                        "[%s] %s" % (
+                            ref.decode("utf-8", errors="replace"),
+                            format_sha(repo_refs[ref])))
                     for ref in repo_refs
                     ] +
                     [

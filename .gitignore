@@ -13,6 +13,9 @@ build
 
 *.pyz
 
+# This is guaranteed to be sensitive--never check it in.
+saml_config.py
+
 *.pem
 
 git-roots
