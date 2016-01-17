@@ -1315,16 +1315,20 @@ def image_page_submit(request, course_identifier, flow_session_id, ordinal):
 # {{{ sendfile
 from sendfile import sendfile
 
-def download(request, creator_id, download_id):
-    download = get_object_or_404(Image, pk=download_id)
-    return _auth_download(request, download)
-
+@login_required
+def image_download(request, creator_id, download_id, thumbnail=False):
+    download_object = get_object_or_404(Image, pk=download_id)
+    if not (
+        request.user==download_object.creator or request.user.is_staff):
+        raise PermissionDenied(_("may not view other people's resource"))
+    if not thumbnail:
+        return _auth_download(request, download_object.file.path)
+    else:
+        return _auth_download(request, download_object.get_thumbnail_path())
 
 @login_required
-def _auth_download(request, download):
-    if not (request.user==download.creator or request.user.is_staff):
-        raise PermissionDenied(_("may not view other people's resource"))
-    return sendfile(request, download.file.path)
+def _auth_download(request, filepath):
+    return sendfile(request, filepath)
 
 
 # }}}

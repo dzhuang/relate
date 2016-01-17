@@ -451,34 +451,37 @@ urlpatterns = [
 
 urlpatterns += [
     url(r"^user"
-    "/flow-session"
-    "/(?P<flow_session_id>[0-9]+)"
-    "/(?P<ordinal>[0-9]+)"
-    "/image/upload/$",
-    course.views.ImageCreateView.as_view(),
-    name = 'jfu_upload'),
-    url(r'^course/trytrytry/flow-session/3669/1/image/upload/', course.views.ImageCreateView.as_view(), name = 'jfu_upload'),
+        "/flow-session"
+        "/(?P<flow_session_id>[0-9]+)"
+        "/(?P<ordinal>[0-9]+)"
+        "/image/upload/$",
+        course.views.ImageCreateView.as_view(),
+        name='jfu_upload'),
+
     url(r"^user"
-    "/flow-session"
-    "/(?P<flow_session_id>[0-9]+)"
-    "/(?P<ordinal>[0-9]+)"
-    "/image/delete/(?P<pk>\d+)$",
-    course.views.ImageDeleteView.as_view(), name='jfu_delete'),
-#    url(r"^user"
-#    "/flow-session"
-#    "/(?P<flow_session_id>[0-9]+)"
-#    "/(?P<ordinal>[0-9]+)"
-#    "/image/delete/(?P<pk>\d+)$",
-#    course.views.upload_delete, name='jfu_delete'),
-#    url(r'^image/delete/(?P<pk>\d+)$', course.views.ImageDeleteView.as_view(), name='jfu_delete'),
+        "/flow-session"
+        "/(?P<flow_session_id>[0-9]+)"
+        "/(?P<ordinal>[0-9]+)"
+        "/image/delete"
+        "/(?P<pk>\d+)$",
+        course.views.ImageDeleteView.as_view(), 
+        name='jfu_delete'),
+
     url(r"^user"
-    "/flow-session"
-    "/(?P<flow_session_id>[0-9]+)"
-    "/(?P<ordinal>[0-9]+)"
-    "/image/view/$", course.views.ImageListView.as_view(), name='jfu_view'),
-#    url(r'^image/view/$', course.views.ImageListView.as_view(), name='jfu_view'),
-    
-    url(r'^course/userfiles/(?P<creator_id>\d+)/(?P<download_id>\d+)/$', course.views.download, name='download'),
+        "/flow-session"
+        "/(?P<flow_session_id>[0-9]+)"
+        "/(?P<ordinal>[0-9]+)"
+        "/image/view/$",
+        course.views.ImageListView.as_view(),
+        name='jfu_view'),
+
+    url(r"^course"
+        "/userfiles"
+        "/(?P<creator_id>\d+)"
+        "/(?P<download_id>\d+)/$",
+        course.views.image_download,
+        name='image_download'),
+
     url(r"^course"
         "/" + COURSE_ID_REGEX +
         "/flow-session"
