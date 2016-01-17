@@ -1510,8 +1510,6 @@ class Image(models.Model):
         DJANGO_TYPE = 'image/jpeg'
         PIL_TYPE = 'jpeg'
         FILE_EXTENSION = 'jpg'
-        
-        
 
         # Open original photo which we want to thumbnail using PIL's Image
         image = Img.open(StringIO(self.file.read()))
@@ -1541,7 +1539,9 @@ class Image(models.Model):
         suf = SimpleUploadedFile(os.path.split(self.file.name)[-1],
                 temp_handle.read(), content_type=DJANGO_TYPE)
         # Save SimpleUploadedFile into image field
-        self.thumbnail.save('%s_thumbnail.%s'%(os.path.splitext(suf.name)[0],FILE_EXTENSION), suf, save=False)
+        
+        self.thumbnail.save('{}_thumbnail.{}'.format(os.path.splitext(suf.name)[0], FILE_EXTENSION), suf, save=False)
+        
 
     def save(self, *args, **kwargs):
         # create a thumbnail
@@ -1565,8 +1565,8 @@ class Image(models.Model):
 
     def delete(self, *args, **kwargs):
         """delete -- Remove to leave file."""
-        self.file.delete(False)
         self.thumbnail.delete(False)
+        self.file.delete(False)
         super(Image, self).delete(*args, **kwargs)
         
     def get_creation_time(self, format='medium'):
