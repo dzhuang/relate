@@ -252,8 +252,8 @@ class BulkPreapprovalsForm(StyledForm):
             label=_("Role"))
     emails = forms.CharField(required=True, widget=forms.Textarea,
             help_text=_("Enter fully qualified email addresses or "
-                        "student ID, one per line."),
-            label=_("Emails or Student ID"))
+                        "institutional ID, one per line."),
+            label=_("Emails or institutional ID"))
 
     def __init__(self, *args, **kwargs):
         super(BulkPreapprovalsForm, self).__init__(*args, **kwargs)

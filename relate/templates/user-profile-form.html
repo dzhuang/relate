@@ -16,42 +16,47 @@
 
 <script type="text/javascript">
 
-    // toggle widget
-    var url=window.location.href;
-    var idx = url.indexOf("?first_login=1");
-    var first_login = false;
-    if (idx >= 0){first_login = true;}
-    
-    if(!first_login){
-        disable_widget_no_id();
+    // parse url: http://stackoverflow.com/a/12254019/3437454
+    function getParam(name) {
+        var half = location.search.split('&' + name + '=')[1];
+        if (!half) half = location.search.split('?' + name + '=')[1];
+        return half !== undefined ? decodeURIComponent(half.split('&')[0]) : null;
     }
-    else{
-        if ($("#id_institutional_id").val().length > 0)
-        {$('#id_institutional_id').prop('disabled', true);}
-    };
+
+    function hasParam(name) {
+        return getParam(name) !== null ? true : false;
+    }
 
     function disable_widget_no_id(){
-            $('#div_id_confirm_institutional_id').hide();
-            $('#id_institutional_id').prop('disabled', true);
-            $("#id_no_institutional_id").prop('checked', true);
+        $('#div_id_confirm_institutional_id').hide();
+        $('#id_institutional_id').prop('disabled', true);
+        $("#id_no_institutional_id").prop('checked', true);
     }
 
     function enable_widget_no_id(){
-            $('#div_id_confirm_institutional_id').show();
-            $('#id_institutional_id').prop('disabled', false);            
+        $('#div_id_confirm_institutional_id').show();
+        $('#id_institutional_id').prop('disabled', false);            
     }
+
+    
+    var first_login = hasParam("first_login");
+    var set_inst_id = hasParam("set_inst_id");
+    
+    if(!(first_login||set_inst_id)){disable_widget_no_id();}
+    else{
+        if ($("#id_institutional_id").val().length > 0){
+            $('#id_institutional_id').prop('disabled', true);
+        }
+    };
 
 
     $(document).on('click', '#id_no_institutional_id', function(event) {
         if (this.checked) {
             disable_widget_no_id();
             $('#id_institutional_id').val("");
-            $('#id_confirm_institutional_id').val("")
-        } else {
-            enable_widget_no_id();
-        }
+            $('#id_confirm_institutional_id').val("")}
+        else {enable_widget_no_id();}
     });
-
 
     // ajax form submit
 
@@ -63,11 +68,10 @@
     });
 
     function sumbit_ajax() {
-        //console.log("create post is working!") // sanity check
         $.ajax({
-            url : "{% url 'relate-profile_form_ajax' %}", // the endpoint
+            url : "{% url 'relate-profile_form_ajax' %}",
             type : "POST", // http method
-            data : $(profile_form).serialize(), // data sent with the post request
+            data : $(profile_form).serialize(), 
             success: function(data) {
                 if (!(data['success'])) {
                     $(profile_form).replaceWith(data['form_html']);
@@ -91,11 +95,11 @@
                                     .removeClass("alert alert-info")
                                     .html("")
                                     .fadeIn();
-                                if (first_login){
-                                    window.location.replace('{% url "relate-home" %}');
-                                };
+                                if (first_login){window.location.replace('{% url "relate-home" %}');}
+                                if (hasParam("referer")){window.location.replace(getParam("referer"));}
+
                             },
-                            5000);
+                            3000);
                     };
                 };
             },

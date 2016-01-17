@@ -913,11 +913,11 @@ msgid "Role"
 msgstr "在课程中的角色"
 
 #: .\course\enrollment.py:252
-msgid "Enter fully qualified email addresses or student ID, one per line."
+msgid "Enter fully qualified email addresses or institutional ID, one per line."
 msgstr "输入允许加入课程用户的Email或学号, 每行一个. "
 
 #: .\course\enrollment.py:254
-msgid "Emails or Student ID"
+msgid "Emails or institutional ID"
 msgstr "电子邮件 或 学号"
 
 #: .\course\enrollment.py:260
@@ -4981,7 +4981,7 @@ msgstr "非学员无法访问该课程."
 #: .\course\views.py:192
 #, python-format
 msgid ""
-"If your fill in the Student ID in <a href='%s'>user profile</a>, maybe you "
+"If your fill in the institutional ID in <a href='%s'>user profile</a>, maybe you "
 "needn't wait for approvement."
 msgstr ""
 "如果你在<a href='%s'>用户信息</a>中填入了学号，那你可能不需要等待老师的确认."
@@ -5406,7 +5406,7 @@ msgstr "用户信息"
 msgid "Sign out"
 msgstr "退出登录"
 
-#~ msgid "student ID"
+#~ msgid "institutional ID"
 #~ msgstr "学号"
 
 #~ msgid "Sign-in not allowed in this facility."
@@ -5424,7 +5424,7 @@ msgstr "退出登录"
 #~ msgid "Your favorite text editor mode for text block or code block."
 #~ msgstr "你喜欢使用的文本编辑器模式，用于文本块或代码块的编辑."
 
-#~ msgid "Enter a valid student ID. "
+#~ msgid "Enter a valid institutional ID. "
 #~ msgstr "请输入有效的学号. "
 
 #~ msgid ""
@@ -5434,10 +5434,10 @@ msgstr "退出登录"
 #~ "非必填项. 输入学号你将可以加入某些已预先批准加入的课程. 一经设定，不能修"
 #~ "改."
 
-#~ msgid "I am not a student or I have no student ID."
+#~ msgid "I am not a student or I have no institutional ID."
 #~ msgstr "我不是学生，或者我没有学号."
 
-#~ msgid "No student ID"
+#~ msgid "No institutional ID"
 #~ msgstr "没有学号"
 
 #~ msgid "User statuses"

@@ -702,11 +702,11 @@ msgid "Role"
 msgstr ""
 
 #: .\course\enrollment.py:232
-msgid "Enter fully qualified email addresses or student ID, one per line."
+msgid "Enter fully qualified email addresses or institutional ID, one per line."
 msgstr ""
 
 #: .\course\enrollment.py:234
-msgid "Emails or Student ID"
+msgid "Emails or institutional ID"
 msgstr ""
 
 #: .\course\enrollment.py:240
@@ -1302,11 +1302,11 @@ msgid "Editor mode"
 msgstr ""
 
 #: .\course\models.py:148
-msgid "student ID"
+msgid "institutional ID"
 msgstr ""
 
 #: .\course\models.py:152
-msgid "Enter a valid student ID. "
+msgid "Enter a valid institutional ID. "
 msgstr ""
 
 #: .\course\models.py:158

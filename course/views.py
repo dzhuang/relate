@@ -190,11 +190,19 @@ def course_page(pctx):
         show_enroll_button = True
 
         # {{{ added by zd to show institutional ID fillin.
-        from django.core.urlresolvers import reverse
-        messages.add_message(pctx.request, messages.WARNING,
-                _("If your fill in the Student ID in <a href='%s'>user profile"
-                  "</a>, maybe you needn't wait for approvement.") 
-                % reverse("relate-user_profile"))
+        
+        if not pctx.request.user.institutional_id:
+            from django.core.urlresolvers import reverse
+            messages.add_message(pctx.request, messages.WARNING,
+                    _("If your fill in the institutional ID in "
+                    "<a href='%s'>user profile</a>, maybe you needn't "
+                    "wait for approvement.") 
+                    % (reverse("relate-user_profile")
+                        + "?referer="
+                        + pctx.request.path
+                        + "&set_inst_id=1"
+                        )
+                    )
         # }}}
 
         messages.add_message(pctx.request, messages.INFO,
@@ -1304,7 +1312,7 @@ def image_page_submit(request, course_identifier, flow_session_id, ordinal):
 # }}}
 
 
-# {{{ 
+# {{{ sendfile
 from sendfile import sendfile
 
 def download(request, creator_id, download_id):

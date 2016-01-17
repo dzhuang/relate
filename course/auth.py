@@ -669,8 +669,8 @@ class UserForm(StyledModelForm):
             required=False)
     no_institutional_id = forms.BooleanField(
             label=_("I have no Institutional ID"),
-            help_text=_("Check the checkbox if you are not a student or you forget your "
-            "institutional id."),
+            help_text=_("Check the checkbox if you are not a student "
+                        "or you forget your institutional id."),
             required=False,
             initial=False)
     
