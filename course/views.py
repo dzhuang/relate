@@ -1330,7 +1330,6 @@ def image_download(request, creator_id, download_id, thumbnail=False):
 def _auth_download(request, filepath):
     return sendfile(request, filepath)
 
-
 # }}}
 
 # vim: foldmethod=marker

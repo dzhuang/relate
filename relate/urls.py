@@ -491,6 +491,10 @@ urlpatterns += [
         "/$",
         course.views.image_page_submit,
         name="relate-submit_image_page"),
+    
+#    url(r"media"
+#       "/"
+#       name="session_image_thumb"),
 
 ]
 

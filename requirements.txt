@@ -90,5 +90,8 @@ pytools
 # For django jquery file upload
 git+https://github.com/dzhuang/django-jfu.git
 
+# For generating thumbnail
+django-imagekit
+
 # For serving permissions associated files
 django-sendfile

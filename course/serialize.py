@@ -24,8 +24,18 @@ def serialize(instance, file_attr='file', flow_session_id=None, ordinal=None):
     file_attr -- attribute name that contains the FileField or ImageField
 
     """
+    
+    from django.conf import settings
+    
+    print settings.IMAGEKIT_CACHEFILE_DIR
 
     obj = getattr(instance, file_attr)
+    
+    print instance.file_thumbnail.url
+    
+    print dir(instance.file_thumbnail)
+    print instance.file_thumbnail.name
+
 
     return {
         'url': instance.get_absolute_url(),

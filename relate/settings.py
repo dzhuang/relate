@@ -50,8 +50,9 @@ INSTALLED_APPS = (
 
     "accounts",
     "course",
-    "ckeditor",
+    #"ckeditor",
     "jfu",
+    'imagekit',
     #"ckeditor_uploader",
 )
 

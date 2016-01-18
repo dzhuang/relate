@@ -1466,6 +1466,8 @@ def user_directory_path(instance, filename):
     return 'userimages/user_{0}/{1}'.format(instance.creator_id, filename)
 
 from relate.utils import format_datetime_local, as_local_time
+from imagekit.models import ImageSpecField
+from imagekit.processors import ResizeToFit
 
 class Image(models.Model):
     """The slug field is really not necessary, but makes the code simpler. 
@@ -1476,96 +1478,15 @@ class Image(models.Model):
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
         verbose_name=_('Creator'), on_delete=models.CASCADE)
     file = models.ImageField(upload_to=user_directory_path, storage=sendfile_storage)
-    thumbnail = models.ImageField(upload_to=user_directory_path, storage=sendfile_storage, blank=True)
     slug = models.SlugField(max_length=256, blank=True)
     creation_time = models.DateTimeField(default=now)
 
-    def create_thumbnail(self):
-        # original code for this method came from
-        # http://snipt.net/danfreak/generate-thumbnails-in-django-with-pil/
-
-        # If there is no image associated with this.
-        # do not create thumbnail
-        if not self.file:
-            return
-
-        from PIL import Image as Img
-        from cStringIO import StringIO
-        from django.core.files.uploadedfile import SimpleUploadedFile
-        import os
-
-        # Set our max thumbnail size in a tuple (max width, max height)
-        THUMBNAIL_SIZE = (200,200)
-
-        #DJANGO_TYPE = self.file.file.content_type
-        
-        dir(self.file)
-
-#        if DJANGO_TYPE == 'image/jpeg':
-#            PIL_TYPE = 'jpeg'
-#            FILE_EXTENSION = 'jpg'
-#        elif DJANGO_TYPE == 'image/png':
-#            PIL_TYPE = 'png'
-#            FILE_EXTENSION = 'png'     
-        DJANGO_TYPE = 'image/jpeg'
-        PIL_TYPE = 'jpeg'
-        FILE_EXTENSION = 'jpg'
-
-        # Open original photo which we want to thumbnail using PIL's Image
-        image = Img.open(StringIO(self.file.read()))
-
-        # Convert to RGB if necessary
-        # Thanks to Limodou on DjangoSnippets.org
-        # http://www.djangosnippets.org/snippets/20/
-        #
-        # I commented this part since it messes up my png files
-        #
-        #if image.mode not in ('L', 'RGB'):
-        #    image = image.convert('RGB')
-
-        # We use our PIL Image object to create the thumbnail, which already
-        # has a thumbnail() convenience method that contrains proportions.
-        # Additionally, we use Image.ANTIALIAS to make the image look better.
-        # Without antialiasing the image pattern artifacts may result.
-        image.thumbnail(THUMBNAIL_SIZE, Img.ANTIALIAS)
-
-        # Save the thumbnail
-        temp_handle = StringIO()
-        image.save(temp_handle, PIL_TYPE)
-        temp_handle.seek(0)
-
-        # Save image to a SimpleUploadedFile which can be saved into
-        # ImageField
-        suf = SimpleUploadedFile(os.path.split(self.file.name)[-1],
-                temp_handle.read(), content_type=DJANGO_TYPE)
-        # Save SimpleUploadedFile into image field
-        
-        self.thumbnail.save('{}_thumbnail.{}'.format(os.path.splitext(suf.name)[0], FILE_EXTENSION), suf, save=False)
-        
-
     def save(self, *args, **kwargs):
-        # create a thumbnail
-        self.create_thumbnail()
-
+        self.slug = self.file.name
         super(Image, self).save(*args, **kwargs)
-
-#    def save(self, *args, **kwargs):
-#        self.slug = self.file.name
-#        super(Image, self).save(*args, **kwargs)
-    
-#    def generate_thumbnail(self):
-#        from PIL import Image as Img
-#        from os.path import basename
-#        thumbnail = Img.open(self.file.path)
-#        thumbnail_path = self.file.path.replace(
-#            basename(self.file.path), 
-#            "thumbnail_" + basename(self.file.path))
-#        thumbnail.thumbnail([150, 150], Img.ANTIALIAS)
-#        thumbnail.save(thumbnail_path, "JPEG")
 
     def delete(self, *args, **kwargs):
         """delete -- Remove to leave file."""
-        self.thumbnail.delete(False)
         self.file.delete(False)
         super(Image, self).delete(*args, **kwargs)
         
@@ -1578,10 +1499,6 @@ class Image(models.Model):
     @models.permalink
     def get_absolute_url(self):
         return ('image_download', [self.creator_id, self.pk], {})
-
-    @models.permalink
-    def get_thumbnail_url(self):
-        return ('download', [self.creator_id, self.pk], {})
 
     class Meta:
         ordering = ("id", 
@@ -1596,13 +1513,28 @@ class Image(models.Model):
     if six.PY3:
         __str__ = __unicode__
 
-class SessionPageImage(Image):
 
+
+class SessionPageImage(Image):
+    file_thumbnail = ImageSpecField(source='file',
+                                    processors=[ResizeToFit(200, 200)],
+                                    format='JPEG',
+                                    options={'quality': 60})
     flow_session  = models.ForeignKey(FlowSession, null=True, related_name="page_image_data",
             verbose_name=_('Flow session'), on_delete=models.CASCADE)
         
     image_page_id = models.CharField(max_length=200, null=True,
             verbose_name=_('Image Page ID'))
+
+    @models.permalink
+    def get_thumbnail_url(self):
+        return ('session_image_thumb', [file_thumbnail.name], {})
+    
+
+#    def delete(self, *args, **kwargs):
+#        """delete -- Remove to leave file."""
+#        self.file_thumbnail.delete(False)
+#        super(SessionPageImage, self).delete(*args, **kwargs)
 
     
 # }}}
