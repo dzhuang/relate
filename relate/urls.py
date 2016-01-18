@@ -447,55 +447,11 @@ urlpatterns = [
     #}}}
 
     url(r'^admin/', include(admin.site.urls)),
-]
-
-urlpatterns += [
-    url(r"^user"
-        "/flow-session"
-        "/(?P<flow_session_id>[0-9]+)"
-        "/(?P<ordinal>[0-9]+)"
-        "/image/upload/$",
-        course.views.ImageCreateView.as_view(),
-        name='jfu_upload'),
-
-    url(r"^user"
-        "/flow-session"
-        "/(?P<flow_session_id>[0-9]+)"
-        "/(?P<ordinal>[0-9]+)"
-        "/image/delete"
-        "/(?P<pk>\d+)$",
-        course.views.ImageDeleteView.as_view(), 
-        name='jfu_delete'),
-
-    url(r"^user"
-        "/flow-session"
-        "/(?P<flow_session_id>[0-9]+)"
-        "/(?P<ordinal>[0-9]+)"
-        "/image/view/$",
-        course.views.ImageListView.as_view(),
-        name='jfu_view'),
-
-    url(r"^course"
-        "/userfiles"
-        "/(?P<creator_id>\d+)"
-        "/(?P<download_id>\d+)/$",
-        course.views.image_download,
-        name='image_download'),
-
-    url(r"^course"
-        "/" + COURSE_ID_REGEX +
-        "/flow-session"
-        "/(?P<flow_session_id>[0-9]+)"
-        "/(?P<ordinal>[0-9]+)"
-        "/submit"
-        "/$",
-        course.views.image_page_submit,
-        name="relate-submit_image_page"),
     
-#    url(r"media"
-#       "/"
-#       name="session_image_thumb"),
+    # {{{ image_upload
+    url(r'^image_upload/', include('image_upload.urls')),
 
+    #}}}
 ]
 
 if settings.RELATE_MAINTENANCE_MODE:
@@ -513,5 +469,11 @@ if settings.RELATE_SIGN_IN_BY_SAML2_ENABLED:
             # Keep commented unless debugging SAML2.
             url(r'^saml2-test/', 'djangosaml2.views.echo_attributes'),
             ])
+
+        
+from django.conf.urls.static import static
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 # vim: fdm=marker
