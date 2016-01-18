@@ -250,16 +250,24 @@ class BulkPreapprovalsForm(StyledForm):
             choices=PARTICIPATION_ROLE_CHOICES,
             initial=participation_role.student,
             label=_("Role"))
-    emails = forms.CharField(required=True, widget=forms.Textarea,
-            help_text=_("Enter fully qualified email addresses or "
-                        "institutional ID, one per line."),
-            label=_("Emails or institutional ID"))
-
+    emails = forms.CharField(required=False, widget=forms.Textarea,
+            help_text=_("Enter fully qualified email addresses, one per line."),
+            label=_("Emails"))
+    inst_ids = forms.CharField(required=False, widget=forms.Textarea,
+            help_text=_("Enter fully qualified institutional IDs, one per line."),
+            label=_("Institutional IDs"))
     def __init__(self, *args, **kwargs):
         super(BulkPreapprovalsForm, self).__init__(*args, **kwargs)
 
         self.helper.add_input(
                 Submit("submit", _("Preapprove")))
+
+    def clean(self):
+        email_data = self.cleaned_data['emails']
+        inst_id_data = self.cleaned_data['inst_ids']
+        if not (email_data or inst_id_data):
+            raise forms.ValidationError(
+                    _("No preapprovement data entered"))
 
 
 @login_required
