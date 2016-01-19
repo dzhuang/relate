@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('course', '0081_course_fields_i18n'),
+        ('course', '0082_course_enroll_deadline'),
     ]
 
     operations = [
