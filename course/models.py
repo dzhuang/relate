@@ -391,10 +391,16 @@ class ParticipationPreapproval(models.Model):
             verbose_name=_('Creation time'))
 
     def __unicode__(self):
-        # Translators: somebody's email in some course in Participation
-        # Preapproval
-        return _("%(email)s in %(course)s") % {
-                "email": self.email, "course": self.course}
+        if self.email:
+            # Translators: somebody's email in some course in Participation
+            # Preapproval
+            return _("Email %(email)s in %(course)s") % {
+                    "email": self.email, "course": self.course}
+        elif self.institutional_id:
+            # Translators: somebody's Institutional ID in some course in 
+            # Participation Preapproval
+            return _("Institutional ID %(inst_id)s in %(course)s") % {
+                    "inst_id": self.institutional_id, "course": self.course}
 
     if six.PY3:
         __str__ = __unicode__
