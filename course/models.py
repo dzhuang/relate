@@ -157,6 +157,14 @@ class Course(models.Model):
             help_text=_("If set, each enrolling student must be "
             "individually approved."),
             verbose_name=_('Enrollment approval required'))
+    preapproval_require_verified_inst_id = models.BooleanField(
+            default=True,
+            help_text=_("If set, students cannot get particiaption "
+                        "preapproval using institutional ID if "
+                        "institutional ID they provided are not "
+                        "verified."),
+            verbose_name=_('None preapproval by institutional ID if not '
+                           'verified?'))
     enrollment_required_email_suffix = models.CharField(
             max_length=200, blank=True, null=True,
             help_text=_("Enrollee's email addresses must end in the "
@@ -367,8 +375,10 @@ class Participation(models.Model):
 
 
 class ParticipationPreapproval(models.Model):
-    email = models.EmailField(max_length=254,
+    email = models.EmailField(max_length=254, null=True, blank=True,
             verbose_name=_('Email'))
+    institutional_id = models.CharField(max_length=254, null=True, blank=True,
+            verbose_name=_('Institutional ID'))
     course = models.ForeignKey(Course,
             verbose_name=_('Course'), on_delete=models.CASCADE)
     role = models.CharField(max_length=50,

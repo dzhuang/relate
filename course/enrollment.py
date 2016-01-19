@@ -103,7 +103,15 @@ def enroll(request, course_identifier):
             preapproval = ParticipationPreapproval.objects.get(
                     course=course, email__iexact=request.user.email)
         except ParticipationPreapproval.DoesNotExist:
-            pass
+            if user.institutional_id:
+                if not (course.preapproval_require_verified_inst_id
+                        and not user.institutional_id_verified):
+                    try:
+                        preapproval = ParticipationPreapproval.objects.get(
+                                course=course,
+                                institutional_id__iexact=user.institutional_id)
+                    except ParticipationPreapproval.DoesNotExist:
+                        pass
 
     if (
             preapproval is None
@@ -132,14 +140,6 @@ def enroll(request, course_identifier):
             participation.save()
 
         return participation
-
-    if preapproval is None:
-        if user.institutional_id:
-            try:
-                preapproval = ParticipationPreapproval.objects.get(
-                        course=course, email__iexact=user.institutional_id)
-            except ParticipationPreapproval.DoesNotExist:
-                pass
 
     role = participation_role.student
 
@@ -250,25 +250,20 @@ class BulkPreapprovalsForm(StyledForm):
             choices=PARTICIPATION_ROLE_CHOICES,
             initial=participation_role.student,
             label=_("Role"))
-    emails = forms.CharField(required=False, widget=forms.Textarea,
-            help_text=_("Enter fully qualified email addresses, one per line."),
-            label=_("Emails"))
-    inst_ids = forms.CharField(required=False, widget=forms.Textarea,
+    preapproval_type = forms.ChoiceField(
+            choices=(
+                ("email", _("Email")),
+                ("institutional_id", _("Institutional ID")),
+                ),
+            initial="email",
+            label=_("Preapproval type"))
+    preapproval_data = forms.CharField(required=True, widget=forms.Textarea,
             help_text=_("Enter fully qualified institutional IDs, one per line."),
-            label=_("Institutional IDs"))
+            label=_("Preapproval data"))
     def __init__(self, *args, **kwargs):
         super(BulkPreapprovalsForm, self).__init__(*args, **kwargs)
-
         self.helper.add_input(
                 Submit("submit", _("Preapprove")))
-
-    def clean(self):
-        email_data = self.cleaned_data['emails']
-        inst_id_data = self.cleaned_data['inst_ids']
-        if not (email_data or inst_id_data):
-            raise forms.ValidationError(
-                    _("No preapprovement data entered"))
-
 
 @login_required
 @transaction.atomic
@@ -288,20 +283,22 @@ def create_preapprovals(pctx):
             pending_approved_count = 0
 
             role = form.cleaned_data["role"]
-            for l in form.cleaned_data["emails"].split("\n"):
+            for l in form.cleaned_data["preapproval_data"].split("\n"):
                 l = l.strip()
+                attr = form.cleaned_data["preapproval_type"]
 
                 if not l:
                     continue
 
                 try:
+                    kwargs = {'{0}__{1}'.format(attr, 'iexact'): l}
                     preapproval = ParticipationPreapproval.objects.get(
-                            email__iexact=l,
-                            course=pctx.course)
+                            course=pctx.course, **kwargs)
                 except ParticipationPreapproval.DoesNotExist:
 
                     # approve if l is requesting enrollment
                     try:
+                        kwargs = {'{0}__{1}__{2}'.format('user', attr, 'iexact'): l}
                         pending_participation = Participation.objects.get(
                                 course=pctx.course,
                                 status=participation_status.requested,
@@ -322,7 +319,7 @@ def create_preapprovals(pctx):
                     continue
 
                 preapproval = ParticipationPreapproval()
-                preapproval.email = l
+                setattr(preapproval, attr, l)
                 preapproval.course = pctx.course
                 preapproval.role = role
                 preapproval.creator = request.user
