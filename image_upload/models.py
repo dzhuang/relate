@@ -82,9 +82,7 @@ class Image(models.Model):
         return ('image_download', [self.creator_id, self.pk], {})
 
     class Meta:
-        ordering = ("id", 
-                   "creation_time"
-                   )
+        ordering = ("id", "creation_time")
 
     def __unicode__(self):
         return _("%(url)s uploaded by %(creator)s") % {
@@ -99,7 +97,7 @@ class SessionPageImage(Image):
     file_thumbnail = ImageSpecField(
             source='file',
             processors=[ResizeToFit(200, 200)],
-            format='JPEG',
+            format='PNG',
             options={'quality': 60}
             )
     flow_session = models.ForeignKey(
