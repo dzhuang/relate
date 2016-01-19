@@ -35,7 +35,7 @@
 
     function enable_widget_no_id(){
         $('#div_id_confirm_institutional_id').show();
-        $('#id_institutional_id').prop('disabled', false);            
+        $('#id_institutional_id').prop('disabled', false);
     }
 
     
@@ -77,7 +77,7 @@
                     $(profile_form).replaceWith(data['form_html']);
                 }
                 else {
-                    $('#div_id_confirm_institutional_id').hide();                    
+                    $('#div_id_confirm_institutional_id').hide();
                     $('#id_institutional_id').prop('disabled', true);
                     if ($("#id_institutional_id").val().length > 0){
                         $('#div_id_no_institutional_id').hide();}
@@ -87,7 +87,8 @@
                     if (data['success_messages']) {
                         $("#profile-form-info")
                             .addClass("alert alert-info")
-                            .html('<i class="fa fa-info-circle"></i> '+data['success_messages']);
+                            .html('<i class="fa fa-info-circle"></i> '
+                                  + data['success_messages']);
                         window.setTimeout(
                             function() {
                                 $("#profile-form-info")
@@ -95,9 +96,10 @@
                                     .removeClass("alert alert-info")
                                     .html("")
                                     .fadeIn();
-                                if (first_login){window.location.replace('{% url "relate-home" %}');}
-                                if (hasParam("referer")){window.location.replace(getParam("referer"));}
-
+                                if (first_login){
+                                    window.location.replace('{% url "relate-home" %}');}
+                                if (hasParam("referer")){
+                                    window.location.replace(getParam("referer"));}
                             },
                             3000);
                     };

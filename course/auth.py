@@ -673,7 +673,7 @@ class UserForm(StyledModelForm):
                         "or you forget your institutional id."),
             required=False,
             initial=False)
-    
+
     class Meta:
         model = get_user_model()
         fields = (
@@ -742,20 +742,7 @@ def user_profile(request):
     if not request.user.is_authenticated():
         raise PermissionDenied()
 
-    user_form = None
-
-    if request.method == "POST":
-        if "submit_user" in request.POST:
-            user_form = UserForm(request.POST, instance=request.user)
-            if user_form.is_valid():
-                user_form.save()
-
-                messages.add_message(request, messages.INFO,
-                        _("Profile data saved."))
-                if request.GET.get("first_login"):
-                    return redirect("relate-home")
-
-    if user_form is None:
+    if request.method == "GET":
         user_form = UserForm(instance=request.user)
 
     return render(request, "user-profile-form.html", {
@@ -763,6 +750,9 @@ def user_profile(request):
         })
 
 def user_profile_ajax(request):
+    if not request.user.is_authenticated():
+        raise PermissionDenied()
+
     user_form = UserForm(request.POST or None, instance=request.user)
     if user_form.is_valid():
         user_form.save()
@@ -776,7 +766,7 @@ def user_profile_ajax(request):
 
     from crispy_forms.utils import render_crispy_form
     from django.core.context_processors import csrf
-    
+
     ctx = {}
     ctx.update(csrf(request))
     form_html = render_crispy_form(user_form, context=ctx)
