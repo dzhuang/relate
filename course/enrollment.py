@@ -112,6 +112,7 @@ def enroll(request, course_identifier):
                                 institutional_id__iexact=user.institutional_id)
                     except ParticipationPreapproval.DoesNotExist:
                         pass
+            pass
 
     if (
             preapproval is None
@@ -258,7 +259,8 @@ class BulkPreapprovalsForm(StyledForm):
             initial="email",
             label=_("Preapproval type"))
     preapproval_data = forms.CharField(required=True, widget=forms.Textarea,
-            help_text=_("Enter fully qualified institutional IDs, one per line."),
+            help_text=_("Enter fully qualified data according to \"Preapproval"
+                        "type\" you selected, one per line."),
             label=_("Preapproval data"))
 
     def __init__(self, *args, **kwargs):
@@ -297,7 +299,8 @@ def create_preapprovals(pctx):
 
                     try:
                         preapproval = ParticipationPreapproval.objects.get(
-                                course=pctx.course, email__iexact=l)
+                                email__iexact=l,
+                                course=pctx.course)
                     except ParticipationPreapproval.DoesNotExist:
 
                         # approve if l is requesting enrollment
