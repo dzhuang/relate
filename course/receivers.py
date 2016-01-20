@@ -24,26 +24,21 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-from django.conf import settings
-
-from django.db.models import signals
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from accounts.models import User
 
 @receiver(post_save, sender=User)
 def update_enrollment_status(sender, created, instance, **kwargs):
-#    from django.contrib.sites.models import Site
-#    print Site.objects.get_current().domain
     if not created:
         user = instance
         from course.models import (
-            Participation, participation_status,
-            ParticipationPreapproval,
-            )
-        
+                Participation, participation_status,
+                ParticipationPreapproval,
+                )
+
         requested_qset = Participation.objects.filter(
-            user=user, status=participation_status.requested)
+                user=user, status=participation_status.requested)
         if requested_qset is None:
             pass
 
@@ -61,16 +56,17 @@ def update_enrollment_status(sender, created, instance, **kwargs):
                                 and not user.institutional_id_verified):
                             try:
                                 preapproval = (
-                                    ParticipationPreapproval.objects.get(
-                                        course=course,
-                                        institutional_id__iexact\
-                                        =user.institutional_id))
+                                     ParticipationPreapproval.objects.get(
+                                         course=course,
+                                         institutional_id__iexact\
+                                                 =user.institutional_id))
                             except ParticipationPreapproval.DoesNotExist:
                                 pass
                 pass
 
             def enroll(status, role):
-                participations = Participation.objects.filter(course=course, user=user)
+                participations = Participation.objects.filter(
+                        course=course, user=user)
 
                 assert participations.count() <= 1
                 if participations.count() == 0:
@@ -90,6 +86,7 @@ def update_enrollment_status(sender, created, instance, **kwargs):
             if preapproval is not None:
                 role = preapproval.role
                 enroll(participation_status.active, role)
+
                 from course.enrollment import send_enrollment_decision
                 send_enrollment_decision(requested, True)
 

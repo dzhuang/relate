@@ -214,13 +214,17 @@ def send_enrollment_decision(participation, approved, request=None):
                         reverse("relate-course_page",
                             args=(course.identifier,)))
             else:
+                site_domain = None
                 if "django.contrib.sites" in settings.INSTALLED_APPS:
                     from django.contrib.sites.models import Site
-                    site_domain = Site.objects.get_current().domain
-                else:
-                    # sites framework above may failed due to unresolved
+                    try:
+                        site_domain = Site.objects.get_current().domain
+                    except:
+                    # sites framework may failed due to unresolved
                     # migrations issue for PostgreSql
                     # http://stackoverflow.com/q/30356963/3437454
+                        pass
+                else:
                     site_domain = getattr(settings, "RELATE_SITE_DOMAIN","")
 
                 if site_domain:
@@ -228,8 +232,8 @@ def send_enrollment_decision(participation, approved, request=None):
                         site_domain,
                         course.get_absolute_url())
                 else:
-                    # FIXME : For full url, RELATE_SITE_DOMAIN is need in settings
-                    # When sending emails triggered by signal.
+                    # FIXME : For full url, RELATE_SITE_DOMAIN is need 
+                    # in settings When sending emails triggered by signal.
                     course_uri = course.get_absolute_url()
 
             from django.template.loader import render_to_string
@@ -359,16 +363,7 @@ def create_preapprovals(pctx):
                     try:
                         preapproval = ParticipationPreapproval.objects.get(
                                 course=pctx.course, institutional_id__iexact=l)
-                        # FIXME :
-                        """
-                           When an exist preapproval is submit, and if the tutor changed the
-                           requirement of preapproval_require_verified_inst_id of the
-                           course from True to False, some pending requests which had not
-                           provided validated inst_id will still be pending.
 
-                           BTW, it is also the case when the tutor changed the
-                           enrollment_required_email_suffix from "@what.com" to "".
-                        """
                     except ParticipationPreapproval.DoesNotExist:
 
                         # approve if l is requesting enrollment
