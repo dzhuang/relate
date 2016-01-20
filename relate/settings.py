@@ -55,6 +55,12 @@ INSTALLED_APPS = (
     "jfu",
     'imagekit',
     #"ckeditor_uploader",
+    
+    ## Seem sites should be put after other
+    ## apps so as to migrate successfully
+    ## for PostgreSql
+    
+    #"django.contrib.sites",
 )
 
 if local_settings["RELATE_SIGN_IN_BY_SAML2_ENABLED"]:
@@ -283,5 +289,8 @@ SAML_ATTRIBUTE_MAPPING = {
 }
 
 # }}}
+
+# Enabling the sites framework, need migration
+# SITE_ID = 1
 
 # vim: foldmethod=marker

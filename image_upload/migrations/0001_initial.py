@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('course', '0082_course_enroll_deadline'),
+        ('accounts', '0008_inst_id_unique_and_updates'),
     ]
 
     operations = [
@@ -31,7 +31,7 @@ class Migration(migrations.Migration):
             name='SessionPageImage',
             fields=[
                 ('image_ptr', models.OneToOneField(parent_link=True, auto_created=True, primary_key=True, serialize=False, to='image_upload.Image')),
-                ('image_page_id', models.CharField(max_length=200, null=True, verbose_name='Image Page ID')),
+                ('image_page_id', models.CharField(max_length=200, null=True)),
                 ('flow_session', models.ForeignKey(related_name='page_image_data', verbose_name='Flow session', to='course.FlowSession', null=True)),
             ],
             bases=('image_upload.image',),

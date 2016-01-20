@@ -214,10 +214,24 @@ def send_enrollment_decision(participation, approved, request=None):
                         reverse("relate-course_page",
                             args=(course.identifier,)))
             else:
-                from django.contrib.sites.models import Site
-                course_uri = course.get_absolute_url()
-                #'https://%s%s' % (
-                    #Site.objects.get_current().domain, course.get_absolute_url())
+                if "django.contrib.sites" in settings.INSTALLED_APPS:
+                    from django.contrib.sites.models import Site
+                    site_domain = Site.objects.get_current().domain
+                else:
+                    # sites framework above may failed due to unresolved
+                    # migrations issue for PostgreSql
+                    # http://stackoverflow.com/q/30356963/3437454
+                    site_domain = getattr(settings, "RELATE_SITE_DOMAIN","")
+
+                if site_domain:
+                    course_uri = 'http://%s%s' % (
+                        site_domain,
+                        course.get_absolute_url())
+                else:
+                    # FIXME : For full url, RELATE_SITE_DOMAIN is need in settings
+                    # When sending emails triggered by signal.
+                    course_uri = course.get_absolute_url()
+
             from django.template.loader import render_to_string
             message = render_to_string("course/enrollment-decision-email.txt", {
                 "user": participation.user,

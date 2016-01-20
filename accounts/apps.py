@@ -2,11 +2,10 @@ from django.apps import AppConfig
 from django.utils.translation import ugettext_lazy as _
 
 
-class CourseConfig(AppConfig):
-    name = 'course'
+class AccountsConfig(AppConfig):
+    name = 'accounts'
     # for translation of the name of "Course" app displayed in admin.
-    verbose_name = _("Course module")
+    verbose_name = _("Accounts")
 
     def ready(self):
-        import course.signals
-        import course.receivers
+        import accounts.signals

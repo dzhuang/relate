@@ -30,13 +30,12 @@ from django.db.models import signals
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from course.models import Course
+from django.dispatch import Signal
 
 
-#@receiver(post_save, sender=Course)
-#def create_customer(sender, instance, created, **kwargs):
-#    print kwargs
-#    print "Save is called"
-    
-#signals.post_save.connect(create_customer, sender=User)
+user_saved = Signal(providing_args=["request", "user"])
+
+
+# TODO
 
 # vim: foldmethod=marker
