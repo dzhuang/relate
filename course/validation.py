@@ -971,7 +971,7 @@ def get_yaml_from_repo_safely(repo, full_name, commit_sha):
 
 def check_attributes_yml(vctx, repo, path, tree):
     try:
-        _, attr_blob_sha = tree[".attributes.yml"]
+        _, attr_blob_sha = tree[b".attributes.yml"]
     except KeyError:
         # no .attributes.yml here
         pass
@@ -1226,6 +1226,7 @@ def validate_course_content(repo, course_file, events_file,
 class FileSystemFakeRepo(object):
     def __init__(self, root):
         self.root = root
+        assert isinstance(self.root, six.binary_type)
 
     def controldir(self):
         return self.root
@@ -1253,6 +1254,7 @@ class FileSystemFakeRepoTreeEntry(object):
 class FileSystemFakeRepoTree(object):
     def __init__(self, root):
         self.root = root
+        assert isinstance(self.root, six.binary_type)
 
     def __getitem__(self, name):
         from os.path import join, isdir, exists
@@ -1302,7 +1304,7 @@ def validate_course_on_filesystem_script_entrypoint():
 
     args = parser.parse_args()
 
-    fake_repo = FileSystemFakeRepo(args.root)
+    fake_repo = FileSystemFakeRepo(args.root.encode("utf-8"))
     warnings = validate_course_content(
             fake_repo,
             args.course_file, args.events_file,
