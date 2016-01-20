@@ -284,4 +284,7 @@ SAML_ATTRIBUTE_MAPPING = {
 
 # }}}
 
+# Enabling the sites framework, need migration
+#SITE_ID = 1
+
 # vim: foldmethod=marker
