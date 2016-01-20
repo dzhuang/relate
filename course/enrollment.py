@@ -206,17 +206,24 @@ def decide_enrollment(approved, modeladmin, request, queryset):
             _("%d requests processed.") % count)
 
 
-def send_enrollment_decision(participation, approved, request):
+def send_enrollment_decision(participation, approved, request=None):
         with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
             course = participation.course
+            if request:
+                course_uri = request.build_absolute_uri(
+                        reverse("relate-course_page",
+                            args=(course.identifier,)))
+            else:
+                from django.contrib.sites.models import Site
+                course_uri = course.get_absolute_url()
+                #'https://%s%s' % (
+                    #Site.objects.get_current().domain, course.get_absolute_url())
             from django.template.loader import render_to_string
             message = render_to_string("course/enrollment-decision-email.txt", {
                 "user": participation.user,
                 "approved": approved,
                 "course": course,
-                "course_uri": request.build_absolute_uri(
-                        reverse("relate-course_page",
-                            args=(course.identifier,)))
+                "course_uri": course_uri
                 })
 
             from django.core.mail import EmailMessage
