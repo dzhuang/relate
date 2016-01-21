@@ -66,6 +66,17 @@ INSTALLED_APPS = (
 if local_settings["RELATE_SIGN_IN_BY_SAML2_ENABLED"]:
     INSTALLED_APPS = INSTALLED_APPS + ("djangosaml2",)
 
+if (not "RELATE_SITE_DOMAIN" in local_settings
+    or local_settings["RELATE_SITE_DOMAIN"] == "www.example.com"):
+    # If django.contrib.sites is added, need to run migrate
+    # the sites app. Then edit in admin the first records as
+    # your site domain.
+    # If migrate failed with sites, which is often the case
+    # for PostgreSql, please configure "RELATE_SITE_DOMAIN"
+    # as your site doman in local_settings.py.
+    INSTALLED_APPS = INSTALLED_APPS + ("django.contrib.sites",)
+    SITE_ID = 1
+
 # }}}
 
 # {{{ django: middleware
