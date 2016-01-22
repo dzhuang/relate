@@ -441,10 +441,6 @@ class ResetPasswordFormByInstid(StyledForm):
                 Submit("submit", _("Send email")))
 
 
-def str_to_class(str):
-    return globals()[str]
-
-
 def masked_email(email):
     # return a masked email address
     at = email.find('@')
@@ -456,7 +452,8 @@ def reset_password(request, field="email"):
         raise SuspiciousOperation(
                 _("self-registration is not enabled"))
 
-    ResetPasswordForm = str_to_class("ResetPasswordFormBy" + field.title())
+    # return form class by string of class name
+    ResetPasswordForm = globals()["ResetPasswordFormBy" + field.title()]
     if request.method == 'POST':
         form = ResetPasswordForm(request.POST)
         if form.is_valid():
