@@ -124,31 +124,13 @@ def enroll(request, course_identifier):
                 "enroll.") % course.enrollment_required_email_suffix)
         return redirect("relate-course_page", course_identifier)
 
-    def enroll(status, role):
-        participations = Participation.objects.filter(course=course, user=user)
-
-        assert participations.count() <= 1
-        if participations.count() == 0:
-            participation = Participation()
-            participation.user = user
-            participation.course = course
-            participation.role = role
-            participation.status = status
-            participation.save()
-        else:
-            (participation,) = participations
-            participation.status = status
-            participation.save()
-
-        return participation
-
     role = participation_role.student
 
     if preapproval is not None:
         role = preapproval.role
 
     if course.enrollment_approval_required and preapproval is None:
-        enroll(participation_status.requested, role)
+        do_enroll(course, user, participation_status.requested, role)
 
         with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
             from django.template.loader import render_to_string
@@ -172,12 +154,31 @@ def enroll(request, course_identifier):
                 _("Enrollment request sent. You will receive notifcation "
                 "by email once your request has been acted upon."))
     else:
-        enroll(participation_status.active, role)
+        do_enroll(course, user, participation_status.active, role)
 
         messages.add_message(request, messages.SUCCESS,
                 _("Successfully enrolled."))
 
     return redirect("relate-course_page", course_identifier)
+
+@transaction.atomic
+def do_enroll(course, user, status, role):
+    participations = Participation.objects.filter(course=course, user=user)
+
+    assert participations.count() <= 1
+    if participations.count() == 0:
+        participation = Participation()
+        participation.user = user
+        participation.course = course
+        participation.role = role
+        participation.status = status
+        participation.save()
+    else:
+        (participation,) = participations
+        participation.status = status
+        participation.save()
+
+    return participation
 
 # }}}
 
@@ -215,28 +216,10 @@ def send_enrollment_decision(participation, approved, request=None):
                             args=(course.identifier,)))
             else:
                 # This will happen when this method is triggered by
-                # a model signal which doesn't contain request object.
-                site_domain = None
-                if "django.contrib.sites" in settings.INSTALLED_APPS:
-                    from django.contrib.sites.models import Site
-                    try:
-                        site_domain = Site.objects.get_current().domain
-                    except:
-                    # sites framework may failed due to unresolved
-                    # migrations issue for PostgreSql
-                    # http://stackoverflow.com/q/30356963/3437454
-                        pass
-                else:
-                    site_domain = getattr(settings, "RELATE_SITE_DOMAIN","")
-
-                if site_domain:
-                    course_uri = 'http://%s%s' % (
-                        site_domain,
-                        course.get_absolute_url())
-                else:
-                    # FIXME : For full url, RELATE_SITE_DOMAIN is need 
-                    # in settings When sending emails triggered by signal.
-                    course_uri = course.get_absolute_url()
+                # a model signal which doesn't contain a request object.
+                from urlparse import urljoin
+                course_uri = urljoin(getattr(settings, "RELATE_BASE_URL"),
+                                     course.get_absolute_url())
 
             from django.template.loader import render_to_string
             message = render_to_string("course/enrollment-decision-email.txt", {
