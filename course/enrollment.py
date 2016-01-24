@@ -40,6 +40,7 @@ from django.core.urlresolvers import reverse
 from django.db import transaction
 from django import forms
 from django.utils import translation
+from django.utils.safestring import mark_safe
 
 from crispy_forms.layout import Submit
 
@@ -64,7 +65,7 @@ from pytools.lex import RE as REBase
 
 @login_required
 @transaction.atomic
-def enroll(request, course_identifier):
+def enroll_view(request, course_identifier):
     course = get_object_or_404(Course, identifier=course_identifier)
     role, participation = get_role_and_participation(request, course)
 
@@ -130,16 +131,19 @@ def enroll(request, course_identifier):
         role = preapproval.role
 
     if course.enrollment_approval_required and preapproval is None:
-        do_enroll(course, user, participation_status.requested, role)
+        handle_enrollment_request(course, user, participation_status.requested,
+                                  role, request)
 
         with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
             from django.template.loader import render_to_string
             message = render_to_string("course/enrollment-request-email.txt", {
                 "user": user,
                 "course": course,
-                "admin_uri": request.build_absolute_uri(
+                "admin_uri": mark_safe(
+                    request.build_absolute_uri(
                         reverse("admin:course_participation_changelist")
-                        + "?status__exact=requested")
+                        +
+                        "?status__exact=requested&course__id__exact=%d" % course.id))
                 })
 
             from django.core.mail import send_mail
@@ -154,7 +158,8 @@ def enroll(request, course_identifier):
                 _("Enrollment request sent. You will receive notifcation "
                 "by email once your request has been acted upon."))
     else:
-        do_enroll(course, user, participation_status.active, role)
+        handle_enrollment_request(course, user, participation_status.active,
+                                  role, request)
 
         messages.add_message(request, messages.SUCCESS,
                 _("Successfully enrolled."))
@@ -162,7 +167,7 @@ def enroll(request, course_identifier):
     return redirect("relate-course_page", course_identifier)
 
 @transaction.atomic
-def do_enroll(course, user, status, role):
+def handle_enrollment_request(course, user, status, role, request=None):
     participations = Participation.objects.filter(course=course, user=user)
 
     assert participations.count() <= 1
@@ -178,7 +183,12 @@ def do_enroll(course, user, status, role):
         participation.status = status
         participation.save()
 
-    return participation
+    if status == participation_status.active:
+        send_enrollment_decision(participation, True, request)
+    elif status == participation_status.denied:
+        send_enrollment_decision(participation, False, request)
+    else:
+        return
 
 # }}}
 
@@ -626,7 +636,9 @@ def query_participations(pctx):
             parsed_query = None
             try:
                 for lineno, q in enumerate(form.cleaned_data["queries"].split("\n")):
-                    if not q.strip():
+                    q = q.strip()
+
+                    if not q:
                         continue
 
                     parsed_subquery = parse_query(pctx.course, q)
@@ -635,11 +647,12 @@ def query_participations(pctx):
                     else:
                         parsed_query = parsed_query | parsed_subquery
 
-            except RuntimeError as e:
+            except Exception as e:
                 messages.add_message(request, messages.ERROR,
-                        _("Error in line %(lineno)d: %(error)s")
+                        _("Error in line %(lineno)d: %(error_type)s: %(error)s")
                         % {
                             "lineno": lineno+1,
+                            "error_type": type(e).__name__,
                             "error": str(e),
                             })
 
