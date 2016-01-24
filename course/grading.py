@@ -51,6 +51,44 @@ from django.utils import translation
 
 # {{{ grading driver
 
+from django_select2.forms import Select2Widget
+from relate.utils import StyledForm
+from crispy_forms.layout import Submit
+from django import forms
+
+class FlowSessionChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        user = obj.user
+        return (
+                _("%(user_email)s - %(user_lastname)s, "
+                    "%(user_firstname)s")
+                % {
+                    "user_email": user.email,
+                    "user_lastname": user.last_name,
+                    "user_firstname": user.first_name})
+
+class GradingFlowSessionSelectForm(StyledForm):
+    def __init__(self, pctx, flow_session, *args, **kwargs):
+        super(GradingFlowSessionSelectForm, self).__init__(*args, **kwargs)
+
+        self.fields["sessions"] = FlowSessionChoiceField(
+                queryset=(FlowSession.objects
+                    .filter(
+                        course=pctx.course,
+                        flow_id=flow_session.flow_id,
+                        participation__isnull=False,
+                        in_progress=flow_session.in_progress)
+                    .order_by(
+                        "participation__user__last_name",
+                        "start_time")),
+                required=True,
+                help_text=_("Select session."),
+                label=_("Arbitary session"),
+                widget=Select2Widget())
+
+        self.helper.add_input(
+                Submit("go","go"))
+
 @course_view
 @retry_transaction_decorator()
 def grade_flow_page(pctx, flow_session_id, page_ordinal):
@@ -89,6 +127,12 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
             .order_by(
                 "participation__user__last_name",
                 "start_time"))
+    
+    print all_flow_sessions
+    
+    select_flow_session_form = GradingFlowSessionSelectForm(pctx, flow_session, page_ordinal)
+    
+    # neet post/get definition and form_to_html
 
     next_flow_session_id = None
     prev_flow_session_id = None
@@ -259,6 +303,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                     fpctx.page_context, fpctx.page_data.data),
                 "form": form,
                 "form_html": form_html,
+                "select_flow_session_form": select_flow_session_form,
                 "feedback": feedback,
                 "max_points": max_points,
                 "points_awarded": points_awarded,
