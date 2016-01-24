@@ -1735,7 +1735,7 @@ msgstr "只下载使用该rules tag的session."
 
 #: .\course\grades.py:1157
 msgid "Restrict to rules tag"
-msgstr ""
+msgstr "限制的rules tag"
 
 #: .\course\grades.py:1161
 msgid "Only download submissions from non-in-progress sessions"
@@ -1747,7 +1747,7 @@ msgstr "只选择非进行中的"
 
 #: .\course\grades.py:1165
 msgid "Additional File"
-msgstr ""
+msgstr "额外的文件"
 
 #: .\course\grades.py:1167
 msgid ""
@@ -4212,7 +4212,7 @@ msgstr "操作"
 
 #: .\course\templates\course\gradebook-by-opp.html:61
 msgid "Download submissions"
-msgstr "下载的提交"
+msgstr "下载提交的内容"
 
 #: .\course\templates\course\gradebook-by-opp.html:69
 msgid "Modify many sessions at once"
