@@ -128,9 +128,24 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 "participation__user__last_name",
                 "start_time"))
     
-    print all_flow_sessions
-    
-    select_flow_session_form = GradingFlowSessionSelectForm(pctx, flow_session, page_ordinal)
+    # {{{ session select2 
+    all_flow_sessions_json = []
+
+    from django.core.urlresolvers import reverse
+    for flowsession in all_flow_sessions:
+        uri = reverse("relate-grade_flow_page",
+            args=(
+                pctx.course.identifier,
+                flowsession.id,
+                fpctx.page_data.ordinal))
+
+        flowsession_json = {
+                "id": flowsession.pk,
+                "text": "%(userfullname)s (%(email)s) started at %(start_time)s"  % {"userfullname": flowsession.participation.user.get_full_name(), "email": flowsession.participation.user.email,  "start_time": flowsession.start_time},
+                "url": uri,
+                }
+        all_flow_sessions_json.append(flowsession_json)
+    # }}}
     
     # neet post/get definition and form_to_html
 
@@ -289,6 +304,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     else:
         grading_opportunity = None
 
+    from json import dumps
     return render_course_page(
             pctx,
             "course/grade-flow-page.html",
@@ -303,7 +319,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                     fpctx.page_context, fpctx.page_data.data),
                 "form": form,
                 "form_html": form_html,
-                "select_flow_session_form": select_flow_session_form,
+                #"select_flow_session_form": select_flow_session_form,
                 "feedback": feedback,
                 "max_points": max_points,
                 "points_awarded": points_awarded,
@@ -313,9 +329,11 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
                 "prev_flow_session_id": prev_flow_session_id,
                 "next_flow_session_id": next_flow_session_id,
+                "all_flow_sessions_json": dumps(all_flow_sessions_json),
 
                 "grading_form": grading_form,
                 "grading_form_html": grading_form_html,
+            
             })
 
 # }}}

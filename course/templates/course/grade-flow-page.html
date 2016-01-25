@@ -3,6 +3,11 @@
 
 {% load crispy_forms_tags %}
 
+{% block header_extra %}
+  <link href='/static/select2/dist/css/select2.css' type="text/css" media="screen" rel="stylesheet" />
+  <script src='/static/select2/dist/js/select2.js'></script>
+{% endblock %}
+
 {% block title %}
    {{ page_data.group_id }}/{{ page_data.page_id }} - {{ flow_identifier}} - {% trans "Grading" %} - {% trans "RELATE" %}
 {% endblock %}
@@ -46,6 +51,22 @@
       <h1> {% trans "Grading" %}: <tt>{{ flow_identifier}} - {{ page_data.group_id }}/{{ page_data.page_id }}</tt> </h1>
 
       {% include "base-page-top.html" %}
+        
+      {# {{{ Searchable session jumps #}
+        {% if all_flow_sessions_json %}
+        <div class="s2"> <p> Jump to: <select id="select_session"> </select> </p></div>
+            <script>
+                var data = {{all_flow_sessions_json|safe}};
+                $("#select_session").select2({
+                    data:data
+                });
+                $("#select_session").on('select2:select', function(e){
+                    // http://stackoverflow.com/a/33248730/3437454
+                    window.location = e.params.data.url;
+                });
+            </script>
+        {% endif %}
+      {# }}} #}
 
       {# {{{ header table #}
       <table class="table table-condensed">
@@ -128,7 +149,6 @@
             {% else %}
               <a href="#" class="btn btn-default disabled"><i class="fa fa-chevron-right"></i></a>
             {% endif %}
-            {# tweak here #}
             {% trans "Session" %}
           </td>
           <td>
@@ -161,15 +181,6 @@
           </td>
         </tr>
       </table>
-      {# }}} #}
-
-<!--
-      {# {{{ select session form #}
-      {% if select_flow_session_form != None %}
-        {{ select_flow_session_form }}
-      {% endif %}
--->
-
       {# }}} #}
 
       {# {{{ grading form #}
