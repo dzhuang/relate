@@ -25,7 +25,7 @@ THE SOFTWARE.
 """
 
 
-from django.utils.translation import ugettext as _
+from django.utils.translation import ugettext as _, string_concat
 from django.shortcuts import (  # noqa
         get_object_or_404, redirect)
 from relate.utils import retry_transaction_decorator
@@ -50,44 +50,6 @@ from django.utils import translation
 
 
 # {{{ grading driver
-
-from django_select2.forms import Select2Widget
-from relate.utils import StyledForm
-from crispy_forms.layout import Submit
-from django import forms
-
-class FlowSessionChoiceField(forms.ModelChoiceField):
-    def label_from_instance(self, obj):
-        user = obj.user
-        return (
-                _("%(user_email)s - %(user_lastname)s, "
-                    "%(user_firstname)s")
-                % {
-                    "user_email": user.email,
-                    "user_lastname": user.last_name,
-                    "user_firstname": user.first_name})
-
-class GradingFlowSessionSelectForm(StyledForm):
-    def __init__(self, pctx, flow_session, *args, **kwargs):
-        super(GradingFlowSessionSelectForm, self).__init__(*args, **kwargs)
-
-        self.fields["sessions"] = FlowSessionChoiceField(
-                queryset=(FlowSession.objects
-                    .filter(
-                        course=pctx.course,
-                        flow_id=flow_session.flow_id,
-                        participation__isnull=False,
-                        in_progress=flow_session.in_progress)
-                    .order_by(
-                        "participation__user__last_name",
-                        "start_time")),
-                required=True,
-                help_text=_("Select session."),
-                label=_("Arbitary session"),
-                widget=Select2Widget())
-
-        self.helper.add_input(
-                Submit("go","go"))
 
 @course_view
 @retry_transaction_decorator()
@@ -132,6 +94,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     all_flow_sessions_json = []
 
     from django.core.urlresolvers import reverse
+    from relate.utils import as_local_time, format_datetime_local
     for flowsession in all_flow_sessions:
         uri = reverse("relate-grade_flow_page",
             args=(
@@ -141,12 +104,22 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
         flowsession_json = {
                 "id": flowsession.pk,
-                "text": "%(userfullname)s (%(email)s) started at %(start_time)s"  % {"userfullname": flowsession.participation.user.get_full_name(), "email": flowsession.participation.user.email,  "start_time": flowsession.start_time},
+                "text": string_concat(
+                    _("%(user_email)s - %(user_fullname)s"),
+                    " ", _("started at %(start_time)s")
+                    ) % 
+                {
+                    "user_fullname":\
+                            flowsession.participation.user.get_full_name(),
+                    "user_email": flowsession.participation.user.email,
+                    "start_time": format_datetime_local(
+                        as_local_time(flowsession.start_time))
+                    },
                 "url": uri,
                 }
         all_flow_sessions_json.append(flowsession_json)
     # }}}
-    
+
     # neet post/get definition and form_to_html
 
     next_flow_session_id = None

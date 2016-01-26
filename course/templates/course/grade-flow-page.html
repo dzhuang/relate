@@ -51,10 +51,10 @@
       <h1> {% trans "Grading" %}: <tt>{{ flow_identifier}} - {{ page_data.group_id }}/{{ page_data.page_id }}</tt> </h1>
 
       {% include "base-page-top.html" %}
-        
+
       {# {{{ Searchable session jumps #}
         {% if all_flow_sessions_json %}
-        <div class="s2"> <p> Jump to: <select id="select_session"> </select> </p></div>
+        <div class="s2"> <p>{% trans "Jump to" %}: <select id="select_session"> </select> </p></div>
             <script>
                 var data = {{all_flow_sessions_json|safe}};
                 $("#select_session").select2({

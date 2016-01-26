@@ -302,4 +302,30 @@ if 0:
 
 # }}}
 
+
+# {{{
+
+def format_full_name(first_name, last_name):
+    from django.conf import settings
+    language_code = getattr(settings, "LANGUAGE_CODE", "en_us")
+
+    if language_code[:2].lower() in ["zh", "ja", "ko"]:
+        full_name_style = "eastern"
+    else:
+        full_name_style = "western"
+
+    import re
+    ENGLISH_CHARS = re.compile('[^\W_]', re.IGNORECASE)    
+    
+    if len(ENGLISH_CHARS.findall(last_name)) +\
+        len(ENGLISH_CHARS.findall(first_name)):
+        full_name_style = "western"
+
+    if full_name_style == "eastern":
+        return "%s%s" % (last_name, first_name)
+    else:
+        return '%s %s' % (first_name, last_name)
+
+#}}}
+
 # vim: foldmethod=marker

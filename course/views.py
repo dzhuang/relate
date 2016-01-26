@@ -714,8 +714,10 @@ def grant_exception(pctx):
 def strify_session_for_exception(session):
     from relate.utils import as_local_time, format_datetime_local
     # Translators: %s is the string of the start time of a session.
-    result = (_("started at %s") % format_datetime_local(
-        as_local_time(session.start_time)))
+    result = (_("started at %(start_time)s") % {
+            "start_time": format_datetime_local(
+                as_local_time(session.start_time))}
+             )
 
     if session.access_rules_tag:
         result += " tagged '%s'" % session.access_rules_tag
