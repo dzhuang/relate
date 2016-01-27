@@ -215,7 +215,7 @@ def course_page(pctx):
             else:
                 if pctx.course.preapproval_require_verified_inst_id:
                     messages.add_message(pctx.request, messages.WARNING,
-                            _("Your institutional id is not verified or "
+                            _("Your institutional ID is not verified or "
                             "preapproved. Please contact your course "
                             "staff.")
                             )
