@@ -30,7 +30,11 @@
       <td>{% trans "Grading Opportunity ID" %}</td><td><tt>{{ opportunity.identifier }}</tt></td>
     </tr>
     <tr>
-      <td>{% trans "Due" %}</td><td><tt>{{ opportunity.due_time }}</tt></td>
+      <td>{% trans "Due" %}</td><td><tt>
+        {% with time=opportunity.due_time %}
+          <span title="{{ time|date:'SHORT_DATETIME_FORMAT' }}">{{ time|date:"MONTH_DAY_FORMAT" }} {{ time|date:"TIME_FORMAT" }}</span>
+        {% endwith %}
+        </tt></td>
     </tr>
     <tr>
       <td>{% trans "Aggregation strategy" %}</td><td><tt>{{ opportunity.aggregation_strategy }}</tt></td>
@@ -140,7 +144,9 @@
                 <li>
                   {% include "course/flow-session-state.html" %}
                   {% if not flow_session.in_progress %}
-                    ({{ flow_session.completion_time }})
+                    {% with time=flow_session.completion_time %}
+                    (<span title="{{ time|date:'SHORT_DATETIME_FORMAT' }}">{{ time|date:"MONTH_DAY_FORMAT" }} {{ time|date:"TIME_FORMAT" }}</span>)
+                    {% endwith %}
                   {% endif %}
                   {% if flow_session.access_rules_tag %}
                     ({% trans "Rules tag" %}: <tt>{{ flow_session.access_rules_tag }}</tt>)
