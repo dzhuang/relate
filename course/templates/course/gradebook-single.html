@@ -170,16 +170,16 @@
                 </p>
                 <p>
                   {# Translators: means "Started at", which followed by a time string#}
-                  <b>{% trans "Started" %}:</b> <span title="{{ flow_session.start_time }}">{{ flow_session.start_time|date:"SHORT_DATETIME_FORMAT" }}</span>
+                  <b>{% trans "Started" %}:</b> <span title="{{ flow_session.start_time|date:"SHORT_DATETIME_FORMAT" }}">{{ flow_session.start_time|date:"MONTH_DAY_FORMAT" }}{{ flow_session.start_time|date:"TIME_FORMAT" }}</span>
                 </p>
                 {% if not flow_session.in_progress %}
                   <p>
                     {# Translators: means "Completed at", which followed by a time string#}
-                    <b>{% trans "Completed" %}:</b> <span title="{{ flow_session.completion_time }}">{{ flow_session.completion_time|date:"SHORT_DATETIME_FORMAT" }}</span>
+                    <b>{% trans "Completed" %}:</b> <span title="{{ flow_session.completion_time|date:"SHORT_DATETIME_FORMAT" }}">{{ flow_session.completion_time|date:"MONTH_DAY_FORMAT" }}{{ flow_session.start_time|date:"TIME_FORMAT" }}</span>
                   </p>
                   <p>
                     {# Translators: means "Last activity at", which followed by a time string#}
-                    <b>{% trans "Last activity" %}:</b> <span title="{{ flow_session.last_activity }}">{{ flow_session.last_activity|date:"SHORT_DATETIME_FORMAT" }}</span>
+                    <b>{% trans "Last activity" %}:</b> <span title="{{ flow_session.last_activity|date:"SHORT_DATETIME_FORMAT" }}">{{ flow_session.last_activity|date:"MONTH_DAY_FORMAT" }}{{ flow_session.start_time|date:"TIME_FORMAT" }}</span>
                   </p>
                 {% endif %}
               </td>
@@ -211,7 +211,7 @@
                 {% if show_privileged_info and flow_session.result_comment %}
                   <p>
                   <b>{% trans " Notes:" %}</b>
-                  {{ flow_session.result_comment|linebreaks }}
+                  {{ flow_session.get_result_comment|safe|linebreaks }}
                   </p>
                 {% endif %}
                 </span>

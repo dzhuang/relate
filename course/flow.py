@@ -780,10 +780,13 @@ def regrade_session(repo, course, session):
                         graded_at_git_commit_sha=fctx.course_commit_sha)
     else:
         prev_completion_time = session.completion_time
+        
+        from django.utils.formats import date_format
 
         session.append_comment(
-                _("Session regraded at %(time)s.") % {
-                    'time': format_datetime_local(local_now())
+                string_concat(_("Session regraded at "), "<span title='%(full_time)s'>%(short_time)s</span>.") % {
+                    'full_time': date_format(local_now(), "SHORT_DATETIME_FORMAT"),
+                    'short_time': date_format(local_now(), "MONTH_DAY_FORMAT") + " " + date_format(local_now(), "TIME_FORMAT"),
                     })
         session.save()
 
