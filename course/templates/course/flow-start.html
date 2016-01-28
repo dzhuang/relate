@@ -29,11 +29,15 @@
           </tr>
           {% for flow_session, session_properties in past_sessions_and_properties %}
             <tr>
-              <td>{{ flow_session.start_time }}</td>
+              {% with time=flow_session.start_time %}
+              <td><span title="{{ time|date:'SHORT_DATETIME_FORMAT' }}">{{ time|date:"MONTH_DAY_FORMAT" }} {{ time|date:"TIME_FORMAT" }}</span></td>
+              {% endwith %}
               <td>
                 {% include "course/flow-session-state.html" %}
                 {% if not flow_session.in_progress %}
-                  ({{ flow_session.completion_time }})
+                {% with time=flow_session.completion_time %}
+                    (<span title="{{ time|date:'SHORT_DATETIME_FORMAT' }}">{{ time|date:"MONTH_DAY_FORMAT" }} {{ time|date:"TIME_FORMAT" }}</span>)
+                {% endwith %}
                 {% endif %}
               </td>
               <td>
@@ -45,7 +49,9 @@
               </td>
               <td>
                 {% if session_properties.due %}
-                  {{ session_properties.due }}
+                {% with time=session_properties.due %}
+                  <span title="{{ time|date:'SHORT_DATETIME_FORMAT' }}">{{ time|date:"MONTH_DAY_FORMAT" }} {{ time|date:"TIME_FORMAT" }}</span>
+                {% endwith %}
                 {% endif %}
               </td>
               <td>

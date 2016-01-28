@@ -105,10 +105,9 @@
                 by {{ grader_name }}
                 {% endblocktrans %}
               {% endif %}
-              {# Translators: the most recent grade is provided "at" some time. #}
-              {% blocktrans trimmed with grade_time=most_recent_grade.grade_time %}
-              at {{ grade_time }}
-              {% endblocktrans %}
+              {% with time=most_recent_grade.grade_time %}
+              {% trans "at" context "at (what time)" %} <span title="{{ time|date:'SHORT_DATETIME_FORMAT' }}">{{ time|date:"MONTH_DAY_FORMAT" }} {{ time|date:"TIME_FORMAT" }}</span>
+              {% endwith %}
             {% else %}
               {% trans "(n/a)" %}
             {% endif%}
@@ -133,8 +132,10 @@
           <td>
             ID: {{ flow_session.id }}
             &middot;{% include "course/flow-session-state.html" %}
-            &middot; {% trans "Start:"%} {{ flow_session.start_time }}
-
+            &middot; {% trans "Start:"%} 
+              {% with time=flow_session.start_time %}
+              <span title="{{ time|date:'SHORT_DATETIME_FORMAT' }}">{{ time|date:"MONTH_DAY_FORMAT" }} {{ time|date:"TIME_FORMAT" }}
+              {% endwith %}
           </td>
         </tr>
         <tr>
