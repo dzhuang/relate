@@ -9,12 +9,7 @@
 {% endblock %}
 
 {% block header_extra %}
-    {# the min.js version contains all dependencies #}
-    <script src="{% static "datatables/media/js/jquery.dataTables.min.js" %}"></script>
-    <link href="{% static "datatables/media/css/jquery.dataTables.min.css" %}" rel="stylesheet">
-
-    <script src="{% static "datatables-fixedcolumns/js/dataTables.fixedColumns.js" %}"></script>
-    <link href="{% static "datatables-fixedcolumns/css/fixedColumns.dataTables.scss" %}" rel="stylesheet">
+  {% include "datatables-header.html" %}
 {% endblock %}
 
 
@@ -102,7 +97,7 @@
     </div>
   {% endif %}
 
-  <table class="gradebook-by-opportunity">
+  <table class="table table-striped gradebook-by-opportunity">
     <thead>
       <th class="datacol">{% trans "User ID" %}</th>
       <th class="datacol">{% trans "Name" context "real name of a user" %}</th>
@@ -144,9 +139,7 @@
                 <li>
                   {% include "course/flow-session-state.html" %}
                   {% if not flow_session.in_progress %}
-                    {% with time=flow_session.completion_time %}
-                    (<span title="{{ time|date:'SHORT_DATETIME_FORMAT' }}">{{ time|date:"MONTH_DAY_FORMAT" }} {{ time|date:"TIME_FORMAT" }}</span>)
-                    {% endwith %}
+                    ({{ flow_session.completion_time }})
                   {% endif %}
                   {% if flow_session.access_rules_tag %}
                     ({% trans "Rules tag" %}: <tt>{{ flow_session.access_rules_tag }}</tt>)
@@ -167,14 +160,13 @@
     </tbody>
   </table>
 
-  {% load datatable_tags %}
-  {% get_datatable_language as datatable_lang %}
+  {% get_current_language as LANGUAGE_CODE %}
   <script type="text/javascript">
     var tbl = $("table.gradebook-by-opportunity").dataTable({
         "scrollCollapse": true,
         "paging": false,
         "ordering": true,
-        "language": {url: '//cdn.datatables.net/plug-ins/1.10.8/i18n/{{datatable_lang}}.json'},
+        "language": {url: '{% static "datatables-i18n/i18n/" %}{{LANGUAGE_CODE}}.json'},
     } );
   </script>
 
