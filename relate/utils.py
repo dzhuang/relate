@@ -104,16 +104,18 @@ def local_now():
 
 def format_datetime_local(datetime, format='medium'):
     """Format the output of a datetime object to a localized string"""
-    from django.utils import formats
-    short_date = formats.date_format(datetime, "SHORT_DATETIME_FORMAT")
-    month_day = formats.date_format(datetime, "MONTH_DAY_FORMAT")
-    time = formats.date_format(datetime, "TIME_FORMAT")
-    print short_date, month_day, time
-    result = '<span title="%(short_date)s">%(month_day)s%(time)s</span>' % {
-        "short_date": short_date,
-        "month_day": month_day,
-        "time": time
-    }    
+    from babel.dates import format_datetime
+    from django.conf import settings
+    from django.utils.translation.trans_real import to_locale
+    # See http://babel.pocoo.org/docs/api/dates/#date-and-time-formatting
+    # for customizing the output format.
+    try:
+        locale = to_locale(settings.LANGUAGE_CODE)
+    except ValueError:
+        locale = "en_US"
+
+    result = format_datetime(datetime, format, locale=locale)
+
     return result
 
 def format_date_local(datetime, format='medium'):

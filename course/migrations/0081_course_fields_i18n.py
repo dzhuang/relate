@@ -37,4 +37,9 @@ class Migration(migrations.Migration):
             name='time_period',
             field=models.CharField(help_text="A human-readable description of the time period for the course (e.g. 'Fall 2014')", max_length=200, null=True, verbose_name='Time Period'),
         ),
+        migrations.AddField(
+            model_name='course',
+            name='enroll_deadline',
+            field=models.DateField(help_text="After which the course will not be displayed on home page, and enrollment will not be allowed. Leave this field blank if there's no deadline of enrollment.", null=True, verbose_name='Enrollment deadline', blank=True),
+        ),
     ]
