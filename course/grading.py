@@ -105,7 +105,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
         flowsession_json = {
                 "id": flowsession.pk,
                 "text": string_concat(
-                    _("%(user_email)s - %(user_fullname)s"),
+                    "%(user_email)s - %(user_fullname)s",
                     " ", _("started at %(start_time)s")
                     ) % 
                 {
