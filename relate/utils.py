@@ -109,7 +109,7 @@ def format_datetime_local(datetime, format='medium'):
     month_day = formats.date_format(datetime, "MONTH_DAY_FORMAT")
     time = formats.date_format(datetime, "TIME_FORMAT")
     print short_date, month_day, time
-    result = '<span title="%(short_date)s">%(month_day)s %(time)s</span>' % {
+    result = '<span title="%(short_date)s">%(month_day)s%(time)s</span>' % {
         "short_date": short_date,
         "month_day": month_day,
         "time": time
