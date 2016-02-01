@@ -35,7 +35,7 @@ from django.core.exceptions import (  # noqa
 from django import http
 
 from course.models import (
-        FlowSession, FlowPageVisitGrade,
+        FlowSession, FlowPageVisitGrade, FlowPageData,
         get_flow_grading_opportunity,
         get_feedback_for_grade,
         update_bulk_feedback)
@@ -101,6 +101,14 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 pctx.course.identifier,
                 flowsession.id,
                 fpctx.page_data.ordinal))
+        
+        page_data = FlowPageData.objects.get(flow_session=flowsession, ordinal=fpctx.page_data.ordinal)
+        
+        from course.flow import get_prev_answer_visit
+        
+        print get_prev_answer_visit(page_data).get_most_recent_grade().grade_time
+        #print page_visit.get_most_recent_grade().grade_time
+
 
         flowsession_json = {
                 "id": flowsession.pk,
