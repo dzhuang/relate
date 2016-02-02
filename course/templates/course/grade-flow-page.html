@@ -62,6 +62,7 @@
                 });
                 $("#select_session").on('select2:select', function(e){
                     // http://stackoverflow.com/a/33248730/3437454
+                    console.log(e.params.data.grade_time)
                     window.location = e.params.data.url;
                 });
             </script>
