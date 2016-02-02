@@ -748,7 +748,7 @@ class GradeChangeAdmin(admin.ModelAdmin):
         qs = super(GradeChangeAdmin, self).get_queryset(request)
         return _filter_participation_linked_obj_for_user(qs, request.user)
 
-    exclude = ("creator", "grade_time")
+    #exclude = ("creator", "grade_time")
 
     def save_model(self, request, obj, form, change):
         obj.creator = request.user
