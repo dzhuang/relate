@@ -90,13 +90,15 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
             .order_by(
                 "participation__user__last_name",
                 "start_time"))
-    
+
     # {{{ session select2 
     graded_flow_sessions_json = []
     ungraded_flow_sessions_json = []
 
     from django.core.urlresolvers import reverse
-    from relate.utils import as_local_time, format_datetime_local
+    from relate.utils import as_local_time, compact_local_datetime_str
+    from course.flow import get_prev_answer_visit
+
     for flowsession in all_flow_sessions:
         uri = reverse("relate-grade_flow_page",
             args=(
@@ -104,14 +106,11 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 flowsession.id,
                 fpctx.page_data.ordinal))
 
-        from course.flow import get_prev_answer_visit
-        
-        page_data = FlowPageData.objects.get(
-                flow_session=flowsession, ordinal=fpctx.page_data.ordinal)
-        
         if not fpctx.page.expects_answer():
             grade_time = None
         else:
+            page_data = FlowPageData.objects.get(
+                flow_session=flowsession, ordinal=fpctx.page_data.ordinal)
             prev_flow_page_visit_grade = get_prev_answer_visit(page_data)\
                     .get_most_recent_grade()
             try:
@@ -128,46 +127,51 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 ) %  {
                         "user_fullname": flowsession.participation\
                                 .user.get_full_name(),
-                        "start_time": format_datetime_local(
-                            as_local_time(flowsession.start_time)),
+                        "start_time": compact_local_datetime_str(
+                            as_local_time(flowsession.start_time),
+                            get_now_or_fake_time(pctx.request)),
                         }
-        
+
         if grade_time:
-            text +=(
+            text += (
                     string_concat(", ", 
                         _("graded at %(grade_time)s"), ".") %
-                    {"grade_time": format_datetime_local(
-                        as_local_time(grade_time))}
+                    {"grade_time": compact_local_datetime_str(
+                        as_local_time(grade_time), 
+                        get_now_or_fake_time(pctx.request))}
                     )
         else:
             text +="."
-        
-        #print page_visit.get_most_recent_grade().grade_time
 
         flowsession_json = {
                 "id": flowsession.pk,
                 "text": text,
                 "url": uri,
-                "grade_time": json.dumps(grade_time.isoformat() if grade_time else None)
+                "grade_time": json.dumps(
+                    grade_time.isoformat() if grade_time else None)
                 }
-        
+
         if grade_time:
             graded_flow_sessions_json.append(flowsession_json)
         else:
             ungraded_flow_sessions_json.append(flowsession_json)
-        
-    all_flow_sessions_json = [{
-            "id": '',
-            "text": _('Graded'),
-            "children": graded_flow_sessions_json
-        },
-        {
-            "id": '',
-            "text": _('Ungraded'),
-            "children": ungraded_flow_sessions_json
-        }]
 
-            
+    if fpctx.page.expects_answer():
+        all_flow_sessions_json = [
+            {"id":'', "text":''},
+            {
+                "id": '',
+                "text": _('Graded'),
+                "children": graded_flow_sessions_json
+            },
+            {
+                "id": '',
+                "text": _('Ungraded'),
+                "children": ungraded_flow_sessions_json
+            }]
+    else:
+        all_flow_sessions_json = [{"id":'', "text":''}] + ungraded_flow_sessions_json
+
     # }}}
 
     # neet post/get definition and form_to_html
