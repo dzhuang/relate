@@ -4,9 +4,11 @@
 {% load crispy_forms_tags %}
 
 {% block header_extra %}
-  {% load static %}
+  {% load static coursetags %}
   <link href='{% static "select2/dist/css/select2.css" %}' type="text/css" media="screen" rel="stylesheet" />
   <script src='{% static "select2/dist/js/select2.js" %}'></script>
+  {% get_current_js_lang_name as LANG %}
+  <script type="text/javascript" src='{% static "select2/dist/js/i18n/" %}{{LANG}}.js'></script>
 {% endblock %}
 
 {% block title %}
@@ -55,9 +57,7 @@
 
       {# {{{ Searchable session jumps #}
         {% if all_flow_sessions_json %}
-        {% load static coursetags %}
         {% get_current_js_lang_name as LANG %}
-        <script type="text/javascript" src='{% static "select2/dist/js/i18n/" %}{{LANG}}.js'></script>
         <div class="s2"> <p>{% trans "Jump to" %}: <select id="select_session"> </select> </p></div>
             <script>
                 var data = {{all_flow_sessions_json|safe}};

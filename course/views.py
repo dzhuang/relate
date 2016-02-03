@@ -671,6 +671,7 @@ class ParticipationChoiceField(forms.ModelChoiceField):
 
 class ExceptionStage1Form(StyledForm):
     def __init__(self, course, flow_ids, *args, **kwargs):
+        language = kwargs.pop("language", None)
         super(ExceptionStage1Form, self).__init__(*args, **kwargs)
 
         self.fields["participation"] = ParticipationChoiceField(
@@ -684,7 +685,7 @@ class ExceptionStage1Form(StyledForm):
                 help_text=_("Select participant for whom exception is to "
                 "be granted."),
                 label=_("Participant"),
-                widget=Select2Widget())
+                widget=Select2Widget(attrs={"data-language": language}))
         self.fields["flow_id"] = forms.ChoiceField(
                 choices=[(fid, fid) for fid in flow_ids],
                 required=True,
@@ -701,6 +702,10 @@ class ExceptionStage1Form(StyledForm):
 
 @course_view
 def grant_exception(pctx):
+
+    from relate.utils import to_js_lang_name
+    language = to_js_lang_name(pctx.request.LANGUAGE_CODE)
+
     if pctx.role not in [
             participation_role.instructor,
             participation_role.teaching_assistant]:
@@ -712,7 +717,8 @@ def grant_exception(pctx):
 
     request = pctx.request
     if request.method == "POST":
-        form = ExceptionStage1Form(pctx.course, flow_ids, request.POST)
+        form = ExceptionStage1Form(pctx.course, flow_ids, request.POST,
+                language=language)
 
         if form.is_valid():
             return redirect("relate-grant_exception_stage_2",
@@ -721,11 +727,13 @@ def grant_exception(pctx):
                     form.cleaned_data["flow_id"])
 
     else:
-        form = ExceptionStage1Form(pctx.course, flow_ids)
+        form = ExceptionStage1Form(pctx.course, flow_ids, 
+                language=language)
 
     return render_course_page(pctx, "course/generic-course-form.html", {
         "form": form,
         "form_description": _("Grant Exception"),
+        "select2_i18n": True,
     })
 
 

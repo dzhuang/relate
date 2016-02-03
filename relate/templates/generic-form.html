@@ -1,14 +1,6 @@
 {% extends "base.html" %}
 {% load i18n %}
 
-{%block header_extra %}
-{% if select2widget %}
-  {% load static coursetags %}
-  {% get_current_js_lang_name as LANG %}
-  <script type="text/javascript" src='{% static "select2/dist/js/i18n/" %}{{LANG}}.js'></script>
-{% endif %}
-{% endblock %}
-
 {% load crispy_forms_tags %}
 
 {% block content %}
@@ -19,14 +11,4 @@
   <div class="well">
     {% crispy form %}
   </div>
-{% endblock %}
-
-{%block footer_extra %}
-{% if select2widget %}
-  <script type="application/javascript">
-      $(document).ready(function(){
-      $('.select2widget').attr("data-language", 'zh-CN');
-      })
-  </script>
-{% endif %}
 {% endblock %}
