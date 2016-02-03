@@ -172,7 +172,8 @@ def impersonate(request):
 
     return render(request, "generic-form.html", {
         "form_description": _("Impersonate user"),
-        "form": form
+        "form": form,
+        "select2widget": True
         })
 
 

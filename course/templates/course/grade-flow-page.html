@@ -4,8 +4,9 @@
 {% load crispy_forms_tags %}
 
 {% block header_extra %}
-  <link href='/static/select2/dist/css/select2.css' type="text/css" media="screen" rel="stylesheet" />
-  <script src='/static/select2/dist/js/select2.js'></script>
+  {% load static %}
+  <link href='{% static "select2/dist/css/select2.css" %}' type="text/css" media="screen" rel="stylesheet" />
+  <script src='{% static "select2/dist/js/select2.js" %}'></script>
 {% endblock %}
 
 {% block title %}
