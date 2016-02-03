@@ -1234,6 +1234,9 @@ def _adjust_flow_session_page_data_inner(repo, flow_session,
     commit_sha = get_course_commit_sha(
             flow_session.course, flow_session.participation)
 
+    if flow_session.page_data_at_course_revision == commit_sha:
+        return
+
     from course.models import FlowPageData
 
     def remove_page(fpd):
@@ -1374,9 +1377,9 @@ def _adjust_flow_session_page_data_inner(repo, flow_session,
 
     # }}}
 
-    if flow_session.page_count != ordinal[0]:
-        flow_session.page_count = ordinal[0]
-        flow_session.save()
+    flow_session.page_count = ordinal[0]
+    flow_session.page_data_at_course_revision = commit_sha
+    flow_session.save()
 
 
 def adjust_flow_session_page_data(repo, flow_session,

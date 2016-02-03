@@ -393,12 +393,12 @@ class ParticipationPreapproval(models.Model):
 
     def __unicode__(self):
         if self.email:
-        # Translators: somebody's email in some course in Participation
-        # Preapproval
+            # Translators: somebody's email in some course in Participation
+            # Preapproval
             return _("Email %(email)s in %(course)s") % {
                 "email": self.email, "course": self.course}
         elif self.institutional_id:
-            # Translators: somebody's Institutional ID in some course in 
+            # Translators: somebody's Institutional ID in some course in
             # Participation Preapproval
             return _("Institutional ID %(inst_id)s in %(course)s") % {
                     "inst_id": self.institutional_id, "course": self.course}
@@ -414,6 +414,8 @@ class ParticipationPreapproval(models.Model):
 
 # }}}
 
+
+# {{{ instant flow request
 
 class InstantFlowRequest(models.Model):
     course = models.ForeignKey(Course,
@@ -442,6 +444,8 @@ class InstantFlowRequest(models.Model):
 
     if six.PY3:
         __str__ = __unicode__
+
+# }}}
 
 
 # {{{ flow session
@@ -472,6 +476,16 @@ class FlowSession(models.Model):
             verbose_name=_('Completion time'))
     page_count = models.IntegerField(null=True, blank=True,
             verbose_name=_('Page count'))
+
+    # This field allows avoiding redundant checks for whether the
+    # page data is in line with the course material.
+    # See course.content.adjust_flow_session_page_data.
+    page_data_at_course_revision = models.CharField(
+            max_length=200, null=True, blank=True,
+            verbose_name=_('Page data at course revision'),
+            help_text=_(
+                "Page set-up data is up-to date for this revision of the "
+                "course material"))
 
     in_progress = models.BooleanField(default=None,
             verbose_name=_('In progress'))

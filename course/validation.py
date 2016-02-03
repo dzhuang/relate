@@ -528,6 +528,12 @@ def validate_session_start_rule(ctx, location, nrule, tags):
         ctx.add_warning(
                 location+", rules",
                 _("attribute 'may_list_existing_sessions' is not present"))
+    if hasattr(nrule, "lock_down_as_exam_session"):
+        ctx.add_warning(
+                location+", rules",
+                _("Attribute 'lock_down_as_exam_session' is deprecated "
+                "and non-functional. Use the access permission flag "
+                "'lock_down_as_exam_session' instead."))
 
     if hasattr(nrule, "tag_session"):
         if nrule.tag_session is not None:
@@ -843,6 +849,8 @@ def validate_flow_desc(ctx, location, flow_desc):
                 ("groups", list),
                 ("pages", list),
                 ("notify_on_submit", list),
+                ("max_points", (int, float)),
+                ("max_points_enforced_cap", (int, float)),
                 ]
             )
 
@@ -875,6 +883,17 @@ def validate_flow_desc(ctx, location, flow_desc):
     for i, grp in enumerate(flow_desc.groups):
         group_has_page = False
 
+        if not isinstance(grp.pages, list):
+            raise ValidationError(
+                    string_concat(
+                        "%(location)s, ",
+                        _("group %(group_index)d ('%(group_id)s'): "
+                            "'pages' is not a list"))
+                    % {
+                        'location': location,
+                        'group_index': i+1,
+                        'group_id': grp.id})
+
         for page in grp.pages:
             group_has_page = flow_has_page = True
             break
@@ -883,7 +902,7 @@ def validate_flow_desc(ctx, location, flow_desc):
             raise ValidationError(
                     string_concat(
                         "%(location)s, ",
-                        _("group %(group_index)d ('%(group_id)d'): "
+                        _("group %(group_index)d ('%(group_id)s'): "
                             "no pages found"))
                     % {
                         'location': location,

@@ -335,6 +335,8 @@ class GradeInfo(object):
     # flow results page.
     FULL_PERCENT = 99.99
 
+    # {{{ point percentages
+
     def points_percent(self):
         """Only to be used for visualization purposes."""
 
@@ -364,6 +366,16 @@ class GradeInfo(object):
             return self.FULL_PERCENT*(
                     self.max_points - self.max_reachable_points)/self.max_points
 
+    def total_points_percent(self):
+        return (
+                self.points_percent()
+                + self.missed_points_percent()
+                + self.unreachable_points_percent())
+
+    # }}}
+
+    # {{{ page counts
+
     def total_count(self):
         return (self.fully_correct_count
                 + self.partially_correct_count
@@ -385,6 +397,8 @@ class GradeInfo(object):
     def unknown_percent(self):
         """Only to be used for visualization purposes."""
         return self.FULL_PERCENT*self.unknown_count/self.total_count()
+
+    # }}}
 
 
 def gather_grade_info(fctx, flow_session, answer_visits):
@@ -451,6 +465,25 @@ def gather_grade_info(fctx, flow_session, answer_visits):
                 incorrect_count += 1
             else:
                 partially_correct_count += 1
+
+    # {{{ adjust max_points if requested
+
+    max_points_desc = getattr(fctx.flow_desc, "max_points", None)
+    if max_points_desc is not None:
+        max_points = max_points_desc
+
+    # }}}
+
+    # {{{ enforce points cap
+
+    max_points_enforced_cap = getattr(
+            fctx.flow_desc, "max_points_enforced_cap", None)
+    if max_points_enforced_cap is not None:
+        max_reachable_points = min(max_reachable_points, max_points_enforced_cap)
+        points = min(points, max_points_enforced_cap)
+        provisional_points = min(provisional_points, max_points_enforced_cap)
+
+    # }}}
 
     return GradeInfo(
             points=points,
@@ -968,11 +1001,6 @@ def post_start_flow(pctx, fctx, flow_id):
             access_rules_tag=session_start_rule.tag_session,
             now_datetime=now_datetime)
 
-    if session_start_rule.lock_down_as_exam_session:
-        pctx.request.session[
-                "relate_session_locked_to_exam_flow_session_pk"] = \
-                        session.pk
-
     return redirect("relate-view_flow_page",
             pctx.course.identifier, session.id, 0)
 
@@ -1162,6 +1190,11 @@ def view_flow_page(pctx, flow_session_id, ordinal):
 
     if access_rule.message:
         messages.add_message(request, messages.INFO, access_rule.message)
+
+    if flow_permission.lock_down_as_exam_session in permissions:
+        pctx.request.session[
+                "relate_session_locked_to_exam_flow_session_pk"] = \
+                        flow_session.pk
 
     page_context = fpctx.page_context
     page_data = fpctx.page_data
