@@ -54,13 +54,15 @@
 
       {# {{{ Searchable session jumps #}
         {% if all_flow_sessions_json %}
-        <script type="text/javascript" src="/static/select2/dist/js/i18n/zh-CN.js"></script>
+        {% load static coursetags %}
+        {% get_current_js_lang_name as LANG %}
+        <script type="text/javascript" src='{% static "select2/dist/js/i18n/" %}{{LANG}}.js'></script>
         <div class="s2"> <p>{% trans "Jump to" %}: <select id="select_session"> </select> </p></div>
             <script>
                 var data = {{all_flow_sessions_json|safe}};
                 $("#select_session").select2({
                     data:data,
-                    language:"zh-CN"
+                    language:"{{LANG}}"
                 });
                 $("#select_session").on('select2:select', function(e){
                     // http://stackoverflow.com/a/33248730/3437454
