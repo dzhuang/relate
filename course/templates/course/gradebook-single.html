@@ -28,7 +28,7 @@
       <tr>
         <td>{% trans "Due" %}</td><td><tt>
         {% with time=opportunity.due_time %}
-              <span title="{{ time|date:'SHORT_DATETIME_FORMAT' }}">{{ time|date:"MONTH_DAY_FORMAT" }} {{ time|date:"TIME_FORMAT" }}</span>
+              <span title="{{ time }}">{{ time|date:"SHORT_DATETIME_FORMAT" }}</span>
         {% endwith %}
           </tt></td>
       </tr>
@@ -81,7 +81,7 @@
         <tr>
           <td>
              {% with time=gchange.grade_time %}
-              <span title="{{ time|date:'SHORT_DATETIME_FORMAT' }}">{{ time|date:"MONTH_DAY_FORMAT" }} {{ time|date:"TIME_FORMAT" }}</span>
+              <span title="{{ time }}">{{ time|date:"SHORT_DATETIME_FORMAT" }}</span>
              {% endwith %}
           </td>
           <td>
@@ -178,17 +178,23 @@
                   {# Translators: means "Started at", which followed by a time string#}
                   <b>{% trans "Started" %}:</b> 
                     {% with time=flow_session.start_time %}
-                    <span title="{{ time|date:'SHORT_DATETIME_FORMAT' }}">{{ time|date:"MONTH_DAY_FORMAT" }} {{ time|date:"TIME_FORMAT" }}</span>
+                    <span title="{{ time }}">{{ time|date:"SHORT_DATETIME_FORMAT" }}</span>
                     {% endwith %}
                 </p>
                 {% if not flow_session.in_progress %}
                   <p>
                     {# Translators: means "Completed at", which followed by a time string#}
-                    <b>{% trans "Completed" %}:</b> <span title="{{ flow_session.completion_time|date:"SHORT_DATETIME_FORMAT" }}">{{ flow_session.completion_time|date:"MONTH_DAY_FORMAT" }}{{ flow_session.start_time|date:"TIME_FORMAT" }}</span>
+                    <b>{% trans "Completed" %}:</b>
+                     {% with time=flow_session.completion_time %}
+                       <span title="{{ time }}">{{ time|date:"SHORT_DATETIME_FORMAT" }}</span>
+                     {% endwith %}
                   </p>
                   <p>
                     {# Translators: means "Last activity at", which followed by a time string#}
-                    <b>{% trans "Last activity" %}:</b> <span title="{{ flow_session.last_activity|date:"SHORT_DATETIME_FORMAT" }}">{{ flow_session.last_activity|date:"MONTH_DAY_FORMAT" }}{{ flow_session.start_time|date:"TIME_FORMAT" }}</span>
+                    <b>{% trans "Last activity" %}:</b>
+                       {% with time=flow_session.last_activity %}
+                         <span title="{{ time }}">{{ time|date:"SHORT_DATETIME_FORMAT" }}</span>
+                       {% endwith %}
                   </p>
                 {% endif %}
               </td>
@@ -196,7 +202,7 @@
               <td>
                 {% if session_properties.due %}
                   {% with time=session_properties.due %}
-                  <span title="{{ time|date:'SHORT_DATETIME_FORMAT' }}">{{ time|date:"MONTH_DAY_FORMAT" }} {{ time|date:"TIME_FORMAT" }}</span>
+                  <span title="{{ time }}">{{ time|date:"SHORT_DATETIME_FORMAT" }}</span>
                   {% endwith %}
                 {% endif %}
               </td>

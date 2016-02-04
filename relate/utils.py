@@ -112,23 +112,6 @@ def format_datetime_local(datetime, format='DATETIME_FORMAT'):
     format, it will be overrided by built-in format as l10n
     is enabled.
     """
-
-    # allow user to supply a custom formatting method.
-    from django.conf import settings
-    custom_format_method = getattr(settings,
-            "RELATE_CUSTOM_DATETIME_FORMAT_METHOD", None)
-    result = None
-    try:
-        result = custom_format_method(datetime, format='DATETIME_FORMAT')
-        if not isinstance(result, six.string_types):
-            result = None
-    except:
-        pass
-
-    if result:
-        return result
-
-    # default method
     from django.utils import formats
     try:
         dt_format = formats.get_format(format)
@@ -136,52 +119,32 @@ def format_datetime_local(datetime, format='DATETIME_FORMAT'):
         return formats.date_format(datetime, "DATETIME_FORMAT")
 
     try:
-        return formats.date_format(datetime, "n月j日H:i")
+        return formats.date_format(datetime, format)
     except:
         # seems it will never raise an exception here?
         return formats.date_format(datetime, "DATETIME_FORMAT")
 
-def compact_local_datetime_str(datetime, now_datetime):
-    return format_datetime_local(datetime)
-    from django.utils.translation import (
-        get_language, to_locale)
-
-    if not get_language().lower in ['zh_cn', 'zh_hans']:
-        format_datetime_local(datetime, format='DATETIME_FORMAT')
-        
-#n月j日H:i
+def compact_local_datetime_str(datetime, now_datetime, in_python=False):
     from django.conf import settings
     if as_local_time(datetime).year == \
             as_local_time(now_datetime).year:
-        datetime_str = format_datetime_local(
-                as_local_time(datetime))
-
-        # for zh_CN or zh_Hans, another format
-        if settings.LANGUAGE_CODE.lower() in ['zh_cn', 'zh_hans']:
-            date_str = format_date_local(
-                as_local_time(
-                    datetime))[5:]
-            time_str = format_time_local(
-                as_local_time(
-                    datetime), "HH:mm")
-            datetime_str = date_str + time_str
-
+        if in_python:
+            return format_datetime_local(datetime,
+                           format="SHORT_DATETIME_FORMAT")
+        else:
+            return (
+                '<span title="%(time)s">%(time_short)s</span>' %
+                {"time": format_datetime_local(datetime),
+                 "time_short": format_datetime_local(datetime,
+                        format="SHORT_DATETIME_FORMAT")
+                })
     else:
-        datetime_str = format_datetime_local(
-                as_local_time(datetime))
-
-        # for zh_CN or zh_Hans, another format
-        if settings.LANGUAGE_CODE.lower() in ['zh_cn', 'zh_hans']:
-            date_str = format_date_local(
-                as_local_time(
-                    datetime))
-            time_str = format_time_local(
-                as_local_time(
-                    datetime), "HH:mm")
-            datetime_str = date_str + time_str
-
-    return datetime_str
-
+        if in_python:
+            return format_datetime_local(datetime)
+        else:
+            return (
+                '<span title="%(time)s">%(time)s</span>' %
+                {"time": format_datetime_local(datetime)})
 
 def format_timedelta_local(datetime, now_datetime):
     from babel.dates import format_timedelta

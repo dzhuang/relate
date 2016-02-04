@@ -27,7 +27,7 @@
     <tr>
       <td>{% trans "Due" %}</td><td><tt>
         {% with time=opportunity.due_time %}
-          <span title="{{ time|date:'SHORT_DATETIME_FORMAT' }}">{{ time|date:"MONTH_DAY_FORMAT" }} {{ time|date:"TIME_FORMAT" }}</span>
+          <span title="{{ time }}">{{ time|date:"SHORT_DATETIME_FORMAT" }}</span>
         {% endwith %}
         </tt></td>
     </tr>
