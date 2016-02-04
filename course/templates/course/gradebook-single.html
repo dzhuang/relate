@@ -80,9 +80,7 @@
         {% for gchange in grade_changes %}
         <tr>
           <td>
-              {% with time=gchange.grade_time %}
-              <span title="{{ time|date:'SHORT_DATETIME_FORMAT' }}">{{ time|date:"MONTH_DAY_FORMAT" }} {{ time|date:"TIME_FORMAT" }}</span>
-              {% endwith %}
+              {{ gchange.grade_time }}              
           </td>
           <td>
             {% if gchange.is_superseded %}<s>{% endif %}
