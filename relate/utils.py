@@ -117,22 +117,13 @@ def format_datetime_local(datetime, format='DATETIME_FORMAT'):
         dt_format = formats.get_format(format)
     except:
         return formats.date_format(datetime, "DATETIME_FORMAT")
-    
-    print formats.get_format(format)
-    print formats.get_format("MONTH_DAY_FORMAT")
-    print formats.get_format("TIME_FORMAT")
 
     try:
         return formats.date_format(datetime, format)
     except:
         # seems it will never raise an exception here?
         return formats.date_format(datetime, "DATETIME_FORMAT")
-    
 
-    
-#    from django.utils.translation import (
-#        check_for_language, get_language, to_locale
-#    )
 
 
 def format_date_local(datetime, format='medium'):
