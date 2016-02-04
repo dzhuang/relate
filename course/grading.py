@@ -129,7 +129,8 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                                 .user.get_full_name(),
                         "start_time": compact_local_datetime_str(
                             as_local_time(flowsession.start_time),
-                            get_now_or_fake_time(pctx.request)),
+                            get_now_or_fake_time(pctx.request),
+                            in_python=True)
                         }
 
         if grade_time:
@@ -138,7 +139,8 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                         _("graded at %(grade_time)s"), ".") %
                     {"grade_time": compact_local_datetime_str(
                         as_local_time(grade_time), 
-                        get_now_or_fake_time(pctx.request))}
+                        get_now_or_fake_time(pctx.request),
+                        in_python=True)}
                     )
         else:
             text +="."

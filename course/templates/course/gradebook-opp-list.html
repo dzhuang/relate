@@ -43,7 +43,7 @@
              data-order=""
           {% endif %}
           >{% with time=opp.due_time %}
-            <span title="{{ time|date:'SHORT_DATETIME_FORMAT' }}">{{ time|date:"MONTH_DAY_FORMAT" }} {{ time|date:"TIME_FORMAT" }}</span>
+            <span title="{{ time }}">{{ time|date:"SHORT_DATETIME_FORMAT" }}</span>
             {% endwith %}</td>
         <td class="datacol">
           {% if opp.shown_in_student_grade_book %}
