@@ -112,6 +112,23 @@ def format_datetime_local(datetime, format='DATETIME_FORMAT'):
     format, it will be overrided by built-in format as l10n
     is enabled.
     """
+
+    # allow user to supply a custom formatting method.
+    from django.conf import settings
+    custom_format_method = getattr(settings,
+            "RELATE_CUSTOM_DATETIME_FORMAT_METHOD", None)
+    result = None
+    try:
+        result = custom_format_method(datetime, format='DATETIME_FORMAT')
+        if not isinstance(result, six.string_types):
+            result = None
+    except:
+        pass
+
+    if result:
+        return result
+
+    # default method
     from django.utils import formats
     try:
         dt_format = formats.get_format(format)
@@ -119,55 +136,20 @@ def format_datetime_local(datetime, format='DATETIME_FORMAT'):
         return formats.date_format(datetime, "DATETIME_FORMAT")
 
     try:
-        return formats.date_format(datetime, format)
+        return formats.date_format(datetime, "n月j日H:i")
     except:
         # seems it will never raise an exception here?
         return formats.date_format(datetime, "DATETIME_FORMAT")
 
-
-
-def format_date_local(datetime, format='medium'):
-    """Format the output of a datetime object to a localized string"""
-    from babel.dates import format_date
-    from django.conf import settings
-    from django.utils.translation.trans_real import to_locale
-    # See http://babel.pocoo.org/docs/api/dates/#date-and-time-formatting 
-    # for customizing the output format.
-    try:
-        locale = to_locale(settings.LANGUAGE_CODE)
-    except ValueError:
-        locale="en_US"
-
-    result = format_date(datetime, format, locale=locale)
-
-    return result
-
-
-def format_time_local(datetime, format='medium'):
-    """Format the output of a datetime object to a localized string"""
-    from babel.dates import format_time
-    from django.conf import settings
-    from django.utils.translation.trans_real import to_locale
-    # See http://babel.pocoo.org/docs/api/dates/#date-and-time-formatting 
-    # for customizing the output format.
-    try:
-        locale = to_locale(settings.LANGUAGE_CODE)
-    except ValueError:
-        locale="en_US"
-
-    result = format_time(datetime, format, locale=locale)
-
-    return result
-
-
 def compact_local_datetime_str(datetime, now_datetime):
+    return format_datetime_local(datetime)
     from django.utils.translation import (
         get_language, to_locale)
 
     if not get_language().lower in ['zh_cn', 'zh_hans']:
         format_datetime_local(datetime, format='DATETIME_FORMAT')
         
-#n月j日 H:i
+#n月j日H:i
     from django.conf import settings
     if as_local_time(datetime).year == \
             as_local_time(now_datetime).year:

@@ -80,7 +80,9 @@
         {% for gchange in grade_changes %}
         <tr>
           <td>
-              {{ gchange.grade_time }}              
+             {% with time=gchange.grade_time %}
+              <span title="{{ time|date:'SHORT_DATETIME_FORMAT' }}">{{ time|date:"MONTH_DAY_FORMAT" }} {{ time|date:"TIME_FORMAT" }}</span>
+             {% endwith %}
           </td>
           <td>
             {% if gchange.is_superseded %}<s>{% endif %}
@@ -193,7 +195,9 @@
 
               <td>
                 {% if session_properties.due %}
-                  {{ session_properties.due }}
+                  {% with time=session_properties.due %}
+                  <span title="{{ time|date:'SHORT_DATETIME_FORMAT' }}">{{ time|date:"MONTH_DAY_FORMAT" }} {{ time|date:"TIME_FORMAT" }}</span>
+                  {% endwith %}
                 {% endif %}
               </td>
 
@@ -218,7 +222,7 @@
                 {% if show_privileged_info and flow_session.result_comment %}
                   <p>
                   <b>{% trans " Notes:" %}</b>
-                  {{ flow_session.result_comment|safe|linebreaks }}
+                  {{ flow_session.result_comment|linebreaks }}
                   </p>
                 {% endif %}
                 </span>

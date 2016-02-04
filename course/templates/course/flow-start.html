@@ -120,8 +120,8 @@
             {% endif %}
             {% if new_session_grading_rule.due %}
               <li>
-                  {% blocktrans trimmed with due=new_session_grading_rule.due %}
-                    Your session will be due on <b>{{ due }}</b>, if session is not ended and roll-over is not applied (through "Keep session and apply new rules" strategy) before that time.
+                  {% blocktrans trimmed with time=new_session_grading_rule.due time_short=new_session_grading_rule.due|date:'SHORT_DATETIME_FORMAT' %}
+                    Your session will be due on <b><span title="{{ time }}">{{ time_short }}</span></b>, if session is not ended and roll-over is not applied (through "Keep session and apply new rules" strategy) before that time.
                   {% endblocktrans %}
               </li>
             {% endif %}
