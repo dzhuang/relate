@@ -108,7 +108,7 @@ def format_datetime_local(datetime, format='DATETIME_FORMAT'):
 
     Note: The datetime rendered in template is itself locale aware.
     A custom format must be defined in settings.py. 
-    When defined a format with a same name existed in built-in
+    When a custom format uses a same name with an existing built-in
     format, it will be overrided by built-in format as l10n
     is enabled.
     """
@@ -123,6 +123,7 @@ def format_datetime_local(datetime, format='DATETIME_FORMAT'):
     except:
         # seems it will never raise an exception here?
         return formats.date_format(datetime, "DATETIME_FORMAT")
+
 
 def compact_local_datetime_str(datetime, now_datetime, in_python=False):
     from django.conf import settings
@@ -145,6 +146,7 @@ def compact_local_datetime_str(datetime, now_datetime, in_python=False):
             return (
                 '<span title="%(time)s">%(time)s</span>' %
                 {"time": format_datetime_local(datetime)})
+
 
 def format_timedelta_local(datetime, now_datetime):
     from babel.dates import format_timedelta

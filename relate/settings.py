@@ -53,13 +53,6 @@ INSTALLED_APPS = (
     'image_upload',
     "jfu",
     'imagekit',
-    #"ckeditor_uploader",
-    
-    ## Seem sites should be put after other
-    ## apps so as to migrate successfully
-    ## for PostgreSql
-    
-    #"django.contrib.sites",
 )
 
 if local_settings["RELATE_SIGN_IN_BY_SAML2_ENABLED"]:
