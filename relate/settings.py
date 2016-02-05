@@ -41,7 +41,6 @@ INSTALLED_APPS = (
     "bootstrap3_datetime",
     "djangobower",
     "django_select2",
-    #'debug_toolbar',
 
     # message queue
     "djcelery",
@@ -49,11 +48,7 @@ INSTALLED_APPS = (
 
     "accounts",
     "course",
-    #"ckeditor",
-    'image_upload',
-    "jfu",
-    'imagekit',
-)
+    ) + local_settings.get("RELATE_CUSTOM_INSTALLED_APPS", ())
 
 if local_settings["RELATE_SIGN_IN_BY_SAML2_ENABLED"]:
     INSTALLED_APPS = INSTALLED_APPS + ("djangosaml2",)
@@ -120,7 +115,7 @@ BOWER_INSTALLED_APPS = (
     "jstree",
     "select2>=4.0.0",
     "select2-bootstrap-css",
-    )
+    ) + local_settings.get("RELATE_CUSTOM_BOWER_INSTALLED_APPS", ())
 
 CODEMIRROR_PATH = "codemirror"
 
@@ -162,8 +157,9 @@ TEMPLATES = [
                 "django.template.context_processors.static",
                 "django.template.context_processors.tz",
                 "django.contrib.messages.context_processors.messages",
-                "django.core.context_processors.request",
-                ) + RELATE_EXTRA_CONTEXT_PROCESSORS,
+                ) + local_settings.get(
+                    "RELATE_CUSTOM_CONTEXT_PROCESSORS", ())
+                  + RELATE_EXTRA_CONTEXT_PROCESSORS,
             }
     },
 ]
