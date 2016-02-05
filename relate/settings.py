@@ -125,7 +125,7 @@ BOWER_INSTALLED_APPS = (
     "datatables.net-fixedcolumns",
     "datatables.net-fixedcolumns-bs",
     "jstree",
-    "select2",
+    "select2>=4.0.0",
     "select2-bootstrap-css",
     )
 
