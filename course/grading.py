@@ -362,7 +362,6 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
                 "grading_form": grading_form,
                 "grading_form_html": grading_form_html,
-            
             })
 
 # }}}
