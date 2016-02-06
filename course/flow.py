@@ -45,8 +45,7 @@ from django.core.urlresolvers import reverse
 
 from relate.utils import (
         StyledForm, local_now, as_local_time,
-        format_datetime_local, compact_local_datetime_str,
-        format_timedelta_local)
+        format_datetime_local, compact_local_datetime_str)
 from crispy_forms.layout import Submit
 
 from course.constants import (
@@ -1402,8 +1401,10 @@ def view_flow_page(pctx, flow_session_id, ordinal):
                     credit_next)
 
         if now_datetime and completed_before:
+            from django.utils.timesince import timeuntil
+
             time_delta = completed_before - now_datetime
-            time_remain_str = format_timedelta_local(completed_before, now_datetime)
+            time_until = timeuntil(completed_before, now_datetime)
 
             if now_datetime < completed_before:
                 flow_page_warning_message = (
@@ -1412,7 +1413,7 @@ def view_flow_page(pctx, flow_session_id, ordinal):
                           "%(completed_before)s</b>) to submit this session to "
                           "get <b>%(credit_percent)d%%</b> of your grade."), " ") %
                         {
-                            "time_remain": time_remain_str,
+                            "time_remain": time_until,
                             "completed_before": compact_local_datetime_str(
                                 completed_before, now_datetime),
                             "credit_percent": credit_percent}

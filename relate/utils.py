@@ -151,20 +151,6 @@ def compact_local_datetime_str(datetime, now_datetime, in_python=False):
                 {"time": format_datetime_local(datetime)})
 
 
-def format_timedelta_local(datetime, now_datetime):
-    from babel.dates import format_timedelta
-    from django.conf import settings
-    from django.utils.translation.trans_real import to_locale
-    from django.utils.translation import get_language
-
-    locale = to_locale(get_language())
-
-    return format_timedelta(
-            datetime - now_datetime,
-            threshold=1.1,
-            locale=locale)
-
-
 # {{{ dict_to_struct
 
 class Struct(object):
