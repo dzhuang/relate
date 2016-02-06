@@ -31,7 +31,7 @@ from image_upload.views import (
     
     image_download)
 
-urlpatterns = patterns('',
+urlpatterns = [
     url(r"^user"
         "/flow-session"
         "/(?P<flow_session_id>[0-9]+)"
@@ -63,4 +63,4 @@ urlpatterns = patterns('',
         "/(?P<download_id>\d+)/$",
         image_download,
         name='image_download'),
-    )
+    ]

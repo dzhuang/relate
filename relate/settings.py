@@ -160,6 +160,7 @@ TEMPLATES = [
                 ) + local_settings.get(
                     "RELATE_CUSTOM_CONTEXT_PROCESSORS", ())
                   + RELATE_EXTRA_CONTEXT_PROCESSORS,
+            'builtins': ['course.templatetags.coursetags'],
             }
     },
 ]

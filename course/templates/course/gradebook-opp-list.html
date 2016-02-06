@@ -42,9 +42,7 @@
           {% else %}
              data-order=""
           {% endif %}
-          >{% with time=opp.due_time %}
-            <span title="{{ time }}">{{ time|date:"SHORT_DATETIME_FORMAT" }}</span>
-            {% endwith %}</td>
+          >{{ opp.due_time|compact_datetime }}</td>
         <td class="datacol">
           {% if opp.shown_in_student_grade_book %}
             <i class="fa fa-check-square-o"></i>

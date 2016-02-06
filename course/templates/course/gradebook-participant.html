@@ -69,9 +69,7 @@
              data-order=""
           {% endif %}
           >
-            {% with time=grade_info.grade_state_machine.last_graded_time %}
-              <span title="{{ time }}">{{ time|date:"SHORT_DATETIME_FORMAT" }}</span>
-            {% endwith %}
+          {{ grade_info.grade_state_machine.last_graded_time|compact_datetime }}</a>
         </td>
       </tr>
       {% endwith %}

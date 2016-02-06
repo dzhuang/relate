@@ -113,9 +113,11 @@ def format_datetime_local(datetime, format='DATETIME_FORMAT'):
     is enabled.
     """
     from django.utils import formats
+
     try:
         dt_format = formats.get_format(format)
     except:
+        
         return formats.date_format(datetime, "DATETIME_FORMAT")
 
     try:
@@ -123,7 +125,6 @@ def format_datetime_local(datetime, format='DATETIME_FORMAT'):
     except:
         # seems it will never raise an exception here?
         return formats.date_format(datetime, "DATETIME_FORMAT")
-
 
 def compact_local_datetime_str(datetime, now_datetime, in_python=False):
     from django.conf import settings
@@ -135,7 +136,8 @@ def compact_local_datetime_str(datetime, now_datetime, in_python=False):
         else:
             return (
                 '<span title="%(time)s">%(time_short)s</span>' %
-                {"time": format_datetime_local(datetime),
+                {"time": format_datetime_local(datetime,
+                        format="DATETIME_FORMAT"),
                  "time_short": format_datetime_local(datetime,
                         format="SHORT_DATETIME_FORMAT")
                 })
@@ -265,6 +267,12 @@ if 0:
 
 # {{{ convert django language name to js styled language name
 
+LANG_MAP_EXTRA = {
+        'zh-hans': 'zh-CN',
+        'zh-hant': 'zh-TW',
+        'zh-hk': 'zh-TW',
+        }
+
 def to_js_lang_name(dj_lang_name):
     """
     Turns a django language name (en-us) into a js styled language
@@ -272,6 +280,8 @@ def to_js_lang_name(dj_lang_name):
     """
     p = dj_lang_name.find('-')
     if p >= 0:
+        if dj_lang_name.lower() in LANG_MAP_EXTRA:
+            return LANG_MAP_EXTRA[dj_lang_name]
         return dj_lang_name[:p].lower() + '-' + dj_lang_name[p + 1:].upper()
     else:
         return dj_lang_name.lower()

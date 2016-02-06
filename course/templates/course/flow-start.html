@@ -34,15 +34,11 @@
           </tr>
           {% for flow_session, session_properties in past_sessions_and_properties %}
             <tr>
-              {% with time=flow_session.start_time %}
-              <td><span title="{{ time }}">{{ time|date:"SHORT_DATETIME_FORMAT" }}</span></td>
-              {% endwith %}
+              <td>{{ flow_session.start_time|compact_datetime }}</td>
               <td>
                 {% include "course/flow-session-state.html" %}
                 {% if not flow_session.in_progress %}
-                {% with time=flow_session.completion_time %}
-                    (<span title="{{ time }}">{{ time|date:"SHORT_DATETIME_FORMAT" }}</span>)
-                {% endwith %}
+                  ({{ flow_session.completion_time|compact_datetime }})
                 {% endif %}
               </td>
               <td>
@@ -54,9 +50,7 @@
               </td>
               <td>
                 {% if session_properties.due %}
-                {% with time=session_properties.due %}
-                  <span title="{{ time }}">{{ time|date:"SHORT_DATETIME_FORMAT" }}</span>
-                {% endwith %}
+                  {{ session_properties.due|compact_datetime }}
                 {% endif %}
               </td>
               <td>
@@ -120,8 +114,8 @@
             {% endif %}
             {% if new_session_grading_rule.due %}
               <li>
-                  {% blocktrans trimmed with time=new_session_grading_rule.due time_short=new_session_grading_rule.due|date:'SHORT_DATETIME_FORMAT' %}
-                    Your session will be due on <b><span title="{{ time }}">{{ time_short }}</span></b>, if session is not ended and roll-over is not applied (through "Keep session and apply new rules" strategy) before that time.
+                  {% blocktrans trimmed with due=new_session_grading_rule.due|compact_datetime %}
+                    Your session will be due on <b>{{ due }}</b>, if session is not ended and roll-over is not applied (through "Keep session and apply new rules" strategy) before that time.
                   {% endblocktrans %}
               </li>
             {% endif %}
