@@ -109,22 +109,23 @@ def format_datetime_local(datetime, format='DATETIME_FORMAT'):
     Note: The datetime rendered in template is itself locale aware.
     A custom format must be defined in settings.py. 
     When a custom format uses a same name with an existing built-in
-    format, it will be overrided by built-in format as l10n
+    format, it will be overrided by built-in format if l10n
     is enabled.
     """
+
+    fmt = format
+
     from django.utils import formats
+    from django.utils.dateformat import format
 
     try:
-        dt_format = formats.get_format(format)
-    except:
-        
-        return formats.date_format(datetime, "DATETIME_FORMAT")
+        return formats.date_format(datetime, fmt)
+    except AttributeError:
+        try:
+            return format(datetime, fmt)
+        except AttributeError:
+            return formats.date_format(datetime, "DATETIME_FORMAT")
 
-    try:
-        return formats.date_format(datetime, format)
-    except:
-        # seems it will never raise an exception here?
-        return formats.date_format(datetime, "DATETIME_FORMAT")
 
 def compact_local_datetime_str(datetime, now_datetime, in_python=False):
     from django.conf import settings
