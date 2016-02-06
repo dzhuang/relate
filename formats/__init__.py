@@ -18,4 +18,18 @@ LANG_INFO = {
         'name': 'Simplified Chinese',
         'name_local': '简体中文',
     },
+    'zh-tw': {
+        'fallback': ['zh-hant'],
+        'bidi': False,
+        'code': 'zh-tw',
+        'name': 'Tranditional Chinese',
+        'name_local': '繁体中文',
+    },
+    'zh-hk': {
+        'fallback': ['zh-hant'],
+        'bidi': False,
+        'code': 'zh-tw',
+        'name': 'Tranditional Chinese',
+        'name_local': '繁体中文',
+    },
 }
