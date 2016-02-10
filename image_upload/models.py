@@ -69,13 +69,10 @@ class Image(models.Model):
         self.file.delete(False)
         super(Image, self).delete(*args, **kwargs)
         
-    def get_creation_time(self, format='medium'):
-        if format == 'short':
-            format = getattr(
-                    settings, 'RELATE_SHORT_DATE_TIME_FORMAT', 'short')
+    def get_creation_time(self):
 
         return format_datetime_local(
-                as_local_time(self.creation_time), format=format)
+                as_local_time(self.creation_time))
 
     @models.permalink
     def get_absolute_url(self):

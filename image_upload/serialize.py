@@ -58,7 +58,7 @@ def serialize(instance, file_attr='file', flow_session_id=None, ordinal=None):
         'type': mimetypes.guess_type(obj.path)[0] or 'image/png',
         'thumbnailUrl': instance.file_thumbnail.url,
         'creationTime': instance.get_creation_time(),
-        'creationTimeShort': instance.get_creation_time(format='short'),
+        'creationTimeShort': instance.get_creation_time(),
         'size': obj.size,
         'deleteUrl': reverse('jfu_delete', kwargs={
                 'pk':instance.pk, 
