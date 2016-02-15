@@ -42,27 +42,49 @@ def order_name(name):
     return name[:10] + "..." + name[-7:]
 
 
-def serialize(instance, file_attr='file', flow_session_id=None, ordinal=None):
+def serialize(request, instance, file_attr='file', flow_session_id=None, ordinal=None):
     """serialize -- Serialize a Picture instance into a dict.
 
     instance -- Picture instance
     file_attr -- attribute name that contains the FileField or ImageField
 
     """
+    
+    from course.views import get_now_or_fake_time
+    from relate.utils import (
+        as_local_time, format_datetime_local, 
+        compact_local_datetime_str)
 
     obj = getattr(instance, file_attr)
+    deleteUrl = reverse('jfu_delete', kwargs={
+                'pk': instance.pk, 
+                'flow_session_id': flow_session_id, 
+                'ordinal': ordinal})
+    updateUrl = reverse('jfu_update', kwargs={
+                'pk': instance.pk})
+    
+    cropHandlerUrl = reverse('image_crop', kwargs={
+                'pk': instance.pk})
+    
+    creationTime = format_datetime_local(
+            as_local_time(instance.creation_time))
+    
+    creationTimeShort = compact_local_datetime_str(
+                            as_local_time(instance.creation_time),
+                            get_now_or_fake_time(request),
+                            in_python=True)
 
     return {
         'url': instance.get_absolute_url(),
         'name': order_name(obj.name),
         'type': mimetypes.guess_type(obj.path)[0] or 'image/png',
         'thumbnailUrl': instance.file_thumbnail.url,
-        'creationTime': instance.get_creation_time(),
-        'creationTimeShort': instance.get_creation_time(),
+        'creationTime': creationTime,
+        'creationTimeShort': creationTimeShort,
         'size': obj.size,
-        'deleteUrl': reverse('jfu_delete', kwargs={
-                'pk':instance.pk, 
-                'flow_session_id':flow_session_id, 
-                'ordinal':ordinal}),
+        'pk': instance.pk,
+        'updateUrl': updateUrl,
+        'deleteUrl': deleteUrl,
+        'cropHandlerUrl': cropHandlerUrl,
         'deleteType': 'POST',
     }

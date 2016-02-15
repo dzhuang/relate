@@ -1,0 +1,41 @@
+{% load i18n %}
+<div class="modal-header visible-lg">
+    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+    <h4 class="modal-title" id="modalLabel">{% trans "Edit" %}</h4>
+</div>
+<div class="modal-body">
+    <div class="img-container">
+        <img id="image" src="{{ file.get_absolute_url }}" alt="Picture{{file.id}}" id="target{{file.id}}">
+    </div>    
+</div>
+<div class="modal-footer">
+    <div class="btn-group">
+        <button type="button" class="btn btn-primary" id="rotate_left">
+            <span class="docs-tooltip" data-toggle="tooltip" title="{% trans 'Rotate left' }%">
+              <span class="fa fa-rotate-left"></span>
+            </span>
+        </button>
+        <button type="button" class="btn btn-primary" id="rotate_right">
+            <span class="docs-tooltip" data-toggle="tooltip" title="{% trans 'Rotate right' }%">
+              <span class="fa fa-rotate-right"></span>
+            </span>
+        </button>
+    </div>
+    <iframe id="cropIframe" name="cropIframe" style="display: none;"></iframe>
+    {# {"x":115.92452830188672,"y":357.2830188679245,"width":563.6226415094342,"height":317.0377358490567,"rotate":0,"scaleX":1,"scaleY":1} #}
+    <form id="imageCropForm" action="{{file.cropHandlerUrl}}" method="post" target="cropIframe"> {# style="display: none;"> #}
+        {% csrf_token %}
+        <input id="dataX" type="text" name="x"/>
+        <input id="dataY" type="text" name="y"/>
+        <input id="dataWidth" type="text" name="width"/>
+        <input id="dataHeight" type="text" name="height"/>
+        <input id="dataRotate" type="text" name="rotate"/>
+        {# <input id="dataScaleX" type="text" name="scalex"/> #}
+        {# <input id="dataScaleY" type="text" name="scaley"/> #}
+    </form>
+    <button type="button" class="btn btn-default" data-dismiss="modal">{% trans "Close" %}</button>
+    <button type="button" class="btn btn-default" id="cropper_save">{% trans "Save" %}</button>
+    <button type="button" class="btn btn-default" id="imageCropSubmit">{% trans "Submit" %}</button>
+    
+    <div id="dl"></div>
+</div>

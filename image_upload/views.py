@@ -27,11 +27,12 @@ THE SOFTWARE.
 from django.shortcuts import get_object_or_404
 from django import http
 from django.contrib.auth.decorators import login_required
-from django.views.generic import CreateView, DeleteView, ListView
+from django.views.generic import CreateView, UpdateView, DeleteView, ListView
 from django.utils.translation import ugettext_lazy as _
 from course.models import FlowPageData
 from image_upload.serialize import serialize
 from image_upload.models import Image, SessionPageImage
+from PIL import Image as IMG
 
 import json
 
@@ -53,7 +54,7 @@ class ImageCreateView(CreateView):
         self.object.image_page_id = fpd.page_id
         self.object.save()
 
-        files = [serialize(self.object, 'file', flow_session_id, ordinal)]
+        files = [serialize(self.request, self.object, 'file', flow_session_id, ordinal)]
         data = {'files': files}
         response = http.JsonResponse(data)
         response['Content-Disposition'] = 'inline; filename=files.json'
@@ -65,6 +66,35 @@ class ImageCreateView(CreateView):
                 content=data, 
                 status=400, 
                 content_type='application/json')
+
+
+import django.forms as forms
+class ImageItemForm(forms.ModelForm):
+    class Meta:
+        model = SessionPageImage
+        fields = ("file",)
+
+class ImageUpdateView(UpdateView):
+    model = SessionPageImage
+    form_class = ImageItemForm
+    template_name = 'image_upload/image_edit_form.html'
+
+    def dispatch(self, *args, **kwargs):
+        self.pk = kwargs['pk']
+        print "self", self
+        return super(ImageUpdateView, self).dispatch(*args, **kwargs)
+
+    def form_valid(self, form):
+        form.save()
+        file = SessionPageImage.objects.get(id=self.pk)
+        print file.pk
+        from django.template.loader import render_to_string
+        return http.HttpResponse(render_to_string('image_upload/image_edit_form_success.html', {'file': file}))
+
+def image_crop_modal(request, pk):
+    file = SessionPageImage.objects.get(id=pk)
+    from django.template.loader import render_to_string
+    return http.HttpResponse(render_to_string('image_upload/cropper_crop.html', {'file': file}))
 
 
 class ImageDeleteView(DeleteView):
@@ -98,7 +128,7 @@ class ImageListView(ListView):
         ordinal = self.kwargs["ordinal"]
         
         files = [
-                serialize(p, 'file', flow_session_id, ordinal)
+                serialize(self.request, p, 'file', flow_session_id, ordinal)
                 for p in self.get_queryset()]
         data = {'files': files}
         response = http.JsonResponse(data)
@@ -123,5 +153,92 @@ def _auth_download(request, download_object):
         from django.core.exceptions import PermissionDenied
         raise PermissionDenied(_("may not view other people's resource"))
     return sendfile(request, download_object.file.path)
+
+# }}}
+
+
+# {{{ crop image
+
+class CropImageError(Exception):
+    pass
+
+@login_required
+def image_crop(request, pk):
+    """剪裁头像"""
+#    try:
+#        upim = UploadedImage.objects.get(uid=get_uid(request))
+#    except UploadedImage.DoesNotExist:
+#        raise UploadAvatarError('请先上传图片')
+#
+#    image_orig = upim.get_image_path()
+#    if not image_orig:
+#        raise UploadAvatarError('请先上传图片')
+#        <input id="uploadAvatarValueX1" type="text" name="x1"/>
+#        <input id="uploadAvatarValueY1" type="text" name="y1"/>
+#        <input id="uploadAvatarValueX2" type="text" name="x2"/>
+#        <input id="uploadAvatarValueY2" type="text" name="y2"/>
+
+#        <input id="cropX" type="text" name="x"/>
+#        <input id="cropY" type="text" name="y"/>
+#        <input id="cropWidth" type="text" name="width"/>
+#        <input id="cropHeight" type="text" name="height"/>
+#        <input id="cropRotate" type="text" name="rotate"/>
+#        <input id="cropscaleX" type="text" name="scaleX"/>
+#        <input id="cropscaleY" type="text" name="scaleY"/>
+
+    print request.POST
+
+#    try:
+#        x = int(float(request.POST['x']))
+#        y = int(float(request.POST['y']))
+#        width = int(float(request.POST['width']))
+#        height = int(float(request.POST['height']))
+#        rotate = int(float(request.POST['rotate']))
+#        scaleX = int(float(request.POST['scalex']))
+#        scaleY = int(float(request.POST['scaley']))
+#    except:
+#        raise CropImage('发生错误，稍后再试')
+#        
+#    print x, y, width, height
+#
+#
+#    try:
+#        orig = Image.open(image_orig)
+#    except IOError:
+#        raise UploadAvatarError('发生错误，请重新上传图片')
+#
+#    orig_w, orig_h = orig.size
+#    if orig_w <= border_size and orig_h <= border_size:
+#        ratio = 1
+#    else:
+#        if orig_w > orig_h:
+#            ratio = float(orig_w) / border_size
+#        else:
+#            ratio = float(orig_h) / border_size
+#
+#    box = [int(x * ratio) for x in [x1, y1, x2, y2]]
+#    avatar = orig.crop(box)
+#    avatar_name, _ = os.path.splitext(upim.image)
+#
+#
+#    size = AVATAR_RESIZE_SIZE
+#    try:
+#        res = avatar.resize((size, size), Image.ANTIALIAS)
+#        res_name = '%s-%d.%s' % (avatar_name, size, AVATAR_SAVE_FORMAT)
+#        res_path = os.path.join(AVATAR_DIR, res_name)
+#        res.save(res_path, AVATAR_SAVE_FORMAT, quality=AVATAR_SAVE_QUALITY)
+#    except:
+#        raise UploadAvatarError('发生错误，请稍后重试')
+#
+#
+#    avatar_crop_done.send(sender = None,
+#                          uid = get_uid(request),
+#                          avatar_name = res_name,
+#                          dispatch_uid = 'siteuser_avatar_crop_done'
+#                          )
+#
+#    return HttpResponse(
+#        "<script>window.parent.crop_avatar_success('%s')</script>"  % '成功'
+#    )
 
 # }}}

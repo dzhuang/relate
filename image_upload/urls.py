@@ -27,8 +27,8 @@ THE SOFTWARE.
 from django.conf.urls import patterns, url
 
 from image_upload.views import (
-    ImageCreateView, ImageDeleteView, ImageListView,
-    
+    ImageCreateView, ImageUpdateView, ImageDeleteView, ImageListView,
+    image_crop_modal, image_crop,
     image_download)
 
 urlpatterns = [
@@ -39,6 +39,12 @@ urlpatterns = [
         "/image/upload/$",
         ImageCreateView.as_view(),
         name='jfu_upload'),
+
+    url(r"^user"
+        "/image/update"
+        "/(?P<pk>\d+)$",
+        image_crop_modal,
+        name='jfu_update'),
 
     url(r"^user"
         "/flow-session"
@@ -63,4 +69,11 @@ urlpatterns = [
         "/(?P<download_id>\d+)/$",
         image_download,
         name='image_download'),
+
+    url(r"^user"
+        "/image/crop"
+        "/(?P<pk>\d+)$",
+        image_crop,
+        name='image_crop'),
+    
     ]

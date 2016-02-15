@@ -68,11 +68,6 @@ class Image(models.Model):
         """delete -- Remove to leave file."""
         self.file.delete(False)
         super(Image, self).delete(*args, **kwargs)
-        
-    def get_creation_time(self):
-
-        return format_datetime_local(
-                as_local_time(self.creation_time))
 
     @models.permalink
     def get_absolute_url(self):
