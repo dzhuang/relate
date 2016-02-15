@@ -9,18 +9,11 @@
     </div>    
 </div>
 <div class="modal-footer">
-    <div class="btn-group">
-        <button type="button" class="btn btn-primary" id="rotate_left">
-            <span class="docs-tooltip" data-toggle="tooltip" title="{% trans 'Rotate left' }%">
-              <span class="fa fa-rotate-left"></span>
-            </span>
-        </button>
         <button type="button" class="btn btn-primary" id="rotate_right">
             <span class="docs-tooltip" data-toggle="tooltip" title="{% trans 'Rotate right' }%">
               <span class="fa fa-rotate-right"></span>
             </span>
         </button>
-    </div>
     <iframe id="cropIframe" name="cropIframe" style="display: none;"></iframe>
     {# {"x":115.92452830188672,"y":357.2830188679245,"width":563.6226415094342,"height":317.0377358490567,"rotate":0,"scaleX":1,"scaleY":1} #}
     <form id="imageCropForm" action="{{file.cropHandlerUrl}}" method="post" target="cropIframe"> {# style="display: none;"> #}
@@ -35,7 +28,12 @@
     </form>
     <button type="button" class="btn btn-default" data-dismiss="modal">{% trans "Close" %}</button>
     <button type="button" class="btn btn-default" id="cropper_save">{% trans "Save" %}</button>
-    <button type="button" class="btn btn-default" id="imageCropSubmit">{% trans "Submit" %}</button>
+    <button type="button" class="btn btn-success" id="imageCropSubmit" disabled="disabled">
+        <i class="fa fa-check"></i>
+        <span>{% trans "Submit" %}</span></button>
+    <button type="button" class="btn btn-warning" id="imageCropReset">
+        <i class="fa fa-remove"></i>
+        <span>{% trans "Reset" %}</span></button>
     
     <div id="dl"></div>
 </div>

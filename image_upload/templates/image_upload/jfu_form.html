@@ -185,31 +185,34 @@
         var dataHeight = document.getElementById('dataHeight');
         var dataWidth = document.getElementById('dataWidth');
         var dataRotate = document.getElementById('dataRotate');
-//        var dataScaleX = document.getElementById('dataScaleX');
-//        var dataScaleY = document.getElementById('dataScaleY');
+        //        var dataScaleX = document.getElementById('dataScaleX');
+        //        var dataScaleY = document.getElementById('dataScaleY');
         var options = {
             checkOrientation: false,
 
-            autoCrop: false,
+            autoCrop: true,
+            autoCropArea: 1,
             strict: true,
-            build: function () {
-                console.log('build');
-            },
+//            build: function () {
+//                console.log('build');
+//            },
             built: function () {
                 //                // Strict mode: set crop box data first
                 //                cropper.setCropBoxData(cropBoxData).setCanvasData(canvasData);
             },
             cropstart: function (data) {
-                console.log('cropstart', data.action);
+                $('#imageCropSubmit').removeAttr('disabled');
+                //console.log('cropstart', data.action);
+                
             },
-            cropmove: function (data) {
-                console.log('cropmove', data.action);
-            },
-            cropend: function (data) {
-                console.log('cropend', data.action);
-            },
+//            cropmove: function (data) {
+//                console.log('cropmove', data.action);
+//            },
+//            cropend: function (data) {
+//                console.log('cropend', data.action);
+//            },
             crop: function (data) {
-                console.log('crop');
+//                console.log('crop');
                 dataX.value = Math.round(data.x);
                 dataY.value = Math.round(data.y);
                 dataHeight.value = Math.round(data.height);
@@ -219,7 +222,7 @@
 //                dataScaleY.value = !isUndefined(data.scaleY) ? data.scaleY : '';
             },
             zoom: function (data) {
-                console.log('zoom', data.ratio);
+  //              console.log('zoom', data.ratio);
             }
         }
 
@@ -231,18 +234,42 @@
         $('.modal .modal-body').css('max-height', $(window).height() * 0.9);
         $('.modal .modal-body').css('margin', 0).css('border', 0);
 
-        $('#rotate_left').click(function () {
-            cropper.rotate(-90);
-//                .img-container {
-//      width: 100%;
-//      margin: 0px;
-//    }
-//    .img-container img {
-//      max-width: 100%;
-//    }
-        });
         $('#rotate_right').click(function () {
+            var contData = cropper.getContainerData();
+
+            cropper.setCropBoxData({
+                width: 2,
+                height: 2,
+                top: (contData.height / 2) - 1,
+                left: (contData.width / 2) - 1
+            });
+
             cropper.rotate(90);
+
+            var canvData = cropper.getCanvasData();
+            var newWidth = canvData.width * (contData.height / canvData.height);
+
+            if (newWidth >= contData.width) {
+                var newHeight = canvData.height * (contData.width / canvData.width);
+                var newCanvData = {
+                    height: newHeight,
+                    width: contData.width,
+                    top: (contData.height - newHeight) / 2,
+                    left: 0
+                };
+            } else {
+                var newCanvData = {
+                    height: contData.height,
+                    width: newWidth,
+                    top: 0,
+                    left: (contData.width - newWidth) / 2
+                };
+            }
+
+            cropper.setCanvasData(newCanvData);
+            cropper.setCropBoxData(newCanvData);
+            
+            $('#imageCropSubmit').removeAttr('disabled');
         });
 
         $('#cropper_save').click(function () {
@@ -250,61 +277,30 @@
             $('#dl').html(result);
         });
 
-        //#        <input id="cropX" type="text" name="x"/>
-        //#        <input id="cropY" type="text" name="y"/>
-        //#        <input id="cropWidth" type="text" name="width"/>
-        //#        <input id="cropHeight" type="text" name="height"/>
-        //#        <input id="cropRotate" type="text" name="rotate"/>
-        //#        <input id="cropscaleX" type="text" name="scaleX"/>
-        //#        <input id="cropscaleY" type="text" name="scaleY"/>
-
-
-        var data = cropper.getData();
-        dataX.value = Math.round(data.x);
-        dataY.value = Math.round(data.y);
-        dataHeight.value = Math.round(data.height);
-        dataWidth.value = Math.round(data.width);
-        dataRotate.value = !isUndefined(data.rotate) ? data.rotate : '';
-//        dataScaleX.value = !isUndefined(data.scaleX) ? data.scaleX : '';
-//        dataScaleY.value = !isUndefined(data.scaleY) ? data.scaleY : '';
 
         $('#imageCropSubmit').click(function () {
             $(this).attr('disabled', 'disabled');
-
-
-            //console.log(crop_data);
-
-
-            $('#cropX').val(crop_data.x);
-            $('#cropY').val(crop_data.y);
-            $('#cropWidth').val(crop_data.width);
-            $('#cropHeight').val(crop_data.height);
-            $('#cropRotate').val(crop_data.rotate);
-//            $('#cropscaleX').val(crop_data.scaleX);
-//            $('#cropscaleY').val(crop_data.scaleY);
-
-            x = $('#cropX').val();
-            y = $('#cropY').val();
-            width = $('#cropWidth').val();
-            height = $('#cropHeight').val();
-            rotate = $('#cropRotate').val();
-//            scalex = $('#cropscaleX').val();
-//            scaley = $('#cropscaleY').val();
-            if (x === "" || y === "" || width === "" || height === "" || rotate == "" 
-               // || scalex === "" || scaley === ""
-               ) {
+            x = $('#dataX').val();
+            y = $('#dataY').val();
+            width = $('#dataWidth').val();
+            height = $('#dataHeight').val();
+            rotate = $('#dataRotate').val();
+            if (x === "" || y === "" || width === "" || height === "" || rotate == ""
+                // || scalex === "" || scaley === ""
+            ) {
                 $(this).removeAttr('disabled');
                 return false;
             }
+            
+            $('#imageCropForm').submit();
+            return false;
 
-            //            $('#uploadAvatarCropForm').submit();
-            //            $('#uploadAvatarValueX1').val('');
-            //            $('#uploadAvatarValueY1').val('');
-            //            $('#uploadAvatarValueX2').val('');
-            //            $('#uploadAvatarValueY2').val('');
-
-            $(this).removeAttr('disabled');
+            //$(this).removeAttr('disabled');
             //            return false;
+        });
+        
+        $('#imageCropReset').click(function () {
+            cropper.reset();
         });
 
     }).on('hidden.bs.modal', '.modal', function () {
