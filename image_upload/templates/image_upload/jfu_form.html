@@ -128,7 +128,8 @@
         </td>
         {% endblock %} {% if SHOW_CREATION_TIME %} {% block JS_DOWNLOAD_TEMPLATE_TIME %}
         <td>
-            <span class="time" title="{{ JQ_OPEN }}=file.creationTime{{ JQ_CLOSE }}">{{ JQ_OPEN }}=file.creationTimeShort{{ JQ_CLOSE }}</span>
+            <span class="time" title="{% trans 'Created at' %} {{ JQ_OPEN }}=file.creationTime{{ JQ_CLOSE }}{{ JQ_OPEN }} if (file.modifiedTimeShort) { {{ JQ_CLOSE }}, {% trans 'modified at' %} {{ JQ_OPEN }}=file.modifiedTime{{ JQ_CLOSE }}{{ JQ_OPEN }} } {{ JQ_CLOSE }}">
+            {{ JQ_OPEN }}=file.creationTimeShort{{ JQ_CLOSE }}{{ JQ_OPEN }} if (file.modifiedTimeShort) { {{ JQ_CLOSE }} ({{ JQ_OPEN }}=file.modifiedTimeShort{{ JQ_CLOSE }}){{ JQ_OPEN }} } {{ JQ_CLOSE }}</span>
         </td>
         {% endblock %} {% endif %} {% block JS_DOWNLOAD_TEMPLATE_FSIZE %}
         <td>
@@ -193,9 +194,9 @@
             autoCrop: true,
             autoCropArea: 1,
             strict: true,
-//            build: function () {
-//                console.log('build');
-//            },
+            //            build: function () {
+            //                console.log('build');
+            //            },
             built: function () {
                 //                // Strict mode: set crop box data first
                 //                cropper.setCropBoxData(cropBoxData).setCanvasData(canvasData);
@@ -203,26 +204,26 @@
             cropstart: function (data) {
                 $('#imageCropSubmit').removeAttr('disabled');
                 //console.log('cropstart', data.action);
-                
+
             },
-//            cropmove: function (data) {
-//                console.log('cropmove', data.action);
-//            },
-//            cropend: function (data) {
-//                console.log('cropend', data.action);
-//            },
+            //            cropmove: function (data) {
+            //                console.log('cropmove', data.action);
+            //            },
+            //            cropend: function (data) {
+            //                console.log('cropend', data.action);
+            //            },
             crop: function (data) {
-//                console.log('crop');
+                //                console.log('crop');
                 dataX.value = Math.round(data.x);
                 dataY.value = Math.round(data.y);
                 dataHeight.value = Math.round(data.height);
                 dataWidth.value = Math.round(data.width);
                 dataRotate.value = !isUndefined(data.rotate) ? data.rotate : '';
-//                dataScaleX.value = !isUndefined(data.scaleX) ? data.scaleX : '';
-//                dataScaleY.value = !isUndefined(data.scaleY) ? data.scaleY : '';
+                //                dataScaleX.value = !isUndefined(data.scaleX) ? data.scaleX : '';
+                //                dataScaleY.value = !isUndefined(data.scaleY) ? data.scaleY : '';
             },
             zoom: function (data) {
-  //              console.log('zoom', data.ratio);
+                //              console.log('zoom', data.ratio);
             }
         }
 
@@ -268,7 +269,7 @@
 
             cropper.setCanvasData(newCanvData);
             cropper.setCropBoxData(newCanvData);
-            
+
             $('#imageCropSubmit').removeAttr('disabled');
         });
 
@@ -291,14 +292,14 @@
                 $(this).removeAttr('disabled');
                 return false;
             }
-            
+
             $('#imageCropForm').submit();
             return false;
 
             //$(this).removeAttr('disabled');
             //            return false;
         });
-        
+
         $('#imageCropReset').click(function () {
             cropper.reset();
         });
@@ -310,6 +311,15 @@
 
     function isUndefined(obj) {
         return typeof obj === 'undefined';
+    }
+
+    function crop_success(msg) {
+        $("#CropResult").addClass('alert alert-success').html(msg);
+        window.setTimeout(
+            function () {
+                $("#CropResult").removeClass('alert alert-error').removeClass('alert alert-success').html("");
+            },
+            3000);
     }
 </script>
 

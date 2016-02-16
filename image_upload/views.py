@@ -26,6 +26,7 @@ THE SOFTWARE.
 
 from django.shortcuts import get_object_or_404
 from django import http
+from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.views.generic import CreateView, UpdateView, DeleteView, ListView
 from django.utils.translation import ugettext_lazy as _
@@ -33,6 +34,7 @@ from course.models import FlowPageData
 from image_upload.serialize import serialize
 from image_upload.models import Image, SessionPageImage
 from PIL import Image as IMG
+from django.db import transaction
 
 import json
 
@@ -93,8 +95,8 @@ class ImageUpdateView(UpdateView):
 
 def image_crop_modal(request, pk):
     file = SessionPageImage.objects.get(id=pk)
-    from django.template.loader import render_to_string
-    return http.HttpResponse(render_to_string('image_upload/cropper_crop.html', {'file': file}))
+    #from django.template.loader import render_to_string
+    return render(request, 'image_upload/cropper_modal.html', {'file': file})
 
 
 class ImageDeleteView(DeleteView):
@@ -162,50 +164,61 @@ def _auth_download(request, download_object):
 class CropImageError(Exception):
     pass
 
+@transaction.atomic
 @login_required
 def image_crop(request, pk):
-    """剪裁头像"""
-#    try:
-#        upim = UploadedImage.objects.get(uid=get_uid(request))
-#    except UploadedImage.DoesNotExist:
-#        raise UploadAvatarError('请先上传图片')
-#
-#    image_orig = upim.get_image_path()
-#    if not image_orig:
-#        raise UploadAvatarError('请先上传图片')
-#        <input id="uploadAvatarValueX1" type="text" name="x1"/>
-#        <input id="uploadAvatarValueY1" type="text" name="y1"/>
-#        <input id="uploadAvatarValueX2" type="text" name="x2"/>
-#        <input id="uploadAvatarValueY2" type="text" name="y2"/>
+    from django.conf import settings
+    try:
+        crop_img = SessionPageImage.objects.get(pk=pk)
+    except SessionPageImage.DoesNotExist:
+        raise CropImageError('请先上传图片')
 
-#        <input id="cropX" type="text" name="x"/>
-#        <input id="cropY" type="text" name="y"/>
-#        <input id="cropWidth" type="text" name="width"/>
-#        <input id="cropHeight" type="text" name="height"/>
-#        <input id="cropRotate" type="text" name="rotate"/>
-#        <input id="cropscaleX" type="text" name="scaleX"/>
-#        <input id="cropscaleY" type="text" name="scaleY"/>
-
+    image_orig = crop_img.file.path
+    image_modified = crop_img.get_random_filename()
+    print image_modified
+    if not image_orig:
+        raise CropImageError('File not found, 请先上传图片')
+        
     print request.POST
 
-#    try:
-#        x = int(float(request.POST['x']))
-#        y = int(float(request.POST['y']))
-#        width = int(float(request.POST['width']))
-#        height = int(float(request.POST['height']))
-#        rotate = int(float(request.POST['rotate']))
+    try:
+        x = int(float(request.POST['x']))
+        y = int(float(request.POST['y']))
+        width = int(float(request.POST['width']))
+        height = int(float(request.POST['height']))
+        rotate = int(float(request.POST['rotate']))
 #        scaleX = int(float(request.POST['scalex']))
 #        scaleY = int(float(request.POST['scaley']))
-#    except:
-#        raise CropImage('发生错误，稍后再试')
+    except:
+        raise CropImageError('发生错误，稍后再试')
 #        
-#    print x, y, width, height
+    print x, y, width, height, rotate
 #
 #
-#    try:
-#        orig = Image.open(image_orig)
-#    except IOError:
-#        raise UploadAvatarError('发生错误，请重新上传图片')
+    try:
+        orig = IMG.open(image_orig)
+    except IOError:
+        raise CropImageError('发生错误，请重新上传图片')
+    
+    orig=orig.rotate(rotate)
+    try:
+        orig.save(image_modified)
+    except IOError:
+        print image_orig
+        print image_modified
+        raise CropImageError('发生错误，稍后再试')
+
+    from relate.utils import local_now
+    crop_img.file = image_modified
+    crop_img.file_last_modified = local_now()
+    crop_img.save()
+    
+    try:
+        import os
+        os.remove(image_orig)
+    except:
+        pass
+    
 #
 #    orig_w, orig_h = orig.size
 #    if orig_w <= border_size and orig_h <= border_size:
@@ -218,7 +231,7 @@ def image_crop(request, pk):
 #
 #    box = [int(x * ratio) for x in [x1, y1, x2, y2]]
 #    avatar = orig.crop(box)
-#    avatar_name, _ = os.path.splitext(upim.image)
+#    avatar_name, _ = os.path.splitext(crop_img.image)
 #
 #
 #    size = AVATAR_RESIZE_SIZE
@@ -228,7 +241,7 @@ def image_crop(request, pk):
 #        res_path = os.path.join(AVATAR_DIR, res_name)
 #        res.save(res_path, AVATAR_SAVE_FORMAT, quality=AVATAR_SAVE_QUALITY)
 #    except:
-#        raise UploadAvatarError('发生错误，请稍后重试')
+#        raise CropImageError('发生错误，请稍后重试')
 #
 #
 #    avatar_crop_done.send(sender = None,
@@ -237,8 +250,8 @@ def image_crop(request, pk):
 #                          dispatch_uid = 'siteuser_avatar_crop_done'
 #                          )
 #
-#    return HttpResponse(
-#        "<script>window.parent.crop_avatar_success('%s')</script>"  % '成功'
-#    )
+    return http.HttpResponse(
+        "<script>window.parent.crop_success('%s')</script>"  % '成功'
+    )
 
 # }}}

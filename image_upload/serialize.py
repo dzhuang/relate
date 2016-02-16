@@ -36,16 +36,18 @@ def order_name(name):
 
     name -- text to be limited.
     """
+    from os.path import basename
+    name = basename(name)
     name = re.sub(r'^.*/', '', name)
-    if len(name) <= 20:
+    if len(name) <= 25:
         return name
-    return name[:10] + "..." + name[-7:]
+    return name[:15] + "..." + name[-7:]
 
 
 def serialize(request, instance, file_attr='file', flow_session_id=None, ordinal=None):
     """serialize -- Serialize a Picture instance into a dict.
 
-    instance -- Picture instance
+    instance -- Image instance
     file_attr -- attribute name that contains the FileField or ImageField
 
     """
@@ -56,6 +58,11 @@ def serialize(request, instance, file_attr='file', flow_session_id=None, ordinal
         compact_local_datetime_str)
 
     obj = getattr(instance, file_attr)
+    
+    # use slug by default
+    name_field = getattr(instance, 'slug', obj.name)
+    name = order_name(name_field)
+
     deleteUrl = reverse('jfu_delete', kwargs={
                 'pk': instance.pk, 
                 'flow_session_id': flow_session_id, 
@@ -63,24 +70,40 @@ def serialize(request, instance, file_attr='file', flow_session_id=None, ordinal
     updateUrl = reverse('jfu_update', kwargs={
                 'pk': instance.pk})
     
+
     cropHandlerUrl = reverse('image_crop', kwargs={
                 'pk': instance.pk})
-    
+
     creationTime = format_datetime_local(
             as_local_time(instance.creation_time))
-    
+
     creationTimeShort = compact_local_datetime_str(
                             as_local_time(instance.creation_time),
+                            get_now_or_fake_time(request),
+                            in_python=True)
+    modifiedTime = ""
+    modifiedTimeShort = ""
+    
+    print instance.creation_time, instance.file_last_modified
+
+    if instance.creation_time != instance.file_last_modified:
+        modifiedTime = format_datetime_local(
+                as_local_time(instance.file_last_modified))
+
+        modifiedTimeShort = compact_local_datetime_str(
+                            as_local_time(instance.file_last_modified),
                             get_now_or_fake_time(request),
                             in_python=True)
 
     return {
         'url': instance.get_absolute_url(),
-        'name': order_name(obj.name),
+        'name': name,
         'type': mimetypes.guess_type(obj.path)[0] or 'image/png',
         'thumbnailUrl': instance.file_thumbnail.url,
         'creationTime': creationTime,
+        'modifiedTime': modifiedTime,
         'creationTimeShort': creationTimeShort,
+        'modifiedTimeShort': modifiedTimeShort,
         'size': obj.size,
         'pk': instance.pk,
         'updateUrl': updateUrl,

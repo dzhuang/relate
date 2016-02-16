@@ -39,7 +39,7 @@ from imagekit.models import ImageSpecField
 from imagekit.processors import ResizeToFit
 
 @deconstructible
-class UserImageStorage(FileSystemStorage):    
+class UserImageStorage(FileSystemStorage):
     def __init__(self):
         super(UserImageStorage, self).__init__(
                 location=settings.SENDFILE_ROOT)
@@ -59,9 +59,11 @@ class Image(models.Model):
             storage=sendfile_storage)
     slug = models.SlugField(max_length=256, blank=True)
     creation_time = models.DateTimeField(default=now)
+    file_last_modified = models.DateTimeField(default=now)
 
     def save(self, *args, **kwargs):
-        self.slug = self.file.name
+        if not self.slug:
+            self.slug = self.file.name
         super(Image, self).save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
@@ -72,6 +74,20 @@ class Image(models.Model):
     @models.permalink
     def get_absolute_url(self):
         return ('image_download', [self.creator_id, self.pk], {})
+
+    def get_random_filename(self):
+        import os, uuid
+        slug_path = self.file.path.replace(
+                os.path.basename(self.file.path),
+                self.slug)
+        [file_no_ext, ext] = os.path.splitext(slug_path)
+        while True:
+            rand_str4 = str(uuid.uuid4())[-4:]
+            rand_file_name = "".join([file_no_ext, rand_str4, ext])
+            print "ori_file_name", self.file.path
+            print "rand_file_name", rand_file_name
+            if not os.path.isfile(rand_file_name):
+                return rand_file_name
 
     class Meta:
         ordering = ("id", "creation_time")
