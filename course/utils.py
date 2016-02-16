@@ -538,6 +538,11 @@ class FlowContext(object):
         except ObjectDoesNotExist:
             raise http.Http404()
 
+        if flow_session is not None:
+            from course.content import adjust_flow_session_page_data
+            adjust_flow_session_page_data(repo, flow_session,
+                    course.identifier, self.flow_desc)
+
 
 class PageOrdinalOutOfRange(http.Http404):
     pass
@@ -555,10 +560,6 @@ class FlowPageContext(FlowContext):
              participation, flow_session, request=None):
         FlowContext.__init__(self, repo, course, flow_id,
                 participation, flow_session=flow_session)
-
-        from course.content import adjust_flow_session_page_data
-        adjust_flow_session_page_data(repo, flow_session,
-                course.identifier, self.flow_desc)
 
         if ordinal >= flow_session.page_count:
             raise PageOrdinalOutOfRange()

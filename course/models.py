@@ -478,9 +478,10 @@ class FlowSession(models.Model):
             verbose_name=_('Page count'))
 
     # This field allows avoiding redundant checks for whether the
-    # page data is in line with the course material.
+    # page data is in line with the course material and the current
+    # version of RELATE.
     # See course.content.adjust_flow_session_page_data.
-    page_data_at_course_revision = models.CharField(
+    page_data_at_revision_key = models.CharField(
             max_length=200, null=True, blank=True,
             verbose_name=_('Page data at course revision'),
             help_text=_(
@@ -594,6 +595,13 @@ class FlowPageData(models.Model):
             # Show correct characters in admin for non ascii languages.
             dump_kwargs={'ensure_ascii': False},
             verbose_name=_('Data'))
+    title = models.CharField(max_length=1000,
+            verbose_name=_('Page Title'), null=True, blank=True)
+
+    bookmarked = models.BooleanField(default=False,
+            help_text=_("A user-facing 'marking' feature to allow participants to "
+                "easily return to pages that still need their attention."),
+            verbose_name=_('Bookmarked'))
 
     class Meta:
         verbose_name = _("Flow page data")
@@ -616,6 +624,9 @@ class FlowPageData(models.Model):
         return self.ordinal - 1
 
     def next_ordinal(self):
+        return self.ordinal + 1
+
+    def human_readable_ordinal(self):
         return self.ordinal + 1
 
 # }}}
