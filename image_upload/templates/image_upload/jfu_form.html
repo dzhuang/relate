@@ -106,7 +106,7 @@
                                 <a href="{{ JQ_OPEN }}=file.url{{ JQ_CLOSE }}"
                                  title="{{ JQ_OPEN }}=file.name{{ JQ_CLOSE }}"
                                  download="{{ JQ_OPEN }}=file.name{{ JQ_CLOSE }}"
-                                 data-gallery><img src="{{ JQ_OPEN }}=file.thumbnailUrl{{ JQ_CLOSE }}"
+                                 data-gallery><img id="thumbnail{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}" src="{{ JQ_OPEN }}=file.thumbnailUrl{{ JQ_CLOSE }}"
                                 ></a>
                             {{ JQ_OPEN }} } {{ JQ_CLOSE }}
                         </span>
@@ -269,7 +269,7 @@
             height = $('#dataHeight').val();
             rotate = $('#dataRotate').val();
 
-            if ((x === "" || y === "" || width === "" || height === "" || rotate == "") 
+            if ((x === "" || y === "" || width === "" || height === "" || rotate == "")
                 //||
                 //(
                 //    x === dataX_init &&
@@ -283,12 +283,20 @@
             }
 
             $('#imageCropForm').submit();
+
+            // post submit action: bugsssssssssssssssss!
+            var oldsrc = $('#image').attr('src');
+            $('#image').attr('src', oldsrc + "#" + new Date().getTime());
+
+            
             return false;
 
         });
 
         $('#imageCropReset').click(function () {
             cropper.reset();
+            $('#imageCropSubmit').addClass("disabled");
+            $('#imageCropReset').addClass("disabled");
         });
 
     }).on('hidden.bs.modal', '.modal', function () {

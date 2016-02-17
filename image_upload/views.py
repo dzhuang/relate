@@ -219,9 +219,29 @@ def image_crop(request, pk):
     except:
         pass
     
-    file = SessionPageImage.objects.get(pk=pk)
+    New_image = SessionPageImage.objects.get(id=pk)
+    
+    print New_image.file_thumbnail.url
+    print New_image.file_last_modified
+    
+    
+    
+    
+    try:
+        image_crop_modal(request, pk)
+        return render(request, 'image_upload/cropper_modal_success.html', {'file': New_image})    
+    except Exception as e:
+        print type(e).__name__,": ", str(e)
+        return http.HttpResponse(
+            "<script>window.parent.crop_success('%s')</script>"  % '成功'
+        )
+#    Ajax:
+#    http://stackoverflow.com/questions/4406348/how-to-add-data-via-ajax-serialize-extra-data-like-this
+#    http://forums.asp.net/t/2010672.aspx?AJAX+to+refresh+image+stored+in+Session
+#    http://stackoverflow.com/questions/1077041/refresh-image-with-a-new-one-at-the-same-url
+#    http://stackoverflow.com/questions/6509981/updating-a-picture-without-page-reload
 
-    return render(request, 'image_upload/cropper_modal_success.html', {'file': file})
+#    return render(request, 'image_upload/cropper_modal_success.html', {'file': New_image.file})
 #    return http.HttpResponse(
 #        "<script>window.parent.crop_success('%s')</script>"  % '成功'
 #    )

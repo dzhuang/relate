@@ -106,7 +106,7 @@ class SessionPageImage(Image):
             source='file',
             processors=[ResizeToFit(200, 200)],
             format='PNG',
-            options={'quality': 60}
+            options={'quality': 85}
             )
     flow_session = models.ForeignKey(
             FlowSession, null=True, related_name="page_image_data",
