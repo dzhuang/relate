@@ -194,110 +194,97 @@
             autoCrop: true,
             autoCropArea: 1,
             strict: true,
-            //            build: function () {
-            //                console.log('build');
-            //            },
             built: function () {
-                //                // Strict mode: set crop box data first
-                //                cropper.setCropBoxData(cropBoxData).setCanvasData(canvasData);
+                // failed.
+                //    var dataX_init = $('#dataX').val();
+                //    var dataY_init = $('#dataY').val();
+                //    var dataHeight_init = $('#dataHeight').val();
+                //    var dataWidth_init = $('#dataWidth').val();
+                //    var dataRotate_init = $('#dataRotate').val();
+                //
+                //    console.log(dataX_init);
+                //    console.log(dataY_init);
+                //    console.log(dataHeight_init);
+                //    console.log(dataWidth_init);
+                //    console.log(dataRotate_init);
             },
             cropstart: function (data) {
-                $('#imageCropSubmit').removeAttr('disabled');
-                //console.log('cropstart', data.action);
-
+                $('#imageCropSubmit').removeClass("disabled");
+                $('#imageCropReset').removeClass("disabled");
             },
-            //            cropmove: function (data) {
-            //                console.log('cropmove', data.action);
-            //            },
-            //            cropend: function (data) {
-            //                console.log('cropend', data.action);
-            //            },
             crop: function (data) {
-                //                console.log('crop');
                 dataX.value = Math.round(data.x);
                 dataY.value = Math.round(data.y);
                 dataHeight.value = Math.round(data.height);
                 dataWidth.value = Math.round(data.width);
                 dataRotate.value = !isUndefined(data.rotate) ? data.rotate : '';
-                //                dataScaleX.value = !isUndefined(data.scaleX) ? data.scaleX : '';
-                //                dataScaleY.value = !isUndefined(data.scaleY) ? data.scaleY : '';
             },
-            zoom: function (data) {
-                //              console.log('zoom', data.ratio);
-            }
         }
-
         var cropBoxData;
         var canvasData;
         var image = document.getElementById("image");
         cropper = new Cropper(image, options);
-        $('.modal .modal-body').css('overflow-y', 'auto');
-        $('.modal .modal-body').css('max-height', $(window).height() * 0.9);
-        $('.modal .modal-body').css('margin', 0).css('border', 0);
+
+        $('.modal .modal-body')
+            .css('overflow-y', 'auto')
+            .css('max-height', $(window).height() * 0.9)
+            .css('margin', 0).css('border', 0);
 
         $('#rotate_right').click(function () {
-            var contData = cropper.getContainerData();
+            rotatedegree(90)
+        });
+        $('#rotate_left').click(function () {
+            rotatedegree(-90)
+        });
+        $('#rotate_mright').click(function () {
+            rotatedegree(0.5)
+        });
+        $('#rotate_mleft').click(function () {
+            rotatedegree(-0.5)
+        });
 
-            cropper.setCropBoxData({
-                width: 2,
-                height: 2,
-                top: (contData.height / 2) - 1,
-                left: (contData.width / 2) - 1
-            });
-
-            cropper.rotate(90);
-
-            var canvData = cropper.getCanvasData();
-            var newWidth = canvData.width * (contData.height / canvData.height);
-
-            if (newWidth >= contData.width) {
-                var newHeight = canvData.height * (contData.width / canvData.width);
-                var newCanvData = {
-                    height: newHeight,
-                    width: contData.width,
-                    top: (contData.height - newHeight) / 2,
-                    left: 0
-                };
+        $('#cropper_preview').click(function () {
+            var toggle = $('.cropper-container').hasClass("hidden");
+            if (!toggle) {
+                var result = cropper.getCroppedCanvas();
+                $('.cropper-container').addClass("hidden");
+                $('#preview').removeClass("hidden").html(result);
+                $(this).html("<i class='fa fa-pencil'></i> {% trans 'Edit'%}");
+                $("button[id^='rotate_']").addClass("hidden");
+                $("#imageCropReset").addClass("hidden");
             } else {
-                var newCanvData = {
-                    height: contData.height,
-                    width: newWidth,
-                    top: 0,
-                    left: (contData.width - newWidth) / 2
-                };
+                $('.cropper-container').removeClass("hidden");
+                $('#preview').addClass("hidden").html("");
+                $(this).html("<i class='fa fa-eye'></i> {% trans 'Preview'%}");
+                $("button[id^='rotate_']").removeClass("hidden");
+                $("#imageCropReset").removeClass("hidden");
             }
-
-            cropper.setCanvasData(newCanvData);
-            cropper.setCropBoxData(newCanvData);
-
-            $('#imageCropSubmit').removeAttr('disabled');
         });
-
-        $('#cropper_save').click(function () {
-            result = cropper.getCroppedCanvas();
-            $('#dl').html(result);
-        });
-
 
         $('#imageCropSubmit').click(function () {
-            $(this).attr('disabled', 'disabled');
+            $(this).addClass("disabled");
             x = $('#dataX').val();
             y = $('#dataY').val();
             width = $('#dataWidth').val();
             height = $('#dataHeight').val();
             rotate = $('#dataRotate').val();
-            if (x === "" || y === "" || width === "" || height === "" || rotate == ""
-                // || scalex === "" || scaley === ""
+
+            if ((x === "" || y === "" || width === "" || height === "" || rotate == "") 
+                //||
+                //(
+                //    x === dataX_init &&
+                //    y === dataY_init &&
+                //    height === dataHeight_init &&
+                //    width === dataWidth_init &&
+                //    rotate === dataRotate_init)
             ) {
-                $(this).removeAttr('disabled');
+                $(this).removeClass("disabled");
                 return false;
             }
 
             $('#imageCropForm').submit();
             return false;
 
-            //$(this).removeAttr('disabled');
-            //            return false;
         });
 
         $('#imageCropReset').click(function () {
@@ -320,6 +307,45 @@
                 $("#CropResult").removeClass('alert alert-error').removeClass('alert alert-success').html("");
             },
             3000);
+    }
+
+    function rotatedegree(angle) {
+        var contData = cropper.getContainerData();
+
+        cropper.setCropBoxData({
+            width: 2,
+            height: 2,
+            top: (contData.height / 2) - 1,
+            left: (contData.width / 2) - 1
+        });
+
+        cropper.rotate(angle);
+
+        var canvData = cropper.getCanvasData();
+        var newWidth = canvData.width * (contData.height / canvData.height);
+
+        if (newWidth >= contData.width) {
+            var newHeight = canvData.height * (contData.width / canvData.width);
+            var newCanvData = {
+                height: newHeight,
+                width: contData.width,
+                top: (contData.height - newHeight) / 2,
+                left: 0
+            };
+        } else {
+            var newCanvData = {
+                height: contData.height,
+                width: newWidth,
+                top: 0,
+                left: (contData.width - newWidth) / 2
+            };
+        }
+
+        cropper.setCanvasData(newCanvData);
+        cropper.setCropBoxData(newCanvData);
+
+        $('#imageCropSubmit').removeClass("disabled");
+        $('#imageCropReset').removeClass("disabled");
     }
 </script>
 

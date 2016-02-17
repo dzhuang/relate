@@ -36,8 +36,9 @@ def order_name(name):
 
     name -- text to be limited.
     """
-    from os.path import basename
-    name = basename(name)
+    import os
+    name = os.path.basename(name)
+    [name,ext]=os.path.splitext(name)
     name = re.sub(r'^.*/', '', name)
     if len(name) <= 25:
         return name

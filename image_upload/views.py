@@ -77,21 +77,23 @@ class ImageItemForm(forms.ModelForm):
         fields = ("file",)
 
 class ImageUpdateView(UpdateView):
-    model = SessionPageImage
-    form_class = ImageItemForm
-    template_name = 'image_upload/image_edit_form.html'
-
-    def dispatch(self, *args, **kwargs):
-        self.pk = kwargs['pk']
-        print "self", self
-        return super(ImageUpdateView, self).dispatch(*args, **kwargs)
-
+    pass
+#    model = SessionPageImage
+#    form_class = ImageItemForm
+#    template_name = 'image_upload/image_edit_form.html'
+#
+#    def dispatch(self, *args, **kwargs):
+#        self.pk = kwargs['pk']
+#        print "self", self
+#        return super(ImageUpdateView, self).dispatch(*args, **kwargs)
+#
     def form_valid(self, form):
-        form.save()
-        file = SessionPageImage.objects.get(id=self.pk)
-        print file.pk
-        from django.template.loader import render_to_string
-        return http.HttpResponse(render_to_string('image_upload/image_edit_form_success.html', {'file': file}))
+        pass
+#        form.save()
+#        file = SessionPageImage.objects.get(id=self.pk)
+#        print file.pk
+#        from django.template.loader import render_to_string
+#        return http.HttpResponse(render_to_string('image_upload/image_edit_form_success.html', {'file': file}))
 
 def image_crop_modal(request, pk):
     file = SessionPageImage.objects.get(id=pk)
@@ -175,11 +177,11 @@ def image_crop(request, pk):
 
     image_orig = crop_img.file.path
     image_modified = crop_img.get_random_filename()
-    print image_modified
+    #print image_modified
     if not image_orig:
         raise CropImageError('File not found, 请先上传图片')
         
-    print request.POST
+    #print request.POST
 
     try:
         x = int(float(request.POST['x']))
@@ -187,25 +189,23 @@ def image_crop(request, pk):
         width = int(float(request.POST['width']))
         height = int(float(request.POST['height']))
         rotate = int(float(request.POST['rotate']))
-#        scaleX = int(float(request.POST['scalex']))
-#        scaleY = int(float(request.POST['scaley']))
     except:
         raise CropImageError('发生错误，稍后再试')
-#        
-    print x, y, width, height, rotate
-#
-#
+
     try:
         orig = IMG.open(image_orig)
     except IOError:
         raise CropImageError('发生错误，请重新上传图片')
     
-    orig=orig.rotate(rotate)
+    orig = orig.rotate(-rotate, expand=True)
+    box =  (x, y, x+width, y+height)
+    orig = orig.crop(box)
+    
     try:
         orig.save(image_modified)
     except IOError:
-        print image_orig
-        print image_modified
+        #print image_orig
+        #print image_modified
         raise CropImageError('发生错误，稍后再试')
 
     from relate.utils import local_now
@@ -219,39 +219,11 @@ def image_crop(request, pk):
     except:
         pass
     
-#
-#    orig_w, orig_h = orig.size
-#    if orig_w <= border_size and orig_h <= border_size:
-#        ratio = 1
-#    else:
-#        if orig_w > orig_h:
-#            ratio = float(orig_w) / border_size
-#        else:
-#            ratio = float(orig_h) / border_size
-#
-#    box = [int(x * ratio) for x in [x1, y1, x2, y2]]
-#    avatar = orig.crop(box)
-#    avatar_name, _ = os.path.splitext(crop_img.image)
-#
-#
-#    size = AVATAR_RESIZE_SIZE
-#    try:
-#        res = avatar.resize((size, size), Image.ANTIALIAS)
-#        res_name = '%s-%d.%s' % (avatar_name, size, AVATAR_SAVE_FORMAT)
-#        res_path = os.path.join(AVATAR_DIR, res_name)
-#        res.save(res_path, AVATAR_SAVE_FORMAT, quality=AVATAR_SAVE_QUALITY)
-#    except:
-#        raise CropImageError('发生错误，请稍后重试')
-#
-#
-#    avatar_crop_done.send(sender = None,
-#                          uid = get_uid(request),
-#                          avatar_name = res_name,
-#                          dispatch_uid = 'siteuser_avatar_crop_done'
-#                          )
-#
-    return http.HttpResponse(
-        "<script>window.parent.crop_success('%s')</script>"  % '成功'
-    )
+    file = SessionPageImage.objects.get(pk=pk)
+
+    return render(request, 'image_upload/cropper_modal_success.html', {'file': file})
+#    return http.HttpResponse(
+#        "<script>window.parent.crop_success('%s')</script>"  % '成功'
+#    )
 
 # }}}

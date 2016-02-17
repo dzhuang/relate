@@ -1,23 +1,62 @@
 {% load i18n %}
+<style>
+/*
+    .container {
+      max-width: 960px;
+      margin: 20px auto;
+    }
+*/
+    .img-container, .preview_container{
+      width: 100%;
+      height: 100%;
+      margin: 0px;
+    }
+    .img-container img, .preview_container canvas{
+      max-width: 100%;
+    }
+/*
+    .preview {
+      max-width: 100%;
+    }
+*/
+  </style>
 <div class="modal-header visible-lg">
     <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-    <h4 class="modal-title" id="modalLabel">{% trans "Edit" %}</h4>
+    <h4 class="modal-title" id="modalLabel">{% trans "Edit image" %}</h4>
 </div>
 <div class="modal-body">
     <div class="img-container">
-        <img id="image" src="{{ file.get_absolute_url }}" alt="Picture{{file.id}}" id="target{{file.id}}">
-    </div>    
+        <img id="image" src="{{ file.get_absolute_url }}" alt="Picture{{file.id}}" id="target{{file.id}}">        
+    </div>
+    <div class="preview_container">
+        <div id="preview"></div>
+    </div>
 </div>
 <div class="modal-footer">
         <span id="CropResult"></span>
+        <button type="button" class="btn btn-primary" id="rotate_left">
+            <span class="docs-tooltip" data-toggle="tooltip" title="{% trans 'Rotate left' }%">
+              <span class="fa fa-rotate-left"></span>
+            </span>
+        </button>            
         <button type="button" class="btn btn-primary" id="rotate_right">
             <span class="docs-tooltip" data-toggle="tooltip" title="{% trans 'Rotate right' }%">
               <span class="fa fa-rotate-right"></span>
             </span>
+        {% if ALLOW_TUNE %}
+        <button type="button" class="btn btn-primary" id="rotate_mleft">
+            <span class="docs-tooltip" data-toggle="tooltip" title="{% trans 'Rotate left mini' }%">
+              <span class="fa fa-reply"></span>
+            </span>
+        </button>            
+        <button type="button" class="btn btn-primary" id="rotate_mright">
+            <span class="docs-tooltip" data-toggle="tooltip" title="{% trans 'Rotate right mini' }%">
+              <span class="fa fa-share"></span>
+            </span>
         </button>
+        {% endif %}
     <iframe id="cropIframe" name="cropIframe" style="display: none;"></iframe>
-    {# {"x":115.92452830188672,"y":357.2830188679245,"width":563.6226415094342,"height":317.0377358490567,"rotate":0,"scaleX":1,"scaleY":1} #}
-    <form id="imageCropForm" action="{% url 'image_crop' file.id %}" method="post" target="cropIframe"> {# style="display: none;"> #}
+    <form id="imageCropForm" action="{% url 'image_crop' file.id %}" method="post" target="cropIframe" style="display: none;">
         {% csrf_token %}
         <input id="dataX" type="text" name="x"/>
         <input id="dataY" type="text" name="y"/>
@@ -27,14 +66,13 @@
         {# <input id="dataScaleX" type="text" name="scalex"/> #}
         {# <input id="dataScaleY" type="text" name="scaley"/> #}
     </form>
-    <button type="button" class="btn btn-default" data-dismiss="modal">{% trans "Close" %}</button>
-    <button type="button" class="btn btn-default" id="cropper_save">{% trans "Save" %}</button>
-    <button type="button" class="btn btn-success" id="imageCropSubmit" disabled="disabled">
+    
+    <button type="button" class="btn btn-success disabled" id="imageCropSubmit">
         <i class="fa fa-check"></i>
         <span>{% trans "Submit" %}</span></button>
-    <button type="button" class="btn btn-warning" id="imageCropReset">
-        <i class="fa fa-remove"></i>
+    <button type="button" class="btn btn-warning disabled" id="imageCropReset">
+        <i class="fa fa-refresh"></i>
         <span>{% trans "Reset" %}</span></button>
-    
-    <div id="dl"></div>
+    <button type="button" class="btn btn-primary" id="cropper_preview"><i class="fa fa-eye"></i> {% trans "Preview" %}</button>
+    <button type="button" class="btn btn-danger" data-dismiss="modal"><i class="fa fa-remove"></i> {% trans "Close" %}</button>
 </div>

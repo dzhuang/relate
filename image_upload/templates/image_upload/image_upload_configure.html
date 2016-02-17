@@ -6,22 +6,7 @@
 
 {% block CSS_EXTRA %}
 <link rel="stylesheet" href="{{ STATIC_URL }}css/jquery_file_upload_extra.css">
-  <link rel="stylesheet" href="/static/cropperjs/dist/cropper.css">
-<style>
-/*
-    .container {
-      max-width: 960px;
-      margin: 20px auto;
-    }
-*/
-    .img-container {
-      width: 100%;
-      margin: 0px;
-    }
-    .img-container img {
-      max-width: 100%;
-    }
-  </style>
+  <link rel="stylesheet" href="{{ STATIC_URL }}cropperjs/dist/cropper.css">
 {% endblock %}
 
 {% block JS_BOOTSTRAP %} {% comment %} BOOTSTRAP js (Override to keep it empty) {% endcomment %} {% endblock %}
