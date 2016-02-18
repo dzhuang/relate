@@ -47,10 +47,7 @@ urlpatterns = [
         name='jfu_update'),
 
     url(r"^user"
-        "/flow-session"
-        "/(?P<flow_session_id>[0-9]+)"
-        "/(?P<ordinal>[0-9]+)"
-        "/image/delete"
+        "/image"
         "/(?P<pk>\d+)$",
         ImageDeleteView.as_view(), 
         name='jfu_delete'),

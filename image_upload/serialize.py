@@ -65,12 +65,10 @@ def serialize(request, instance, file_attr='file', flow_session_id=None, ordinal
     name = order_name(name_field)
 
     deleteUrl = reverse('jfu_delete', kwargs={
-                'pk': instance.pk, 
-                'flow_session_id': flow_session_id, 
-                'ordinal': ordinal})
+                'pk': instance.pk,}) 
+
     updateUrl = reverse('jfu_update', kwargs={
                 'pk': instance.pk})
-    
 
     cropHandlerUrl = reverse('image_crop', kwargs={
                 'pk': instance.pk})

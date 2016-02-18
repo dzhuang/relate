@@ -25,7 +25,7 @@ THE SOFTWARE.
 """
 
 from django.shortcuts import get_object_or_404
-from django import http
+from django import forms, http
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.views.generic import CreateView, UpdateView, DeleteView, ListView
@@ -69,8 +69,6 @@ class ImageCreateView(CreateView):
                 status=400, 
                 content_type='application/json')
 
-
-import django.forms as forms
 class ImageItemForm(forms.ModelForm):
     class Meta:
         model = SessionPageImage
@@ -94,12 +92,6 @@ class ImageUpdateView(UpdateView):
 #        print file.pk
 #        from django.template.loader import render_to_string
 #        return http.HttpResponse(render_to_string('image_upload/image_edit_form_success.html', {'file': file}))
-
-def image_crop_modal(request, pk):
-    file = SessionPageImage.objects.get(id=pk)
-    #from django.template.loader import render_to_string
-    return render(request, 'image_upload/cropper_modal.html', {'file': file})
-
 
 class ImageDeleteView(DeleteView):
     model = SessionPageImage
@@ -166,22 +158,25 @@ def _auth_download(request, download_object):
 class CropImageError(Exception):
     pass
 
-@transaction.atomic
 @login_required
+def image_crop_modal(request, pk):
+    file = SessionPageImage.objects.get(id=pk)
+    return render(request, 'image_upload/cropper_modal.html', {'file': file})
+
+@login_required
+@transaction.atomic
 def image_crop(request, pk):
     from django.conf import settings
     try:
-        crop_img = SessionPageImage.objects.get(pk=pk)
+        crop_instance = SessionPageImage.objects.get(pk=pk)
     except SessionPageImage.DoesNotExist:
         raise CropImageError('请先上传图片')
 
-    image_orig = crop_img.file.path
-    image_modified = crop_img.get_random_filename()
-    #print image_modified
-    if not image_orig:
+    image_orig_path = crop_instance.file.path
+    if not image_orig_path:
         raise CropImageError('File not found, 请先上传图片')
-        
-    #print request.POST
+
+    image_modified_path = crop_instance.get_random_filename()
 
     try:
         x = int(float(request.POST['x']))
@@ -193,48 +188,50 @@ def image_crop(request, pk):
         raise CropImageError('发生错误，稍后再试')
 
     try:
-        orig = IMG.open(image_orig)
+        image_orig = IMG.open(image_orig_path)
     except IOError:
         raise CropImageError('发生错误，请重新上传图片')
     
-    orig = orig.rotate(-rotate, expand=True)
+    image_orig = image_orig.rotate(-rotate, expand=True)
     box =  (x, y, x+width, y+height)
-    orig = orig.crop(box)
+    image_orig = image_orig.crop(box)
     
     try:
-        orig.save(image_modified)
+        image_orig.save(image_modified_path)
     except IOError:
-        #print image_orig
-        #print image_modified
         raise CropImageError('发生错误，稍后再试')
 
     from relate.utils import local_now
-    crop_img.file = image_modified
-    crop_img.file_last_modified = local_now()
-    crop_img.save()
+    crop_instance.file = image_modified_path
+    crop_instance.file_last_modified = local_now()
+    crop_instance.save()
     
     try:
         import os
-        os.remove(image_orig)
+        os.remove(image_orig_path)
     except:
         pass
     
-    New_image = SessionPageImage.objects.get(id=pk)
+    new_instance = SessionPageImage.objects.get(id=pk)
+
+    print new_instance.file_thumbnail.url
+    print new_instance.file_last_modified
     
-    print New_image.file_thumbnail.url
-    print New_image.file_last_modified
+    response = None
     
-    
-    
-    
-    try:
-        image_crop_modal(request, pk)
-        return render(request, 'image_upload/cropper_modal_success.html', {'file': New_image})    
-    except Exception as e:
-        print type(e).__name__,": ", str(e)
-        return http.HttpResponse(
+    return http.HttpResponse(
             "<script>window.parent.crop_success('%s')</script>"  % '成功'
-        )
+    )
+    
+    
+#    try:
+#        image_crop_modal(request, pk)
+#        return render(request, 'image_upload/cropper_modal_success.html', {'file': New_image})    
+#    except Exception as e:
+#        print type(e).__name__,": ", str(e)
+#        return http.HttpResponse(
+#            "<script>window.parent.crop_success('%s')</script>"  % '成功'
+#        )
 #    Ajax:
 #    http://stackoverflow.com/questions/4406348/how-to-add-data-via-ajax-serialize-extra-data-like-this
 #    http://forums.asp.net/t/2010672.aspx?AJAX+to+refresh+image+stored+in+Session
