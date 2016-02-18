@@ -138,7 +138,7 @@
         {% endblock %} {% block JS_DOWNLOAD_TEMPLATE_DELETE %}
         <td>
             {{ JQ_OPEN }} if (file.deleteUrl) { {{ JQ_CLOSE }}
-            <a class="btn btn-success" data-toggle="modal" href="{{ JQ_OPEN }}=file.updateUrl{{ JQ_CLOSE }}" data-target="#modal">
+            <a class="btn btn-success btn-edit-image" data-toggle="modal" href="{{ JQ_OPEN }}=file.updateUrl{{ JQ_CLOSE }}" data-target="#modal">
                 <i class="fa  fa fa-pencil"></i> <span>{% trans "Edit" %}</span>
             </a>
             <button class="btn btn-danger delete" data-type="{{ JQ_OPEN }}=file.deleteType{{ JQ_CLOSE }}" data-data='{ "csrfmiddlewaretoken" : "{{ csrf_token }}" }' data-url="{{ JQ_OPEN }}=file.deleteUrl{{ JQ_CLOSE }}" {{ JQ_OPEN }} if (file.deleteWithCredentials) { %} data-xhr-fields='{"withCredentials":true}' {% } {{ JQ_CLOSE }}>
@@ -178,6 +178,13 @@
 
 <script src="/static/cropperjs/dist/cropper.js"></script>
 <script>
+    var thatrow;
+    $('#fileupload').on("click", ".btn-edit-image", function(){
+        thatrow = $(event.target).closest('tr');
+    });
+    
+    //console.log(thatrow);
+    
     var cropper;
     $('body').on('shown.bs.modal', function () {
         $('.img-container img').css('max-height', $(window).height() * 0.8);
@@ -287,7 +294,12 @@
             // post submit action: bugsssssssssssssssss!
             var oldsrc = $('#image').attr('src');
             $('#image').attr('src', oldsrc + "#" + new Date().getTime());
-
+            $(thatrow).find('.preview').find('img');
+            
+            // for ajax
+            formdata = $('#imageCropForm').serialize();
+            //{{file.thumbnailUrl}}
+            
             
             return false;
 
