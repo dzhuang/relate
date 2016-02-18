@@ -45,7 +45,7 @@ def order_name(name):
     return name[:15] + "..." + name[-7:]
 
 
-def serialize(request, instance, file_attr='file', flow_session_id=None, ordinal=None):
+def serialize(request, instance, file_attr='file'):
     """serialize -- Serialize a Picture instance into a dict.
 
     instance -- Image instance

@@ -115,7 +115,7 @@
         <td>
             <p class="name">
                 {{ JQ_OPEN }} if (file.url) { {{ JQ_CLOSE }}
-                <a href="{{ JQ_OPEN }}=file.url{{ JQ_CLOSE }}" title="{{ JQ_OPEN }}=file.name{{ JQ_CLOSE }}" download="{{ JQ_OPEN }}=file.name{{ JQ_CLOSE }}" {{ JQ_OPEN }}=file.thumbnailUrl? 'data-gallery': ''{{ JQ_CLOSE }}>
+                <a href="{{ JQ_OPEN }}=file.url{{ JQ_CLOSE }}" title="{{ JQ_OPEN }}=file.name{{ JQ_CLOSE }}" download="{{ JQ_OPEN }}=file.name{{ JQ_CLOSE }}" {{ JQ_OPEN }}=file.thumbnailUrl? 'data-gallery': ''{{ JQ_CLOSE }} id="filename{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}">
                                  {{ JQ_OPEN }}=file.name{{ JQ_CLOSE }}
                                 </a> {{ JQ_OPEN }} } else { {{ JQ_CLOSE }}
                 <span>{{ JQ_OPEN }}=file.name{{ JQ_CLOSE }}</span> {{ JQ_OPEN }} } {{ JQ_CLOSE }}
@@ -178,12 +178,13 @@
 
 <script src="/static/cropperjs/dist/cropper.js"></script>
 <script>
-    var thatrow;
+    var clicked_row;
+    var clicked_response;
     $('#fileupload').on("click", ".btn-edit-image", function(){
-        thatrow = $(event.target).closest('tr');
+        clicked_row = $(event.target).closest('tr');
     });
     
-    //console.log(thatrow);
+    //console.log(clicked_row);
     
     var cropper;
     $('body').on('shown.bs.modal', function () {
@@ -202,18 +203,6 @@
             autoCropArea: 1,
             strict: true,
             built: function () {
-                // failed.
-                //    var dataX_init = $('#dataX').val();
-                //    var dataY_init = $('#dataY').val();
-                //    var dataHeight_init = $('#dataHeight').val();
-                //    var dataWidth_init = $('#dataWidth').val();
-                //    var dataRotate_init = $('#dataRotate').val();
-                //
-                //    console.log(dataX_init);
-                //    console.log(dataY_init);
-                //    console.log(dataHeight_init);
-                //    console.log(dataWidth_init);
-                //    console.log(dataRotate_init);
             },
             cropstart: function (data) {
                 $('#imageCropSubmit').removeClass("disabled");
@@ -276,30 +265,45 @@
             height = $('#dataHeight').val();
             rotate = $('#dataRotate').val();
 
-            if ((x === "" || y === "" || width === "" || height === "" || rotate == "")
-                //||
-                //(
-                //    x === dataX_init &&
-                //    y === dataY_init &&
-                //    height === dataHeight_init &&
-                //    width === dataWidth_init &&
-                //    rotate === dataRotate_init)
-            ) {
+            if (x === "" || y === "" || width === "" || height === "" || rotate == "")
+            {
                 $(this).removeClass("disabled");
                 return false;
             }
 
-            $('#imageCropForm').submit();
+            //$('#imageCropForm').submit();
+            
+             var jqxhr = $.ajax(
+                 {
+                     method: "POST",
+                     url: $('#imageCropForm').attr("action"),
+                     data: $('#imageCropForm').serialize(),
+                 })
+                 .done(function (response) {
+                     $("#thumbnail"+response.file.pk).attr('src',response.file.thumbnailUrl);
+//                     var oldsrc = $('#image').attr('src');
+//                      $('#image').attr('src', oldsrc + "#" + new Date().getTime());
+//                     //$("#filename"+response.file.pk).attr('src', response.file.url + "#" + new Date().getTime());
+                     crop_success_msg("{% trans 'Done!' %}");
+                     setTimeout(function() { $('#modal').modal('hide'); }, 2000);
+                     console.log($(response));
+                     window.location.reload();
+
+                 })
+                 .fail(function () {
+                     crop_failed_msg("{% trans 'Failed!' %}");
+                 });
+
 
             // post submit action: bugsssssssssssssssss!
-            var oldsrc = $('#image').attr('src');
-            $('#image').attr('src', oldsrc + "#" + new Date().getTime());
-            $(thatrow).find('.preview').find('img');
-            
-            console.log("submitted!");
-            // for ajax
-            formdata = $('#imageCropForm').serialize();
-            //{{file.thumbnailUrl}}
+//            var oldsrc = $('#image').attr('src');
+//            $('#image').attr('src', oldsrc + "#" + new Date().getTime());
+//            $(clicked_row).find('.preview').find('img');
+//            
+//            console.log("submitted!");
+            //// for ajax
+            //formdata = $('#imageCropForm').serialize();
+            ////{{file.thumbnailUrl}}
             
             
             return false;
@@ -321,8 +325,17 @@
         return typeof obj === 'undefined';
     }
 
-    function crop_success(msg) {
+    function crop_success_msg(msg) {
         $("#CropResult").addClass('alert alert-success').html(msg);
+        window.setTimeout(
+            function () {
+                $("#CropResult").removeClass('alert alert-error').removeClass('alert alert-success').html("");
+            },
+            3000);
+    }
+    
+    function crop_failed_msg(msg) {
+        $("#CropResult").addClass('alert alert-error').html(msg);
         window.setTimeout(
             function () {
                 $("#CropResult").removeClass('alert alert-error').removeClass('alert alert-success').html("");

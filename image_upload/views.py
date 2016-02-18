@@ -56,7 +56,7 @@ class ImageCreateView(CreateView):
         self.object.image_page_id = fpd.page_id
         self.object.save()
 
-        files = [serialize(self.request, self.object, 'file', flow_session_id, ordinal)]
+        files = [serialize(self.request, self.object, 'file')]
         data = {'files': files}
         response = http.JsonResponse(data)
         response['Content-Disposition'] = 'inline; filename=files.json'
@@ -124,7 +124,7 @@ class ImageListView(ListView):
         ordinal = self.kwargs["ordinal"]
         
         files = [
-                serialize(self.request, p, 'file', flow_session_id, ordinal)
+                serialize(self.request, p, 'file')
                 for p in self.get_queryset()]
         data = {'files': files}
         response = http.JsonResponse(data)
@@ -177,6 +177,11 @@ def image_crop(request, pk):
         raise CropImageError('File not found, 请先上传图片')
 
     image_modified_path = crop_instance.get_random_filename()
+    
+#    if request.is_ajax():
+#        print "Hello AJAX!"
+#    else:
+#        print "Hello not AJAX!"
 
     try:
         x = int(float(request.POST['x']))
@@ -205,7 +210,7 @@ def image_crop(request, pk):
     crop_instance.file = image_modified_path
     crop_instance.file_last_modified = local_now()
     crop_instance.save()
-    
+
     try:
         import os
         os.remove(image_orig_path)
@@ -213,34 +218,13 @@ def image_crop(request, pk):
         pass
     
     new_instance = SessionPageImage.objects.get(id=pk)
-
-    print new_instance.file_thumbnail.url
-    print new_instance.file_last_modified
     
     response = None
-    
-    return http.HttpResponse(
-            "<script>window.parent.crop_success('%s')</script>"  % '成功'
-    )
-    
-    
-#    try:
-#        image_crop_modal(request, pk)
-#        return render(request, 'image_upload/cropper_modal_success.html', {'file': New_image})    
-#    except Exception as e:
-#        print type(e).__name__,": ", str(e)
-#        return http.HttpResponse(
-#            "<script>window.parent.crop_success('%s')</script>"  % '成功'
-#        )
-#    Ajax:
-#    http://stackoverflow.com/questions/4406348/how-to-add-data-via-ajax-serialize-extra-data-like-this
-#    http://forums.asp.net/t/2010672.aspx?AJAX+to+refresh+image+stored+in+Session
-#    http://stackoverflow.com/questions/1077041/refresh-image-with-a-new-one-at-the-same-url
-#    http://stackoverflow.com/questions/6509981/updating-a-picture-without-page-reload
+    response_file = serialize(request, new_instance, 'file')
 
-#    return render(request, 'image_upload/cropper_modal_success.html', {'file': New_image.file})
-#    return http.HttpResponse(
-#        "<script>window.parent.crop_success('%s')</script>"  % '成功'
-#    )
+    data = {'file': response_file}
+    response = http.JsonResponse(data)
+    response['Content-Disposition'] = 'inline; filename=files.json'
+    return response    
 
 # }}}
