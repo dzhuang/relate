@@ -11,39 +11,6 @@
 <link rel="stylesheet" href="{{ STATIC_URL }}cropperjs/dist/cropper.css">
 {% endblock %}
 
-{% block JS_DOWNLOAD_TEMPLATE_PREVIEW_THUMBNAIL_EXTRA_ATTR %}
-    id="thumbnail{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
-{% endblock %}{# block JS_DOWNLOAD_TEMPLATE_PREVIEW_THUMBNAIL_EXTRA_ATTR #}
-
-{% block JS_DOWNLOAD_TEMPLATE_DOWNLOAD_FILENAME_EXTRA_ATTR %}
-    id="filename{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
-{% endblock %}{# block JS_DOWNLOAD_TEMPLATE_DOWNLOAD_FILENAME_EXTRA_ATTR #}
-
-{% block JS_DOWNLOAD_TEMPLATE_EXTRA_COLUMN %}
-    {% if SHOW_CREATION_TIME %}
-        <td>
-            <span
-                class="time"
-                title="{% trans 'Created at' %} {{ JQ_OPEN }}=file.creationTime{{ JQ_CLOSE }}{{ JQ_OPEN }} if (file.modifiedTimeShort) { {{ JQ_CLOSE }}, {% trans 'modified at' %} {{ JQ_OPEN }}=file.modifiedTime{{ JQ_CLOSE }}{{ JQ_OPEN }} } {{ JQ_CLOSE }}"
-            >
-                {{ JQ_OPEN }}=file.creationTimeShort{{ JQ_CLOSE }}{{ JQ_OPEN }} if (file.modifiedTimeShort) { {{ JQ_CLOSE }} ({{ JQ_OPEN }}=file.modifiedTimeShort{{ JQ_CLOSE }}){{ JQ_OPEN }} } {{ JQ_CLOSE }}
-            </span>
-        </td>
-    {% endif %}
-{% endblock %}{# //JS_DOWNLOAD_TEMPLATE_EXTRA_COLUMN #}
-
-{% block JS_DOWNLOAD_TEMPLATE_DELETE_EXTRA_BUTTON %}
-    <a 
-        class="btn btn-success btn-edit-image"
-        data-toggle="modal"
-        href="{{ JQ_OPEN }}=file.updateUrl{{ JQ_CLOSE }}"
-        data-target="#modal"
-    >
-        <i class="fa fa-pencil"></i>
-        <span>{% trans "Edit" %}</span>
-    </a>
-{% endblock %}{# //block JS_DOWNLOAD_TEMPLATE_DELETE_EXTRA_BUTTON #}
-
 {% block JS_BOOTSTRAP %}{# BOOTSTRAP js (Override to keep it empty) #}{% endblock %}
 
 {% block UPLOAD_FORM %}
