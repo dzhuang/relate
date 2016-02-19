@@ -25,11 +25,25 @@ THE SOFTWARE.
 """
 
 from django.conf.urls import patterns, url
+from django.views.i18n import javascript_catalog
 
 from image_upload.views import (
     ImageCreateView, ImageUpdateView, ImageDeleteView, ImageListView,
     image_crop_modal, image_crop,
     image_download)
+
+js_info_dict_image_upload = {
+    'packages': ('image_upload',),
+}
+
+js_info_dict_other_app = {
+    'packages': ('your.other.app.package',),
+}
+
+urlpatterns = [
+    
+    url(r'^jsi18n/other_app/$', javascript_catalog, js_info_dict_other_app),
+]
 
 urlpatterns = [
     url(r"^user"
@@ -72,5 +86,11 @@ urlpatterns = [
         "/(?P<pk>\d+)$",
         image_crop,
         name='image_crop'),
+    
+    url(r"^jsi18n"
+        "/image_upload/$",
+        javascript_catalog,
+        js_info_dict_image_upload,
+        name='javascript-catalog-image-upload'),
     
     ]

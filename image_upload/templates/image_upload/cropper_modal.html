@@ -1,25 +1,4 @@
 {% load i18n %}
-<style>
-/*
-    .container {
-      max-width: 960px;
-      margin: 20px auto;
-    }
-*/
-    .img-container, .preview_container{
-      width: 100%;
-      height: 100%;
-      margin: 0px;
-    }
-    .img-container img, .preview_container canvas{
-      max-width: 100%;
-    }
-/*
-    .preview {
-      max-width: 100%;
-    }
-*/
-  </style>
 <div class="modal-header visible-lg">
     <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
     <h4 class="modal-title" id="modalLabel">{% trans "Edit image" %}</h4>
@@ -33,27 +12,23 @@
     </div>
 </div>
 <div class="modal-footer">
-        <span id="CropResult"></span>
+        <div id="CropResult"></div>
         <button type="button" class="btn btn-primary" id="rotate_left">
-            <span class="docs-tooltip" data-toggle="tooltip" title="{% trans 'Rotate left' %}">
-              <span class="fa fa-rotate-left"></span>
-            </span>
+              <i class="fa fa-rotate-left"></i>
+                <span>90&deg;</span>
         </button>            
         <button type="button" class="btn btn-primary" id="rotate_right">
-            <span class="docs-tooltip" data-toggle="tooltip" title="{% trans 'Rotate right' %}">
-              <span class="fa fa-rotate-right"></span>
-            </span>
+              <i class="fa fa-rotate-right"></i>
+                <span>90&deg;</span>
         </button>
-        {% if ALLOW_TUNE %}
+        {% if ALLOW_ROTATE_TUNE %}
         <button type="button" class="btn btn-primary" id="rotate_mleft">
-            <span class="docs-tooltip" data-toggle="tooltip" title="{% trans 'Rotate left mini' %}">
-              <span class="fa fa-reply"></span>
-            </span>
+              <i class="fa fa-reply"></i>
+                <span>0.5&deg;</span>
         </button>            
         <button type="button" class="btn btn-primary" id="rotate_mright">
-            <span class="docs-tooltip" data-toggle="tooltip" title="{% trans 'Rotate right mini' %}">
-              <span class="fa fa-share"></span>
-            </span>
+              <i class="fa fa-share"></i>
+            <span>0.5&deg;</span>
         </button>
         {% endif %}
     <iframe id="cropIframe" name="cropIframe" style="display: none;"></iframe>
@@ -74,6 +49,11 @@
     <button type="button" class="btn btn-warning disabled" id="imageCropReset">
         <i class="fa fa-refresh"></i>
         <span>{% trans "Reset" %}</span></button>
-    <button type="button" class="btn btn-primary" id="cropper_preview"><i class="fa fa-eye"></i> {% trans "Preview" %}</button>
-    <button type="button" class="btn btn-danger" data-dismiss="modal"><i class="fa fa-remove"></i> {% trans "Close" %}</button>
+    <button type="button" class="btn btn-primary" id="cropper_preview">
+        <i class="fa fa-eye"></i>
+        <span>{% trans "Preview" %}</span></button>
+    <button type="button" class="btn btn-danger" data-dismiss="modal">
+        <i class="fa fa-remove"></i>
+        <span>{% trans "Close" %}</span>
+    </button>
 </div>

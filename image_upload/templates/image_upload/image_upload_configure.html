@@ -7,8 +7,9 @@
 {% block CSS_HTML5_SHIM %}{% comment %} ie 9 lt already supported (Override to keep it empty) {% endcomment %} {% endblock %}
 
 {% block CSS_EXTRA %}
-<link rel="stylesheet" href="{{ STATIC_URL }}css/jquery_file_upload_extra.css">
-  <link rel="stylesheet" href="{{ STATIC_URL }}cropperjs/dist/cropper.css">
+{{ block.super }}
+<link rel="stylesheet" href="{{ STATIC_URL }}css/imgupload_page.css">
+<link rel="stylesheet" href="{{ STATIC_URL }}cropperjs/dist/cropper.css">
 {% endblock %}
 
 {% block JS_BOOTSTRAP %} {% comment %} BOOTSTRAP js (Override to keep it empty) {% endcomment %} {% endblock %}
@@ -37,18 +38,15 @@ imageOrientation: true
 
 
 {% block JS_EXTRA %}
+{{ block.super }}
   <script type="text/javascript">
     $(document).ready(function() {//"save", "save_and_next", "save_and_finish", "submit"
-        $("input[name='save']")
-            .attr("formaction", window.location.pathname);
-        $("input[name='submit']")
-            .attr("formaction", window.location.pathname);
-        $("input[name='save_and_next']")
-            .attr("formaction", window.location.pathname);
-        $("input[name='save_and_finish']")
-            .attr("formaction", window.location.pathname);
+        $(".relate-save-button").each(function(){$(this).attr("formaction", window.location.pathname);});
     });
   </script>
+<script src="{% url 'javascript-catalog-image-upload' %}"></script>
+<script src="{{ STATIC_URL }}cropperjs/dist/cropper.js"></script>
+<script src="{{ STATIC_URL }}js/imgupload_page.js"></script>
 {% endblock %}
 
 {% block JS_UPLOAD_TEMPLATE %}{% endblock %}
