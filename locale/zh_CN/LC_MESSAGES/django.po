@@ -1666,8 +1666,8 @@ msgstr "满分分值"
 #: .\course\grades.py:919 .\course\sandbox.py:70
 #: .\course\templates\course\grade-import-preview.html:15
 #: .\course\versioning.py:483
-#: .\image_upload\templates\image_upload\cropper_modal.html:76
-#: .\image_upload\templates\image_upload\cropper_modal_success.html:40
+#: .\image_upload\templates\image_upload\cropper-modal.html:76
+#: .\image_upload\templates\image_upload\cropper-modal_success.html:40
 #: .\image_upload\templates\image_upload\jfu_form.html:269
 msgid "Preview"
 msgstr "预览"
@@ -1788,8 +1788,8 @@ msgid "Ungraded"
 msgstr "尚未评分"
 
 #: .\course\grading.py:301 .\course\templates\course\flow-page.html.py:54
-#: .\image_upload\templates\image_upload\cropper_modal.html:72
-#: .\image_upload\templates\image_upload\cropper_modal_success.html:36
+#: .\image_upload\templates\image_upload\cropper-modal.html:72
+#: .\image_upload\templates\image_upload\cropper-modal_success.html:36
 msgid "Submit"
 msgstr "提交"
 
@@ -5379,22 +5379,22 @@ msgstr "%(current)d个(共计%(total)d个)已经处理."
 msgid "%(url)s uploaded by %(creator)s"
 msgstr "%(url)s(%(creator)s上传)"
 
-#: .\image_upload\templates\image_upload\cropper_modal.html:25
-#: .\image_upload\templates\image_upload\cropper_modal_success.html:25
+#: .\image_upload\templates\image_upload\cropper-modal.html:25
+#: .\image_upload\templates\image_upload\cropper-modal_success.html:25
 msgid "Edit image"
 msgstr "编辑图片"
 
-#: .\image_upload\templates\image_upload\cropper_modal.html:75
-#: .\image_upload\templates\image_upload\cropper_modal_success.html:39
+#: .\image_upload\templates\image_upload\cropper-modal.html:75
+#: .\image_upload\templates\image_upload\cropper-modal_success.html:39
 msgid "Reset"
 msgstr "重置"
 
-#: .\image_upload\templates\image_upload\cropper_modal.html:77
-#: .\image_upload\templates\image_upload\cropper_modal_success.html:41
+#: .\image_upload\templates\image_upload\cropper-modal.html:77
+#: .\image_upload\templates\image_upload\cropper-modal_success.html:41
 msgid "Close"
 msgstr "关闭"
 
-#: .\image_upload\templates\image_upload\cropper_modal_success.html:33
+#: .\image_upload\templates\image_upload\cropper-modal_success.html:33
 msgid "Succeeded!"
 msgstr "成功!"
 

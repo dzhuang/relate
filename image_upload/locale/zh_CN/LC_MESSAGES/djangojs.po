@@ -17,18 +17,18 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Language: \n"
 
-#: .\static\js\imgupload_page.js:81
+#: .\static\js\imgupload-page.js:81
 msgid "Edit"
 msgstr "编辑"
 
-#: .\static\js\imgupload_page.js:87
+#: .\static\js\imgupload-page.js:87
 msgid "Preview"
 msgstr "预览"
 
-#: .\static\js\imgupload_page.js:118
+#: .\static\js\imgupload-page.js:118
 msgid "Done!"
 msgstr "完成！"
 
-#: .\static\js\imgupload_page.js:125
+#: .\static\js\imgupload-page.js:125
 msgid "Failed!"
 msgstr "失败！"

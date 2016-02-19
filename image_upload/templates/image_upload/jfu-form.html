@@ -15,13 +15,23 @@
                     <i class="glyphicon glyphicon-plus"></i>
                     <span>{% trans "Add files..." %}</span>
                     {% block UPLOAD_FORM_BUTTON_BAR_ADD_FILE_INPUT %}
-                        {# UPLOAD_FORM_BUTTON_BAR_ADD_FILE_INPUT and FILE_INPUT control the same block. FILE_INPUT is the original and shorter block name that has been kept to function as a convenient alias as well as to allow backward-compatibility with dependent projects. Note: Only one should be overriden in the inheriting templates. #}
+                        {% comment %}
+                            UPLOAD_FORM_BUTTON_BAR_ADD_FILE_INPUT and FILE_INPUT
+                            control the same block. 
+
+                            FILE_INPUT is the original and shorter block name that has
+                            been kept to function as a convenient alias as well as to
+                            allow backward-compatibility with dependent projects. 
+
+                            Note: Only one should be overriden in the inheriting templates.
+                        {% endcomment %}
                             {% block FILE_INPUT %}
                                 {# The file input for the upload form. #}
                                 <input type="file" name="file" multiple 
-                                       {% if accepted_mime_types %}
-                                            accept='{{ accepted_mime_types|join:"," }}'
-                                       {% endif %}>
+                                    {% if accepted_mime_types %}
+                                        accept='{{ accepted_mime_types|join:"," }}'
+                                    {% endif %}
+                                >
                             {% endblock %}{# //FILE_INPUT #}
                     {% endblock %}{# //block UPLOAD_FORM_BUTTON_BAR_ADD_FILE_INPUT #}
 
@@ -55,7 +65,11 @@
             {# The global progress information #}
             <div class="col-lg-5 fileupload-progress fade">
                 {# The global progress bar #}
-                <div class="progress progress-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+                    <div 
+                        class="progress progress-striped active" 
+                        role="progressbar" 
+                        aria-valuemin="0" aria-valuemax="100"
+                    >
                     <div class="progress-bar progress-bar-success" style="width:0%;">
                     </div>
                 </div>
@@ -81,7 +95,7 @@
 
 {% block UPLOAD_FORM_EXTRA %} {% endblock %}
 
-{% block JS_UPLOAD_TEMPLATE_INSIDE %}
+{% block JS_UPLOAD_TEMPLATE %}
     <script id="template-upload" type="text/x-tmpl">
         {{ JQ_OPEN }} for (var i=0, file; file=o.files[i]; i++) { {{ JQ_CLOSE }}
 
@@ -103,7 +117,8 @@
                 {% block JS_UPLOAD_TEMPLATE_PROGRESSBAR %}
                     <td>
                         <p class="size">Processing...</p>
-                        <div class="progress progress-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                        <div class="progress progress-striped active" role="progressbar"
+                            aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
                             <div class="progress-bar progress-bar-success" style="width:0%;"></div>
                         </div>
                     </td>
@@ -135,9 +150,10 @@
 
         {{ JQ_OPEN }} } {{ JQ_CLOSE }}
     </script>
-{% endblock %}{# //JS_UPLOAD_TEMPLATE_INSIDE #}
+{% endblock %}{# //JS_UPLOAD_TEMPLATE #}
 
-{% block JS_DOWNLOAD_TEMPLATE_INSIDE %}
+
+{% block JS_DOWNLOAD_TEMPLATE %}
     {# The template to display files available for download #}
     <script id="template-download" type="text/x-tmpl">
         {{ JQ_OPEN }} for (var i=0, file; file=o.files[i]; i++) { {{ JQ_CLOSE }}
@@ -152,9 +168,12 @@
                                     href="{{ JQ_OPEN }}=file.url{{ JQ_CLOSE }}"
                                     title="{{ JQ_OPEN }}=file.name{{ JQ_CLOSE }}"
                                     download="{{ JQ_OPEN }}=file.name{{ JQ_CLOSE }}"
-                                    data-gallery><img id="thumbnail{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
-                                    src="{{ JQ_OPEN }}=file.thumbnailUrl{{ JQ_CLOSE }}"
-                                ></a>
+                                    data-gallery>
+                                    <img
+                                       id="thumbnail{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
+                                        src="{{ JQ_OPEN }}=file.thumbnailUrl{{ JQ_CLOSE }}"
+                                    >
+                                </a>
                             {{ JQ_OPEN }} } {{ JQ_CLOSE }}
                         </span>
                     </td>

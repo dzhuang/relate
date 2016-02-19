@@ -161,7 +161,7 @@ class CropImageError(Exception):
 @login_required
 def image_crop_modal(request, pk):
     file = SessionPageImage.objects.get(id=pk)
-    return render(request, 'image_upload/cropper_modal.html', {'file': file})
+    return render(request, 'image_upload/cropper-modal.html', {'file': file})
 
 @login_required
 @transaction.atomic

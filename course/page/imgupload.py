@@ -71,7 +71,7 @@ class ImageUploadForm(StyledForm):
         
         self.helper.layout = Layout(
                 HTML(
-                    "{% extends 'image_upload/jfu_form.html' %}" 
+                    "{% extends 'image_upload/jfu-form.html' %}"
                     + jfu_button_control
                     ),
                 )
@@ -237,7 +237,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         from django.template import RequestContext
         from django.template.loader import render_to_string
         return render_to_string(
-                "image_upload/image-upload-template.html",
+                "image_upload/imgupload-page-tmpl.html",
                 RequestContext(request, ctx))
 
     def answer_data(self, page_context, page_data, form, files_data):

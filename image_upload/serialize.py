@@ -82,8 +82,6 @@ def serialize(request, instance, file_attr='file'):
                             in_python=True)
     modifiedTime = ""
     modifiedTimeShort = ""
-    
-    print instance.creation_time, instance.file_last_modified
 
     if instance.creation_time != instance.file_last_modified:
         modifiedTime = format_datetime_local(
@@ -99,6 +97,7 @@ def serialize(request, instance, file_attr='file'):
         'name': name,
         'type': mimetypes.guess_type(obj.path)[0] or 'image/png',
         'thumbnailUrl': instance.file_thumbnail.url,
+        'timeStr': "<span>abcdefg</span>",
         'creationTime': creationTime,
         'modifiedTime': modifiedTime,
         'creationTimeShort': creationTimeShort,
