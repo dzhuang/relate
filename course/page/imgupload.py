@@ -34,7 +34,7 @@ from course.page.base import (
 from course.validation import ValidationError
 from relate.utils import StyledForm
 from crispy_forms.layout import Layout, HTML
-from image_upload.models import SessionPageImage
+from image_upload.models import FlowPageImage
 from course.models import FlowPageData
 
 
@@ -53,19 +53,22 @@ class ImageUploadForm(StyledForm):
         
         jfu_button_control = ""
         
-        if not self.page_behavior.may_change_answer:
-            jfu_button_control = (
-                "{% block UPLOAD_FORM_BUTTON_BAR %}{% endblock %}"
-                "{% block JS_UPLOAD_TEMPLATE_CONTROLS %}{% endblock %}"
-                "{% block JS_DOWNLOAD_TEMPLATE_DELETE %}{% endblock %}")
+#        if not self.page_behavior.may_change_answer:
+#            jfu_button_control = (
+#                "{% block UPLOAD_FORM_BUTTON_BAR %}{% endblock %}"
+#                "{% block JS_UPLOAD_TEMPLATE_CONTROLS %}{% endblock %}"
+#                "{% block JS_DOWNLOAD_TEMPLATE_DELETE %}{% endblock %}")
         
         self.helper.form_id = "fileupload"
+        
 
         from django.core.urlresolvers import reverse
         self.helper.form_action = reverse(
                 "jfu_upload",
-                kwargs={'flow_session_id': page_context.flow_session.id, 
-                    'ordinal': page_context.ordinal}
+                kwargs={'course_identifier': page_context.course,
+                        'flow_session_id': page_context.flow_session.id,
+                        'ordinal': page_context.ordinal
+                       }
                 )
         self.helper.form_method = "POST"
         
@@ -83,7 +86,7 @@ class ImageUploadForm(StyledForm):
         fpd=FlowPageData.objects.get(
             flow_session=flow_session_id, ordinal=ordinal)
 
-        qs = SessionPageImage.objects.filter(
+        qs = FlowPageImage.objects.filter(
                 creator=user
                 ).filter(flow_session=flow_session_id
                 ).filter(image_page_id=fpd.page_id)
@@ -230,6 +233,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         ctx["JQ_OPEN"] = '{%'
         ctx['JQ_CLOSE'] = '%}'
         ctx["accepted_mime_types"] = ['image/*']
+        ctx['course_identifier'] = page_context.course
         ctx["flow_session_id"] = page_context.flow_session.id
         ctx["ordinal"] = page_context.ordinal
         ctx["SHOW_CREATION_TIME"] = True
@@ -247,7 +251,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         fpd=FlowPageData.objects.get(
             flow_session=flow_session_id, ordinal=ordinal)
 
-        qs = SessionPageImage.objects.filter(
+        qs = FlowPageImage.objects.filter(
                 creator=user
                 ).filter(flow_session=flow_session_id
                 ).filter(image_page_id=fpd.page_id)

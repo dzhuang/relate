@@ -27,10 +27,12 @@ THE SOFTWARE.
 from django.conf.urls import patterns, url
 from django.views.i18n import javascript_catalog
 
+from course.constants import COURSE_ID_REGEX, FLOW_ID_REGEX
+
 from image_upload.views import (
     ImageCreateView, ImageUpdateView, ImageDeleteView, ImageListView,
-    image_crop_modal, image_crop,
-    image_download)
+    image_crop_modal, image_crop, user_image_download,
+    flow_page_image_download)
 
 js_info_dict_image_upload = {
     'packages': ('image_upload',),
@@ -45,8 +47,9 @@ urlpatterns = [
     url(r'^jsi18n/other_app/$', javascript_catalog, js_info_dict_other_app),
 ]
 
-urlpatterns = [
-    url(r"^user"
+urlpatterns = [ 
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
         "/flow-session"
         "/(?P<flow_session_id>[0-9]+)"
         "/(?P<ordinal>[0-9]+)"
@@ -54,19 +57,28 @@ urlpatterns = [
         ImageCreateView.as_view(),
         name='jfu_upload'),
 
-    url(r"^user"
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/flow-session"
+        "/(?P<flow_session_id>[0-9]+)"
+        "/(?P<ordinal>[0-9]+)"
         "/image/update"
         "/(?P<pk>\d+)$",
         image_crop_modal,
         name='jfu_update'),
 
-    url(r"^user"
-        "/image"
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/flow-session"
+        "/(?P<flow_session_id>[0-9]+)"
+        "/(?P<ordinal>[0-9]+)"
+        "/image/delete"
         "/(?P<pk>\d+)$",
         ImageDeleteView.as_view(), 
         name='jfu_delete'),
 
-    url(r"^user"
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
         "/flow-session"
         "/(?P<flow_session_id>[0-9]+)"
         "/(?P<ordinal>[0-9]+)"
@@ -74,14 +86,23 @@ urlpatterns = [
         ImageListView.as_view(),
         name='jfu_view'),
 
-    url(r"^course"
-        "/userfiles"
+    url(r"^userfiles"
         "/(?P<creator_id>\d+)"
         "/(?P<download_id>\d+)/$",
-        image_download,
-        name='image_download'),
+        user_image_download,
+        name='user_image_download'),
 
-    url(r"^user"
+    url(r"^user/flow_page_images"
+        "/(?P<creator_id>\d+)"
+        "/(?P<download_id>\d+)/$",
+        flow_page_image_download,
+        name='flow_page_image_download'),
+
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/flow-session"
+        "/(?P<flow_session_id>[0-9]+)"
+        "/(?P<ordinal>[0-9]+)"
         "/image/crop"
         "/(?P<pk>\d+)$",
         image_crop,

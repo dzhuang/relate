@@ -33,7 +33,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.utils.timezone import now
 
 from relate.utils import format_datetime_local, as_local_time
-from course.models import FlowSession
+from course.models import Course, FlowSession, FlowPageData
 
 from imagekit.models import ImageSpecField
 from imagekit.processors import ResizeToFit
@@ -49,31 +49,30 @@ sendfile_storage = UserImageStorage()
 
 
 def user_directory_path(instance, filename):
-    return 'userimages/user_{0}/{1}'.format(instance.creator_id, filename)
+    return 'user_images/user_{0}/{1}'.format(instance.creator_id, filename)
 
 
-class Image(models.Model):
+class UserImage(models.Model):
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
             verbose_name=_('Creator'), on_delete=models.CASCADE)
     file = models.ImageField(upload_to=user_directory_path, 
             storage=sendfile_storage)
     slug = models.SlugField(max_length=256, blank=True)
     creation_time = models.DateTimeField(default=now)
-    file_last_modified = models.DateTimeField(default=now)
 
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = self.file.name
-        super(Image, self).save(*args, **kwargs)
+        super(UserImage, self).save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
         """delete -- Remove to leave file."""
         self.file.delete(False)
-        super(Image, self).delete(*args, **kwargs)
+        super(UserImage, self).delete(*args, **kwargs)
 
     @models.permalink
     def get_absolute_url(self):
-        return ('image_download', [self.creator_id, self.pk], {})
+        return ('user_image_download', [self.creator_id, self.pk], {})
 
     def get_random_filename(self):
         import os, uuid
@@ -101,17 +100,73 @@ class Image(models.Model):
         __str__ = __unicode__
 
 
-class SessionPageImage(Image):
+def user_flowsession_img_path(instance, file_name):
+    return 'flow_session_images/user_{0}/{1}'.format(instance.creator_id, file_name)
+
+class FlowPageImage(models.Model):
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
+            verbose_name=_('Creator'), on_delete=models.CASCADE)
+    file = models.ImageField(upload_to=user_flowsession_img_path, 
+            storage=sendfile_storage)
+    slug = models.SlugField(max_length=256, blank=True)
+    creation_time = models.DateTimeField(default=now)
+    file_last_modified = models.DateTimeField(default=now)    
     file_thumbnail = ImageSpecField(
             source='file',
             processors=[ResizeToFit(200, 200)],
             format='PNG',
             options={'quality': 85}
             )
+    course = models.ForeignKey(
+            Course, null=True,
+            verbose_name=_('Course'), on_delete=models.CASCADE)
     flow_session = models.ForeignKey(
             FlowSession, null=True, related_name="page_image_data",
             verbose_name=_('Flow session'), on_delete=models.CASCADE)
     image_page_id = models.CharField(max_length=200, null=True)
 
+    def get_page_ordinal(self):
+        fpd = FlowPageData.objects.get(
+            flow_session=self.flow_session_id, page_id=self.image_page_id)
+        return fpd.ordinal
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = self.file.name
+        super(FlowPageImage, self).save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        """delete -- Remove to leave file."""
+        self.file.delete(False)
+        super(FlowPageImage, self).delete(*args, **kwargs)
+
+    @models.permalink
+    def get_absolute_url(self):
+        return ('flow_page_image_download', [self.creator_id, self.pk], {})
+
+    def get_random_filename(self):
+        import os, uuid
+        slug_path = self.uploaded.path.replace(
+                os.path.basename(self.file.path),
+                self.slug)
+        [file_no_ext, ext] = os.path.splitext(slug_path)
+        while True:
+            rand_str4 = str(uuid.uuid4())[-4:]
+            rand_file_name = "".join([file_no_ext, rand_str4, ext])
+            print "ori_file_name", self.file.path
+            print "rand_file_name", rand_file_name
+            if not os.path.isfile(rand_file_name):
+                return rand_file_name
+
+    class Meta:
+        ordering = ("id", "creation_time")
+
+    def __unicode__(self):
+        return _("%(url)s uploaded by %(creator)s") % {
+            'url': self.get_absolute_url(),
+            'creator': self.creator}
+
+    if six.PY3:
+        __str__ = __unicode__
 
 # vim: foldmethod=marker

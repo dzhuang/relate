@@ -57,6 +57,7 @@ def serialize(request, instance, file_attr='file'):
     from relate.utils import (
         as_local_time, format_datetime_local, 
         compact_local_datetime_str)
+    from course.models import Course
 
     obj = getattr(instance, file_attr)
     
@@ -64,14 +65,26 @@ def serialize(request, instance, file_attr='file'):
     name_field = getattr(instance, 'slug', obj.name)
     name = order_name(name_field)
 
-    deleteUrl = reverse('jfu_delete', kwargs={
-                'pk': instance.pk,}) 
+    deleteUrl = reverse('jfu_delete', 
+            kwargs={
+                'course_identifier': instance.course.identifier,
+                'flow_session_id': instance.flow_session_id,
+                'ordinal': instance.get_page_ordinal(),
+                'pk': instance.pk,})
 
-    updateUrl = reverse('jfu_update', kwargs={
-                'pk': instance.pk})
+    updateUrl = reverse('jfu_update',
+            kwargs={
+                'course_identifier': instance.course.identifier,
+                'flow_session_id': instance.flow_session_id,
+                'ordinal': instance.get_page_ordinal(),
+                'pk': instance.pk,})
 
-    cropHandlerUrl = reverse('image_crop', kwargs={
-                'pk': instance.pk})
+    cropHandlerUrl = reverse('image_crop',
+            kwargs={
+                'course_identifier': instance.course.identifier,
+                'flow_session_id': instance.flow_session_id,
+                'ordinal': instance.get_page_ordinal(),
+                'pk': instance.pk,})
 
     creationTime = format_datetime_local(
             as_local_time(instance.creation_time))

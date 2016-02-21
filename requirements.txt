@@ -97,3 +97,6 @@ django-imagekit
 
 # For serving permissions associated files
 django-sendfile
+
+# For Class Based View mixins
+django-braces

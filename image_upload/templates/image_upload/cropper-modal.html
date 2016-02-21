@@ -32,7 +32,7 @@
         </button>
         {% endif %}
     <iframe id="cropIframe" name="cropIframe" style="display: none;"></iframe>
-    <form id="imageCropForm" action="{% url 'image_crop' file.id %}" method="post" target="cropIframe" style="display: none;">
+    <form id="imageCropForm" action="{% url 'image_crop' file.course.identifier file.flow_session_id file.get_page_ordinal file.id %}" method="post" target="cropIframe" style="display: none;">
         {% csrf_token %}
         <input id="dataX" type="text" name="x"/>
         <input id="dataY" type="text" name="y"/>
