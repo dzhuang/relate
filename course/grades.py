@@ -105,7 +105,7 @@ def view_participant_grades(pctx, participation_id=None):
     for opp in grading_opps:
         if is_student_viewing:
             if not (opp.shown_in_grade_book
-                    and opp.shown_in_student_grade_book):
+                    and opp.shown_in_participant_grade_book):
                 continue
         else:
             if not opp.shown_in_grade_book:
@@ -713,7 +713,7 @@ def view_single_grade(pctx, participation_id, opportunity_id):
         if not opportunity.shown_in_grade_book:
             messages.add_message(pctx.request, messages.INFO,
                     _("This grade is not shown in the grade book."))
-        if not opportunity.shown_in_student_grade_book:
+        if not opportunity.shown_in_participant_grade_book:
             messages.add_message(pctx.request, messages.INFO,
                     _("This grade is not shown in the student grade book."))
 
@@ -721,7 +721,7 @@ def view_single_grade(pctx, participation_id, opportunity_id):
         if participation != pctx.participation:
             raise PermissionDenied(_("may not view other people's grades"))
         if not (opportunity.shown_in_grade_book
-                and opportunity.shown_in_student_grade_book):
+                and opportunity.shown_in_participant_grade_book):
             raise PermissionDenied(_("grade has not been released"))
     else:
         raise PermissionDenied()
@@ -847,6 +847,14 @@ def view_single_grade(pctx, participation_id, opportunity_id):
 
     avg_grade_percentage, avg_grade_population = average_grade(opportunity)
 
+    show_privileged_info = pctx.role in [
+            participation_role.instructor,
+            participation_role.teaching_assistant
+            ]
+    show_page_grades = (
+            show_privileged_info
+            or opportunity.page_scores_in_participant_gradebook)
+
     return render_course_page(pctx, "course/gradebook-single.html", {
         "opportunity": opportunity,
         "avg_grade_percentage": avg_grade_percentage,
@@ -857,10 +865,8 @@ def view_single_grade(pctx, participation_id, opportunity_id):
         "state_machine": state_machine,
         "flow_sessions_and_session_properties": flow_sessions_and_session_properties,
         "allow_session_actions": allow_session_actions,
-        "show_privileged_info": pctx.role in [
-            participation_role.instructor,
-            participation_role.teaching_assistant
-            ],
+        "show_privileged_info": show_privileged_info,
+        "show_page_grades": show_page_grades,
         })
 
 # }}}
@@ -1146,11 +1152,14 @@ class DownloadAllSubmissionsForm(StyledForm):
                 label=_("Page ID"))
         self.fields["which_attempt"] = forms.ChoiceField(
                 choices=(
-                    ("first", _("First attempt")),
-                    ("last", _("Last attempt")),
+                    ("first", _("Least recent attempt")),
+                    ("last", _("Most recent attempt")),
                     ("all", _("All attempts")),
                     ),
-                label=_("Attempts to include"))
+                label=_("Attempts to include."),
+                help_text=_(
+                    "Every submission to the page counts as an attempt."),
+                initial="last")
         self.fields["restrict_to_rules_tag"] = forms.ChoiceField(
                 choices=session_tag_choices,
                 help_text=_("Only download sessions tagged with this rules tag."),

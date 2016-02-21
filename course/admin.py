@@ -649,16 +649,16 @@ class GradingOpportunityAdmin(admin.ModelAdmin):
             "identifier",
             "due_time",
             "shown_in_grade_book",
-            "shown_in_student_grade_book",
+            "shown_in_participant_grade_book",
             )
     list_filter = (
             "course",
             "shown_in_grade_book",
-            "shown_in_student_grade_book",
+            "shown_in_participant_grade_book",
             )
     list_editable = (
             "shown_in_grade_book",
-            "shown_in_student_grade_book",
+            "shown_in_participant_grade_book",
             )
 
     # {{{ permissions

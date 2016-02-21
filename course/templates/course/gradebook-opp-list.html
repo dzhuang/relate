@@ -21,7 +21,7 @@
       <th class="datacol">{% trans "Flow ID" %}</th>
       <th class="datacol">{% trans "Aggregation strategy" %}</th>
       <th class="datacol">{% trans "Due time" %}</th>
-      <th class="datacol">{% trans "Shown to students" %}</th>
+      <th class="datacol">{% trans "Shown to participants" %}</th>
     </thead>
     <tbody>
       {% for opp in grading_opps %}
@@ -44,7 +44,7 @@
           {% endif %}
           >{{ opp.due_time|compact_datetime }}</td>
         <td class="datacol">
-          {% if opp.shown_in_student_grade_book %}
+          {% if opp.shown_in_participant_grade_book %}
             <i class="fa fa-check-square-o"></i>
           {% else %}
             <i class="fa fa-square-o"></i>
