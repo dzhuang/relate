@@ -69,7 +69,7 @@ ipaddress
 
 # For interoperation with SAML2/Shibboleth
 pysaml2
-djangosaml2
+hg+https://inducer@bitbucket.org/inducer/djangosaml2
 
 # A task queue, used to execute long-running tasks
 celery
@@ -84,19 +84,3 @@ django_select2>=5.5.0
 
 # For query lexing
 pytools
-
-
-# For django-ckeditor
-# django-ckeditor
-
-# For django jquery file upload
-git+https://github.com/dzhuang/django-jfu.git
-
-# For generating thumbnail
-django-imagekit
-
-# For serving permissions associated files
-django-sendfile
-
-# For Class Based View mixins
-django-braces
