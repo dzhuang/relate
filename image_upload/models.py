@@ -49,8 +49,10 @@ sendfile_storage = UserImageStorage()
 
 
 def user_directory_path(instance, filename):
-    return 'user_images/user_{0}/{1}'.format(instance.creator_id, filename)
-
+    return 'user_images/{0}(user_{1})/{2}'.format(
+        instance.creator.get_full_name().replace(' ', '_'),
+        instance.creator_id,
+        file_name)
 
 class UserImage(models.Model):
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
@@ -101,7 +103,10 @@ class UserImage(models.Model):
 
 
 def user_flowsession_img_path(instance, file_name):
-    return 'flow_session_images/user_{0}/{1}'.format(instance.creator_id, file_name)
+    return 'flow_session_images/{0}(user_{1})/{2}'.format(
+        instance.creator.get_full_name().replace(' ', '_'),
+        instance.creator_id,
+        file_name)
 
 class FlowPageImage(models.Model):
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
@@ -146,7 +151,7 @@ class FlowPageImage(models.Model):
 
     def get_random_filename(self):
         import os, uuid
-        slug_path = self.uploaded.path.replace(
+        slug_path = self.file.path.replace(
                 os.path.basename(self.file.path),
                 self.slug)
         [file_no_ext, ext] = os.path.splitext(slug_path)
