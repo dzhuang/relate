@@ -24,13 +24,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-from django.conf.urls import patterns, url
+from django.conf.urls import url
 from django.views.i18n import javascript_catalog
 
-from course.constants import COURSE_ID_REGEX, FLOW_ID_REGEX
+from course.constants import COURSE_ID_REGEX
 
 from image_upload.views import (
-    ImageCreateView, ImageUpdateView, ImageDeleteView, ImageListView,
+    ImageCreateView, ImageDeleteView, ImageListView,
     image_crop_modal, image_crop, user_image_download,
     flow_page_image_download)
 

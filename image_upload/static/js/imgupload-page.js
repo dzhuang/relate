@@ -1,6 +1,9 @@
+// don't show past submission as those currently won't be saved in page-visit.
+$('#past-submission_dropdown').addClass('hidden');
+
 $(document).ready(function() {
     //"save", "save_and_next", "save_and_finish", "submit"
-    $(".relate-save-button").each(function(){$(this).attr("formaction", window.location.pathname);});
+    $(".relate-save-button").each(function(){$(this).attr("formaction", window.location.pathname);});   
 });
 $("tbody").sortable({
     items: "> tr",

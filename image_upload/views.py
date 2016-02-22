@@ -28,113 +28,24 @@ from django.shortcuts import get_object_or_404
 from django import forms, http
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-from django.views.generic import CreateView, UpdateView, DeleteView, ListView
+from django.views.generic import (
+        CreateView, DeleteView, ListView)
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils.translation import ugettext_lazy as _
 from django.db import transaction
 
 import json
 
-from PIL import Image as IMG
-from braces.views import LoginRequiredMixin
+from PIL import Image
 
 from course.models import Course, FlowPageData
-from course.flow import (
-        get_page_behavior, get_and_check_flow_session,
-        get_prev_answer_visits_qset)
-from course.utils import (
-        FlowPageContext, get_session_access_rule,
-        get_session_grading_rule)
-          
-from course.views import get_now_or_fake_time
+from course.utils import course_view
 
 from image_upload.serialize import serialize
-from image_upload.models import UserImage, FlowPageImage
+from image_upload.utils import get_page_image_behavior, ImageOperationMixin
+from image_upload.models import FlowPageImage
 
-
-def get_image_behavor(pctx, flow_session_id, ordinal):
-
-    request = pctx.request
-
-    ordinal = int(ordinal)
-
-    flow_session_id = int(flow_session_id)
-    flow_session = get_and_check_flow_session(pctx, flow_session_id)
-    flow_id = flow_session.flow_id
-
-    fpctx = FlowPageContext(pctx.repo, pctx.course, flow_id, ordinal,
-            participation=pctx.participation,
-            flow_session=flow_session,
-            request=pctx.request)
-
-    now_datetime = get_now_or_fake_time(request)
-    access_rule = get_session_access_rule(
-            flow_session, pctx.role, fpctx.flow_desc, now_datetime,
-            facilities=pctx.request.relate_facilities)
-
-    grading_rule = get_session_grading_rule(
-            flow_session, pctx.role, fpctx.flow_desc, now_datetime)
-    generates_grade = (
-            grading_rule.grade_identifier is not None
-            and
-            grading_rule.generates_grade)
-
-    #del grading_rule
-
-    permissions = fpctx.page.get_modified_permissions_for_page(
-            access_rule.permissions)
-
-    answer_visit = None
-    prev_visit_id = None
-
-    prev_answer_visits = list(
-            get_prev_answer_visits_qset(fpctx.page_data))
-
-    # {{{ fish out previous answer_visit
-
-    prev_visit_id = pctx.request.GET.get("visit_id")
-    if prev_visit_id is not None:
-        prev_visit_id = int(prev_visit_id)
-
-    viewing_prior_version = False
-    if prev_answer_visits and prev_visit_id is not None:
-        answer_visit = prev_answer_visits[0]
-
-        for ivisit, pvisit in enumerate(prev_answer_visits):
-            if pvisit.id == prev_visit_id:
-                answer_visit = pvisit
-                if ivisit > 0:
-                    viewing_prior_version = True
-
-                break
-
-        prev_visit_id = answer_visit.id
-
-    elif prev_answer_visits:
-        answer_visit = prev_answer_visits[0]
-        prev_visit_id = answer_visit.id
-
-    else:
-        answer_visit = None
-
-    # }}}
-
-    if answer_visit is not None:
-        answer_was_graded = answer_visit.is_submitted_answer
-    else:
-        answer_was_graded = False
-
-    page_behavior = get_page_behavior(
-            page=fpctx.page,
-            permissions=permissions,
-            session_in_progress=flow_session.in_progress,
-            answer_was_graded=answer_was_graded,
-            generates_grade=generates_grade,
-            is_unenrolled_session=flow_session.participation is None,
-            viewing_prior_version=viewing_prior_version)
-
-    return page_behavior
-
-class ImageCreateView(LoginRequiredMixin, CreateView):
+class ImageCreateView(LoginRequiredMixin, ImageOperationMixin, CreateView):
     model = FlowPageImage
     fields = ("file", "slug")
 
@@ -173,26 +84,8 @@ class ImageItemForm(forms.ModelForm):
         model = FlowPageImage
         fields = ("file",)
 
-class ImageUpdateView(UpdateView):
-    pass
-#    model = FlowPageImage
-#    form_class = ImageItemForm
-#    template_name = 'image_upload/image_edit_form.html'
-#
-#    def dispatch(self, *args, **kwargs):
-#        self.pk = kwargs['pk']
-#        print "self", self
-#        return super(ImageUpdateView, self).dispatch(*args, **kwargs)
-#
-    def form_valid(self, form):
-        pass
-#        form.save()
-#        file = FlowPageImage.objects.get(id=self.pk)
-#        print file.pk
-#        from django.template.loader import render_to_string
-#        return http.HttpResponse(render_to_string('image_upload/image_edit_form_success.html', {'file': file}))
 
-class ImageDeleteView(LoginRequiredMixin, DeleteView):
+class ImageDeleteView(LoginRequiredMixin, ImageOperationMixin, DeleteView):
     model = FlowPageImage
 
     def delete(self, request, *args, **kwargs):
@@ -218,12 +111,7 @@ class ImageListView(LoginRequiredMixin, ListView):
                 .filter(image_page_id=fpd.page_id)
 
     def render_to_response(self, context, **response_kwargs):
-        
-        flow_session_id = self.kwargs["flow_session_id"]
-        ordinal = self.kwargs["ordinal"]
-        
-        files = [
-                serialize(self.request, p, 'file')
+        files = [serialize(self.request, p, 'file')
                 for p in self.get_queryset()]
         data = {'files': files}
         response = http.JsonResponse(data)
@@ -262,8 +150,6 @@ def _auth_download(request, download_object):
 class CropImageError(Exception):
     pass
 
-from course.utils import course_view
-
 
 @login_required
 @course_view
@@ -272,16 +158,16 @@ def image_crop_modal(pctx, flow_session_id, ordinal, pk):
     file = FlowPageImage.objects.get(id=pk)
     return render(request, 'image_upload/cropper-modal.html', {'file': file})
 
+
 @login_required
 @transaction.atomic
 @course_view
 def image_crop(pctx, flow_session_id, ordinal, pk):
-    page_behavior = get_image_behavor(pctx, flow_session_id, ordinal)
-    may_change_answer = page_behavior.may_change_answer
+    page_image_behavior = get_page_image_behavior(pctx, flow_session_id, ordinal)
+    may_change_answer = page_image_behavior.may_change_answer
     if not may_change_answer:
         raise CropImageError(_('Not allowd to modify answer!'))
     request = pctx.request
-    from django.conf import settings
     try:
         crop_instance = FlowPageImage.objects.get(pk=pk)
     except FlowPageImage.DoesNotExist:
@@ -305,7 +191,7 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
             raise CropImageError('发生错误，稍后再试')
 
         try:
-            image_orig = IMG.open(image_orig_path)
+            image_orig = Image.open(image_orig_path)
         except IOError:
             raise CropImageError('发生错误，请重新上传图片')
 
