@@ -103,7 +103,7 @@ class UserImage(models.Model):
 
 
 def user_flowsession_img_path(instance, file_name):
-    return 'flow_session_images/{0}(user_{1})/{2}'.format(
+    return 'course_imgs/{0}(user_{1})/{2}'.format(
         instance.creator.get_full_name().replace(' ', '_'),
         instance.creator_id,
         file_name)
@@ -115,7 +115,7 @@ class FlowPageImage(models.Model):
             storage=sendfile_storage)
     slug = models.SlugField(max_length=256, blank=True)
     creation_time = models.DateTimeField(default=now)
-    file_last_modified = models.DateTimeField(default=now)    
+    file_last_modified = models.DateTimeField(default=now)
     file_thumbnail = ImageSpecField(
             source='file',
             processors=[ResizeToFit(200, 200)],

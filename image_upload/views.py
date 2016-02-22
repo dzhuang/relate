@@ -204,9 +204,17 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
         except IOError:
             raise CropImageError('发生错误，稍后再试')
 
-        from relate.utils import local_now
+        from relate.utils import as_local_time, local_now
+        import datetime
+
+        if local_now() < as_local_time(
+                crop_instance.creation_time + datetime.timedelta(minutes=5)):
+            crop_instance.file_last_modified = crop_instance.creation_time = local_now()
+            
+        else:
+            crop_instance.file_last_modified = local_now()
+
         crop_instance.file = image_modified_path
-        crop_instance.file_last_modified = local_now()
         crop_instance.save()
 
         try:
