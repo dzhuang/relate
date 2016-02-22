@@ -5,21 +5,22 @@ $(document).ready(function() {
     //"save", "save_and_next", "save_and_finish", "submit"
     $(".relate-save-button").each(function(){$(this).attr("formaction", window.location.pathname);});   
 });
-$("tbody").sortable({
-    items: "> tr",
-    appendTo: "parent",
-    helper: "clone"
-}).disableSelection();
+//$("tbody").sortable({
+//    items: "> tr",
+//    appendTo: "parent",
+//    helper: "clone"
+//}).disableSelection();
+//
+//$("#tabs ul li a").droppable({
+//    hoverClass: "drophover",
+//    tolerance: "pointer",
+//    drop: function (e, ui) {
+//        var tabdiv = $(this).attr("href");
+//        $(tabdiv + " table tr:last").after("<tr>" + ui.draggable.html() + "</tr>");
+//        ui.draggable.remove();
+//    }
+//});
 
-$("#tabs ul li a").droppable({
-    hoverClass: "drophover",
-    tolerance: "pointer",
-    drop: function (e, ui) {
-        var tabdiv = $(this).attr("href");
-        $(tabdiv + " table tr:last").after("<tr>" + ui.draggable.html() + "</tr>");
-        ui.draggable.remove();
-    }
-});
 //var clicked_row;
 //var clicked_response;
 //$('#fileupload').on("click", ".btn-edit-image", function(){
@@ -27,8 +28,19 @@ $("#tabs ul li a").droppable({
 //});
 
 var cropper;
-$('body').on('shown.bs.modal', function () {
-    $('.img-container img').css('max-height', $(window).height() * 0.8);
+$('body').on('loaded.bs.modal', function () {
+    
+        
+    var img = $('.img-container img');
+    //var img_path = $('.img-container img').attr('src');    
+    //$(img).attr('src', img_path+"#"+(new Date().getTime()));
+    //console.log($(img).attr('src'));
+    $(img).imagesLoaded()
+    .done(
+        function(){            
+            console.log("image loaded!")
+        $(img).css('max-height', $(window).height() * 0.8);
+    
     var dataX = document.getElementById('dataX');
     var dataY = document.getElementById('dataY');
     var dataHeight = document.getElementById('dataHeight');
@@ -122,7 +134,7 @@ $('body').on('shown.bs.modal', function () {
 //                     //$("#filename"+response.file.pk).attr('src', response.file.url + "#" + new Date().getTime());
                  crop_success_msg(gettext('Done!'));
                  setTimeout(function() { $('#modal').modal('hide'); }, 2000);
-                 window.location.reload();
+                 //window.location.reload();
 
              })
              .fail(function () {
@@ -138,10 +150,12 @@ $('body').on('shown.bs.modal', function () {
         $('#imageCropSubmit').addClass("disabled");
         $('#imageCropReset').addClass("disabled");
     });
+        });
 
 }).on('hidden.bs.modal', '.modal', function () {
     $(this).removeData('bs.modal');
     cropper.destroy();
+    $('.modal-content').empty();
 });
 
 function isUndefined(obj) {
