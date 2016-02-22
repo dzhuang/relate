@@ -5,6 +5,37 @@ $(document).ready(function() {
     //"save", "save_and_next", "save_and_finish", "submit"
     $(".relate-save-button").each(function(){$(this).attr("formaction", window.location.pathname);});   
 });
+
+//$(function(){ 
+//  //上移 
+//  var $up = $(".up") 
+//  $up.click(function() { 
+//    var $tr = $(this).parents("tr"); 
+//    if ($tr.index() != 0) { 
+//      $tr.fadeOut().fadeIn(); 
+//      $tr.prev().before($tr); 
+//       
+//    } 
+//  }); 
+//  //下移 
+//  var $down = $(".down"); 
+//  var len = $down.length; 
+//  $down.click(function() { 
+//    var $tr = $(this).parents("tr"); 
+//    if ($tr.index() != len - 1) { 
+//      $tr.fadeOut().fadeIn(); 
+//      $tr.next().after($tr); 
+//    } 
+//  }); 
+//  //置顶 
+//  var $top = $(".top"); 
+//  $top.click(function(){ 
+//    var $tr = $(this).parents("tr"); 
+//    $tr.fadeOut().fadeIn(); 
+//    $(".table").prepend($tr); 
+//    $tr.css("color","#f60"); 
+//  }); 
+//});
 //$("tbody").sortable({
 //    items: "> tr",
 //    appendTo: "parent",
@@ -29,18 +60,7 @@ $(document).ready(function() {
 
 var cropper;
 $('body').on('loaded.bs.modal', function () {
-    
-        
-    var img = $('.img-container img');
-    //var img_path = $('.img-container img').attr('src');    
-    //$(img).attr('src', img_path+"#"+(new Date().getTime()));
-    //console.log($(img).attr('src'));
-    $(img).imagesLoaded()
-    .done(
-        function(){            
-            console.log("image loaded!")
-        $(img).css('max-height', $(window).height() * 0.8);
-    
+    $('.img-container img').css('max-height', $(window).height() * 0.8);
     var dataX = document.getElementById('dataX');
     var dataY = document.getElementById('dataY');
     var dataHeight = document.getElementById('dataHeight');
@@ -134,7 +154,7 @@ $('body').on('loaded.bs.modal', function () {
 //                     //$("#filename"+response.file.pk).attr('src', response.file.url + "#" + new Date().getTime());
                  crop_success_msg(gettext('Done!'));
                  setTimeout(function() { $('#modal').modal('hide'); }, 2000);
-                 //window.location.reload();
+                 window.location.reload();
 
              })
              .fail(function () {
@@ -150,12 +170,10 @@ $('body').on('loaded.bs.modal', function () {
         $('#imageCropSubmit').addClass("disabled");
         $('#imageCropReset').addClass("disabled");
     });
-        });
 
 }).on('hidden.bs.modal', '.modal', function () {
     $(this).removeData('bs.modal');
     cropper.destroy();
-    $('.modal-content').empty();
 });
 
 function isUndefined(obj) {
