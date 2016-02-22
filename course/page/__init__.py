@@ -38,7 +38,7 @@ from course.page.choice import (
 from course.page.code import (
         PythonCodeQuestion, PythonCodeQuestionWithHumanTextFeedback)
 from course.page.upload import FileUploadQuestion
-from course.page.imgupload import ImageUploadQuestion # added by zd
+from image_upload.page.imgupload import ImageUploadQuestion # added by zd
 
 __all__ = (
         "InvalidPageData",
