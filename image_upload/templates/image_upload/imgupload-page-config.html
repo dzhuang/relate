@@ -29,7 +29,7 @@ disableImageResize: /Android(?!.*Chrome)|Opera/
 imageCrop: false, // Force cropped images
 acceptFileTypes: /(\.|\/)(png|gif|jpe?g)$/i,
 messages: {
-                acceptFileTypes: '不允许的文件类型'
+                acceptFileTypes: '{% trans "不允许的文件类型" %}'
             },
 imageOrientation: true
 {% endblock %}
@@ -39,7 +39,7 @@ imageOrientation: true
 {{ block.super }}
 <script src="{% url 'javascript-catalog-image-upload' %}"></script>
 <script src="{{ STATIC_URL }}cropperjs/dist/cropper.js"></script>
-<script src="{{ STATIC_URL }}js/imgupload-page.js"></script>
+<script src="{{ STATIC_URL }}js/imgupload-page-min.js"></script>
 {% endblock %}
 
 {% block JS_UPLOAD_TEMPLATE %}{% endblock %}

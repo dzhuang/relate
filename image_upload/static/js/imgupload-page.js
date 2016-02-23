@@ -52,11 +52,10 @@ $(document).ready(function() {
 //    }
 //});
 
-//var clicked_row;
-//var clicked_response;
-//$('#fileupload').on("click", ".btn-edit-image", function(){
-//    clicked_row = $(event.target).closest('tr');
-//});
+var clicked_row;
+$('#fileupload').on("click", ".btn-edit-image", function(){
+    clicked_row = $(event.target).closest('tr');
+});
 
 var cropper;
 $('body').on('loaded.bs.modal', function () {
@@ -129,6 +128,7 @@ $('body').on('loaded.bs.modal', function () {
 
     $('#imageCropSubmit').click(function () {
         $(this).addClass("disabled");
+        $(".modal-footer > button").addClass("disabled");
         x = $('#dataX').val();
         y = $('#dataY').val();
         width = $('#dataWidth').val();
@@ -148,13 +148,17 @@ $('body').on('loaded.bs.modal', function () {
                  data: $('#imageCropForm').serialize(),
              })
              .done(function (response) {
-//                     $("#thumbnail"+response.file.pk).attr('src',response.file.thumbnailUrl);
+                     $("#thumbnail"+response.file.pk).prop('src',response.file.thumbnailUrl);
+                     $("#previewid"+response.file.pk).prop('href',response.file.url);
+                     $("#filename"+response.file.pk).prop('href',response.file.url);
+                     $("#filetime"+response.file.pk).prop('title',response.file.timestr_title).html(response.timestr_short);
+                     $("#filesize"+response.file.pk).html(formatFileSize(response.file.size));                    
 //                     var oldsrc = $('#image').attr('src');
 //                      $('#image').attr('src', oldsrc + "#" + new Date().getTime());
 //                     //$("#filename"+response.file.pk).attr('src', response.file.url + "#" + new Date().getTime());
                  crop_success_msg(gettext('Done!'));
                  setTimeout(function() { $('#modal').modal('hide'); }, 2000);
-                 window.location.reload();
+                 //window.location.reload();
 
              })
              .fail(function () {
@@ -172,8 +176,10 @@ $('body').on('loaded.bs.modal', function () {
     });
 
 }).on('hidden.bs.modal', '.modal', function () {
+    $('.img-container').html("");
     $(this).removeData('bs.modal');
     cropper.destroy();
+    
 });
 
 function isUndefined(obj) {
@@ -236,3 +242,16 @@ function rotatedegree(angle) {
     $('#imageCropSubmit').removeClass("disabled");
     $('#imageCropReset').removeClass("disabled");
 }
+
+function formatFileSize(bytes) {
+            if (typeof bytes !== 'number') {
+                return '';
+            }
+            if (bytes >= 1000000000) {
+                return (bytes / 1000000000).toFixed(2) + ' GB';
+            }
+            if (bytes >= 1000000) {
+                return (bytes / 1000000).toFixed(2) + ' MB';
+            }
+            return (bytes / 1000).toFixed(2) + ' KB';
+        }

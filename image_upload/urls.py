@@ -94,7 +94,8 @@ urlpatterns = [
 
     url(r"^user/flow_page_images"
         "/(?P<creator_id>\d+)"
-        "/(?P<download_id>\d+)/$",
+        "/(?P<download_id>\d+)"
+        "/(?P<file_name>[^/]+)$",
         flow_page_image_download,
         name='flow_page_image_download'),
 

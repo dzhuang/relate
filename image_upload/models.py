@@ -85,8 +85,8 @@ class UserImage(models.Model):
         while True:
             rand_str4 = str(uuid.uuid4())[-4:]
             rand_file_name = "".join([file_no_ext, rand_str4, ext])
-            print "ori_file_name", self.file.path
-            print "rand_file_name", rand_file_name
+#            print "ori_file_name", self.file.path
+#            print "rand_file_name", rand_file_name
             if not os.path.isfile(rand_file_name):
                 return rand_file_name
 
@@ -147,7 +147,9 @@ class FlowPageImage(models.Model):
 
     @models.permalink
     def get_absolute_url(self):
-        return ('flow_page_image_download', [self.creator_id, self.pk], {})
+        import os
+        file_name = os.path.basename(self.file.path)
+        return ('flow_page_image_download', [self.creator_id, self.pk, file_name], {})
 
     def get_random_filename(self):
         import os, uuid
@@ -158,8 +160,6 @@ class FlowPageImage(models.Model):
         while True:
             rand_str4 = str(uuid.uuid4())[-4:]
             rand_file_name = "".join([file_no_ext, rand_str4, ext])
-            print "ori_file_name", self.file.path
-            print "rand_file_name", rand_file_name
             if not os.path.isfile(rand_file_name):
                 return rand_file_name
 

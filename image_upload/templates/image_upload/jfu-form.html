@@ -168,6 +168,7 @@
                                     href="{{ JQ_OPEN }}=file.url{{ JQ_CLOSE }}"
                                     title="{{ JQ_OPEN }}=file.name{{ JQ_CLOSE }}"
                                     download="{{ JQ_OPEN }}=file.name{{ JQ_CLOSE }}"
+                                    id="previewid{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
                                     data-gallery>
                                     <img
                                        id="thumbnail{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
@@ -219,10 +220,11 @@
                     {% block JS_DOWNLOAD_TEMPLATE_TIME %}
                         <td>
                             <span
-                                class="time"
-                                title="{% trans 'Created at' %} {{ JQ_OPEN }}=file.creationTime{{ JQ_CLOSE }}{{ JQ_OPEN }} if (file.modifiedTimeShort) { {{ JQ_CLOSE }}, {% trans 'modified at' %} {{ JQ_OPEN }}=file.modifiedTime{{ JQ_CLOSE }}{{ JQ_OPEN }} } {{ JQ_CLOSE }}"
+                                class="timestr"
+                                id="filetime{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
+                                title="{{ JQ_OPEN }}=file.timestr_title{{ JQ_CLOSE }}"
                             >
-                                {{ JQ_OPEN }}=file.creationTimeShort{{ JQ_CLOSE }}{{ JQ_OPEN }} if (file.modifiedTimeShort) { {{ JQ_CLOSE }} ({{ JQ_OPEN }}=file.modifiedTimeShort{{ JQ_CLOSE }}){{ JQ_OPEN }} } {{ JQ_CLOSE }}
+                                {{ JQ_OPEN }}=file.timestr_short{{ JQ_CLOSE }}
                             </span>
                         </td>
                     {% endblock %}{# block JS_DOWNLOAD_TEMPLATE_TIME #}
@@ -230,7 +232,10 @@
 
                 {% block JS_DOWNLOAD_TEMPLATE_FSIZE %}
                     <td>
-                        <span class="size">{{ JQ_OPEN }}=o.formatFileSize(file.size){{ JQ_CLOSE }}</span>
+                        <span
+                            class="size"
+                            id="filesize{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
+                        >{{ JQ_OPEN }}=o.formatFileSize(file.size){{ JQ_CLOSE }}</span>
                     </td>
                 {% endblock %}{# //JS_DOWNLOAD_TEMPLATE_FSIZE #}
 

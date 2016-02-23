@@ -27,6 +27,7 @@ THE SOFTWARE.
 import mimetypes
 import re
 from django.core.urlresolvers import reverse
+from django.utils.translation import ugettext_lazy as _, ugettext, string_concat
 
 
 def order_name(name):
@@ -104,17 +105,20 @@ def serialize(request, instance, file_attr='file'):
                             as_local_time(instance.file_last_modified),
                             get_now_or_fake_time(request),
                             in_python=True)
+    
+    timestr_title = ugettext("Created at") + " " + creationTime
+    timestr_short = creationTimeShort
+    if modifiedTime:
+        timestr_title = timestr_title + ", " + ugettext("modified at") + " " + modifiedTime
+        timestr_short = timestr_short + " (" + modifiedTimeShort + ")"
 
     return {
         'url': instance.get_absolute_url(),
         'name': name,
         'type': mimetypes.guess_type(obj.path)[0] or 'image/png',
         'thumbnailUrl': instance.file_thumbnail.url,
-        'timeStr': "<span>abcdefg</span>",
-        'creationTime': creationTime,
-        'modifiedTime': modifiedTime,
-        'creationTimeShort': creationTimeShort,
-        'modifiedTimeShort': modifiedTimeShort,
+        'timestr_title': timestr_title,
+        'timestr_short': timestr_short,
         'size': obj.size,
         'pk': instance.pk,
         'updateUrl': updateUrl,

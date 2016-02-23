@@ -130,7 +130,7 @@ def user_image_download(request, creator_id, download_id):
     return _auth_download(request, download_object)
 
 @login_required
-def flow_page_image_download(request, creator_id, download_id):
+def flow_page_image_download(request, creator_id, download_id, file_name):
     download_object = get_object_or_404(FlowPageImage, pk=download_id)
     return _auth_download(request, download_object)
 
