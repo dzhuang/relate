@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-02-22 07:56+0800\n"
+"POT-Creation-Date: 2016-02-25 22:48+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -34,6 +34,26 @@ msgstr "课程"
 msgid "Flow session"
 msgstr ""
 
+#: .\page\imgupload.py:98
+msgid "You have not upload image(s)!"
+msgstr "您还未上传图片!"
+
+#: .\page\imgupload.py:171
+msgid "upload question does not have assigned point value"
+msgstr "上传问题还未设置分数"
+
+#: .\serialize.py:75
+msgid "The image file does not exist!"
+msgstr "该图片文件不存在！"
+
+#: .\serialize.py:128
+msgid "Created at"
+msgstr "创建于"
+
+#: .\serialize.py:131
+msgid "modified at"
+msgstr "修改于"
+
 #: .\templates\image_upload\cropper-modal.html:4
 msgid "Edit image"
 msgstr "编辑图片"
@@ -54,6 +74,31 @@ msgstr "预览"
 msgid "Close"
 msgstr "关闭"
 
+#: .\templates\image_upload\imgupload-page-config.html:32
+msgid "File is too big"
+msgstr "这个图片太大了"
+
+#: .\templates\image_upload\imgupload-page-config.html:33
+msgid "File is too small"
+msgstr "这个图片太小了"
+
+#: .\templates\image_upload\imgupload-page-config.html:34
+msgid "Filetype not allowed"
+msgstr "该文件类型不被允许"
+
+#: .\templates\image_upload\imgupload-page-config.html:35
+#, python-format
+msgid "Max number of files exceeded, only %(maxNumberOfFiles)s allowed"
+msgstr "超出了允许上传的文件数量，只允许上传%(maxNumberOfFiles)s个"
+
+#: .\templates\image_upload\imgupload-page-config.html:36
+msgid "Uploaded bytes exceed file size"
+msgstr "超出了允许上传的文件大小"
+
+#: .\templates\image_upload\imgupload-page-config.html:37
+msgid "Empty file upload result"
+msgstr "没有上传结果"
+
 #: .\templates\image_upload\jfu-form.html:16
 msgid "Add files..."
 msgstr ""
@@ -67,7 +112,7 @@ msgid "Cancel upload"
 msgstr ""
 
 #: .\templates\image_upload\jfu-form.html:56
-#: .\templates\image_upload\jfu-form.html:260
+#: .\templates\image_upload\jfu-form.html:265
 msgid "Delete"
 msgstr ""
 
@@ -76,34 +121,42 @@ msgid "Start"
 msgstr "开始"
 
 #: .\templates\image_upload\jfu-form.html:143
-#: .\templates\image_upload\jfu-form.html:266
+#: .\templates\image_upload\jfu-form.html:271
 msgid "Cancel"
 msgstr "放弃"
 
-#: .\templates\image_upload\jfu-form.html:209
+#: .\templates\image_upload\jfu-form.html:210
 msgid "Error"
 msgstr "错误"
 
-#: .\templates\image_upload\jfu-form.html:224
-msgid "Created at"
-msgstr "创建于"
-
-#: .\templates\image_upload\jfu-form.html:224
-msgid "modified at"
-msgstr "修改于"
-
-#: .\templates\image_upload\jfu-form.html:248
+#: .\templates\image_upload\jfu-form.html:253
 msgid "Edit"
 msgstr "编辑"
 
-#: .\views.py:254
+#: .\views.py:143
 msgid "may not view other people's resource"
 msgstr "不允许查看其他人的资源"
 
-#: .\views.py:282
-msgid "Not allowd to modify answer!"
-msgstr "不允许修改回答"
+#: .\views.py:170
+msgid "Not allowd to modify answer."
+msgstr "不允许修改回答."
 
-#: .\views.py:343
+#: .\views.py:175 .\views.py:179
+msgid "Please upload the image first."
+msgstr "请先上传图片."
+
+#: .\views.py:179
+msgid "File not found."
+msgstr "该文件未找到"
+
+#: .\views.py:184
 msgid "Only Ajax Post is allowed."
 msgstr "只允许Ajax POST操作"
+
+#: .\views.py:193 .\views.py:207
+msgid "There are errors, please refresh the page or try again later"
+msgstr "发生错误，请刷新页面或稍后重试"
+
+#: .\views.py:198
+msgid "There are errors，please re-upload the image"
+msgstr "发生错误，请重新上传图片"

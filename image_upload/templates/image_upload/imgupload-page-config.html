@@ -19,8 +19,8 @@
 {% endblock %}
 
 {% block JS_OPTS %}
-imageMaxWidth: 900,
-imageMaxHeight: 900,
+imageMaxWidth: {{imageMaxWidth}},
+imageMaxHeight: {{imageMaxHeight}},
 loadImageFileTypes: /^image\/(gif|jpeg|png|svg\+xml)$/,
 sequentialUploads: true,
 disableImageResize: /Android(?!.*Chrome)|Opera/
@@ -29,9 +29,19 @@ disableImageResize: /Android(?!.*Chrome)|Opera/
 imageCrop: false, // Force cropped images
 acceptFileTypes: /(\.|\/)(png|gif|jpe?g)$/i,
 messages: {
-                acceptFileTypes: '{% trans "不允许的文件类型" %}'
+            maxFileSize: '{% trans "File is too big" %}',
+            minFileSize: '{% trans "File is too small" %}',
+            acceptFileTypes: '{% trans "Filetype not allowed" %}',
+            maxNumberOfFiles: '{% blocktrans trimmed %} Max number of files exceeded, only {{maxNumberOfFiles}} allowed{% endblocktrans %}',
+            uploadedBytes: '{% trans "Uploaded bytes exceed file size" %}',
+            emptyResult: '{% trans "Empty file upload result" %}'
             },
-imageOrientation: true
+imageOrientation: true,
+maxNumberOfFiles: {{maxNumberOfFiles}},
+previewMaxWidth: {{previewMaxWidth}},
+previewMaxHeight: {{previewMaxHeight}},
+maxFileSize: {{maxFileSize}},
+minFileSize: {{minFileSize}},
 {% endblock %}
 
 

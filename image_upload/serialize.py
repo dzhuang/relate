@@ -23,23 +23,23 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
+from django.core.urlresolvers import reverse
+from django.utils.translation import ugettext
 
 import mimetypes
 import re
-from django.core.urlresolvers import reverse
-from django.utils.translation import ugettext_lazy as _, ugettext, string_concat
+import os
 
 
 def order_name(name):
-    """order_name 
-    -- Limit a text to 20 chars length, if necessary strips the middle 
+    """order_name
+    -- Limit a text to 20 chars length, if necessary strips the middle
        of the text and substitute it for an ellipsis.
 
     name -- text to be limited.
     """
-    import os
     name = os.path.basename(name)
-    [name,ext]=os.path.splitext(name)
+    [name, ext] = os.path.splitext(name)
     name = re.sub(r'^.*/', '', name)
     if len(name) <= 25:
         return name
@@ -53,47 +53,66 @@ def serialize(request, instance, file_attr='file'):
     file_attr -- attribute name that contains the FileField or ImageField
 
     """
-    
+
     from course.views import get_now_or_fake_time
     from relate.utils import (
-        as_local_time, format_datetime_local, 
+        as_local_time, format_datetime_local,
         compact_local_datetime_str)
-    from course.models import Course
 
     obj = getattr(instance, file_attr)
-    
+
+    error = None
+
+    try:
+        IsFile = os.path.isfile(obj.path)
+        size = obj.size
+        obj_name = obj.name
+        img_type = mimetypes.guess_type(obj.path)[0] or 'image/png'
+    except:
+        obj_name = None
+        size = 0
+        img_type = None
+        error = ugettext("The image file does not exist!")
+
     # use slug by default
-    name_field = getattr(instance, 'slug', obj.name)
+    name_field = getattr(instance, 'slug', obj_name)
     name = order_name(name_field)
 
-    deleteUrl = reverse('jfu_delete', 
+    deleteUrl = reverse('jfu_delete',
             kwargs={
                 'course_identifier': instance.course.identifier,
-                'flow_session_id': instance.flow_session_id,
-                'ordinal': instance.get_page_ordinal(),
-                'pk': instance.pk,})
+        	    'flow_session_id': instance.flow_session_id,
+        	    'ordinal': instance.get_page_ordinal(),
+        	    'pk': instance.pk,
+        	    }
+	    )
 
     updateUrl = reverse('jfu_update',
             kwargs={
                 'course_identifier': instance.course.identifier,
                 'flow_session_id': instance.flow_session_id,
                 'ordinal': instance.get_page_ordinal(),
-                'pk': instance.pk,})
+                'pk': instance.pk,
+                }
+            )
 
     cropHandlerUrl = reverse('image_crop',
             kwargs={
                 'course_identifier': instance.course.identifier,
                 'flow_session_id': instance.flow_session_id,
                 'ordinal': instance.get_page_ordinal(),
-                'pk': instance.pk,})
+                'pk': instance.pk,
+                }
+            )
 
     creationTime = format_datetime_local(
             as_local_time(instance.creation_time))
 
     creationTimeShort = compact_local_datetime_str(
-                            as_local_time(instance.creation_time),
-                            get_now_or_fake_time(request),
-                            in_python=True)
+		    as_local_time(instance.creation_time),
+		    get_now_or_fake_time(request),
+		    in_python=True)
+
     modifiedTime = ""
     modifiedTimeShort = ""
 
@@ -105,7 +124,7 @@ def serialize(request, instance, file_attr='file'):
                             as_local_time(instance.file_last_modified),
                             get_now_or_fake_time(request),
                             in_python=True)
-    
+
     timestr_title = ugettext("Created at") + " " + creationTime
     timestr_short = creationTimeShort
     if modifiedTime:
@@ -115,11 +134,12 @@ def serialize(request, instance, file_attr='file'):
     return {
         'url': instance.get_absolute_url(),
         'name': name,
-        'type': mimetypes.guess_type(obj.path)[0] or 'image/png',
+        'type': img_type,
         'thumbnailUrl': instance.file_thumbnail.url,
         'timestr_title': timestr_title,
         'timestr_short': timestr_short,
-        'size': obj.size,
+        'size': size,
+        'error': error,
         'pk': instance.pk,
         'updateUrl': updateUrl,
         'deleteUrl': deleteUrl,

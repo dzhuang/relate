@@ -27,15 +27,18 @@ THE SOFTWARE.
 import django.forms as forms
 from django.utils.translation import ugettext as _, string_concat
 
+from image_upload.models import FlowPageImage
+
 from course.page.base import (
         PageBaseWithTitle, PageBaseWithValue, PageBaseWithHumanTextFeedback,
         PageBaseWithCorrectAnswer,
         markup_to_html)
-from course.validation import ValidationError
-from relate.utils import StyledForm
-from crispy_forms.layout import Layout, HTML
-from image_upload.models import FlowPageImage
 from course.models import FlowPageData
+from course.validation import ValidationError
+
+from relate.utils import StyledForm
+
+from crispy_forms.layout import Layout, HTML
 
 
 # {{{ image upload question
@@ -160,26 +163,8 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         The grading guideline for this question, in :ref:`markup`.
     """
 
-    ALLOWED_MIME_TYPES = [
-            "image/jpeg",
-            "image/png",
-            "application/pdf",
-            ]
-
     def __init__(self, vctx, location, page_desc):
         super(ImageUploadQuestion, self).__init__(vctx, location, page_desc)
-
-        if not (set(page_desc.mime_types) <= set(self.ALLOWED_MIME_TYPES)):
-            raise ValidationError(
-                    string_concat(
-                        "%(location)s: ",
-                        _("unrecognized mime types"),
-                        " '%(presenttype)s'")
-                    % {
-                        'location': location,
-                        'presenttype': ", ".join(
-                            set(page_desc.mime_types)
-                            - set(self.ALLOWED_MIME_TYPES))})
 
         if vctx is not None:
             if not hasattr(page_desc, "value"):
@@ -196,6 +181,12 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         return super(ImageUploadQuestion, self).allowed_attrs() + (
                 ("correct_answer", "markup"),
                 ("mime_types", list),
+                ("imageMaxWidth", (int, float)),
+                ("imageMaxHeight", (int, float)),
+                ("ImageMaxFileSizeByte", (int, float)),
+                ("previewMaxWidth", (int, float)),
+                ("previewMaxHeight", (int, float)),
+                ("maxNumberOfFiles", (int, float)),
                 )
 
     def human_feedback_point_value(self, page_context, page_data):
@@ -219,7 +210,6 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
 
     def process_form_post(self, page_context, page_data, post_data, files_data,
             page_behavior):
-        
         form = ImageUploadForm(
                 self.page_desc.maximum_megabytes, self.page_desc.mime_types,
                 page_context, page_behavior, page_data,
@@ -228,21 +218,29 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         return form
 
     def form_to_html(self, request, page_context, form, answer_data):
-        ctx = {"form": form}
-        
-        ctx["JQ_OPEN"] = '{%'
-        ctx['JQ_CLOSE'] = '%}'
-        ctx["accepted_mime_types"] = ['image/*']
-        ctx['course_identifier'] = page_context.course
-        ctx["flow_session_id"] = page_context.flow_session.id
-        ctx["ordinal"] = page_context.ordinal
-        ctx["SHOW_CREATION_TIME"] = True
+        ctx = {"form": form, 
+               "JQ_OPEN": '{%',
+               'JQ_CLOSE': '%}',
+               "accepted_mime_types": ['image/*'],
+               'course_identifier': page_context.course,
+               "flow_session_id": page_context.flow_session.id,
+               "ordinal": page_context.ordinal,
+               "SHOW_CREATION_TIME": True,
+
+               "imageMaxWidth": getattr(self.page_desc, "imageMaxWidth", 1000),
+               "imageMaxHeight": getattr(self.page_desc, "imageMaxHeight", 1000),
+               "maxFileSize": getattr(self.page_desc, "maxFileSize", 1) * 1024**2,
+               "minFileSize": getattr(self.page_desc, "minFileSize", 0.1) * 1024**2,
+               "previewMaxWidth": getattr(self.page_desc, "previewMaxWidth", 200),
+               "previewMaxHeight": getattr(self.page_desc, "previewMaxHeight", 200),
+               "maxNumberOfFiles": getattr(self.page_desc, "maxNumberOfFiles", 3)
+               }
 
         from django.template import RequestContext
         from django.template.loader import render_to_string
         return render_to_string(
-                "image_upload/imgupload-page-tmpl.html",
-                RequestContext(request, ctx))
+            "image_upload/imgupload-page-tmpl.html",
+            RequestContext(request, ctx))
 
     def answer_data(self, page_context, page_data, form, files_data):
         flow_session_id = page_context.flow_session.id

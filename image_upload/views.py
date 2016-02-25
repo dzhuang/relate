@@ -31,7 +31,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.generic import (
         CreateView, DeleteView, ListView)
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy as _, string_concat
 from django.db import transaction
 
 from course.models import Course, FlowPageData
@@ -167,16 +167,18 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
     page_image_behavior = get_page_image_behavior(pctx, flow_session_id, ordinal)
     may_change_answer = page_image_behavior.may_change_answer
     if not may_change_answer:
-        raise CropImageError(_('Not allowd to modify answer!'))
+        raise CropImageError(_('Not allowd to modify answer.'))
     request = pctx.request
     try:
         crop_instance = FlowPageImage.objects.get(pk=pk)
     except FlowPageImage.DoesNotExist:
-        raise CropImageError('请先上传图片')
+        raise CropImageError(_('Please upload the image first.'))
 
     image_orig_path = crop_instance.file.path
     if not image_orig_path:
-        raise CropImageError('File not found, 请先上传图片')
+        raise CropImageError(
+            string_concat(_('File not found.'),
+                          _('Please upload the image first.')))
 
     image_modified_path = crop_instance.get_random_filename()
     
@@ -190,12 +192,12 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
         height = int(float(request.POST['height']))
         rotate = int(float(request.POST['rotate']))
     except:
-        raise CropImageError('发生错误，稍后再试')
+        raise CropImageError(_('There are errors, please refresh the page or try again later'))
 
     try:
         image_orig = Image.open(image_orig_path)
     except IOError:
-        raise CropImageError('发生错误，请重新上传图片')
+        raise CropImageError(_('There are errors，please re-upload the image'))
 
     image_orig = image_orig.rotate(-rotate, expand=True)
     box =  (x, y, x+width, y+height)
@@ -204,7 +206,7 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
     try:
         image_orig.save(image_modified_path)
     except IOError:
-        raise CropImageError('发生错误，稍后再试')
+        raise CropImageError(_('There are errors, please refresh the page or try again later'))
 
     from relate.utils import as_local_time, local_now
     import datetime
