@@ -12,3 +12,6 @@ django-sendfile
 
 # For Class Based View mixins
 django-braces
+
+# For jsonview decorator
+django-jsonview

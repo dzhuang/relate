@@ -34,16 +34,17 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils.translation import ugettext_lazy as _
 from django.db import transaction
 
-import json
-
-from PIL import Image
-
 from course.models import Course, FlowPageData
 from course.utils import course_view
 
 from image_upload.serialize import serialize
 from image_upload.utils import get_page_image_behavior, ImageOperationMixin
 from image_upload.models import FlowPageImage
+
+from jsonview.decorators import json_view
+from jsonview.exceptions import BadRequest
+import json
+from PIL import Image
 
 class ImageCreateView(LoginRequiredMixin, ImageOperationMixin, CreateView):
     model = FlowPageImage
@@ -147,7 +148,7 @@ def _auth_download(request, download_object):
 
 # {{{ crop image
 
-class CropImageError(Exception):
+class CropImageError(BadRequest):
     pass
 
 
@@ -158,7 +159,7 @@ def image_crop_modal(pctx, flow_session_id, ordinal, pk):
     file = FlowPageImage.objects.get(id=pk)
     return render(request, 'image_upload/cropper-modal.html', {'file': file})
 
-
+@json_view
 @login_required
 @transaction.atomic
 @course_view
@@ -179,61 +180,57 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
 
     image_modified_path = crop_instance.get_random_filename()
     
-    if request.is_ajax():
-
-        try:
-            x = int(float(request.POST['x']))
-            y = int(float(request.POST['y']))
-            width = int(float(request.POST['width']))
-            height = int(float(request.POST['height']))
-            rotate = int(float(request.POST['rotate']))
-        except:
-            raise CropImageError('发生错误，稍后再试')
-
-        try:
-            image_orig = Image.open(image_orig_path)
-        except IOError:
-            raise CropImageError('发生错误，请重新上传图片')
-
-        image_orig = image_orig.rotate(-rotate, expand=True)
-        box =  (x, y, x+width, y+height)
-        image_orig = image_orig.crop(box)
-
-        try:
-            image_orig.save(image_modified_path)
-        except IOError:
-            raise CropImageError('发生错误，稍后再试')
-
-        from relate.utils import as_local_time, local_now
-        import datetime
-
-        if local_now() < as_local_time(
-                crop_instance.creation_time + datetime.timedelta(minutes=5)):
-            crop_instance.file_last_modified = crop_instance.creation_time = local_now()
-            
-        else:
-            crop_instance.file_last_modified = local_now()
-
-        crop_instance.file = image_modified_path
-        crop_instance.save()
-
-        try:
-            import os
-            os.remove(image_orig_path)
-        except:
-            pass
-
-        new_instance = FlowPageImage.objects.get(id=pk)
-
-        response = None
-        response_file = serialize(request, new_instance, 'file')
-
-        data = {'file': response_file}
-        response = http.JsonResponse(data)
-        response['Content-Disposition'] = 'inline; filename=files.json'
-        return response
-    
-    else:
+    if not request.is_ajax():
         raise CropImageError(_('Only Ajax Post is allowed.'))
+
+    try:
+        x = int(float(request.POST['x']))
+        y = int(float(request.POST['y']))
+        width = int(float(request.POST['width']))
+        height = int(float(request.POST['height']))
+        rotate = int(float(request.POST['rotate']))
+    except:
+        raise CropImageError('发生错误，稍后再试')
+
+    try:
+        image_orig = Image.open(image_orig_path)
+    except IOError:
+        raise CropImageError('发生错误，请重新上传图片')
+
+    image_orig = image_orig.rotate(-rotate, expand=True)
+    box =  (x, y, x+width, y+height)
+    image_orig = image_orig.crop(box)
+
+    try:
+        image_orig.save(image_modified_path)
+    except IOError:
+        raise CropImageError('发生错误，稍后再试')
+
+    from relate.utils import as_local_time, local_now
+    import datetime
+
+    if local_now() < as_local_time(
+            crop_instance.creation_time + datetime.timedelta(minutes=5)):
+        crop_instance.file_last_modified = crop_instance.creation_time = local_now()
+
+    else:
+        crop_instance.file_last_modified = local_now()
+
+    crop_instance.file = image_modified_path
+    crop_instance.save()
+
+    try:
+        import os
+        os.remove(image_orig_path)
+    except:
+        pass
+
+    new_instance = FlowPageImage.objects.get(id=pk)
+
+    response = None
+    response_file = serialize(request, new_instance, 'file')
+
+    data = {'file': response_file}
+    return data
 
 # }}}

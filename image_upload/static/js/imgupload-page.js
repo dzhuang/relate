@@ -71,6 +71,9 @@ $('body').on('loaded.bs.modal', function () {
         autoCrop: true,
         autoCropArea: 1,
         strict: true,
+        movable: false,
+        zoomable: false,
+        minContainerheight: $(window).height() * 0.8,
         built: function () {
         },
         cropstart: function (data) {
@@ -87,9 +90,9 @@ $('body').on('loaded.bs.modal', function () {
     }
     var cropBoxData;
     var canvasData;
-    var image = document.getElementById("image");
+    var image = document.querySelector("#image");
     cropper = new Cropper(image, options);
-
+    
     $('.modal .modal-body')
         .css('overflow-y', 'auto')
         .css('max-height', $(window).height() * 0.9)
@@ -148,25 +151,22 @@ $('body').on('loaded.bs.modal', function () {
                  data: $('#imageCropForm').serialize(),
              })
              .done(function (response) {
-                     $("#thumbnail"+response.file.pk).prop('src',response.file.thumbnailUrl);
-                     $("#previewid"+response.file.pk).prop('href',response.file.url);
-                     $("#filename"+response.file.pk).prop('href',response.file.url);
-                     $("#filetime"+response.file.pk).prop('title',response.file.timestr_title).html(response.timestr_short);
-                     $("#filesize"+response.file.pk).html(formatFileSize(response.file.size));                    
-//                     var oldsrc = $('#image').attr('src');
-//                      $('#image').attr('src', oldsrc + "#" + new Date().getTime());
-//                     //$("#filename"+response.file.pk).attr('src', response.file.url + "#" + new Date().getTime());
-                 crop_success_msg(gettext('Done!'));
+                    var new_img = response.file
+                     $("#thumbnail"+new_img.pk).prop('src',new_img.thumbnailUrl);
+                     $("#previewid"+new_img.pk).prop('href',new_img.url);
+                     $("#filename"+new_img.pk).prop('href',new_img.url);
+                     $("#filetime"+new_img.pk).prop('title',new_img.timestr_title).html(new_img.timestr_short); $("#filesize"+new_img.pk).html(formatFileSize(new_img.size));
+                 cropper.replace(new_img.url);
+                 crop_msg(true, gettext('Done!'));
                  setTimeout(function() { $('#modal').modal('hide'); }, 2000);
-                 //window.location.reload();
-
              })
-             .fail(function () {
-                 crop_failed_msg(gettext('Failed!'));
+             .fail(function (response) {
+                 msg = gettext('Failed!')+ " " + response.responseJSON.message
+                 crop_msg(false, msg);
+                 console.log(response);
+                 setTimeout(function() { $('#modal').modal('hide'); }, 2000);
              });
-
         return false;
-
     });
 
     $('#imageCropReset').click(function () {
@@ -186,20 +186,19 @@ function isUndefined(obj) {
     return typeof obj === 'undefined';
 }
 
-function crop_success_msg(msg) {
-    $("#CropResult").addClass('alert alert-success').html(msg);
+function crop_msg(success, msg) {
+    var e = $("#CropResult");
+    if (success === true){
+        e.addClass('alert alert-success').html(msg);
+    }
+    else
+    {
+        console.log(success)
+        e.addClass('alert alert-danger').html(msg);
+    }
     window.setTimeout(
         function () {
-            $("#CropResult").removeClass('alert alert-error').removeClass('alert alert-success').html("");
-        },
-        3000);
-}
-
-function crop_failed_msg(msg) {
-    $("#CropResult").addClass('alert alert-error').html(msg);
-    window.setTimeout(
-        function () {
-            $("#CropResult").removeClass('alert alert-error').removeClass('alert alert-success').html("");
+            e.removeClass().html("");
         },
         3000);
 }
