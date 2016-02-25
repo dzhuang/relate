@@ -36,6 +36,8 @@ from course.validation import ValidationError
 
 from relate.utils import StyledForm
 
+from crispy_forms.layout import Layout, Field
+
 
 # {{{ upload question
 
@@ -48,6 +50,10 @@ class FileUploadForm(StyledForm):
 
         self.max_file_size = maximum_megabytes * 1024**2
         self.mime_types = mime_types
+
+        self.helper.layout = Layout(
+                Field("uploaded_file", accept=",".join(mime_types))
+                )
 
     def clean_uploaded_file(self):
         uploaded_file = self.cleaned_data['uploaded_file']
