@@ -45,12 +45,10 @@ from crispy_forms.layout import Layout, HTML
 
 class ImageUploadForm(StyledForm):
     
-    def __init__(self, maximum_megabytes, mime_types, page_context, 
+    def __init__(self, page_context, 
                  page_behavior, page_data, *args, **kwargs):
         super(ImageUploadForm, self).__init__(*args, **kwargs)
 
-        self.max_file_size = maximum_megabytes * 1024**2
-        self.mime_types = mime_types
         self.page_behavior = page_behavior
         self.page_context = page_context
         
@@ -170,20 +168,50 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
             if not hasattr(page_desc, "value"):
                 vctx.add_warning(location, _("upload question does not have "
                         "assigned point value"))
+        self.maxNumberOfFiles = getattr(page_desc, "maxNumberOfFiles", 1)
+
+        self.imageMaxWidth =  getattr(self.page_desc, "imageMaxWidth", 1000)
+        if self.imageMaxWidth > 1500:
+            self.imageMaxWidth = 1500
+        elif self.imageMaxWidth < 200:
+            self.imageMaxWidth = 400
+        
+        self.imageMaxHeight = getattr(self.page_desc, "imageMaxHeight", 1000)
+        if self.imageMaxHeight > 1500:
+            self.imageMaxHeight = 1500
+        elif self.imageMaxHeight < 200:
+            self.imageMaxHeight = 400
+
+        self.maxFileSize = getattr(self.page_desc, "maxFileSize", 1) * 1024**2
+        if self.maxFileSize >= 2 *1024**2:
+            self.maxFileSize = 1.5 *1024**2
+        elif self.maxFileSize < 0.05 *1024**2:
+            self.maxFileSize = 0.1 * 1024**2
+        
+        self.minFileSize = getattr(self.page_desc, "minFileSize", 0.1) * 1024**2
+        if self.minFileSize >= 0.2 *1024**2:
+            self.minFileSize = 0.2 *1024**2
+        
+        if self.minFileSize > self.maxFileSize:
+            vctx.add_warning(location, _("minFileSize should not be greater than "
+                                         "maxFileSize, better do not set those 2 "
+                                         "attributes."
+                                        ))
+        self.previewMaxWidth = getattr(self.page_desc, "previewMaxWidth", 200)
+        self.previewMaxHeight = getattr(self.page_desc, "previewMaxHeight", 200)
 
     def required_attrs(self):
         return super(ImageUploadQuestion, self).required_attrs() + (
                 ("prompt", "markup"),
-                ("maximum_megabytes", (int, float)),
                 )
 
     def allowed_attrs(self):
         return super(ImageUploadQuestion, self).allowed_attrs() + (
                 ("correct_answer", "markup"),
-                ("mime_types", list),
                 ("imageMaxWidth", (int, float)),
                 ("imageMaxHeight", (int, float)),
-                ("ImageMaxFileSizeByte", (int, float)),
+                ("maxFileSize", (int, float)),
+                ("minFileSize", (int, float)),
                 ("previewMaxWidth", (int, float)),
                 ("previewMaxHeight", (int, float)),
                 ("maxNumberOfFiles", (int, float)),
@@ -192,17 +220,18 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
     def human_feedback_point_value(self, page_context, page_data):
         return self.max_points(page_data)
 
-    def markup_body_for_title(self):
+    def markup_body_for_title(self):        
         return self.page_desc.prompt
 
     def body(self, page_context, page_data):
-        return markup_to_html(page_context, self.page_desc.prompt)
+        return (
+            markup_to_html(page_context, self.page_desc.prompt)
+            + string_concat("<br/><p class='text-info'><strong><small>(", _("Note: Maxmum number of images: %d"),  ")</small></strong></p>") % (self.maxNumberOfFiles,))
 
     def make_form(self, page_context, page_data,
             answer_data, page_behavior):
 
         form = ImageUploadForm(
-                self.page_desc.maximum_megabytes, self.page_desc.mime_types,
                 page_context, page_behavior, page_data)
 
         return form
@@ -211,13 +240,13 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
     def process_form_post(self, page_context, page_data, post_data, files_data,
             page_behavior):
         form = ImageUploadForm(
-                self.page_desc.maximum_megabytes, self.page_desc.mime_types,
                 page_context, page_behavior, page_data,
                 post_data, files_data)
-        
+
         return form
 
     def form_to_html(self, request, page_context, form, answer_data):
+        
         ctx = {"form": form, 
                "JQ_OPEN": '{%',
                'JQ_CLOSE': '%}',
@@ -227,13 +256,13 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                "ordinal": page_context.ordinal,
                "SHOW_CREATION_TIME": True,
 
-               "imageMaxWidth": getattr(self.page_desc, "imageMaxWidth", 1000),
-               "imageMaxHeight": getattr(self.page_desc, "imageMaxHeight", 1000),
-               "maxFileSize": getattr(self.page_desc, "maxFileSize", 1) * 1024**2,
-               "minFileSize": getattr(self.page_desc, "minFileSize", 0.1) * 1024**2,
-               "previewMaxWidth": getattr(self.page_desc, "previewMaxWidth", 200),
-               "previewMaxHeight": getattr(self.page_desc, "previewMaxHeight", 200),
-               "maxNumberOfFiles": getattr(self.page_desc, "maxNumberOfFiles", 3)
+               "imageMaxWidth": self.imageMaxWidth,
+               "imageMaxHeight": self.imageMaxHeight,
+               "maxFileSize": self.maxFileSize,
+               "minFileSize": self.minFileSize,
+               "previewMaxWidth": self.previewMaxWidth,
+               "previewMaxHeight": self.previewMaxHeight,
+               "maxNumberOfFiles": self.maxNumberOfFiles
                }
 
         from django.template import RequestContext
