@@ -50,11 +50,11 @@
                     <i class="glyphicon glyphicon-ban-circle"></i>
                     <span>{% trans "Cancel upload" %}</span>
                 </button>
-                <button type="button" class="btn btn-success sort-table">
+                <button type="button" class="btn btn-success btn-srt-tbl">
                     <i class="fa fa-sort"></i>
                     <span>{% trans "Sort" %}</span>
                 </button>
-                <button type="button" class="btn btn-primary sort-table-submit hidden">
+                <button type="button" class="btn btn-primary btn-srt-tbl-cfm hidden">
                     <i class="fa fa-sort"></i>
                     <span>{% trans "Done" %}</span>
                 </button>
@@ -230,7 +230,7 @@
 
                 {% if SHOW_CREATION_TIME %}
                     {% block JS_DOWNLOAD_TEMPLATE_TIME %}
-                        <td class="downloadtd">
+                        <td class="td-dl">
                             <span
                                 class="timestr"
                                 id="filetime{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
@@ -243,7 +243,7 @@
                 {% endif %}
                 
                     {% block JS_DOWNLOAD_SORT %}
-                        <td class="sorttd hidden">
+                        <td class="td-srt hidden">
                             <a 
                                 class="button btn btn-success up"
                                 id="sort-up{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
@@ -255,12 +255,18 @@
                                 id="sort-down{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
                             >
                                 <i class="fa fa-arrow-down"></i>
-                            </a>                     
+                            </a>
+                            <a
+                                class="button btn btn-success top"
+                                id="sort-down{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
+                            >
+                                <i class="fa fa-step-forward fa-rotate-270"></i>
+                            </a>
                         </td>
                     {% endblock %}{# block JS_DOWNLOAD_SORT #}
 
                 {% block JS_DOWNLOAD_TEMPLATE_FSIZE %}
-                    <td class="downloadtd">
+                    <td class="td-dl">
                         <span
                             class="size"
                             id="filesize{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
@@ -269,7 +275,7 @@
                 {% endblock %}{# //JS_DOWNLOAD_TEMPLATE_FSIZE #}
 
                 {% block JS_DOWNLOAD_TEMPLATE_DELETE %}
-                    <td class="downloadtd">
+                    <td class="td-dl">
                         {{ JQ_OPEN }} if (file.deleteUrl) { {{ JQ_CLOSE }}
                             <a 
                                 class="btn btn-success btn-edit-image"

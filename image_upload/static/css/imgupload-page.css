@@ -10,6 +10,14 @@
     max-width: 100%;
 }
 
+tr:nth-child(1) > td.td-srt > a.button.btn.btn-success.up,
+tr:nth-child(1) > td.td-srt > a.button.btn.btn-success.top,
+tr:nth-child(2) > td.td-srt > a.button.btn.btn-success.top,
+tr:nth-last-child(1) > td.td-srt > a.button.btn.btn-success.down,
+{
+    display: none;
+}
+
 @media (max-width: 767px) {
     .modal-footer > button >span {
         display: none;

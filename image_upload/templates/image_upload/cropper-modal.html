@@ -12,27 +12,31 @@
     </div>
 </div>
 <div class="modal-footer">
-        <div id="CropResult"></div>
-        <button type="button" class="btn btn-primary" id="rotate_left">
+        <div id="crp-result"></div>
+        <button type="button" class="btn btn-primary btn-crp-rtt" data-step="90">
               <i class="fa fa-rotate-left"></i>
                 <span>90&deg;</span>
         </button>            
-        <button type="button" class="btn btn-primary" id="rotate_right">
+        <button type="button" class="btn btn-primary btn-crp-rtt" data-step="-90">
               <i class="fa fa-rotate-right"></i>
                 <span>90&deg;</span>
         </button>
         {% if ALLOW_ROTATE_TUNE %}
-        <button type="button" class="btn btn-primary" id="rotate_mleft">
+        <button type="button" class="btn btn-primary btn-crp-rtt" data-step="-0.5">
               <i class="fa fa-reply"></i>
                 <span>0.5&deg;</span>
         </button>            
-        <button type="button" class="btn btn-primary" id="rotate_mright">
+        <button type="button" class="btn btn-primary btn-crp-rtt" data-step="0.5">
               <i class="fa fa-share"></i>
             <span>0.5&deg;</span>
         </button>
         {% endif %}
-    <iframe id="cropIframe" name="cropIframe" style="display: none;"></iframe>
-    <form id="imageCropForm" action="{% url 'image_crop' file.course.identifier file.flow_session_id file.get_page_ordinal file.id %}" method="post" target="cropIframe" style="display: none;">
+    <iframe id="crp-iframe" name="crp-iframe" style="display: none;"></iframe>
+    <form id="crp-form"
+          action="{% url 'image_crop' file.course.identifier file.flow_session_id file.get_page_ordinal file.id %}"
+          method="post"
+          target="crp-iframe"
+          style="display: none;">
         {% csrf_token %}
         <input id="dataX" type="text" name="x"/>
         <input id="dataY" type="text" name="y"/>
@@ -43,13 +47,13 @@
         {# <input id="dataScaleY" type="text" name="scaley"/> #}
     </form>
     
-    <button type="button" class="btn btn-success disabled" id="imageCropSubmit">
+    <button type="button" class="btn btn-success disabled btn-crp-submit">
         <i class="fa fa-check"></i>
         <span>{% trans "Submit" %}</span></button>
-    <button type="button" class="btn btn-warning disabled" id="imageCropReset">
+    <button type="button" class="btn btn-warning disabled btn-crp-reset">
         <i class="fa fa-refresh"></i>
         <span>{% trans "Reset" %}</span></button>
-    <button type="button" class="btn btn-primary" id="cropper_preview">
+    <button type="button" class="btn btn-primary btn-crp-preview">
         <i class="fa fa-eye"></i>
         <span>{% trans "Preview" %}</span></button>
     <button type="button" class="btn btn-danger" data-dismiss="modal">
