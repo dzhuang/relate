@@ -50,6 +50,14 @@
                     <i class="glyphicon glyphicon-ban-circle"></i>
                     <span>{% trans "Cancel upload" %}</span>
                 </button>
+                <button type="button" class="btn btn-success sort-table">
+                    <i class="fa fa-sort"></i>
+                    <span>{% trans "Sort" %}</span>
+                </button>
+                <button type="button" class="btn btn-primary sort-table-submit hidden">
+                    <i class="fa fa-sort"></i>
+                    <span>{% trans "Done" %}</span>
+                </button>
                 <button type="button" class="btn btn-danger delete">
                     <i class="glyphicon glyphicon-trash"></i>
                     <span>{% trans "Delete" %}</span>
@@ -57,6 +65,10 @@
                 <input type="checkbox" class="toggle">
             {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR_CONTROL #}
             {% block UPLOAD_FORM_BUTTON_BAR_EXTRA %}
+            
+
+        
+            
             {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR_EXTRA #}
 
         </div>
@@ -158,7 +170,7 @@
     <script id="template-download" type="text/x-tmpl">
         {{ JQ_OPEN }} for (var i=0, file; file=o.files[i]; i++) { {{ JQ_CLOSE }}
 
-            <tr class="template-download fade">
+            <tr class="template-download fade" data-order='{"pk":"{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}", "order":"{{ JQ_OPEN }}=file.order{{ JQ_CLOSE }}"}'>
 
                 {% block JS_DOWNLOAD_TEMPLATE_PREVIEW %}
                     <td>
@@ -218,7 +230,7 @@
 
                 {% if SHOW_CREATION_TIME %}
                     {% block JS_DOWNLOAD_TEMPLATE_TIME %}
-                        <td>
+                        <td class="downloadtd">
                             <span
                                 class="timestr"
                                 id="filetime{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
@@ -229,9 +241,26 @@
                         </td>
                     {% endblock %}{# block JS_DOWNLOAD_TEMPLATE_TIME #}
                 {% endif %}
+                
+                    {% block JS_DOWNLOAD_SORT %}
+                        <td class="sorttd hidden">
+                            <a 
+                                class="button btn btn-success up"
+                                id="sort-up{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
+                            >
+                                <i class="fa fa-arrow-up"></i>
+                            </a>
+                            <a
+                                class="button btn btn-success down"
+                                id="sort-down{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
+                            >
+                                <i class="fa fa-arrow-down"></i>
+                            </a>                     
+                        </td>
+                    {% endblock %}{# block JS_DOWNLOAD_SORT #}
 
                 {% block JS_DOWNLOAD_TEMPLATE_FSIZE %}
-                    <td>
+                    <td class="downloadtd">
                         <span
                             class="size"
                             id="filesize{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
@@ -240,7 +269,7 @@
                 {% endblock %}{# //JS_DOWNLOAD_TEMPLATE_FSIZE #}
 
                 {% block JS_DOWNLOAD_TEMPLATE_DELETE %}
-                    <td>
+                    <td class="downloadtd">
                         {{ JQ_OPEN }} if (file.deleteUrl) { {{ JQ_CLOSE }}
                             <a 
                                 class="btn btn-success btn-edit-image"

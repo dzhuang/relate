@@ -141,6 +141,7 @@ def serialize(request, instance, file_attr='file'):
         'size': size,
         'error': error,
         'pk': instance.pk,
+        'order': instance.order,
         'updateUrl': updateUrl,
         'deleteUrl': deleteUrl,
         'cropHandlerUrl': cropHandlerUrl,

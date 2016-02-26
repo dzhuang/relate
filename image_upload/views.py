@@ -33,6 +33,7 @@ from django.views.generic import (
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils.translation import ugettext_lazy as _, string_concat
 from django.db import transaction
+from django.db.models import Max
 
 from course.models import Course, FlowPageData
 from course.utils import course_view
@@ -65,6 +66,12 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin, CreateView):
         self.object.flow_session_id = flow_session_id
         self.object.image_page_id = fpd.page_id
         self.object.course = course
+        max_order = self.model.objects\
+            .filter(flow_session=flow_session_id)\
+            .filter(image_page_id=fpd.page_id)\
+            .aggregate(Max('order'))['order__max']
+        if max_order is not None:
+            self.object.order = max_order + 1
         self.object.save()
 
         files = [serialize(self.request, self.object, 'file')]
@@ -109,7 +116,8 @@ class ImageListView(LoginRequiredMixin, ListView):
         return FlowPageImage.objects\
                 .filter(creator=self.request.user)\
                 .filter(flow_session=flow_session_id)\
-                .filter(image_page_id=fpd.page_id)
+                .filter(image_page_id=fpd.page_id)\
+                .order_by("order","pk")
 
     def render_to_response(self, context, **response_kwargs):
         files = [serialize(self.request, p, 'file')

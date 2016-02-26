@@ -130,6 +130,9 @@ class FlowPageImage(models.Model):
             verbose_name=_('Flow session'), on_delete=models.CASCADE)
     image_page_id = models.CharField(max_length=200, null=True)
 
+    # The order of the img in a flow session page.
+    order = models.SmallIntegerField(default=0)
+
     def get_page_ordinal(self):
         fpd = FlowPageData.objects.get(
             flow_session=self.flow_session_id, page_id=self.image_page_id)
