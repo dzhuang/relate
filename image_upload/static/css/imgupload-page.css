@@ -25,4 +25,11 @@ tr:nth-last-child(1) > td.td-srt > a.button.btn.btn-success.down,
     #fileupload > table > tbody > * > td:nth-child(2) {
         display: none;
     }
+    button.btn.btn-warning.cancel, button.btn.btn-primary.start {
+        display: none;
+    }
+    #fileupload > table > tbody > tr.template-upload.fade.in > * > strong
+    {
+        display: inline;
+    }
 }
