@@ -31,7 +31,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.generic import (
         CreateView, DeleteView, ListView)
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.utils.translation import ugettext_lazy as _, string_concat
+from django.utils.translation import ugettext_lazy as _, string_concat, ugettext
 from django.db import transaction
 
 from course.models import Course, FlowPageData
@@ -245,3 +245,43 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
     return data
 
 # }}}
+
+
+class ImgTableOrderError(BadRequest):
+    pass
+
+@json_view
+@login_required
+@transaction.atomic
+@course_view
+def image_order(pctx, flow_session_id, ordinal):
+    page_image_behavior = get_page_image_behavior(pctx, flow_session_id, ordinal)
+    may_change_answer = page_image_behavior.may_change_answer
+    if not may_change_answer:
+        raise ImgTableOrderError(_('Not allowd to modify answer.'))
+    request = pctx.request
+    if not request.is_ajax():
+        raise ImgTableOrderError(_('Only Ajax Post is allowed.'))
+
+#    print request.POST['chg_data']
+    
+    chg_data_list = json.loads(request.POST['chg_data'])
+
+#    print len(chg_data_list)
+
+    for chg_data in chg_data_list:
+        try:
+            chg_instance = FlowPageImage.objects.get(pk=chg_data['pk'])
+        except FlowPageImage.DoesNotExist:
+            raise ImgTableOrderError(_('Please upload the image first.'))
+#        try:
+        chg_instance.order = chg_data['new_ord']
+        chg_instance.save()
+#        except:
+#            raise ImgTableOrderError(_('There are errors, please refresh the page or try again later'))
+
+    response = {'message': ugettext('Done')}
+
+    #raise ImgTableOrderError("Failed")
+    
+    return response

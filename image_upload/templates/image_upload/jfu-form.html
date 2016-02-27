@@ -50,14 +50,6 @@
                     <i class="glyphicon glyphicon-ban-circle"></i>
                     <span>{% trans "Cancel upload" %}</span>
                 </button>
-                <button type="button" class="btn btn-success btn-srt-tbl">
-                    <i class="fa fa-sort"></i>
-                    <span>{% trans "Sort" %}</span>
-                </button>
-                <button type="button" class="btn btn-primary btn-srt-tbl-cfm hidden">
-                    <i class="fa fa-sort"></i>
-                    <span>{% trans "Done" %}</span>
-                </button>
                 <button type="button" class="btn btn-danger delete">
                     <i class="glyphicon glyphicon-trash"></i>
                     <span>{% trans "Delete" %}</span>
@@ -65,10 +57,15 @@
                 <input type="checkbox" class="toggle">
             {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR_CONTROL #}
             {% block UPLOAD_FORM_BUTTON_BAR_EXTRA %}
-            
-
-        
-            
+                <button type="button" class="btn btn-success btn-srt-tbl" style="float:right;">
+                    <i class="fa fa-sort"></i>
+                    <span>{% trans "Sort" %}</span>
+                </button>
+                <button type="button" class="btn btn-primary btn-srt-tbl-cfm hidden" style="float:right;">
+                    <i class="fa fa-sort"></i>
+                    <span>{% trans "Done" %}</span>
+                </button>
+                <span id="srt_prgrs" style="float:right; padding-right: 15px"></span>
             {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR_EXTRA #}
 
         </div>
@@ -251,19 +248,19 @@
                     {% block JS_DOWNLOAD_SORT %}
                         <td class="td-srt hidden">
                             <a 
-                                class="button btn btn-success up"
+                                class="button btn btn-success btn-srt up"
                                 id="sort-up{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
                             >
                                 <i class="fa fa-arrow-up"></i>
                             </a>
                             <a
-                                class="button btn btn-success down"
+                                class="button btn btn-success btn-srt down"
                                 id="sort-down{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
                             >
                                 <i class="fa fa-arrow-down"></i>
                             </a>
                             <a
-                                class="button btn btn-success top"
+                                class="button btn btn-success btn-srt top"
                                 id="sort-down{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
                             >
                                 <i class="fa fa-step-forward fa-rotate-270"></i>

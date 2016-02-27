@@ -10,6 +10,17 @@ $(document).ready(function () {
     $('#past-submission_dropdown').addClass('hidden');
 });
 
+//$('#fileupload > table > tbody').addEventListener('DOMContentLoaded', function () {
+//    console.log("loaded");
+//});
+
+//window.addEventListener('DOMContentLoaded', function () {
+//    var elements = window.document.querySelector('#fileupload > table > tbody');
+//    if (document.querySelector("#fileupload > table").rows.length >= 2) {
+//        console.log("abcdefg");
+//        $('.btn-srt-tbl').removeClass('hidden');
+//    }
+//});
 
 function assignOrder() {
     'use strict';
@@ -18,20 +29,28 @@ function assignOrder() {
         $(this).data("order").new_ord = idx;
         idx = idx + 1;
     });
-    $('.up').each(function () {$(this).removeClass("hidden"); });
-    $('.down').each(function () {$(this).removeClass("hidden"); });
-    $('.top').each(function () {$(this).removeClass("hidden"); });
-    $('tr:nth-child(1) > td.td-srt > a.button.btn.btn-success.up').addClass("hidden");
-    $('tr:nth-child(1) > td.td-srt > a.button.btn.btn-success.top').addClass("hidden");
-    $('tr:nth-child(2) > td.td-srt > a.button.btn.btn-success.top').addClass("hidden");
-    $('tr:nth-last-child(1) > td.td-srt > a.button.btn.btn-success.down').addClass("hidden");
+    $('.btn-srt').each(function () {
+        $(this).removeClass("hidden");
+    });
+    $('tr:nth-child(1) > td.td-srt > .up').addClass("hidden");
+    $('tr:nth-child(1) > td.td-srt > .top').addClass("hidden");
+    $('tr:nth-child(2) > td.td-srt > .top').addClass("hidden");
+    $('tr:nth-last-child(1) > td.td-srt > .down').addClass("hidden");
 }
+
+//$("#fileupload > table").on('loaded', function () {
+//    'use strict';
+//    if (document.querySelector("#fileupload > table").rows.length >= 2) {
+//        $('.btn-srt-tbl').removeClass('hidden');
+//    }
+//});
 
 
 $('.btn-srt-tbl').on('click', function () {
     'use strict';
-    var $up, $down, len, row1, row2, $top, chg_data;
+    var $up, $down, len, row1, row2, $top, chg_data, jqxhr;
     $(this).addClass('hidden');
+    $('#fileupload > .fileupload-buttonbar > div > *').not('.btn-srt-tbl-cfm').not('.btn-srt-tbl').addClass('disabled');
     $('.btn-srt-tbl-cfm').removeClass('hidden');
     $('.td-dl').each(function () {
         $(this).addClass('hidden');
@@ -41,8 +60,12 @@ $('.btn-srt-tbl').on('click', function () {
     });
 
     assignOrder();
-    
+
     function send_data() {
+        $(".relate-save-button").addClass('disabled');
+        $('#srt_prgrs').html(
+            '<img src="/static/images/busy.gif" %}" alt="Busy indicator">'
+        ).show();
         chg_data = [];
         $('#fileupload > table > tbody > tr').each(function () {
             if ($(this).data('order').new_ord !== $(this).data('order').old_ord) {
@@ -50,13 +73,50 @@ $('.btn-srt-tbl').on('click', function () {
             }
         });
         
+        if (chg_data.length > 0) {
+            jqxhr = $.ajax({
+                method: "POST",
+                url: $('#ord-form').attr("action"),
+                data: $('#ord-form').serialize() + "&chg_data=" + JSON.stringify(chg_data)
+            })
+                .done(function (response) {
+                    console.log("ok");
+                    $('#fileupload > table > tbody > tr').each(function () {
+                        $(this).data('order').new_ord = $(this).data('order').old_ord;
+                        $('[class*=btn-srt]').removeClass('disabled');
+                        $(".relate-save-button").removeClass('disabled');
+                    });
+                    $('#srt_prgrs').html(response.message);
+                    window.setTimeout(function () {
+                        $('#srt_prgrs').fadeOut();
+                    }, 3000);
+                })
+                .fail(function (response) {
+                    console.log(response);
+                    $('#srt_prgrs').html(gettext('Failed!') + " " + response.responseJSON.message);
+                    window.setTimeout(function () {
+                        $('#srt_prgrs').fadeOut();
+                    }, 3000);
+                //window.location.reload();
+                });
+            return false;
+        } else {
+            $('#fileupload > table > tbody > tr').each(function () {
+                console.log("unchanged??");
+                $(this).data('order').new_ord = $(this).data('order').old_ord;
+                $('[class*=btn-srt]').removeClass('disabled');
+                $(".relate-save-button").removeClass('disabled');
+            });
+        }
+
     }
 
     //上移 
+    
     $up = $(".up");
     $up.click(function () {
-        var indexes = [],
-            $tr = $(this).parents("tr");
+        $('[class*=btn-srt]').addClass('disabled');
+        var $tr = $(this).parents("tr");
         if ($tr.index() !== 0) {
             row1 = $tr;
             row2 = $tr.prev();
@@ -71,6 +131,7 @@ $('.btn-srt-tbl').on('click', function () {
     $down = $(".down");
     len = $down.length;
     $down.click(function () {
+        $('[class*=btn-srt]').addClass('disabled');
         var $tr = $(this).parents("tr");
         if ($tr.index() !== len - 1) {
             //$tr.fadeOut("slow").fadeIn("slow");
@@ -83,6 +144,7 @@ $('.btn-srt-tbl').on('click', function () {
     //置顶 
     $top = $(".top");
     $top.click(function () {
+        $('[class*=btn-srt]').addClass('disabled');
         var $tr = $(this).parents("tr");
         if ($tr.index() !== 0 && $tr.index() !== 1) {
             //$tr.fadeOut().fadeIn();
@@ -106,6 +168,7 @@ $('.btn-srt-tbl-cfm').on('click', function () {
     $('.td-srt').each(function () {
         $(this).addClass('hidden');
     });
+    $('#fileupload > .fileupload-buttonbar > div > *').not('.btn-srt-tbl-cfm').not('.btn-srt-tbl').removeClass('disabled');
 });
 
 var clicked_row;

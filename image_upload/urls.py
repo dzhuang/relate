@@ -31,7 +31,8 @@ from course.constants import COURSE_ID_REGEX
 
 from image_upload.views import (
     ImageCreateView, ImageDeleteView, ImageListView,
-    image_crop_modal, image_crop, user_image_download,
+    image_crop_modal, image_crop, image_order,
+    user_image_download,
     flow_page_image_download)
 
 js_info_dict_image_upload = {
@@ -108,6 +109,15 @@ urlpatterns = [
         "/(?P<pk>\d+)$",
         image_crop,
         name='image_crop'),
+
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/flow-session"
+        "/(?P<flow_session_id>[0-9]+)"
+        "/(?P<ordinal>[0-9]+)"
+        "/image/order",
+        image_order,
+        name='image_order'),
     
     url(r"^jsi18n"
         "/image_upload/$",
