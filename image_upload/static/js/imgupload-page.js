@@ -1,4 +1,4 @@
-/*global $, Cropper, gettext */
+/*global $, Cropper, gettext, console */
 
 // don't show past submission as those currently won't be saved in page-visit.
 $(document).ready(function () {
@@ -15,7 +15,7 @@ function assignOrder() {
     'use strict';
     var idx = 0;
     $('#fileupload > table > tbody > tr').each(function () {
-        $(this).data("order").new_order = idx;
+        $(this).data("order").new_ord = idx;
         idx = idx + 1;
     });
     $('.up').each(function () {$(this).removeClass("hidden"); });
@@ -27,9 +27,10 @@ function assignOrder() {
     $('tr:nth-last-child(1) > td.td-srt > a.button.btn.btn-success.down').addClass("hidden");
 }
 
+
 $('.btn-srt-tbl').on('click', function () {
     'use strict';
-    var $up, $down, len, row1, row2, $top;
+    var $up, $down, len, row1, row2, $top, chg_data;
     $(this).addClass('hidden');
     $('.btn-srt-tbl-cfm').removeClass('hidden');
     $('.td-dl').each(function () {
@@ -40,6 +41,16 @@ $('.btn-srt-tbl').on('click', function () {
     });
 
     assignOrder();
+    
+    function send_data() {
+        chg_data = [];
+        $('#fileupload > table > tbody > tr').each(function () {
+            if ($(this).data('order').new_ord !== $(this).data('order').old_ord) {
+                chg_data.push($(this).data('order'));
+            }
+        });
+        
+    }
 
     //上移 
     $up = $(".up");
@@ -47,18 +58,12 @@ $('.btn-srt-tbl').on('click', function () {
         var indexes = [],
             $tr = $(this).parents("tr");
         if ($tr.index() !== 0) {
-            //$tr.fadeOut("slow").fadeIn("slow");
             row1 = $tr;
             row2 = $tr.prev();
-            //            console.log(row1.data("order"));
-            //            console.log(row2.data("order"));
             $tr.prev().before($tr);
             $up = $(".up");
             assignOrder();
-            //            console.log(row1.data("order"));
-            //            console.log(row2.data("order"));
-            indexes.push(row1.data("order"), row1.data("order"));
-            //            console.log(indexes);
+            send_data();
 
         }
     });
@@ -72,6 +77,7 @@ $('.btn-srt-tbl').on('click', function () {
             $tr.next().after($tr);
             $down = $(".down");
             assignOrder();
+            send_data();
         }
     });
     //置顶 
@@ -84,9 +90,11 @@ $('.btn-srt-tbl').on('click', function () {
             $tr.css("color", "#f60");
             $top = $(".top");
             assignOrder();
+            send_data();
         }
     });
 });
+
 $('.btn-srt-tbl-cfm').on('click', function () {
     'use strict';
     $(this).addClass('hidden');

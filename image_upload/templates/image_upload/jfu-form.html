@@ -170,7 +170,13 @@
     <script id="template-download" type="text/x-tmpl">
         {{ JQ_OPEN }} for (var i=0, file; file=o.files[i]; i++) { {{ JQ_CLOSE }}
 
-            <tr class="template-download fade" data-order='{"pk":"{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}", "order":"{{ JQ_OPEN }}=file.order{{ JQ_CLOSE }}"}'>
+            <tr class="template-download fade"
+                data-order=
+                    '{
+                        "pk":{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }},
+                        "old_ord":{{ JQ_OPEN }}=file.order{{ JQ_CLOSE }},
+                        "new_ord":""
+                        }'>
 
                 {% block JS_DOWNLOAD_TEMPLATE_PREVIEW %}
                     <td>
