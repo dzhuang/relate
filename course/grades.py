@@ -1274,9 +1274,11 @@ def download_all_submissions(pctx, flow_id):
                         visit.answer)
 
                 if which_attempt in ["first", "last"]:
-                    key = (visit.flow_session.participation.user.username,)
+                    key = (visit.flow_session.participation.user.get_full_name(),
+                            visit.flow_session.participation.user.institutional_id)
                 elif which_attempt == "all":
-                    key = (visit.flow_session.participation.user.username,
+                    key = (visit.flow_session.participation.user.get_full_name(),
+                            visit.flow_session.participation.user.institutional_id,
                             str(visit.flow_session.id))
                 else:
                     raise NotImplementedError()

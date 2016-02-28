@@ -1524,30 +1524,24 @@ msgid "Import Grade Data"
 msgstr "导入成绩数据"
 
 #: .\grades.py:1155
-#, fuzzy
-#| msgid "Last attempt"
 msgid "Least recent attempt"
 msgstr "最后一次尝试"
 
 #: .\grades.py:1156
-#, fuzzy
-#| msgid "Last attempt"
 msgid "Most recent attempt"
-msgstr "最后一次尝试"
+msgstr "最近的一次尝试"
 
 #: .\grades.py:1157
 msgid "All attempts"
 msgstr "所有尝试"
 
 #: .\grades.py:1159
-#, fuzzy
-#| msgid "Attempts to include"
 msgid "Attempts to include."
 msgstr "将包含的尝试"
 
 #: .\grades.py:1161
 msgid "Every submission to the page counts as an attempt."
-msgstr ""
+msgstr "将该page的所有提交视为一次尝试."
 
 #: .\grades.py:1165
 msgid "Only download sessions tagged with this rules tag."
@@ -3767,10 +3761,8 @@ msgid "(none)"
 msgstr "(无)"
 
 #: .\templates\course\flow-start.html:70
-#, fuzzy
-#| msgid "(unknown)"
 msgid "(not shown)"
-msgstr "(未知)"
+msgstr "(未显示)"
 
 #: .\templates\course\flow-start.html:78
 msgid "Resume"
@@ -3974,8 +3966,6 @@ msgid "View in flow"
 msgstr "在flow中查看"
 
 #: .\templates\course\grade-flow-page.html:203
-#, fuzzy
-#| msgid "A correct answer is"
 msgid "Correct Answer"
 msgstr "参考答案"
 
@@ -4109,8 +4099,6 @@ msgid "Name of grading opportunity"
 msgstr "得分机会的名称"
 
 #: .\templates\course\gradebook-opp-list.html:24
-#, fuzzy
-#| msgid "Shown to pariticpant"
 msgid "Shown to participants"
 msgstr "向学员显示"
 
@@ -4207,10 +4195,8 @@ msgid " Notes:"
 msgstr "注释："
 
 #: .\templates\course\gradebook-single.html:224
-#, fuzzy
-#| msgid "IP range"
 msgid "Page"
-msgstr "IP地址范围"
+msgstr ""
 
 #: .\templates\course\gradebook-single.html:225
 msgid "Percent"
