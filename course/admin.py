@@ -309,7 +309,7 @@ admin.site.register(Participation, ParticipationAdmin)
 
 
 class ParticipationPreapprovalAdmin(admin.ModelAdmin):
-    list_display = ("email", "institutional_id", "course", "role",
+    list_display = ("provided_name", "email", "institutional_id", "course", "role",
             "creation_time", "creator")
     list_filter = ("course", "role")
 
