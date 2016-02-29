@@ -14,6 +14,15 @@
 {% block content %}
   <h1>{% trans "List of Participants" %}</h1>
 
-  {% include "course/participation-table.html" with participations=participations %}
+  {% include "course/participation-table-with-provided-name.html" with participations=participations %}
 
+<hr>
+
+ {% if unregistered %}
+
+  <h3>{% trans "Unregistered Participants" %}</h3>
+
+  {% include "course/unregistered-participation-table.html" with participations=participations %}
+
+ {% endif %}
 {% endblock %}
