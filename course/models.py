@@ -385,6 +385,8 @@ class ParticipationPreapproval(models.Model):
     role = models.CharField(max_length=50,
             choices=PARTICIPATION_ROLE_CHOICES,
             verbose_name=_('Role'))
+    provided_name = models.CharField(max_length=254, null=True, blank=True,
+            verbose_name=_('Provided name'))
 
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
             verbose_name=_('Creator'), on_delete=models.CASCADE)

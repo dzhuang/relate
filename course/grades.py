@@ -158,9 +158,31 @@ def view_participant_list(pctx):
                 status=participation_status.active)
             .order_by("id")
             .select_related("user"))
+    
+    from course.models import ParticipationPreapproval
+
+    registered_inst_id = []
+    registered_provided_name = []
+        
+    for parti in participations:
+        registered_inst_id.append(parti.user.institutional_id)
+        try:
+            registered_preappr = ParticipationPreapproval.objects.get(institutional_id=parti.user.institutional_id)
+            registered_provided_name.append(registered_preappr.provided_name)
+        except ParticipationPreapproval.DoesNotExist:
+            registered_provided_name.append(None)
+        
+    participations = zip(participations, registered_provided_name)
+
+    unregistered = list(ParticipationPreapproval.objects
+            .filter(course=pctx.course)
+            .exclude(institutional_id__in=registered_inst_id)
+            .exclude(provided_name__iexact=None)
+            )
 
     return render_course_page(pctx, "course/gradebook-participant-list.html", {
         "participations": participations,
+        "unregistered": unregistered,
         })
 
 # }}}

@@ -254,6 +254,12 @@ urlpatterns = [
         name="relate-create_preapprovals"),
     url(r"^course"
         "/" + COURSE_ID_REGEX +
+        "/preapprove/csv"
+        "/$",
+        course.enrollment.create_preapprovals_csv,
+        name="relate-create_preapprovals_csv"),
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
         "/query-participations"
         "/$",
         course.enrollment.query_participations,
