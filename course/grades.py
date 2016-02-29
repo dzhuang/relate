@@ -166,11 +166,13 @@ def view_participant_list(pctx):
         
     for parti in participations:
         registered_inst_id.append(parti.user.institutional_id)
-        try:
-            registered_preappr = ParticipationPreapproval.objects.get(institutional_id=parti.user.institutional_id)
-            registered_provided_name.append(registered_preappr.provided_name)
-        except ParticipationPreapproval.DoesNotExist:
-            registered_provided_name.append(None)
+        if parti.user.institutional_id:
+            try:
+                registered_preappr = ParticipationPreapproval.objects.get(course=pctx.course, 
+                                                      institutional_id=parti.user.institutional_id)
+                registered_provided_name.append(registered_preappr.provided_name)
+            except ParticipationPreapproval.DoesNotExist:
+                registered_provided_name.append(None)
         
     participations = zip(participations, registered_provided_name)
 
