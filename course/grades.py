@@ -161,24 +161,25 @@ def view_participant_list(pctx):
     
     from course.models import ParticipationPreapproval
 
-    registered_inst_id = []
-    registered_provided_name = []
-        
-    for parti in participations:
-        registered_inst_id.append(parti.user.institutional_id)
-        if parti.user.institutional_id:
+    registered_inst_id_list = []
+    registered_provided_name_list = []
+
+    if participations:
+        for parti in participations:
+            if parti.user.institutional_id:
+                registered_inst_id_list.append(parti.user.institutional_id)
             try:
                 registered_preappr = ParticipationPreapproval.objects.get(course=pctx.course, 
                                                       institutional_id=parti.user.institutional_id)
-                registered_provided_name.append(registered_preappr.provided_name)
+                registered_provided_name_list.append(registered_preappr.provided_name)
             except ParticipationPreapproval.DoesNotExist:
-                registered_provided_name.append(None)
+                registered_provided_name_list.append(None)
         
-    participations = zip(participations, registered_provided_name)
+    participations = zip(participations, registered_provided_name_list)
 
     unregistered = list(ParticipationPreapproval.objects
             .filter(course=pctx.course)
-            .exclude(institutional_id__in=registered_inst_id)
+            .exclude(institutional_id__in=registered_inst_id_list)
             .exclude(provided_name__iexact=None)
             )
 
@@ -186,9 +187,6 @@ def view_participant_list(pctx):
         "participations": participations,
         "unregistered": unregistered,
         })
-
-# }}}
-
 
 # {{{ grading opportunity list
 
