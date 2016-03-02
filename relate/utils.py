@@ -163,23 +163,23 @@ def compact_local_datetime_str(datetime, now_datetime, in_python=False):
     if as_local_time(datetime).year == \
             as_local_time(now_datetime).year:
         if in_python:
-            return format_datetime_local(datetime,
+            return format_datetime_local(as_local_time(datetime),
                            format="SHORT_DATETIME_FORMAT")
         else:
             return (
                 '<span title="%(time)s">%(time_short)s</span>' %
-                {"time": format_datetime_local(datetime,
+                {"time": format_datetime_local(as_local_time(datetime),
                         format="DATETIME_FORMAT"),
-                 "time_short": format_datetime_local(datetime,
+                 "time_short": format_datetime_local(as_local_time(datetime),
                         format="SHORT_DATETIME_FORMAT")
                 })
     else:
         if in_python:
-            return format_datetime_local(datetime)
+            return format_datetime_local(as_local_time(datetime))
         else:
             return (
                 '<span title="%(time)s">%(time)s</span>' %
-                {"time": format_datetime_local(datetime)})
+                {"time": format_datetime_local(as_local_time(datetime))})
 
 
 # {{{ dict_to_struct
