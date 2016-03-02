@@ -14,7 +14,7 @@
     <tr>
       <td class="headcol"><a href="{% url "relate-view_participant_grades" course.identifier participation.id %}"><span class="sensitive">{{ participation.user.username }}</span></a></td>
       <td class="datacol"><span class="sensitive">
-          {% if participation.user.get_full_name == provided_name %}
+          {% if participation.user.get_full_name.lower == provided_name.lower %}
             {{ participation.user.get_full_name }}
           {% else %}
             {% if provided_name != None %}
