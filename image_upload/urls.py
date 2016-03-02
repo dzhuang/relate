@@ -93,7 +93,10 @@ urlpatterns = [
         user_image_download,
         name='user_image_download'),
 
-    url(r"^user/flow_page_images"
+    url(r"^user_flow_page_images"
+        "/" + COURSE_ID_REGEX +
+        "/flow-session"
+        "/(?P<flow_session_id>[0-9]+)"
         "/(?P<creator_id>\d+)"
         "/(?P<download_id>\d+)"
         "/(?P<file_name>[^/]+)$",

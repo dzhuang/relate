@@ -49,8 +49,13 @@ sendfile_storage = UserImageStorage()
 
 
 def user_directory_path(instance, filename):
+    if instance.creator.get_full_name() is not None:
+        print "user_full_name", user_full_name
+        user_full_name = "abcd" #instance.creator.get_full_name().replace(' ', '_')
+    else:
+        user_full_name = instance.creator.pk
     return 'user_images/{0}(user_{1})/{2}'.format(
-        instance.creator.get_full_name().replace(' ', '_'),
+        user_full_name,
         instance.creator_id,
         file_name)
 
@@ -103,8 +108,13 @@ class UserImage(models.Model):
 
 
 def user_flowsession_img_path(instance, file_name):
-    return 'course_imgs/{0}(user_{1})/{2}'.format(
-        instance.creator.get_full_name().replace(' ', '_'),
+    if instance.creator.get_full_name() is not None:
+        print "user_full_name", user_full_name
+        user_full_name = "abcd" #instance.creator.get_full_name().replace(' ', '_')
+    else:
+        user_full_name = instance.creator.pk
+    return 'user_images/{0}(user_{1})/{2}'.format(
+        user_full_name,
         instance.creator_id,
         file_name)
 
@@ -152,7 +162,13 @@ class FlowPageImage(models.Model):
     def get_absolute_url(self):
         import os
         file_name = os.path.basename(self.file.path)
-        return ('flow_page_image_download', [self.creator_id, self.pk, file_name], {})
+        return ('flow_page_image_download', [
+                self.course.identifier,
+                self.flow_session_id,
+                self.creator_id,
+                self.pk,
+                file_name], {}
+                )
 
     def get_random_filename(self):
         import os, uuid

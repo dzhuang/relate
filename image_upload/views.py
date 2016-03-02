@@ -34,7 +34,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils.translation import ugettext_lazy as _, string_concat, ugettext
 from django.db import transaction
 
-from course.models import Course, FlowPageData
+from course.models import Course, FlowPageData, Participation
+from course.constants import participation_role
 from course.utils import course_view
 
 from image_upload.serialize import serialize
@@ -115,7 +116,6 @@ class ImageListView(LoginRequiredMixin, ListView):
                 flow_session=flow_session_id, ordinal=ordinal)
 
         return FlowPageImage.objects\
-                .filter(creator=self.request.user)\
                 .filter(flow_session=flow_session_id)\
                 .filter(image_page_id=fpd.page_id)\
                 .order_by("order","pk")
@@ -136,18 +136,36 @@ from sendfile import sendfile
 
 @login_required
 def user_image_download(request, creator_id, download_id):
+    # refer to the following method to allow staff download
     download_object = get_object_or_404(Image, pk=download_id)
     return _auth_download(request, download_object)
 
 @login_required
-def flow_page_image_download(request, creator_id, download_id, file_name):
+@course_view
+def flow_page_image_download(pctx, flow_session_id, creator_id, 
+                             download_id, file_name):
+    request = pctx.request
     download_object = get_object_or_404(FlowPageImage, pk=download_id)
-    return _auth_download(request, download_object)
+    
+    privilege = False
+    # whether the user is allowed to view the private image
+    participation = Participation.objects.get(
+        course=pctx.course, user=request.user)
+    print "request.user.is_staff", request.user.is_staff
+    if (
+        participation.role in (
+            [participation_role.instructor,
+             participation_role.teaching_assistant,
+             participation_role.auditor])
+        or request.user.is_staff):
+        privilege = True
+    
+    return _auth_download(request, download_object, privilege)
 
 @login_required
-def _auth_download(request, download_object):
+def _auth_download(request, download_object, privilege=False):
     if not (
-        request.user==download_object.creator or request.user.is_staff):
+        request.user==download_object.creator or privilege):
         from django.core.exceptions import PermissionDenied
         raise PermissionDenied(_("may not view other people's resource"))
     return sendfile(request, download_object.file.path)
