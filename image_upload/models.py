@@ -50,8 +50,7 @@ sendfile_storage = UserImageStorage()
 
 def user_directory_path(instance, filename):
     if instance.creator.get_full_name() is not None:
-        print "user_full_name", user_full_name
-        user_full_name = "abcd" #instance.creator.get_full_name().replace(' ', '_')
+        user_full_name = instance.creator.get_full_name().replace(' ', '_')
     else:
         user_full_name = instance.creator.pk
     return 'user_images/{0}(user_{1})/{2}'.format(
@@ -109,8 +108,7 @@ class UserImage(models.Model):
 
 def user_flowsession_img_path(instance, file_name):
     if instance.creator.get_full_name() is not None:
-        print "user_full_name", user_full_name
-        user_full_name = "abcd" #instance.creator.get_full_name().replace(' ', '_')
+        user_full_name = instance.creator.get_full_name().replace(' ', '_')
     else:
         user_full_name = instance.creator.pk
     return 'user_images/{0}(user_{1})/{2}'.format(
