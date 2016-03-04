@@ -952,15 +952,17 @@ class ImportGradesForm(StyledForm):
     def clean(self):
         data = super(ImportGradesForm, self).clean()
         file_contents=data.get("file")
-        from course.utils import csv_data_importable
+        if file_contents:
         column_idx_list = [
             data["id_column"],
             data["points_column"],
             data["feedback_column"]
         ]
-        has_header=data.get("format") == "csvhead"
+            has_header=data["format"] == "csvhead"
         header_count = 1 if has_header else 0
-        if file_contents:
+
+            from course.utils import csv_data_importable
+
             importable, err_msg = csv_data_importable(
                     file_contents,
                     column_idx_list,
@@ -968,6 +970,7 @@ class ImportGradesForm(StyledForm):
 
             if not importable:
                 self.add_error('file', err_msg)
+
 
 class ParticipantNotFound(ValueError):
     pass
