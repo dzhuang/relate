@@ -169,8 +169,10 @@ def view_participant_list(pctx):
             if parti.user.institutional_id:
                 registered_inst_id_list.append(parti.user.institutional_id)
             try:
-                registered_preappr = ParticipationPreapproval.objects.get(course=pctx.course, 
-                                                      institutional_id=parti.user.institutional_id)
+                registered_preappr = ParticipationPreapproval.objects\
+                        .exclude(institutional_id__isnull=True)\
+                        .get(course=pctx.course, 
+                             institutional_id=parti.user.institutional_id)
                 registered_provided_name_list.append(registered_preappr.provided_name)
             except ParticipationPreapproval.DoesNotExist:
                 registered_provided_name_list.append(None)
@@ -947,6 +949,25 @@ class ImportGradesForm(StyledForm):
         self.helper.add_input(Submit("preview", _("Preview")))
         self.helper.add_input(Submit("import", _("Import")))
 
+    def clean(self):
+        data = super(ImportGradesForm, self).clean()
+        file_contents=data.get("file")
+        from course.utils import csv_data_importable
+        column_idx_list = [
+            data["id_column"],
+            data["points_column"],
+            data["feedback_column"]
+        ]
+        has_header=data.get("format") == "csvhead"
+        header_count = 1 if has_header else 0
+        if file_contents:
+            importable, err_msg = csv_data_importable(
+                    file_contents,
+                    column_idx_list,
+                    header_count)
+
+            if not importable:
+                self.add_error('file', err_msg)
 
 class ParticipantNotFound(ValueError):
     pass
