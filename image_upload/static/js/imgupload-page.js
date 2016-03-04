@@ -209,7 +209,7 @@ window.addEventListener('DOMContentLoaded', function () {
                 dataY.value = Math.round(data.y);
                 dataHeight.value = Math.round(data.height);
                 dataWidth.value = Math.round(data.width);
-                dataRotate.value = typeof data.rotate === 'undefined' ? data.rotate : '';
+                dataRotate.value = Math.round(data.rotate);
             }
         });
 

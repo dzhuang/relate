@@ -844,7 +844,7 @@ def csv_data_importable(file_contents, column_idx_list, header_count):
             return False, (
                     _("Error: Columns to be imported contain "
                         "non-ASCII characters. "
-                        "Please save your csv file as utf-8 encoding "
+                        "Please save your CSV file as utf-8 encoded "
                         "and import again.")
             )
 
