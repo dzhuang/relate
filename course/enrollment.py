@@ -432,7 +432,7 @@ class BulkPreapprovalsFormCsv(StyledForm):
                 ),
             initial="institutional_id_with_name",
             label=_("Preapproval type"))
-    csv_header_count = forms.IntegerField(required=True, initial=5, label=_("Header Count"))
+    csv_header_count = forms.IntegerField(required=True, initial=4, label=_("Header Count"))
     inst_id_column = forms.IntegerField(
                 help_text=_("1-based column index for the Institutional ID "
                 "used to locate student record"),
@@ -454,26 +454,36 @@ class BulkPreapprovalsFormCsv(StyledForm):
 
     def __init__(self, *args, **kwargs):
         super(BulkPreapprovalsFormCsv, self).__init__(*args, **kwargs)
-        
 #        self.helper.add_input(Submit("preview", _("Preview")))
 
         self.helper.add_input(
                 Submit("submit", _("Preapprove")))
-#    def clean(self):
-#        print self.cleaned_data['file']
-#        pass
+
+    def clean(self):
+        data = super(BulkPreapprovalsFormCsv, self).clean()
+        file_contents=data.get("file")
+        if file_contents:
+            column_idx_list = [
+                data["inst_id_column"],
+                data["provided_name_column"],
+            ]
+            header_count = data.get("csv_header_count", 0) 
+
+            from course.utils import csv_data_importable
+
+            importable, err_msg = csv_data_importable(
+                    file_contents,
+                    column_idx_list,
+                    header_count)
+
+            if not importable:
+                self.add_error('file', err_msg)
 
 def csv_to_preapproval(
         file_contents, inst_id_column, provided_name_column, header_count):
     result = []
     error_lines = []
     need_convert_to_utf8 = False
-    
-#    import six
-#
-#    if six.PY2:
-#        import unicodecsv as csv
-#    else:
     import csv
 
     total_count = 0
@@ -489,28 +499,7 @@ def csv_to_preapproval(
         inst_id_str = row[inst_id_column-1].strip()
         provided_name_str = row[provided_name_column-1].strip()
         
-        try:
-            result.append(u"%s,%s" % (inst_id_str,provided_name_str))
-        except UnicodeDecodeError:
-            need_convert_to_utf8 = True
-            #error_lines.append(_("line %d is not Unicode string.") % (line_count - header_count))
-            continue
-            
-        #print provided_name_str
-
         total_count += 1
-        
-    if need_convert_to_utf8 and not is_utf8_format:
-        error_lines.append(
-                ugettext("Import failed due to records containing non-ASCII "
-                         "characters in the csv file uploaded. Please convert the "
-                         "file to utf8 format and import again."
-                 ))
-        total_count = 0
-        result = None
-
-        #print result
-        #print error_line
 
     return total_count, result, error_lines
 
