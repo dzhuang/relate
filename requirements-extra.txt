@@ -1,6 +1,14 @@
 # For django-ckeditor
 # django-ckeditor
 
+# For postgresql
+## for linux, run "apt-get install libpq-dev" first
+psycopg2
+
+# For image upload
+## for linux, run "apt-get install libjpeg-dev" first
+pillow
+
 # For django jquery file upload
 git+https://github.com/dzhuang/django-jfu.git
 
