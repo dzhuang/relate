@@ -242,13 +242,22 @@ def send_enrollment_decision(participation, approved, request=None):
                 })
 
             from django.core.mail import EmailMessage
+            allow_nonauthorized_sender = getattr(settings, "RELATE_EMAIL_SMTP_ALLOW_NONAUTHORIZED_SENDER", False)
+
+            if allow_nonauthorized_sender:
+                reply_email = course.from_email
+                from_email = course.from_email
+            else:
+                reply_email = course.notify_email
+                from_email = settings.DEFAULT_FROM_EMAIL
             msg = EmailMessage(
                     string_concat("[%s] ", _("Your enrollment request"))
                     % course.identifier,
                     message,
-                    course.from_email,
+                    from_email,
                     [participation.user.email])
             msg.bcc = [course.notify_email]
+            msg.reply_to = [reply_email]
             msg.send()
 
 
