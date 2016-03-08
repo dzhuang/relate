@@ -8,6 +8,7 @@
     <th class="datacol">{% trans "Role" %}</th>
     <th class="datacol">{% trans "Institutional ID" %}</th>
     <th class="datacol">{% trans "Tags" %}</th>
+    <th class="datacol">{% trans "Email" %}</th>
   </thead>
   <tbody>
     {% for participation, provided_name in participations %}
@@ -32,6 +33,7 @@
         {% endfor %}
       </td>
     </tr>
+      <td class="datacol"><span class="sensitive">{{ participation.user.email }}</span></td>
     {% endfor %}
   </tbody>
 </table>
