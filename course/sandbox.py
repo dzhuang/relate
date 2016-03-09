@@ -345,7 +345,7 @@ def view_page_sandbox(pctx):
 # }}}
 
 
-# {{{ remove common indentation in SandBox Form
+# {{{ remove common indentation of content in SandBox Form
 
 def remove_sb_content_common_indentation(code):
     if "\n" not in code:
