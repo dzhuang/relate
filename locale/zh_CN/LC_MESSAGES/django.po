@@ -2026,7 +2026,7 @@ msgid ""
 "slash."
 msgstr ""
 "一个<em>在git仓库目录下</em>的子目录. 一般情况下不要求填写, 除非你的课程内容"
-"放git仓库的某个子目录下. 填写时不要包含斜杠."
+"放在git仓库的某个子目录下. 填写时不要包含斜杠."
 
 #: .\course\models.py:142
 msgid "Course root in repository"
@@ -2406,10 +2406,12 @@ msgid ""
 "A user-facing 'marking' feature to allow participants to easily return to "
 "pages that still need their attention."
 msgstr ""
+"一个用户可以看到的\"书签\"特性，让参与者可以很容易回到那些需要引起他们关注的"
+"page."
 
 #: .\course\models.py:606
 msgid "Bookmarked"
-msgstr ""
+msgstr "已加书签"
 
 #: .\course\models.py:609 .\course\models.py:610
 msgid "Flow page data"
@@ -2695,7 +2697,7 @@ msgstr "在在学生的成绩册中显示"
 
 #: .\course\models.py:1083
 msgid "Scores for individual pages are shown in the participants' grade book"
-msgstr ""
+msgstr "在学员的'成绩册'中将显示的每个独立page的得分"
 
 #: .\course\models.py:1087 .\course\models.py:1118
 msgid "Grading opportunity"
@@ -3955,7 +3957,7 @@ msgstr "已保存"
 
 #: .\course\templates\course\flow-page.html:388
 msgid "Error--not saved."
-msgstr ""
+msgstr "错误--未保存."
 
 #: .\course\templates\course\flow-session-state.html:3
 msgid "in progress"
