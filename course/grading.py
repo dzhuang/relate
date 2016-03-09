@@ -111,9 +111,9 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
         else:
             page_data = FlowPageData.objects.get(
                 flow_session=flowsession, ordinal=fpctx.page_data.ordinal)
-            prev_flow_page_visit_grade = get_prev_answer_visit(page_data)\
-                    .get_most_recent_grade()
             try:
+                prev_flow_page_visit_grade = get_prev_answer_visit(page_data)\
+                    .get_most_recent_grade()
                 if prev_flow_page_visit_grade.feedback:
                     grade_time = prev_flow_page_visit_grade.grade_time
                 else:
