@@ -4,6 +4,7 @@
 $(document).ready(function () {
     //"save", "save_and_next", "save_and_finish", "submit"
     'use strict';
+    $(".alert.alert-danger.warning.noscript").addClass('hidden');
     $(".relate-save-button").each(function () {
         $(this).attr("formaction", window.location.pathname);
     });

@@ -80,6 +80,10 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin, CreateView):
         data = {'files': files}
         response = http.JsonResponse(data)
         response['Content-Disposition'] = 'inline; filename=files.json'
+
+        # Prevent download Json response in IE 7-10
+        # http://stackoverflow.com/a/13944206/3437454
+        response['Content-Type'] = 'text/plain'
         return response
 
     def form_invalid(self, form):
@@ -151,7 +155,6 @@ def flow_page_image_download(pctx, flow_session_id, creator_id,
     # whether the user is allowed to view the private image
     participation = Participation.objects.get(
         course=pctx.course, user=request.user)
-    print "request.user.is_staff", request.user.is_staff
     if (
         participation.role in (
             [participation_role.instructor,
