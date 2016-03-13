@@ -9,14 +9,17 @@
 {{ block.super }}
 <link rel="stylesheet" href="{{ STATIC_URL }}css/imgupload-page.css">
 <link rel="stylesheet" href="{{ STATIC_URL }}cropperjs/dist/cropper.css">
-<noscript><link rel="stylesheet" href="{{ STATIC_URL }}css/imgupload-noscript.css"> </noscript>
+<noscript><link rel="stylesheet" href="{{ STATIC_URL }}css/imgupload-noscript.css"></noscript>
+    <!--[if lt IE 9]>
+        <link rel="stylesheet" href="{{ STATIC_URL }}css/imgupload-noscript.css">
+    <![endif]-->
 {% endblock %}
 
 {% block JS_BOOTSTRAP %}{# BOOTSTRAP js (Override to keep it empty) #}{% endblock %}
 
 {% block UPLOAD_FORM %}
     <noscript><div class="alert alert-danger warning noscript"><i class="fa fa-warning"></i> {% trans "This page requires Javascript enabled in your browser. Please refer to <a href='https://www.whatismybrowser.com/guides/how-to-enable-javascript/' target='_blank'> this link </a> to see how to do it." %}<br/></div></noscript>
-    <!--[if lt IE 9]>
+    <!--[if lte IE 9]>
         <div class="browser alert alert-danger warning"><i class="fa fa-warning"></i> {% trans "This page requires a modern browser so that it can work properly" %}, {% trans "especially when you want to sort image correctly and enable image editting" %}. {% trans "Chrome/Firefox are prefered browsers. If you want use Internet Explorer, please install one with version higher than 10." %}<br/></div>
     <![endif]-->
 {% load i18n crispy_forms_tags %}
