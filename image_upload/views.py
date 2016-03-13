@@ -52,6 +52,31 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin, CreateView):
     fields = ("file", "slug")
 
     def form_valid(self, form):
+        file = form.cleaned_data.get('file')
+        from django.conf import settings
+
+        max_allowed_jfu_size = getattr(
+			settings, "RELATE_JFU_MAX_IMAGE_SIZE", 2) * 1024**2
+
+        if file._size > max_allowed_jfu_size:
+		file_data = {"files": [{
+			"name": form.cleaned_data.get('slug'),
+			"size": file._size,
+                        "error": ugettext(
+				"The file is too big. Please use "
+				"Chrome/Firefox or mobile browser by "
+				"which images will be cropped "
+				"automatically before upload.")
+			},
+			]}
+		response = http.JsonResponse(file_data)
+		response['Content-Disposition'] = 'inline; filename=files.json'
+
+                # Prevent download Json response in IE 7-10
+                # http://stackoverflow.com/a/13944206/3437454
+                response['Content-Type'] = 'text/plain'
+                return response
+
         self.object = form.save(commit=False)
         self.object.creator = self.request.user
         self.object.save()
@@ -89,9 +114,9 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin, CreateView):
     def form_invalid(self, form):
         data = json.dumps(form.errors)
         return http.HttpResponse(
-                content=data, 
-                status=400, 
-                content_type='application/json')
+		content=data,
+		status=400,
+		content_type='application/json')
 
 class ImageItemForm(forms.ModelForm):
     class Meta:
@@ -259,7 +284,6 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
 
     new_instance = FlowPageImage.objects.get(id=pk)
 
-    response = None
     response_file = serialize(request, new_instance, 'file')
 
     data = {'file': response_file}
@@ -284,11 +308,7 @@ def image_order(pctx, flow_session_id, ordinal):
     if not request.is_ajax():
         raise ImgTableOrderError(_('Only Ajax Post is allowed.'))
 
-#    print request.POST['chg_data']
-    
     chg_data_list = json.loads(request.POST['chg_data'])
-
-#    print len(chg_data_list)
 
     for chg_data in chg_data_list:
         try:
