@@ -1757,7 +1757,7 @@ msgstr "导入成绩数据"
 
 #: .\course\grades.py:1213
 msgid "Least recent attempt"
-msgstr "最后一次尝试"
+msgstr "最早的一次尝试"
 
 #: .\course\grades.py:1214
 msgid "Most recent attempt"
