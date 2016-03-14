@@ -26,6 +26,12 @@ THE SOFTWARE.
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext
 
+from course.views import get_now_or_fake_time
+from relate.utils import (
+    as_local_time, format_datetime_local,
+    compact_local_datetime_str)
+
+from datetime import timedelta
 import mimetypes
 import re
 import os
@@ -54,11 +60,6 @@ def serialize(request, instance, file_attr='file'):
 
     """
 
-    from course.views import get_now_or_fake_time
-    from relate.utils import (
-        as_local_time, format_datetime_local,
-        compact_local_datetime_str)
-
     obj = getattr(instance, file_attr)
 
     error = None
@@ -81,11 +82,11 @@ def serialize(request, instance, file_attr='file'):
     deleteUrl = reverse('jfu_delete',
             kwargs={
                 'course_identifier': instance.course.identifier,
-        	    'flow_session_id': instance.flow_session_id,
-        	    'ordinal': instance.get_page_ordinal(),
-        	    'pk': instance.pk,
-        	    }
-	    )
+                'flow_session_id': instance.flow_session_id,
+                'ordinal': instance.get_page_ordinal(),
+                'pk': instance.pk,
+                }
+        )
 
     updateUrl = reverse('jfu_update',
             kwargs={
@@ -109,14 +110,25 @@ def serialize(request, instance, file_attr='file'):
             as_local_time(instance.creation_time))
 
     creationTimeShort = compact_local_datetime_str(
-		    as_local_time(instance.creation_time),
-		    get_now_or_fake_time(request),
-		    in_python=True)
+            as_local_time(instance.creation_time),
+            get_now_or_fake_time(request),
+            in_python=True)
+
+    timestr_title = ugettext("Created at") + " " + creationTime
+    timestr_short = creationTimeShort
+
+    show_modifiedTime = False
+    # Only display file_last_modified time when modification is 
+    # within 5 minutes on creation.
+    if instance.file_last_modified > (
+            instance.creation_time + timedelta(minutes=5)):
+        show_modifiedTime = True
+
 
     modifiedTime = ""
     modifiedTimeShort = ""
 
-    if instance.creation_time != instance.file_last_modified:
+    if show_modifiedTime:
         modifiedTime = format_datetime_local(
                 as_local_time(instance.file_last_modified))
 
@@ -124,10 +136,6 @@ def serialize(request, instance, file_attr='file'):
                             as_local_time(instance.file_last_modified),
                             get_now_or_fake_time(request),
                             in_python=True)
-
-    timestr_title = ugettext("Created at") + " " + creationTime
-    timestr_short = creationTimeShort
-    if modifiedTime:
         timestr_title = timestr_title + ", " + ugettext("modified at") + " " + modifiedTime
         timestr_short = timestr_short + " (" + modifiedTimeShort + ")"
 
