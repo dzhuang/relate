@@ -41,7 +41,8 @@ from markdown.treeprocessors import Treeprocessor
 
 from six.moves import html_parser
 
-from jinja2 import BaseLoader as BaseTemplateLoader, TemplateNotFound
+from jinja2 import (
+        BaseLoader as BaseTemplateLoader, TemplateNotFound, FileSystemLoader)
 
 from relate.utils import dict_to_struct
 
@@ -254,7 +255,12 @@ JINJA_YAML_RE = re.compile(
     r"^\[JINJA\]\s*$(.*?)^\[\/JINJA\]\s*$",
     re.MULTILINE | re.DOTALL)
 YAML_BLOCK_START_SCALAR_RE = re.compile(
-    r":\s*[|>](?:[0-9][-+]?|[-+][0-9]?)?(?:\s*\#.*)?$")
+    r"(:\s*[|>])"
+    "(J?)"
+    "((?:[0-9][-+]?|[-+][0-9]?)?)"
+    "(?:\s*\#.*)?"
+    "$")
+
 GROUP_COMMENT_START = re.compile(r"^\s*#\s*\{\{\{")
 LEADING_SPACES_RE = re.compile(r"^( *)")
 
@@ -268,14 +274,14 @@ def process_yaml_for_expansion(yaml_str):
 
     while i < line_count:
         l = lines[i]
-        if GROUP_COMMENT_START.match(l):
-            jinja_lines.append("{% raw %}")
-            jinja_lines.append(l)
-            jinja_lines.append("{% endraw %}")
-            i += 1
+        yaml_block_scalar_match = YAML_BLOCK_START_SCALAR_RE.search(l)
 
-        elif YAML_BLOCK_START_SCALAR_RE.search(l):
+        if yaml_block_scalar_match is not None:
             unprocessed_block_lines = []
+            allow_jinja = bool(yaml_block_scalar_match.group(2))
+            l = YAML_BLOCK_START_SCALAR_RE.sub(
+                    r"\1\3", l)
+
             unprocessed_block_lines.append(l)
 
             block_start_indent = len(LEADING_SPACES_RE.match(l).group(1))
@@ -297,9 +303,17 @@ def process_yaml_for_expansion(yaml_str):
                     unprocessed_block_lines.append(l)
                     i += 1
 
-            jinja_lines.append("{% raw %}")
+            if not allow_jinja:
+                jinja_lines.append("{% raw %}")
             jinja_lines.extend(unprocessed_block_lines)
+            if not allow_jinja:
+                jinja_lines.append("{% endraw %}")
+
+        elif GROUP_COMMENT_START.match(l):
+            jinja_lines.append("{% raw %}")
+            jinja_lines.append(l)
             jinja_lines.append("{% endraw %}")
+            i += 1
 
         else:
             jinja_lines.append(l)
@@ -335,6 +349,24 @@ class YamlBlockEscapingGitTemplateLoader(GitTemplateLoader):
     def get_source(self, environment, template):
         source, path, is_up_to_date = \
                 super(YamlBlockEscapingGitTemplateLoader, self).get_source(
+                        environment, template)
+
+        from os.path import splitext
+        _, ext = splitext(template)
+        ext = ext.lower()
+
+        if ext in [".yml", ".yaml"]:
+            source = process_yaml_for_expansion(source)
+
+        return source, path, is_up_to_date
+
+
+class YamlBlockEscapingFileSystemLoader(FileSystemLoader):
+    # https://github.com/inducer/relate/issues/130
+
+    def get_source(self, environment, template):
+        source, path, is_up_to_date = \
+                super(YamlBlockEscapingFileSystemLoader, self).get_source(
                         environment, template)
 
         from os.path import splitext

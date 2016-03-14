@@ -419,13 +419,13 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
 
           feedback.check_numpy_array_allclose(name, ref, data,
               accuracy_critical=True, rtol=1e-5, atol=1e-8,
-              report_success=True)
+              report_success=True, report_failure=True)
           # returns True if accurate
 
           feedback.check_list(name, ref, data, entry_type=None)
 
           feedback.check_scalar(name, ref, data, accuracy_critical=True,
-              rtol=1e-5, atol=1e-8, report_success=True)
+              rtol=1e-5, atol=1e-8, report_success=True, report_failure=True)
           # returns True if accurate
 
     * ``data_files``: A dictionary mapping file names from :attr:`data_files`
@@ -535,23 +535,10 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
         if correct_code is None:
             correct_code = ""
 
-        import re
-        CORRECT_CODE_TAG = re.compile(r"^(\s*)###CORRECT_CODE###\s*$")  # noqa
-
-        new_test_code_lines = []
-        for l in test_code.split("\n"):
-            match = CORRECT_CODE_TAG.match(l)
-            if match is not None:
-                prefix = match.group(1)
-                for cc_l in correct_code.split("\n"):
-                    new_test_code_lines.append(prefix+cc_l)
-            else:
-                new_test_code_lines.append(l)
-
-        return "\n".join(new_test_code_lines)
+        from .code_runpy_backend import substitute_correct_code_into_test_code
+        return substitute_correct_code_into_test_code(test_code, correct_code)
 
     def grade(self, page_context, page_data, answer_data, grade_data):
-
         if answer_data is None:
             return AnswerFeedback(correctness=0,
                     feedback=_("No answer provided."))

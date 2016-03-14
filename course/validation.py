@@ -672,7 +672,7 @@ def validate_session_grading_rule(ctx, location, grule, tags, grade_identifier):
         if not (grule.if_has_tag is None or grule.if_has_tag in tags):
             raise ValidationError(
                     string_concat(
-                        "%(locatioin)s: ",
+                        "%(location)s: ",
                         _("invalid tag '%(tag)s'"))
                     % {'location': location, 'tag': grule.if_has_tag})
         has_conditionals = True
@@ -851,6 +851,7 @@ def validate_flow_desc(ctx, location, flow_desc):
                 ("notify_on_submit", list),
                 ("max_points", (int, float)),
                 ("max_points_enforced_cap", (int, float)),
+                ("bonus_points", (int, float)),
                 ]
             )
 
@@ -1341,26 +1342,12 @@ class FileSystemFakeRepoFile(object):
             return inf.read()
 
 
-def validate_course_on_filesystem_script_entrypoint():
-    from django.conf import settings
-    settings.configure(DEBUG=True)
-
-    import django
-    django.setup()
-
-    import os
-    import argparse
-    parser = argparse.ArgumentParser(description='Process some integers.')
-    parser.add_argument("--course-file", default="course.yml")
-    parser.add_argument("--events-file", default="events.yml")
-    parser.add_argument('root', default=os.getcwd())
-
-    args = parser.parse_args()
-
-    fake_repo = FileSystemFakeRepo(args.root.encode("utf-8"))
+def validate_course_on_filesystem(
+        root, course_file, events_file):
+    fake_repo = FileSystemFakeRepo(root.encode("utf-8"))
     warnings = validate_course_content(
             fake_repo,
-            args.course_file, args.events_file,
+            course_file, events_file,
             validate_sha=fake_repo, course=None)
 
     if warnings:

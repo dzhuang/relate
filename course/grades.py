@@ -879,6 +879,18 @@ def view_single_grade(pctx, participation_id, opportunity_id):
             show_privileged_info
             or opportunity.page_scores_in_participant_gradebook)
 
+    # {{{ filter out pre-public grade changes
+
+    if (not show_privileged_info and
+            opportunity.hide_superseded_grade_history_before is not None):
+        grade_changes = [gchange
+                for gchange in grade_changes
+                if not gchange.is_superseded
+                or gchange.grade_time >=
+                        opportunity.hide_superseded_grade_history_before]
+
+    # }}}
+
     return render_course_page(pctx, "course/gradebook-single.html", {
         "opportunity": opportunity,
         "avg_grade_percentage": avg_grade_percentage,
@@ -951,14 +963,14 @@ class ImportGradesForm(StyledForm):
 
     def clean(self):
         data = super(ImportGradesForm, self).clean()
-        file_contents=data.get("file")
+        file_contents = data.get("file")
         if file_contents:
             column_idx_list = [
                 data["id_column"],
                 data["points_column"],
                 data["feedback_column"]
             ]
-            has_header=data["format"] == "csvhead"
+            has_header = data["format"] == "csvhead"
             header_count = 1 if has_header else 0
 
             from course.utils import csv_data_importable
