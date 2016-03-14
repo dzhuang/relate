@@ -64,7 +64,7 @@ class SandboxForm(forms.Form):
                     + " "
                     + cm_help_text),
                 label=_("Content"))
-        
+
         # 'strip' attribute was added to CharField in Django 1.9
         # with 'True' as default value.
         if hasattr(self.fields["content"], "strip"):
@@ -350,5 +350,6 @@ def view_page_sandbox(pctx):
         })
 
 # }}}
+
 
 # vim: foldmethod=marker
