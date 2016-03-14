@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-03-14 15:32+0800\n"
+"POT-Creation-Date: 2016-03-14 17:51+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -85,7 +85,7 @@ msgid "Designates whether the user can log into this admin site."
 msgstr "指定该用户是否可以登入管理界面."
 
 #: .\accounts\models.py:90 .\course\auth.py:437 .\course\enrollment.py:288
-#: .\course\models.py:382
+#: .\course\grades.py:944 .\course\models.py:382
 #: .\course\templates\course\participation-table-with-provided-name.html:9
 #: .\course\templates\course\participation-table.html:8
 #: .\course\templates\course\unregistered-participation-table.html:6
@@ -234,7 +234,7 @@ msgstr ""
 msgid "not in use"
 msgstr "未使用"
 
-#: .\course\admin.py:492 .\course\grades.py:1210 .\course\models.py:594
+#: .\course\admin.py:492 .\course\grades.py:1247 .\course\models.py:594
 msgid "Page ID"
 msgstr ""
 
@@ -1659,7 +1659,8 @@ msgstr "该session评分已重新计算. "
 msgid "invalid session operation"
 msgstr "无效的session操作"
 
-#: .\course\grades.py:813 .\course\grades.py:1157 .\course\versioning.py:547
+#: .\course\grades.py:813 .\course\grades.py:1194 .\course\utils.py:855
+#: .\course\versioning.py:547
 msgctxt "Starting of Error message"
 msgid "Error"
 msgstr "错误"
@@ -1688,133 +1689,155 @@ msgstr "带有表头的CSV文件"
 msgid "Format"
 msgstr "格式"
 
+#: .\course\grades.py:943
+msgid "Email or NetID"
+msgstr "Email或用户名"
+
+#: .\course\grades.py:946
+msgid "User Attribute"
+msgstr "用户属性"
+
 #. Translators: the following strings are for the format
 #. informatioin for a CSV file to be imported.
-#: .\course\grades.py:944
+#: .\course\grades.py:951
 msgid ""
-"1-based column index for the Email or NetID used to locate student record"
-msgstr "学生电子邮件或用户ID所在列，从1起"
+"1-based column index for the user attribute selected above to locate student "
+"record"
+msgstr "上面所选用户属性的所在的列，从1起"
 
-#: .\course\grades.py:947
-msgid "User ID column"
-msgstr "用户ID列"
+#: .\course\grades.py:954
+msgid "User Attribute column"
+msgstr "用户属性列"
 
-#: .\course\grades.py:949
+#: .\course\grades.py:956
 msgid "1-based column index for the (numerical) grade"
 msgstr "学生的(数值)得分所在列，从1起"
 
-#: .\course\grades.py:951
+#: .\course\grades.py:958
 msgid "Points column"
 msgstr "分值列"
 
-#: .\course\grades.py:953
+#: .\course\grades.py:960
 msgid "1-based column index for further (textual) feedback"
 msgstr "对学生作业的进一步（文字）反馈所在列，从1起"
 
-#: .\course\grades.py:955
+#: .\course\grades.py:962
 msgid "Feedback column"
 msgstr "反馈所在列"
 
 #. Translators: "Max point" refers to full credit in points.
-#: .\course\grades.py:959 .\course\models.py:753 .\course\models.py:1151
+#: .\course\grades.py:966 .\course\models.py:753 .\course\models.py:1151
 msgid "Max points"
 msgstr "满分分值"
 
-#: .\course\grades.py:961 .\course\sandbox.py:70
+#: .\course\grades.py:968 .\course\sandbox.py:70
 #: .\course\templates\course\grade-import-preview.html:15
 #: .\course\versioning.py:483
 msgid "Preview"
 msgstr "预览"
 
-#: .\course\grades.py:962
+#: .\course\grades.py:969
 msgid "Import"
 msgstr "导入"
 
+#. Translators: use institutional_id_string to find user
+#. (participant).
+#: .\course\grades.py:1011
+#, python-format
+msgid "no participant found with institutional ID '%(inst_id_string)s'"
+msgstr "用学号\"%(inst_id_string)s\"找不到学员"
+
+#: .\course\grades.py:1016
+#, python-format
+msgid ""
+"more than one participant found with institutional ID '%(inst_id_string)s'"
+msgstr "用学号\"%(inst_id_string)s\"找到超过1个学员"
+
 #. Translators: use id_string to find user (participant).
-#: .\course\grades.py:1019
+#: .\course\grades.py:1051
 #, python-format
 msgid "no participant found for '%(id_string)s'"
 msgstr "用\"%(id_string)s\"找不到参与者"
 
-#: .\course\grades.py:1023
+#: .\course\grades.py:1055
 #, python-format
 msgid "more than one participant found for '%(id_string)s'"
 msgstr "用\"%(id_string)s\"找到超过1个参与者"
 
-#: .\course\grades.py:1165
+#: .\course\grades.py:1202
 #, python-format
 msgid "%(total)d grades found, %(unchaged)d unchanged."
 msgstr "找到%(total)d个评分, %(unchaged)d个未更改. "
 
-#: .\course\grades.py:1179
+#: .\course\grades.py:1216
 #, python-format
 msgid "%d grades imported."
 msgstr "%d个评分导入成功. "
 
-#: .\course\grades.py:1192
+#: .\course\grades.py:1229
 msgid "Import Grade Data"
 msgstr "导入成绩数据"
 
-#: .\course\grades.py:1213
+#: .\course\grades.py:1250
 msgid "Least recent attempt"
 msgstr "最早的一次尝试"
 
-#: .\course\grades.py:1214
+#: .\course\grades.py:1251
 msgid "Most recent attempt"
 msgstr "最近的一次尝试"
 
-#: .\course\grades.py:1215
+#: .\course\grades.py:1252
 msgid "All attempts"
 msgstr "所有尝试"
 
-#: .\course\grades.py:1217
+#: .\course\grades.py:1254
 msgid "Attempts to include."
 msgstr "将包含的尝试"
 
-#: .\course\grades.py:1219
+#: .\course\grades.py:1256
 msgid "Every submission to the page counts as an attempt."
 msgstr "将该page的所有提交视为一次尝试."
 
-#: .\course\grades.py:1223
+#: .\course\grades.py:1260
 msgid "Only download sessions tagged with this rules tag."
 msgstr "只下载使用该rules tag的session."
 
-#: .\course\grades.py:1224
+#: .\course\grades.py:1261
 msgid "Restrict to rules tag"
 msgstr "限制的rules tag"
 
-#: .\course\grades.py:1228
+#: .\course\grades.py:1265
 msgid "Only download submissions from non-in-progress sessions"
 msgstr "只下载非进行状态的session的提交"
 
-#: .\course\grades.py:1230
+#: .\course\grades.py:1267
 msgid "Non-in-progress only"
 msgstr "只选择非进行中的"
 
-#: .\course\grades.py:1232
+#: .\course\grades.py:1269
 msgid "Additional File"
 msgstr "额外的文件"
 
-#: .\course\grades.py:1234
+#: .\course\grades.py:1271
 msgid ""
 "If given, the uploaded file will be included in the zip archive. If the "
 "produced archive is to be used for plagiarism detection, then this may be "
 "used to include the reference solution."
 msgstr ""
 
-#: .\course\grades.py:1242
+#: .\course\grades.py:1279
 msgid "Download"
 msgstr "下载"
 
-#: .\course\grades.py:1252
+#: .\course\grades.py:1289
 msgid "must be at least TA to download submissions"
 msgstr "至少是助教(TA)才能下载提交"
 
-#: .\course\grades.py:1265 .\course\grades.py:1269
+#: .\course\grades.py:1302 .\course\grades.py:1306
 msgid "ALL"
 msgstr "所有"
 
-#: .\course\grades.py:1380
+#: .\course\grades.py:1417
 msgid "Download All Submissions in Zip file"
 msgstr "以Zip文件下载所有提交"
 
@@ -4818,44 +4841,44 @@ msgstr "进程"
 msgid "The process failed and reported the following error:"
 msgstr "该过程进行失败，并报告了以下错误:"
 
-#: .\course\utils.py:176
+#: .\course\utils.py:177
 msgid "Latest start time"
 msgstr "最迟开始时间"
 
-#: .\course\utils.py:178
+#: .\course\utils.py:179
 #, python-format
 msgid "Session(s) must start before %s."
 msgstr "所有session必须在%s前开始."
 
-#: .\course\utils.py:212
+#: .\course\utils.py:213
 #, python-format
 msgid ""
 "If completed before %(time)s, you'll get %(credit_percent)s%% of your grade."
 msgstr "在%(time)s前提交，将得到应得分的%(credit_percent)s%%."
 
-#: .\course\utils.py:221
+#: .\course\utils.py:222
 msgid "Submission time and Grading"
 msgstr "提交时间与评分"
 
-#: .\course\utils.py:225
+#: .\course\utils.py:226
 #, python-format
 msgid "No grade will be granted for submision later than %s."
 msgstr "迟于%s提交的作业将没有成绩."
 
-#: .\course\utils.py:491
+#: .\course\utils.py:492
 msgid "grading rule determination was unable to find a grading rule"
 msgstr "无法为评分找到规则"
 
-#: .\course\utils.py:730
+#: .\course\utils.py:731
 msgid "Press F9 to toggle full-screen mode. "
 msgstr "按F9以打开/关闭全屏模式. "
 
-#: .\course\utils.py:731
+#: .\course\utils.py:732
 #, python-format
 msgid "Set editor mode in <a href='%s'>user profile</a>."
 msgstr "在 <a href='%s'>用户信息</a> 中设置编辑器模式. "
 
-#: .\course\utils.py:845
+#: .\course\utils.py:846
 msgid ""
 "Error: Columns to be imported contain non-ASCII characters. Please save your "
 "CSV file as utf-8 encoded and import again."
