@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-03-14 17:51+0800\n"
+"POT-Creation-Date: 2016-03-14 18:12+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -1694,7 +1694,7 @@ msgid "Email or NetID"
 msgstr "Email或用户名"
 
 #: .\course\grades.py:946
-msgid "User Attribute"
+msgid "User attribute"
 msgstr "用户属性"
 
 #. Translators: the following strings are for the format
@@ -1706,7 +1706,7 @@ msgid ""
 msgstr "上面所选用户属性的所在的列，从1起"
 
 #: .\course\grades.py:954
-msgid "User Attribute column"
+msgid "User attribute column"
 msgstr "用户属性列"
 
 #: .\course\grades.py:956

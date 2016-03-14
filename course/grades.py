@@ -158,7 +158,7 @@ def view_participant_list(pctx):
                 status=participation_status.active)
             .order_by("id")
             .select_related("user"))
-    
+
     from course.models import ParticipationPreapproval
 
     registered_inst_id_list = []
@@ -943,7 +943,7 @@ class ImportGradesForm(StyledForm):
                     ("email_or_id", _("Email or NetID")),
                     ("inst_id", _("Institutional ID")),
                     ),
-                label=_("User Attribute"))
+                label=_("User attribute"))
 
         self.fields["attr_column"] = forms.IntegerField(
                 # Translators: the following strings are for the format
@@ -951,7 +951,7 @@ class ImportGradesForm(StyledForm):
                 help_text=_("1-based column index for the user attribute "
                 "selected above to locate student record"),
                 min_value=1,
-                label=_("User Attribute column"))
+                label=_("User attribute column"))
         self.fields["points_column"] = forms.IntegerField(
                 help_text=_("1-based column index for the (numerical) grade"),
                 min_value=1,
