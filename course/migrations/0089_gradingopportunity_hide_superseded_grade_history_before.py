@@ -17,9 +17,4 @@ class Migration(migrations.Migration):
             name='hide_superseded_grade_history_before',
             field=models.DateTimeField(blank=True, help_text='Grade changes dated before this date that are superseded by later grade changes will not be shown to participants. This can help avoid discussions about pre-release grading adjustments.May be blank. In that case, the entire grade history is shown.', null=True, verbose_name='Hide superseded grade history before'),
         ),
-        migrations.AddField(
-            model_name='participationpreapproval',
-            name='provided_name',
-            field=models.CharField(blank=True, max_length=254, null=True, verbose_name='Provided name'),
-        ),
     ]
