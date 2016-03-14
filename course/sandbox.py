@@ -191,10 +191,11 @@ def view_page_sandbox(pctx):
 
     if is_preview_post:
         edit_form = make_form(pctx.request.POST)
+        from pytools.py_codegen import remove_common_indentation
+        new_page_source = None
 
         if edit_form.is_valid():
             try:
-                from pytools.py_codegen import remove_common_indentation
                 new_page_source = remove_common_indentation(
                         edit_form.cleaned_data["content"],
                         require_leading_newline=False)
@@ -228,7 +229,8 @@ def view_page_sandbox(pctx):
                 # Yay, it did validate.
                 request.session[PAGE_SESSION_KEY] = page_source = new_page_source
 
-            del new_page_source
+            if new_page_source:
+                del new_page_source
 
         edit_form = make_form(pctx.request.POST)
 
