@@ -44,10 +44,14 @@ from image_upload.models import FlowPageImage
 
 from jsonview.decorators import json_view
 from jsonview.exceptions import BadRequest
+from braces.views import JSONResponseMixin
 import json
 from PIL import Image
 
-class ImageCreateView(LoginRequiredMixin, ImageOperationMixin, CreateView):
+class ImageCreateView(LoginRequiredMixin, ImageOperationMixin, JSONResponseMixin, CreateView):
+    # Prevent download Json response in IE 7-10
+    # http://stackoverflow.com/a/13944206/3437454
+    content_type = 'text/plain'
     model = FlowPageImage
     fields = ("file", "slug")
 
@@ -59,23 +63,19 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin, CreateView):
 			settings, "RELATE_JFU_MAX_IMAGE_SIZE", 2) * 1024**2
 
         if file._size > max_allowed_jfu_size:
-		file_data = {"files": [{
-			"name": form.cleaned_data.get('slug'),
-			"size": file._size,
+            file_data = {
+                    "files": [{
+                        "name": form.cleaned_data.get('slug'),
+                        "size": file._size,
                         "error": ugettext(
-				"The file is too big. Please use "
-				"Chrome/Firefox or mobile browser by "
-				"which images will be cropped "
-				"automatically before upload.")
-			},
-			]}
-		response = http.JsonResponse(file_data)
-		response['Content-Disposition'] = 'inline; filename=files.json'
+                            "The file is too big. Please use "
+                            "Chrome/Firefox or mobile browser by "
+                            "which images will be cropped "
+                            "automatically before upload.")
+                        },]
+                    }
 
-                # Prevent download Json response in IE 7-10
-                # http://stackoverflow.com/a/13944206/3437454
-                response['Content-Type'] = 'text/plain'
-                return response
+            return self.render_json_response(file_data)
 
         self.object = form.save(commit=False)
         self.object.creator = self.request.user
@@ -103,20 +103,11 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin, CreateView):
 
         files = [serialize(self.request, self.object, 'file')]
         data = {'files': files}
-        response = http.JsonResponse(data)
-        response['Content-Disposition'] = 'inline; filename=files.json'
-
-        # Prevent download Json response in IE 7-10
-        # http://stackoverflow.com/a/13944206/3437454
-        response['Content-Type'] = 'text/plain'
-        return response
+        return self.render_json_response(data)
 
     def form_invalid(self, form):
         data = json.dumps(form.errors)
-        return http.HttpResponse(
-		content=data,
-		status=400,
-		content_type='application/json')
+        return self.render_json_response(data, status_code=400)
 
 class ImageItemForm(forms.ModelForm):
     class Meta:
@@ -132,10 +123,13 @@ class ImageDeleteView(LoginRequiredMixin, ImageOperationMixin, DeleteView):
         self.object.delete()
         response = http.JsonResponse(True, safe=False)
         response['Content-Disposition'] = 'inline; filename=files.json'
+        response['Content-Type'] = 'text/plain'
         return response
 
 
-class ImageListView(LoginRequiredMixin, ListView):
+class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
+    # Prevent download Json response in IE 7-10
+    # http://stackoverflow.com/a/13944206/3437454):
     model = FlowPageImage
 
     def get_queryset(self):
@@ -153,9 +147,7 @@ class ImageListView(LoginRequiredMixin, ListView):
         files = [serialize(self.request, p, 'file')
                 for p in self.get_queryset()]
         data = {'files': files}
-        response = http.JsonResponse(data)
-        response['Content-Disposition'] = 'inline; filename=files.json'
-        return response
+        return self.render_json_response(data)
 
 # }}}
 
