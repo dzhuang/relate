@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-03-14 01:22+0800\n"
+"POT-Creation-Date: 2016-03-14 15:32+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -17,65 +17,65 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Language: \n"
 
-#: .\models.py:63 .\models.py:121
+#: .\image_upload\models.py:63 .\image_upload\models.py:121
 msgid "Creator"
 msgstr "创建者"
 
-#: .\models.py:101 .\models.py:187
+#: .\image_upload\models.py:101 .\image_upload\models.py:187
 #, python-format
 msgid "%(url)s uploaded by %(creator)s"
 msgstr "%(url)s(%(creator)s上传)"
 
-#: .\models.py:135
+#: .\image_upload\models.py:135
 msgid "Course"
 msgstr "课程"
 
-#: .\models.py:138
+#: .\image_upload\models.py:138
 msgid "Flow session"
 msgstr ""
 
-#: .\page\imgupload.py:96
+#: .\image_upload\page\imgupload.py:96
 msgid "You have not upload image(s)!"
 msgstr "您还未上传图片!"
 
-#: .\page\imgupload.py:169
+#: .\image_upload\page\imgupload.py:169
 msgid "upload question does not have assigned point value"
 msgstr "上传问题还未设置分数"
 
-#: .\page\imgupload.py:196
+#: .\image_upload\page\imgupload.py:196
 msgid ""
 "minFileSize should not be greater than maxFileSize, better do not set those "
 "2 attributes."
 msgstr "minFileSize不应超出maxFileSize，最好不要设置这2个属性."
 
-#: .\page\imgupload.py:229
+#: .\image_upload\page\imgupload.py:229
 #, python-format
 msgid "Note: Maxmum number of images: %d"
 msgstr "注：最多可上传文件的数量: %d"
 
-#: .\serialize.py:75
+#: .\image_upload\serialize.py:75
 msgid "The image file does not exist!"
 msgstr "该图片文件不存在！"
 
-#: .\serialize.py:128
+#: .\image_upload\serialize.py:128
 msgid "Created at"
 msgstr "创建于"
 
-#: .\serialize.py:131
+#: .\image_upload\serialize.py:131
 msgid "modified at"
 msgstr "修改于"
 
-#: .\templates\image_upload\cropper-modal.html:4
+#: .\image_upload\templates\image_upload\cropper-modal.html:4
 msgid "Edit image"
 msgstr "编辑图片"
 
-#: .\templates\image_upload\cropper-modal.html:6
-#: .\templates\image_upload\imgupload-page-config.html:23
+#: .\image_upload\templates\image_upload\cropper-modal.html:6
+#: .\image_upload\templates\image_upload\imgupload-page-config.html:23
 msgid "This page requires a modern browser so that it can work properly"
 msgstr "这个页面的正确加载需要使用现代浏览器"
 
-#: .\templates\image_upload\cropper-modal.html:6
-#: .\templates\image_upload\imgupload-page-config.html:23
+#: .\image_upload\templates\image_upload\cropper-modal.html:6
+#: .\image_upload\templates\image_upload\imgupload-page-config.html:23
 msgid ""
 "Chrome/Firefox are prefered browsers. If you want use Internet Explorer, "
 "please install one with version higher than 10."
@@ -83,23 +83,23 @@ msgstr ""
 "推荐使用的浏览器是Chrome或Firefox. 如果您希望使用Internet Explorer，请安装IE "
 "10以上的版本."
 
-#: .\templates\image_upload\cropper-modal.html:55
+#: .\image_upload\templates\image_upload\cropper-modal.html:55
 msgid "Submit"
 msgstr "提交"
 
-#: .\templates\image_upload\cropper-modal.html:58
+#: .\image_upload\templates\image_upload\cropper-modal.html:58
 msgid "Reset"
 msgstr "重置"
 
-#: .\templates\image_upload\cropper-modal.html:61
+#: .\image_upload\templates\image_upload\cropper-modal.html:61
 msgid "Preview"
 msgstr "预览"
 
-#: .\templates\image_upload\cropper-modal.html:64
+#: .\image_upload\templates\image_upload\cropper-modal.html:64
 msgid "Close"
 msgstr "关闭"
 
-#: .\templates\image_upload\imgupload-page-config.html:21
+#: .\image_upload\templates\image_upload\imgupload-page-config.html:21
 msgid ""
 "This page requires Javascript enabled in your browser. Please refer to <a "
 "href='https://www.whatismybrowser.com/guides/how-to-enable-javascript/' "
@@ -109,79 +109,80 @@ msgstr ""
 "cn/3dschool/3d/help/openJsHelp.html' target='_blank'>这个链接</a>来打开"
 "Javascript."
 
-#: .\templates\image_upload\imgupload-page-config.html:23
+#: .\image_upload\templates\image_upload\imgupload-page-config.html:23
 msgid ""
 "especially when you want to sort image correctly and enable image editting"
 msgstr "特别是您需要对图片进行排序，或者需要启用编辑功能(裁剪、旋转图片)时"
 
-#: .\templates\image_upload\imgupload-page-config.html:40
+#: .\image_upload\templates\image_upload\imgupload-page-config.html:40
 msgid "File is too big"
 msgstr "这个图片太大了"
 
-#: .\templates\image_upload\imgupload-page-config.html:41
+#: .\image_upload\templates\image_upload\imgupload-page-config.html:41
 msgid "File is too small"
 msgstr "这个图片太小了"
 
-#: .\templates\image_upload\imgupload-page-config.html:42
+#: .\image_upload\templates\image_upload\imgupload-page-config.html:42
 msgid "Filetype not allowed"
 msgstr "该文件类型不被允许"
 
-#: .\templates\image_upload\imgupload-page-config.html:43
+#: .\image_upload\templates\image_upload\imgupload-page-config.html:43
 #, python-format
 msgid "Max number of files exceeded, only %(maxNumberOfFiles)s allowed"
 msgstr "超出了允许上传的文件数量，只允许上传%(maxNumberOfFiles)s个"
 
-#: .\templates\image_upload\imgupload-page-config.html:44
+#: .\image_upload\templates\image_upload\imgupload-page-config.html:44
 msgid "Uploaded bytes exceed file size"
 msgstr "超出了允许上传的文件大小"
 
-#: .\templates\image_upload\imgupload-page-config.html:45
+#: .\image_upload\templates\image_upload\imgupload-page-config.html:45
 msgid "Empty file upload result"
 msgstr "没有上传结果"
 
-#: .\templates\image_upload\jfu-form.html:16
+#: .\image_upload\templates\image_upload\jfu-form.html:16
 msgid "Add files..."
 msgstr ""
 
-#: .\templates\image_upload\jfu-form.html:48
+#: .\image_upload\templates\image_upload\jfu-form.html:48
 msgid "Start upload"
 msgstr ""
 
-#: .\templates\image_upload\jfu-form.html:52
+#: .\image_upload\templates\image_upload\jfu-form.html:52
 msgid "Cancel upload"
 msgstr ""
 
-#: .\templates\image_upload\jfu-form.html:56
-#: .\templates\image_upload\jfu-form.html:303
+#: .\image_upload\templates\image_upload\jfu-form.html:56
+#: .\image_upload\templates\image_upload\jfu-form.html:303
 msgid "Delete"
 msgstr ""
 
-#: .\templates\image_upload\jfu-form.html:63
+#: .\image_upload\templates\image_upload\jfu-form.html:63
 msgid "Sort"
 msgstr "排序"
 
-#: .\templates\image_upload\jfu-form.html:67 .\views.py:373
+#: .\image_upload\templates\image_upload\jfu-form.html:67
+#: .\image_upload\views.py:316
 msgid "Done"
 msgstr "完成"
 
-#: .\templates\image_upload\jfu-form.html:143
+#: .\image_upload\templates\image_upload\jfu-form.html:143
 msgid "Start"
 msgstr "开始"
 
-#: .\templates\image_upload\jfu-form.html:152
-#: .\templates\image_upload\jfu-form.html:309
+#: .\image_upload\templates\image_upload\jfu-form.html:152
+#: .\image_upload\templates\image_upload\jfu-form.html:309
 msgid "Cancel"
 msgstr "放弃"
 
-#: .\templates\image_upload\jfu-form.html:225
+#: .\image_upload\templates\image_upload\jfu-form.html:225
 msgid "Error"
 msgstr "错误"
 
-#: .\templates\image_upload\jfu-form.html:291
+#: .\image_upload\templates\image_upload\jfu-form.html:291
 msgid "Edit"
 msgstr "编辑"
 
-#: .\views.py:96
+#: .\image_upload\views.py:71
 msgid ""
 "The file is too big. Please use Chrome/Firefox or mobile browser by which "
 "images will be cropped automatically before upload."
@@ -189,30 +190,31 @@ msgstr ""
 "这个文件太大了. 推荐使用Chrome或Firefox浏览器，或者直接在手机浏览器上传，它们"
 "将在照片上传前自动压缩尺寸."
 
-#: .\views.py:246
+#: .\image_upload\views.py:190
 msgid "may not view other people's resource"
 msgstr "不允许查看其他人的资源"
 
-#: .\views.py:273 .\views.py:355
+#: .\image_upload\views.py:217 .\image_upload\views.py:298
 msgid "Not allowd to modify answer."
 msgstr "不允许修改回答."
 
-#: .\views.py:278 .\views.py:284 .\views.py:366
+#: .\image_upload\views.py:222 .\image_upload\views.py:228
+#: .\image_upload\views.py:309
 msgid "Please upload the image first."
 msgstr "请先上传图片."
 
-#: .\views.py:283
+#: .\image_upload\views.py:227
 msgid "File not found."
 msgstr "该文件未找到"
 
-#: .\views.py:289 .\views.py:358
+#: .\image_upload\views.py:233 .\image_upload\views.py:301
 msgid "Only Ajax Post is allowed."
 msgstr "只允许Ajax POST操作"
 
-#: .\views.py:298 .\views.py:312
+#: .\image_upload\views.py:242 .\image_upload\views.py:256
 msgid "There are errors, please refresh the page or try again later"
 msgstr "发生错误，请刷新页面或稍后重试"
 
-#: .\views.py:303
+#: .\image_upload\views.py:247
 msgid "There are errors，please re-upload the image"
 msgstr "发生错误，请重新上传图片"
