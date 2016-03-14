@@ -107,7 +107,7 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin, JSONResponseMixin
 
     def form_invalid(self, form):
         data = json.dumps(form.errors)
-        return self.render_json_response(data, status_code=400)
+        return self.render_json_response(data, status=400)
 
 class ImageItemForm(forms.ModelForm):
     class Meta:
