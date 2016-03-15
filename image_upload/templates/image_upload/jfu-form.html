@@ -4,7 +4,7 @@
 <noscript>
     <input type="hidden" name="redirect" value="{{ request.path }}"> </noscript>
 
-{% if SHOW_EDIT_SORT_BUTTON %}
+{% if IS_COURSE_STAFF %}
 {% block UPLOAD_FORM_BUTTON_BAR %}
     <div class="row fileupload-buttonbar">
         {# The fileupload-buttonbar contains buttons to add/delete files and start/cancel the upload #}
@@ -57,7 +57,7 @@
                 </button>
                 <input type="checkbox" class="toggle">
             {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR_CONTROL #}
-            {% if SHOW_EDIT_SORT_BUTTON %}
+            {% if IS_COURSE_STAFF %}
             {% block UPLOAD_FORM_BUTTON_BAR_EXTRA %}
                 <button type="button" class="btn btn-success btn-srt-tbl" style="float:right;">
                     <i class="fa fa-sort"></i>
@@ -248,7 +248,7 @@
                         </td>
                     {% endblock %}{# block JS_DOWNLOAD_TEMPLATE_TIME #}
                 {% endif %}
-                    {% if SHOW_EDIT_SORT_BUTTON %}
+                    {% if IS_COURSE_STAFF %}
                     {% block JS_DOWNLOAD_SORT %}
                         <td class="td-srt hidden">
                             <a 
@@ -284,7 +284,7 @@
 
                 <td class="td-dl">
                         {{ JQ_OPEN }} if (file.deleteUrl) { {{ JQ_CLOSE }}
-                        {% if SHOW_EDIT_SORT_BUTTON %}
+                        {% if IS_COURSE_STAFF %}
                         {% block JS_DOWNLOAD_TEMPLATE_EDIT %}
                             <a 
                                 class="btn btn-success btn-edit-image"

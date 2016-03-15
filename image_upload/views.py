@@ -48,6 +48,18 @@ from braces.views import JSONResponseMixin
 import json
 from PIL import Image
 
+def is_course_staff(pctx):
+    request = pctx.request
+    course = pctx.course
+    from course.constants import participation_role
+    from course.auth import get_role_and_participation
+    role, participation = get_role_and_participation(request, course)
+    if role in [participation_role.teaching_assistant,
+            participation_role.instructor]:
+        return True
+    else:
+        return False
+
 class ImageCreateView(LoginRequiredMixin, ImageOperationMixin, JSONResponseMixin, CreateView):
     # Prevent download Json response in IE 7-10
     # http://stackoverflow.com/a/13944206/3437454
@@ -120,11 +132,15 @@ class ImageDeleteView(LoginRequiredMixin, ImageOperationMixin, DeleteView):
 
     def delete(self, request, *args, **kwargs):
         self.object = self.get_object()
-        self.object.delete()
-        response = http.JsonResponse(True, safe=False)
-        response['Content-Disposition'] = 'inline; filename=files.json'
-        response['Content-Type'] = 'text/plain'
-        return response
+        if self.request.user != self.object.creator:
+            from django.core.exceptions import PermissionDenied
+            raise PermissionDenied(_("may not delete other people's image"))
+        else:
+            self.object.delete()
+            response = http.JsonResponse(True, safe=False)
+            response['Content-Disposition'] = 'inline; filename=files.json'
+            response['Content-Type'] = 'text/plain'
+            return response
 
 
 class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
@@ -204,7 +220,22 @@ class CropImageError(BadRequest):
 def image_crop_modal(pctx, flow_session_id, ordinal, pk):
     request = pctx.request
     file = FlowPageImage.objects.get(id=pk)
-    return render(request, 'image_upload/cropper-modal.html', {'file': file})
+    course_staff_status = is_course_staff(pctx)
+    staff_edit_warnning = False
+    #print file.creator
+    if (
+        course_staff_status
+        and
+        request.user != file.creator
+        ):
+        staff_edit_warnning = True
+    return render(
+            request,
+            'image_upload/cropper-modal.html',
+            {'file': file,
+             'STAFF_EDIT_WARNNING': staff_edit_warnning,
+             'owner': file.creator
+            })
 
 @json_view
 @login_required
@@ -214,17 +245,9 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
     page_image_behavior = get_page_image_behavior(pctx, flow_session_id, ordinal)
     may_change_answer = page_image_behavior.may_change_answer
 
-    is_course_staff = False
-    request = pctx.request
-    course = pctx.course
-    from course.constants import participation_role
-    from course.auth import get_role_and_participation
-    role, participation = get_role_and_participation(request, course)
-    if role in [participation_role.teaching_assistant,
-            participation_role.instructor]:
-        is_course_staff = True
+    course_staff_status = is_course_staff(pctx)
 
-    if not (may_change_answer or is_course_staff):
+    if not (may_change_answer or course_staff_status):
         raise CropImageError(_('Not allowd to modify answer.'))
     try:
         crop_instance = FlowPageImage.objects.get(pk=pk)
@@ -268,7 +291,7 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
     from relate.utils import as_local_time, local_now
     import datetime
 
-    if not is_course_staff:
+    if not course_staff_status:
         if local_now() < as_local_time(
                 crop_instance.creation_time + datetime.timedelta(minutes=5)):
             crop_instance.file_last_modified = crop_instance.creation_time = local_now()

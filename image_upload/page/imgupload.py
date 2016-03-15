@@ -231,7 +231,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
             markup_to_html(page_context, self.page_desc.prompt)
             + string_concat("<br/><p class='text-info'><strong><small>(", _("Note: Maxmum number of images: %d"),  ")</small></strong></p>") % (self.maxNumberOfFiles,))
 
-    def allow_staff_edit(self, request, page_context):
+    def is_course_staff(self, request, page_context):
         user = request.user
         course = page_context.course
         from course.constants import participation_role
@@ -260,8 +260,8 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         return form
 
     def form_to_html(self, request, page_context, form, answer_data):
-        SHOW_EDIT_SORT_BUTTON = (
-                self.allow_staff_edit(request, page_context)
+        IS_COURSE_STAFF = (
+                self.is_course_staff(request, page_context)
                 or
                 form.page_behavior.may_change_answer)
 
@@ -272,8 +272,9 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                'course_identifier': page_context.course,
                "flow_session_id": page_context.flow_session.id,
                "ordinal": page_context.ordinal,
-               "SHOW_EDIT_SORT_BUTTON": SHOW_EDIT_SORT_BUTTON,
+               "IS_COURSE_STAFF": IS_COURSE_STAFF,
                "SHOW_CREATION_TIME": True,
+               "ALLOW_ROTATE_TUNE": True,
 
                "imageMaxWidth": self.imageMaxWidth,
                "imageMaxHeight": self.imageMaxHeight,

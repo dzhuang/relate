@@ -15,6 +15,12 @@
     </div>
 </div>
 <div class="modal-footer">
+        {% if STAFF_EDIT_WARNNING %}
+        <div class="alert alert-danger warning" style="text-align: left;">{% blocktrans trimmed %}
+            <strong>WATCH OUT!!!</strong> You are currently editting <strong>{{owner}}</strong>'s image. 
+            Take care especially if you want to crop the image. Your revision will not be able to undo upon submission!
+            {% endblocktrans %}</div>
+        {% endif %}
         <div id="crp-result"></div>
         <button type="button" class="btn btn-primary btn-crp-rtt" data-step="90">
               <i class="fa fa-rotate-left"></i>
@@ -49,7 +55,6 @@
         {# <input id="dataScaleX" type="text" name="scalex"/> #}
         {# <input id="dataScaleY" type="text" name="scaley"/> #}
     </form>
-    
     <button type="button" class="btn btn-success disabled btn-crp-submit">
         <i class="fa fa-check"></i>
         <span>{% trans "Submit" %}</span></button>
