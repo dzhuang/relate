@@ -329,7 +329,8 @@ class ImgTableOrderError(BadRequest):
 def image_order(pctx, flow_session_id, ordinal):
     page_image_behavior = get_page_image_behavior(pctx, flow_session_id, ordinal)
     may_change_answer = page_image_behavior.may_change_answer
-    if not may_change_answer:
+    course_staff_status = is_course_staff(pctx)
+    if not (may_change_answer or course_staff_status):
         raise ImgTableOrderError(_('Not allowd to modify answer.'))
     request = pctx.request
     if not request.is_ajax():
