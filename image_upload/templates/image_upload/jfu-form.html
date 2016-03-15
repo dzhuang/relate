@@ -4,6 +4,7 @@
 <noscript>
     <input type="hidden" name="redirect" value="{{ request.path }}"> </noscript>
 
+{% if SHOW_EDIT_SORT_BUTTON %}
 {% block UPLOAD_FORM_BUTTON_BAR %}
     <div class="row fileupload-buttonbar">
         {# The fileupload-buttonbar contains buttons to add/delete files and start/cancel the upload #}
@@ -56,6 +57,7 @@
                 </button>
                 <input type="checkbox" class="toggle">
             {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR_CONTROL #}
+            {% if SHOW_EDIT_SORT_BUTTON %}
             {% block UPLOAD_FORM_BUTTON_BAR_EXTRA %}
                 <button type="button" class="btn btn-success btn-srt-tbl" style="float:right;">
                     <i class="fa fa-sort"></i>
@@ -67,6 +69,7 @@
                 </button>
                 <span id="srt_prgrs" style="float:right; padding-right: 15px"></span>
             {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR_EXTRA #}
+            {% endif %}
 
         </div>
 
@@ -88,6 +91,7 @@
         {% endblock %}
     </div>
 {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR #}
+{% endif %}
 
 {# The loading indicator is shown during file processing #}
 {% block UPLOAD_FORM_LINDICATOR %}
@@ -244,7 +248,7 @@
                         </td>
                     {% endblock %}{# block JS_DOWNLOAD_TEMPLATE_TIME #}
                 {% endif %}
-                
+                    {% if SHOW_EDIT_SORT_BUTTON %}
                     {% block JS_DOWNLOAD_SORT %}
                         <td class="td-srt hidden">
                             <a 
@@ -267,6 +271,7 @@
                             </a>
                         </td>
                     {% endblock %}{# block JS_DOWNLOAD_SORT #}
+                    {% endif %}
 
                 {% block JS_DOWNLOAD_TEMPLATE_FSIZE %}
                     <td class="td-dl">
@@ -277,9 +282,10 @@
                     </td>
                 {% endblock %}{# //JS_DOWNLOAD_TEMPLATE_FSIZE #}
 
-                {% block JS_DOWNLOAD_TEMPLATE_DELETE %}
-                    <td class="td-dl">
+                <td class="td-dl">
                         {{ JQ_OPEN }} if (file.deleteUrl) { {{ JQ_CLOSE }}
+                        {% if SHOW_EDIT_SORT_BUTTON %}
+                        {% block JS_DOWNLOAD_TEMPLATE_EDIT %}
                             <a 
                                 class="btn btn-success btn-edit-image"
                                 data-toggle="modal"
@@ -289,6 +295,9 @@
                                 <i class="fa fa-pencil"></i>
                                 <span>{% trans "Edit" %}</span>
                             </a>
+                        {% endblock %}{# //block JS_DOWNLOAD_TEMPLATE_EDIT #}
+                        {% endif %}
+                        {% block JS_DOWNLOAD_TEMPLATE_DELETE %}
                             <button
                                 class="btn btn-danger delete"
                                 data-type="{{ JQ_OPEN }}=file.deleteType{{ JQ_CLOSE }}"
@@ -307,9 +316,10 @@
                                 <i class="glyphicon glyphicon-ban-circle"></i>
                                 <span>{% trans "Cancel" %}</span>
                             </button>
+                        {% endblock %}{# //block JS_DOWNLOAD_TEMPLATE_DELETE #}
                         {{ JQ_OPEN }} } {{ JQ_CLOSE }}
-                    </td>
-                {% endblock %}{# //block JS_DOWNLOAD_TEMPLATE_DELETE #}
+                </td>
+
             </tr>
         {{ JQ_OPEN }} } {{ JQ_CLOSE }}
     </script>

@@ -56,12 +56,15 @@ class ImageUploadForm(StyledForm):
         
         if not self.page_behavior.may_change_answer:
             jfu_button_control = (
-                "{% block UPLOAD_FORM_BUTTON_BAR %}{% endblock %}"
+                #"{% block UPLOAD_FORM_BUTTON_BAR %}{% endblock %}"
+                "{% block UPLOAD_FORM_BUTTON_BAR_ADD %}{% endblock %}"
+                "{% block UPLOAD_FORM_BUTTON_BAR_CONTROL %}{% endblock %}"
+                "{% block UPLOAD_FORM_PROGRESS_BAR %}{% endblock %}"
                 "{% block JS_UPLOAD_TEMPLATE_CONTROLS %}{% endblock %}"
-                "{% block JS_DOWNLOAD_TEMPLATE_DELETE %}{% endblock %}")
-        
+                "{% block JS_DOWNLOAD_TEMPLATE_DELETE %}{% endblock %}"
+            )
+
         self.helper.form_id = "fileupload"
-        
 
         from django.core.urlresolvers import reverse
         self.helper.form_action = reverse(
@@ -228,6 +231,17 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
             markup_to_html(page_context, self.page_desc.prompt)
             + string_concat("<br/><p class='text-info'><strong><small>(", _("Note: Maxmum number of images: %d"),  ")</small></strong></p>") % (self.maxNumberOfFiles,))
 
+    def allow_staff_edit(self, request, page_context):
+        user = request.user
+        course = page_context.course
+        from course.constants import participation_role
+        from course.auth import get_role_and_participation
+        role, participation = get_role_and_participation(request, course)
+        if role in [participation_role.teaching_assistant,
+                participation_role.instructor]:
+            return True
+        return False
+
     def make_form(self, page_context, page_data,
             answer_data, page_behavior):
 
@@ -246,7 +260,11 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         return form
 
     def form_to_html(self, request, page_context, form, answer_data):
-        
+        SHOW_EDIT_SORT_BUTTON = (
+                self.allow_staff_edit(request, page_context)
+                or
+                form.page_behavior.may_change_answer)
+
         ctx = {"form": form, 
                "JQ_OPEN": '{%',
                'JQ_CLOSE': '%}',
@@ -254,6 +272,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                'course_identifier': page_context.course,
                "flow_session_id": page_context.flow_session.id,
                "ordinal": page_context.ordinal,
+               "SHOW_EDIT_SORT_BUTTON": SHOW_EDIT_SORT_BUTTON,
                "SHOW_CREATION_TIME": True,
 
                "imageMaxWidth": self.imageMaxWidth,
@@ -265,11 +284,19 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                "maxNumberOfFiles": self.maxNumberOfFiles
                }
 
-        from django.template import RequestContext
-        from django.template.loader import render_to_string
-        return render_to_string(
-            "image_upload/imgupload-page-tmpl.html",
-            RequestContext(request, ctx))
+        from django.template import RequestContext, loader
+        from django import VERSION as DJANGO_VERSION
+        if DJANGO_VERSION >= (1, 9):
+            return loader.render_to_string(
+                    "image_upload/imgupload-page-tmpl.html",
+                    context=ctx,
+                    request=request)
+        else:
+            context = RequestContext(request)
+            context.update({"form": form})
+            return loader.render_to_string(
+                    "image_upload/imgupload-page-tmpl.html",
+                    RequestContext(request, ctx))
 
     def answer_data(self, page_context, page_data, form, files_data):
         flow_session_id = page_context.flow_session.id

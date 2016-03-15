@@ -213,9 +213,19 @@ def image_crop_modal(pctx, flow_session_id, ordinal, pk):
 def image_crop(pctx, flow_session_id, ordinal, pk):
     page_image_behavior = get_page_image_behavior(pctx, flow_session_id, ordinal)
     may_change_answer = page_image_behavior.may_change_answer
-    if not may_change_answer:
-        raise CropImageError(_('Not allowd to modify answer.'))
+
+    is_course_staff = False
     request = pctx.request
+    course = pctx.course
+    from course.constants import participation_role
+    from course.auth import get_role_and_participation
+    role, participation = get_role_and_participation(request, course)
+    if role in [participation_role.teaching_assistant,
+            participation_role.instructor]:
+        is_course_staff = True
+
+    if not (may_change_answer or is_course_staff):
+        raise CropImageError(_('Not allowd to modify answer.'))
     try:
         crop_instance = FlowPageImage.objects.get(pk=pk)
     except FlowPageImage.DoesNotExist:
@@ -258,12 +268,13 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
     from relate.utils import as_local_time, local_now
     import datetime
 
-    if local_now() < as_local_time(
-            crop_instance.creation_time + datetime.timedelta(minutes=5)):
-        crop_instance.file_last_modified = crop_instance.creation_time = local_now()
+    if not is_course_staff:
+        if local_now() < as_local_time(
+                crop_instance.creation_time + datetime.timedelta(minutes=5)):
+            crop_instance.file_last_modified = crop_instance.creation_time = local_now()
 
-    else:
-        crop_instance.file_last_modified = local_now()
+        else:
+            crop_instance.file_last_modified = local_now()
 
     crop_instance.file = image_modified_path
     crop_instance.save()
