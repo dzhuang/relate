@@ -246,6 +246,7 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
     may_change_answer = page_image_behavior.may_change_answer
 
     course_staff_status = is_course_staff(pctx)
+    request = pctx.request
 
     if not (may_change_answer or course_staff_status):
         raise CropImageError(_('Not allowd to modify answer.'))
