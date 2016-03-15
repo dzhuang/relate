@@ -1373,6 +1373,10 @@ def download_all_submissions(pctx, flow_id):
                 bytes_answer = page.normalized_bytes_answer(
                         grading_page_context, visit.page_data.data,
                         visit.answer)
+                
+                user_full_name = visit.flow_session.participation.user.get_full_name()
+                if not_user_full_name:
+                    user_full_name = visit.flow_session.participation.user.username
 
                 if which_attempt in ["first", "last"]:
                     key = (visit.flow_session.participation.user.get_full_name(),
