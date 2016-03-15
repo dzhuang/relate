@@ -1374,15 +1374,15 @@ def download_all_submissions(pctx, flow_id):
                         grading_page_context, visit.page_data.data,
                         visit.answer)
                 
-                user_full_name = visit.flow_session.participation.user.get_full_name()
-                if not_user_full_name:
-                    user_full_name = visit.flow_session.participation.user.username
+                username = visit.flow_session.participation.user.get_full_name()
+                if not username:
+                    username = visit.flow_session.participation.user.username
 
                 if which_attempt in ["first", "last"]:
-                    key = (visit.flow_session.participation.user.get_full_name(),
+                    key = (username,
                             visit.flow_session.participation.user.institutional_id)
                 elif which_attempt == "all":
-                    key = (visit.flow_session.participation.user.get_full_name(),
+                    key = (username,
                             visit.flow_session.participation.user.institutional_id,
                             str(visit.flow_session.id))
                 else:
