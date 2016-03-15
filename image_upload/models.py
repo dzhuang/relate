@@ -126,9 +126,9 @@ class FlowPageImage(models.Model):
     file_last_modified = models.DateTimeField(default=now)
     file_thumbnail = ImageSpecField(
             source='file',
-            processors=[ResizeToFit(200, 200)],
+            processors=[ResizeToFit(100, 100)],
             format='PNG',
-            options={'quality': 85}
+            options={'quality': 50}
             )
     course = models.ForeignKey(
             Course, null=True,
