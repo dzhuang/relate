@@ -219,10 +219,14 @@ class CropImageError(BadRequest):
 @course_view
 def image_crop_modal(pctx, flow_session_id, ordinal, pk):
     request = pctx.request
-    file = FlowPageImage.objects.get(id=pk)
+    try:
+        file = FlowPageImage.objects.get(id=pk)
+    except FlowPageImage.DoesNotExist:
+        raise CropImageError(
+            string_concat(_('File not found.'),
+                          _('Please upload the image first.')))
     course_staff_status = is_course_staff(pctx)
     staff_edit_warnning = False
-    #print file.creator
     if (
         course_staff_status
         and
@@ -343,11 +347,11 @@ def image_order(pctx, flow_session_id, ordinal):
             chg_instance = FlowPageImage.objects.get(pk=chg_data['pk'])
         except FlowPageImage.DoesNotExist:
             raise ImgTableOrderError(_('Please upload the image first.'))
-#        try:
-        chg_instance.order = chg_data['new_ord']
-        chg_instance.save()
-#        except:
-#            raise ImgTableOrderError(_('There are errors, please refresh the page or try again later'))
+        try:
+            chg_instance.order = chg_data['new_ord']
+            chg_instance.save()
+        except:
+            raise ImgTableOrderError(_('There are errors, please refresh the page or try again later'))
 
     response = {'message': ugettext('Done')}
 
