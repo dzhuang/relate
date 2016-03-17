@@ -7,20 +7,29 @@
     <![endif]-->
 </div>
 <div class="modal-body">
+    {% if file %}
     <div class="img-container">
         <img id="image" src="{{ file.get_absolute_url }}" alt="Picture{{file.id}}" id="target{{file.id}}">
     </div>
     <div class="preview_container">
         <div id="preview"></div>
     </div>
+    {% endif %}
 </div>
 <div class="modal-footer">
         {% if STAFF_EDIT_WARNNING %}
-        <div class="alert alert-danger warning" style="text-align: left;">{% blocktrans trimmed %}
+        <div class="alert alert-danger warning" style="text-align: left;"><i class="fa fa-warning"></i>{% blocktrans trimmed %}
             <strong>WATCH OUT!!!</strong> You are currently editting <strong>{{owner}}</strong>'s image. 
             Take care especially if you want to crop the image. Your revision will not be able to undo upon submission!
             {% endblocktrans %}</div>
         {% endif %}
+        {% if error_message %}
+        <div class="alert alert alert-danger">
+          <i class="fa fa-warning"></i>
+            {{ error_message }}
+        </div>
+        {% endif %}
+        {% if file %}
         <div id="crp-result"></div>
         <button type="button" class="btn btn-primary btn-crp-rtt" data-step="-90">
               <i class="fa fa-rotate-left"></i>
@@ -64,6 +73,7 @@
     <button type="button" class="btn btn-primary btn-crp-preview">
         <i class="fa fa-eye"></i>
         <span>{% trans "Preview" %}</span></button>
+    {% endif %}
     <button type="button" class="btn btn-danger" data-dismiss="modal">
         <i class="fa fa-remove"></i>
         <span>{% trans "Close" %}</span>

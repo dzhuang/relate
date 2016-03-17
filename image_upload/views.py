@@ -219,12 +219,21 @@ class CropImageError(BadRequest):
 @course_view
 def image_crop_modal(pctx, flow_session_id, ordinal, pk):
     request = pctx.request
+    error_message = None
     try:
         file = FlowPageImage.objects.get(id=pk)
     except FlowPageImage.DoesNotExist:
-        raise CropImageError(
+        error_message = (
             string_concat(_('File not found.'),
                           _('Please upload the image first.')))
+        return render(
+            request,
+            'image_upload/cropper-modal.html',
+            {'file': None,
+             'error_message': error_message,
+             'STAFF_EDIT_WARNNING': False,
+             'owner': None
+            })
     course_staff_status = is_course_staff(pctx)
     staff_edit_warnning = False
     if (
@@ -237,6 +246,7 @@ def image_crop_modal(pctx, flow_session_id, ordinal, pk):
             request,
             'image_upload/cropper-modal.html',
             {'file': file,
+             'error_message': error_message,
              'STAFF_EDIT_WARNNING': staff_edit_warnning,
              'owner': file.creator
             })
