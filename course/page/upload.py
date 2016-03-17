@@ -42,6 +42,7 @@ from crispy_forms.layout import Layout, Field
 # {{{ upload question
 
 class FileUploadForm(StyledForm):
+    show_save_button = False
     uploaded_file = forms.FileField(required=True,
             label=ugettext_lazy('Uploaded file'))
 
