@@ -1132,9 +1132,7 @@ def get_page_behavior(page, permissions, session_in_progress, answer_was_graded,
 
 def add_buttons_to_form(form, fpctx, flow_session, permissions):
     from crispy_forms.layout import Submit
-    
     show_save_button = getattr(form, "show_save_button", True)
-    print show_save_button
     if show_save_button:
         form.helper.add_input(
                 Submit("save", _("Save answer"),
