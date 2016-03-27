@@ -111,7 +111,8 @@ urlpatterns = [
 
     # {{{ course
 
-    url(r'^$', course.views.home, name='relate-home'),
+    #url(r'^$', course.views.home, name='relate-home'),
+    url(r'^course/$', course.views.home, name='relate-home'),
 
     url(r"^course"
         "/" + COURSE_ID_REGEX +
