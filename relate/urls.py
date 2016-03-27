@@ -43,7 +43,8 @@ import course.analytics
 import course.exam
 
 urlpatterns = [
-    url(r"^login/$",
+    url(r"^usrlogin/$",
+    #url(r"^login/$",
         course.auth.sign_in_choice,
         name="relate-sign_in_choice"),
     url(r"^login/user-password/$",
@@ -72,11 +73,13 @@ urlpatterns = [
         "/$",
         course.auth.sign_in_stage2_with_token,
         name="relate-sign_in_stage2_with_token"),
-    url(r"^logout/$",
+    url(r"^usrlogout/$",
+    #url(r"^logout/$",
         django.contrib.auth.views.logout,
         {"next_page": "relate-home"},
         name="relate-logout"),
-    url(r"^profile/$",
+    url(r"^usrprofile/$",
+    #url(r"^profile/$",
         course.auth.user_profile,
         name="relate-user_profile"),
 
@@ -470,6 +473,7 @@ urlpatterns = [
 
     #}}}
 
+    url(r'^usradmin/', include(admin.site.urls)),
     url(r'^admin/', include(admin.site.urls)),
     
     # {{{ image_upload
