@@ -43,8 +43,8 @@ import course.analytics
 import course.exam
 
 urlpatterns = [
-    #url(r"^usrlogin/$",
-    url(r"^login/$",
+    url(r"^usrlogin/$",
+    #url(r"^login/$",
         course.auth.sign_in_choice,
         name="relate-sign_in_choice"),
     url(r"^login/user-password/$",
