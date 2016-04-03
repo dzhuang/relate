@@ -1,4 +1,4 @@
-为RELATE写入内容
+Writing content for RELATE
 ==============================
 
 .. _git-repo:
