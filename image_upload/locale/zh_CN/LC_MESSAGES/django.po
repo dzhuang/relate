@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-03-15 16:05+0800\n"
+"POT-Creation-Date: 2016-04-07 19:28+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -83,7 +83,7 @@ msgstr ""
 "推荐使用的浏览器是Chrome或Firefox. 如果您希望使用Internet Explorer，请安装IE "
 "10以上的版本."
 
-#: .\image_upload\templates\image_upload\cropper-modal.html:19
+#: .\image_upload\templates\image_upload\cropper-modal.html:21
 #, python-format
 msgid ""
 "<strong>WATCH OUT!!!</strong> You are currently editting <strong>%(owner)s</"
@@ -93,19 +93,19 @@ msgstr ""
 "<strong>请注意!!!</strong> 您正在编辑 <strong>%(owner)s</strong>上传的图片. "
 "在操作时，特别是进行裁剪时要特别注意. 您的操作一旦提交则无法恢复!"
 
-#: .\image_upload\templates\image_upload\cropper-modal.html:60
+#: .\image_upload\templates\image_upload\cropper-modal.html:69
 msgid "Submit"
 msgstr "提交"
 
-#: .\image_upload\templates\image_upload\cropper-modal.html:63
+#: .\image_upload\templates\image_upload\cropper-modal.html:72
 msgid "Reset"
 msgstr "重置"
 
-#: .\image_upload\templates\image_upload\cropper-modal.html:66
+#: .\image_upload\templates\image_upload\cropper-modal.html:75
 msgid "Preview"
 msgstr "预览"
 
-#: .\image_upload\templates\image_upload\cropper-modal.html:69
+#: .\image_upload\templates\image_upload\cropper-modal.html:79
 msgid "Close"
 msgstr "关闭"
 
@@ -171,7 +171,7 @@ msgid "Sort"
 msgstr "排序"
 
 #: .\image_upload\templates\image_upload\jfu-form.html:69
-#: .\image_upload\views.py:350
+#: .\image_upload\views.py:366
 msgid "Done"
 msgstr "完成"
 
@@ -208,27 +208,28 @@ msgstr "不允许删除其他人的图片"
 msgid "may not view other people's resource"
 msgstr "不允许查看其他人的资源"
 
-#: .\image_upload\views.py:251 .\image_upload\views.py:332
-msgid "Not allowd to modify answer."
-msgstr "不允许修改回答."
-
-#: .\image_upload\views.py:255 .\image_upload\views.py:261
-#: .\image_upload\views.py:343
-msgid "Please upload the image first."
-msgstr "请先上传图片."
-
-#: .\image_upload\views.py:260
+#: .\image_upload\views.py:227 .\image_upload\views.py:275
 msgid "File not found."
 msgstr "该文件未找到"
 
-#: .\image_upload\views.py:266 .\image_upload\views.py:335
+#: .\image_upload\views.py:228 .\image_upload\views.py:270
+#: .\image_upload\views.py:276 .\image_upload\views.py:359
+msgid "Please upload the image first."
+msgstr "请先上传图片."
+
+#: .\image_upload\views.py:266 .\image_upload\views.py:348
+msgid "Not allowd to modify answer."
+msgstr "不允许修改回答."
+
+#: .\image_upload\views.py:281 .\image_upload\views.py:351
 msgid "Only Ajax Post is allowed."
 msgstr "只允许Ajax POST操作"
 
-#: .\image_upload\views.py:275 .\image_upload\views.py:289
+#: .\image_upload\views.py:290 .\image_upload\views.py:304
+#: .\image_upload\views.py:364
 msgid "There are errors, please refresh the page or try again later"
 msgstr "发生错误，请刷新页面或稍后重试"
 
-#: .\image_upload\views.py:280
+#: .\image_upload\views.py:295
 msgid "There are errors，please re-upload the image"
 msgstr "发生错误，请重新上传图片"
