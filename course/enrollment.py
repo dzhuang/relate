@@ -490,6 +490,7 @@ class BulkPreapprovalsFormCsv(StyledForm):
 
 def csv_to_preapproval(
         file_contents, inst_id_column, provided_name_column, header_count):
+    print "i am here =============================="
     result = []
     error_lines = []
     need_convert_to_utf8 = False
@@ -499,8 +500,10 @@ def csv_to_preapproval(
     line_count = 0
     n_csv_count = 0
     spamreader = csv.reader(file_contents)
+    print spamreader
     is_utf8_format = isinstance(spamreader, unicode)
     for row in spamreader:
+        print row
         line_count += 1
         if header_count > 0 and line_count <= header_count:
             continue
@@ -509,7 +512,9 @@ def csv_to_preapproval(
         provided_name_str = row[provided_name_column-1].strip()
         
         total_count += 1
-
+        result.append(",".join([inst_id_str,provided_name_str]))
+    print "here's the result =============================="
+    print result
     return total_count, result, error_lines
 
 @login_required
@@ -636,6 +641,7 @@ def create_preapprovals_csv(pctx):
                     elif preapp_type == "institutional_id_with_name":
 
                         [inst_id, full_name] = l.split(",")
+                        print l
 
                         if not (inst_id and full_name):
                             continue
