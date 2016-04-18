@@ -38,6 +38,7 @@ from course.models import Course, FlowSession, FlowPageData
 from imagekit.models import ImageSpecField
 from imagekit.processors import ResizeToFit
 
+
 @deconstructible
 class UserImageStorage(FileSystemStorage):
     def __init__(self):
@@ -56,7 +57,7 @@ def user_directory_path(instance, filename):
     return 'user_images/{0}(user_{1})/{2}'.format(
         user_full_name,
         instance.creator_id,
-        file_name)
+        filename)
 
 class UserImage(models.Model):
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,

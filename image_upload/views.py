@@ -256,8 +256,12 @@ def image_crop_modal(pctx, flow_session_id, ordinal, pk):
 @transaction.atomic
 @course_view
 def image_crop(pctx, flow_session_id, ordinal, pk):
-    page_image_behavior = get_page_image_behavior(pctx, flow_session_id, ordinal)
-    may_change_answer = page_image_behavior.may_change_answer
+    
+    try:
+        page_image_behavior = get_page_image_behavior(pctx, flow_session_id, ordinal)
+        may_change_answer = page_image_behavior.may_change_answer
+    except ValueError:
+        may_change_answer = True
 
     course_staff_status = is_course_staff(pctx)
     request = pctx.request
@@ -341,8 +345,13 @@ class ImgTableOrderError(BadRequest):
 @transaction.atomic
 @course_view
 def image_order(pctx, flow_session_id, ordinal):
-    page_image_behavior = get_page_image_behavior(pctx, flow_session_id, ordinal)
-    may_change_answer = page_image_behavior.may_change_answer
+    
+    try:
+        page_image_behavior = get_page_image_behavior(pctx, flow_session_id, ordinal)
+        may_change_answer = page_image_behavior.may_change_answer
+    except ValueError:
+        may_change_answer = True
+
     course_staff_status = is_course_staff(pctx)
     if not (may_change_answer or course_staff_status):
         raise ImgTableOrderError(_('Not allowd to modify answer.'))

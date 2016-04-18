@@ -52,8 +52,8 @@ urlpatterns = [
     url(r"^course"
         "/" + COURSE_ID_REGEX +
         "/flow-session"
-        "/(?P<flow_session_id>[0-9]+)"
-        "/(?P<ordinal>[0-9]+)"
+        "/(?P<flow_session_id>[0-9]+|None)"
+        "/(?P<ordinal>[0-9]+|None)"
         "/image/upload/$",
         ImageCreateView.as_view(),
         name='jfu_upload'),
@@ -71,8 +71,8 @@ urlpatterns = [
     url(r"^course"
         "/" + COURSE_ID_REGEX +
         "/flow-session"
-        "/(?P<flow_session_id>[0-9]+)"
-        "/(?P<ordinal>[0-9]+)"
+        "/(?P<flow_session_id>[0-9]+|None)"
+        "/(?P<ordinal>[0-9]+|None)"
         "/image/delete"
         "/(?P<pk>\d+)$",
         ImageDeleteView.as_view(), 
@@ -81,8 +81,8 @@ urlpatterns = [
     url(r"^course"
         "/" + COURSE_ID_REGEX +
         "/flow-session"
-        "/(?P<flow_session_id>[0-9]+)"
-        "/(?P<ordinal>[0-9]+)"
+        "/(?P<flow_session_id>[0-9]+|None)"
+        "/(?P<ordinal>[0-9]+|None)"
         "/image/view/$",
         ImageListView.as_view(),
         name='jfu_view'),
@@ -96,7 +96,7 @@ urlpatterns = [
     url(r"^user_flow_page_images"
         "/" + COURSE_ID_REGEX +
         "/flow-session"
-        "/(?P<flow_session_id>[0-9]+)"
+        "/(?P<flow_session_id>[0-9]+|None)"
         "/(?P<creator_id>\d+)"
         "/(?P<download_id>\d+)"
         "/(?P<file_name>[^/]+)$",
@@ -106,8 +106,8 @@ urlpatterns = [
     url(r"^course"
         "/" + COURSE_ID_REGEX +
         "/flow-session"
-        "/(?P<flow_session_id>[0-9]+)"
-        "/(?P<ordinal>[0-9]+)"
+        "/(?P<flow_session_id>[0-9]+|None)"
+        "/(?P<ordinal>[0-9]+|None)"
         "/image/crop"
         "/(?P<pk>\d+)$",
         image_crop,
@@ -116,8 +116,8 @@ urlpatterns = [
     url(r"^course"
         "/" + COURSE_ID_REGEX +
         "/flow-session"
-        "/(?P<flow_session_id>[0-9]+)"
-        "/(?P<ordinal>[0-9]+)"
+        "/(?P<flow_session_id>[0-9]+|None)"
+        "/(?P<ordinal>[0-9]+|None)"
         "/image/order",
         image_order,
         name='image_order'),

@@ -132,4 +132,8 @@ class ImageOperationMixin(UserPassesTestMixin):
         course_identifier = self.kwargs['course_identifier']
 
         pctx = CoursePageContext(request, course_identifier)
-        return get_page_image_behavior(pctx, flow_session_id, ordinal).may_change_answer
+        
+        try:
+            return get_page_image_behavior(pctx, flow_session_id, ordinal).may_change_answer
+        except ValueError:
+            return True
