@@ -33,7 +33,9 @@ from image_upload.views import (
     ImageCreateView, ImageDeleteView, ImageListView,
     image_crop_modal, image_crop, image_order,
     user_image_download,
-    flow_page_image_download)
+    flow_page_image_download,
+    flow_page_image_download_review
+)
 
 js_info_dict_image_upload = {
     'packages': ('image_upload',),
@@ -102,6 +104,18 @@ urlpatterns = [
         "/(?P<file_name>[^/]+)$",
         flow_page_image_download,
         name='flow_page_image_download'),
+
+    url(r"^review"
+        "/(?P<download_id>\d+)"
+        "/(?P<file_name>[^/]+)$",
+        flow_page_image_download_review,
+        name='flow_page_image_download_review'),
+
+    # url(r"^images_review"
+    #     "/(?P<download_id>\d+)"
+    #     "/(?P<file_name>[^/]+)$",
+    #     flow_page_image_download_review,
+    #     name='flow_page_image_download_review'),
 
     url(r"^course"
         "/" + COURSE_ID_REGEX +

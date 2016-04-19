@@ -158,16 +158,23 @@ class FlowPageImage(models.Model):
         super(FlowPageImage, self).delete(*args, **kwargs)
 
     @models.permalink
-    def get_absolute_url(self):
+    def get_absolute_url(self, private=True):
         import os
         file_name = os.path.basename(self.file.path)
-        return ('flow_page_image_download', [
-                self.course.identifier,
-                self.flow_session_id,
-                self.creator_id,
+        if private:
+            return ('flow_page_image_download', [
+                    self.course.identifier,
+                    self.flow_session_id,
+                    self.creator_id,
+                    self.pk,
+                    file_name], {}
+                    )
+        else:
+            return ('flow_page_image_download_review', [
                 self.pk,
                 file_name], {}
-                )
+                    )
+
 
     def get_random_filename(self):
         import os, uuid

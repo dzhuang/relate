@@ -179,7 +179,7 @@ def user_image_download(request, creator_id, download_id):
 
 @login_required
 @course_view
-def flow_page_image_download(pctx, flow_session_id, creator_id, 
+def flow_page_image_download(pctx, flow_session_id, creator_id,
                              download_id, file_name):
     request = pctx.request
     download_object = get_object_or_404(FlowPageImage, pk=download_id)
@@ -196,6 +196,14 @@ def flow_page_image_download(pctx, flow_session_id, creator_id,
         or request.user.is_staff):
         privilege = True
     
+    return _auth_download(request, download_object, privilege)
+
+@login_required
+def flow_page_image_download_review(request, download_id, file_name):
+
+    download_object = get_object_or_404(FlowPageImage, pk=download_id)
+    privilege = True
+
     return _auth_download(request, download_object, privilege)
 
 @login_required

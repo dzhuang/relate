@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
 from __future__ import division
 
 __copyright__ = "Copyright (C) 2016 Dong Zhuang"
@@ -41,6 +42,8 @@ from relate.utils import StyledForm
 
 from crispy_forms.layout import Layout, HTML
 
+import json
+import os
 
 # {{{ image upload question
 
@@ -344,42 +347,15 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
     #     )
 
     def make_page_data(self):
-        #import random
 
-        # perm = list(range(len(self.page_desc.choices)))
-        # if getattr(self.page_desc, "shuffle", False):
-        #     random.shuffle(perm)
-        #
-        # return {"flowpage_img": perm}
+        #print("=====================================================================")
 
         exclude_parti_tag = ["Foreign"]
-
         exclude_username = ["Miss.Chen"]
-
         attempts_included = "last"
-
         refered_course_id = "Graduate-ORI-16"
         refered_flow_id = "design-assignmment1-lpmodel"
         refered_page_id = "designLPModel1"
-
-        # qs_flow = FlowSession.objects.filter(
-        #      course__identifier=refered_course_id, flow_id=refered_flow_id
-        #  )
-        #
-        # print("========================")
-        # print(refered_page_id)
-        # print("========================")
-        # # fpd = FlowPageData.objects.filter(
-        # #     flow_session__course__identifier=refered_course_id, page_id=refered_page_id
-        # # )
-        # # print len(fpd)
-        # #
-        # # try_page = fpd[0]
-        # # print(dir(try_page))
-        # fpi = FlowPageImage.objects.filter()
-
-        # from course.utils import PageInstanceCache
-        # page_cache = PageInstanceCache(pctx.repo, pctx.course, flow_id)
 
         visits = (FlowPageVisit.objects
                   .filter(
@@ -410,152 +386,80 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
         elif attempts_included == "last":
             visits = visits.order_by('flow_session__participation__user__username', '-visit_time').distinct('flow_session__participation__user__username')
 
-        if len(visits) > 0:
+        # print("==================================")
+        # print(len(visits))
+        # print("==================================")
+        if len(visits) == 0:
+            return {}
+        else:
             import random
             import json
-            while True:
-                visits_list = list(visits)
-                #print len(visits_list)
+
+            page_id = None
+            flow_session = None
+            visits_list = list(visits)
+            while len(visits_list) > 0:
                 random.shuffle(visits_list)
-                #print visit.visit_time, visit.answer
+                page_id = visits_list[0].page_data.page_id
+                flow_session = visits_list[0].flow_session
+                qs = FlowPageImage.objects.filter(flow_session=flow_session, image_page_id=page_id)
 
-                answer = json.loads(visits_list[0].answer)
-                pid = visits_list[0].page_data.page_id
-                fs = visits_list[0].flow_session
-                print pid, fs
-                print answer
-
-                qs = FlowPageImage.objects.filter(flow_session=fs, image_page_id=pid)
-
-                if len(qs) > 0:
+                if len(qs) > 1:
+                    for fpi in qs:
+                        if not os.path.exists(fpi.file.path):
+                            visits_list.pop(0)
+                            continue
                     break
+                else:
+                    visits_list.pop(0)
+            # print("==================================")
+            # print(page_id)
+            # print(flow_session.flow_id)
+            # print("==================================")
 
-        print qs[0].file
-        print qs[1].file
-        page_data = '{"question": [%(question)s], "answers": [%(answers)s]}' % {
-            "question": qs[0].file.path,
-            "answers": ", ".join([a.file.path for a in qs[1:]])
-        }
-        print json.dumps(page_data)
+            if page_id and flow_session:
+                # print("==================================")
+                # print(flow_session.flow_id)
+                # print("==================================")
+                return {"course": refered_course_id,
+                        "flow_pk": flow_session.pk,
+                        "page_id": page_id}
+            else:
+                return {}
 
-
-
-                    #
-        # print(len(visits))
-        # for visit in visits:
-        #     print visit.visit_time
- #           print visit.answer
     def body(self, page_context, page_data):
-        answerdata1, answerdata2 = make_page_data()
+
+        #print(page_data)
+        if page_data is None:
+        #print("==================================")
+            page_data = self.make_page_data()
+        # print("==================================")
+        # print(page_data)
+
+        flow_pk = page_data["flow_pk"]
+        page_id = page_data["page_id"]
+
+        qs = FlowPageImage.objects.filter(flow_session__id=flow_pk, image_page_id=page_id)
+
+        print(len(qs))
+        answerdata1 = qs[0].get_absolute_url(private=False)
+        thumbnail1 = qs[0].file_thumbnail
+        answerdata2 = qs[1].get_absolute_url(private=False)
+        thumbnail2 = qs[1].file_thumbnail
+
+        #answerdata1, answerdata2 = self.make_page_data()
         return (
             markup_to_html(page_context, self.page_desc.prompt)
             + string_concat("<br/><p class='text-info'><strong><small>"
                             "(", _("Note: Maxmum number of images: %d"),
                             ")</small></strong></p>") % (self.maxNumberOfFiles,)
-            + "<p><img src=\""  + answerdata1 + "\"></p>"
-            + "<p><img src=\"" + answerdata2 + "\"></p>"
+            + '<div><p><a href="'  + answerdata1 + '" data-gallery><img src="' + thumbnail1.url + '\"><a></p>'
+            + '<p><a href="' + answerdata2 + '" data-gallery><img src="' + thumbnail2.url + '\"><a></p></div>'
 
         )
-    #
-    #
-    #
-    # def correct_answer(self, page_context, page_data, answer_data, grade_data):
-    #     if hasattr(self.page_desc, "answer_comment"):
-    #         return markup_to_html(page_context, self.page_desc.answer_comment)
-    #     else:
-    #         return None
+
+
 #}}}
 
-
-def make_page_data():
-    exclude_parti_tag = ["Foreign"]
-
-    exclude_username = ["Miss.Chen"]
-
-    attempts_included = "last"
-
-    refered_course_id = "Graduate-ORI-16"
-    refered_flow_id = "design-assignmment1-lpmodel"
-    refered_page_id = "designLPModel1"
-
-    # qs_flow = FlowSession.objects.filter(
-    #      course__identifier=refered_course_id, flow_id=refered_flow_id
-    #  )
-    #
-    # print("========================")
-    # print(refered_page_id)
-    # print("========================")
-    # # fpd = FlowPageData.objects.filter(
-    # #     flow_session__course__identifier=refered_course_id, page_id=refered_page_id
-    # # )
-    # # print len(fpd)
-    # #
-    # # try_page = fpd[0]
-    # # print(dir(try_page))
-    # fpi = FlowPageImage.objects.filter()
-
-    # from course.utils import PageInstanceCache
-    # page_cache = PageInstanceCache(pctx.repo, pctx.course, flow_id)
-
-    visits = (FlowPageVisit.objects
-              .filter(
-        flow_session__course__identifier=refered_course_id,
-        flow_session__flow_id=refered_flow_id,
-        page_data__page_id=refered_page_id,
-        is_submitted_answer=True,
-        flow_session__in_progress=False,
-    )
-              .select_related("flow_session")
-              .select_related("flow_session__participation__user")
-              .select_related("page_data")
-
-              # We overwrite earlier submissions with later ones
-              # in a dictionary below.
-              .order_by("visit_time"))
-
-    if exclude_parti_tag is not None:
-        visits = visits.exclude(
-            flow_session__participation__tags__name__in=exclude_parti_tag)
-
-    if exclude_username is not None:
-        visits = visits.exclude(
-            flow_session__participation__user__username__in=exclude_username)
-
-    if attempts_included == "first":
-        visits = visits.order_by('flow_session__participation__user__username', 'visit_time').distinct(
-            'flow_session__participation__user__username')
-    elif attempts_included == "last":
-        visits = visits.order_by('flow_session__participation__user__username', '-visit_time').distinct(
-            'flow_session__participation__user__username')
-
-    if len(visits) > 0:
-        import random
-        import json
-        while True:
-            visits_list = list(visits)
-            # print len(visits_list)
-            random.shuffle(visits_list)
-            # print visit.visit_time, visit.answer
-
-            answer = json.loads(visits_list[0].answer)
-            pid = visits_list[0].page_data.page_id
-            fs = visits_list[0].flow_session
-            print pid, fs
-            print answer
-
-            qs = FlowPageImage.objects.filter(flow_session=fs, image_page_id=pid)
-
-            if len(qs) > 0:
-                break
-
-    print qs[0].file
-    print qs[1].file
-    page_data = '{"question": [%(question)s], "answers": [%(answers)s]}' % {
-        "question": qs[0].file.path,
-        "answers": ", ".join([a.file.path for a in qs[1:]])
-    }
-
-    return qs[0].get_absolute_url(), qs[1].get_absolute_url()
-    #return json.dumps(page_data)
 
 # vim: foldmethod=marker
