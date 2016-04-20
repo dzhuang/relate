@@ -72,7 +72,7 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin, JSONResponseMixin
         from django.conf import settings
 
         max_allowed_jfu_size = getattr(
-			settings, "RELATE_JFU_MAX_IMAGE_SIZE", 2) * 1024**2
+            settings, "RELATE_JFU_MAX_IMAGE_SIZE", 2) * 1024**2
 
         if file._size > max_allowed_jfu_size:
             file_data = {
@@ -151,8 +151,15 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
     def get_queryset(self):
         flow_session_id = self.kwargs["flow_session_id"]
         ordinal = self.kwargs["ordinal"]
-        fpd = FlowPageData.objects.get(
-                flow_session=flow_session_id, ordinal=ordinal)
+
+        try:
+            fpd = FlowPageData.objects.get(
+                    flow_session=flow_session_id, ordinal=ordinal)
+        except ValueError:
+
+            # in sandbox
+            if flow_session_id == "None" or ordinal == "None":
+                return None
 
         return FlowPageImage.objects\
                 .filter(flow_session=flow_session_id)\
@@ -160,11 +167,14 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
                 .order_by("order","pk")
 
     def render_to_response(self, context, **response_kwargs):
-        files = [serialize(self.request, p, 'file')
-                for p in self.get_queryset()]
-        data = {'files': files}
+        queryset = self.get_queryset()
+        if queryset:
+            files = [serialize(self.request, p, 'file')
+                    for p in self.get_queryset()]
+            data = {'files': files}
+        else:
+            data = {}
         return self.render_json_response(data)
-
 # }}}
 
 
@@ -199,11 +209,19 @@ def flow_page_image_download(pctx, flow_session_id, creator_id,
     return _auth_download(request, download_object, privilege)
 
 @login_required
-def flow_page_image_download_review(request, download_id, file_name):
+def flow_page_image_problem(request, download_id, file_name):
+    # show the problem image
+    download_object = get_object_or_404(FlowPageImage, pk=download_id)
+    if download_object.order == 0:
+        privilege = True
+    else:
+        privilege = False
+    return _auth_download(request, download_object, privilege)
 
+@login_required
+def flow_page_image_key(request, download_id, creator_id, file_name):
     download_object = get_object_or_404(FlowPageImage, pk=download_id)
     privilege = True
-
     return _auth_download(request, download_object, privilege)
 
 @login_required

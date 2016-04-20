@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function
 from __future__ import division
 
 __copyright__ = "Copyright (C) 2016 Dong Zhuang"
@@ -35,8 +34,9 @@ from course.page.base import (
     PageBaseWithTitle, PageBaseWithValue, PageBaseWithHumanTextFeedback,
     PageBaseWithCorrectAnswer,
     markup_to_html)
-from course.models import FlowPageData, FlowSession, FlowPageVisit
+from course.models import FlowPageData, FlowSession, FlowPageVisit, Course
 from course.validation import ValidationError
+from course.constants import participation_role
 
 from relate.utils import StyledForm
 
@@ -328,42 +328,125 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
 
 class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
 
-    # def __init__(self, vctx, location, page_desc):
-    #     super(ImageUploadQuestionWithAnswer, self).__init__(vctx, location, page_desc)
-    #     self.refered_course_id = getattr(self.page_desc, "refered_course_id")
-    #     self.refered_page_id = getattr(self.page_desc, "refered_page_id")
-    #     self.excluded_parti_TAG = getattr(self.page_desc, "excluded_parti_TAG", None)
+    def __init__(self, vctx, location, page_desc):
+        super(ImageUploadQuestionWithAnswer, self).__init__(vctx, location, page_desc)
+        self.refered_course_id = getattr(page_desc, "refered_course_id")
+        self.refered_flow_id = getattr(page_desc, "refered_flow_id")
+        self.refered_page_id = getattr(page_desc, "refered_page_id")
+
+        self.exclude_parti_tag = getattr(page_desc, "exclude_parti_tag", None)
+        self.exclude_username = getattr(page_desc, "exclude_username", None)
+        self.exclude_session_tag = getattr(page_desc, "exclude_session_tag", None)
+        self.attempt_included = getattr(page_desc, "attempt_included", "last")
 
 
-    # def required_attrs(self):
-    #     return super(ImageUploadQuestionWithAnswer, self).required_attrs() + (
-    #         ("refered_course_id", str),
-    #         ("refered_page_id", str)
-    #     )
-    #
-    # def allowed_attrs(self):
-    #     return super(ImageUploadQuestionWithAnswer, self).allowed_attrs() + (
-    #         ("excluded_parti_TAG", (list, str)),
-    #     )
+        if self.attempt_included not in ["last", "first", "all"]:
+            raise ValidationError(
+                string_concat(
+                    "%(location)s: ",
+                    _("\"attempt_included\" must be one of "
+                      "\"last\", \"first\", \"all\""))
+                % {
+                    'location': location})
+
+        fpv_qs = FlowPageVisit.objects.filter(
+            flow_session__course__identifier=self.refered_course_id,
+            flow_session__flow_id=self.refered_flow_id,
+            page_data__page_id=self.refered_page_id,
+            is_submitted_answer=True,
+            flow_session__in_progress=False, )\
+            .exclude(
+            flow_session__participation__role__in=[participation_role.instructor,
+                                                   participation_role.teaching_assistant,
+                                                   participation_role.auditor]
+        )\
+            .select_related("flow_session")\
+            .select_related("flow_session__participation__user")\
+            .select_related("page_data")
+
+        if len(fpv_qs) == 0:
+            raise ValidationError(
+                    _("no existing flow page visit found named \"%(refered_page_id)s\" "
+                      "in flow \"%(refered_flow_id)s\" "
+                      "in course \"%(refered_course_id)s\""
+                      )
+                    % {
+                        'refered_course_id': self.refered_course_id,
+                        'refered_flow_id':self.refered_flow_id,
+                        'refered_page_id': self.refered_page_id})
+
+        if self.exclude_parti_tag:
+            for tag in self.exclude_parti_tag:
+                parti_tag_qs = fpv_qs.filter(flow_session__participation__tags__name__in=self.exclude_parti_tag)
+                if len(parti_tag_qs) == 0 and vctx is not None:
+                    vctx.add_warning(location,
+                        _("no participation tag named \"%(tag)s\" "
+                          "in course \"%(refered_course_id)s\""
+                          )
+                        % {
+                            'refered_course_id': self.refered_course_id,
+                            'tag': tag,
+                                     })
+        if self.exclude_username:
+            for name in self.exclude_username:
+                username_qs = fpv_qs.filter(
+                    flow_session__participation__user__username__exact=name)
+                if len(username_qs) == 0 and vctx is not None:
+                    vctx.add_warning(location,
+                                     _("no user with username \"%(name)s\" submitted sessions "
+                                       "in flow \"%(refered_flow_id)s\" "
+                                       "in course \"%(refered_course_id)s\""
+                                       )
+                                     % {
+                                         'refered_course_id': self.refered_course_id,
+                                         'refered_flow_id': self.refered_flow_id,
+                                         'name': name,
+                                     })
+
+        if self.exclude_session_tag:
+            for session_tag in self.exclude_session_tag:
+                stag_qs = fpv_qs.filter(
+                    flow_session__access_rules_tag__exact=session_tag)
+                if len(stag_qs) == 0 and vctx is not None:
+                    vctx.add_warning(location,
+                                     _("no flow session is taged \"%(session_tag)s\" is submitted "
+                                       "in flow \"%(refered_flow_id)s\" "
+                                       "in course \"%(refered_course_id)s\""
+                                       )
+                                     % {
+                                         'refered_course_id': self.refered_course_id,
+                                         'refered_flow_id': self.refered_flow_id,
+                                         'session_tag': session_tag,
+                                     })
+
+    def required_attrs(self):
+        return super(ImageUploadQuestionWithAnswer, self).required_attrs() + (
+            ("refered_course_id", str),
+            ("refered_flow_id", str),
+            ("refered_page_id", str),
+        )
+
+    def allowed_attrs(self):
+        return super(ImageUploadQuestionWithAnswer, self).allowed_attrs() + (
+            ("attempt_included", str),
+            ("exclude_parti_tag", (str, list)),
+            ("exclude_username", (str, list)),
+            ("exclude_session_tag", (str, list)),
+        )
 
     def make_page_data(self):
 
-        #print("=====================================================================")
-
-        exclude_parti_tag = ["Foreign"]
-        exclude_username = ["Miss.Chen"]
-        attempts_included = "last"
-        refered_course_id = "Graduate-ORI-16"
-        refered_flow_id = "design-assignmment1-lpmodel"
-        refered_page_id = "designLPModel1"
-
         visits = (FlowPageVisit.objects
                   .filter(
-            flow_session__course__identifier=refered_course_id,
-            flow_session__flow_id=refered_flow_id,
-            page_data__page_id=refered_page_id,
+            flow_session__course__identifier=self.refered_course_id,
+            flow_session__flow_id=self.refered_flow_id,
+            page_data__page_id=self.refered_page_id,
             is_submitted_answer=True,
-            flow_session__in_progress=False,
+            flow_session__in_progress=False,)
+                  .exclude(
+            flow_session__participation__role__in=[participation_role.instructor,
+                                                   participation_role.teaching_assistant,
+                                                   participation_role.auditor]
         )
                   .select_related("flow_session")
                   .select_related("flow_session__participation__user")
@@ -373,22 +456,23 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                   # in a dictionary below.
                   .order_by("visit_time"))
 
-        if exclude_parti_tag is not None:
+        if self.exclude_parti_tag is not None:
             visits = visits.exclude(
-                flow_session__participation__tags__name__in=exclude_parti_tag)
+                flow_session__participation__tags__name__in=self.exclude_parti_tag)
 
-        if exclude_username is not None:
+        if self.exclude_username is not None:
             visits = visits.exclude(
-                flow_session__participation__user__username__in=exclude_username)
+                flow_session__participation__user__username__in=self.exclude_username)
 
-        if attempts_included == "first":
+        if self.exclude_session_tag is not None:
+            visits = visits.exclude(
+                flow_session__access_rules_tag__in=self.exclude_session_tag)
+
+        if self.attempt_included == "first":
             visits = visits.order_by('flow_session__participation__user__username', 'visit_time').distinct('flow_session__participation__user__username')
-        elif attempts_included == "last":
+        elif self.attempt_included == "last":
             visits = visits.order_by('flow_session__participation__user__username', '-visit_time').distinct('flow_session__participation__user__username')
 
-        # print("==================================")
-        # print(len(visits))
-        # print("==================================")
         if len(visits) == 0:
             return {}
         else:
@@ -405,11 +489,18 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                 qs = FlowPageImage.objects.filter(flow_session=flow_session, image_page_id=page_id)
 
                 if len(qs) > 1:
+                    all_file_exist = True
                     for fpi in qs:
+                        print("==============================================")
+                        print(fpi.file.path)
                         if not os.path.exists(fpi.file.path):
-                            visits_list.pop(0)
-                            continue
-                    break
+                            all_file_exist = False
+                            break
+                    if not all_file_exist:
+                        visits_list.pop(0)
+                        continue
+                    else:
+                        break
                 else:
                     visits_list.pop(0)
             # print("==================================")
@@ -421,20 +512,17 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                 # print("==================================")
                 # print(flow_session.flow_id)
                 # print("==================================")
-                return {"course": refered_course_id,
+                return {"course": self.refered_course_id,
                         "flow_pk": flow_session.pk,
                         "page_id": page_id}
             else:
                 return {}
 
     def body(self, page_context, page_data):
-
-        #print(page_data)
-        if page_data is None:
-        #print("==================================")
+        if page_context.in_sandbox:
             page_data = self.make_page_data()
-        # print("==================================")
-        # print(page_data)
+        elif page_data is None:
+            page_data = self.make_page_data()
 
         flow_pk = page_data["flow_pk"]
         page_id = page_data["page_id"]
@@ -444,7 +532,7 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
         print(len(qs))
         answerdata1 = qs[0].get_absolute_url(private=False)
         thumbnail1 = qs[0].file_thumbnail
-        answerdata2 = qs[1].get_absolute_url(private=False)
+        answerdata2 = qs[1].get_absolute_url(private=False, key=True)
         thumbnail2 = qs[1].file_thumbnail
 
         #answerdata1, answerdata2 = self.make_page_data()

@@ -34,7 +34,8 @@ from image_upload.views import (
     image_crop_modal, image_crop, image_order,
     user_image_download,
     flow_page_image_download,
-    flow_page_image_download_review
+    flow_page_image_problem,
+    flow_page_image_key,
 )
 
 js_info_dict_image_upload = {
@@ -105,17 +106,24 @@ urlpatterns = [
         flow_page_image_download,
         name='flow_page_image_download'),
 
-    url(r"^review"
+    url(r"^question_img"
         "/(?P<download_id>\d+)"
         "/(?P<file_name>[^/]+)$",
-        flow_page_image_download_review,
-        name='flow_page_image_download_review'),
+        flow_page_image_problem,
+        name='flow_page_image_problem'),
+    
+    url(r"^key_img"
+        "/(?P<download_id>\d+)"
+        "/(?P<creator_id>\d+)"
+        "/(?P<file_name>[^/]+)$",
+        flow_page_image_key,
+        name='flow_page_image_key'),
 
     # url(r"^images_review"
     #     "/(?P<download_id>\d+)"
     #     "/(?P<file_name>[^/]+)$",
-    #     flow_page_image_download_review,
-    #     name='flow_page_image_download_review'),
+    #     flow_page_image_problem,
+    #     name='flow_page_image_problem'),
 
     url(r"^course"
         "/" + COURSE_ID_REGEX +
