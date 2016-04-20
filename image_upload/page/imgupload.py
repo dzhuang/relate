@@ -338,6 +338,8 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
         self.exclude_username = getattr(page_desc, "exclude_username", None)
         self.exclude_session_tag = getattr(page_desc, "exclude_session_tag", None)
         self.attempt_included = getattr(page_desc, "attempt_included", "last")
+        self.exclude_grade_percentage_lower_than = getattr(page_desc, "exclude_grade_percentage_lower_than", None)
+        self.only_graded_sessions = getattr(page_desc, "only_graded_sessions", True)
 
 
         if self.attempt_included not in ["last", "first", "all"]:
@@ -418,6 +420,18 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                                          'refered_flow_id': self.refered_flow_id,
                                          'session_tag': session_tag,
                                      })
+        if self.exclude_grade_percentage_lower_than:
+            try:
+                grade_percentage = float(self.exclude_grade_percentage_lower_than)
+            except Exception as e:
+                raise ValidationError(
+                      string_concat(
+                          location,
+                          ": %(err_type)s: %(err_str)s.")
+                      % {
+                          "err_type": type(e).__name__,
+                          "err_str": str(e)}
+                )
 
     def required_attrs(self):
         return super(ImageUploadQuestionWithAnswer, self).required_attrs() + (
@@ -432,6 +446,8 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
             ("exclude_parti_tag", (str, list)),
             ("exclude_username", (str, list)),
             ("exclude_session_tag", (str, list)),
+            ("exclude_grade_percentage_lower_than", (str, float)),
+            ("only_graded_sessions", bool),
         )
 
     def make_page_data(self):
@@ -484,15 +500,24 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
             visits_list = list(visits)
             while len(visits_list) > 0:
                 random.shuffle(visits_list)
-                page_id = visits_list[0].page_data.page_id
-                flow_session = visits_list[0].flow_session
+                visit = visits_list[0]
+                if self.only_graded_sessions or self.exclude_grade_percentage_lower_than:
+                    most_recent_grade = visit.get_most_recent_grade()
+                    if (self.only_graded_sessions and not most_recent_grade.correctness)\
+                            or\
+                            (self.exclude_grade_percentage_lower_than
+                             and
+                             most_recent_grade.correctness < float(self.exclude_grade_percentage_lower_than)):
+                        visits_list.pop (0)
+                        continue
+
+                page_id = visit.page_data.page_id
+                flow_session = visit.flow_session
                 qs = FlowPageImage.objects.filter(flow_session=flow_session, image_page_id=page_id)
 
                 if len(qs) > 1:
                     all_file_exist = True
                     for fpi in qs:
-                        print("==============================================")
-                        print(fpi.file.path)
                         if not os.path.exists(fpi.file.path):
                             all_file_exist = False
                             break
@@ -503,48 +528,64 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                         break
                 else:
                     visits_list.pop(0)
-            # print("==================================")
-            # print(page_id)
-            # print(flow_session.flow_id)
-            # print("==================================")
+            
+            if len(visits_list) == 0:
+                return {}
 
             if page_id and flow_session:
-                # print("==================================")
-                # print(flow_session.flow_id)
-                # print("==================================")
                 return {"course": self.refered_course_id,
                         "flow_pk": flow_session.pk,
                         "page_id": page_id}
             else:
                 return {}
 
+    def get_flowpageimage_qs(self, page_context, page_data):
+        if page_context.in_sandbox or page_data is None:
+            page_data = self.make_page_data ()
+
+        if page_data:
+            flow_pk = page_data["flow_pk"]
+            page_id = page_data["page_id"]
+            qs = FlowPageImage.objects.filter (flow_session__id=flow_pk, image_page_id=page_id)
+
+            if len(qs) > 0:
+                return qs
+
+        return None
+
     def body(self, page_context, page_data):
-        if page_context.in_sandbox:
-            page_data = self.make_page_data()
-        elif page_data is None:
-            page_data = self.make_page_data()
 
-        flow_pk = page_data["flow_pk"]
-        page_id = page_data["page_id"]
+        body_html =  markup_to_html(page_context, self.page_desc.prompt)\
+                     + string_concat("<br/><p class='text-info'><strong><small>"
+                                     "(", _("Note: Maxmum number of images: %d"),
+                                     ")</small></strong></p>")\
+                       % (self.maxNumberOfFiles,)
 
-        qs = FlowPageImage.objects.filter(flow_session__id=flow_pk, image_page_id=page_id)
+        qs = self.get_flowpageimage_qs(page_context, page_data)
 
-        print(len(qs))
-        answerdata1 = qs[0].get_absolute_url(private=False)
-        thumbnail1 = qs[0].file_thumbnail
-        answerdata2 = qs[1].get_absolute_url(private=False, key=True)
-        thumbnail2 = qs[1].file_thumbnail
+        if qs:
+            question_img = qs[0].get_absolute_url(private=False)
+            question_thumbnail = qs[0].file_thumbnail
 
-        #answerdata1, answerdata2 = self.make_page_data()
-        return (
-            markup_to_html(page_context, self.page_desc.prompt)
-            + string_concat("<br/><p class='text-info'><strong><small>"
-                            "(", _("Note: Maxmum number of images: %d"),
-                            ")</small></strong></p>") % (self.maxNumberOfFiles,)
-            + '<div><p><a href="'  + answerdata1 + '" data-gallery><img src="' + thumbnail1.url + '\"><a></p>'
-            + '<p><a href="' + answerdata2 + '" data-gallery><img src="' + thumbnail2.url + '\"><a></p></div>'
+            body_html += (
+                '<div><p><a href="'  + question_img + '" data-gallery><img src="' + question_thumbnail.url + '\"><a></p>'
+                '</div>'
+            )
 
-        )
+        return body_html
+
+    def correct_answer(self, page_context, page_data, answer_data, grade_data):
+        qs = self.get_flowpageimage_qs(page_context, page_data)
+        ca = ""
+        if qs:
+            for answer in list(qs)[1:]:
+                key_thumbnail = qs[1].file_thumbnail
+                key_img = answer.get_absolute_url(private=False, key=True)
+                ca = ca + '<p><a href="' + key_img + '" data-gallery><img src="' + key_thumbnail.url + '\"><a></p>'
+
+        CA_PATTERN = string_concat (_ ("A correct answer is"), ": <br/> <div>%s</div>")  # noqa
+
+        return CA_PATTERN % ca
 
 
 #}}}
