@@ -38,17 +38,13 @@ from course.utils import CoursePageContext
 # extracted from course.flow
 def get_page_image_behavior(pctx, flow_session_id, ordinal):
     
-    print pctx.in_sandbox
-    
-    print "======================"
-
-    if pctx.in_sandbox:
-            from course.page.base import PageBehavior
-            return PageBehavior(
-                show_correctness=True,
-                show_answer=True,
-                may_change_answer=True,
-            )
+    if ordinal == "None" and flow_session_id == "None":
+        from course.page.base import PageBehavior
+        return PageBehavior(
+            show_correctness=True,
+            show_answer=True,
+            may_change_answer=True,
+        )
 
     request = pctx.request
 

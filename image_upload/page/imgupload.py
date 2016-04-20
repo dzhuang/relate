@@ -568,7 +568,7 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
             question_thumbnail = qs[0].file_thumbnail
 
             body_html += (
-                '<div><p><a href="'  + question_img + '" data-gallery><img src="' + question_thumbnail.url + '\"><a></p>'
+                '<div><p><a href="' + question_img + '" data-gallery="#question"><img src="' + question_thumbnail.url + '"></a></p>'
                 '</div>'
             )
 
@@ -579,11 +579,11 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
         ca = ""
         if qs:
             for answer in list(qs)[1:]:
-                key_thumbnail = qs[1].file_thumbnail
+                key_thumbnail = answer.file_thumbnail
                 key_img = answer.get_absolute_url(private=False, key=True)
-                ca = ca + '<p><a href="' + key_img + '" data-gallery><img src="' + key_thumbnail.url + '\"><a></p>'
+                ca = ca + '<a href="' + key_img + '" data-gallery="#blueimp-gallery-key"><img src="' + key_thumbnail.url + '"></a>'
 
-        CA_PATTERN = string_concat (_ ("A correct answer is"), ": <br/> <div>%s</div>")  # noqa
+        CA_PATTERN = string_concat (_ ("A correct answer is"), ": <br/> <div class='container'><div id='key'>%s</div></div>")  # noqa
 
         return CA_PATTERN % ca
 
