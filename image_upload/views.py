@@ -72,7 +72,7 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin, JSONResponseMixin
         from django.conf import settings
 
         max_allowed_jfu_size = getattr(
-			settings, "RELATE_JFU_MAX_IMAGE_SIZE", 2) * 1024**2
+            settings, "RELATE_JFU_MAX_IMAGE_SIZE", 2) * 1024**2
 
         if file._size > max_allowed_jfu_size:
             file_data = {
@@ -151,8 +151,15 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
     def get_queryset(self):
         flow_session_id = self.kwargs["flow_session_id"]
         ordinal = self.kwargs["ordinal"]
-        fpd = FlowPageData.objects.get(
-                flow_session=flow_session_id, ordinal=ordinal)
+
+        try:
+            fpd = FlowPageData.objects.get(
+                    flow_session=flow_session_id, ordinal=ordinal)
+        except ValueError:
+
+            # in sandbox
+            if flow_session_id == "None" or ordinal == "None":
+                return None
 
         return FlowPageImage.objects\
                 .filter(flow_session=flow_session_id)\
@@ -160,11 +167,14 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
                 .order_by("order","pk")
 
     def render_to_response(self, context, **response_kwargs):
-        files = [serialize(self.request, p, 'file')
-                for p in self.get_queryset()]
-        data = {'files': files}
+        queryset = self.get_queryset()
+        if queryset:
+            files = [serialize(self.request, p, 'file')
+                    for p in self.get_queryset()]
+            data = {'files': files}
+        else:
+            data = {}
         return self.render_json_response(data)
-
 # }}}
 
 
@@ -179,7 +189,7 @@ def user_image_download(request, creator_id, download_id):
 
 @login_required
 @course_view
-def flow_page_image_download(pctx, flow_session_id, creator_id, 
+def flow_page_image_download(pctx, flow_session_id, creator_id,
                              download_id, file_name):
     request = pctx.request
     download_object = get_object_or_404(FlowPageImage, pk=download_id)
@@ -196,6 +206,22 @@ def flow_page_image_download(pctx, flow_session_id, creator_id,
         or request.user.is_staff):
         privilege = True
     
+    return _auth_download(request, download_object, privilege)
+
+@login_required
+def flow_page_image_problem(request, download_id, file_name):
+    # show the problem image
+    download_object = get_object_or_404(FlowPageImage, pk=download_id)
+    if download_object.order == 0:
+        privilege = True
+    else:
+        privilege = False
+    return _auth_download(request, download_object, privilege)
+
+@login_required
+def flow_page_image_key(request, download_id, creator_id, file_name):
+    download_object = get_object_or_404(FlowPageImage, pk=download_id)
+    privilege = True
     return _auth_download(request, download_object, privilege)
 
 @login_required
@@ -256,8 +282,12 @@ def image_crop_modal(pctx, flow_session_id, ordinal, pk):
 @transaction.atomic
 @course_view
 def image_crop(pctx, flow_session_id, ordinal, pk):
-    page_image_behavior = get_page_image_behavior(pctx, flow_session_id, ordinal)
-    may_change_answer = page_image_behavior.may_change_answer
+    
+    try:
+        page_image_behavior = get_page_image_behavior(pctx, flow_session_id, ordinal)
+        may_change_answer = page_image_behavior.may_change_answer
+    except ValueError:
+        may_change_answer = True
 
     course_staff_status = is_course_staff(pctx)
     request = pctx.request
@@ -341,8 +371,13 @@ class ImgTableOrderError(BadRequest):
 @transaction.atomic
 @course_view
 def image_order(pctx, flow_session_id, ordinal):
-    page_image_behavior = get_page_image_behavior(pctx, flow_session_id, ordinal)
-    may_change_answer = page_image_behavior.may_change_answer
+    
+    try:
+        page_image_behavior = get_page_image_behavior(pctx, flow_session_id, ordinal)
+        may_change_answer = page_image_behavior.may_change_answer
+    except ValueError:
+        may_change_answer = True
+
     course_staff_status = is_course_staff(pctx)
     if not (may_change_answer or course_staff_status):
         raise ImgTableOrderError(_('Not allowd to modify answer.'))

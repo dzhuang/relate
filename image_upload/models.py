@@ -38,6 +38,7 @@ from course.models import Course, FlowSession, FlowPageData
 from imagekit.models import ImageSpecField
 from imagekit.processors import ResizeToFit
 
+
 @deconstructible
 class UserImageStorage(FileSystemStorage):
     def __init__(self):
@@ -56,7 +57,7 @@ def user_directory_path(instance, filename):
     return 'user_images/{0}(user_{1})/{2}'.format(
         user_full_name,
         instance.creator_id,
-        file_name)
+        filename)
 
 class UserImage(models.Model):
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
@@ -157,16 +158,29 @@ class FlowPageImage(models.Model):
         super(FlowPageImage, self).delete(*args, **kwargs)
 
     @models.permalink
-    def get_absolute_url(self):
+    def get_absolute_url(self, private=True, key=False):
         import os
         file_name = os.path.basename(self.file.path)
-        return ('flow_page_image_download', [
-                self.course.identifier,
-                self.flow_session_id,
-                self.creator_id,
+        if private:
+            return ('flow_page_image_download', [
+                    self.course.identifier,
+                    self.flow_session_id,
+                    self.creator_id,
+                    self.pk,
+                    file_name], {}
+                    )
+        elif key==False:
+            return ('flow_page_image_problem', [
                 self.pk,
                 file_name], {}
-                )
+                    )
+        elif key==True:
+            return ('flow_page_image_key', [
+                self.pk,
+                self.creator_id,
+                file_name], {}
+                    )
+
 
     def get_random_filename(self):
         import os, uuid

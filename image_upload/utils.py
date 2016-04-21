@@ -37,6 +37,14 @@ from course.utils import CoursePageContext
 
 # extracted from course.flow
 def get_page_image_behavior(pctx, flow_session_id, ordinal):
+    
+    if ordinal == "None" and flow_session_id == "None":
+        from course.page.base import PageBehavior
+        return PageBehavior(
+            show_correctness=True,
+            show_answer=True,
+            may_change_answer=True,
+        )
 
     request = pctx.request
 
@@ -132,4 +140,8 @@ class ImageOperationMixin(UserPassesTestMixin):
         course_identifier = self.kwargs['course_identifier']
 
         pctx = CoursePageContext(request, course_identifier)
-        return get_page_image_behavior(pctx, flow_session_id, ordinal).may_change_answer
+        
+        try:
+            return get_page_image_behavior(pctx, flow_session_id, ordinal).may_change_answer
+        except ValueError:
+            return True

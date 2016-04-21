@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-04-07 19:28+0800\n"
+"POT-Creation-Date: 2016-04-21 22:47+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -969,8 +969,8 @@ msgstr "预先批准数据"
 msgid "Preapprove"
 msgstr "预先批准"
 
-#: .\course\enrollment.py:308 .\course\enrollment.py:520
-#: .\course\enrollment.py:947
+#: .\course\enrollment.py:308 .\course\enrollment.py:525
+#: .\course\enrollment.py:953
 msgid "only instructors may do that"
 msgstr "只有任课老师才有执行该操作的权限"
 
@@ -1016,7 +1016,7 @@ msgstr "学生全名所在列，从1起"
 msgid "Full name column"
 msgstr "全名列序"
 
-#: .\course\enrollment.py:699
+#: .\course\enrollment.py:705
 #, python-format
 msgid ""
 "%(n_created)d preapprovals created, %(n_exist)d already existed, %(n_updated)"
@@ -1026,11 +1026,11 @@ msgstr ""
 "(n_updated)d条记录更新了全名, 批准了%(n_requested_approved)d个之前已经提交的"
 "申请. "
 
-#: .\course\enrollment.py:716
+#: .\course\enrollment.py:722
 msgid "Create Participation Preapprovals from CSV"
 msgstr "用户加入课程预批准--csv导入"
 
-#: .\course\enrollment.py:905
+#: .\course\enrollment.py:911
 msgid ""
 "Enter queries, one per line. Allowed: <code>and</code>, <code>or</code>, "
 "<code>not</code>, <code>id:1234</code>, <code>email:a@b.com</code>, "
@@ -1046,43 +1046,43 @@ msgstr ""
 "teaching_assistant|student|observer|auditor</code>, <code>status:requested|"
 "active|dropped|denied</code>."
 
-#: .\course\enrollment.py:920
+#: .\course\enrollment.py:926
 msgid "Queries"
 msgstr "查询"
 
-#: .\course\enrollment.py:923
+#: .\course\enrollment.py:929
 msgid "Apply tag"
 msgstr "应用tag"
 
-#: .\course\enrollment.py:924
+#: .\course\enrollment.py:930
 msgid "Remove tag"
 msgstr "移除tag"
 
-#: .\course\enrollment.py:925
+#: .\course\enrollment.py:931
 msgid "Drop"
 msgstr "删除"
 
-#: .\course\enrollment.py:927
+#: .\course\enrollment.py:933
 msgid "Operation"
 msgstr "操作"
 
-#: .\course\enrollment.py:929
+#: .\course\enrollment.py:935
 msgid "Tag"
 msgstr "标签"
 
-#: .\course\enrollment.py:930
+#: .\course\enrollment.py:936
 msgid "Tag to apply or remove"
 msgstr "准备应用或移除的tag"
 
-#: .\course\enrollment.py:937 .\course\exam.py:181
+#: .\course\enrollment.py:943 .\course\exam.py:181
 msgid "List"
 msgstr "列表"
 
-#: .\course\enrollment.py:939
+#: .\course\enrollment.py:945
 msgid "Apply operation"
 msgstr "应用操作"
 
-#: .\course\enrollment.py:972
+#: .\course\enrollment.py:978
 #, python-format
 msgid "Error in line %(lineno)d: %(error_type)s: %(error)s"
 msgstr "在第%(lineno)d行出现错误: %(error_type)s: %(error)s"
@@ -3720,7 +3720,7 @@ msgstr ""
 
 #: .\course\templates\course\enrollment-decision-email.txt:12
 #: .\course\templates\course\enrollment-request-email.txt:8
-#: .\course\templates\course\grade-notify.txt:12
+#: .\course\templates\course\grade-notify.txt:11
 #: .\course\templates\course\sign-in-email.txt:11
 #: .\course\templates\course\submit-notify.txt:8
 msgid "- RELATE staff "
@@ -4297,12 +4297,23 @@ msgid "Submit and next session"
 msgstr "提交并转到下一个session"
 
 #: .\course\templates\course\grade-notify.txt:2
-#, python-format
+#, fuzzy, python-format
+#| msgid ""
+#| "\n"
+#| "You have a new notification regarding your work on the page with title '%"
+#| "(page_title)s' in '%(flow_id)s' of '%(course_identifier)s'. The full text "
+#| "of the feedback follows.\n"
+#| "-------------------------------------------------------------------\n"
+#| "%(feedback_text)s\n"
+#| "-------------------------------------------------------------------\n"
+#| "Click here to review the feedback in context:\n"
+#| "%(review_uri)s\n"
+#| "\n"
 msgid ""
 "\n"
 "You have a new notification regarding your work on the page with title '%"
-"(page_title)s' in '%(flow_id)s' of '%(course_identifier)s'. The "
-"full text of the feedback follows.\n"
+"(page_title)s' in '%(flow_session_id)s' of '%(course_identifier)s'. The full "
+"text of the feedback follows.\n"
 "-------------------------------------------------------------------\n"
 "%(feedback_text)s\n"
 "-------------------------------------------------------------------\n"
