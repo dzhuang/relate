@@ -767,21 +767,10 @@ class ImgUPloadAnswerEmailFeedbackForm(StyledForm):
                 "submit", _("Send Email"),
                 css_class="relate-submit-button"))
 
-
-
-    # def clean(self):
-    #     cleaned_data = super(TextAnswerForm, self).clean()
-    #
-    #     answer = cleaned_data.get("answer", "")
-    #     for i, validator in enumerate(self.validators):
-    #         try:
-    #             validator.validate(answer)
-    #         except forms.ValidationError:
-    #             if i + 1 == len(self.validators):
-    #                 # last one, and we flunked -> not valid
-    #                 raise
-    #         else:
-    #             # Found one that will take the input. Good enough.
-    #             break
+    def clean_feedback(self):
+        cleaned_data = super(ImgUPloadAnswerEmailFeedbackForm, self).clean()
+        feedback = cleaned_data.get("feedback")
+        if len(feedback) < 20:
+            raise forms.ValidationError(_("At least 20 characters are required for submission."))
 
 # vim: foldmethod=marker
