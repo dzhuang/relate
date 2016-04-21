@@ -339,7 +339,8 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
         self.exclude_session_tag = getattr(page_desc, "exclude_session_tag", None)
         self.attempt_included = getattr(page_desc, "attempt_included", "last")
         self.exclude_grade_percentage_lower_than = getattr(page_desc, "exclude_grade_percentage_lower_than", None)
-        self.only_graded_sessions = getattr(page_desc, "only_graded_sessions", True)
+        self.only_graded_pages = getattr(page_desc, "only_graded_pages", True)
+        self.allow_report_correct_answer_false = getattr(page_desc,"allow_report_correct_answer_false", True)
 
 
         if self.attempt_included not in ["last", "first", "all"]:
@@ -420,9 +421,15 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                                          'refered_flow_id': self.refered_flow_id,
                                          'session_tag': session_tag,
                                      })
+
         if self.exclude_grade_percentage_lower_than:
             try:
                 grade_percentage = float(self.exclude_grade_percentage_lower_than)
+                if grade_percentage > 1 or grade_percentage < 0:
+                    vctx.add_warning(location,
+                                     _("attribute \"exclude_grade_percentage_lower_than\" "
+                                       "should between 0 and 1")
+                                     )
             except Exception as e:
                 raise ValidationError(
                       string_concat(
@@ -447,7 +454,7 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
             ("exclude_username", (str, list)),
             ("exclude_session_tag", (str, list)),
             ("exclude_grade_percentage_lower_than", (str, float)),
-            ("only_graded_sessions", bool),
+            ("only_graded_pages", bool),
         )
 
     def make_page_data(self):
@@ -501,9 +508,10 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
             while len(visits_list) > 0:
                 random.shuffle(visits_list)
                 visit = visits_list[0]
-                if self.only_graded_sessions or self.exclude_grade_percentage_lower_than:
+                if self.only_graded_pages or self.exclude_grade_percentage_lower_than:
                     most_recent_grade = visit.get_most_recent_grade()
-                    if (self.only_graded_sessions and not most_recent_grade.correctness)\
+                    print most_recent_grade
+                    if (self.only_graded_pages and not most_recent_grade.correctness)\
                             or\
                             (self.exclude_grade_percentage_lower_than
                              and
@@ -574,18 +582,87 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
 
         return body_html
 
+    def send_ca_false_email(self, page_context, wrong_msg):
+        from django.utils import translation
+        from django.conf import settings
+        from course.models import Participation
+
+        tutor_qs = Participation.objects.filter(course=page_context.course, role=participation_role.instructor)
+
+        tutor_email_list = [tutor.user.email for tutor in tutor_qs]
+
+
+        from_email = getattr(settings, "STUDENT_FEEDBACK_FROM_EMAIL", settings.SERVER_EMAIL)
+        student_email = page_context.flow_session.participation.user.email
+
+        with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
+
+            from django.template.loader import render_to_string
+            message = render_to_string("image_upload/report-correct-answer-error-email.txt", {
+                "page_id": self.page_desc.id,
+                "course": page_context.course,
+                "error_message": wrong_msg,
+                "review_url": page_context.page_uri
+            })
+
+            from django.core.mail import EmailMessage
+            msg = EmailMessage(
+                subject=string_concat("[%(identifier)s:%(flow_id)s] ",
+                              _("New notification"))
+                % {'identifier': page_context.course.identifier,
+                   'flow_id': page_context.flow_session.flow_id},
+                body=message,
+                from_email=from_email,
+                to=tutor_email_list)
+            msg.bcc = [student_email]
+            msg.reply_to = [student_email]
+            msg.send()
+
+
+
+
     def correct_answer(self, page_context, page_data, answer_data, grade_data):
         qs = self.get_flowpageimage_qs(page_context, page_data)
-        ca = ""
+        ca = "\n"
         if qs:
             for answer in list(qs)[1:]:
                 key_thumbnail = answer.file_thumbnail
                 key_img = answer.get_absolute_url(private=False, key=True)
-                ca = ca + '<a href="' + key_img + '" data-gallery="#blueimp-gallery-key"><img src="' + key_thumbnail.url + '"></a>'
+                ca = ca + '<a href="' + key_img + '"><img src="' + key_thumbnail.url + '"></a>\n'
 
-        CA_PATTERN = string_concat (_ ("A correct answer is"), ": <br/> <div class='container'><div id='key'>%s</div></div>")  # noqa
+        js = """<script>
+                document.getElementById('key').onclick = function (event) {
+                    event = event || window.event;
+                    var target = event.target || event.srcElement,
+                    link = target.src ? target.parentNode : target,
+                    options = {index: link, event: event},
+                    links = this.getElementsByTagName('a');
+                    blueimp.Gallery(links, options);
+                    };
+            </script>"""
 
-        return CA_PATTERN % ca
+        student_feedback = ""
+        if self.allow_report_correct_answer_false:
+            from course.models import Participation
+            tutor_qs = Participation.objects.filter(course=page_context.course, role=participation_role.instructor)
+            tutor_email_list = [tutor.user.email for tutor in tutor_qs]
+
+            student_feedback_message = (
+                string_concat(_("Find the correct answer wrong? Your "
+                  "can send feedback email to %(tutormail)s, "
+                  "and if you are proved to be right, you'll "
+                  "get bonus for the contribution."))
+                % {"tutormail": ", ".join(tutor_email_list)}
+            )
+            student_feedback_title = _("Notice")
+
+            student_feedback = "<br/> <div class='warning'><h4>%s</h4>%s </div>" \
+                               % (student_feedback_title, student_feedback_message)
+
+        CA_PATTERN = string_concat (_ ("A correct answer is"), ": <br/> <div id='key'>%s</div>  %s <br/> %s")  # noqa
+
+
+        return CA_PATTERN % (ca, student_feedback, js)
 
 
 #}}}
