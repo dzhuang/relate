@@ -37,10 +37,11 @@ from course.page.base import (
 from course.models import FlowPageData, FlowSession, FlowPageVisit, Course
 from course.validation import ValidationError
 from course.constants import participation_role
+from course.utils import course_view, render_course_page, FlowPageContext
 
 from relate.utils import StyledForm
 
-from crispy_forms.layout import Layout, HTML
+from crispy_forms.layout import Layout, HTML, Submit
 
 import json
 import os
@@ -563,6 +564,10 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
 
     def body(self, page_context, page_data):
 
+        print "======================"
+        print type(page_context)
+
+
         body_html =  markup_to_html(page_context, self.page_desc.prompt)\
                      + string_concat("<br/><p class='text-info'><strong><small>"
                                      "(", _("Note: Maxmum number of images: %d"),
@@ -581,45 +586,6 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
             )
 
         return body_html
-
-    def send_ca_false_email(self, page_context, wrong_msg):
-        from django.utils import translation
-        from django.conf import settings
-        from course.models import Participation
-
-        tutor_qs = Participation.objects.filter(course=page_context.course, role=participation_role.instructor)
-
-        tutor_email_list = [tutor.user.email for tutor in tutor_qs]
-
-
-        from_email = getattr(settings, "STUDENT_FEEDBACK_FROM_EMAIL", settings.SERVER_EMAIL)
-        student_email = page_context.flow_session.participation.user.email
-
-        with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
-
-            from django.template.loader import render_to_string
-            message = render_to_string("image_upload/report-correct-answer-error-email.txt", {
-                "page_id": self.page_desc.id,
-                "course": page_context.course,
-                "error_message": wrong_msg,
-                "review_url": page_context.page_uri
-            })
-
-            from django.core.mail import EmailMessage
-            msg = EmailMessage(
-                subject=string_concat("[%(identifier)s:%(flow_id)s] ",
-                              _("New notification"))
-                % {'identifier': page_context.course.identifier,
-                   'flow_id': page_context.flow_session.flow_id},
-                body=message,
-                from_email=from_email,
-                to=tutor_email_list)
-            msg.bcc = [student_email]
-            msg.reply_to = [student_email]
-            msg.send()
-
-
-
 
     def correct_answer(self, page_context, page_data, answer_data, grade_data):
         qs = self.get_flowpageimage_qs(page_context, page_data)
@@ -647,25 +613,175 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
             tutor_qs = Participation.objects.filter(course=page_context.course, role=participation_role.instructor)
             tutor_email_list = [tutor.user.email for tutor in tutor_qs]
 
-            student_feedback_message = (
-                string_concat(_("Find the correct answer wrong? Your "
-                  "can send feedback email to %(tutormail)s, "
-                  "and if you are proved to be right, you'll "
-                  "get bonus for the contribution."))
-                % {"tutormail": ", ".join(tutor_email_list)}
+            from django.core.urlresolvers import reverse
+            email_page_url = reverse(
+                "feedBackEmail",
+                kwargs={'course_identifier': page_context.course.identifier,
+                        'flow_session_id': page_context.flow_session.id,
+                        'ordinal': page_context.ordinal
+                        }
             )
-            student_feedback_title = _("Notice")
+            feedbackbutton = (
+                "<a href='%(url)s'"
+                "class='btn btn-primary btn-xs relate-btn-xs-vert-spaced' target='_blank'>"
+                "%(send_email)s </a>"
+                % {"url": email_page_url, "send_email": _("Send Email")})
 
-            student_feedback = "<br/> <div class='warning'><h4>%s</h4>%s </div>" \
-                               % (student_feedback_title, student_feedback_message)
+            student_feedback_message = (
+                string_concat(_("Find the given correct answer wrong? Please feel easy to "
+                                "contact the instructor(s) "))
+            )
+
+            student_feedback_message += feedbackbutton
+
+
+            student_feedback = "<br/> <div style='float:right'>%s </div>"  % student_feedback_message
 
         CA_PATTERN = string_concat (_ ("A correct answer is"), ": <br/> <div id='key'>%s</div>  %s <br/> %s")  # noqa
 
 
         return CA_PATTERN % (ca, student_feedback, js)
 
+@course_view
+def feedBackEmail(pctx, flow_session_id, ordinal):
 
+    from django.http import HttpResponse
+    from django.shortcuts import get_object_or_404
+
+    request = pctx.request
+    if request.method == "POST":
+        form = ImgUPloadAnswerEmailFeedbackForm(request.POST)
+
+        if form.is_valid():
+            from django.utils import translation
+            from django.conf import settings
+            from course.models import Participation
+
+            flow_session = get_object_or_404(FlowSession, id=int(flow_session_id))
+
+            flow_id = flow_session.flow_id
+
+            page_id = FlowPageData.objects.get(flow_session=flow_session_id, ordinal=ordinal).page_id
+
+            tutor_qs = Participation.objects.filter(course=pctx.course, role=participation_role.instructor)
+
+            tutor_email_list = [tutor.user.email for tutor in tutor_qs]
+
+            #print page_id
+
+            from django.core.urlresolvers import reverse
+            review_url = reverse(
+                "relate-view_flow_page",
+                kwargs={'course_identifier': pctx.course.identifier,
+                        'flow_session_id': flow_session_id,
+                        'ordinal': ordinal
+                        }
+            )
+
+            from urlparse import urljoin
+            review_uri = urljoin(getattr(settings, "RELATE_BASE_URL"),
+                                 review_url)
+
+
+            from_email = getattr(settings, "STUDENT_FEEDBACK_FROM_EMAIL", settings.SERVER_EMAIL)
+            student_email = flow_session.participation.user.email
+
+            with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
+                from django.template.loader import render_to_string
+                message = render_to_string("image_upload/report-correct-answer-error-email.txt", {
+                    "page_id": page_id,
+                    "flow_session_id": flow_session_id,
+                    "course": pctx.course,
+                    "feedback_text": form.cleaned_data["feedback"],
+                    "review_uri": review_uri,
+                    "username": pctx.participation.user.get_full_name()
+                })
+
+                from django.core.mail import EmailMessage
+                msg = EmailMessage(
+                    subject=string_concat("[%(identifier)s:%(flow_id)s--%(page_id)s] ",
+                                          _("Feedback from %(username)s"))
+                            % {'identifier': pctx.course_identifier,
+                               'flow_id': flow_session_id,
+                               'page_id': page_id,
+                               'username': pctx.participation.user.get_full_name()
+                               },
+                    body=message,
+                    from_email=from_email,
+                    to=tutor_email_list,
+                    headers={
+                        "SUBMAIL_APP_ID": settings.STUDENT_FEEDBACK_APP_ID,
+                        "SUBMAIL_APP_KEY": settings.STUDENT_FEEDBACK_APP_KEY}
+                )
+                msg.bcc = [student_email]
+                msg.reply_to = [student_email]
+                msg.send()
+            return HttpResponse(_("Thank you for your feedback, and notice that you will "
+                                  "also receive a copy of the email."))
+
+
+    else:
+        form = ImgUPloadAnswerEmailFeedbackForm()
+
+    return render_course_page(pctx, "course/generic-course-form.html", {
+         "form": form,
+         "form_description": _("Send feedback email"),
+     })
+
+    from django.http import HttpResponse
+    #return HttpResponse("")
+
+
+    # def email_form_html(self, request):
+    #
+    #     form = ImgUPloadAnswerEmailFeedbackForm()
+    #
+    #     from django.template import loader, RequestContext
+    #     from django import VERSION as django_version  # noqa
+    #
+    #     if django_version >= (1, 9):
+    #         return loader.render_to_string(
+    #             "course/crispy-form.html",
+    #             context={"form": form},
+    #             request=request)
+    #     else:
+    #         context = RequestContext(request)
+    #         context.update({"form": form})
+    #         return loader.render_to_string(
+    #             "course/crispy-form.html",
+    #             context_instance=context)
 #}}}
 
+
+class ImgUPloadAnswerEmailFeedbackForm(StyledForm):
+    def __init__(self, *args, **kwargs):
+        super(ImgUPloadAnswerEmailFeedbackForm, self).__init__(*args, **kwargs)
+        self.fields["feedback"] = forms.CharField(
+                required=True,
+                widget=forms.Textarea,
+                help_text=_("Please input directly your feedback messages <strong>(no email appelation and welcome is required)</strong>. If you are proved to be right, you'll "
+                  "get bonus for the contribution."),
+                label=_("Feedback"))
+        self.helper.add_input(
+            Submit(
+                "submit", _("Send Email"),
+                css_class="relate-submit-button"))
+
+
+
+    # def clean(self):
+    #     cleaned_data = super(TextAnswerForm, self).clean()
+    #
+    #     answer = cleaned_data.get("answer", "")
+    #     for i, validator in enumerate(self.validators):
+    #         try:
+    #             validator.validate(answer)
+    #         except forms.ValidationError:
+    #             if i + 1 == len(self.validators):
+    #                 # last one, and we flunked -> not valid
+    #                 raise
+    #         else:
+    #             # Found one that will take the input. Good enough.
+    #             break
 
 # vim: foldmethod=marker

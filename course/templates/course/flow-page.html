@@ -258,7 +258,7 @@
     </div>
   {% elif show_answer and correct_answer %}
     {# show only correct answer, without indication of correctness #}
-    <div class="well">
+    <div class="well"  id="correcteness-feedback">
       <p>{{ correct_answer|safe }}</p>
     </div>
   {% endif %}

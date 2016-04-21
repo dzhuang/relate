@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-04-21 13:30+0800\n"
+"POT-Creation-Date: 2016-04-21 22:40+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -34,30 +34,30 @@ msgstr "课程"
 msgid "Flow session"
 msgstr ""
 
-#: .\image_upload\page\imgupload.py:102
+#: .\image_upload\page\imgupload.py:103
 msgid "You have not upload image(s)!"
 msgstr "您还未上传图片!"
 
-#: .\image_upload\page\imgupload.py:176
+#: .\image_upload\page\imgupload.py:177
 msgid "upload question does not have assigned point value"
 msgstr "上传问题还未设置分数"
 
-#: .\image_upload\page\imgupload.py:203
+#: .\image_upload\page\imgupload.py:204
 msgid ""
 "minFileSize should not be greater than maxFileSize, better do not set those "
 "2 attributes."
 msgstr "minFileSize不应超出maxFileSize，最好不要设置这2个属性."
 
-#: .\image_upload\page\imgupload.py:236 .\image_upload\page\imgupload.py:568
+#: .\image_upload\page\imgupload.py:237 .\image_upload\page\imgupload.py:573
 #, python-format
 msgid "Note: Maxmum number of images: %d"
 msgstr "注：最多可上传文件的数量: %d"
 
-#: .\image_upload\page\imgupload.py:350
+#: .\image_upload\page\imgupload.py:351
 msgid "\"attempt_included\" must be one of \"last\", \"first\", \"all\""
 msgstr "\"attempt_included\" 只能是\"last\", \"first\", \"all\"中的一个."
 
-#: .\image_upload\page\imgupload.py:372
+#: .\image_upload\page\imgupload.py:373
 #, python-format
 msgid ""
 "no existing flow page visit found named \"%(refered_page_id)s\" in flow \"%"
@@ -66,14 +66,14 @@ msgstr ""
 "在课程\"%(refered_course_id)s\"中的%(refered_flow_id)s\"flow中，未找到名称为"
 "\"%(refered_page_id)s\"的flow page 访问"
 
-#: .\image_upload\page\imgupload.py:386
+#: .\image_upload\page\imgupload.py:387
 #, python-format
 msgid ""
 "no participation tag named \"%(tag)s\" in course \"%(refered_course_id)s\""
 msgstr ""
 "课程\"%(refered_course_id)s\"中没有名称为\"%(tag)s\"的participation tag."
 
-#: .\image_upload\page\imgupload.py:399
+#: .\image_upload\page\imgupload.py:400
 #, python-format
 msgid ""
 "no user with username \"%(name)s\" submitted sessions in flow \"%"
@@ -82,38 +82,60 @@ msgstr ""
 "在课程\"%(refered_course_id)s\"中的%(refered_flow_id)s\"flow中，未找到用户名"
 "为\"%(name)s\"的用户提交的page."
 
-#: .\image_upload\page\imgupload.py:415
+#: .\image_upload\page\imgupload.py:416
 #, python-format
 msgid ""
 "no flow session is taged \"%(session_tag)s\" is submitted in flow \"%"
 "(refered_flow_id)s\" in course \"%(refered_course_id)s\""
 msgstr ""
 
-#: .\image_upload\page\imgupload.py:430
+#: .\image_upload\page\imgupload.py:431
 msgid ""
 "attribute \"exclude_grade_percentage_lower_than\" should between 0 and 1"
 msgstr ""
 
-#: .\image_upload\page\imgupload.py:611
-msgid "New notification"
-msgstr ""
+#: .\image_upload\page\imgupload.py:628 .\image_upload\page\imgupload.py:767
+msgid "Send Email"
+msgstr "发送邮件"
 
-#: .\image_upload\page\imgupload.py:651
-#, python-format
+#: .\image_upload\page\imgupload.py:631
 msgid ""
-"Find the correct answer wrong? Your can send feedback email to %(tutormail)"
-"s, and if you are proved to be right, you'll get bonus for the contribution."
-msgstr ""
-"发现参考答案不正确？您可以发送邮件到%(tutormail)s来报告. 如果您的报告是正确"
-"的，您将会因为这个贡献获得平时分的奖励！"
+"Find the given correct answer wrong? Please feel easy to contact the "
+"instructor(s) "
+msgstr "发现参考答案有误？请与老师联系 "
 
-#: .\image_upload\page\imgupload.py:657
-msgid "Notice"
-msgstr "注意"
-
-#: .\image_upload\page\imgupload.py:662
+#: .\image_upload\page\imgupload.py:640
 msgid "A correct answer is"
 msgstr "参考答案："
+
+#: .\image_upload\page\imgupload.py:703
+#, python-format
+msgid "Feedback from %(username)s"
+msgstr "来自 %(username)s 的反馈"
+
+#: .\image_upload\page\imgupload.py:719
+msgid ""
+"Thank you for your feedback, and notice that you will also receive a copy of "
+"the email."
+msgstr ""
+"感谢您的反馈，请注意您也将会收到该邮件的副本."
+
+#: .\image_upload\page\imgupload.py:728
+msgid "Send feedback email"
+msgstr "发送反馈邮件"
+
+#: .\image_upload\page\imgupload.py:762
+msgid ""
+"Please input directly your feedback messages <strong>(no email appelation "
+"and welcome is required)</strong>. If you are proved to be right, you'll get "
+"bonus for the contribution."
+msgstr ""
+"请直接将您的反馈信息填入发送（<strong>不需要邮箱抬头和称谓</strong>）。如果您"
+"的报告是正确的，您将会因为这个贡献获得平时分的奖励！"
+
+#: .\image_upload\page\imgupload.py:764
+msgid "Feedback"
+msgstr "反馈"
 
 #: .\image_upload\serialize.py:76
 msgid "The image file does not exist!"
@@ -258,15 +280,25 @@ msgstr "编辑"
 #, python-format
 msgid ""
 "Hi there,\n"
-"I found the question with ID '%(page_id)s' in '%(course_identifier)s' give a "
-"wrong answer.\n"
-"Details of are below:\n"
-"%(false_message)s\n"
+"I think the question with ID \"%(page_id)s\" in flow \"%(flow_session_id)s\" "
+"of  \"%(course_identifier)s\" gives a wrong answer as a \"correct answer\". "
+"Details of the feedback are below:\n"
+"-------------------------------------------------------------------\n"
+"%(feedback_text)s\n"
+"-------------------------------------------------------------------\n"
+"Click here to review the feedback in context:\n"
+"%(review_uri)s\n"
+"\n"
 msgstr ""
-
-#: .\image_upload\templates\image_upload\report-correct-answer-error-email.txt:6
-msgid "RELATE"
-msgstr ""
+"您好！\n"
+"我认为课程\"%(course_identifier)s\"中的Flow \"%(flow_session_id)s\"中页面\"%"
+"(page_id)s\"所给出的参考答案有误，具体如"
+"下：-------------------------------------------------------------------\n"
+"%(feedback_text)s\n"
+"-------------------------------------------------------------------\n"
+"您可以点击以下链接去检查一下:\n"
+"%(review_uri)s\n"
+"\n"
 
 #: .\image_upload\views.py:83
 msgid ""

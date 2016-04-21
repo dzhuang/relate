@@ -1,8 +1,12 @@
-{% load i18n %}{% blocktrans with page_id=page_id course_identifier=course.identifier false_message=false_message|safe %}Hi there,
-I found the question with ID '{{ page_id }}' in '{{ course_identifier }}' give a wrong answer.
-Details of are below:
-{{ false_message }}
+{% load i18n %}{% blocktrans with page_id=page_id course_identifier=course.identifier feedback_text=feedback_text|safe %}Hi there,
+I think the question with ID "{{ page_id }}" in flow "{{ flow_session_id }}" of  "{{ course_identifier }}" gives a wrong answer as a "correct answer". Details of the feedback are below:
+-------------------------------------------------------------------
+{{ feedback_text }}
+-------------------------------------------------------------------
+Click here to review the feedback in context:
+{{ review_uri }}
+
 {% endblocktrans %}
-- {% trans "RELATE" %}
+- {{ username }}
 
 

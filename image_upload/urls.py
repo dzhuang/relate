@@ -38,6 +38,8 @@ from image_upload.views import (
     flow_page_image_key,
 )
 
+from image_upload.page.imgupload import feedBackEmail
+
 js_info_dict_image_upload = {
     'packages': ('image_upload',),
 }
@@ -119,11 +121,6 @@ urlpatterns = [
         flow_page_image_key,
         name='flow_page_image_key'),
 
-    # url(r"^images_review"
-    #     "/(?P<download_id>\d+)"
-    #     "/(?P<file_name>[^/]+)$",
-    #     flow_page_image_problem,
-    #     name='flow_page_image_problem'),
 
     url(r"^course"
         "/" + COURSE_ID_REGEX +
@@ -143,6 +140,15 @@ urlpatterns = [
         "/image/order",
         image_order,
         name='image_order'),
+
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/flow-session"
+        "/(?P<flow_session_id>[0-9]+|None)"
+        "/(?P<ordinal>[0-9]+|None)"
+        "/email-feedback/$",
+        feedBackEmail,
+        name='feedBackEmail'),
     
     url(r"^jsi18n"
         "/image_upload/$",
