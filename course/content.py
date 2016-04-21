@@ -101,6 +101,17 @@ def get_repo_blob(repo, full_name, commit_sha, allow_tree=True):
     tree_sha = repo[commit_sha].tree
     tree = repo[tree_sha]
 
+    def access_directory_content(maybe_tree, name):
+        try:
+            mode_and_blob_sha = tree[name.encode()]
+        except TypeError:
+            raise ObjectDoesNotExist(_("resource '%s' is a file, "
+                "not a directory")
+                % full_name.decode("utf-8"))
+
+        mode, blob_sha = mode_and_blob_sha
+        return mode_and_blob_sha
+
     if not full_name:
         if allow_tree:
             return tree
@@ -114,10 +125,11 @@ def get_repo_blob(repo, full_name, commit_sha, allow_tree=True):
                 # tolerate empty path components (begrudgingly)
                 continue
 
-            mode, blob_sha = tree[name.encode()]
+            mode, blob_sha = access_directory_content(tree, name)
             tree = repo[blob_sha]
 
-        mode, blob_sha = tree[names[-1].encode()]
+        mode, blob_sha = access_directory_content(tree, names[-1])
+
         result = repo[blob_sha]
         if not allow_tree and not hasattr(result, "data"):
             raise ObjectDoesNotExist(
@@ -803,6 +815,8 @@ def extract_title_from_markup(markup_text):
 DATE_RE = re.compile(r"^([0-9]+)\-([01][0-9])\-([0-3][0-9])$")
 TRAILING_NUMERAL_RE = re.compile(r"^(.*)\s+([0-9]+)$")
 
+END_PREFIX = "end:"
+
 
 class InvalidDatespec(ValueError):
     def __init__(self, datespec):
@@ -945,36 +959,26 @@ def parse_date_spec(course, datespec, vctx=None, location=None):
                 datetime.datetime.combine(result, datetime.time.min))
         return apply_postprocs(result)
 
+    is_end = datespec.startswith(END_PREFIX)
+    if is_end:
+        datespec = datespec[len(END_PREFIX):]
+
     match = TRAILING_NUMERAL_RE.match(datespec)
     if match:
-        if vctx is not None:
-            from course.validation import validate_identifier
-            validate_identifier(vctx, "%s: event kind" % location,
-                    match.group(1))
+        # event with numeral
 
-        if course is None:
-            return now()
+        event_kind = match.group(1)
+        ordinal = int(match.group(2))
 
-        from course.models import Event
-        try:
-            return apply_postprocs(
-                    Event.objects.get(
-                        course=course,
-                        kind=match.group(1),
-                        ordinal=int(match.group(2))).time)
+    else:
+        # event without numeral
 
-        except ObjectDoesNotExist:
-            if vctx is not None:
-                vctx.add_warning(
-                        location,
-                        _("unrecognized date/time specification: '%s' "
-                        "(interpreted as 'now')")
-                        % orig_datespec)
-            return now()
+        event_kind = datespec
+        ordinal = None
 
     if vctx is not None:
         from course.validation import validate_identifier
-        validate_identifier(vctx, "%s: event kind" % location, datespec)
+        validate_identifier(vctx, "%s: event kind" % location, event_kind)
 
     if course is None:
         return now()
@@ -982,11 +986,10 @@ def parse_date_spec(course, datespec, vctx=None, location=None):
     from course.models import Event
 
     try:
-        return apply_postprocs(
-                Event.objects.get(
-                    course=course,
-                    kind=datespec,
-                    ordinal=None).time)
+        event_obj = Event.objects.get(
+            course=course,
+            kind=event_kind,
+            ordinal=ordinal)
 
     except ObjectDoesNotExist:
         if vctx is not None:
@@ -996,6 +999,23 @@ def parse_date_spec(course, datespec, vctx=None, location=None):
                     "(interpreted as 'now')")
                     % orig_datespec)
         return now()
+
+    if is_end:
+        if event_obj.end_time is not None:
+            result = event_obj.end_time
+        else:
+            result = event_obj.time
+            if vctx is not None:
+                vctx.add_warning(
+                        location,
+                        _("event '%s' has no end time, using start time instead")
+                        % orig_datespec)
+
+    else:
+        result = event_obj.time
+
+    return apply_postprocs(result)
+
 
 # }}}
 
@@ -1469,10 +1489,21 @@ def adjust_flow_session_page_data(repo, flow_session,
 
 
 def get_course_commit_sha(course, participation):
+    # logic duplicated in course.utils.CoursePageContext
+
     sha = course.active_git_commit_sha
 
     if participation is not None and participation.preview_git_commit_sha:
-        sha = participation.preview_git_commit_sha
+        preview_sha = participation.preview_git_commit_sha
+
+        repo = get_course_repo(course)
+        try:
+            repo[preview_sha.encode()]
+        except KeyError:
+            preview_sha = None
+
+        if preview_sha is not None:
+            sha = preview_sha
 
     return sha.encode()
 

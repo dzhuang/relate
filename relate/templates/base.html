@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 {% load i18n %}
 {% load static %}
 
@@ -122,12 +122,12 @@
 
     {% block root_container %}
     <div class="container" id="content-wrapper">
+      {% block version_advice %}
+      {% endblock %}
+
       {% include "base-page-top.html" %}
 
       {% block nav_recommendations %}
-      {% endblock %}
-
-      {% block version_advice %}
       {% endblock %}
 
       {% block content %}
