@@ -343,7 +343,13 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         if len(qs) == 0:
             return None
 
-        file = qs[0].file
+        file = None
+        for q in qs:
+            if q.order == 0:
+                file= q.file
+                break
+        if not file:
+            return None
 
         if not os.path.isfile(file.path):
             return None
