@@ -1410,7 +1410,9 @@ def download_all_submissions(pctx, flow_id):
                         course=pctx.course,
                         repo=pctx.repo,
                         commit_sha=pctx.course_commit_sha,
-                        flow_session=visit.flow_session)
+                        flow_session=visit.flow_session,
+                        ordinal=visit.page_data.ordinal
+                        )
 
                 bytes_answer = page.normalized_bytes_answer(
                         grading_page_context, visit.page_data.data,
