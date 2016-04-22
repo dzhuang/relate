@@ -322,6 +322,37 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         else:
             return None
 
+    def normalized_bytes_answer(self, page_context, page_data, answer_data):
+        if answer_data is None:
+            return None
+
+        flow_session_id = page_context.flow_session.id
+        ordinal = page_context.ordinal
+        user = page_context.flow_session.user
+        fpd = FlowPageData.objects.get(
+            flow_session=flow_session_id, ordinal=ordinal)
+
+        qs = FlowPageImage.objects.filter(
+            creator=user
+        ).filter(flow_session=flow_session_id
+                 ).filter(image_page_id=fpd.page_id)
+
+        if len(qs) == 0:
+            return None
+
+        file = qs[0].file
+        file_name, ext = os.path.splitext(file.path)
+
+        thefile = open(file.path, 'rb')
+        thefile.seek(0)
+        buf = file.read()
+        thefile.close()
+
+        if ext is None:
+            ext = ".dat"
+
+        return (ext, buf)
+
 # }}}
 
 

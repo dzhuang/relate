@@ -1419,14 +1419,15 @@ def download_all_submissions(pctx, flow_id):
                 username = visit.flow_session.participation.user.get_full_name()
                 if not username:
                     username = visit.flow_session.participation.user.username
+                institutional_id = visit.flow_session.participation.user.institutional_id
+                if not institutional_id:
+                    institutional_id = ""
 
                 if which_attempt in ["first", "last"]:
-                    key = (username,
-                            visit.flow_session.participation.user.institutional_id)
+                    key = (username, institutional_id)
                 elif which_attempt == "all":
-                    key = (username,
-                            visit.flow_session.participation.user.institutional_id,
-                            str(visit.flow_session.id))
+                    key = (username, institutional_id,
+                           str(visit.flow_session.id))
                 else:
                     raise NotImplementedError()
 
