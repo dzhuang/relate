@@ -608,8 +608,8 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
 
     def body(self, page_context, page_data):
 
-        print "======================"
-        print type(page_context)
+        #print "======================"
+        #print type(page_context)
 
 
         body_html =  markup_to_html(page_context, self.page_desc.prompt)\
@@ -621,11 +621,20 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
         qs = self.get_flowpageimage_qs(page_context, page_data)
 
         if qs:
-            question_img = qs[0].get_absolute_url(private=False)
-            question_thumbnail = qs[0].file_thumbnail
+            question_img_url = None
+            question_thumbnail_url = None
+            found_img = False
+            for img in qs:
+                if img.order == 0:
+                    found_img = True
+                    break
+
+            if found_img:
+                question_img_url = img.get_absolute_url(private=False)
+                question_thumbnail_url = img.file_thumbnail.url
 
             body_html += (
-                '<div><p><a href="' + question_img + '" data-gallery="#question"><img src="' + question_thumbnail.url + '"></a></p>'
+                '<div><p><a href="' + question_img_url + '" data-gallery="#question"><img src="' + question_thumbnail_url + '"></a></p>'
                 '</div>'
             )
 
