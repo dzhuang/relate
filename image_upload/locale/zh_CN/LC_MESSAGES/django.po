@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-04-22 15:04+0800\n"
+"POT-Creation-Date: 2016-04-23 19:47+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -48,16 +48,16 @@ msgid ""
 "2 attributes."
 msgstr "minFileSize不应超出maxFileSize，最好不要设置这2个属性."
 
-#: .\image_upload\page\imgupload.py:237 .\image_upload\page\imgupload.py:573
+#: .\image_upload\page\imgupload.py:237 .\image_upload\page\imgupload.py:617
 #, python-format
 msgid "Note: Maxmum number of images: %d"
 msgstr "注：最多可上传文件的数量: %d"
 
-#: .\image_upload\page\imgupload.py:351
+#: .\image_upload\page\imgupload.py:395
 msgid "\"attempt_included\" must be one of \"last\", \"first\", \"all\""
 msgstr "\"attempt_included\" 只能是\"last\", \"first\", \"all\"中的一个."
 
-#: .\image_upload\page\imgupload.py:373
+#: .\image_upload\page\imgupload.py:417
 #, python-format
 msgid ""
 "no existing flow page visit found named \"%(refered_page_id)s\" in flow \"%"
@@ -66,14 +66,14 @@ msgstr ""
 "在课程\"%(refered_course_id)s\"中的%(refered_flow_id)s\"flow中，未找到名称为"
 "\"%(refered_page_id)s\"的flow page 访问"
 
-#: .\image_upload\page\imgupload.py:387
+#: .\image_upload\page\imgupload.py:431
 #, python-format
 msgid ""
 "no participation tag named \"%(tag)s\" in course \"%(refered_course_id)s\""
 msgstr ""
 "课程\"%(refered_course_id)s\"中没有名称为\"%(tag)s\"的participation tag."
 
-#: .\image_upload\page\imgupload.py:400
+#: .\image_upload\page\imgupload.py:444
 #, python-format
 msgid ""
 "no user with username \"%(name)s\" submitted sessions in flow \"%"
@@ -82,48 +82,48 @@ msgstr ""
 "在课程\"%(refered_course_id)s\"中的%(refered_flow_id)s\"flow中，未找到用户名"
 "为\"%(name)s\"的用户提交的page."
 
-#: .\image_upload\page\imgupload.py:416
+#: .\image_upload\page\imgupload.py:460
 #, python-format
 msgid ""
 "no flow session is taged \"%(session_tag)s\" is submitted in flow \"%"
 "(refered_flow_id)s\" in course \"%(refered_course_id)s\""
 msgstr ""
 
-#: .\image_upload\page\imgupload.py:431
+#: .\image_upload\page\imgupload.py:475
 msgid ""
 "attribute \"exclude_grade_percentage_lower_than\" should between 0 and 1"
 msgstr ""
 
-#: .\image_upload\page\imgupload.py:628 .\image_upload\page\imgupload.py:767
+#: .\image_upload\page\imgupload.py:681 .\image_upload\page\imgupload.py:820
 msgid "Send Email"
 msgstr "发送邮件"
 
-#: .\image_upload\page\imgupload.py:631
+#: .\image_upload\page\imgupload.py:684
 msgid ""
 "Find the given correct answer wrong? Please feel easy to contact the "
 "instructor(s) "
 msgstr "发现参考答案有误？请与老师联系 "
 
-#: .\image_upload\page\imgupload.py:640
+#: .\image_upload\page\imgupload.py:693
 msgid "A correct answer is"
 msgstr "参考答案："
 
-#: .\image_upload\page\imgupload.py:703
+#: .\image_upload\page\imgupload.py:756
 #, python-format
 msgid "Feedback from %(username)s"
 msgstr "来自 %(username)s 的反馈"
 
-#: .\image_upload\page\imgupload.py:719
+#: .\image_upload\page\imgupload.py:772
 msgid ""
 "Thank you for your feedback, and notice that you will also receive a copy of "
 "the email."
 msgstr "感谢您的反馈，请注意您也将会收到该邮件的副本."
 
-#: .\image_upload\page\imgupload.py:728
+#: .\image_upload\page\imgupload.py:781
 msgid "Send feedback email"
 msgstr "发送反馈邮件"
 
-#: .\image_upload\page\imgupload.py:762
+#: .\image_upload\page\imgupload.py:815
 msgid ""
 "Please input directly your feedback messages <strong>(no email appelation "
 "and welcome is required)</strong>. If you are proved to be right, you'll get "
@@ -132,11 +132,11 @@ msgstr ""
 "请直接将您的反馈信息填入发送（<strong>不需要邮箱抬头和称谓</strong>）。如果您"
 "的报告是正确的，您将会因为这个贡献获得平时分的奖励！"
 
-#: .\image_upload\page\imgupload.py:764
+#: .\image_upload\page\imgupload.py:817
 msgid "Feedback"
 msgstr "反馈"
 
-#: .\image_upload\page\imgupload.py:774
+#: .\image_upload\page\imgupload.py:827
 msgid "At least 20 characters are required for submission."
 msgstr "至少要输入20个以上的字符才允许提交."
 
@@ -295,8 +295,8 @@ msgid ""
 msgstr ""
 "您好！\n"
 "我认为课程\"%(course_identifier)s\"中的Flow \"%(flow_session_id)s\"中页面\"%"
-"(page_id)s\"所给出的参考答案有误，具体如"
-"下：-------------------------------------------------------------------\n"
+"(page_id)s\"所给出的参考答案有误，具体如下：\n"
+"-------------------------------------------------------------------\n"
 "%(feedback_text)s\n"
 "-------------------------------------------------------------------\n"
 "您可以点击以下链接去检查一下:\n"

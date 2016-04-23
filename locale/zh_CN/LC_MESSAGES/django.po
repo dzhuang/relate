@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-04-22 15:04+0800\n"
+"POT-Creation-Date: 2016-04-23 19:47+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -196,6 +196,7 @@ msgid "Tags must belong to same course as participation."
 msgstr "Tags必须与同一课程中的participation一致. "
 
 #: .\course\admin.py:264 .\course\exam.py:187
+#: .\course\templates\course\gradebook-by-opp.html:110
 #: .\course\templates\course\gradebook-participant.html:30
 #: .\course\templates\course\gradebook.html:18
 #: .\course\templates\course\participation-table-with-provided-name.html:7
@@ -851,10 +852,9 @@ msgid "Revoked"
 msgstr "已撤回"
 
 #: .\course\content.py:108
-#, fuzzy, python-format
-#| msgid "resource '%s' is a directory, not a file"
+#, python-format
 msgid "resource '%s' is a file, not a directory"
-msgstr "资源\"%s\"是一个文件夹，不是一个文件"
+msgstr "资源\"%s\"是一个文件，不是一个文件夹"
 
 #: .\course\content.py:120
 msgid "repo root is a directory, not a file"
@@ -887,7 +887,7 @@ msgstr "无法识别的日期/时间设定: '%s' (被解释为\"现在\")"
 #: .\course\content.py:1011
 #, python-format
 msgid "event '%s' has no end time, using start time instead"
-msgstr ""
+msgstr "事件'%s'没有结束时间，请使用开始时间"
 
 #: .\course\content.py:1212
 #, python-format
@@ -955,7 +955,7 @@ msgid "Deny enrollment"
 msgstr "拒绝加入"
 
 #: .\course\enrollment.py:284 .\course\enrollment.py:433
-#: .\course\models.py:387 .\course\templates\course\gradebook-by-opp.html:112
+#: .\course\models.py:387
 #: .\course\templates\course\participation-table-with-provided-name.html:8
 #: .\course\templates\course\participation-table.html:7
 msgid "Role"
@@ -1775,10 +1775,9 @@ msgid "more than one participant found for '%(id_string)s'"
 msgstr "用\"%(id_string)s\"找到超过1个参与者"
 
 #: .\course\grades.py:1142
-#, fuzzy, python-format
-#| msgid "extraneous attribute(s) '%(attr)s'"
+#, python-format
 msgid "Unknown user attribute '%(attr_type)s'"
-msgstr "冗余的外部属性 \"%(attr)s\""
+msgstr "未知的用户属性 '%(attr_type)s'"
 
 #: .\course\grades.py:1179
 msgid "points"
@@ -1869,7 +1868,7 @@ msgstr "至少是助教(TA)才能下载提交"
 msgid "ALL"
 msgstr "所有"
 
-#: .\course\grades.py:1469
+#: .\course\grades.py:1472
 msgid "Download All Submissions in Zip file"
 msgstr "以Zip文件下载所有提交"
 
@@ -3544,8 +3543,6 @@ msgid "Edit Participations (admin)"
 msgstr "编辑课程参与(admin)"
 
 #: .\course\templates\course\course-base.html:58
-#, fuzzy
-#| msgid "Grading opportunities"
 msgid "Grading Opportunities"
 msgstr "得分机会"
 
@@ -3560,8 +3557,6 @@ msgid "Edit Grading Opportunities (admin)"
 msgstr "编辑得分机会(admin)"
 
 #: .\course\templates\course\course-base.html:64
-#, fuzzy
-#| msgid "Grade book"
 msgid "Grade Book"
 msgstr "成绩册"
 
@@ -3773,7 +3768,7 @@ msgstr ""
 "用别的方法登入</a>."
 
 #: .\course\templates\course\feedback-code-with-human.html:4
-#: .\course\templates\course\gradebook-by-opp.html:120
+#: .\course\templates\course\gradebook-by-opp.html:118
 #: .\course\templates\course\gradebook-single.html:113
 msgid "Overall grade"
 msgstr "总评"
@@ -4374,16 +4369,12 @@ msgid "View grader statistics"
 msgstr "查看得分统计"
 
 #: .\course\templates\course\gradebook-by-opp.html:60
-#, fuzzy
-#| msgid "View grades"
 msgid "View page grades"
-msgstr "查看得分"
+msgstr "查看页面得分"
 
 #: .\course\templates\course\gradebook-by-opp.html:64
-#, fuzzy
-#| msgid "Average grade"
 msgid "Hide page grades"
-msgstr "所有参与者的平均分"
+msgstr "隐藏页面得分"
 
 #: .\course\templates\course\gradebook-by-opp.html:67
 msgid "Download submissions"
@@ -4418,36 +4409,19 @@ msgstr ""
 "\", 并不会考察学员已提交的回答正确与否, 它只是使用已有的正确性信息重新计算该"
 "flow取得的分数, 这通常在修改了得分规则时使用.</p>"
 
-#: .\course\templates\course\gradebook-by-opp.html:110
-#, fuzzy
-#| msgid "last name"
-msgid "Last name"
-msgstr "姓"
-
-#: .\course\templates\course\gradebook-by-opp.html:111
-#, fuzzy
-#| msgid "first name"
-msgid "First name"
-msgstr "名"
-
-#: .\course\templates\course\gradebook-by-opp.html:118
-#, fuzzy
-#| msgctxt "Flow rule kind choices"
-#| msgid "Session Start"
+#: .\course\templates\course\gradebook-by-opp.html:116
 msgid "Session state"
-msgstr "session开始"
+msgstr "session状态"
 
-#: .\course\templates\course\gradebook-by-opp.html:119
-#, fuzzy
-#| msgid "Session regraded."
+#: .\course\templates\course\gradebook-by-opp.html:117
 msgid "Session grade"
-msgstr "该session已重新评分. "
+msgstr "session得分 "
 
-#: .\course\templates\course\gradebook-by-opp.html:172
+#: .\course\templates\course\gradebook-by-opp.html:165
 msgid "Rules tag"
 msgstr "规则tag"
 
-#: .\course\templates\course\gradebook-by-opp.html:179
+#: .\course\templates\course\gradebook-by-opp.html:172
 #, python-format
 msgid "%(points)s/%(max_points)s points"
 msgstr "%(points)s/%(max_points)s分"
@@ -4944,7 +4918,7 @@ msgstr "无法为评分找到规则"
 #, python-format
 msgid ""
 "Preview revision '%s' does not exist--showing active course content instead."
-msgstr ""
+msgstr "预览 '%s' 不存在 -- 所以这里显示课程的内容"
 
 #: .\course\utils.py:755
 msgid "Press F9 to toggle full-screen mode. "
@@ -5316,10 +5290,8 @@ msgid "Fetch"
 msgstr ""
 
 #: .\course\versioning.py:500
-#, fuzzy
-#| msgid "No events found."
 msgid "- not found -"
-msgstr "未找到Event. "
+msgstr "- 未找到 -"
 
 #: .\course\versioning.py:513
 msgid "must be instructor or TA to update course"
@@ -5793,6 +5765,3 @@ msgstr "用户信息"
 #: .\relate\templates\user-profile-form.html:12
 msgid "Sign out"
 msgstr "退出登录"
-
-#~ msgid "inconsistent indentation at line %d."
-#~ msgstr "在第%d行存在不致的缩进."
