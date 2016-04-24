@@ -180,6 +180,9 @@
                     <b>{% trans "Last activity" %}:</b> {{ flow_session.last_activity|compact_datetime }}
                   </p>
                 {% endif %}
+                <p>
+                  <a href="{% url "relate-view_flow_page" course.identifier flow_session.id 0 %}">{% trans "View in flow" %}</a>
+                </p>
               </td>
 
               <td>
