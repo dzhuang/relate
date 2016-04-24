@@ -113,6 +113,7 @@
           <th class="datacol">{{ i }}</th>
         {% endfor %}
       {% endif %}
+      <th class="datacol">{% trans "Session id" %}</th>
       <th class="datacol">{% trans "Session state" %}</th>
       <th class="datacol">{% trans "Session grade" %}</th>
       <th class="datacol">{% trans "Overall grade" %}</th>
@@ -155,6 +156,9 @@
         </td>
         {% endfor %}
         {% endif %}
+        <td class="datacol" data-order="{{ grade_info.flow_session.id }}">
+          <a href="{% url "relate-view_flow_page" course.identifier grade_info.flow_session.id 0 %}" target="_blank">{{grade_info.flow_session.id}}</a>
+        </td>
         <td class="datacol" data-order="{{ grade_info.flow_session.in_progress }}">
           {% if grade_info.flow_session %}
           {% include "course/flow-session-state.html" with flow_session=grade_info.flow_session %}
