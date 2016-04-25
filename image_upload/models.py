@@ -139,6 +139,13 @@ class FlowPageImage(models.Model):
             verbose_name=_('Flow session'), on_delete=models.CASCADE)
     image_page_id = models.CharField(max_length=200, null=True)
 
+    is_image_texify = models.BooleanField(default=False, verbose_name="Image textified?")
+
+    image_text = models.TextField(default="",
+                                  verbose_name=_("Related Html"),
+                                  help_text=_("The html for the FlowPageImage")
+                                  )
+
     # The order of the img in a flow session page.
     order = models.SmallIntegerField(default=0)
 
@@ -181,6 +188,19 @@ class FlowPageImage(models.Model):
                 file_name], {}
                     )
 
+    def admin_image(self):
+        img_url = self.file_thumbnail.url()
+        return '<img src="%s"/>' % img_url
+
+    admin_image.allow_tags = True
+
+    def get_image_text(self):
+        if self.is_image_texify:
+            if self.image_text:
+                return self.image_text
+            else:
+                return None
+        return None
 
     def get_random_filename(self):
         import os, uuid
@@ -198,9 +218,12 @@ class FlowPageImage(models.Model):
         ordering = ("id", "creation_time")
 
     def __unicode__(self):
-        return _("%(url)s uploaded by %(creator)s") % {
-            'url': self.get_absolute_url(),
-            'creator': self.creator}
+        try:
+            return _("%(url)s uploaded by %(creator)s") % {
+                'url': self.get_absolute_url(),
+                'creator': self.creator}
+        except:
+            return ""
 
     if six.PY3:
         __str__ = __unicode__
