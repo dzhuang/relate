@@ -1529,8 +1529,7 @@ def view_flow_page(pctx, flow_session_id, ordinal):
             # continue at common flow page generation below
 
     else:
-        if request.user == flow_session.participation.user:
-            create_flow_page_visit(request, flow_session, fpctx.page_data)
+        create_flow_page_visit(request, flow_session, fpctx.page_data)
 
         prev_answer_visits = list(
                 get_prev_answer_visits_qset(fpctx.page_data))
