@@ -389,10 +389,16 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
 
         form_data = {}
         form_data["access_rules_tag"] = access_rules_tag
-        if grade_data is not None:
-            for k in self.grade_data_attrs:
-                form_data[k] = grade_data[k]
-        return ImgUploadHumanTextFeedbackForm(human_feedback_point_value, form_data)
+        if grade_data is not None or access_rules_tag:
+            form_data = {}
+            if grade_data is not None:
+                for k in self.grade_data_attrs:
+                    form_data[k] = grade_data[k]
+            if access_rules_tag is not None:
+                form_data["access_rules_tag"] = access_rules_tag
+            return ImgUploadHumanTextFeedbackForm(human_feedback_point_value, form_data)
+        else:
+            return ImgUploadHumanTextFeedbackForm(human_feedback_point_value)
 
     def post_grading_form(self, page_context, page_data, grade_data,
                           post_data, files_data):
