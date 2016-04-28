@@ -266,9 +266,6 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
 
     def make_form(self, page_context, page_data,
                   answer_data, page_behavior):
-        print "ordinal========================================="
-
-        print page_context.ordinal
 
         form = ImageUploadForm(
             page_context, page_behavior, page_data)
