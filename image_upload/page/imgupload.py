@@ -50,6 +50,22 @@ from crispy_forms.layout import Layout, HTML, Submit
 import json
 import os
 
+LATEX_HEADER = '''
+\\documentclass{article}
+\\usepackage{amsmath}
+\\usepackage{amsthm}
+\\usepackage{amssymb}
+\\usepackage{bm}
+\\pagestyle{empty}
+\\begin{document}
+'''
+
+LATEX_FOOTER = '''
+\\end{document}
+'''
+
+
+
 # {{{ image upload question
 
 class ImageUploadForm(StyledForm):
@@ -193,6 +209,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                 vctx.add_warning(location, _("upload question does not have "
                                              "assigned point value"))
         self.maxNumberOfFiles = getattr(page_desc, "maxNumberOfFiles", 1)
+        self.latex_code = getattr(page_desc, "latex_code", None)
 
         self.imageMaxWidth = getattr(self.page_desc, "imageMaxWidth", 1000)
         if self.imageMaxWidth > 1500:
@@ -239,6 +256,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
             ("previewMaxWidth", (int, float)),
             ("previewMaxHeight", (int, float)),
             ("maxNumberOfFiles", (int, float)),
+            ("latex_code", list),
         )
 
     def human_feedback_point_value(self, page_context, page_data):
@@ -248,6 +266,20 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         return self.page_desc.prompt
 
     def body(self, page_context, page_data):
+        latex_code = self.latex_code
+        latex_first =  latex_code[0]
+        print type(latex_first)
+
+
+#        print latex_code[0].split("\n")
+
+        from course.content import get_course_repo_path
+        latex_folder_path = os.path.join(get_course_repo_path(page_context.course),"latex-png")
+        print latex_folder_path
+
+        render_latex(latex_first, latex_folder_path)
+
+
         return (
             markup_to_html(page_context, self.page_desc.prompt)
             + string_concat("<br/><p class='text-info'><strong><small>(", _("Note: Maxmum number of images: %d"),
@@ -880,4 +912,57 @@ class ImgUPloadAnswerEmailFeedbackForm(StyledForm):
         if len(feedback) < 20:
             raise forms.ValidationError(_("At least 20 characters are required for submission."))
 
+
+
+def render_latex(latex_string, OUTPUT_DIR):
+    import subprocess
+    from datetime import datetime
+    from hashlib import md5
+    from django.conf import settings
+
+    latex = latex_string #.split("/n")
+    filebase = md5(latex).hexdigest()
+    workingdir = OUTPUT_DIR
+
+    if not os.path.exists(os.path.join(workingdir, filebase + '.png')):
+        png_path = os.path.join(workingdir, filebase + '.png')
+        latexpath, ext = os.path.splitext(png_path)
+        latexpath = latexpath + ".tex"
+
+        latexfile = open(latexpath, 'w')
+        latexfile.write('\n'.join(('% generated at: ' + str(datetime.now()),
+                                   LATEX_HEADER,
+                                   '%s' % latex,  # delimit equation with $
+                                   LATEX_FOOTER)))
+        latexfile.close()
+
+        old_workingdir = os.getcwd()
+        os.chdir(workingdir)
+        latex_exitcode = subprocess.call((r'latex',
+                                          filebase + '.tex'))
+        dvipng_exitcode = subprocess.call((r'dvipng',
+                                           '-o', filebase + '.png',
+                                           '-pp', '1',  # only page one
+                                           '-T', 'tight',
+                                           '-x', '1600',  # scale
+                                           filebase + '.dvi'))
+        if latex_exitcode or dvipng_exitcode:
+            # TODO: There is room for better error reporting here,
+            # but I'm happy to fail silently and leave the temp
+            # files behind for debugging.
+            return latex
+        else:
+            os.unlink(filebase + '.tex')
+            os.unlink(filebase + '.log')
+            os.unlink(filebase + '.aux')
+            os.unlink(filebase + '.dvi')
+            os.chdir(old_workingdir)
+
+    return True
+    # return '<img src="%s" alt="%s" %s/>' % (
+    #     settings.MEDIA_URL + OUTPUT_DIR + filebase + '.png',
+    #     latex,
+    #     self.IMG_CLASS_NAME and 'class="%s" ' % self.IMG_CLASS_NAME or '')
+
 # vim: foldmethod=marker
+
