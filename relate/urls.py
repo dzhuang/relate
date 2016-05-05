@@ -29,7 +29,6 @@ from django.contrib import admin
 from django.conf import settings
 from course.constants import COURSE_ID_REGEX, FLOW_ID_REGEX, STATICPAGE_PATH_REGEX
 
-import django.contrib.auth.views
 import course.auth
 import course.views
 import course.im
@@ -75,8 +74,7 @@ urlpatterns = [
         name="relate-sign_in_stage2_with_token"),
     url(r"^usrlogout/$",
     #url(r"^logout/$",
-        django.contrib.auth.views.logout,
-        {"next_page": "relate-home"},
+        course.auth.sign_out,
         name="relate-logout"),
     url(r"^usrprofile/$",
     #url(r"^profile/$",
@@ -363,6 +361,15 @@ urlpatterns = [
         "/$",
         course.flow.update_expiration_mode,
         name="relate-update_expiration_mode"),
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/flow-session"
+        "/(?P<flow_session_id>[-0-9]+)"
+        "/(?P<ordinal>[0-9]+)"
+        "/update-bookmark-state"
+        "/$",
+        course.flow.update_page_bookmark_state,
+        name="relate-update_page_bookmark_state"),
     url(r"^course"
         "/" + COURSE_ID_REGEX +
         "/flow-session"
