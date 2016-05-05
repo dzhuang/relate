@@ -93,7 +93,6 @@ class FlowSessionGradingRule(FlowSessionRuleBase):
             "credit_percent",
             "use_last_activity_as_completion_time",
 
-
             "max_points",
             "max_points_enforced_cap",
             "bonus_points",
@@ -296,9 +295,6 @@ def get_session_start_rule(course, participation, role, flow_id, flow_desc,
 
     from course.models import FlowSession
     for rule in rules:
-        if not _eval_generic_conditions(rule, course, role, now_datetime,
-                flow_id=flow_id,
-                login_exam_ticket=login_exam_ticket):
 
         # {{{ added by zd
         if (hasattr(rule, "if_before") 
@@ -307,7 +303,9 @@ def get_session_start_rule(course, participation, role, flow_id, flow_desc,
             if getattr(rule, "may_start_new_session"):
                 latest_start_datetime = parse_date_spec(course, rule.if_before)
         # }}}
-        if not _eval_generic_conditions(rule, course, role, now_datetime):
+        if not _eval_generic_conditions(rule, course, role, now_datetime,
+                flow_id=flow_id,
+                login_exam_ticket=login_exam_ticket):
             continue
 
         if not for_rollover and hasattr(rule, "if_in_facility"):
