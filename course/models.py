@@ -459,7 +459,7 @@ class FlowSession(models.Model):
             verbose_name=_('Course'), on_delete=models.CASCADE)
 
     participation = models.ForeignKey(Participation, null=True, blank=True,
-            db_index=True,
+            db_index=True, related_name="flow_sessions",
             verbose_name=_('Participation'), on_delete=models.CASCADE)
 
     # This looks like it's redundant with participation, above--but it's not.
@@ -1201,7 +1201,9 @@ class GradeChange(models.Model):
                     "in the same course"))
 
     def percentage(self):
-        if self.max_points is not None and self.points is not None:
+        if (self.max_points is not None
+                and self.points is not None
+                and self.max_points != 0):
             return 100*self.points/self.max_points
         else:
             return None

@@ -145,6 +145,46 @@ RELATE_EDITABLE_INST_ID_BEFORE_VERIFICATION = True
 
 # }}}
 
+# {{{ covert LaTeX to image dataURI
+
+# The absolute path of LaTex working dir on the server.
+#RELATE_LATEX_OUTPUT_PATH = "\path\to\latex\working\dir"
+
+# The name of the subfolder if you want to save converted images
+# in MEDIA_ROOT. default value is "latex_image". Set this value
+# when RELATE_LATEX_OUTPUT_PATH is not set.
+#RELATE_LATEX_IMAGE_FOLDER_NAME = "latex_image"
+
+# Default preamble for latex code, the following is the default value.
+#RELATE_LATEX_PREAMBLE = r'''
+#\documentclass{article}
+#\usepackage[fontsize=14px]{scrextend} % render with font size 14px
+#\usepackage{amsmath}
+#\usepackage{amsthm}
+#\usepackage{amssymb}
+#\usepackage{tikz}
+#\usepackage{pgf}
+#\usepackage{bm}
+#\pagestyle{empty}
+#'''
+
+# The starting and ending string of document
+# modify this when you want to wrap your code
+# with some environment, e.g. "CJK"
+#RELATE_LATEX_BEGIN_DOCUMENT = r'''
+#\begin{document}
+#'''
+#RELATE_LATEX_END_DOCUMENT = r'''
+#\end{document}
+#'''
+
+# The prefered image format converted to. If not set, "png"
+# will be used. However, when there are tikz/pgf blocks in
+# the tex source, the output format will be "svg".
+#RELATE_LATEX_TO_IMAGE_FORMAT = "png"
+
+# }}}
+
 # {{{ docker
 
 # A string containing the image ID of the docker image to be used to run
@@ -195,6 +235,30 @@ RELATE_SITE_ANNOUNCEMENT = None
 #LANGUAGE_CODE='en-us'
 
 # {{{ exams and testing
+
+# This may also be a callable that receives a local-timezone datetime and returns
+# an equivalent dictionary.
+#
+# def RELATE_FACILITIES(now_datetime):
+#     from relate.utils import localize_datetime
+#     from datetime import datetime
+#
+#     if (now_datetime >= localize_datetime(datetime(2016, 5, 5, 0, 0))
+#             and now_datetime < localize_datetime(datetime(2016, 5, 6, 0, 0))):
+#         ip_ranges = [
+#             "127.0.0.1/32",
+#             "192.168.77.0/24",
+#             ]
+#     else:
+#         ip_ranges = []
+#
+#     return {
+#         "test_center": {
+#             "ip_ranges": ip_ranges,
+#             "exams_only": True,
+#             },
+#     }
+
 
 RELATE_FACILITIES = {
     "test_center": {

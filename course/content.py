@@ -769,6 +769,13 @@ def markup_to_html(course, repo, commit_sha, text, reverse_func=None,
 
     env.globals["parse_date_spec"] = parse_date_spec_jinja
 
+    from course.latex_utils import tex2imgtag
+
+    def jinja_tex2imgtag(caller, *args, **kwargs):
+        return tex2imgtag(caller(), *args, **kwargs)
+
+    env.globals["latex"] = jinja_tex2imgtag
+
     template = env.from_string(text)
     text = template.render(**jinja_env)
 

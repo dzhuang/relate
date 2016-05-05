@@ -36,7 +36,7 @@ from crispy_forms.layout import Submit, Layout, Div
 from django.db.models import Q
 from django.conf import settings
 from django.contrib.auth import (get_user_model, REDIRECT_FIELD_NAME,
-        login as auth_login,)
+        login as auth_login, logout as auth_logout)
 from django.contrib.auth.forms import \
         AuthenticationForm as AuthenticationFormBase
 from django.contrib.sites.shortcuts import get_current_site
@@ -272,7 +272,7 @@ class TokenBackend(object):
 def sign_in_choice(request, redirect_field_name=REDIRECT_FIELD_NAME):
     redirect_to = request.POST.get(redirect_field_name,
                                    request.GET.get(redirect_field_name, ''))
-    next_uri=""
+    next_uri = ""
     if redirect_to:
         next_uri = "?%s=%s" % (redirect_field_name, redirect_to)
 
@@ -942,5 +942,26 @@ class Saml2Backend(Saml2BackendBase):
 
 # }}}
 
+
+# {{{ sign-out
+
+@never_cache
+def sign_out(request):
+
+    response = None
+
+    if settings.RELATE_SIGN_IN_BY_SAML2_ENABLED:
+        from djangosaml2.views import _get_subject_id, logout as saml2_logout
+        if _get_subject_id(request.session) is not None:
+            response = saml2_logout(request)
+
+    auth_logout(request)
+
+    if response is not None:
+        return response
+    else:
+        return redirect("relate-home")
+
+# }}}
 
 # vim: foldmethod=marker

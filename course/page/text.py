@@ -310,7 +310,7 @@ class CaseSensitiveRegexMatcher(RegexMatcher):
 
 def parse_sympy(s):
     if six.PY2:
-        if isinstance(s, unicode):  # has Py2/3 guard
+        if isinstance(s, unicode):  # noqa -- has Py2/3 guard
             # Sympy is not spectacularly happy with unicode function names
             s = s.encode()
 
@@ -500,12 +500,12 @@ class FloatMatcher(TextAnswerMatcher):
 
         if hasattr(self.matcher_desc, "atol"):
             if (abs(answer_float - self.matcher_desc.value)
-                    >= self.matcher_desc.atol):
+                    > self.matcher_desc.atol):
                 return 0
         if hasattr(self.matcher_desc, "rtol"):
             if (abs(answer_float - self.matcher_desc.value)
                     / abs(self.matcher_desc.value)
-                    >= self.matcher_desc.rtol):
+                    > self.matcher_desc.rtol):
                 return 0
 
         return 1
@@ -912,17 +912,18 @@ class TextQuestion(TextQuestionBase, PageBaseWithValue):
 
         answer = answer_data["answer"]
 
-        correctnesses_and_answers = []
+        correctness = 0
+
         for matcher in self.matchers:
             try:
                 matcher.validate(answer)
             except forms.ValidationError:
                 continue
 
-            correctnesses_and_answers.append(
-                    (matcher.grade(answer), matcher.correct_answer_text()))
-
-        correctness, correct_answer_text = max(correctnesses_and_answers)
+            matcher_correctness = matcher.grade(answer)
+            if (matcher_correctness is not None
+                    and matcher_correctness >= correctness):
+                correctness = matcher_correctness
 
         return AnswerFeedback(correctness=correctness)
 

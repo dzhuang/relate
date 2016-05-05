@@ -38,6 +38,7 @@ from django.core.exceptions import (  # noqa
 from django.contrib import messages  # noqa
 from django.contrib.auth.decorators import permission_required
 from django.db import transaction
+from django.db.models import Q
 from django.core.urlresolvers import reverse
 
 from django.views.decorators.debug import sensitive_post_parameters
@@ -81,16 +82,14 @@ class UserChoiceField(forms.ModelChoiceField):
 
 
 class IssueTicketForm(StyledForm):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, now_datetime, *args, **kwargs):
         initial_exam = kwargs.pop("initial_exam", None)
 
         super(IssueTicketForm, self).__init__(*args, **kwargs)
 
         self.fields["user"] = UserChoiceField(
                 queryset=(get_user_model().objects
-                    .filter(
-                        is_active=True,
-                        )
+                    .filter(is_active=True)
                     .order_by("last_name")),
                 widget=Select2Widget(),
                 required=True,
@@ -99,8 +98,15 @@ class IssueTicketForm(StyledForm):
                 label=_("Participant"))
         self.fields["exam"] = forms.ModelChoiceField(
                 queryset=(
-                    Exam.objects.filter(
-                        active=True)),
+                    Exam.objects
+                    .filter(
+                        Q(active=True)
+                        & (
+                            Q(no_exams_after__isnull=True)
+                            | Q(no_exams_after__gt=now_datetime)
+                            ))
+                    .order_by("no_exams_before")
+                    ),
                 required=True,
                 initial=initial_exam,
                 label=_("Exam"))
@@ -118,8 +124,10 @@ class IssueTicketForm(StyledForm):
 
 @permission_required("course.can_issue_exam_tickets")
 def issue_exam_ticket(request):
+    now_datetime = get_now_or_fake_time(request)
+
     if request.method == "POST":
-        form = IssueTicketForm(request.POST)
+        form = IssueTicketForm(now_datetime, request.POST)
 
         if form.is_valid():
             exam = form.cleaned_data["exam"]
@@ -161,10 +169,10 @@ def issue_exam_ticket(request):
                             ) % {"participation": participation,
                                  "ticket_code": ticket.code})
 
-                form = IssueTicketForm(initial_exam=exam)
+                form = IssueTicketForm(now_datetime, initial_exam=exam)
 
     else:
-        form = IssueTicketForm()
+        form = IssueTicketForm(now_datetime)
 
     return render(request, "generic-form.html", {
         "form_description":
@@ -500,6 +508,8 @@ def check_in_for_exam(request):
                     # Make pretend-facilities survive exam login.
                     request.session["relate_pretend_facilities"] = pretend_facilities
 
+                request.session["relate_exam_ticket_pk_used_for_login"] = ticket.pk
+
                 return redirect("relate-view_start_flow",
                         ticket.exam.course.identifier,
                         ticket.exam.flow_id)
@@ -517,8 +527,8 @@ def check_in_for_exam(request):
 
 
 def is_from_exams_only_facility(request):
-    from django.conf import settings
-    for name, props in six.iteritems(settings.RELATE_FACILITIES):
+    from course.utils import get_facilities_config
+    for name, props in six.iteritems(get_facilities_config(request)):
         if not props.get("exams_only", False):
             continue
 
@@ -527,6 +537,15 @@ def is_from_exams_only_facility(request):
             return True
 
     return False
+
+
+def get_login_exam_ticket(request):
+    exam_ticket_pk = request.session.get("relate_exam_ticket_pk_used_for_login")
+
+    if exam_ticket_pk is None:
+        return None
+
+    return ExamTicket.objects.get(pk=exam_ticket_pk)
 
 
 # {{{ lockdown middleware
@@ -548,11 +567,10 @@ class ExamFacilityMiddleware(object):
 
         from course.exam import check_in_for_exam, issue_exam_ticket
         from course.auth import (user_profile, sign_in_choice, sign_in_by_email,
-                sign_in_stage2_with_token, sign_in_by_user_pw, impersonate,
+                sign_in_stage2_with_token, sign_in_by_user_pw, sign_out, impersonate,
                 stop_impersonating)
         from course.views import set_pretend_facilities
         from course.flow import view_start_flow, view_resume_flow, view_flow_page
-        from django.contrib.auth.views import logout
 
         ok = False
         if resolver_match.func in [
@@ -567,7 +585,7 @@ class ExamFacilityMiddleware(object):
                 view_start_flow,
                 view_resume_flow,
                 user_profile,
-                logout,
+                sign_out,
                 set_pretend_facilities]:
             ok = True
 
@@ -621,10 +639,10 @@ class ExamLockdownMiddleware(object):
             from course.views import (get_repo_file, get_current_repo_file)
             from course.flow import (
                     view_start_flow, view_resume_flow, view_flow_page,
-                    update_expiration_mode, finish_flow_session_view)
+                    update_expiration_mode, update_page_bookmark_state,
+                    finish_flow_session_view)
             from course.auth import (user_profile, sign_in_choice, sign_in_by_email,
-                    sign_in_stage2_with_token, sign_in_by_user_pw)
-            from django.contrib.auth.views import logout
+                    sign_in_stage2_with_token, sign_in_by_user_pw, sign_out)
 
             ok = False
             if resolver_match.func in [
@@ -639,7 +657,7 @@ class ExamLockdownMiddleware(object):
                     sign_in_stage2_with_token,
                     sign_in_by_user_pw,
                     user_profile,
-                    logout]:
+                    sign_out]:
                 ok = True
 
             elif request.path.startswith("/saml2"):
@@ -650,6 +668,7 @@ class ExamLockdownMiddleware(object):
                         view_resume_flow,
                         view_flow_page,
                         update_expiration_mode,
+                        update_page_bookmark_state,
                         finish_flow_session_view]
                     and
                     int(resolver_match.kwargs["flow_session_id"])
