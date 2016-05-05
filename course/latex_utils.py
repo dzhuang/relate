@@ -45,7 +45,6 @@ DEFAULT_LATEX_PREAMBLE = r'''
 \usepackage{amssymb}
 \usepackage{tikz}
 \usepackage{pgf}
-\usepackage{CJKutf8}
 \usepackage{bm}
 \pagestyle{empty}
 '''

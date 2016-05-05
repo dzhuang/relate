@@ -164,7 +164,6 @@ RELATE_EDITABLE_INST_ID_BEFORE_VERIFICATION = True
 #\usepackage{amssymb}
 #\usepackage{tikz}
 #\usepackage{pgf}
-#\usepackage{CJKutf8}
 #\usepackage{bm}
 #\pagestyle{empty}
 #'''
