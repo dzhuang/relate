@@ -5,8 +5,8 @@ from image_upload.models import FlowPageImage
 
 
 class FlowPageImageAdmin(admin.ModelAdmin):
-    list_filter = ("course","flow_session")
-    list_display = ('course', 'creator', 'admin_image')
+    list_filter = ("course", "image_page_id")
+    list_display = ('course', 'creator')
 
     # {{{ permissions
 
