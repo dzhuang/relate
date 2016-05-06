@@ -666,11 +666,7 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
         #print type(page_context)
 
 
-        body_html =  markup_to_html(page_context, self.page_desc.prompt)\
-                     + string_concat("<br/><p class='text-info'><strong><small>"
-                                     "(", _("Note: Maxmum number of images: %d"),
-                                     ")</small></strong></p>")\
-                       % (self.maxNumberOfFiles,)
+        body_html =  markup_to_html(page_context, self.page_desc.prompt)
 
         qs = self.get_flowpageimage_qs(page_context, page_data)
 
@@ -684,13 +680,22 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                     break
 
             if found_img:
-                question_img_url = img.get_absolute_url(private=False)
-                question_thumbnail_url = img.file_thumbnail.url
+                if img.is_image_texify and img.image_text:
+                    img_text = img.image_text
+                    body_html += markup_to_html(page_context, img_text)
+                else:
+                    question_img_url = img.get_absolute_url(private=False)
+                    question_thumbnail_url = img.file_thumbnail.url
 
-            body_html += (
-                '<div><p><a href="' + question_img_url + '" data-gallery="#question"><img src="' + question_thumbnail_url + '"></a></p>'
-                '</div>'
-            )
+                    body_html += (
+                        '<div><p><a href="' + question_img_url + '" data-gallery="#question"><img src="' + question_thumbnail_url + '"></a></p>'
+                        '</div>'
+                    )
+
+            body_html += string_concat("<br/><p class='text-info'><strong><small>"
+                                     "(", _("Note: Maxmum number of images: %d"),
+                                     ")</small></strong></p>")\
+                       % (self.maxNumberOfFiles,)
 
         return body_html
 
