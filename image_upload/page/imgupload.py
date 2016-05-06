@@ -880,4 +880,5 @@ class ImgUPloadAnswerEmailFeedbackForm(StyledForm):
         if len(feedback) < 20:
             raise forms.ValidationError(_("At least 20 characters are required for submission."))
 
+
 # vim: foldmethod=marker

@@ -189,9 +189,10 @@ class FlowPageImage(models.Model):
                     )
 
     def admin_image(self):
-        img_url = self.file_thumbnail.url()
-        return '<img src="%s"/>' % img_url
-
+        #img_url = self.file_thumbnail.url()
+        img_url = self.get_absolute_url(private=False)
+        return '<img src="%s" class="img-responsive"/>' % img_url
+    admin_image.short_description = 'Image'
     admin_image.allow_tags = True
 
     def get_image_text(self):
