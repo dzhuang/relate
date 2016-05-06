@@ -124,7 +124,7 @@ def make_tex_source(tex_body, tex_preamble="",
             if not re.search(ele_re, tex_body):
                 missing_ele.append(ele)
 
-        if missing_ele:
+        if len(missing_ele) < 3:
             raise ValueError("<pre>%s</pre>"
                 % _("Your faied to submit a full latex document: "
                     " missing %s.")
