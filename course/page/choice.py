@@ -55,7 +55,7 @@ class MultipleChoiceAnswerForm(StyledForm):
 
         # Translators: "Choice" in Choice Answer Form in a multiple
         # choice question in which multiple answers can be chosen.
-        self.fields["choice"].label = _("Choices")
+        self.fields["choice"].label = _("Select all that apply:")
 
 
 def markup_to_html_plain(page_context, s):
@@ -65,9 +65,123 @@ def markup_to_html_plain(page_context, s):
     return s
 
 
+# {{{ choice question base
+
+class ChoiceQuestionBase(PageBaseWithTitle, PageBaseWithValue):
+    CORRECT_TAG = "~CORRECT~"
+    DISREGARD_TAG = "~DISREGARD~"
+
+    @classmethod
+    def process_choice_string(cls, page_context, s):
+        if not isinstance(s, str):
+            s = str(s)
+        s = remove_prefix(cls.CORRECT_TAG, s)
+        s = remove_prefix(cls.DISREGARD_TAG, s)
+        s = markup_to_html_plain(page_context, s)
+        # allow HTML in option
+        s = mark_safe(s)
+
+        return s
+
+    def __init__(self, vctx, location, page_desc):
+        super(ChoiceQuestionBase, self).__init__(vctx, location, page_desc)
+
+        self.correct_choice_count = 0
+        self.disregard_choice_count = 0
+        for choice_idx, choice in enumerate(page_desc.choices):
+            try:
+                choice = str(choice)
+            except:
+                raise ValidationError(
+                        string_concat(
+                            "%(location)s, ",
+                            _("choice %(idx)d: unable to convert to string")
+                            )
+                        % {'location': location, 'idx': choice_idx+1})
+
+            if choice.startswith(self.CORRECT_TAG):
+                self.correct_choice_count += 1
+
+            if choice.startswith(self.DISREGARD_TAG):
+                self.disregard_choice_count += 1
+
+            if vctx is not None:
+                validate_markup(vctx, location,
+                        remove_prefix(self.DISREGARD_TAG,
+                            remove_prefix(self.CORRECT_TAG,
+                                choice)))
+
+    def required_attrs(self):
+        return super(ChoiceQuestionBase, self).required_attrs() + (
+                ("prompt", "markup"),
+                ("choices", list),
+                )
+
+    def allowed_attrs(self):
+        return super(ChoiceQuestionBase, self).allowed_attrs() + (
+                ("shuffle", bool),
+                )
+
+    def markup_body_for_title(self):
+        return self.page_desc.prompt
+
+    def body(self, page_context, page_data):
+        return markup_to_html(page_context, self.page_desc.prompt)
+
+    def make_page_data(self):
+        import random
+        perm = list(range(len(self.page_desc.choices)))
+        if getattr(self.page_desc, "shuffle", False):
+            random.shuffle(perm)
+
+        return {"permutation": perm}
+
+    def unpermuted_indices_with_tag(self, tag):
+        result = []
+        for i, choice_text in enumerate(self.page_desc.choices):
+            if str(choice_text).startswith(tag):
+                result.append(i)
+
+        return result
+
+    def unpermuted_correct_indices(self):
+        return self.unpermuted_indices_with_tag(self.CORRECT_TAG)
+
+    def unpermuted_disregard_indices(self):
+        return self.unpermuted_indices_with_tag(self.DISREGARD_TAG)
+
+    def make_form(self, page_context, page_data,
+            answer_data, page_behavior):
+        if (
+                "permutation" not in page_data
+                or (set(page_data["permutation"])
+                    != set(range(len(self.page_desc.choices))))):
+            from course.page import InvalidPageData
+            raise InvalidPageData(ugettext(
+                "existing choice permutation not "
+                "suitable for number of choices in question"))
+
+        if answer_data is not None:
+            form_data = {"choice": answer_data["choice"]}
+            form = self.make_choice_form(
+                    page_context, page_data, page_behavior, form_data)
+        else:
+            form = self.make_choice_form(
+                    page_context, page_data, page_behavior)
+
+        return form
+
+    def process_form_post(self, page_context, page_data, post_data, files_data,
+            page_behavior):
+        return self.make_choice_form(
+                    page_context, page_data, page_behavior, post_data, files_data)
+
+# }}}
+
+
 # {{{ choice question
 
-class ChoiceQuestion(PageBaseWithTitle, PageBaseWithValue):
+class ChoiceQuestion(ChoiceQuestionBase):
     """
     A page asking the participant to choose one of multiple answers.
 
@@ -106,42 +220,10 @@ class ChoiceQuestion(PageBaseWithTitle, PageBaseWithValue):
         be presented in random order.
     """
 
-    CORRECT_TAG = "~CORRECT~"
-
-    @classmethod
-    def process_choice_string(cls, page_context, s):
-        if not isinstance(s, str):
-            s = str(s)
-        s = remove_prefix(cls.CORRECT_TAG, s)
-        s = markup_to_html_plain(page_context, s)
-        # allow HTML in option
-        s = mark_safe(s)
-
-        return s
-
     def __init__(self, vctx, location, page_desc):
         super(ChoiceQuestion, self).__init__(vctx, location, page_desc)
 
-        correct_choice_count = 0
-        for choice_idx, choice in enumerate(page_desc.choices):
-            try:
-                choice = str(choice)
-            except:
-                raise ValidationError(
-                        string_concat(
-                            "%(location)s, ",
-                            _("choice %(idx)d: unable to convert to string")
-                            )
-                        % {'location': location, 'idx': choice_idx+1})
-
-            if choice.startswith(self.CORRECT_TAG):
-                correct_choice_count += 1
-
-            if vctx is not None:
-                validate_markup(vctx, location,
-                        remove_prefix(self.CORRECT_TAG, choice))
-
-        if correct_choice_count < 1:
+        if self.correct_choice_count < 1:
             raise ValidationError(
                     string_concat(
                         "%(location)s: ",
@@ -149,32 +231,15 @@ class ChoiceQuestion(PageBaseWithTitle, PageBaseWithValue):
                         "expected, %(n_correct)d found"))
                     % {
                         'location': location,
-                        'n_correct': correct_choice_count})
+                        'n_correct': self.correct_choice_count})
 
-    def required_attrs(self):
-        return super(ChoiceQuestion, self).required_attrs() + (
-                ("prompt", "markup"),
-                ("choices", list),
-                )
-
-    def allowed_attrs(self):
-        return super(ChoiceQuestion, self).allowed_attrs() + (
-                ("shuffle", bool),
-                )
-
-    def markup_body_for_title(self):
-        return self.page_desc.prompt
-
-    def body(self, page_context, page_data):
-        return markup_to_html(page_context, self.page_desc.prompt)
-
-    def make_page_data(self):
-        import random
-        perm = list(range(len(self.page_desc.choices)))
-        if getattr(self.page_desc, "shuffle", False):
-            random.shuffle(perm)
-
-        return {"permutation": perm}
+        if self.disregard_choice_count:
+            raise ValidationError(
+                    string_concat(
+                        "%(location)s: ",
+                        _("ChoiceQuestion does not allow any choices "
+                        "marked 'disregard'"))
+                    % {'location': location})
 
     def make_choice_form(
             self, page_context, page_data, page_behavior, *args, **kwargs):
@@ -197,42 +262,8 @@ class ChoiceQuestion(PageBaseWithTitle, PageBaseWithValue):
 
         return form
 
-    def make_form(self, page_context, page_data,
-            answer_data, page_behavior):
-        if (
-                "permutation" not in page_data
-                or (set(page_data["permutation"])
-                    != set(range(len(self.page_desc.choices))))):
-            from course.page import InvalidPageData
-            raise InvalidPageData(ugettext(
-                "existing choice permutation not "
-                "suitable for number of choices in question"))
-
-        if answer_data is not None:
-            form_data = {"choice": answer_data["choice"]}
-            form = self.make_choice_form(
-                    page_context, page_data, page_behavior, form_data)
-        else:
-            form = self.make_choice_form(
-                    page_context, page_data, page_behavior)
-
-        return form
-
-    def process_form_post(self, page_context, page_data, post_data, files_data,
-            page_behavior):
-        return self.make_choice_form(
-                    page_context, page_data, page_behavior, post_data, files_data)
-
     def answer_data(self, page_context, page_data, form, files_data):
         return {"choice": form.cleaned_data["choice"]}
-
-    def unpermuted_correct_indices(self):
-        result = []
-        for i, choice_text in enumerate(self.page_desc.choices):
-            if str(choice_text).startswith(self.CORRECT_TAG):
-                result.append(i)
-
-        return result
 
     def grade(self, page_context, page_data, answer_data, grade_data):
         if answer_data is None:
@@ -271,7 +302,7 @@ class ChoiceQuestion(PageBaseWithTitle, PageBaseWithValue):
 
 # {{{ multiple choice question
 
-class MultipleChoiceQuestion(ChoiceQuestion):
+class MultipleChoiceQuestion(ChoiceQuestionBase):
     """
     A page asking the participant to choose a few of multiple available answers.
 
@@ -303,47 +334,97 @@ class MultipleChoiceQuestion(ChoiceQuestion):
 
         A list of choices, each in :ref:`markup`. Correct
         choices are indicated by the prefix ``~CORRECT~``.
+        Choices marked with the prefix ``~DISREGARD~`` are
+        ignored when determining the correctness of an answer.
 
     .. attribute:: shuffle
 
         Optional. ``True`` or ``False``. If true, the choices will
         be presented in random order.
 
-    .. attribute:: allow_partial_credit
+    .. attribute:: credit_mode
 
-        Optional. ``True`` or ``False``. If False (default), only
-        answers in which all check marks match the reference solution will
-        be counted as correct.  If True, answers with subset of correct
-        choices will receive credit for each matching check box, irrespective
-        of whether it is checked or not.
+        One of the following:
 
-    .. attribute:: allow_partial_credit_subset_only
+        *   ``exact``: The question is scored as correct if and only if all
+            check boxes match the correct solution.
 
-        Optional. ``True`` or ``False``. If False (default), only
-        answers in which all check marks match the reference solution will
-        be counted as correct.  If True, partial credits will only be granted
-        to answers which are strict subsets of reference solution.
+        *   ``proportional``: Correctness is determined as the fraction
+            of (checked or unchecked) boxes that match the value in the
+            solution.
+
+        *   ``proportional_correct``: Correctness is determined
+            as the fraction of boxes that are checked in both the participant's
+            answer and the solution relative to the total number of correct answers.
+            Credit is only awarded if *no* incorrect answer is checked.
     """
 
     def __init__(self, vctx, location, page_desc):
         super(MultipleChoiceQuestion, self).__init__(vctx, location, page_desc)
 
-        if (
-                getattr(self.page_desc, "allow_partial_credit", False)
-                and
-                getattr(self.page_desc, "allow_partial_credit_subset_only", False)):
+        pd = self.page_desc
+
+        if hasattr(pd, "credit_mode"):
+            credit_mode = pd.credit_mode
+
+            if (
+                    hasattr(pd, "allow_partial_credit")
+                    or
+                    hasattr(pd, "allow_partial_credit_subset_only")):
+                raise ValidationError(
+                        string_concat(
+                            "%(location)s: ",
+                            _("'allow_partial_credit' or "
+                            "'allow_partial_credit_subset_only' may not be specified"
+                            "at the same time as 'credit_mode'"))
+                        % {'location': location})
+
+        else:
+
+            partial = getattr(pd, "allow_partial_credit", False)
+            partial_subset = getattr(pd, "allow_partial_credit_subset_only", False)
+
+            if not partial and not partial_subset:
+                credit_mode = "exact"
+            elif partial and not partial_subset:
+                credit_mode = "proportional"
+            elif not partial and partial_subset:
+                credit_mode = "proportional_correct"
+            elif partial and partial_subset:
+                raise ValidationError(
+                        string_concat(
+                            "%(location)s: ",
+                            _("'allow_partial_credit' and "
+                            "'allow_partial_credit_subset_only' are not allowed to "
+                            "coexist when both attribute are 'True'"))
+                        % {'location': location})
+            else:
+                assert False
+
+        if credit_mode not in [
+                "exact",
+                "proportional",
+                "proportional_correct"]:
             raise ValidationError(
                     string_concat(
                         "%(location)s: ",
-                        _("'allow_partial_credit' and "
-                        "'allow_partial_credit_subset_only' are not allowed to "
-                        "co-exist when both attribute are 'True'"))
-                    % {'location': location})
+                        _("unrecognized credit_mode '%(credit_mode)s'"))
+                    % {'location': location, "credit_mode": credit_mode})
+
+        if vctx is not None and not hasattr(pd, "credit_mode"):
+            vctx.add_warning(location,
+                    _("'credit_mode' will be required on multi-select choice "
+                        "questions in a future version. set "
+                        "'credit_mode: {}' to match current behavior.")
+                    .format(credit_mode))
+
+        self.credit_mode = credit_mode
 
     def allowed_attrs(self):
         return super(MultipleChoiceQuestion, self).allowed_attrs() + (
                 ("allow_partial_credit", bool),
                 ("allow_partial_credit_subset_only", bool),
+                ("credit_mode", str),
                 )
 
     def make_choice_form(self, page_context, page_data, page_behavior,
@@ -359,13 +440,17 @@ class MultipleChoiceQuestion(ChoiceQuestion):
             forms.TypedMultipleChoiceField(
                 choices=tuple(choices),
                 coerce=int,
-                widget=forms.CheckboxSelectMultiple()),
+                widget=forms.CheckboxSelectMultiple(),
+                required=False),
             *args, **kwargs)
 
         if not page_behavior.may_change_answer:
             form.fields['choice'].widget.attrs['disabled'] = True
 
         return form
+
+    def answer_data(self, page_context, page_data, form, files_data):
+        return {"choice": form.cleaned_data["choice"]}
 
     def grade(self, page_context, page_data, answer_data, grade_data):
         if answer_data is None:
@@ -375,29 +460,35 @@ class MultipleChoiceQuestion(ChoiceQuestion):
         permutation = page_data["permutation"]
         choice = answer_data["choice"]
 
-        unpermed_idx_set = set([permutation[idx] for idx in choice])
-        correct_idx_set = set(self.unpermuted_correct_indices())
+        disregard_idx_set = set(self.unpermuted_disregard_indices())
+        unpermed_idx_set = (
+                set([permutation[idx] for idx in choice]) - disregard_idx_set)
+        correct_idx_set = (
+                set(self.unpermuted_correct_indices()) - disregard_idx_set)
+        num_choices = len(self.page_desc.choices) - len(disregard_idx_set)
 
-        if unpermed_idx_set == correct_idx_set:
-            correctness = 1
-        else:
-            if getattr(self.page_desc, "allow_partial_credit", False):
-                correctness = (
-                        (
-                            len(self.page_desc.choices)
-                            -
-                            len(unpermed_idx_set
-                                .symmetric_difference(correct_idx_set)))
-                        /
-                        len(self.page_desc.choices))
-            elif getattr(self.page_desc, "allow_partial_credit_subset_only",
-                         False):
-                if unpermed_idx_set < correct_idx_set:
-                    correctness = (
-                            len(unpermed_idx_set)/len(correct_idx_set))
-                else:
-                    correctness = 0
+        if self.credit_mode == "exact":
+            if unpermed_idx_set == correct_idx_set:
+                correctness = 1
             else:
+                correctness = 0
+
+        elif self.credit_mode == "proportional":
+
+            correctness = (
+                    (
+                        num_choices
+                        -
+                        len(unpermed_idx_set
+                            .symmetric_difference(correct_idx_set)))
+                    /
+                    num_choices)
+
+        elif self.credit_mode == "proportional_correct":
+
+            correctness = (
+                    len(unpermed_idx_set & correct_idx_set)/len(correct_idx_set))
+            if not (unpermed_idx_set <= correct_idx_set):
                 correctness = 0
 
         return AnswerFeedback(correctness=correctness)

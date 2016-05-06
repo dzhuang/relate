@@ -2,6 +2,8 @@
 
 from __future__ import division
 
+from django.utils import translation
+
 __copyright__ = "Copyright (C) 2016 Dong Zhuang"
 
 __license__ = """
@@ -27,12 +29,14 @@ THE SOFTWARE.
 import django.forms as forms
 from django.utils.translation import ugettext as _, string_concat
 from django.db.models import Q
+from django.conf import settings
+from django.db import transaction
 
 from image_upload.models import FlowPageImage
 
 from course.page.base import (
     PageBaseWithTitle, PageBaseWithValue, PageBaseWithHumanTextFeedback,
-    PageBaseWithCorrectAnswer,
+    PageBaseWithCorrectAnswer, HumanTextFeedbackForm,
     markup_to_html)
 from course.models import FlowPageData, FlowSession, FlowPageVisit, Course
 from course.validation import ValidationError
@@ -101,6 +105,18 @@ class ImageUploadForm(StyledForm):
 
         if len(qs) == 0:
             raise forms.ValidationError(_("You have not upload image(s)!"))
+
+
+
+
+class ImgUploadHumanTextFeedbackForm(HumanTextFeedbackForm):
+    def __init__(self, *args, **kwargs):
+        super(ImgUploadHumanTextFeedbackForm, self).__init__(*args, **kwargs)
+
+        self.fields["access_rules_tag"] = forms.CharField(
+            required=False,
+            help_text=_("Manually set the access_rules_tag of the session, if necessary."),
+            label=_('Access rules tag'))
 
 
 class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
@@ -250,9 +266,6 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
 
     def make_form(self, page_context, page_data,
                   answer_data, page_behavior):
-        print "ordinal========================================="
-
-        print page_context.ordinal
 
         form = ImageUploadForm(
             page_context, page_behavior, page_data)
@@ -365,6 +378,47 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
             ext = ".dat"
 
         return (ext, buf)
+
+    def make_grading_form(self, page_context, page_data, grade_data):
+        access_rules_tag = page_context.flow_session.access_rules_tag
+        human_feedback_point_value = self.human_feedback_point_value(
+            page_context, page_data)
+
+        form_data = {}
+        form_data["access_rules_tag"] = access_rules_tag
+        if grade_data is not None or access_rules_tag:
+            form_data = {}
+            if grade_data is not None:
+                for k in self.grade_data_attrs:
+                    form_data[k] = grade_data[k]
+            if access_rules_tag is not None:
+                form_data["access_rules_tag"] = access_rules_tag
+            return ImgUploadHumanTextFeedbackForm(human_feedback_point_value, form_data)
+        else:
+            return ImgUploadHumanTextFeedbackForm(human_feedback_point_value)
+
+    def post_grading_form(self, page_context, page_data, grade_data,
+                          post_data, files_data):
+
+        human_feedback_point_value = self.human_feedback_point_value(
+            page_context, page_data)
+
+        return ImgUploadHumanTextFeedbackForm(human_feedback_point_value, post_data, files_data)
+
+    @transaction.atomic
+    def update_grade_data_from_grading_form(self, page_context, page_data,
+                                            grade_data, grading_form, files_data):
+
+        grade_data = super(ImageUploadQuestion,self).update_grade_data_from_grading_form(page_context, page_data,
+                                            grade_data, grading_form, files_data)
+
+        if grading_form.cleaned_data["access_rules_tag"] and page_context.flow_session:
+            if not grading_form.cleaned_data["access_rules_tag"] == page_context.flow_session.access_rules_tag:
+                the_flow_session = page_context.flow_session
+                the_flow_session.access_rules_tag = grading_form.cleaned_data["access_rules_tag"]
+                the_flow_session.save()
+
+        return grade_data
 
 # }}}
 
