@@ -33,9 +33,10 @@ from subprocess import Popen, PIPE
 from django.utils.translation import ugettext as _
 from django.conf import settings
 
-# {{{ latex 2 image conversion
 
 ALLOWED_LATEX2IMG_FORMAT = ['png', 'svg']
+
+# {{{ default values
 
 DEFAULT_LATEX_PREAMBLE = r'''
 \documentclass{article}
@@ -62,9 +63,23 @@ LATEX_LOG_OMIT_LINE_STARTS = (
 LATEX_ERR_LOG_BEGIN_LINE_STARTS = "\n! "
 LATEX_ERR_LOG_END_LINE_STARTS = "\nHere is how much of TeX's memory"
 
-PAGE_EMPTY_RE = re.compile(r"\n[^%]*\\pagestyle\{empty\}")
-TIKZ_PGF_RE = re.compile(r"\n[^%]*\\begin\{(tikzpicture|pgfpicture)\}")
+# }}}
 
+# {{{ latex code re
+
+PAGE_EMPTY_RE = re.compile(r"\n[^%]*\\pagestyle\{empty\}")
+BEGIN_DOCUMENT_RE = re.compile(r"\n(\s*)(\\begin\{document\})")
+TIKZ_PGF_RE = re.compile(r"\n[^%]*\\begin\{(?:tikzpicture|pgfpicture)\}")
+
+IS_FULL_DOC_RE = re.compile(r"(?:^|\n)\s*\\documentclass(?:.|\n)*"
+                            r"\n\s*\\begin\{document\}(?:.|\n)*"
+                            r"\n\s*\\end\{document\}")
+
+DOC_ELEMENT_RE_LIST = [(r"'\documentclass'", re.compile(r"(?:^|\n)\s*\\documentclass")),
+                       (r"'\begin{document}'", re.compile(r"\n\s*\\begin\{document\}")),
+                       (r"'\end{document}'", re.compile(r"\n\s*\\end\{document\}"))]
+
+# }}}
 
 # {{{ file read and write
 
@@ -88,42 +103,55 @@ def _file_write(filename, content):
 # {{{ assemble tex source
 
 def make_tex_source(tex_body, tex_preamble="",
-                    tex_preamble_extra="", is_full_code=False):
+                    tex_preamble_extra=""):
     '''
         Assemble tex source code.
-        If is_full_code is True, tex_body it self contains
-        preamble, which make it convenient for pgf/tikz
-        settings.
+
+        If tex_body contain all basic elements of a full
+        latex document (\documentclass \begin{document}
+        and \end{document}, it will be treated as full
+        document.This makes it convenient for pgf/tikz
+        settings in preamble.
     '''
     assert isinstance(tex_body, unicode)
 
-    # In case tex_body contains preamble
-    if is_full_code:
+    if re.search(IS_FULL_DOC_RE, tex_body):
         tex_source = tex_body
+
     else:
-        if not tex_preamble:
-            tex_preamble = getattr(
-                settings, "RELATE_LATEX_PREAMBLE",
-                DEFAULT_LATEX_PREAMBLE)
+        missing_ele = []
+        for ele, ele_re in DOC_ELEMENT_RE_LIST:
+            if not re.search(ele_re, tex_body):
+                missing_ele.append(ele)
 
-        # allow wrap tex_body by some environments
-        tex_begin_document =getattr(
-            settings, "RELATE_LATEX_BEGIN_DOCUMENT",
-            r"\begin{document}")
+        if missing_ele:
+            raise ValueError("<pre>%s</pre>"
+                % _("Your faied to submit a full latex document: "
+                    " missing %s.")
+                             % ", ".join(missing_ele) )
+        else:
+            if not tex_preamble:
+                tex_preamble = getattr(
+                    settings, "RELATE_LATEX_PREAMBLE",
+                    DEFAULT_LATEX_PREAMBLE)
 
-        tex_end_document =getattr(
-            settings, "RELATE_LATEX_END_DOCUMENT",
-            r"\end{document}")
+            tex_begin_document =getattr(
+                settings, "RELATE_LATEX_BEGIN_DOCUMENT",
+                r"\begin{document}")
 
-        tex_source = "%s" * 5 % (
-            tex_preamble, tex_preamble_extra,
-            tex_begin_document, tex_body, tex_end_document)
+            tex_end_document =getattr(
+                settings, "RELATE_LATEX_END_DOCUMENT",
+                r"\end{document}")
+
+            tex_source = "%s" * 5 % (
+                tex_preamble, tex_preamble_extra,
+                tex_begin_document, tex_body, tex_end_document)
 
     # make sure the latex source use empty style (no page mark)
     if not re.search(PAGE_EMPTY_RE, tex_source):
-        tex_source = tex_source.replace(
-            "\\begin{document}",
-            "\n\\pagestyle{empty}\n\\begin{document}")
+        tex_source = re.sub(BEGIN_DOCUMENT_RE,
+                            r"\n\1\\pagestyle{empty}\n\1\2",
+                            tex_source)
 
     return tex_source
 
@@ -137,10 +165,11 @@ def get_abstract_latex_log(log):
         .split(LATEX_ERR_LOG_END_LINE_STARTS)[0]
 
     if LATEX_LOG_OMIT_LINE_STARTS:
-        msg = "\n".join(line for line in msg.splitlines()
-                        if (not line.startswith(LATEX_LOG_OMIT_LINE_STARTS)
-                            and
-                            line.strip() != ""))
+        msg = "\n".join(
+            line for line in msg.splitlines()
+            if (not line.startswith(LATEX_LOG_OMIT_LINE_STARTS)
+                and
+                line.strip() != ""))
     return msg
 
 
@@ -189,7 +218,7 @@ def tex2dvi(tex_source, output_dir, basename, overwrite=False,
                 _file_write(log_path, log)
             finally:
                 from django.utils.html import escape
-                raise RuntimeError(
+                raise ValueError(
                     "<pre>%s</pre>" % escape(log).strip())
 
         aux = _file_read(aux_path)
@@ -226,7 +255,7 @@ def get_image_data_uri(image_path):
 def tex2dataURI(
         tex_body, output_dir=None, tex_filename="",
         image_format="", tex_preamble="", tex_preamble_extra="",
-        overwrite=False, is_full_code=False):
+        overwrite=False):
     '''Convert LaTex body to dataURI'''
 
     if not output_dir:
@@ -244,7 +273,7 @@ def tex2dataURI(
             raise
 
     tex_source = make_tex_source(
-        tex_body, tex_preamble, tex_preamble_extra, is_full_code)
+        tex_body, tex_preamble, tex_preamble_extra)
 
     if tex_filename:
         # In case a filename with extension is given,
@@ -359,7 +388,7 @@ def tex2dataURI(
 
 def tex2imgtag(tex_source, output_dir=None, tex_filename=None,
         image_format="svg", tex_preamble="", tex_preamble_extra="",
-        overwrite=False, is_full_code=False, html_class_extra="", alt=""):
+        overwrite=False, html_class_extra="", alt=None):
     '''Convert LaTex to IMG tag'''
 
     # make rendered image responsive by default
@@ -374,13 +403,16 @@ def tex2imgtag(tex_source, output_dir=None, tex_filename=None,
 
         html_class = "%s %s" %(html_class, html_extra_class)
 
+    if alt is None:
+        alt = tex_source
+
     if alt:
         alt = "alt='%s'" % alt.strip()
 
     try:
         src = tex2dataURI(tex_source, output_dir, tex_filename,
                           image_format, tex_preamble, tex_preamble_extra,
-                          overwrite, is_full_code)
+                          overwrite)
     except Exception:
         raise
 
