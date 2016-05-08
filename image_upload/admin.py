@@ -5,11 +5,10 @@ from image_upload.models import FlowPageImage
 
 
 class FlowPageImageAdmin(admin.ModelAdmin):
-    list_filter = ("course", "image_page_id", 'is_image_texify')
-    list_display = ('course', 'is_image_texify', 'creator', 'creation_time', "image_page_id", "flow_session")
+    list_filter = ("course", "image_page_id", 'is_image_textify')
+    list_display = ('course', 'is_image_textify', 'creator', 'creation_time', "image_page_id", "flow_session")
 
-    fields = ('admin_image','image_text', 'is_image_texify',
-              'is_image_textify',
+    fields = ('admin_image','image_text', 'is_image_textify',
               )
     readonly_fields = ('admin_image',)
 

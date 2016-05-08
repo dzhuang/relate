@@ -676,7 +676,7 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                     break
 
             if found_img:
-                if img.is_image_texify and img.image_text:
+                if img.is_image_textify and img.image_text:
                     img_text = img.image_text
                     body_html += markup_to_html(page_context, img_text)
                 else:

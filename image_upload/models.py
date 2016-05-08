@@ -141,8 +141,6 @@ class FlowPageImage(models.Model):
             verbose_name=_('Flow session'), on_delete=models.CASCADE)
     image_page_id = models.CharField(max_length=200, null=True)
 
-    is_image_texify = models.BooleanField(default=False, verbose_name="Image textified?")
-
     is_image_textify = models.BooleanField(default=False, verbose_name="Load textified Image?")
 
     image_text = models.TextField(default="",
@@ -205,7 +203,7 @@ class FlowPageImage(models.Model):
     admin_image.allow_tags = True
 
     def get_image_text(self):
-        if self.is_image_texify:
+        if self.is_image_textify:
             if self.image_text:
                 return self.image_text
             else:
