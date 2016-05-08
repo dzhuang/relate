@@ -294,6 +294,31 @@
 
   {# }}} #}
 
+  {# {{{ show single grade link #}
+
+  {% if show_privileged_shortcut %}
+    <div class="row" align="right">
+       {% if not flow_session.in_progress %}
+            <a href="{% url 'relate-view_reopen_session' course.identifier flow_session.id opportunity.id %}"
+              class="btn btn-primary btn-xs relate-btn-xs-vert-spaced">
+              {% trans "Reopen" %}
+            </a>
+        {% endif %}
+          <a href="{% url 'relate-grant_exception_stage_3' course.identifier flow_session.participation.id flow_session.flow_id flow_session.id %}"
+            class="btn btn-primary btn-xs relate-btn-xs-vert-spaced">
+            {% trans "Grant exception" %}
+          </a>
+
+      <a class="btn btn-primary btn-xs relate-btn-xs-vert-spaced"
+         href="{% url 'relate-grade_flow_page' course.identifier flow_session.id ordinal %}"
+         role="button">
+        {% trans "View in grade page" %}
+        </a>
+    </div>
+  {% endif %}
+
+  {# }}} #}
+
   {# {{{ change listening, navigation confirmation #}
 
   <script type="text/javascript">

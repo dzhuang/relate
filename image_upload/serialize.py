@@ -106,6 +106,15 @@ def serialize(request, instance, file_attr='file'):
                 }
             )
 
+    imageDataCopyHandlerUrl = reverse ('image_data_copy',
+                              kwargs={
+                                  'course_identifier': instance.course.identifier,
+                                  'flow_session_id': instance.flow_session_id,
+                                  'ordinal': instance.get_page_ordinal (),
+                                  'pk': instance.pk,
+                              }
+                              )
+
     creationTime = format_datetime_local(
             as_local_time(instance.creation_time))
 
@@ -153,5 +162,6 @@ def serialize(request, instance, file_attr='file'):
         'updateUrl': updateUrl,
         'deleteUrl': deleteUrl,
         'cropHandlerUrl': cropHandlerUrl,
+        'imageDataCopyHandlerUrl': imageDataCopyHandlerUrl,
         'deleteType': 'POST',
     }

@@ -36,6 +36,7 @@ from image_upload.views import (
     flow_page_image_download,
     flow_page_image_problem,
     flow_page_image_key,
+    image_data_copy,
 )
 
 from image_upload.page.imgupload import feedBackEmail
@@ -131,6 +132,17 @@ urlpatterns = [
         "/(?P<pk>\d+)$",
         image_crop,
         name='image_crop'),
+
+    #imageDataCopyHandlerUrl
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/flow-session"
+        "/(?P<flow_session_id>[0-9]+|None)"
+        "/(?P<ordinal>[0-9]+|None)"
+        "/image/data_copy"
+        "/(?P<pk>\d+)$",
+        image_data_copy,
+        name='image_data_copy'),
 
     url(r"^course"
         "/" + COURSE_ID_REGEX +

@@ -218,7 +218,15 @@
                                 </span>
                             {{ JQ_OPEN }} } {{ JQ_CLOSE }}
                         </p>
-
+                            {% if IS_COURSE_STAFF %}
+                                {% block COPY_IMAGE_DATA %}
+                                        <a
+                                            class="button btn btn-data-copy"
+                                            href={{ JQ_OPEN }}=file.imageDataCopyHandlerUrl{{ JQ_CLOSE }}
+                                        >
+                                            <i class="fa fa-clipboard" aria-hidden="true"></i></a>
+                                {% endblock %}{# block COPY_IMAGE_DATA #}
+                            {% endif %}
                         {% block JS_DOWNLOAD_TEMPLATE_ERROR %}
                             {{ JQ_OPEN }} if (file.error) { {{ JQ_CLOSE }}
                                 <div>
@@ -251,7 +259,7 @@
                     {% if IS_COURSE_STAFF %}
                     {% block JS_DOWNLOAD_SORT %}
                         <td class="td-srt hidden">
-                            <a 
+                            <a
                                 class="button btn btn-success btn-srt up"
                                 id="sort-up{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
                             >
@@ -286,6 +294,7 @@
                         {{ JQ_OPEN }} if (file.deleteUrl) { {{ JQ_CLOSE }}
                         {% if IS_COURSE_STAFF %}
                         {% block JS_DOWNLOAD_TEMPLATE_EDIT %}
+                        {# 改到这里了，应该把url传到js去处理么 #}
                             <a 
                                 class="btn btn-success btn-edit-image"
                                 data-toggle="modal"
