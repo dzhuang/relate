@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name='flowpageimage',
-            name='is_image_texify',
-            field=models.BooleanField(default=False, verbose_name=b'Image textified?'),
+            name='is_image_textify',
+            field=models.BooleanField(default=False, verbose_name=b'Load textified Image?'),
         ),
     ]

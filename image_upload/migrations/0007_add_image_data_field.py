@@ -13,18 +13,9 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='flowpageimage',
-            name='is_image_texify',
-        ),
         migrations.AddField(
             model_name='flowpageimage',
             name='image_data',
             field=jsonfield.fields.JSONField(blank=True, null=True, verbose_name='Image_Data'),
-        ),
-        migrations.AddField(
-            model_name='flowpageimage',
-            name='is_image_textify',
-            field=models.BooleanField(default=False, verbose_name=b'Load textified Image?'),
         ),
     ]
