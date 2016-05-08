@@ -117,6 +117,8 @@ def user_flowsession_img_path(instance, file_name):
         instance.creator_id,
         file_name)
 
+from jsonfield import JSONField
+
 class FlowPageImage(models.Model):
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
             verbose_name=_('Creator'), on_delete=models.CASCADE)
@@ -141,10 +143,17 @@ class FlowPageImage(models.Model):
 
     is_image_texify = models.BooleanField(default=False, verbose_name="Image textified?")
 
+    is_image_textify = models.BooleanField(default=False, verbose_name="Load textified Image?")
+
     image_text = models.TextField(default="",
                                   verbose_name=_("Related Html"),
                                   help_text=_("The html for the FlowPageImage")
                                   )
+
+    image_data = JSONField (null=True, blank=True,
+                      # Show correct characters in admin for non ascii languages.
+                      dump_kwargs={'ensure_ascii': False},
+                      verbose_name=_('Image_Data'))
 
     # The order of the img in a flow session page.
     order = models.SmallIntegerField(default=0)

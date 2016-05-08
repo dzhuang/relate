@@ -651,23 +651,19 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
             page_data = self.make_page_data ()
 
         if page_data:
-            flow_pk = page_data["flow_pk"]
-            page_id = page_data["page_id"]
-            qs = FlowPageImage.objects.filter (flow_session__id=flow_pk, image_page_id=page_id)
-
-            if len(qs) > 0:
-                return qs
+            try:
+                flow_pk = page_data["flow_pk"]
+                page_id = page_data["page_id"]
+                qs = FlowPageImage.objects.filter (flow_session__id=flow_pk, image_page_id=page_id)
+                if len(qs) > 0:
+                    return qs
+            except:
+                return None
 
         return None
 
     def body(self, page_context, page_data):
-
-        #print "======================"
-        #print type(page_context)
-
-
         body_html =  markup_to_html(page_context, self.page_desc.prompt)
-
         qs = self.get_flowpageimage_qs(page_context, page_data)
 
         if qs:

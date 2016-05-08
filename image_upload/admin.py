@@ -8,7 +8,9 @@ class FlowPageImageAdmin(admin.ModelAdmin):
     list_filter = ("course", "image_page_id", 'is_image_texify')
     list_display = ('course', 'is_image_texify', 'creator', 'creation_time', "image_page_id", "flow_session")
 
-    fields = ('admin_image','image_text', 'is_image_texify')
+    fields = ('admin_image','image_text', 'is_image_texify',
+              'is_image_textify',
+              )
     readonly_fields = ('admin_image',)
 
     # {{{ permissions
