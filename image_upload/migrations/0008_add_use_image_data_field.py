@@ -23,4 +23,9 @@ class Migration(migrations.Migration):
             name='image_data',
             field=jsonfield.fields.JSONField(blank=True, null=True, verbose_name='External image data'),
         ),
+        migrations.AlterField(
+            model_name='flowpageimage',
+            name='image_text',
+            field=models.TextField(blank=True, default=b'', help_text='The html for the FlowPageImage', verbose_name='Related Html'),
+        ),
     ]
