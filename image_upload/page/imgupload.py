@@ -699,7 +699,22 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
         qs = self.get_flowpageimage_qs(page_context, page_data)
         ca = "\n"
         if qs:
-            for answer in list(qs)[1:]:
+            answer_qs = None
+            img_0 = qs[0]
+            if img_0.use_image_data and img_0.image_data:
+                try:
+                    flow_pk = img_0.image_data["flow_pk"]
+                    page_id = img_0.image_data["page_id"]
+                    order_set = img_0.image_data["order_set"]
+                    answer_qs = FlowPageImage.objects.filter(
+                        flow_session__id=flow_pk, image_page_id=page_id,
+                        order__in=order_set)
+                except:
+                    answer_qs=None
+            if not answer_qs:
+                answer_qs = list(qs)[1:]
+
+            for answer in answer_qs:
                 key_thumbnail = answer.file_thumbnail
                 key_img = answer.get_absolute_url(private=False, key=True)
                 ca = ca + '<a href="' + key_img + '"><img src="' + key_thumbnail.url + '"></a>\n'

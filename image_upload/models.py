@@ -141,9 +141,9 @@ class FlowPageImage(models.Model):
             verbose_name=_('Flow session'), on_delete=models.CASCADE)
     image_page_id = models.CharField(max_length=200, null=True)
 
-    is_image_textify = models.BooleanField(default=False, verbose_name="Load textified Image?")
+    is_image_textify = models.BooleanField(default=False, verbose_name=_("Load textified Image?"))
 
-    image_text = models.TextField(default="",
+    image_text = models.TextField(default="", blank=True,
                                   verbose_name=_("Related Html"),
                                   help_text=_("The html for the FlowPageImage")
                                   )
@@ -151,7 +151,9 @@ class FlowPageImage(models.Model):
     image_data = JSONField (null=True, blank=True,
                       # Show correct characters in admin for non ascii languages.
                       dump_kwargs={'ensure_ascii': False},
-                      verbose_name=_('Image_Data'))
+                      verbose_name=_('External image data'))
+
+    use_image_data = models.BooleanField(default=False, verbose_name=_("Use external Image data?"))
 
     # The order of the img in a flow session page.
     order = models.SmallIntegerField(default=0)
