@@ -9,6 +9,7 @@ $(document).ready(function () {
     });
     $('#past-submission_dropdown').addClass('hidden');
 
+    // for copy image_data
     new Clipboard('.btn-data-copy');
 });
 

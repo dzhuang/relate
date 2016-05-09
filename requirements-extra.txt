@@ -24,5 +24,3 @@ django-braces
 # For jsonview decorator
 django-jsonview
 
-# For bootstrap in admin
-git+https://github.com/Seha16/django-admin-bootstrap.git

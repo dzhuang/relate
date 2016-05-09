@@ -30,7 +30,6 @@ else:
 # {{{ django: apps
 
 INSTALLED_APPS = (
-#    "bootstrap_admin",  # pip install git+https://github.com/Seha16/django-admin-bootstrap.git
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
