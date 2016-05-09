@@ -480,7 +480,7 @@ urlpatterns = [
 
     #}}}
 
-    url(r'^usradmin/', include(admin.site.urls)),
+    #url(r'^usradmin/', include(admin.site.urls)),
     url(r'^admin/', include(admin.site.urls)),
     
     # {{{ image_upload

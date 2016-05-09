@@ -50,6 +50,18 @@ from crispy_forms.layout import Layout, HTML, Submit
 import json
 import os
 
+
+def is_course_staff(request, page_context):
+    user = request.user
+    course = page_context.course
+    from course.constants import participation_role
+    from course.auth import get_role_and_participation
+    role, participation = get_role_and_participation(request, course)
+    if role in [participation_role.teaching_assistant,
+                participation_role.instructor]:
+        return True
+    return False
+
 # {{{ image upload question
 
 class ImageUploadForm(StyledForm):
@@ -59,6 +71,7 @@ class ImageUploadForm(StyledForm):
 
         self.page_behavior = page_behavior
         self.page_context = page_context
+        self.page_data = page_data
 
         jfu_button_control = ""
 
@@ -253,16 +266,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
             + string_concat("<br/><p class='text-info'><strong><small>(", _("Note: Maxmum number of images: %d"),
                             ")</small></strong></p>") % (self.maxNumberOfFiles,))
 
-    def is_course_staff(self, request, page_context):
-        user = request.user
-        course = page_context.course
-        from course.constants import participation_role
-        from course.auth import get_role_and_participation
-        role, participation = get_role_and_participation(request, course)
-        if role in [participation_role.teaching_assistant,
-                    participation_role.instructor]:
-            return True
-        return False
+
 
     def make_form(self, page_context, page_data,
                   answer_data, page_behavior):
@@ -281,11 +285,6 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         return form
 
     def form_to_html(self, request, page_context, form, answer_data):
-        IS_COURSE_STAFF = (
-            self.is_course_staff(request, page_context)
-            or
-            form.page_behavior.may_change_answer)
-
         ctx = {"form": form,
                "JQ_OPEN": '{%',
                'JQ_CLOSE': '%}',
@@ -293,7 +292,8 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                'course_identifier': page_context.course,
                "flow_session_id": page_context.flow_session.id,
                "ordinal": page_context.ordinal,
-               "IS_COURSE_STAFF": IS_COURSE_STAFF,
+               "IS_COURSE_STAFF": is_course_staff(request, page_context),
+               "MAY_CHANGE_ANSWER": form.page_behavior.may_change_answer,
                "SHOW_CREATION_TIME": True,
                "ALLOW_ROTATE_TUNE": True,
 
@@ -609,7 +609,7 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                 visit = visits_list[0]
                 if self.only_graded_pages or self.exclude_grade_percentage_lower_than:
                     most_recent_grade = visit.get_most_recent_grade()
-                    print most_recent_grade
+                    #print most_recent_grade
                     if (self.only_graded_pages and not most_recent_grade.correctness)\
                             or\
                             (self.exclude_grade_percentage_lower_than
@@ -662,8 +662,7 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
 
         return None
 
-    def body(self, page_context, page_data):
-        body_html =  markup_to_html(page_context, self.page_desc.prompt)
+    def get_question_img(self, page_context, page_data):
         qs = self.get_flowpageimage_qs(page_context, page_data)
 
         if qs:
@@ -674,19 +673,27 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                 if img.order == 0:
                     found_img = True
                     break
+        if found_img:
+            return img
+        else:
+            return None
 
-            if found_img:
-                if img.is_image_textify and img.image_text:
-                    img_text = img.image_text
-                    body_html += markup_to_html(page_context, img_text)
-                else:
-                    question_img_url = img.get_absolute_url(private=False)
-                    question_thumbnail_url = img.file_thumbnail.url
 
-                    body_html += (
-                        '<div><p><a href="' + question_img_url + '" data-gallery="#question"><img src="' + question_thumbnail_url + '"></a></p>'
-                        '</div>'
-                    )
+    def body(self, page_context, page_data):
+        body_html =  markup_to_html(page_context, self.page_desc.prompt)
+        img = self.get_question_img(page_context, page_data)
+        if img:
+            if img.is_image_textify and img.image_text:
+                img_text = img.image_text
+                body_html += markup_to_html(page_context, img_text)
+            else:
+                question_img_url = img.get_absolute_url(private=False)
+                question_thumbnail_url = img.file_thumbnail.url
+
+                body_html += (
+                    '<div><p><a href="' + question_img_url + '" data-gallery="#question"><img src="' + question_thumbnail_url + '"></a></p>'
+                    '</div>'
+                )
 
             body_html += string_concat("<br/><p class='text-info'><strong><small>"
                                      "(", _("Note: Maxmum number of images: %d"),
@@ -695,9 +702,58 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
 
         return body_html
 
-    def correct_answer(self, page_context, page_data, answer_data, grade_data):
+    def form_to_html(self, request, page_context, form, answer_data):
+        html = super(ImageUploadQuestionWithAnswer,self).form_to_html(request, page_context, form, answer_data)
+
+
+
+        from image_upload.serialize import get_image_page_data_str, get_image_admin_url
+
+        question_img = self.get_question_img(page_context,form.page_data)
+        answer_qs = self.get_correct_answer_qs(page_context, form.page_data)
+
+        first_row = ""
+        second_row = ""
+
+        full_qs_list = []
+
+        if question_img:
+            full_qs_list.append(question_img)
+        if answer_qs:
+            full_qs_list += list(answer_qs)
+
+        if full_qs_list:
+            for answer_img in full_qs_list:
+                i_thumbnail_url = answer_img.file_thumbnail.url
+                i_img_url = answer_img.get_absolute_url(private=False, key=True)
+                first_row += '<td><a href="%s" class="adminimage"><img src="%s"></a></td>' \
+                             % (i_img_url, i_thumbnail_url)
+
+                image_data_dict = get_image_page_data_str(answer_img)
+                imageAdminUrl = get_image_admin_url(answer_img)
+
+                second_row += '<td><a class="btn-data-copy" data-clipboard-text=\'%s\'>' \
+                              '<i class="fa fa-clipboard" aria-hidden="true"></i>' \
+                              '</a><a href="%s" target="_blank"><i class="fa fa-user"></i></a></td>' \
+                              % (image_data_dict, imageAdminUrl)
+
+        js = """<script>
+            document.getElementById('adminonly').onclick = function (event) {
+                event = event || window.event;
+                var target = event.target || event.srcElement,
+                link = target.src ? target.parentNode : target,
+                options = {index: link, event: event},
+                links = this.getElementsByClassName('adminimage');
+                blueimp.Gallery(links, options);
+                };
+        </script>"""
+
+        return html + "<div><table>" + "<tr id='adminonly'>" +\
+               first_row + "</tr>" + "<tr>" + second_row + "</tr>" + "</table></div>" + js
+
+    def get_correct_answer_qs(self,page_context, page_data):
         qs = self.get_flowpageimage_qs(page_context, page_data)
-        ca = "\n"
+        answer_qs = None
         if qs:
             answer_qs = None
             img_0 = qs[0]
@@ -713,7 +769,13 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                     answer_qs=None
             if not answer_qs:
                 answer_qs = list(qs)[1:]
+        return answer_qs
 
+
+    def correct_answer(self, page_context, page_data, answer_data, grade_data):
+        answer_qs = self.get_correct_answer_qs(page_context, page_data)
+        ca = "\n"
+        if answer_qs:
             for answer in answer_qs:
                 key_thumbnail = answer.file_thumbnail
                 key_img = answer.get_absolute_url(private=False, key=True)
@@ -732,9 +794,6 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
 
         student_feedback = ""
         if self.allow_report_correct_answer_false:
-            from course.models import Participation
-            tutor_qs = Participation.objects.filter(course=page_context.course, role=participation_role.instructor)
-            tutor_email_list = [tutor.user.email for tutor in tutor_qs]
 
             from django.core.urlresolvers import reverse
             email_page_url = reverse(

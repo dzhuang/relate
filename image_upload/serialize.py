@@ -35,7 +35,9 @@ from datetime import timedelta
 import mimetypes
 import re
 import os
+import json
 
+from image_upload.models import FlowPageImage
 
 def order_name(name):
     """order_name
@@ -51,6 +53,26 @@ def order_name(name):
         return name
     return name[:15] + "..." + name[-7:]
 
+def get_image_page_data_str(image):
+    if not isinstance(image, FlowPageImage):
+        return None
+    if image.flow_session.in_progress:
+        return None
+
+    image_data_dict = {
+        'flow_pk': image.flow_session.id,
+        'page_id': image.image_page_id,
+        'order_set': list((image.order,)),
+    }
+
+    return json.dumps(image_data_dict).encode("utf-8")
+
+def get_image_admin_url(image):
+    if not isinstance(image, FlowPageImage):
+        return None
+    if image.flow_session.in_progress:
+        return None
+    return reverse('admin:image_upload_flowpageimage_change', args=(image.pk,))
 
 def serialize(request, instance, file_attr='file'):
     """serialize -- Serialize a Picture instance into a dict.
@@ -106,15 +128,6 @@ def serialize(request, instance, file_attr='file'):
                 }
             )
 
-    imageDataCopyHandlerUrl = reverse ('image_data_copy',
-                              kwargs={
-                                  'course_identifier': instance.course.identifier,
-                                  'flow_session_id': instance.flow_session_id,
-                                  'ordinal': instance.get_page_ordinal (),
-                                  'pk': instance.pk,
-                              }
-                              )
-
     creationTime = format_datetime_local(
             as_local_time(instance.creation_time))
 
@@ -162,6 +175,7 @@ def serialize(request, instance, file_attr='file'):
         'updateUrl': updateUrl,
         'deleteUrl': deleteUrl,
         'cropHandlerUrl': cropHandlerUrl,
-        'imageDataCopyHandlerUrl': imageDataCopyHandlerUrl,
+        'imageAdminUrl': get_image_admin_url(instance),
+        'image_data_dict': get_image_page_data_str(instance),
         'deleteType': 'POST',
     }

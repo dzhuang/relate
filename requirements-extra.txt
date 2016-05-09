@@ -25,4 +25,4 @@ django-braces
 django-jsonview
 
 # For bootstrap in admin
-pip install git+https://github.com/Seha16/django-admin-bootstrap.git
+git+https://github.com/Seha16/django-admin-bootstrap.git

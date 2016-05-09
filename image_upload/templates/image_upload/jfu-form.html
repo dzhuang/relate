@@ -4,7 +4,7 @@
 <noscript>
     <input type="hidden" name="redirect" value="{{ request.path }}"> </noscript>
 
-{% if IS_COURSE_STAFF %}
+{% if IS_COURSE_STAFF or MAY_CHANGE_ANSWER %}
 {% block UPLOAD_FORM_BUTTON_BAR %}
     <div class="row fileupload-buttonbar">
         {# The fileupload-buttonbar contains buttons to add/delete files and start/cancel the upload #}
@@ -57,7 +57,7 @@
                 </button>
                 <input type="checkbox" class="toggle">
             {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR_CONTROL #}
-            {% if IS_COURSE_STAFF %}
+            {% if IS_COURSE_STAFF or MAY_CHANGE_ANSWER  %}
             {% block UPLOAD_FORM_BUTTON_BAR_EXTRA %}
                 <button type="button" class="btn btn-success btn-srt-tbl" style="float:right;">
                     <i class="fa fa-sort"></i>
@@ -218,15 +218,7 @@
                                 </span>
                             {{ JQ_OPEN }} } {{ JQ_CLOSE }}
                         </p>
-                            {% if IS_COURSE_STAFF %}
-                                {% block COPY_IMAGE_DATA %}
-                                        <a
-                                            class="button btn btn-data-copy"
-                                            href={{ JQ_OPEN }}=file.imageDataCopyHandlerUrl{{ JQ_CLOSE }}
-                                        >
-                                            <i class="fa fa-clipboard" aria-hidden="true"></i></a>
-                                {% endblock %}{# block COPY_IMAGE_DATA #}
-                            {% endif %}
+
                         {% block JS_DOWNLOAD_TEMPLATE_ERROR %}
                             {{ JQ_OPEN }} if (file.error) { {{ JQ_CLOSE }}
                                 <div>
@@ -256,7 +248,7 @@
                         </td>
                     {% endblock %}{# block JS_DOWNLOAD_TEMPLATE_TIME #}
                 {% endif %}
-                    {% if IS_COURSE_STAFF %}
+                    {% if IS_COURSE_STAFF or MAY_CHANGE_ANSWER %}
                     {% block JS_DOWNLOAD_SORT %}
                         <td class="td-srt hidden">
                             <a
@@ -294,7 +286,23 @@
                         {{ JQ_OPEN }} if (file.deleteUrl) { {{ JQ_CLOSE }}
                         {% if IS_COURSE_STAFF %}
                         {% block JS_DOWNLOAD_TEMPLATE_EDIT %}
-                        {# 改到这里了，应该把url传到js去处理么 #}
+                            {% if IS_COURSE_STAFF %}
+                                {% block COPY_IMAGE_DATA %}
+                                {{ JQ_OPEN }} if (file.image_data_dict) { {{ JQ_CLOSE }}
+                                        <a
+                                            class="btn-data-copy"
+                                            data-clipboard-text="{{ JQ_OPEN }}=file.image_data_dict{{ JQ_CLOSE }}"
+                                        >
+                                            <i class="fa fa-clipboard" aria-hidden="true"></i></a>
+                                {{ JQ_OPEN }} } {{ JQ_CLOSE }}
+                                {{ JQ_OPEN }} if (file.imageAdminUrl) { {{ JQ_CLOSE }}
+                                        <a
+                                            href={{ JQ_OPEN }}=file.imageAdminUrl{{ JQ_CLOSE }}
+                                        >
+                                            <i class="fa fa-user"></i></a>
+                                {{ JQ_OPEN }} } {{ JQ_CLOSE }}
+                                {% endblock %}{# block COPY_IMAGE_DATA #}
+                            {% endif %}
                             <a 
                                 class="btn btn-success btn-edit-image"
                                 data-toggle="modal"

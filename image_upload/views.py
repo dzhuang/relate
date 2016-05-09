@@ -363,37 +363,6 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
 # }}}
 
 
-@json_view
-@login_required
-@course_view
-def image_data_copy(pctx, flow_session_id, ordinal, pk):
-    import pyperclip
-    order_set = []
-
-    copy_instance = FlowPageImage.objects.get(pk=pk)
-
-    order_set.append(copy_instance.order)
-
-    copy_dict = {}
-
-    try:
-        copy_dict = {
-            "flow_pk": copy_instance.flow_session.id,
-            "page_id": copy_instance.image_page_id,
-            "order_set": order_set,
-        }
-        pyperclip.copy(repr(copy_dict))
-        response = {
-            'success': True,
-            'message': ugettext('Image data copied.')}
-    except Exception as e:
-        response = {
-            'success': False,
-            'message': "%s: %s" % (type(e).__name__, str(e))}
-
-    return response
-
-
 class ImgTableOrderError(BadRequest):
     pass
 

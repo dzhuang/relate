@@ -8,6 +8,8 @@ $(document).ready(function () {
         $(this).attr("formaction", window.location.pathname);
     });
     $('#past-submission_dropdown').addClass('hidden');
+
+    new Clipboard('.btn-data-copy');
 });
 
 //$('#fileupload > table > tbody').addEventListener('DOMContentLoaded', function () {
