@@ -1,10 +1,19 @@
 from django.contrib import admin
 
-# Register your models here.
+from django import forms
 from image_upload.models import FlowPageImage
+from ckeditor.widgets import CKEditorWidget
 
+class FPIAdminForm(forms.ModelForm):
+    image_text = forms.CharField(widget=CKEditorWidget())
+    class Meta:
+        model = FlowPageImage
+        fields = ['image_text', 'is_image_textify', 'image_data', 'use_image_data'
+                  ]
 
 class FlowPageImageAdmin(admin.ModelAdmin):
+    form = FPIAdminForm
+
     list_filter = ("course", "image_page_id", 'is_image_textify', 'use_image_data', 'order', 'creator')
     list_display = ('course', 'is_image_textify', 'use_image_data', 'order', 'creator', 'creation_time', "image_page_id", "flow_session")
 
