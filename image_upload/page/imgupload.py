@@ -107,19 +107,17 @@ class ImageUploadForm(StyledForm):
     def clean(self):
         flow_session_id = self.page_context.flow_session.id
         ordinal = self.page_context.ordinal
-        user = self.page_context.flow_session.user
+        flow_owner = self.page_context.flow_session.participation.user
         fpd = FlowPageData.objects.get(
             flow_session=flow_session_id, ordinal=ordinal)
 
         qs = FlowPageImage.objects.filter(
-            creator=user
+            creator=flow_owner
         ).filter(flow_session=flow_session_id
                  ).filter(image_page_id=fpd.page_id)
 
         if len(qs) == 0:
             raise forms.ValidationError(_("You have not upload image(s)!"))
-
-
 
 
 class ImgUploadHumanTextFeedbackForm(HumanTextFeedbackForm):
@@ -266,8 +264,6 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
             + string_concat("<br/><p class='text-info'><strong><small>(", _("Note: Maxmum number of images: %d"),
                             ")</small></strong></p>") % (self.maxNumberOfFiles,))
 
-
-
     def make_form(self, page_context, page_data,
                   answer_data, page_behavior):
 
@@ -323,14 +319,14 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
     def answer_data(self, page_context, page_data, form, files_data):
         flow_session_id = page_context.flow_session.id
         ordinal = page_context.ordinal
-        user = page_context.flow_session.user
+        flow_owner = page_context.flow_session.participation.user
         fpd = FlowPageData.objects.get(
             flow_session=flow_session_id, ordinal=ordinal)
 
-        qs = FlowPageImage.objects.filter(
-            creator=user
-        ).filter(flow_session=flow_session_id
-                 ).filter(image_page_id=fpd.page_id)
+        qs = FlowPageImage.objects\
+            .filter(creator=flow_owner)\
+            .filter(flow_session=flow_session_id)\
+            .filter(image_page_id=fpd.page_id)
 
         if len(qs) > 0:
             import json
@@ -344,12 +340,12 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
 
         flow_session_id = page_context.flow_session.id
         ordinal = page_context.ordinal
-        user = page_context.flow_session.user
+        flow_owner = page_context.flow_session.participation.user
         fpd = FlowPageData.objects.get(
             flow_session=flow_session_id, ordinal=ordinal)
 
         qs = FlowPageImage.objects.filter(
-            creator=user
+            creator=flow_owner
         ).filter(flow_session=flow_session_id
                  ).filter(image_page_id=fpd.page_id)
 
@@ -705,51 +701,53 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
     def form_to_html(self, request, page_context, form, answer_data):
         html = super(ImageUploadQuestionWithAnswer,self).form_to_html(request, page_context, form, answer_data)
 
+        if is_course_staff(request,page_context):
 
+            from image_upload.serialize import get_image_page_data_str, get_image_admin_url
 
-        from image_upload.serialize import get_image_page_data_str, get_image_admin_url
+            question_img = self.get_question_img(page_context,form.page_data)
+            answer_qs = self.get_correct_answer_qs(page_context, form.page_data)
 
-        question_img = self.get_question_img(page_context,form.page_data)
-        answer_qs = self.get_correct_answer_qs(page_context, form.page_data)
+            first_row = ""
+            second_row = ""
 
-        first_row = ""
-        second_row = ""
+            full_qs_list = []
 
-        full_qs_list = []
+            if question_img:
+                full_qs_list.append(question_img)
+            if answer_qs:
+                full_qs_list += list(answer_qs)
 
-        if question_img:
-            full_qs_list.append(question_img)
-        if answer_qs:
-            full_qs_list += list(answer_qs)
+            if full_qs_list:
+                for answer_img in full_qs_list:
+                    i_thumbnail_url = answer_img.file_thumbnail.url
+                    i_img_url = answer_img.get_absolute_url(private=False, key=True)
+                    first_row += '<td><a href="%s" class="adminimage"><img src="%s"></a></td>' \
+                                 % (i_img_url, i_thumbnail_url)
 
-        if full_qs_list:
-            for answer_img in full_qs_list:
-                i_thumbnail_url = answer_img.file_thumbnail.url
-                i_img_url = answer_img.get_absolute_url(private=False, key=True)
-                first_row += '<td><a href="%s" class="adminimage"><img src="%s"></a></td>' \
-                             % (i_img_url, i_thumbnail_url)
+                    image_data_dict = get_image_page_data_str(answer_img)
+                    imageAdminUrl = get_image_admin_url(answer_img)
 
-                image_data_dict = get_image_page_data_str(answer_img)
-                imageAdminUrl = get_image_admin_url(answer_img)
+                    second_row += '<td><a class="btn-data-copy" data-clipboard-text=\'%s\'>' \
+                                  '<i class="fa fa-clipboard" aria-hidden="true"></i>' \
+                                  '</a><a href="%s" target="_blank"><i class="fa fa-user"></i></a></td>' \
+                                  % (image_data_dict, imageAdminUrl)
 
-                second_row += '<td><a class="btn-data-copy" data-clipboard-text=\'%s\'>' \
-                              '<i class="fa fa-clipboard" aria-hidden="true"></i>' \
-                              '</a><a href="%s" target="_blank"><i class="fa fa-user"></i></a></td>' \
-                              % (image_data_dict, imageAdminUrl)
+            js = """<script>
+                document.getElementById('adminonly').onclick = function (event) {
+                    event = event || window.event;
+                    var target = event.target || event.srcElement,
+                    link = target.src ? target.parentNode : target,
+                    options = {index: link, event: event},
+                    links = this.getElementsByClassName('adminimage');
+                    blueimp.Gallery(links, options);
+                    };
+            </script>"""
 
-        js = """<script>
-            document.getElementById('adminonly').onclick = function (event) {
-                event = event || window.event;
-                var target = event.target || event.srcElement,
-                link = target.src ? target.parentNode : target,
-                options = {index: link, event: event},
-                links = this.getElementsByClassName('adminimage');
-                blueimp.Gallery(links, options);
-                };
-        </script>"""
+            html += "<div><table>" + "<tr id='adminonly'>" + \
+                   first_row + "</tr>" + "<tr>" + second_row + "</tr>" + "</table></div>" + js
 
-        return html + "<div><table>" + "<tr id='adminonly'>" +\
-               first_row + "</tr>" + "<tr>" + second_row + "</tr>" + "</table></div>" + js
+        return html
 
     def get_correct_answer_qs(self,page_context, page_data):
         qs = self.get_flowpageimage_qs(page_context, page_data)
@@ -770,7 +768,6 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
             if not answer_qs:
                 answer_qs = list(qs)[1:]
         return answer_qs
-
 
     def correct_answer(self, page_context, page_data, answer_data, grade_data):
         answer_qs = self.get_correct_answer_qs(page_context, page_data)
