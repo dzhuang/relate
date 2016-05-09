@@ -198,8 +198,10 @@ class FlowPageImage(models.Model):
                     )
 
     def admin_image(self):
-        #img_url = self.file_thumbnail.url()
-        img_url = self.get_absolute_url(private=False)
+        if self.order == 0:
+            img_url = self.get_absolute_url(private=False)
+        else:
+            img_url = self.get_absolute_url(key=True)
         return '<img src="%s" class="img-responsive" style="max-height:300pt"/>' % img_url
     admin_image.short_description = 'Image'
     admin_image.allow_tags = True
