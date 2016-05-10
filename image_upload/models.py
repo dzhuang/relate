@@ -143,12 +143,13 @@ class FlowPageImage(models.Model):
 
     is_image_textify = models.BooleanField(default=False, verbose_name=_("Load textified Image?"))
 
-    image_text = models.TextField(default="", blank=True,
-                                  verbose_name=_("Related Html"),
-                                  help_text=_("The html for the FlowPageImage")
-                                  )
+    image_text = models.TextField(
+        verbose_name=_("Related Html"),
+        help_text=_("The html for the FlowPageImage"),
+        blank=True, null=True
+    )
 
-    image_data = JSONField (null=True, blank=True,
+    image_data = JSONField(null=True, blank=True,
                       # Show correct characters in admin for non ascii languages.
                       dump_kwargs={'ensure_ascii': False},
                       verbose_name=_('External image data'))
@@ -166,6 +167,8 @@ class FlowPageImage(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = self.file.name
+        self.image_text = self.image_text or None
+        self.image_data = self.image_data or None
         super(FlowPageImage, self).save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):

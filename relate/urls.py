@@ -487,6 +487,9 @@ urlpatterns = [
     url(r'^image_upload/', include('image_upload.urls')),
 
     #}}}
+
+    # markdown with preview support
+    url(r'^markdownx/', include('markdownx.urls')),
 ]
 
 if settings.RELATE_SIGN_IN_BY_SAML2_ENABLED:
