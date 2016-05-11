@@ -44,6 +44,34 @@ class HasImageTextFilter(admin.SimpleListFilter):
         else:
             return queryset.filter(image_text__len=0)
 
+class ParticipationTagFilter(admin.SimpleListFilter):
+    title = _("participation tags")
+    parameter_name = 'ptags'
+
+    def lookups(self, request, model_admin):
+        from course.models import ParticipationTag
+        ptag_qs = ParticipationTag.objects.all()
+        ptag_list = [ptag.name for ptag in ptag_qs]
+
+        tag_tuple = ()
+
+        for tag in ptag_list:
+            if tag.strip() <> "" and tag <> '<<<NONE>>>':
+                tag_tuple += (((tag, tag),))
+
+        self.tag_tuple = tag_tuple
+
+        return (('no_tag', _('no tag')),) + tag_tuple
+
+    def queryset(self, request, queryset):
+        has_tag_list = [tag for (tag, _) in self.tag_tuple]
+        if self.value() in has_tag_list:
+            return queryset.filter(flow_session__participation__tags__name__exact=self.value())
+        else:
+            # result for no_tag
+            return queryset.exclude(flow_session__participation__tags__name__in=has_tag_list)
+
+
 class AccessRuleTagFilter(admin.SimpleListFilter):
     title = _("Access Rule Tag")
     parameter_name = 'accessruletag'
@@ -102,6 +130,7 @@ class FlowPageImageAdmin(admin.ModelAdmin):
         'order',
         HasImageTextFilter,
         AccessRuleTagFilter,
+        ParticipationTagFilter,
     )
 
     list_display = (
@@ -156,20 +185,16 @@ class FlowPageImageAdmin(admin.ModelAdmin):
             from course.models import FlowPageData
 
             try:
-                fpd = FlowPageData.objects.filter(flow_session=obj.flow_session_id, page_id=obj.image_page_id)
-                ordinal = fpd[0].ordinal
+                ordinal = obj.get_page_ordinal()
                 if ordinal is None:
                     return None
             except:
                 return None
 
-            if not fpd:
-                return None
-
             return reverse('relate-view_flow_page', kwargs={
                 'course_identifier': obj.course.identifier,
                 'flow_session_id': obj.flow_session.id,
-                'ordinal': fpd[0].ordinal
+                'ordinal': ordinal
             })
 
     def render_change_form(self, request, context, add=False, change=False, form_url='', obj=None):
@@ -190,11 +215,9 @@ class FlowPageImageAdmin(admin.ModelAdmin):
             context.update({"previous_fpi_id": previous_fpi_id})
 
         if obj:
-            from image_upload.utils import get_page_ordinal
-            ordinal = get_page_ordinal(obj.flow_session_id, obj.image_page_id)
             context.update({'course_identifier': obj.course.identifier,
                            'flow_session_id': obj.flow_session_id,
-                           'ordinal': ordinal
+                           'ordinal': obj.get_page_ordinal()
                            })
 
         context.update({"preserved_filters": preserved_filters})

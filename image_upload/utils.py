@@ -211,9 +211,3 @@ TextField.register_lookup(CharacterLength)
 
 # }}}
 
-
-def get_page_ordinal(flow_session_id, page_id):
-    from course.models import FlowPageData
-    fpd = FlowPageData.objects.get(
-        flow_session=flow_session_id, page_id=page_id)
-    return fpd.ordinal
