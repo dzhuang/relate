@@ -4,13 +4,13 @@ from django.template.response import SimpleTemplateResponse
 from django import forms
 from django.utils.translation import (
     ugettext_lazy as _, string_concat, pgettext)
-from django.utils.http import urlencode
 from django.utils.six.moves.urllib.parse import parse_qsl, urlparse, urlunparse
 from django.contrib.admin.templatetags.admin_urls import add_preserved_filters
 from django.core.urlresolvers import Resolver404, get_script_prefix, resolve, reverse
 from django.contrib.admin.views.main import ChangeList
 from django.http import HttpResponseRedirect
-from django.utils.encoding import force_unicode
+
+#from image_upload.utils import CharacterLength
 
 from image_upload.models import FlowPageImage
 
@@ -23,12 +23,57 @@ class FPIWidget(AdminMarkdownxWidget):
         js = ("/static/marked/marked.min.js",)
 
 class FPIAdminForm(forms.ModelForm):
-    image_text = forms.CharField(widget=AdminMarkdownWidget, required=False)
+    image_text = forms.CharField(
+        widget=AdminMarkdownWidget, required=False, label=_("Related Html"))
 
     class Meta:
         model = FlowPageImage
         fields = ['image_text', 'is_image_textify', 'image_data', 'use_image_data'
                   ]
+
+class HasImageTextFilter(admin.SimpleListFilter):
+    title = _("Has image text?")
+    parameter_name = 'hastext'
+    def lookups(self, request, model_admin):
+        return(
+            ('has_text', _('yes')),
+            ('no_text', _('no')))
+    def queryset(self, request, queryset):
+        if self.value() == 'has_text':
+            return queryset.filter(image_text__len__gt=0)
+        else:
+            return queryset.filter(image_text__len=0)
+
+class AccessRuleTagFilter(admin.SimpleListFilter):
+    title = _("Access Rule Tag")
+    parameter_name = 'accessruletag'
+    def lookups(self, request, model_admin):
+        from django.db import connection
+        cursor = connection.cursor()
+        cursor.execute("select distinct access_rules_tag from course_flowsession "
+                "order by access_rules_tag")
+        from course.grades import mangle_session_access_rule_tag
+        session_rule_tags = [
+                mangle_session_access_rule_tag(row[0]) for row in cursor.fetchall()]
+
+        tag_tuple = ()
+
+        for tag in session_rule_tags:
+            if tag.strip() <> "" and tag <> '<<<NONE>>>':
+                tag_tuple += (((tag, tag),))
+
+        self.tag_tuple = tag_tuple
+
+        return (('no_tag', _('no tag')),) + tag_tuple
+
+    def queryset(self, request, queryset):
+        has_tag_list = [tag for (tag, _) in self.tag_tuple]
+
+        if self.value() in has_tag_list:
+            return queryset.filter(flow_session__access_rules_tag__exact=self.value())
+        else:
+            # result for no_tag
+            return queryset.exclude(flow_session__access_rules_tag__in=has_tag_list)
 
 class FlowPageImageAdmin(admin.ModelAdmin):
     change_form_template = 'image_upload/flowpageimage_change_form.html'
@@ -38,6 +83,11 @@ class FlowPageImageAdmin(admin.ModelAdmin):
         return obj.flow_session.flow_id
     get_flow_id.short_description = _("Flow ID")
     get_flow_id.admin_order_field = "flow_session__flow_id"
+
+    def has_image_text(self, obj):
+        return True if obj.image_text else False
+    has_image_text.short_description = _("Has image text?")
+    has_image_text.boolean = True
 
     def get_full_name(self, obj):
         return obj.flow_session.participation.user.get_full_name()
@@ -50,13 +100,15 @@ class FlowPageImageAdmin(admin.ModelAdmin):
         'is_image_textify',
         'use_image_data',
         'order',
-        'creator'
+        HasImageTextFilter,
+        AccessRuleTagFilter,
     )
 
     list_display = (
         'id',
         'course',
         'is_image_textify',
+        'has_image_text',
         'use_image_data',
         'order',
         'creator',
@@ -65,10 +117,11 @@ class FlowPageImageAdmin(admin.ModelAdmin):
         "image_page_id",
         "get_flow_id",
     )
+    list_display_links = ('id',)
 
-    default_filters = ('order__eq=0',
-                       'flow_session__access_rules_tag__neq="NO-refer"',
-                       )
+    # default_filters = ('order__eq=0',
+    #                    'flow_session__access_rules_tag__neq="NO-refer"',
+    #                    )
 
     fields = (('admin_image','image_text', 'is_image_textify'), ('image_data', 'use_image_data'))
     readonly_fields = ('admin_image',)
@@ -119,30 +172,34 @@ class FlowPageImageAdmin(admin.ModelAdmin):
                 'ordinal': fpd[0].ordinal
             })
 
-    def change_view(self, request, object_id, form_url='', extra_context=None):
+    def render_change_form(self, request, context, add=False, change=False, form_url='', obj=None):
         preserved_filters = self.get_preserved_filters(request)
         filtered_query_set = self.get_filtered_queryset(request)
         previous_fpi_id = None
         next_fpi_id = None
         for index, item in enumerate(filtered_query_set):
-            if item.id == int(object_id):
+            if item.id == int(obj.id):
                 if index > 0:
                     previous_fpi_id = filtered_query_set[index - 1].id
                 if index + 1 < len(filtered_query_set):
                     next_fpi_id = filtered_query_set[index + 1].id
 
-        extra_context = extra_context or {}
-
-        extra_context["preserved_filters"] = preserved_filters
-
         if next_fpi_id is not None:
-            extra_context["next_fpi_id"] = next_fpi_id
+            context.update({"next_fpi_id": next_fpi_id})
         if previous_fpi_id is not None:
-            extra_context["previous_fpi_id"] = previous_fpi_id
+            context.update({"previous_fpi_id": previous_fpi_id})
 
-        return super(FlowPageImageAdmin,self).change_view(request,object_id, form_url, extra_context)
+        if obj:
+            from image_upload.utils import get_page_ordinal
+            ordinal = get_page_ordinal(obj.flow_session_id, obj.image_page_id)
+            context.update({'course_identifier': obj.course.identifier,
+                           'flow_session_id': obj.flow_session_id,
+                           'ordinal': ordinal
+                           })
 
-
+        context.update({"preserved_filters": preserved_filters})
+        return super(FlowPageImageAdmin,self)\
+            .render_change_form(request, context, add, change, form_url, obj)
 
     def get_filtered_queryset(self, request):
         from django.contrib.admin.views.main import ERROR_FLAG
@@ -160,8 +217,6 @@ class FlowPageImageAdmin(admin.ModelAdmin):
                             list_display_links, list_filter, self.date_hierarchy,
                             search_fields, list_select_related, self.list_per_page,
                             self.list_max_show_all, self.list_editable, self)
-
-
         except IncorrectLookupParameters:
             # Wacky lookup parameters were given, so redirect to the main
             # changelist page, without parameters, and pass an 'invalid=1'
@@ -253,16 +308,7 @@ class FlowPageImageAdmin(admin.ModelAdmin):
                 match = resolve(match_url)
             except Resolver404:
                 pass
-            # else:
-            #     current_url = '%s:%s' % (match.app_name, match.url_name)
-            #     changelist_url = 'admin:%s_%s_changelist' % (opts.app_label, opts.model_name)
-            #     if changelist_url == current_url and '_changelist_filters' in preserved_filters:
-            #         preserved_filters = dict(parse_qsl(preserved_filters['_changelist_filters']))
-            #
-            # merged_qs.update(preserved_filters)
-
         merged_qs.update(parsed_qs)
-
         return merged_qs
 
 admin.site.register(FlowPageImage, FlowPageImageAdmin)

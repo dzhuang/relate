@@ -195,3 +195,25 @@ class AdminMarkdownWidget(MarkdownWidget, widgets.AdminTextareaWidget):
 
 
     # }}}
+
+   #{{{ enable query filter charfield by 'len'
+from django.db.models import Transform
+from django.db.models import CharField, TextField
+
+class CharacterLength(Transform):
+    lookup_name = 'len'
+    def as_sql(self, compiler, connection):
+        lhs, params = compiler.compile(self.lhs)
+        return "LENGTH(%s)" % lhs, params
+
+CharField.register_lookup(CharacterLength)
+TextField.register_lookup(CharacterLength)
+
+# }}}
+
+
+def get_page_ordinal(flow_session_id, page_id):
+    from course.models import FlowPageData
+    fpd = FlowPageData.objects.get(
+        flow_session=flow_session_id, page_id=page_id)
+    return fpd.ordinal

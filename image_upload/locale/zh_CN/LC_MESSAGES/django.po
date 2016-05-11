@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-05-11 17:45+0800\n"
+"POT-Creation-Date: 2016-05-11 18:50+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -17,95 +17,105 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Language: \n"
 
-#: .\image_upload\admin.py:39
+#: .\admin.py:39
 msgid "Flow ID"
 msgstr ""
 
-#: .\image_upload\admin.py:44
+#: .\admin.py:44
+msgid "Has image text?"
+msgstr "有文本?"
+
+#: .\admin.py:49
 msgctxt "real name of a user"
 msgid "Name"
 msgstr "姓名"
 
-#: .\image_upload\admin.py:175
+#: .\admin.py:181
 msgid "Database error"
 msgstr "数据库出错"
 
-#: .\image_upload\admin.py:201 .\image_upload\admin.py:215
+#: .\admin.py:207 .\admin.py:221
 #, python-format
 msgid "The %(name)s \"%(obj)s\" was changed successfully."
 msgstr ""
 
-#: .\image_upload\models.py:64 .\image_upload\models.py:124
+#: .\apps.py:8
+msgid "Image upload"
+msgstr "图片上传"
+
+#: .\models.py:64 .\models.py:125
 msgid "Creator"
 msgstr "创建者"
 
-#: .\image_upload\models.py:102 .\image_upload\models.py:237
+#: .\models.py:69
+msgid "Creation Time"
+msgstr "创建时间"
+
+#: .\models.py:103 .\models.py:238
 #, python-format
 msgid "%(url)s uploaded by %(creator)s"
 msgstr "%(url)s(%(creator)s上传)"
 
-#: .\image_upload\models.py:138
+#: .\models.py:139
 msgid "Course"
 msgstr "课程"
 
-#: .\image_upload\models.py:141
+#: .\models.py:142
 msgid "Flow session"
 msgstr ""
 
-#: .\image_upload\models.py:144
+#: .\models.py:145
 msgid "Load textified Image?"
-msgstr ""
+msgstr "实施文本化?"
 
-#: .\image_upload\models.py:147
-#, fuzzy
-#| msgid "Created at"
+#: .\models.py:148
 msgid "Related Html"
-msgstr "创建于"
+msgstr "文本化(html)"
 
-#: .\image_upload\models.py:148
+#: .\models.py:149
 msgid "The html for the FlowPageImage"
 msgstr "FlowPageImage的html文本"
 
-#: .\image_upload\models.py:155
+#: .\models.py:156
 msgid "External image data"
 msgstr "与之关联的图片数据"
 
-#: .\image_upload\models.py:157
+#: .\models.py:158
 msgid "Use external Image data?"
-msgstr "使用外部关联图片数据？"
+msgstr "使用关联图片？"
 
-#: .\image_upload\page\imgupload.py:120
+#: .\page\imgupload.py:120
 msgid "You have not upload image(s)!"
 msgstr "您还未上传图片!"
 
-#: .\image_upload\page\imgupload.py:129
+#: .\page\imgupload.py:129
 msgid "Manually set the access_rules_tag of the session, if necessary."
 msgstr "手工设置该session的access_rules_tag，如果需要的话"
 
-#: .\image_upload\page\imgupload.py:130
+#: .\page\imgupload.py:130
 msgid "Access rules tag"
 msgstr ""
 
-#: .\image_upload\page\imgupload.py:204
+#: .\page\imgupload.py:204
 msgid "upload question does not have assigned point value"
 msgstr "上传问题还未设置分数"
 
-#: .\image_upload\page\imgupload.py:231
+#: .\page\imgupload.py:231
 msgid ""
 "minFileSize should not be greater than maxFileSize, better do not set those "
 "2 attributes."
 msgstr "minFileSize不应超出maxFileSize，最好不要设置这2个属性."
 
-#: .\image_upload\page\imgupload.py:264 .\image_upload\page\imgupload.py:695
+#: .\page\imgupload.py:264 .\page\imgupload.py:695
 #, python-format
 msgid "Note: Maxmum number of images: %d"
 msgstr "注：最多可上传文件的数量: %d"
 
-#: .\image_upload\page\imgupload.py:445
+#: .\page\imgupload.py:445
 msgid "\"attempt_included\" must be one of \"last\", \"first\", \"all\""
 msgstr "\"attempt_included\" 只能是\"last\", \"first\", \"all\"中的一个."
 
-#: .\image_upload\page\imgupload.py:467
+#: .\page\imgupload.py:467
 #, python-format
 msgid ""
 "no existing flow page visit found named \"%(refered_page_id)s\" in flow \"%"
@@ -114,14 +124,14 @@ msgstr ""
 "在课程\"%(refered_course_id)s\"中的%(refered_flow_id)s\"flow中，未找到名称为"
 "\"%(refered_page_id)s\"的flow page 访问"
 
-#: .\image_upload\page\imgupload.py:481
+#: .\page\imgupload.py:481
 #, python-format
 msgid ""
 "no participation tag named \"%(tag)s\" in course \"%(refered_course_id)s\""
 msgstr ""
 "课程\"%(refered_course_id)s\"中没有名称为\"%(tag)s\"的participation tag."
 
-#: .\image_upload\page\imgupload.py:494
+#: .\page\imgupload.py:494
 #, python-format
 msgid ""
 "no user with username \"%(name)s\" submitted sessions in flow \"%"
@@ -130,48 +140,48 @@ msgstr ""
 "在课程\"%(refered_course_id)s\"中的%(refered_flow_id)s\"flow中，未找到用户名"
 "为\"%(name)s\"的用户提交的page."
 
-#: .\image_upload\page\imgupload.py:510
+#: .\page\imgupload.py:510
 #, python-format
 msgid ""
 "no flow session is taged \"%(session_tag)s\" is submitted in flow \"%"
 "(refered_flow_id)s\" in course \"%(refered_course_id)s\""
 msgstr ""
 
-#: .\image_upload\page\imgupload.py:525
+#: .\page\imgupload.py:525
 msgid ""
 "attribute \"exclude_grade_percentage_lower_than\" should between 0 and 1"
 msgstr ""
 
-#: .\image_upload\page\imgupload.py:807 .\image_upload\page\imgupload.py:946
+#: .\page\imgupload.py:807 .\page\imgupload.py:946
 msgid "Send Email"
 msgstr "发送邮件"
 
-#: .\image_upload\page\imgupload.py:810
+#: .\page\imgupload.py:810
 msgid ""
 "Find the given correct answer wrong? Please feel easy to contact the "
 "instructor(s) "
 msgstr "发现参考答案有误？请与老师联系 "
 
-#: .\image_upload\page\imgupload.py:819
+#: .\page\imgupload.py:819
 msgid "A correct answer is"
 msgstr "参考答案："
 
-#: .\image_upload\page\imgupload.py:882
+#: .\page\imgupload.py:882
 #, python-format
 msgid "Feedback from %(username)s"
 msgstr "来自 %(username)s 的反馈"
 
-#: .\image_upload\page\imgupload.py:898
+#: .\page\imgupload.py:898
 msgid ""
 "Thank you for your feedback, and notice that you will also receive a copy of "
 "the email."
 msgstr "感谢您的反馈，请注意您也将会收到该邮件的副本."
 
-#: .\image_upload\page\imgupload.py:907
+#: .\page\imgupload.py:907
 msgid "Send feedback email"
 msgstr "发送反馈邮件"
 
-#: .\image_upload\page\imgupload.py:941
+#: .\page\imgupload.py:941
 msgid ""
 "Please input directly your feedback messages <strong>(no email appelation "
 "and welcome is required)</strong>. If you are proved to be right, you'll get "
@@ -180,37 +190,37 @@ msgstr ""
 "请直接将您的反馈信息填入发送（<strong>不需要邮箱抬头和称谓</strong>）。如果您"
 "的报告是正确的，您将会因为这个贡献获得平时分的奖励！"
 
-#: .\image_upload\page\imgupload.py:943
+#: .\page\imgupload.py:943
 msgid "Feedback"
 msgstr "反馈"
 
-#: .\image_upload\page\imgupload.py:953
+#: .\page\imgupload.py:953
 msgid "At least 20 characters are required for submission."
 msgstr "至少要输入20个以上的字符才允许提交."
 
-#: .\image_upload\serialize.py:98
+#: .\serialize.py:98
 msgid "The image file does not exist!"
 msgstr "该图片文件不存在！"
 
-#: .\image_upload\serialize.py:139
+#: .\serialize.py:139
 msgid "Created at"
 msgstr "创建于"
 
-#: .\image_upload\serialize.py:161
+#: .\serialize.py:161
 msgid "modified at"
 msgstr "修改于"
 
-#: .\image_upload\templates\image_upload\cropper-modal.html:4
+#: .\templates\image_upload\cropper-modal.html:4
 msgid "Edit image"
 msgstr "编辑图片"
 
-#: .\image_upload\templates\image_upload\cropper-modal.html:6
-#: .\image_upload\templates\image_upload\imgupload-page-config.html:23
+#: .\templates\image_upload\cropper-modal.html:6
+#: .\templates\image_upload\imgupload-page-config.html:23
 msgid "This page requires a modern browser so that it can work properly"
 msgstr "这个页面的正确加载需要使用现代浏览器"
 
-#: .\image_upload\templates\image_upload\cropper-modal.html:6
-#: .\image_upload\templates\image_upload\imgupload-page-config.html:23
+#: .\templates\image_upload\cropper-modal.html:6
+#: .\templates\image_upload\imgupload-page-config.html:23
 msgid ""
 "Chrome/Firefox are prefered browsers. If you want use Internet Explorer, "
 "please install one with version higher than 10."
@@ -218,7 +228,7 @@ msgstr ""
 "推荐使用的浏览器是Chrome或Firefox. 如果您希望使用Internet Explorer，请安装IE "
 "10以上的版本."
 
-#: .\image_upload\templates\image_upload\cropper-modal.html:21
+#: .\templates\image_upload\cropper-modal.html:21
 #, python-format
 msgid ""
 "<strong>WATCH OUT!!!</strong> You are currently editting <strong>%(owner)s</"
@@ -228,47 +238,47 @@ msgstr ""
 "<strong>请注意!!!</strong> 您正在编辑 <strong>%(owner)s</strong>上传的图片. "
 "在操作时，特别是进行裁剪时要特别注意. 您的操作一旦提交则无法恢复!"
 
-#: .\image_upload\templates\image_upload\cropper-modal.html:69
+#: .\templates\image_upload\cropper-modal.html:69
 msgid "Submit"
 msgstr "提交"
 
-#: .\image_upload\templates\image_upload\cropper-modal.html:72
+#: .\templates\image_upload\cropper-modal.html:72
 msgid "Reset"
 msgstr "重置"
 
-#: .\image_upload\templates\image_upload\cropper-modal.html:75
+#: .\templates\image_upload\cropper-modal.html:75
 msgid "Preview"
 msgstr "预览"
 
-#: .\image_upload\templates\image_upload\cropper-modal.html:79
+#: .\templates\image_upload\cropper-modal.html:79
 msgid "Close"
 msgstr "关闭"
 
-#: .\image_upload\templates\image_upload\flowpageimage_change_form.html:7
-#: .\image_upload\templates\image_upload\flowpageimage_change_form.html:10
-#: .\image_upload\templates\image_upload\flowpageimage_change_form.html:28
+#: .\templates\image_upload\flowpageimage_change_form.html:7
+#: .\templates\image_upload\flowpageimage_change_form.html:10
+#: .\templates\image_upload\flowpageimage_change_form.html:28
 msgid "View previous"
 msgstr "上一个"
 
-#: .\image_upload\templates\image_upload\flowpageimage_change_form.html:8
-#: .\image_upload\templates\image_upload\flowpageimage_change_form.html:11
-#: .\image_upload\templates\image_upload\flowpageimage_change_form.html:29
+#: .\templates\image_upload\flowpageimage_change_form.html:8
+#: .\templates\image_upload\flowpageimage_change_form.html:11
+#: .\templates\image_upload\flowpageimage_change_form.html:29
 msgid "Save and view previous"
 msgstr "保存并查看上一个"
 
-#: .\image_upload\templates\image_upload\flowpageimage_change_form.html:14
-#: .\image_upload\templates\image_upload\flowpageimage_change_form.html:17
-#: .\image_upload\templates\image_upload\flowpageimage_change_form.html:32
+#: .\templates\image_upload\flowpageimage_change_form.html:14
+#: .\templates\image_upload\flowpageimage_change_form.html:17
+#: .\templates\image_upload\flowpageimage_change_form.html:32
 msgid "Save and view next"
 msgstr "保存并查看下一个"
 
-#: .\image_upload\templates\image_upload\flowpageimage_change_form.html:15
-#: .\image_upload\templates\image_upload\flowpageimage_change_form.html:18
-#: .\image_upload\templates\image_upload\flowpageimage_change_form.html:33
+#: .\templates\image_upload\flowpageimage_change_form.html:15
+#: .\templates\image_upload\flowpageimage_change_form.html:18
+#: .\templates\image_upload\flowpageimage_change_form.html:33
 msgid "View next"
 msgstr "下一个"
 
-#: .\image_upload\templates\image_upload\imgupload-page-config.html:21
+#: .\templates\image_upload\imgupload-page-config.html:21
 msgid ""
 "This page requires Javascript enabled in your browser. Please refer to <a "
 "href='https://www.whatismybrowser.com/guides/how-to-enable-javascript/' "
@@ -278,81 +288,80 @@ msgstr ""
 "cn/3dschool/3d/help/openJsHelp.html' target='_blank'>这个链接</a>来打开"
 "Javascript."
 
-#: .\image_upload\templates\image_upload\imgupload-page-config.html:23
+#: .\templates\image_upload\imgupload-page-config.html:23
 msgid ""
 "especially when you want to sort image correctly and enable image editting"
 msgstr "特别是您需要对图片进行排序，或者需要启用编辑功能(裁剪、旋转图片)时"
 
-#: .\image_upload\templates\image_upload\imgupload-page-config.html:40
+#: .\templates\image_upload\imgupload-page-config.html:40
 msgid "File is too big"
 msgstr "这个图片太大了"
 
-#: .\image_upload\templates\image_upload\imgupload-page-config.html:41
+#: .\templates\image_upload\imgupload-page-config.html:41
 msgid "File is too small"
 msgstr "这个图片太小了"
 
-#: .\image_upload\templates\image_upload\imgupload-page-config.html:42
+#: .\templates\image_upload\imgupload-page-config.html:42
 msgid "Filetype not allowed"
 msgstr "该文件类型不被允许"
 
-#: .\image_upload\templates\image_upload\imgupload-page-config.html:43
+#: .\templates\image_upload\imgupload-page-config.html:43
 #, python-format
 msgid "Max number of files exceeded, only %(maxNumberOfFiles)s allowed"
 msgstr "超出了允许上传的文件数量，只允许上传%(maxNumberOfFiles)s个"
 
-#: .\image_upload\templates\image_upload\imgupload-page-config.html:44
+#: .\templates\image_upload\imgupload-page-config.html:44
 msgid "Uploaded bytes exceed file size"
 msgstr "超出了允许上传的文件大小"
 
-#: .\image_upload\templates\image_upload\imgupload-page-config.html:45
+#: .\templates\image_upload\imgupload-page-config.html:45
 msgid "Empty file upload result"
 msgstr "没有上传结果"
 
-#: .\image_upload\templates\image_upload\jfu-form.html:17
+#: .\templates\image_upload\jfu-form.html:17
 msgid "Add files..."
 msgstr ""
 
-#: .\image_upload\templates\image_upload\jfu-form.html:49
+#: .\templates\image_upload\jfu-form.html:49
 msgid "Start upload"
 msgstr ""
 
-#: .\image_upload\templates\image_upload\jfu-form.html:53
+#: .\templates\image_upload\jfu-form.html:53
 msgid "Cancel upload"
 msgstr ""
 
-#: .\image_upload\templates\image_upload\jfu-form.html:57
-#: .\image_upload\templates\image_upload\jfu-form.html:330
-#: .\image_upload\templates\image_upload\submit_line.html:6
+#: .\templates\image_upload\jfu-form.html:57
+#: .\templates\image_upload\jfu-form.html:330
+#: .\templates\image_upload\submit_line.html:6
 msgid "Delete"
 msgstr ""
 
-#: .\image_upload\templates\image_upload\jfu-form.html:65
+#: .\templates\image_upload\jfu-form.html:65
 msgid "Sort"
 msgstr "排序"
 
-#: .\image_upload\templates\image_upload\jfu-form.html:69
-#: .\image_upload\views.py:401
+#: .\templates\image_upload\jfu-form.html:69 .\views.py:401
 msgid "Done"
 msgstr "完成"
 
-#: .\image_upload\templates\image_upload\jfu-form.html:147
+#: .\templates\image_upload\jfu-form.html:147
 msgid "Start"
 msgstr "开始"
 
-#: .\image_upload\templates\image_upload\jfu-form.html:156
-#: .\image_upload\templates\image_upload\jfu-form.html:336
+#: .\templates\image_upload\jfu-form.html:156
+#: .\templates\image_upload\jfu-form.html:336
 msgid "Cancel"
 msgstr "放弃"
 
-#: .\image_upload\templates\image_upload\jfu-form.html:229
+#: .\templates\image_upload\jfu-form.html:229
 msgid "Error"
 msgstr "错误"
 
-#: .\image_upload\templates\image_upload\jfu-form.html:315
+#: .\templates\image_upload\jfu-form.html:315
 msgid "Edit"
 msgstr "编辑"
 
-#: .\image_upload\templates\image_upload\report-correct-answer-error-email.txt:1
+#: .\templates\image_upload\report-correct-answer-error-email.txt:1
 #, python-format
 msgid ""
 "Hi there,\n"
@@ -376,23 +385,23 @@ msgstr ""
 "%(review_uri)s\n"
 "\n"
 
-#: .\image_upload\templates\image_upload\submit_line.html:3
+#: .\templates\image_upload\submit_line.html:3
 msgid "Save"
 msgstr ""
 
-#: .\image_upload\templates\image_upload\submit_line.html:8
+#: .\templates\image_upload\submit_line.html:8
 msgid "Save as new"
 msgstr ""
 
-#: .\image_upload\templates\image_upload\submit_line.html:9
+#: .\templates\image_upload\submit_line.html:9
 msgid "Save and add another"
 msgstr ""
 
-#: .\image_upload\templates\image_upload\submit_line.html:10
+#: .\templates\image_upload\submit_line.html:10
 msgid "Save and continue editing"
 msgstr ""
 
-#: .\image_upload\views.py:83
+#: .\views.py:83
 msgid ""
 "The file is too big. Please use Chrome/Firefox or mobile browser by which "
 "images will be cropped automatically before upload."
@@ -400,36 +409,34 @@ msgstr ""
 "这个文件太大了. 推荐使用Chrome或Firefox浏览器，或者直接在手机浏览器上传，它们"
 "将在照片上传前自动压缩尺寸."
 
-#: .\image_upload\views.py:137
+#: .\views.py:137
 msgid "may not delete other people's image"
 msgstr "不允许删除其他人的图片"
 
-#: .\image_upload\views.py:232
+#: .\views.py:232
 msgid "may not view other people's resource"
 msgstr "不允许查看其他人的资源"
 
-#: .\image_upload\views.py:253 .\image_upload\views.py:305
+#: .\views.py:253 .\views.py:305
 msgid "File not found."
 msgstr "该文件未找到"
 
-#: .\image_upload\views.py:254 .\image_upload\views.py:300
-#: .\image_upload\views.py:306 .\image_upload\views.py:394
+#: .\views.py:254 .\views.py:300 .\views.py:306 .\views.py:394
 msgid "Please upload the image first."
 msgstr "请先上传图片."
 
-#: .\image_upload\views.py:296 .\image_upload\views.py:383
+#: .\views.py:296 .\views.py:383
 msgid "Not allowd to modify answer."
 msgstr "不允许修改回答."
 
-#: .\image_upload\views.py:311 .\image_upload\views.py:386
+#: .\views.py:311 .\views.py:386
 msgid "Only Ajax Post is allowed."
 msgstr "只允许Ajax POST操作"
 
-#: .\image_upload\views.py:320 .\image_upload\views.py:334
-#: .\image_upload\views.py:399
+#: .\views.py:320 .\views.py:334 .\views.py:399
 msgid "There are errors, please refresh the page or try again later"
 msgstr "发生错误，请刷新页面或稍后重试"
 
-#: .\image_upload\views.py:325
+#: .\views.py:325
 msgid "There are errors，please re-upload the image"
 msgstr "发生错误，请重新上传图片"

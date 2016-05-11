@@ -65,7 +65,8 @@ class UserImage(models.Model):
     file = models.ImageField(upload_to=user_directory_path, 
             storage=sendfile_storage)
     slug = models.SlugField(max_length=256, blank=True)
-    creation_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=now,
+                                         verbose_name=_('Creation Time'))
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -167,8 +168,6 @@ class FlowPageImage(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = self.file.name
-        # self.image_text = self.image_text or None
-        # self.image_data = self.image_data or None
         super(FlowPageImage, self).save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):

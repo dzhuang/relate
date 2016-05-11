@@ -3,6 +3,7 @@
 
 {% block submit_buttons_top %}
     <div class="submit-row">
+        <a href="{% url 'relate-grade_flow_page' course_identifier flow_session_id ordinal %}" target="_blank"> {% trans 'View in grade page' %}</a>
         {% if previous_fpi_id %}
        <input type="button" onclick="location.href='{% url 'admin:image_upload_flowpageimage_change' previous_fpi_id %}?{{preserved_filters}}'" value="{% trans 'View previous' %}" />
         <input type="submit" value="{% trans 'Save and view previous' %}" name="_saveviewprevious" />
