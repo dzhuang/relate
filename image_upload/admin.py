@@ -14,10 +14,16 @@ from django.utils.encoding import force_unicode
 
 from image_upload.models import FlowPageImage
 
+from image_upload.utils import AdminMarkdownWidget
+
 from markdownx.widgets import AdminMarkdownxWidget
 
+class FPIWidget(AdminMarkdownxWidget):
+    class Media:
+        js = ("/static/marked/marked.min.js",)
+
 class FPIAdminForm(forms.ModelForm):
-    image_text = forms.CharField(widget=AdminMarkdownxWidget)
+    image_text = forms.CharField(widget=AdminMarkdownWidget, required=False)
 
     class Meta:
         model = FlowPageImage

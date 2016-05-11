@@ -954,8 +954,8 @@ def validate_flow_desc(vctx, location, flow_desc):
         for i, item in enumerate(flow_desc.notify_on_submit):
             if not isinstance(item, six.string_types):
                 raise ValidationError(
-                        _("%s, notify_on_submit: item %d is not a string")
-                        % (location, i+1))
+                        _("%(location)s, notify_on_submit: item %(id)d is not a string")
+                        % {"location": location, "id": i+1})
 
     for attr in ["max_points", "max_points_enforced_cap", "bonus_points"]:
         if hasattr(flow_desc, attr):

@@ -167,8 +167,8 @@ class FlowPageImage(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = self.file.name
-        self.image_text = self.image_text or None
-        self.image_data = self.image_data or None
+        # self.image_text = self.image_text or None
+        # self.image_data = self.image_data or None
         super(FlowPageImage, self).save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):

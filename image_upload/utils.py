@@ -145,3 +145,53 @@ class ImageOperationMixin(UserPassesTestMixin):
             return get_page_image_behavior(pctx, flow_session_id, ordinal).may_change_answer
         except ValueError:
             return True
+
+# {{{
+
+from django import forms
+from django.template import Context
+from django.template.loader import get_template
+from django.contrib.admin import widgets
+
+class MarkdownWidget(forms.Textarea):
+    def render(self, name, value, attrs=None):
+        if attrs is None:
+            attrs = {}
+        if 'class' in attrs:
+            attrs['class'] += ' markdown-editor'
+        else:
+            attrs.update({'class': 'markdown-editor'})
+        attrs.update(
+            {
+                #'id': "marked-mathjax-input",
+                'onkeyup': "Preview.Update()",
+                #'name': "comment",
+             }
+        )
+        #attrs.update({"autofocus": ""})
+
+        widget = super(MarkdownWidget, self).render(name, value, attrs)
+
+        t = get_template('image_upload/widget.html')
+        c = Context({
+            'markdown_editor': widget,
+        })
+
+        return t.render(c)
+
+    class Media:
+        js = (
+            "/static/marked/marked.min.js",
+        )
+
+class AdminMarkdownWidget(MarkdownWidget, widgets.AdminTextareaWidget):
+    class Media:
+        css = {
+            'all': ('/static/css/markdown-mathjax.css',)
+        }
+        js = (
+            "/static/marked/marked.min.js",
+              )
+
+
+    # }}}

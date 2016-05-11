@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-04-23 19:47+0800\n"
+"POT-Creation-Date: 2016-05-11 17:45+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -17,47 +17,95 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Language: \n"
 
-#: .\image_upload\models.py:64 .\image_upload\models.py:122
+#: .\image_upload\admin.py:39
+msgid "Flow ID"
+msgstr ""
+
+#: .\image_upload\admin.py:44
+msgctxt "real name of a user"
+msgid "Name"
+msgstr "姓名"
+
+#: .\image_upload\admin.py:175
+msgid "Database error"
+msgstr "数据库出错"
+
+#: .\image_upload\admin.py:201 .\image_upload\admin.py:215
+#, python-format
+msgid "The %(name)s \"%(obj)s\" was changed successfully."
+msgstr ""
+
+#: .\image_upload\models.py:64 .\image_upload\models.py:124
 msgid "Creator"
 msgstr "创建者"
 
-#: .\image_upload\models.py:102 .\image_upload\models.py:201
+#: .\image_upload\models.py:102 .\image_upload\models.py:237
 #, python-format
 msgid "%(url)s uploaded by %(creator)s"
 msgstr "%(url)s(%(creator)s上传)"
 
-#: .\image_upload\models.py:136
+#: .\image_upload\models.py:138
 msgid "Course"
 msgstr "课程"
 
-#: .\image_upload\models.py:139
+#: .\image_upload\models.py:141
 msgid "Flow session"
 msgstr ""
 
-#: .\image_upload\page\imgupload.py:103
+#: .\image_upload\models.py:144
+msgid "Load textified Image?"
+msgstr ""
+
+#: .\image_upload\models.py:147
+#, fuzzy
+#| msgid "Created at"
+msgid "Related Html"
+msgstr "创建于"
+
+#: .\image_upload\models.py:148
+msgid "The html for the FlowPageImage"
+msgstr "FlowPageImage的html文本"
+
+#: .\image_upload\models.py:155
+msgid "External image data"
+msgstr "与之关联的图片数据"
+
+#: .\image_upload\models.py:157
+msgid "Use external Image data?"
+msgstr "使用外部关联图片数据？"
+
+#: .\image_upload\page\imgupload.py:120
 msgid "You have not upload image(s)!"
 msgstr "您还未上传图片!"
 
-#: .\image_upload\page\imgupload.py:177
+#: .\image_upload\page\imgupload.py:129
+msgid "Manually set the access_rules_tag of the session, if necessary."
+msgstr "手工设置该session的access_rules_tag，如果需要的话"
+
+#: .\image_upload\page\imgupload.py:130
+msgid "Access rules tag"
+msgstr ""
+
+#: .\image_upload\page\imgupload.py:204
 msgid "upload question does not have assigned point value"
 msgstr "上传问题还未设置分数"
 
-#: .\image_upload\page\imgupload.py:204
+#: .\image_upload\page\imgupload.py:231
 msgid ""
 "minFileSize should not be greater than maxFileSize, better do not set those "
 "2 attributes."
 msgstr "minFileSize不应超出maxFileSize，最好不要设置这2个属性."
 
-#: .\image_upload\page\imgupload.py:237 .\image_upload\page\imgupload.py:617
+#: .\image_upload\page\imgupload.py:264 .\image_upload\page\imgupload.py:695
 #, python-format
 msgid "Note: Maxmum number of images: %d"
 msgstr "注：最多可上传文件的数量: %d"
 
-#: .\image_upload\page\imgupload.py:395
+#: .\image_upload\page\imgupload.py:445
 msgid "\"attempt_included\" must be one of \"last\", \"first\", \"all\""
 msgstr "\"attempt_included\" 只能是\"last\", \"first\", \"all\"中的一个."
 
-#: .\image_upload\page\imgupload.py:417
+#: .\image_upload\page\imgupload.py:467
 #, python-format
 msgid ""
 "no existing flow page visit found named \"%(refered_page_id)s\" in flow \"%"
@@ -66,14 +114,14 @@ msgstr ""
 "在课程\"%(refered_course_id)s\"中的%(refered_flow_id)s\"flow中，未找到名称为"
 "\"%(refered_page_id)s\"的flow page 访问"
 
-#: .\image_upload\page\imgupload.py:431
+#: .\image_upload\page\imgupload.py:481
 #, python-format
 msgid ""
 "no participation tag named \"%(tag)s\" in course \"%(refered_course_id)s\""
 msgstr ""
 "课程\"%(refered_course_id)s\"中没有名称为\"%(tag)s\"的participation tag."
 
-#: .\image_upload\page\imgupload.py:444
+#: .\image_upload\page\imgupload.py:494
 #, python-format
 msgid ""
 "no user with username \"%(name)s\" submitted sessions in flow \"%"
@@ -82,48 +130,48 @@ msgstr ""
 "在课程\"%(refered_course_id)s\"中的%(refered_flow_id)s\"flow中，未找到用户名"
 "为\"%(name)s\"的用户提交的page."
 
-#: .\image_upload\page\imgupload.py:460
+#: .\image_upload\page\imgupload.py:510
 #, python-format
 msgid ""
 "no flow session is taged \"%(session_tag)s\" is submitted in flow \"%"
 "(refered_flow_id)s\" in course \"%(refered_course_id)s\""
 msgstr ""
 
-#: .\image_upload\page\imgupload.py:475
+#: .\image_upload\page\imgupload.py:525
 msgid ""
 "attribute \"exclude_grade_percentage_lower_than\" should between 0 and 1"
 msgstr ""
 
-#: .\image_upload\page\imgupload.py:681 .\image_upload\page\imgupload.py:820
+#: .\image_upload\page\imgupload.py:807 .\image_upload\page\imgupload.py:946
 msgid "Send Email"
 msgstr "发送邮件"
 
-#: .\image_upload\page\imgupload.py:684
+#: .\image_upload\page\imgupload.py:810
 msgid ""
 "Find the given correct answer wrong? Please feel easy to contact the "
 "instructor(s) "
 msgstr "发现参考答案有误？请与老师联系 "
 
-#: .\image_upload\page\imgupload.py:693
+#: .\image_upload\page\imgupload.py:819
 msgid "A correct answer is"
 msgstr "参考答案："
 
-#: .\image_upload\page\imgupload.py:756
+#: .\image_upload\page\imgupload.py:882
 #, python-format
 msgid "Feedback from %(username)s"
 msgstr "来自 %(username)s 的反馈"
 
-#: .\image_upload\page\imgupload.py:772
+#: .\image_upload\page\imgupload.py:898
 msgid ""
 "Thank you for your feedback, and notice that you will also receive a copy of "
 "the email."
 msgstr "感谢您的反馈，请注意您也将会收到该邮件的副本."
 
-#: .\image_upload\page\imgupload.py:781
+#: .\image_upload\page\imgupload.py:907
 msgid "Send feedback email"
 msgstr "发送反馈邮件"
 
-#: .\image_upload\page\imgupload.py:815
+#: .\image_upload\page\imgupload.py:941
 msgid ""
 "Please input directly your feedback messages <strong>(no email appelation "
 "and welcome is required)</strong>. If you are proved to be right, you'll get "
@@ -132,23 +180,23 @@ msgstr ""
 "请直接将您的反馈信息填入发送（<strong>不需要邮箱抬头和称谓</strong>）。如果您"
 "的报告是正确的，您将会因为这个贡献获得平时分的奖励！"
 
-#: .\image_upload\page\imgupload.py:817
+#: .\image_upload\page\imgupload.py:943
 msgid "Feedback"
 msgstr "反馈"
 
-#: .\image_upload\page\imgupload.py:827
+#: .\image_upload\page\imgupload.py:953
 msgid "At least 20 characters are required for submission."
 msgstr "至少要输入20个以上的字符才允许提交."
 
-#: .\image_upload\serialize.py:76
+#: .\image_upload\serialize.py:98
 msgid "The image file does not exist!"
 msgstr "该图片文件不存在！"
 
-#: .\image_upload\serialize.py:117
+#: .\image_upload\serialize.py:139
 msgid "Created at"
 msgstr "创建于"
 
-#: .\image_upload\serialize.py:139
+#: .\image_upload\serialize.py:161
 msgid "modified at"
 msgstr "修改于"
 
@@ -195,6 +243,30 @@ msgstr "预览"
 #: .\image_upload\templates\image_upload\cropper-modal.html:79
 msgid "Close"
 msgstr "关闭"
+
+#: .\image_upload\templates\image_upload\flowpageimage_change_form.html:7
+#: .\image_upload\templates\image_upload\flowpageimage_change_form.html:10
+#: .\image_upload\templates\image_upload\flowpageimage_change_form.html:28
+msgid "View previous"
+msgstr "上一个"
+
+#: .\image_upload\templates\image_upload\flowpageimage_change_form.html:8
+#: .\image_upload\templates\image_upload\flowpageimage_change_form.html:11
+#: .\image_upload\templates\image_upload\flowpageimage_change_form.html:29
+msgid "Save and view previous"
+msgstr "保存并查看上一个"
+
+#: .\image_upload\templates\image_upload\flowpageimage_change_form.html:14
+#: .\image_upload\templates\image_upload\flowpageimage_change_form.html:17
+#: .\image_upload\templates\image_upload\flowpageimage_change_form.html:32
+msgid "Save and view next"
+msgstr "保存并查看下一个"
+
+#: .\image_upload\templates\image_upload\flowpageimage_change_form.html:15
+#: .\image_upload\templates\image_upload\flowpageimage_change_form.html:18
+#: .\image_upload\templates\image_upload\flowpageimage_change_form.html:33
+msgid "View next"
+msgstr "下一个"
 
 #: .\image_upload\templates\image_upload\imgupload-page-config.html:21
 msgid ""
@@ -249,7 +321,8 @@ msgid "Cancel upload"
 msgstr ""
 
 #: .\image_upload\templates\image_upload\jfu-form.html:57
-#: .\image_upload\templates\image_upload\jfu-form.html:312
+#: .\image_upload\templates\image_upload\jfu-form.html:330
+#: .\image_upload\templates\image_upload\submit_line.html:6
 msgid "Delete"
 msgstr ""
 
@@ -267,7 +340,7 @@ msgid "Start"
 msgstr "开始"
 
 #: .\image_upload\templates\image_upload\jfu-form.html:156
-#: .\image_upload\templates\image_upload\jfu-form.html:318
+#: .\image_upload\templates\image_upload\jfu-form.html:336
 msgid "Cancel"
 msgstr "放弃"
 
@@ -275,7 +348,7 @@ msgstr "放弃"
 msgid "Error"
 msgstr "错误"
 
-#: .\image_upload\templates\image_upload\jfu-form.html:297
+#: .\image_upload\templates\image_upload\jfu-form.html:315
 msgid "Edit"
 msgstr "编辑"
 
@@ -302,6 +375,22 @@ msgstr ""
 "您可以点击以下链接去检查一下:\n"
 "%(review_uri)s\n"
 "\n"
+
+#: .\image_upload\templates\image_upload\submit_line.html:3
+msgid "Save"
+msgstr ""
+
+#: .\image_upload\templates\image_upload\submit_line.html:8
+msgid "Save as new"
+msgstr ""
+
+#: .\image_upload\templates\image_upload\submit_line.html:9
+msgid "Save and add another"
+msgstr ""
+
+#: .\image_upload\templates\image_upload\submit_line.html:10
+msgid "Save and continue editing"
+msgstr ""
 
 #: .\image_upload\views.py:83
 msgid ""
