@@ -10,7 +10,14 @@ from django.core.urlresolvers import Resolver404, get_script_prefix, resolve, re
 from django.contrib.admin.views.main import ChangeList
 from django.http import HttpResponseRedirect
 
-#from image_upload.utils import CharacterLength
+from course.admin import (
+    admin_roles,
+    _filter_courses_for_user,
+    _filter_course_linked_obj_for_user,
+    _filter_participation_linked_obj_for_user)
+
+# }}}
+
 
 from image_upload.models import FlowPageImage
 
@@ -36,8 +43,8 @@ class HasImageTextFilter(admin.SimpleListFilter):
     parameter_name = 'hastext'
     def lookups(self, request, model_admin):
         return(
-            ('has_text', _('yes')),
-            ('no_text', _('no')))
+            ('y', _('Yes')),
+            ('n', _('No')))
     def queryset(self, request, queryset):
         if self.value() == 'has_text':
             return queryset.filter(image_text__len__gt=0)
@@ -80,14 +87,14 @@ class AccessRuleTagFilter(admin.SimpleListFilter):
         cursor = connection.cursor()
         cursor.execute("select distinct access_rules_tag from course_flowsession "
                 "order by access_rules_tag")
-        from course.grades import mangle_session_access_rule_tag
+        from course.grades import mangle_session_access_rule_tag, RULE_TAG_NONE_STRING
         session_rule_tags = [
                 mangle_session_access_rule_tag(row[0]) for row in cursor.fetchall()]
 
         tag_tuple = ()
 
         for tag in session_rule_tags:
-            if tag.strip() <> "" and tag <> '<<<NONE>>>':
+            if tag.strip() <> "" and tag <> RULE_TAG_NONE_STRING:
                 tag_tuple += (((tag, tag),))
 
         self.tag_tuple = tag_tuple

@@ -457,8 +457,8 @@ class HasAnswerListFilter(admin.SimpleListFilter):
 
     def lookups(self, request, model_admin):
         return (
-            ('y', 'Yes'),
-            ('n', 'No'),
+            ('y', _('Yes')),
+            ('n', _('No')),
         )
 
     def queryset(self, request, queryset):
