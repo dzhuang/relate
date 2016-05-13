@@ -249,6 +249,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
             grading_form = fpctx.page.post_grading_form(
                     fpctx.page_context, fpctx.page_data, grade_data,
                     request.POST, request.FILES)
+            print grading_form.has_changed()
             if grading_form.is_valid():
                 grade_data = fpctx.page.update_grade_data_from_grading_form(
                         fpctx.page_context, fpctx.page_data, grade_data,

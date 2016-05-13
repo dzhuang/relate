@@ -437,6 +437,7 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
         self.only_graded_pages = getattr(page_desc, "only_graded_pages", True)
         self.allow_report_correct_answer_false = getattr(page_desc,"allow_report_correct_answer_false", True)
 
+        self.question_requirement = getattr(page_desc, "question_requirement, None")
 
         if self.attempt_included not in ["last", "first", "all"]:
             raise ValidationError(
@@ -544,6 +545,7 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
 
     def allowed_attrs(self):
         return super(ImageUploadQuestionWithAnswer, self).allowed_attrs() + (
+            ("question_requirement", "markup"),
             ("attempt_included", str),
             ("exclude_parti_tag", (str, list)),
             ("exclude_username", (str, list)),
@@ -690,6 +692,9 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                     '<div><p><a href="' + question_img_url + '" data-gallery="#question"><img src="' + question_thumbnail_url + '"></a></p>'
                     '</div>'
                 )
+
+            if self.question_requirement:
+                body_html += markup_to_html(page_context, self.question_requirement)
 
             body_html += string_concat("<br/><p class='text-info'><strong><small>"
                                      "(", _("Note: Maxmum number of images: %d"),
