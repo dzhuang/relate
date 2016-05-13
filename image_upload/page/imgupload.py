@@ -437,7 +437,7 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
         self.only_graded_pages = getattr(page_desc, "only_graded_pages", True)
         self.allow_report_correct_answer_false = getattr(page_desc,"allow_report_correct_answer_false", True)
 
-        self.question_requirement = getattr(page_desc, "question_requirement, None")
+        self.question_requirement = getattr(page_desc, "question_requirement", None)
 
         if self.attempt_included not in ["last", "first", "all"]:
             raise ValidationError(
