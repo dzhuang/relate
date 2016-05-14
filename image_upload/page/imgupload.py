@@ -225,6 +225,10 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
             self.maxFileSize = 0.5 * 1024 ** 2
 
         # disable minFileSize
+        self.minFileSize = getattr(self.page_desc, "minFileSize", 0.0005) * 1024 ** 2
+        self.minFileSize = 0.0005 * 1024 ** 2
+        #if self.minFileSize >= 0.05 * 1024 ** 2:
+        #    self.minFileSize = 0.05 * 1024 ** 2
 
         # self.minFileSize = getattr(self.page_desc, "minFileSize", 0.03) * 1024 ** 2
         # if self.minFileSize >= 0.05 * 1024 ** 2:
