@@ -409,6 +409,9 @@ def tex2imgtag(tex_source, output_dir=None, tex_filename=None,
     if alt:
         alt = "alt='%s'" % alt.strip()
 
+    # issue with source code displaying.
+    alt = ""
+
     try:
         src = tex2dataURI(tex_source, output_dir, tex_filename,
                           image_format, tex_preamble, tex_preamble_extra,
