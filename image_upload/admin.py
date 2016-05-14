@@ -51,6 +51,81 @@ class HasImageTextFilter(admin.SimpleListFilter):
         else:
             return queryset.filter(image_text__len=0)
 
+
+# class AttemptFilter(admin.SimpleListFilter):
+#     title = _("Session Attempt")
+#     parameter_name = 'attempt'
+#
+#     def lookups(self, request, model_admin):
+#         from course.models import FlowPageVisit
+#         all_submitted_visit_qs = FlowPageVisit.objects.filter(
+#             is_submitted_answer=True,
+#             flow_session__in_progress=False)
+#
+#         visits_qs = all_submitted_visit_qs.order_by(
+#             'flow_session__participation__user__username', 'visit_time') \
+#             #.distinct('flow_session__participation__user__username')
+#
+#         visit_dict = visits_qs.values('flow_session__participation__user__username', 'page_data__page_id').distinct()
+#
+#         first_visit_list = []
+#         last_visit_list = []
+#         for visit in visits_qs:
+#
+#
+#
+#
+#
+#         print first_dict
+#
+#         self.first_visit_session_list = []
+#         if first_visits_qs:
+#             for visit in first_visits_qs:
+#                 self.first_visit_session_list.append(visit.flow_session.id)
+#
+#         print 8463 in self.first_visit_session_list, '8463'
+#         print 7786 in self.first_visit_session_list, '7786'
+#
+#         last_visits_qs = all_submitted_visit_qs.order_by(
+#             'flow_session__participation__user__username', '-visit_time') \
+#             .distinct('flow_session__participation__user__username')
+#
+#         self.last_visit_session_list = []
+#         if last_visits_qs:
+#             for visit in last_visits_qs:
+#                 self.last_visit_session_list.append(visit.flow_session.id)
+#
+#         #print self.first_visit_session_list
+#         #print self.last_visit_session_list
+#
+#         return(
+#             ('first', _('First')),
+#             ('last', _('Last'))
+#         )
+
+    def queryset(self, request, queryset):
+        if self.value() == 'first':
+            return queryset.filter(flow_session__id__in=self.first_visit_session_list)
+        else:
+            return queryset.filter(flow_session__id__in=self.last_visit_session_list)
+
+
+class SessionGradeStatus(admin.SimpleListFilter):
+    title = _("Graded status")
+    parameter_name = 'grade_status'
+    def lookups(self, request, model_admin):
+        return(
+            ('geq95', _('Higher than or qual 95%')),
+            ('geq90', _('Higher than or qual 90%')),
+            ('geq80', _('Higher than or qual 80%')),
+            ('le80', _('Lower than 80%')),
+            ('n', _('ungraded')))
+    def queryset(self, request, queryset):
+        if self.value() == 'geq95':
+            return queryset.filter(image_text__len__gt=0)
+        else:
+            return queryset.filter(image_text__len=0)
+
 class ParticipationTagFilter(admin.SimpleListFilter):
     title = _("participation tags")
     parameter_name = 'ptags'
@@ -138,6 +213,7 @@ class FlowPageImageAdmin(admin.ModelAdmin):
         HasImageTextFilter,
         AccessRuleTagFilter,
         ParticipationTagFilter,
+        #AttemptFilter,
     )
 
     list_display = (

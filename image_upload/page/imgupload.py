@@ -588,6 +588,7 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
             visits = visits.exclude(
                 flow_session__access_rules_tag__in=self.exclude_session_tag)
 
+        # visits that are not submitted and not im progress has been filtered
         if self.attempt_included == "first":
             visits = visits.order_by('flow_session__participation__user__username', 'visit_time').distinct('flow_session__participation__user__username')
         elif self.attempt_included == "last":
@@ -652,7 +653,9 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
             try:
                 flow_pk = page_data["flow_pk"]
                 page_id = page_data["page_id"]
-                qs = FlowPageImage.objects.filter (flow_session__id=flow_pk, image_page_id=page_id)
+                qs = FlowPageImage.objects.filter(
+                    flow_session__id=flow_pk, image_page_id=page_id)\
+                    .order_by("order")
                 if len(qs) > 0:
                     return qs
             except:
@@ -759,6 +762,8 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
         answer_qs = None
         if qs:
             answer_qs = None
+
+            # 如果题目图片使用了image_data，则用image_data
             img_0 = qs[0]
             if img_0.use_image_data and img_0.image_data:
                 try:
