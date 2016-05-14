@@ -31,6 +31,7 @@ from django.utils.translation import ugettext as _, string_concat
 from django.db.models import Q
 from django.conf import settings
 from django.db import transaction
+from django.contrib import messages
 
 from image_upload.models import FlowPageImage
 
@@ -820,7 +821,7 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
             )
             feedbackbutton = (
                 "<a href='%(url)s'"
-                "class='btn btn-primary btn-xs relate-btn-xs-vert-spaced' target='_blank'>"
+                "class='btn btn-primary btn-xs relate-btn-xs-vert-spaced'>"
                 "%(send_email)s </a>"
                 % {"url": email_page_url, "send_email": _("Send Email")})
 
@@ -830,18 +831,16 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
             )
 
             student_feedback_message += feedbackbutton
-
             student_feedback = "<br/> <div style='float:right'>%s </div>"  % student_feedback_message
 
-        CA_PATTERN = string_concat (_ ("A correct answer is"), ": <br/> <div id='key'>%s</div>  %s")  # noqa
+        CA_PATTERN = string_concat (_ ("A correct answer is"), ": <br/> <div id='key'>%s</div> %s")  # noqa
 
         return CA_PATTERN % (ca, student_feedback)
 
+
 @course_view
 def feedBackEmail(pctx, flow_session_id, ordinal):
-
-    from django.http import HttpResponse
-    from django.shortcuts import get_object_or_404
+    from django.shortcuts import get_object_or_404, redirect
 
     request = pctx.request
     if request.method == "POST":
@@ -853,16 +852,9 @@ def feedBackEmail(pctx, flow_session_id, ordinal):
             from course.models import Participation
 
             flow_session = get_object_or_404(FlowSession, id=int(flow_session_id))
-
-            flow_id = flow_session.flow_id
-
             page_id = FlowPageData.objects.get(flow_session=flow_session_id, ordinal=ordinal).page_id
-
             tutor_qs = Participation.objects.filter(course=pctx.course, role=participation_role.instructor)
-
             tutor_email_list = [tutor.user.email for tutor in tutor_qs]
-
-            #print page_id
 
             from django.core.urlresolvers import reverse
             review_url = reverse(
@@ -876,7 +868,6 @@ def feedBackEmail(pctx, flow_session_id, ordinal):
             from urlparse import urljoin
             review_uri = urljoin(getattr(settings, "RELATE_BASE_URL"),
                                  review_url)
-
 
             from_email = getattr(settings, "STUDENT_FEEDBACK_FROM_EMAIL", settings.SERVER_EMAIL)
             student_email = flow_session.participation.user.email
@@ -911,9 +902,12 @@ def feedBackEmail(pctx, flow_session_id, ordinal):
                 msg.bcc = [student_email]
                 msg.reply_to = [student_email]
                 msg.send()
-            return HttpResponse(_("Thank you for your feedback, and notice that you will "
-                                  "also receive a copy of the email."))
 
+                messages.add_message(
+                    request, messages.SUCCESS,
+                    _("Thank you for your feedback, and notice that you will "
+                      "also receive a copy of the email."))
+            return redirect("relate-view_flow_page", pctx.course.identifier,flow_session_id, ordinal)
 
     else:
         form = ImgUPloadAnswerEmailFeedbackForm()
@@ -923,28 +917,6 @@ def feedBackEmail(pctx, flow_session_id, ordinal):
          "form_description": _("Send feedback email"),
      })
 
-    from django.http import HttpResponse
-    #return HttpResponse("")
-
-
-    # def email_form_html(self, request):
-    #
-    #     form = ImgUPloadAnswerEmailFeedbackForm()
-    #
-    #     from django.template import loader, RequestContext
-    #     from django import VERSION as django_version  # noqa
-    #
-    #     if django_version >= (1, 9):
-    #         return loader.render_to_string(
-    #             "course/crispy-form.html",
-    #             context={"form": form},
-    #             request=request)
-    #     else:
-    #         context = RequestContext(request)
-    #         context.update({"form": form})
-    #         return loader.render_to_string(
-    #             "course/crispy-form.html",
-    #             context_instance=context)
 #}}}
 
 
@@ -967,6 +939,6 @@ class ImgUPloadAnswerEmailFeedbackForm(StyledForm):
         feedback = cleaned_data.get("feedback")
         if len(feedback) < 20:
             raise forms.ValidationError(_("At least 20 characters are required for submission."))
-
+        return feedback
 
 # vim: foldmethod=marker
