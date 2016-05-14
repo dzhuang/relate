@@ -403,8 +403,9 @@ def tex2imgtag(tex_source, output_dir=None, tex_filename=None,
 
         html_class = "%s %s" %(html_class, html_extra_class)
 
-    if alt is None:
-        alt = tex_source
+    # remove source_code because mathjax will render it.
+    # if alt is None:
+    #     alt = tex_source
 
     if alt:
         alt = "alt='%s'" % alt.strip()
