@@ -775,6 +775,9 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                         order__in=order_set)
                 except:
                     answer_qs=None
+
+            # 图片未关联到外部的图片（即答案，则使用order在1之后的所有图片
+            # 作为答案.
             if not answer_qs:
                 answer_qs = list(qs)[1:]
         return answer_qs
@@ -782,22 +785,27 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
     def correct_answer(self, page_context, page_data, answer_data, grade_data):
         answer_qs = self.get_correct_answer_qs(page_context, page_data)
         ca = "\n"
-        if answer_qs:
-            for answer in answer_qs:
-                key_thumbnail = answer.file_thumbnail
-                key_img = answer.get_absolute_url(private=False, key=True)
-                ca = ca + '<a href="' + key_img + '"><img src="' + key_thumbnail.url + '"></a>\n'
 
-        js = """<script>
-                document.getElementById('key').onclick = function (event) {
-                    event = event || window.event;
-                    var target = event.target || event.srcElement,
-                    link = target.src ? target.parentNode : target,
-                    options = {index: link, event: event},
-                    links = this.getElementsByTagName('a');
-                    blueimp.Gallery(links, options);
-                    };
-            </script>"""
+        if answer_qs:
+            if answer_qs[0].is_image_textify and answer_qs[0].image_text:
+                ca += markup_to_html(page_context, answer_qs[0].image_text)
+            else:
+                for answer in answer_qs:
+                    key_thumbnail = answer.file_thumbnail
+                    key_img = answer.get_absolute_url(private=False, key=True)
+                    ca = ca + '<a href="' + key_img + '"><img src="' + key_thumbnail.url + '"></a>\n'
+
+                js = """<br/><script>
+                        document.getElementById('key').onclick = function (event) {
+                            event = event || window.event;
+                            var target = event.target || event.srcElement,
+                            link = target.src ? target.parentNode : target,
+                            options = {index: link, event: event},
+                            links = this.getElementsByTagName('a');
+                            blueimp.Gallery(links, options);
+                            };
+                    </script>"""
+                ca += js
 
         student_feedback = ""
         if self.allow_report_correct_answer_false:
@@ -823,13 +831,11 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
 
             student_feedback_message += feedbackbutton
 
-
             student_feedback = "<br/> <div style='float:right'>%s </div>"  % student_feedback_message
 
-        CA_PATTERN = string_concat (_ ("A correct answer is"), ": <br/> <div id='key'>%s</div>  %s <br/> %s")  # noqa
+        CA_PATTERN = string_concat (_ ("A correct answer is"), ": <br/> <div id='key'>%s</div>  %s")  # noqa
 
-
-        return CA_PATTERN % (ca, student_feedback, js)
+        return CA_PATTERN % (ca, student_feedback)
 
 @course_view
 def feedBackEmail(pctx, flow_session_id, ordinal):
