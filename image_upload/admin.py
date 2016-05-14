@@ -102,12 +102,12 @@ class HasImageTextFilter(admin.SimpleListFilter):
 #             ('first', _('First')),
 #             ('last', _('Last'))
 #         )
-
-    def queryset(self, request, queryset):
-        if self.value() == 'first':
-            return queryset.filter(flow_session__id__in=self.first_visit_session_list)
-        else:
-            return queryset.filter(flow_session__id__in=self.last_visit_session_list)
+#
+#    def queryset(self, request, queryset):
+#        if self.value() == 'first':
+#            return queryset.filter(flow_session__id__in=self.first_visit_session_list)
+#        else:
+#            return queryset.filter(flow_session__id__in=self.last_visit_session_list)
 
 
 class SessionGradeStatus(admin.SimpleListFilter):
