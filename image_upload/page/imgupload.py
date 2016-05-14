@@ -694,7 +694,10 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
         if img:
             if img.is_image_textify and img.image_text:
                 img_text = img.image_text
-                body_html += markup_to_html(page_context, img_text)
+                try:
+                    body_html += markup_to_html(page_context, img_text)
+                except:
+                    pass
             else:
                 question_img_url = img.get_absolute_url(private=False)
                 question_thumbnail_url = img.file_thumbnail.url
@@ -796,7 +799,10 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
 
         if answer_qs:
             if answer_qs[0].is_image_textify and answer_qs[0].image_text:
-                ca += markup_to_html(page_context, answer_qs[0].image_text)
+                try:
+                    ca += markup_to_html(page_context, answer_qs[0].image_text)
+                except:
+                    pass
             else:
                 for answer in answer_qs:
                     key_thumbnail = answer.file_thumbnail

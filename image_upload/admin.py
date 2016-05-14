@@ -46,10 +46,10 @@ class HasImageTextFilter(admin.SimpleListFilter):
             ('y', _('Yes')),
             ('n', _('No')))
     def queryset(self, request, queryset):
-        if self.value() == 'has_text':
-            return queryset.filter(image_text__len__gt=0)
+        if self.value() == 'y':
+            return queryset.exclude(image_text=u'').exclude(image_text__isnull=True)
         else:
-            return queryset.filter(image_text__len=0)
+            return queryset.filter(image_text=u'')
 
 
 # class AttemptFilter(admin.SimpleListFilter):
