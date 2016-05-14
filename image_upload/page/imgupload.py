@@ -224,15 +224,18 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         elif self.maxFileSize < 0.5 * 1024 ** 2:
             self.maxFileSize = 0.5 * 1024 ** 2
 
-        self.minFileSize = getattr(self.page_desc, "minFileSize", 0.03) * 1024 ** 2
-        if self.minFileSize >= 0.05 * 1024 ** 2:
-            self.minFileSize = 0.05 * 1024 ** 2
+        # disable minFileSize
 
-        if self.minFileSize > self.maxFileSize:
-            vctx.add_warning(location, _("minFileSize should not be greater than "
-                                         "maxFileSize, better do not set those 2 "
-                                         "attributes."
-                                         ))
+        # self.minFileSize = getattr(self.page_desc, "minFileSize", 0.03) * 1024 ** 2
+        # if self.minFileSize >= 0.05 * 1024 ** 2:
+        #     self.minFileSize = 0.05 * 1024 ** 2
+        #
+        # if self.minFileSize > self.maxFileSize:
+        #     vctx.add_warning(location, _("minFileSize should not be greater than "
+        #                                  "maxFileSize, better do not set those 2 "
+        #                                  "attributes."
+        #                                  ))
+
         self.previewMaxWidth = getattr(self.page_desc, "previewMaxWidth", 200)
         self.previewMaxHeight = getattr(self.page_desc, "previewMaxHeight", 200)
 
