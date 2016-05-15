@@ -745,7 +745,7 @@ def markup_to_html(course, repo, commit_sha, text, reverse_func=None,
             cache_key = ("markup:v4:%d:%s:%s"
                     % (course.id, str(commit_sha),
                         hashlib.md5(text.encode("utf-8")).hexdigest()))
-            
+
             def_cache = cache.caches["default"]
             result = def_cache.get(cache_key)
             if result is not None:
@@ -772,7 +772,10 @@ def markup_to_html(course, repo, commit_sha, text, reverse_func=None,
     from course.latex_utils import tex2imgtag
 
     def jinja_tex2imgtag(caller, *args, **kwargs):
-        return tex2imgtag(caller(), *args, **kwargs)
+        try:
+            return tex2imgtag(caller(), *args, **kwargs)
+        except:
+            raise
 
     env.globals["latex"] = jinja_tex2imgtag
 
