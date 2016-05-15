@@ -775,7 +775,7 @@ def markup_to_html(course, repo, commit_sha, text, reverse_func=None,
         try:
             return tex2imgtag(caller(), *args, **kwargs)
         except:
-            raise
+            pass
 
     env.globals["latex"] = jinja_tex2imgtag
 
