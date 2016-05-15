@@ -386,10 +386,17 @@ def tex2dataURI(
 
 #{{{ covert tex to <img> tag
 
-def tex2imgtag(tex_source, output_dir=None, tex_filename=None,
-        image_format="svg", tex_preamble="", tex_preamble_extra="",
-        overwrite=False, html_class_extra="", alt=None, *args, **kargs):
+def tex2imgtag(tex_source, *args, **kwargs):
     '''Convert LaTex to IMG tag'''
+
+    output_dir = kwargs.get("output_idr", None)
+    tex_filename = kwargs.get("tex_filename", None)
+    image_format = kwargs.get("image_format", "svg")
+    tex_preamble = kwargs.get("tex_preamble", "")
+    tex_preamble_extra = kwargs.get("tex_preamble_extra", "")
+    overwrite = kwargs.get("overwrite", False)
+    html_class_extra = kwargs.get("html_class_extra", "")
+    alt = kwargs.get("alt", "")
 
     # make rendered image responsive by default
     html_class = "img-responsive"
