@@ -772,15 +772,17 @@ def markup_to_html(course, repo, commit_sha, text, reverse_func=None,
     from course.latex_utils import tex2imgtag
 
     def jinja_tex2imgtag(caller, *args, **kwargs):
-        try:
-            return tex2imgtag(caller(), *args, **kwargs)
-        except:
-            return None
+        return tex2imgtag(caller(), *args, **kwargs)
 
-    env.globals["latex"] = jinja_tex2imgtag
+    #env.globals["latex"] = jinja_tex2imgtag
 
     template = env.from_string(text)
-    text = template.render(**jinja_env)
+    try:
+        env.globals["latex"] = jinja_tex2imgtag
+        text = template.render(**jinja_env)
+    except:
+        text = template.render(**jinja_env)
+        #raise
 
     # }}}
 
