@@ -388,7 +388,7 @@ def tex2dataURI(
 
 def tex2imgtag(tex_source, output_dir=None, tex_filename=None,
         image_format="svg", tex_preamble="", tex_preamble_extra="",
-        overwrite=False, html_class_extra="", alt=None):
+        overwrite=False, html_class_extra="", alt=None, *args, **kargs):
     '''Convert LaTex to IMG tag'''
 
     # make rendered image responsive by default
