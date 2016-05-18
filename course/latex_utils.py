@@ -34,7 +34,7 @@ from django.utils.translation import ugettext as _
 from django.conf import settings
 
 
-ALLOWED_LATEX2IMG_FORMAT = ['png', 'svg']
+
 
 # {{{ default values
 
@@ -251,12 +251,14 @@ def get_image_data_uri(image_path):
         "b64": b64encode(buf).decode(),
     }
 
+ALLOWED_LATEX2IMG_FORMAT = ['png', 'svg']
+ALLOWED_COMPILER = ['latex', 'pdflatex', 'xelatex']
 
-def tex2dataURI(
+def tex_to_data_uri(
         tex_body, output_dir=None, tex_filename="",
         image_format="", tex_preamble="", tex_preamble_extra="",
         overwrite=False):
-    '''Convert LaTex body to dataURI'''
+    '''Convert LaTex body to data uri'''
 
     if not output_dir:
         output_dir = getattr(
@@ -386,7 +388,7 @@ def tex2dataURI(
 
 #{{{ covert tex to <img> tag
 
-def tex2imgtag(tex_source, *args, **kwargs):
+def tex_to_img_tag(tex_source, compiler, *args, **kwargs):
     '''Convert LaTex to IMG tag'''
 
     output_dir = kwargs.get("output_idr", None)
@@ -418,7 +420,7 @@ def tex2imgtag(tex_source, *args, **kwargs):
         alt = "alt='%s'" % alt.strip()
 
     try:
-        src = tex2dataURI(tex_source, output_dir, tex_filename,
+        src = tex_to_data_uri(tex_source, compiler, output_dir, tex_filename,
                           image_format, tex_preamble, tex_preamble_extra,
                           overwrite)
     except Exception:

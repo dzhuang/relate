@@ -769,16 +769,16 @@ def markup_to_html(course, repo, commit_sha, text, reverse_func=None,
 
     env.globals["parse_date_spec"] = parse_date_spec_jinja
 
-    from course.latex_utils import tex2imgtag
+    from course.latex_utils import tex_to_img_tag
 
-    def jinja_tex2imgtag(caller, *args, **kwargs):
-        return tex2imgtag(caller(), *args, **kwargs)
+    def jinja_tex_to_img_tag(caller, *args, **kwargs):
+        return tex_to_img_tag(caller(), *args, **kwargs)
 
     #env.globals["latex"] = jinja_tex2imgtag
 
     template = env.from_string(text)
     try:
-        env.globals["latex"] = jinja_tex2imgtag
+        env.globals["latex"] = jinja_tex_to_img_tag
         text = template.render(**jinja_env)
     except:
         text = template.render(**jinja_env)
