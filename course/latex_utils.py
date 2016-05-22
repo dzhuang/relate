@@ -266,12 +266,15 @@ class Tex2ImgBase(object):
         a subprocess
         """
         env = dict(os.environ)
+        #print env
         if self.latex_bin_path:
-            env["path"] = self.latex_bin_path\
-                          + os.pathsep + env["path"]
+            env["PATH"] = self.latex_bin_path\
+                          + os.pathsep + env["PATH"]
         if self.imagemagick_bin_path:
-            env["path"] = self.imagemagick_bin_path\
-                          + os.pathsep + env["path"]
+            env["PATH"] = self.imagemagick_bin_path\
+                          + os.pathsep + env["PATH"]
+
+        print env["PATH"], '----------------------------------------------------------------path'
         return env
 
     def get_mid_step_media(self):
@@ -297,7 +300,9 @@ class Tex2ImgBase(object):
                 cwd=self.working_dir,
                 env=self._update_sys_env(),
             )
+            [_, stderr] = tex_compile_process.communicate()
             tex_compile_process.wait()
+            print stderr
 
         except OSError as err:
             if err.errno != errno.ENOENT:
@@ -345,9 +350,13 @@ class Tex2ImgBase(object):
                 stderr=PIPE,
                 cwd=self.working_dir,
                 env=self._update_sys_env(),
+                shell=True
             )
             [stdout, stderr] = image_convert_process.communicate()
             image_convert_process.wait()
+            print stderr, '-----------------------------stderr'
+        # except Exception as e:
+        #     raise
         except OSError as err:
             if err.errno != errno.ENOENT:
                 raise
@@ -495,38 +504,43 @@ class Latex2Png(TexDviImageBase):
 
 class TexPdfImageBase(Tex2ImgBase):
     mid_step_media_type = "pdf"
-    image_coverter_name = 'imagemagick'
+    image_converter_name = 'imagemagick'
 
     def _get_image_convert_cmdline(
             self, input_filepath, output_filepath):
         # the following setting return image with gmail quality image with
         # exactly printed size
-        return ['convert',
-                '-density', '96',
-                '-quality', '85',
+
+        print input_filepath, output_filepath
+
+        return ['convert', '-density', '96', '-quality', '85',
                 input_filepath,
                 output_filepath
                 ]
 
 
 class Pdflatex2Png(TexPdfImageBase):
+    tex_compiler = "pdflatex"
     def _get_tex_compile_cmdline(self, tex_path):
         return ['latexmk',
                 '-pdf',
+                '-pdflatex=pdflatex %O '
                 '-no-shell-escape '
                 '-interaction=batchmode '
-                '-halt-on-error',
+                '-halt-on-error '
+                '%S',
                 tex_path
                 ]
 
 
 class Xelatex2Png(TexPdfImageBase):
+    tex_compiler = "xelatex"
     def _get_tex_compile_cmdline(self, tex_path):
         return ['latexmk',
                 '-e',
-                '$pdflatex=q/xelatex -no-shell-escape '
+                '$pdflatex=q/xelatex %O -no-shell-escape '
                 '-interaction=batchmode '
-                '-halt-on-error %O %S/',
+                '-halt-on-error %S/',
                 '-pdf',
                 tex_path
                 ]
@@ -539,8 +553,35 @@ ALLOWED_COMPILER_FORMAT_TUPLE = (
     ("xelatex", "png")
 )
 
-def get_image_class(compiler, image_fomrat):
-    pass
+def get_tex2img_class(compiler, image_fomrat):
+    image_format = image_fomrat.replace(".", "").lower()
+    compiler = compiler.lower()
+    if not image_format in ALLOWED_LATEX2IMG_FORMAT:
+        raise ValueError(
+            _("Unsupported image format '%s'") % image_format)
+
+    if not compiler in ALLOWED_COMPILER:
+        raise ValueError(
+            _("Unsupported tex compiler '%s'") % compiler)
+
+    if not (compiler, image_format) in ALLOWED_COMPILER_FORMAT_TUPLE:
+        raise ValueError(
+            _("Unsupported combination: "
+              "('%(compiler)s', '%(format)s'). "
+              "Currently support %(supported)s.")
+              % {"compiler": compiler,
+                 "format": image_format,
+                 "supported": ", ".join(
+                     str(e) for e in ALLOWED_COMPILER_FORMAT_TUPLE)}
+        )
+
+    class_name = "%s2%s" % (compiler.title(), image_format.title())
+
+    import sys
+    return getattr(sys.modules[__name__], class_name)
+
+
+
 
 
     # tex_compile_cmd = "latex"
@@ -628,23 +669,38 @@ def tex_to_img_tag(tex_source, *args, **kwargs):
             getattr(settings, "MEDIA_ROOT"),
             DEFAULT_LATEX_IMAGE_FOLDER_NAME)
     tex_filename = kwargs.get("tex_filename", None)
-    image_format = kwargs.get("image_format", "svg")
+    compiler = kwargs.get("compiler", "latex")
+    image_format = kwargs.get("image_format", "")
+    if not image_format:
+        raise ValueError(_("'image_format' must be specified."))
     tex_preamble = kwargs.get("tex_preamble", "")
     tex_preamble_extra = kwargs.get("tex_preamble_extra", "")
     overwrite = kwargs.get("overwrite", False)
     html_class_extra = kwargs.get("html_class_extra", "")
     alt = kwargs.get("alt", "")
+    imagemagick_bin_path = kwargs.get("imagemagick_bin_path", "")
+    latex_bin_path = kwargs.get("latex_bin_path", "")
 
     if html_class_extra:
-        if isinstance (html_class_extra, list):
+        if isinstance(html_class_extra, list):
             html_extra_class = " ".join (html_class_extra)
         elif not isinstance(html_class_extra, six.string_types):
             raise ValueError(
                 _('"html_class_extra" must be a string or a list'))
-        html_class = "%s %s" %(DEFAULT_IMG_HTML_CLASS, html_extra_class)
+        html_class = "%s %s" %(DEFAULT_IMG_HTML_CLASS, html_class_extra)
     else: html_class = DEFAULT_IMG_HTML_CLASS
 
-    latex2img = Latex2Svg(tex_source,tex_filename,output_dir, image_format,"", "")
+    tex2img_class = get_tex2img_class(compiler, image_format)
+
+    latex2img = tex2img_class(
+        tex_source=tex_source,
+        tex_filename=tex_filename,
+        output_dir=output_dir,
+        image_format=image_format,
+        latex_bin_path=latex_bin_path,
+        imagemagick_bin_path=imagemagick_bin_path,
+        )
+
     return (
         "<img src='%(src)s' "
         "class='%(html_class)s' %(alt)s>"
@@ -653,9 +709,6 @@ def tex_to_img_tag(tex_source, *args, **kwargs):
             "html_class": html_class,
             "alt": alt,
         })
-
-
-
 
 
 # {{{ assemble tex source

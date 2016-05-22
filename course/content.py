@@ -772,6 +772,10 @@ def markup_to_html(course, repo, commit_sha, text, reverse_func=None,
     from course.latex_utils import tex_to_img_tag
 
     def jinja_tex_to_img_tag(caller, *args, **kwargs):
+        kwargs["imagemagick_bin_path"]  = getattr(
+            settings, "RELATE_IMAGEMAGICK_BIN_PATH", None)
+        kwargs["latex_bin_path"] = getattr(
+            settings, "RELATE_LATEX_BIN_PATH", None)
         return tex_to_img_tag(caller(), *args, **kwargs)
 
     def jinja_tex_to_img_tag_failed(caller, *args, **kwargs):
