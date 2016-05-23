@@ -26,6 +26,7 @@ THE SOFTWARE.
 
 import six
 import os
+import sys
 import re
 import errno
 from subprocess import Popen, PIPE
@@ -33,9 +34,61 @@ import shutil
 from hashlib import md5
 
 from django.core.exceptions import ImproperlyConfigured
-from django.utils.translation import ugettext as _
+from django.utils.translation import (
+    ugettext as _, string_concat)
 from django.conf import settings
+from django.core.management.base import CommandError
+from django.utils.encoding import (
+    DEFAULT_LOCALE_ENCODING, force_text)
 
+CMD_NAME_DICT = {"convert": "ImageMagick",
+                 "dvipng": "Dvipng",
+                 "dvisvgm": "Dvisvg",
+                 "xelatex": "LaTex",
+                 "pdflatex": "LaTex",
+                 "latex": "LaTex",
+                 "latexmk": "LaTex"}
+
+def popen_wrapper(args, env,
+                  enable_shell, os_err_exc_type=CommandError,
+                  stdout_encoding='utf-8'):
+    """
+    Extended from django.core.management.utils.popen_wrapper,
+    especially to solve UnicodeDecodeError raised on Windows
+    platform where the OS stdout is not utf-8.
+
+    Friendly wrapper around Popen, with env and shell options
+
+    Returns stdout output, stderr output and OS status code.
+    """
+
+    try:
+        p = Popen(args, shell=enable_shell, stdout=PIPE,
+                  stderr=PIPE, close_fds=os.name != 'nt', env=env)
+    except OSError as e:
+        # if e.errno == errno.ENOENT:
+        #     raise OSError(_("Failed to run '%(cmd)s'. "
+        #                     "Are you sure %(cmd_name)s is installed "
+        #                     "or properly configured in "
+        #                     "local_settings.py?")
+        #                   % {
+        #                     "cmd": args[0],
+        #                     "cmd_name": CMD_NAME_DICT[args[0]]
+        #                   }
+        #               )
+        strerror = force_text(e.strerror, DEFAULT_LOCALE_ENCODING,
+                              strings_only=True)
+        six.reraise(os_err_exc_type, os_err_exc_type(
+                string_concat(_('Error executing'), '%s: %s')
+                % (args[0], strerror)), sys.exc_info()[2])
+    output, errors = p.communicate()
+    return (
+        force_text(output, stdout_encoding, strings_only=True,
+                   errors='strict'),
+        force_text(errors, DEFAULT_LOCALE_ENCODING,
+                   strings_only=True, errors='replace'),
+        p.returncode
+    )
 
 def make_tex_source(tex_body, tex_preamble="",
                     tex_preamble_extra=""):
@@ -159,6 +212,12 @@ class Tex2ImgBase(object):
         # for exception raise.
         raise NotImplementedError()
 
+    # 'shell=True' is strongly discouraged for python subprocess
+    # but it is needed for imagemagick to work in a subprocess.
+    # Will there be any security hazard for that? If yes, how to
+    # avoid it?
+    subprocess_enable_shell = False
+
     @staticmethod
     def _get_file_basename(filename, tex_source):
         if filename:
@@ -266,7 +325,6 @@ class Tex2ImgBase(object):
         a subprocess
         """
         env = dict(os.environ)
-        #print env
         if self.latex_bin_path:
             env["PATH"] = self.latex_bin_path\
                           + os.pathsep + env["PATH"]
@@ -274,7 +332,6 @@ class Tex2ImgBase(object):
             env["PATH"] = self.imagemagick_bin_path\
                           + os.pathsep + env["PATH"]
 
-        print env["PATH"], '----------------------------------------------------------------path'
         return env
 
     def get_mid_step_media(self):
@@ -300,19 +357,20 @@ class Tex2ImgBase(object):
                 cwd=self.working_dir,
                 env=self._update_sys_env(),
             )
-            [_, stderr] = tex_compile_process.communicate()
+            [stdout, stderr] = tex_compile_process.communicate()
             tex_compile_process.wait()
             print stderr
 
         except OSError as err:
             if err.errno != errno.ENOENT:
                 raise
-            raise OSError(_("Failed to run '%s' cmdline. "
-                            "Are you sure LaTeX is installed "
-                            "or RELATE_LATEX_BIN_PATH is properly "
-                            "configured in local_settings.py?")
-                          % cmdline
-                          )
+            raise OSError(
+                _("Failed to run '%s' cmdline. "
+                  "Are you sure LaTeX is installed "
+                  "or RELATE_LATEX_BIN_PATH is properly "
+                  "configured in local_settings.py?")
+                % cmdline
+            )
 
         if tex_compile_process.returncode != 0:
             log = _file_read(log_path)
@@ -342,24 +400,11 @@ class Tex2ImgBase(object):
         cmdline = self._get_image_convert_cmdline(
             compiled_output_path, image_path)
 
-
         try:
-            image_convert_process = Popen(
-                cmdline,
-                stdout=PIPE,
-                stderr=PIPE,
-                cwd=self.working_dir,
-                env=self._update_sys_env(),
-                shell=True
-            )
-            [stdout, stderr] = image_convert_process.communicate()
-            image_convert_process.wait()
-            print stderr, '-----------------------------stderr'
-        # except Exception as e:
-        #     raise
+            output, error, status = popen_wrapper(cmdline, enable_shell=self.subprocess_enable_shell, env=self._update_sys_env())
         except OSError as err:
-            if err.errno != errno.ENOENT:
-                raise
+            # if err.errno != errno.ENOENT:
+            #     raise
             raise OSError(_("Failed to run '%s' cmd. "
                             "Are you sure '%s' is installed "
                             "or it\'s is properly "
@@ -367,14 +412,14 @@ class Tex2ImgBase(object):
                           % (cmdline, self.image_converter_name)
                           )
         else:
-            if image_convert_process.returncode != 0:
-                raise RuntimeError(stderr)
-            output_image_path = os.path.join(
-                    self.output_dir,
-                    "%s.%s" % (self.basename, self.image_format))
-            shutil.copyfile(image_path, output_image_path)
-            self.remove_working_dir()
-            return output_image_path
+            if status != 0:
+                raise RuntimeError(error)
+        output_image_path = os.path.join(
+                self.output_dir,
+                "%s.%s" % (self.basename, self.image_format))
+        shutil.copyfile(image_path, output_image_path)
+        self.remove_working_dir()
+        return output_image_path
 
     def get_compile_err_cached(self):
 
@@ -505,15 +550,14 @@ class Latex2Png(TexDviImageBase):
 class TexPdfImageBase(Tex2ImgBase):
     mid_step_media_type = "pdf"
     image_converter_name = 'imagemagick'
+    subprocess_enable_shell = True
 
     def _get_image_convert_cmdline(
             self, input_filepath, output_filepath):
         # the following setting return image with gmail quality image with
         # exactly printed size
 
-        print input_filepath, output_filepath
-
-        return ['convert', '-density', '96', '-quality', '85',
+        return ['convertx', '-density', '96', '-quality', '85', '-trim',
                 input_filepath,
                 output_filepath
                 ]
