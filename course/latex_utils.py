@@ -40,6 +40,7 @@ from django.conf import settings
 from django.core.management.base import CommandError
 from django.utils.encoding import (
     DEFAULT_LOCALE_ENCODING, force_text)
+from django.utils.functional import cached_property
 
 CMD_NAME_DICT = {"convert": "ImageMagick",
                  "dvipng": "Dvipng",
@@ -202,6 +203,10 @@ class Tex2ImgBase(object):
         raise NotImplementedError()
 
     @property
+    def image_converter(self):
+        raise NotImplementedError()
+
+    @property
     def mid_step_media_type(self):
         raise NotImplementedError()
 
@@ -227,6 +232,45 @@ class Tex2ImgBase(object):
                 return None
             basename = md5(tex_source).hexdigest()
         return basename
+
+    @staticmethod
+    def _update_sys_env(bin_path_list):
+        """
+        Prepend latex_bin_path and imagemagick_bin_path to
+        server system env $PATH for www-data user when execute
+        a subprocess
+        """
+        env = dict(os.environ)
+        for bin_path in bin_path_list:
+            if bin_path:
+                env["PATH"] = bin_path + os.pathsep + env["PATH"]
+        return env
+
+    #@cached_property
+    def get_version(self, cmd):
+        # This will output system-encoded bytestrings instead of UTF-8,
+        # when looking up the version. It's especially a problem on Windows.
+        out, err, status = popen_wrapper(
+            [cmd, '--version'],
+            enable_shell=self.subprocess_enable_shell,
+            stdout_encoding=DEFAULT_LOCALE_ENCODING,
+            env=self.env
+        )
+        m = re.search(r'(\d+)\.(\d+)\.?(\d+)?', out)
+        if m:
+            return tuple(int(d) for d in m.groups() if d is not None)
+        else:
+            raise ValueError(
+                _("Unable to get %s version. Is it installed?")
+                % CMD_NAME_DICT[cmd])
+
+    @cached_property
+    def get_compiler_version(self):
+        return self.get_version(self.tex_compiler)
+
+    @cached_property
+    def get_converter_version(self):
+        return self.get_version(self.image_converter)
 
     def __init__(self, tex_source, tex_filename, output_dir,
                  image_format, latex_bin_path,
@@ -292,7 +336,7 @@ class Tex2ImgBase(object):
         self.image_format = image_format
 
         if latex_bin_path:
-            # Fali silently
+            # Fail silently
             self.latex_bin_path = latex_bin_path.strip()
         else:
             self.latex_bin_path = ""
@@ -301,6 +345,8 @@ class Tex2ImgBase(object):
             self.imagemagick_bin_path = imagemagick_bin_path.strip()
         else:
             self.imagemagick_bin_path = ""
+
+        self.env = self._update_sys_env([self.latex_bin_path, self.imagemagick_bin_path])
             
         self.working_dir = None
 
@@ -311,28 +357,18 @@ class Tex2ImgBase(object):
                 "%s_%s.log" % (self.basename, self.tex_compiler)
         )
 
+        try:
+            print self.get_converter_version
+            print self.get_compiler_version, 'version----------------------------------------'
+        except:
+            raise
+
     def _get_tex_compile_cmdline(self, tex_path):
         raise NotImplementedError()
 
     def _get_image_convert_cmdline(
             self, input_filepath, output_filepath):
         raise NotImplementedError()
-
-    def _update_sys_env(self):
-        """
-        Prepend latex_bin_path and imagemagick_bin_path to
-        server system env $PATH for www-data user when execute
-        a subprocess
-        """
-        env = dict(os.environ)
-        if self.latex_bin_path:
-            env["PATH"] = self.latex_bin_path\
-                          + os.pathsep + env["PATH"]
-        if self.imagemagick_bin_path:
-            env["PATH"] = self.imagemagick_bin_path\
-                          + os.pathsep + env["PATH"]
-
-        return env
 
     def get_mid_step_media(self):
         import tempfile
@@ -355,7 +391,7 @@ class Tex2ImgBase(object):
                 stdout=PIPE,
                 stderr=PIPE,
                 cwd=self.working_dir,
-                env=self._update_sys_env(),
+                env=self.env,
             )
             [stdout, stderr] = tex_compile_process.communicate()
             tex_compile_process.wait()
@@ -401,7 +437,7 @@ class Tex2ImgBase(object):
             compiled_output_path, image_path)
 
         try:
-            output, error, status = popen_wrapper(cmdline, enable_shell=self.subprocess_enable_shell, env=self._update_sys_env())
+            output, error, status = popen_wrapper(cmdline, enable_shell=self.subprocess_enable_shell, env=self.env)
         except OSError as err:
             # if err.errno != errno.ENOENT:
             #     raise
@@ -524,7 +560,8 @@ class TexDviImageBase(Tex2ImgBase):
 
 
 class Latex2Svg(TexDviImageBase):
-    image_coverter_name = 'dvisvgm'
+    image_converter = 'dvisvgm'
+    image_converter_name = 'dvisvg'
 
     def _get_image_convert_cmdline(
             self, input_filepath, output_filepath):
@@ -535,7 +572,8 @@ class Latex2Svg(TexDviImageBase):
 
 
 class Latex2Png(TexDviImageBase):
-    image_coverter_name = 'dvipng'
+    image_converter = 'dvisvgm'
+    image_converter_name = 'dvipng'
 
     def _get_image_convert_cmdline(
             self, input_filepath, output_filepath):
@@ -549,6 +587,7 @@ class Latex2Png(TexDviImageBase):
 
 class TexPdfImageBase(Tex2ImgBase):
     mid_step_media_type = "pdf"
+    image_converter = 'convert'
     image_converter_name = 'imagemagick'
     subprocess_enable_shell = True
 
@@ -557,7 +596,7 @@ class TexPdfImageBase(Tex2ImgBase):
         # the following setting return image with gmail quality image with
         # exactly printed size
 
-        return ['convertx', '-density', '96', '-quality', '85', '-trim',
+        return ['convert', '-density', '96', '-quality', '85', '-trim',
                 input_filepath,
                 output_filepath
                 ]
