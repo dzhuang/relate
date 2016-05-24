@@ -42,16 +42,44 @@ from django.utils.encoding import (
     DEFAULT_LOCALE_ENCODING, force_text)
 from django.utils.functional import cached_property
 
-CMD_NAME_DICT = {"convert": "ImageMagick",
-                 "dvipng": "Dvipng",
-                 "dvisvgm": "Dvisvg",
-                 "xelatex": "LaTex",
-                 "pdflatex": "LaTex",
-                 "latex": "LaTex",
-                 "latexmk": "LaTex"}
+# {{{ Constants
+
+# from .utils import (
+#     CMD_NAME_DICT, ALLOWED_COMPILER, ALLOWED_LATEX2IMG_FORMAT,
+#     ALLOWED_COMPILER_FORMAT_COMBINATION, LATEX_ERR_LOG_BEGIN_LINE_STARTS,
+#     LATEX_ERR_LOG_END_LINE_STARTS, DEFAULT_IMG_HTML_CLASS)
+
+CMD_NAME_DICT = {
+    "latex": "latex",
+    "xelatex": "latex",
+    "pdflatexx": "latex",
+    "latexmk": "latex",
+    "convert": "ImageMagick",
+    "dvipng": "latex",
+    "dvisvgm": "latex"}
+
+ALLOWED_COMPILER = ['latex', 'pdflatex', 'xelatex']
+ALLOWED_LATEX2IMG_FORMAT = ['png', 'svg']
+
+ALLOWED_COMPILER_FORMAT_COMBINATION = (
+    ("latex", "png"),
+    ("latex", "svg"),
+    ("pdflatex", "png"),
+    ("xelatex", "png")
+)
+
+LATEX_ERR_LOG_BEGIN_LINE_STARTS = "\n! "
+LATEX_ERR_LOG_END_LINE_STARTS = "\nHere is how much of TeX's memory"
+
+DEFAULT_IMG_HTML_CLASS = "img-responsive"
+
+# }}}
+
+
+# {{{ subprocess popen wrapper
 
 def popen_wrapper(args, env,
-                  enable_shell, os_err_exc_type=CommandError,
+                  enable_shell=False, os_err_exc_type=CommandError,
                   stdout_encoding='utf-8'):
     """
     Extended from django.core.management.utils.popen_wrapper,
@@ -67,16 +95,6 @@ def popen_wrapper(args, env,
         p = Popen(args, shell=enable_shell, stdout=PIPE,
                   stderr=PIPE, close_fds=os.name != 'nt', env=env)
     except OSError as e:
-        # if e.errno == errno.ENOENT:
-        #     raise OSError(_("Failed to run '%(cmd)s'. "
-        #                     "Are you sure %(cmd_name)s is installed "
-        #                     "or properly configured in "
-        #                     "local_settings.py?")
-        #                   % {
-        #                     "cmd": args[0],
-        #                     "cmd_name": CMD_NAME_DICT[args[0]]
-        #                   }
-        #               )
         strerror = force_text(e.strerror, DEFAULT_LOCALE_ENCODING,
                               strings_only=True)
         six.reraise(os_err_exc_type, os_err_exc_type(
@@ -91,77 +109,84 @@ def popen_wrapper(args, env,
         p.returncode
     )
 
-def make_tex_source(tex_body, tex_preamble="",
-                    tex_preamble_extra=""):
-    '''
-    Assemble tex source code.
 
-    If tex_body contain all basic elements of a full
-    latex document (\documentclass \begin{document}
-    and \end{document}, it will be treated as full
-    document.This makes it convenient for pgf/tikz
-    settings in preamble.
-'''
-    assert isinstance(tex_body, unicode)
+def get_latex2img_env(bin_path_list):
+    """
+    Prepend latex_bin_path and imagemagick_bin_path to
+    server system env $PATH for www-data user when execute
+    a subprocess
+    """
+    env = dict(os.environ)
+    for bin_path in bin_path_list:
+        if bin_path:
+            env["PATH"] = bin_path + os.pathsep + env["PATH"]
+    return env
 
-    if re.search(IS_FULL_DOC_RE, tex_body):
-        tex_source = tex_body
 
+def get_version(tool_cmd, enable_shell, env):
+    # This will output system-encoded bytestrings instead of UTF-8,
+    # when looking up the version. It's especially a problem on Windows.
+    out, err, status = popen_wrapper(
+        [tool_cmd, '--version'],
+        enable_shell=enable_shell,
+        stdout_encoding=DEFAULT_LOCALE_ENCODING,
+        env=env
+    )
+    m = re.search(r'(\d+)\.(\d+)\.?(\d+)?', out)
+    if m:
+        return tuple(int(d) for d in m.groups() if d is not None)
     else:
-        missing_ele = []
-        for ele, ele_re in DOC_ELEMENT_RE_LIST:
-            if not re.search(ele_re, tex_body):
-                missing_ele.append(ele)
-
-        if len(missing_ele) < 3:
-            raise ValueError("<pre>%s</pre>"
-                             % _("Your faied to submit a full latex document: "
-                                 " missing %s.")
-                             % ", ".join(missing_ele))
-        else:
-            if not tex_preamble:
-                tex_preamble = getattr(
-                    settings, "RELATE_LATEX_PREAMBLE",
-                    DEFAULT_LATEX_PREAMBLE)
-
-            tex_begin_document = getattr(
-                settings, "RELATE_LATEX_BEGIN_DOCUMENT",
-                r"\begin{document}")
-
-            tex_end_document = getattr(
-                settings, "RELATE_LATEX_END_DOCUMENT",
-                r"\end{document}")
-
-            tex_source = "%s" * 5 % (
-                tex_preamble, tex_preamble_extra,
-                tex_begin_document, tex_body, tex_end_document)
-
-    # make sure the latex source use empty style (no page mark)
-    if not re.search(PAGE_EMPTY_RE, tex_source):
-        tex_source = re.sub(BEGIN_DOCUMENT_RE,
-                            r"\n\1\\pagestyle{empty}\n\1\2",
-                            tex_source)
-
-    return tex_source
-
+        raise CommandError(
+            _("Unable to run %(cmd)s. Is %(tool)s installed "
+              "or has its path correctly configured "
+              "in local_settings.py?")
+            % {"cmd": tool_cmd,
+               "tool": CMD_NAME_DICT[tool_cmd],
+               })
 
 # }}}
 
-def get_image_data_uri(image_path):
-    if not image_path:
+
+# {{{ file read and write
+
+def _file_read(filename):
+    '''Read the content of a file and close it properly.'''
+    f = file(filename, 'rb')
+    content = f.read()
+    f.close()
+    return content
+
+
+def _file_write(filename, content):
+    '''Write into a file and close it properly.'''
+    f = file(filename, 'wb')
+    f.write(content)
+    f.close()
+
+# }}}
+
+
+# {{{ convert file to data uri
+
+def get_file_data_uri(file_path):
+    '''Convert file to data URI'''
+    if not file_path:
         return None
 
     from base64 import b64encode
     from mimetypes import guess_type
-    buf = _file_read(image_path)
-    image_mime_type = guess_type(image_path)[0]
+    buf = _file_read(file_path)
+    mime_type = guess_type(file_path)[0]
 
     return "data:%(mime_type)s;base64,%(b64)s" % {
-        "mime_type": image_mime_type,
+        "mime_type": mime_type,
         "b64": b64encode(buf).decode(),
     }
 
-ALLOWED_LATEX2IMG_FORMAT = ['png', 'svg']
+# }}}
+
+
+# {{{ Base class
 
 class Tex2ImgBase(object):
     """The abstract class of converting tex source to images.
@@ -246,31 +271,10 @@ class Tex2ImgBase(object):
                 env["PATH"] = bin_path + os.pathsep + env["PATH"]
         return env
 
-    #@cached_property
-    def get_version(self, cmd):
-        # This will output system-encoded bytestrings instead of UTF-8,
-        # when looking up the version. It's especially a problem on Windows.
-        out, err, status = popen_wrapper(
-            [cmd, '--version'],
-            enable_shell=self.subprocess_enable_shell,
-            stdout_encoding=DEFAULT_LOCALE_ENCODING,
-            env=self.env
-        )
-        m = re.search(r'(\d+)\.(\d+)\.?(\d+)?', out)
-        if m:
-            return tuple(int(d) for d in m.groups() if d is not None)
-        else:
-            raise ValueError(
-                _("Unable to get %s version. Is it installed?")
-                % CMD_NAME_DICT[cmd])
-
     @cached_property
-    def get_compiler_version(self):
-        return self.get_version(self.tex_compiler)
-
-    @cached_property
-    def get_converter_version(self):
-        return self.get_version(self.image_converter)
+    def _env(self):
+        return self._update_sys_env(
+            [self.latex_bin_path, self.imagemagick_bin_path])
 
     def __init__(self, tex_source, tex_filename, output_dir,
                  image_format, latex_bin_path,
@@ -303,7 +307,7 @@ class Tex2ImgBase(object):
                   "an empty string"))
         assert isinstance(tex_source, unicode)
         self.tex_source = tex_source
-        
+
         if output_dir:
             output_dir = output_dir.strip()
         if not output_dir:
@@ -336,7 +340,6 @@ class Tex2ImgBase(object):
         self.image_format = image_format
 
         if latex_bin_path:
-            # Fail silently
             self.latex_bin_path = latex_bin_path.strip()
         else:
             self.latex_bin_path = ""
@@ -346,8 +349,6 @@ class Tex2ImgBase(object):
         else:
             self.imagemagick_bin_path = ""
 
-        self.env = self._update_sys_env([self.latex_bin_path, self.imagemagick_bin_path])
-            
         self.working_dir = None
 
         self.basename = self._get_file_basename(
@@ -357,20 +358,41 @@ class Tex2ImgBase(object):
                 "%s_%s.log" % (self.basename, self.tex_compiler)
         )
 
-        try:
-            print self.get_converter_version
-            print self.get_compiler_version, 'version----------------------------------------'
-        except:
-            raise
+        # Valiate if the required tools are installed or configured
+        # through checking the version.
+        for toolcmd in [self.tex_compiler, self.image_converter]:
+            tool_version = self._get_version(toolcmd)
+            if not tool_version:
+                raise CommandError(
+                    _("Unable to run %(cmd)s. Is %(tool)s installed "
+                      "or has its path correctly configured "
+                      "in local_settings.py?")
+                    % {"cmd": toolcmd,
+                       "tool": CMD_NAME_DICT[toolcmd],
+                       })
 
-    def _get_tex_compile_cmdline(self, tex_path):
+    def _get_version(self, cmd):
+        # This will output system-encoded bytestrings instead of UTF-8,
+        # when looking up the version. It's especially a problem on Windows.
+        out, err, status = popen_wrapper(
+            [cmd, '--version'],
+            enable_shell=self.subprocess_enable_shell,
+            stdout_encoding=DEFAULT_LOCALE_ENCODING,
+            env=self._env
+        )
+        m = re.search(r'(\d+)\.(\d+)\.?(\d+)?', out)
+        if m:
+            return tuple(int(d) for d in m.groups() if d is not None)
+
+
+    def get_tex_compile_cmdline(self, tex_path):
         raise NotImplementedError()
 
-    def _get_image_convert_cmdline(
+    def get_image_convert_cmdline(
             self, input_filepath, output_filepath):
         raise NotImplementedError()
 
-    def get_mid_step_media(self):
+    def _get_mid_step_media(self):
         import tempfile
         self.working_dir = tempfile.mkdtemp(prefix="RELATE_LATEX_")
 
@@ -383,7 +405,7 @@ class Tex2ImgBase(object):
             ".tex",
             "." + self.mid_step_media_type.replace(".", "").lower())
 
-        cmdline = self._get_tex_compile_cmdline(tex_path)
+        cmdline = self.get_tex_compile_cmdline(tex_path)
 
         try:
             tex_compile_process = Popen(
@@ -391,7 +413,7 @@ class Tex2ImgBase(object):
                 stdout=PIPE,
                 stderr=PIPE,
                 cwd=self.working_dir,
-                env=self.env,
+                env=self._env,
             )
             [stdout, stderr] = tex_compile_process.communicate()
             tex_compile_process.wait()
@@ -413,7 +435,7 @@ class Tex2ImgBase(object):
             try:
                 log = get_abstract_latex_log(log)
                 _file_write(self.compile_errlog_path, log)
-                self.remove_working_dir()
+                self._remove_working_dir()
             finally:
                 from django.utils.html import escape
                 raise ValueError(
@@ -426,18 +448,17 @@ class Tex2ImgBase(object):
                 _('No %s file was produced.'),
                 self.mid_step_media_type)
 
-    def get_converted_image(self):
-        compiled_output_path = self.get_mid_step_media()
+    def _get_converted_image(self):
+        compiled_output_path = self._get_mid_step_media()
         if not compiled_output_path:
             return None
         image_path = compiled_output_path.replace(
             "." + self.mid_step_media_type, "." + self.image_format)
 
-        cmdline = self._get_image_convert_cmdline(
-            compiled_output_path, image_path)
+        cmdline = self.get_image_convert_cmdline(compiled_output_path, image_path)
 
         try:
-            output, error, status = popen_wrapper(cmdline, enable_shell=self.subprocess_enable_shell, env=self.env)
+            output, error, status = popen_wrapper(cmdline, enable_shell=self.subprocess_enable_shell, env=self._env)
         except OSError as err:
             # if err.errno != errno.ENOENT:
             #     raise
@@ -454,11 +475,10 @@ class Tex2ImgBase(object):
                 self.output_dir,
                 "%s.%s" % (self.basename, self.image_format))
         shutil.copyfile(image_path, output_image_path)
-        self.remove_working_dir()
+        self._remove_working_dir()
         return output_image_path
 
-    def get_compile_err_cached(self):
-
+    def _get_compile_err_cached(self):
         try:
             import django.core.cache as cache
         except ImproperlyConfigured:
@@ -496,14 +516,13 @@ class Tex2ImgBase(object):
         return None
 
     def get_data_uri_cached(self, force_regenerate=False):
-
         if force_regenerate:
-            image_path = self.get_converted_image()
-            uri_result = get_image_data_uri(image_path)
+            image_path = self._get_converted_image()
+            uri_result = get_file_data_uri(image_path)
             assert isinstance(uri_result, six.string_types)
             return uri_result
 
-        err_result = self.get_compile_err_cached()
+        err_result = self._get_compile_err_cached()
         if err_result:
             return None
 
@@ -526,8 +545,8 @@ class Tex2ImgBase(object):
 
         # read or generate the image
         if not os.path.isfile(image_saving_path):
-            image_saving_path = self.get_converted_image()
-        uri_result = get_image_data_uri(image_saving_path)
+            image_saving_path = self._get_converted_image()
+        uri_result = get_file_data_uri(image_saving_path)
         assert isinstance(uri_result, six.string_types)
 
         # no cache configured
@@ -540,15 +559,18 @@ class Tex2ImgBase(object):
             def_cache.add(uri_cache_key, uri_result, None)
             return uri_result
 
-    def remove_working_dir(self):
+    def _remove_working_dir(self):
         shutil.rmtree(self.working_dir)
 
+# }}}
+
+# {{{ derived classes
 
 class TexDviImageBase(Tex2ImgBase):
     tex_compiler = "latex"
     mid_step_media_type = "dvi"
 
-    def _get_tex_compile_cmdline(self, tex_path):
+    def get_tex_compile_cmdline(self, tex_path):
         return ['latexmk',
                 '-e',
                 '$latex=q/latex -no-shell-escape '
@@ -563,7 +585,7 @@ class Latex2Svg(TexDviImageBase):
     image_converter = 'dvisvgm'
     image_converter_name = 'dvisvg'
 
-    def _get_image_convert_cmdline(
+    def get_image_convert_cmdline(
             self, input_filepath, output_filepath):
         return ['dvisvgm',
                 '--no-fonts',
@@ -575,7 +597,7 @@ class Latex2Png(TexDviImageBase):
     image_converter = 'dvisvgm'
     image_converter_name = 'dvipng'
 
-    def _get_image_convert_cmdline(
+    def get_image_convert_cmdline(
             self, input_filepath, output_filepath):
         return ['dvipng',
                 '-o', output_filepath,
@@ -591,7 +613,7 @@ class TexPdfImageBase(Tex2ImgBase):
     image_converter_name = 'imagemagick'
     subprocess_enable_shell = True
 
-    def _get_image_convert_cmdline(
+    def get_image_convert_cmdline(
             self, input_filepath, output_filepath):
         # the following setting return image with gmail quality image with
         # exactly printed size
@@ -604,7 +626,7 @@ class TexPdfImageBase(Tex2ImgBase):
 
 class Pdflatex2Png(TexPdfImageBase):
     tex_compiler = "pdflatex"
-    def _get_tex_compile_cmdline(self, tex_path):
+    def get_tex_compile_cmdline(self, tex_path):
         return ['latexmk',
                 '-pdf',
                 '-pdflatex=pdflatex %O '
@@ -618,7 +640,7 @@ class Pdflatex2Png(TexPdfImageBase):
 
 class Xelatex2Png(TexPdfImageBase):
     tex_compiler = "xelatex"
-    def _get_tex_compile_cmdline(self, tex_path):
+    def get_tex_compile_cmdline(self, tex_path):
         return ['latexmk',
                 '-e',
                 '$pdflatex=q/xelatex %O -no-shell-escape '
@@ -628,13 +650,9 @@ class Xelatex2Png(TexPdfImageBase):
                 tex_path
                 ]
 
+# }}}
 
-ALLOWED_COMPILER_FORMAT_TUPLE = (
-    ("latex", "png"),
-    ("latex", "svg"),
-    ("pdflatex", "png"),
-    ("xelatex", "png")
-)
+
 
 def get_tex2img_class(compiler, image_fomrat):
     image_format = image_fomrat.replace(".", "").lower()
@@ -647,7 +665,7 @@ def get_tex2img_class(compiler, image_fomrat):
         raise ValueError(
             _("Unsupported tex compiler '%s'") % compiler)
 
-    if not (compiler, image_format) in ALLOWED_COMPILER_FORMAT_TUPLE:
+    if not (compiler, image_format) in ALLOWED_COMPILER_FORMAT_COMBINATION:
         raise ValueError(
             _("Unsupported combination: "
               "('%(compiler)s', '%(format)s'). "
@@ -655,24 +673,12 @@ def get_tex2img_class(compiler, image_fomrat):
               % {"compiler": compiler,
                  "format": image_format,
                  "supported": ", ".join(
-                     str(e) for e in ALLOWED_COMPILER_FORMAT_TUPLE)}
+                     str(e) for e in ALLOWED_COMPILER_FORMAT_COMBINATION)}
         )
 
     class_name = "%s2%s" % (compiler.title(), image_format.title())
 
-    import sys
     return getattr(sys.modules[__name__], class_name)
-
-
-
-
-
-    # tex_compile_cmd = "latex"
-    # tex_cmd_line = "--no-shell-escape"
-    # tex_cmd_args = ""
-
-    #def compile(selfself):
-
 
 
 # {{{ default values
@@ -689,8 +695,9 @@ DEFAULT_LATEX_PREAMBLE = r'''
 \pagestyle{empty}
 '''
 
-DEFAULT_LATEX_IMAGE_FOLDER_NAME = getattr(
-    settings, "RELATE_LATEX_IMAGE_FOLDER_NAME", "latex_image")
+
+# DEFAULT_LATEX_IMAGE_FOLDER_NAME = getattr(
+#     settings, "RELATE_LATEX_IMAGE_FOLDER_NAME", "latex_image")
 
 LATEX_LOG_OMIT_LINE_STARTS = (
     "See the LaTeX manual or LaTeX",
@@ -699,8 +706,6 @@ LATEX_LOG_OMIT_LINE_STARTS = (
     # more
 )
 
-LATEX_ERR_LOG_BEGIN_LINE_STARTS = "\n! "
-LATEX_ERR_LOG_END_LINE_STARTS = "\nHere is how much of TeX's memory"
 
 # }}}
 
@@ -720,37 +725,20 @@ DOC_ELEMENT_RE_LIST = [(r"'\documentclass'", re.compile(r"(?:^|\n)\s*\\documentc
 
 # }}}
 
-# {{{ file read and write
-
-def _file_read(filename):
-    '''Read the content of a file and close it properly.'''
-    f = file(filename, 'rb')
-    content = f.read()
-    f.close()
-    return content
 
 
-def _file_write(filename, content):
-    '''Write into a file and close it properly.'''
-    f = file(filename, 'wb')
-    f.write(content)
-    f.close()
-
-# }}}
-
-DEFAULT_IMG_HTML_CLASS = "img-responsive"
 
 def tex_to_img_tag(tex_source, *args, **kwargs):
     '''Convert LaTex to IMG tag'''
 
     output_dir = kwargs.get("output_dir", None)
-    if not output_dir:
-        output_dir = getattr(
-            settings, "RELATE_LATEX_OUTPUT_PATH", None)
-    if not output_dir:
-        output_dir = os.path.join(
-            getattr(settings, "MEDIA_ROOT"),
-            DEFAULT_LATEX_IMAGE_FOLDER_NAME)
+    # if not output_dir:
+    #     output_dir = getattr(
+    #         settings, "RELATE_LATEX_OUTPUT_PATH", None)
+    # if not output_dir:
+    #     output_dir = os.path.join(
+    #         getattr(settings, "MEDIA_ROOT"),
+    #         "")
     tex_filename = kwargs.get("tex_filename", None)
     compiler = kwargs.get("compiler", "latex")
     image_format = kwargs.get("image_format", "")
@@ -933,20 +921,10 @@ def get_abstract_latex_log(log):
 
 # {{{ covert DVI to dataURI
 
-def get_file_data_uri(path):
-    '''Convert file to data URI'''
-    from base64 import b64encode
-    from mimetypes import guess_type
-    buf = _file_read(path)
-    mime_type = guess_type(path)[0]
-
-    return "data:%(mime_type)s;base64,%(b64)s" % {
-        "mime_type": mime_type,
-        "b64": b64encode(buf).decode(),
-    }
 
 
-ALLOWED_COMPILER = ['latex', 'pdflatex', 'xelatex']
+
+
 
 # def tex_to_data_uri(
 #         tex_body, output_dir=None, tex_filename="",
@@ -1129,6 +1107,61 @@ ALLOWED_COMPILER = ['latex', 'pdflatex', 'xelatex']
 #         })
 
 # }}}
+
+def make_tex_source(tex_body, tex_preamble="",
+                    tex_preamble_extra=""):
+
+    '''
+    Assemble tex source code.
+
+    If tex_body contain all basic elements of a full
+    latex document (\documentclass \begin{document}
+    and \end{document}, it will be treated as full
+    document.This makes it convenient for pgf/tikz
+    settings in preamble.
+    '''
+    assert isinstance(tex_body, unicode)
+
+    if re.search(IS_FULL_DOC_RE, tex_body):
+        tex_source = tex_body
+
+    else:
+        missing_ele = []
+        for ele, ele_re in DOC_ELEMENT_RE_LIST:
+            if not re.search(ele_re, tex_body):
+                missing_ele.append(ele)
+
+        if len(missing_ele) < 3:
+            raise ValueError("<pre>%s</pre>"
+                             % _("Your faied to submit a full latex document: "
+                                 " missing %s.")
+                             % ", ".join(missing_ele))
+        else:
+            if not tex_preamble:
+                tex_preamble = getattr(
+                    settings, "RELATE_LATEX_PREAMBLE",
+                    DEFAULT_LATEX_PREAMBLE)
+
+            tex_begin_document = getattr(
+                settings, "RELATE_LATEX_BEGIN_DOCUMENT",
+                r"\begin{document}")
+
+            tex_end_document = getattr(
+                settings, "RELATE_LATEX_END_DOCUMENT",
+                r"\end{document}")
+
+            tex_source = "%s" * 5 % (
+                tex_preamble, tex_preamble_extra,
+                tex_begin_document, tex_body, tex_end_document)
+
+    # make sure the latex source use empty style (no page mark)
+    if not re.search(PAGE_EMPTY_RE, tex_source):
+        tex_source = re.sub(BEGIN_DOCUMENT_RE,
+                            r"\n\1\\pagestyle{empty}\n\1\2",
+                            tex_source)
+
+    return tex_source
+
 
 
 # vim: foldmethod=marker
