@@ -92,8 +92,9 @@ def popen_wrapper(args, env,
         strerror = force_text(e.strerror, DEFAULT_LOCALE_ENCODING,
                               strings_only=True)
         six.reraise(os_err_exc_type, os_err_exc_type(
-                string_concat(_('Error executing'), '%s: %s')
+                string_concat(_('Error executing'), ' %s: %s')
                 % (args[0], strerror)), sys.exc_info()[2])
+
     output, errors = p.communicate()
     return (
         force_text(output, stdout_encoding, strings_only=True,
