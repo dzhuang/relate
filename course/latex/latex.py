@@ -42,6 +42,8 @@ from django.utils.encoding import (
     DEFAULT_LOCALE_ENCODING, force_text)
 from django.utils.functional import cached_property
 
+from .utils import popen_wrapper
+
 # {{{ Constants
 
 # from .utils import (
@@ -75,41 +77,6 @@ DEFAULT_IMG_HTML_CLASS = "img-responsive"
 
 # }}}
 
-
-# {{{ subprocess popen wrapper
-
-def popen_wrapper(args, env,
-                  enable_shell=False, os_err_exc_type=CommandError,
-                  stdout_encoding='utf-8'):
-    """
-    Extended from django.core.management.utils.popen_wrapper,
-    especially to solve UnicodeDecodeError raised on Windows
-    platform where the OS stdout is not utf-8.
-
-    Friendly wrapper around Popen, with env and shell options
-
-    Returns stdout output, stderr output and OS status code.
-    """
-
-    try:
-        p = Popen(args, shell=enable_shell, stdout=PIPE,
-                  stderr=PIPE, close_fds=os.name != 'nt', env=env)
-    except OSError as e:
-        strerror = force_text(e.strerror, DEFAULT_LOCALE_ENCODING,
-                              strings_only=True)
-        six.reraise(os_err_exc_type, os_err_exc_type(
-                string_concat(_('Error executing'), '%s: %s')
-                % (args[0], strerror)), sys.exc_info()[2])
-    output, errors = p.communicate()
-    return (
-        force_text(output, stdout_encoding, strings_only=True,
-                   errors='strict'),
-        force_text(errors, DEFAULT_LOCALE_ENCODING,
-                   strings_only=True, errors='replace'),
-        p.returncode
-    )
-
-
 def get_latex2img_env(bin_path_list):
     """
     Prepend latex_bin_path and imagemagick_bin_path to
@@ -121,28 +88,6 @@ def get_latex2img_env(bin_path_list):
         if bin_path:
             env["PATH"] = bin_path + os.pathsep + env["PATH"]
     return env
-
-
-def get_version(tool_cmd, enable_shell, env):
-    # This will output system-encoded bytestrings instead of UTF-8,
-    # when looking up the version. It's especially a problem on Windows.
-    out, err, status = popen_wrapper(
-        [tool_cmd, '--version'],
-        enable_shell=enable_shell,
-        stdout_encoding=DEFAULT_LOCALE_ENCODING,
-        env=env
-    )
-    m = re.search(r'(\d+)\.(\d+)\.?(\d+)?', out)
-    if m:
-        return tuple(int(d) for d in m.groups() if d is not None)
-    else:
-        raise CommandError(
-            _("Unable to run %(cmd)s. Is %(tool)s installed "
-              "or has its path correctly configured "
-              "in local_settings.py?")
-            % {"cmd": tool_cmd,
-               "tool": CMD_NAME_DICT[tool_cmd],
-               })
 
 # }}}
 
@@ -310,11 +255,16 @@ class Tex2ImgBase(object):
 
         if output_dir:
             output_dir = output_dir.strip()
+            print output_dir, '-------output_dir'
         if not output_dir:
             raise ValueError(
                 _("Param output_dir must be specified"))
         else:
-            if not os.path.isdir(output_dir):
+            try:
+                if not os.path.exists(output_dir)\
+                        or not os.path.isdir(output_dir):
+                    os.makedirs(output_dir)
+            except Exception:
                 raise ValueError(
                     _("Param output_dir '%s' is not a valid path")
                     % output_dir)
@@ -358,33 +308,6 @@ class Tex2ImgBase(object):
                 "%s_%s.log" % (self.basename, self.tex_compiler)
         )
 
-        # Valiate if the required tools are installed or configured
-        # through checking the version.
-        for toolcmd in [self.tex_compiler, self.image_converter]:
-            tool_version = self._get_version(toolcmd)
-            if not tool_version:
-                raise CommandError(
-                    _("Unable to run %(cmd)s. Is %(tool)s installed "
-                      "or has its path correctly configured "
-                      "in local_settings.py?")
-                    % {"cmd": toolcmd,
-                       "tool": CMD_NAME_DICT[toolcmd],
-                       })
-
-    def _get_version(self, cmd):
-        # This will output system-encoded bytestrings instead of UTF-8,
-        # when looking up the version. It's especially a problem on Windows.
-        out, err, status = popen_wrapper(
-            [cmd, '--version'],
-            enable_shell=self.subprocess_enable_shell,
-            stdout_encoding=DEFAULT_LOCALE_ENCODING,
-            env=self._env
-        )
-        m = re.search(r'(\d+)\.(\d+)\.?(\d+)?', out)
-        if m:
-            return tuple(int(d) for d in m.groups() if d is not None)
-
-
     def get_tex_compile_cmdline(self, tex_path):
         raise NotImplementedError()
 
@@ -407,6 +330,8 @@ class Tex2ImgBase(object):
 
         cmdline = self.get_tex_compile_cmdline(tex_path)
 
+        output, error, status = popen_wrapper(cmdline, enable_shell=self.subprocess_enable_shell, env=self._env)
+
         try:
             tex_compile_process = Popen(
                 cmdline,
@@ -417,8 +342,6 @@ class Tex2ImgBase(object):
             )
             [stdout, stderr] = tex_compile_process.communicate()
             tex_compile_process.wait()
-            print stderr
-
         except OSError as err:
             if err.errno != errno.ENOENT:
                 raise
@@ -457,20 +380,9 @@ class Tex2ImgBase(object):
 
         cmdline = self.get_image_convert_cmdline(compiled_output_path, image_path)
 
-        try:
-            output, error, status = popen_wrapper(cmdline, enable_shell=self.subprocess_enable_shell, env=self._env)
-        except OSError as err:
-            # if err.errno != errno.ENOENT:
-            #     raise
-            raise OSError(_("Failed to run '%s' cmd. "
-                            "Are you sure '%s' is installed "
-                            "or it\'s is properly "
-                            "configured in local_settings.py?")
-                          % (cmdline, self.image_converter_name)
-                          )
-        else:
-            if status != 0:
-                raise RuntimeError(error)
+        output, error, status = popen_wrapper(cmdline, enable_shell=self.subprocess_enable_shell, env=self._env)
+        if status != 0:
+            raise RuntimeError(error)
         output_image_path = os.path.join(
                 self.output_dir,
                 "%s.%s" % (self.basename, self.image_format))
@@ -625,7 +537,7 @@ class TexPdfImageBase(Tex2ImgBase):
 
 
 class Pdflatex2Png(TexPdfImageBase):
-    tex_compiler = "pdflatex"
+    tex_compiler = "pdflatexx"
     def get_tex_compile_cmdline(self, tex_path):
         return ['latexmk',
                 '-pdf',
@@ -731,14 +643,8 @@ DOC_ELEMENT_RE_LIST = [(r"'\documentclass'", re.compile(r"(?:^|\n)\s*\\documentc
 def tex_to_img_tag(tex_source, *args, **kwargs):
     '''Convert LaTex to IMG tag'''
 
-    output_dir = kwargs.get("output_dir", None)
-    # if not output_dir:
-    #     output_dir = getattr(
-    #         settings, "RELATE_LATEX_OUTPUT_PATH", None)
-    # if not output_dir:
-    #     output_dir = os.path.join(
-    #         getattr(settings, "MEDIA_ROOT"),
-    #         "")
+    output_dir = kwargs.get("output_dir")
+
     tex_filename = kwargs.get("tex_filename", None)
     compiler = kwargs.get("compiler", "latex")
     image_format = kwargs.get("image_format", "")
@@ -754,7 +660,7 @@ def tex_to_img_tag(tex_source, *args, **kwargs):
 
     if html_class_extra:
         if isinstance(html_class_extra, list):
-            html_extra_class = " ".join (html_class_extra)
+            html_class_extra = " ".join (html_class_extra)
         elif not isinstance(html_class_extra, six.string_types):
             raise ValueError(
                 _('"html_class_extra" must be a string or a list'))
@@ -853,6 +759,8 @@ def get_abstract_latex_log(log):
                 and
                 line.strip() != ""))
     return msg
+
+
 
 
 # {{{ covert tex to dvi format

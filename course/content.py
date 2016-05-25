@@ -772,6 +772,11 @@ def markup_to_html(course, repo, commit_sha, text, reverse_func=None,
 
     from course.latex.latex import tex_to_img_tag
 
+    def returnwarning(caller, *args, **kwargs):
+        return  "<div class='alert alert-danger'>%s</div>" % _(
+            "RELATE_LATEX_TO_IMAGE_ENABLED is set to False, "
+            "no image will be generated.")
+
     def jinja_tex_to_img_tag(caller, *args, **kwargs):
         kwargs["imagemagick_bin_path"]  = getattr(
             settings, "RELATE_IMAGEMAGICK_BIN_PATH", None)
@@ -781,21 +786,24 @@ def markup_to_html(course, repo, commit_sha, text, reverse_func=None,
             settings, "LATEX_IMAGE_SAVING_FOLDER_PATH",
             os.path.join(settings.MEDIA_ROOT, "latex_image"))
         if course:
-            kwargs["output_path"] = os.path.join(
+            kwargs["output_dir"] = os.path.join(
                 default_saving_folder, course.identifier
             )
         else:
-            kwargs["output_path"] = default_saving_folder
+            kwargs["output_dir"] = default_saving_folder
         return tex_to_img_tag(caller(), *args, **kwargs)
 
     def jinja_tex_to_img_tag_failed(caller, *args, **kwargs):
         return "<img src='' alt='img' />"
 
-    #env.globals["latex"] = jinja_tex2imgtag
-
     template = env.from_string(text)
     #try:
-    env.globals["latex"] = jinja_tex_to_img_tag
+    latex2image_enabled = getattr(settings, "RELATE_LATEX_TO_IMAGE_ENABLED", False)
+    if latex2image_enabled:
+        env.globals["latex"] = jinja_tex_to_img_tag
+    else:
+        env.globals["latex"] = returnwarning
+
     text = template.render(**jinja_env)
 #except:
         # env.globals["latex"] = jinja_tex_to_img_tag_failed

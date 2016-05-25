@@ -46,7 +46,7 @@ from django.utils.functional import cached_property
 CMD_NAME_DICT = {
     "latex": "latex",
     "xelatex": "latex",
-    "pdflatexx": "latex",
+    "pdflatex": "latex",
     "latexmk": "latex",
     "convert": "ImageMagick",
     "dvipng": "latex",
@@ -117,27 +117,27 @@ def get_latex2img_env(bin_path_list):
             env["PATH"] = bin_path + os.pathsep + env["PATH"]
     return env
 
-
-def get_version(tool_cmd, enable_shell, env):
-    # This will output system-encoded bytestrings instead of UTF-8,
-    # when looking up the version. It's especially a problem on Windows.
-    out, err, status = popen_wrapper(
-        [tool_cmd, '--version'],
-        enable_shell=enable_shell,
-        stdout_encoding=DEFAULT_LOCALE_ENCODING,
-        env=env
-    )
-    m = re.search(r'(\d+)\.(\d+)\.?(\d+)?', out)
-    if m:
-        return tuple(int(d) for d in m.groups() if d is not None)
-    else:
-        raise CommandError(
-            _("Unable to run %(cmd)s. Is %(tool)s installed "
-              "or has its path correctly configured "
-              "in local_settings.py?")
-            % {"cmd": tool_cmd,
-               "tool": CMD_NAME_DICT[tool_cmd],
-               })
+#
+# def get_version(tool_cmd, enable_shell, env):
+#     # This will output system-encoded bytestrings instead of UTF-8,
+#     # when looking up the version. It's especially a problem on Windows.
+#     out, err, status = popen_wrapper(
+#         [tool_cmd, '--version'],
+#         enable_shell=enable_shell,
+#         stdout_encoding=DEFAULT_LOCALE_ENCODING,
+#         env=env
+#     )
+#     m = re.search(r'(\d+)\.(\d+)\.?(\d+)?', out)
+#     if m:
+#         return tuple(int(d) for d in m.groups() if d is not None)
+#     else:
+#         raise CommandError(
+#             _("Unable to run %(cmd)s. Is %(tool)s installed "
+#               "or has its path correctly configured "
+#               "in local_settings.py?")
+#             % {"cmd": tool_cmd,
+#                "tool": CMD_NAME_DICT[tool_cmd],
+#                })
 
 # }}}
 
