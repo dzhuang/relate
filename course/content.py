@@ -968,7 +968,7 @@ def parse_date_spec(course, datespec, vctx=None, location=None):
     while True:
         parsed_one = False
         for pp_class in DATESPEC_POSTPROCESSORS:
-            datespec, postproc = pp_class.parse(datespec)
+            datespec, postproc = pp_class.parse_temp(datespec)
             if postproc is not None:
                 parsed_one = True
                 postprocs.insert(0, postproc)

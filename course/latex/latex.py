@@ -43,6 +43,7 @@ from django.utils.encoding import (
 from django.utils.functional import cached_property
 
 from .utils import popen_wrapper
+from .parse import TexDoc
 
 # {{{ Constants
 
@@ -644,7 +645,6 @@ def tex_to_img_tag(tex_source, *args, **kwargs):
     '''Convert LaTex to IMG tag'''
 
     output_dir = kwargs.get("output_dir")
-
     tex_filename = kwargs.get("tex_filename", None)
     compiler = kwargs.get("compiler", "latex")
     image_format = kwargs.get("image_format", "")
@@ -654,6 +654,7 @@ def tex_to_img_tag(tex_source, *args, **kwargs):
     tex_preamble_extra = kwargs.get("tex_preamble_extra", "")
     overwrite = kwargs.get("overwrite", False)
     html_class_extra = kwargs.get("html_class_extra", "")
+    standalone = kwargs.get("standalone", True)
     alt = kwargs.get("alt", "")
     imagemagick_bin_path = kwargs.get("imagemagick_bin_path", "")
     latex_bin_path = kwargs.get("latex_bin_path", "")
@@ -669,8 +670,18 @@ def tex_to_img_tag(tex_source, *args, **kwargs):
 
     tex2img_class = get_tex2img_class(compiler, image_format)
 
+    texdoc = TexDoc(tex_source, preamble=tex_preamble, preamble_extra=tex_preamble_extra, empty_pagestyle=standalone)
+
+    # remove source_code because mathjax will render it.
+    # if not alt:
+    #     alt = texdoc.document
+    #
+    # if alt:
+    #     from django.utils.html import escape
+    #     alt = "alt='<pre>%s</pre>'" % alt.strip().replace("\n","")
+
     latex2img = tex2img_class(
-        tex_source=tex_source,
+        tex_source=texdoc.as_latex(),
         tex_filename=tex_filename,
         output_dir=output_dir,
         image_format=image_format,
