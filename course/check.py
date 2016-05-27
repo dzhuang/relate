@@ -12,7 +12,7 @@ import re
 class Tags(DjangoTags):
     relate_course_tag = 'relate_course_tag'
 
-@register(Tags.relate_course_tag)
+@register(Tags.relate_course_tag, deploy=True)
 def latex2image_bin_check(app_configs, **kwargs):
     if not getattr(settings, "RELATE_LATEX_TO_IMAGE_ENABLED", False):
         return []
