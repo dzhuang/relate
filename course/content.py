@@ -770,9 +770,11 @@ def markup_to_html(course, repo, commit_sha, text, reverse_func=None,
 
     env.globals["parse_date_spec"] = parse_date_spec_jinja
 
-    from course.latex.latex import tex_to_img_tag
+    from course.latex import tex_to_img_tag
 
-    def returnwarning(caller, *args, **kwargs):
+    # {{{
+
+    def latex_not_enabled_warning(caller, *args, **kwargs):
         return  "<div class='alert alert-danger'>%s</div>" % _(
             "RELATE_LATEX_TO_IMAGE_ENABLED is set to False, "
             "no image will be generated.")
@@ -797,18 +799,27 @@ def markup_to_html(course, repo, commit_sha, text, reverse_func=None,
         return "<img src='' alt='img' />"
 
     template = env.from_string(text)
-    #try:
-    latex2image_enabled = getattr(settings, "RELATE_LATEX_TO_IMAGE_ENABLED", False)
+    latex2image_enabled = getattr(
+        settings, "RELATE_LATEX_TO_IMAGE_ENABLED", False)
     if latex2image_enabled:
-        env.globals["latex"] = jinja_tex_to_img_tag
+        try:
+            env.globals["latex"] = jinja_tex_to_img_tag
+            text = template.render(**jinja_env)
+        except:
+            if validate_only:
+                raise
+            else:
+                # fail silently
+                text = template.render(**jinja_env)
     else:
-        env.globals["latex"] = returnwarning
+        if not validate_only:
+            env.globals["latex"] = latex_not_enabled_warning
+        else:
+            raise ValueError(_(
+            "RELATE_LATEX_TO_IMAGE_ENABLED is set to False, "
+            "no image will be generated."))
+        text = template.render(**jinja_env)
 
-    text = template.render(**jinja_env)
-#except:
-        # env.globals["latex"] = jinja_tex_to_img_tag_failed
-        # text = template.render(**jinja_env)
-        #raise
 
     # }}}
 
@@ -968,7 +979,7 @@ def parse_date_spec(course, datespec, vctx=None, location=None):
     while True:
         parsed_one = False
         for pp_class in DATESPEC_POSTPROCESSORS:
-            datespec, postproc = pp_class.parse_temp(datespec)
+            datespec, postproc = pp_class.parse(datespec)
             if postproc is not None:
                 parsed_one = True
                 postprocs.insert(0, postproc)

@@ -27,19 +27,15 @@ THE SOFTWARE.
 import six
 import os
 import sys
-import re
-import errno
+import ply.lex
 from subprocess import Popen, PIPE
-import shutil
-from hashlib import md5
 
-from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import (
     ugettext as _, string_concat)
 from django.core.management.base import CommandError
 from django.utils.encoding import (
     DEFAULT_LOCALE_ENCODING, force_text)
-from django.utils.functional import cached_property
+
 
 # {{{ Constants
 
@@ -62,19 +58,12 @@ ALLOWED_COMPILER_FORMAT_COMBINATION = (
     ("xelatex", "png")
 )
 
-LATEX_ERR_LOG_BEGIN_LINE_STARTS = "\n! "
-LATEX_ERR_LOG_END_LINE_STARTS = "\nHere is how much of TeX's memory"
-
-DEFAULT_IMG_HTML_CLASS = "img-responsive"
-
 # }}}
 
 
 # {{{ subprocess popen wrapper
 
-def popen_wrapper(args, env,
-                  enable_shell=False, os_err_exc_type=CommandError,
-                  stdout_encoding='utf-8'):
+def popen_wrapper(args, os_err_exc_type=CommandError, stdout_encoding='utf-8', **kwargs):
     """
     Extended from django.core.management.utils.popen_wrapper,
     especially to solve UnicodeDecodeError raised on Windows
@@ -83,11 +72,12 @@ def popen_wrapper(args, env,
     Friendly wrapper around Popen, with env and shell options
 
     Returns stdout output, stderr output and OS status code.
+    :param **kwargs:
     """
 
     try:
-        p = Popen(args, shell=enable_shell, stdout=PIPE,
-                  stderr=PIPE, close_fds=os.name != 'nt', env=env)
+        p = Popen(args, stdout=PIPE,
+                  stderr=PIPE, close_fds=os.name != 'nt', **kwargs)
     except OSError as e:
         strerror = force_text(e.strerror, DEFAULT_LOCALE_ENCODING,
                               strings_only=True)
@@ -114,7 +104,7 @@ def prepend_bin_path_to_subprocess_env(bin_path):
     if isinstance(bin_path, six.string_types):
         env["PATH"] = bin_path + os.pathsep + env["PATH"]
 
-    if isinstance(list, bin_path):
+    if isinstance(bin_path, list):
         for bin_path in bin_path:
             if bin_path:
                 env["PATH"] = bin_path + os.pathsep + env["PATH"]
@@ -163,9 +153,13 @@ def get_file_data_uri(file_path):
 # }}}
 
 
-# DEFAULT_LATEX_IMAGE_FOLDER_NAME = getattr(
-#     settings, "RELATE_LATEX_IMAGE_FOLDER_NAME", "latex_image")
+# }}}
 
+
+# {{{ get error log abstracted
+
+LATEX_ERR_LOG_BEGIN_LINE_STARTS = "\n! "
+LATEX_ERR_LOG_END_LINE_STARTS = "\nHere is how much of TeX's memory"
 LATEX_LOG_OMIT_LINE_STARTS = (
     "See the LaTeX manual or LaTeX",
     "Type  H <return>  for",
@@ -173,29 +167,8 @@ LATEX_LOG_OMIT_LINE_STARTS = (
     # more
 )
 
-
-# }}}
-
-# {{{ latex code re
-
-PAGE_EMPTY_RE = re.compile(r"\n[^%]*\\pagestyle\{empty\}")
-BEGIN_DOCUMENT_RE = re.compile(r"\n(\s*)(\\begin\{document\})")
-TIKZ_PGF_RE = re.compile(r"\n[^%]*\\begin\{(?:tikzpicture|pgfpicture)\}")
-
-IS_FULL_DOC_RE = re.compile(r"(?:^|\n)\s*\\documentclass(?:.|\n)*"
-                            r"\n\s*\\begin\{document\}(?:.|\n)*"
-                            r"\n\s*\\end\{document\}")
-
-DOC_ELEMENT_RE_LIST = [(r"'\documentclass'", re.compile(r"(?:^|\n)\s*\\documentclass")),
-                       (r"'\begin{document}'", re.compile(r"\n\s*\\begin\{document\}")),
-                       (r"'\end{document}'", re.compile(r"\n\s*\\end\{document\}"))]
-
-# }}}
-
-
 def get_abstract_latex_log(log):
     '''abstract error msg from latex compilation log'''
-
     msg = log.split(LATEX_ERR_LOG_BEGIN_LINE_STARTS)[1]\
         .split(LATEX_ERR_LOG_END_LINE_STARTS)[0]
 
@@ -207,9 +180,8 @@ def get_abstract_latex_log(log):
                 line.strip() != ""))
     return msg
 
+# }}}
 
-
-import ply.lex
 
 # {{{ strip comments from source
 
@@ -308,5 +280,40 @@ def strip_comments(source):
 
 # }}}
 
+# {{{ remove redundant strings
+
+def strip_spaces(s, allow_single_empty_line=False):
+    """
+    strip spaces in s, so that the result will be
+    considered same although new empty lines or
+    extra spaces are added. Especially for generating
+    md5 of the string.
+    :param s: string. The source code
+    :param allow_single_empty_line: bool. If True,
+    single empty line will be preserved, this is need
+    for latex document body. If False, all empty line
+    will be removed.
+    :return: string.
+    """
+
+    # strip all lines
+    s = "\n".join([l.strip() for l in s.split("\n")])
+
+    if not allow_single_empty_line:
+        while "\n\n" in s:
+            s = s.replace('\n\n', '\n')
+    else:
+        while "\n\n\n" in s:
+            s = s.replace('\n\n\n', '\n\n')
+
+    # remove redundant white spaces and tabs
+    pattern_list = ['  ', '\t ', '\t\t', ' \t']
+    for pattern in pattern_list:
+        while pattern in s:
+            s = s.replace(pattern, ' ')
+
+    return s
+
+## }}}
 
 # vim: foldmethod=marker

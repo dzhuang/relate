@@ -34,12 +34,9 @@ def latex2image_bin_check(app_configs, **kwargs):
         out = ""
         strerror = ""
         try:
-            out, err, status = popen_wrapper(
-                [cmd, '--version'],
-                enable_shell=enable_shell,
-                stdout_encoding=DEFAULT_LOCALE_ENCODING,
-                env=RELATE_LATEX_TO_IMAGE_ENV
-            )
+            out, err, status = popen_wrapper([cmd, '--version'], stdout_encoding=DEFAULT_LOCALE_ENCODING,
+                                             shell=enable_shell,
+                                             env=RELATE_LATEX_TO_IMAGE_ENV)
         except CommandError as e:
             strerror = e.__str__()
 
