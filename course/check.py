@@ -2,7 +2,7 @@ from django.core.checks import Error, Warning, Critical, Info, register
 from django.core.checks import Tags as DjangoTags
 from django.conf import settings
 from course.latex.utils import (
-    CMD_NAME_DICT, get_latex2img_env, popen_wrapper)
+    CMD_NAME_DICT, prepend_bin_path_to_subprocess_env, popen_wrapper)
 from django.core.management.base import CommandError
 from django.utils.encoding import (
     DEFAULT_LOCALE_ENCODING, force_text)
@@ -22,8 +22,7 @@ def latex2image_bin_check(app_configs, **kwargs):
     imagemagick_bin_path = getattr(settings, "RELATE_IMAGEMAGICK_BIN_PATH", "")
     latex_bin_path = getattr(settings, "RELATE_LATEX_BIN_PATH", "")
 
-    RELATE_LATEX_TO_IMAGE_ENV = get_latex2img_env(
-        [imagemagick_bin_path, latex_bin_path])
+    RELATE_LATEX_TO_IMAGE_ENV = prepend_bin_path_to_subprocess_env([imagemagick_bin_path, latex_bin_path])
 
     for cmd in CMD_NAME_DICT:
 
