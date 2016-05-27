@@ -787,12 +787,12 @@ def markup_to_html(course, repo, commit_sha, text, reverse_func=None,
         default_saving_folder = getattr(
             settings, "LATEX_IMAGE_SAVING_FOLDER_PATH",
             os.path.join(settings.MEDIA_ROOT, "latex_image"))
-        if course:
-            kwargs["output_dir"] = os.path.join(
-                default_saving_folder, course.identifier
-            )
-        else:
-            kwargs["output_dir"] = default_saving_folder
+        # if course:
+        #     kwargs["output_dir"] = os.path.join(
+        #         default_saving_folder, course.identifier
+        #     )
+        # else:
+        kwargs["output_dir"] = default_saving_folder
         return tex_to_img_tag(caller(), *args, **kwargs)
 
     def jinja_tex_to_img_tag_failed(caller, *args, **kwargs):

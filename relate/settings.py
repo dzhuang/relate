@@ -283,12 +283,12 @@ if "RELATE_EMAIL_APPELATION_PRIORITY_LIST" in local_settings:
     assert isinstance(
         local_settings["RELATE_EMAIL_APPELATION_PRIORITY_LIST"], list)
 
-# This makes sure RELATE_LATEX_TO_IMAGE_FORMAT is allowed format
-if "RELATE_LATEX_TO_IMAGE_FORMAT" in local_settings:
-    from course.latex_utils import ALLOWED_LATEX2IMG_FORMAT
-    assert (
-        local_settings["RELATE_LATEX_TO_IMAGE_FORMAT"]
-        in ALLOWED_LATEX2IMG_FORMAT)
+# # This makes sure RELATE_LATEX_TO_IMAGE_FORMAT is allowed format
+# if "RELATE_LATEX_TO_IMAGE_FORMAT" in local_settings:
+#     from course.latex_utils import ALLOWED_LATEX2IMG_FORMAT
+#     assert (
+#         local_settings["RELATE_LATEX_TO_IMAGE_FORMAT"]
+#         in ALLOWED_LATEX2IMG_FORMAT)
 
 
 # vim: foldmethod=marker
