@@ -279,8 +279,7 @@ class Tex2ImgBase(object):
             return compiled_file_path
         else:
             raise RuntimeError(
-                _('No %s file was produced.'),
-                self.mid_step_media_type)
+                _('No %s file was produced.') %  self.mid_step_media_type)
 
     def _get_converted_image(self):
         compiled_output_path = self._get_mid_step_media()
