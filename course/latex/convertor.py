@@ -259,6 +259,7 @@ class Tex2ImgBase(object):
             "." + self.mid_step_media_type.replace(".", "").lower())
 
         cmdline = self.get_tex_compile_cmdline(tex_path)
+        print self._env["PATH"]
 
         output, error, status = popen_wrapper(
             cmdline, env=self._env, shell=self.subprocess_enable_shell,
