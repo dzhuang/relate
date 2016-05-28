@@ -475,12 +475,8 @@ class Pdflatex2Png(TexPdfImageBase):
     tex_compiler = "pdflatexx"
     def get_tex_compile_cmdline(self, tex_path):
         return ['latexmk',
+                '-pdflatex="pdflatex -no-shell-escape -interaction=batchmode -halt-on-error",'
                 '-pdf',
-                '-pdflatex=pdflatex %O '
-                '-no-shell-escape '
-                '-interaction=batchmode '
-                '-halt-on-error '
-                '%S',
                 tex_path
                 ]
 
