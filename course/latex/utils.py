@@ -28,6 +28,7 @@ import six
 import os
 import sys
 import ply.lex
+from hashlib import md5
 from subprocess import Popen, PIPE
 
 from django.utils.translation import (
@@ -38,15 +39,6 @@ from django.utils.encoding import (
 
 
 # {{{ Constants
-
-CMD_NAME_DICT = {
-    "latex": "latex",
-    "xelatex": "latex",
-    "pdflatex": "latex",
-    "latexmk": "latex",
-    "convert": "ImageMagick",
-    "dvipng": "latex",
-    "dvisvgm": "latex"}
 
 ALLOWED_COMPILER = ['latex', 'pdflatex', 'xelatex']
 ALLOWED_LATEX2IMG_FORMAT = ['png', 'svg']
@@ -69,10 +61,9 @@ def popen_wrapper(args, os_err_exc_type=CommandError, stdout_encoding='utf-8', *
     especially to solve UnicodeDecodeError raised on Windows
     platform where the OS stdout is not utf-8.
 
-    Friendly wrapper around Popen, with env and shell options
+    Friendly wrapper around Popen
 
     Returns stdout output, stderr output and OS status code.
-    :param **kwargs:
     """
 
     try:
@@ -94,27 +85,24 @@ def popen_wrapper(args, os_err_exc_type=CommandError, stdout_encoding='utf-8', *
         p.returncode
     )
 
-
-def prepend_bin_path_to_subprocess_env(bin_path):
-    """
-    Prepend bin path to server env $PATH for www-data
-    user when execute a subprocess
-    """
-    env = dict(os.environ)
-    if isinstance(bin_path, six.string_types):
-        env["PATH"] = bin_path + os.pathsep + env["PATH"]
-
-    if isinstance(bin_path, list):
-        for bin_path in bin_path:
-            if bin_path:
-                env["PATH"] = bin_path + os.pathsep + env["PATH"]
-
-    return env
-
 # }}}
 
 
 # {{{ file read and write
+
+def get_basename_or_md5(filename, s):
+    """
+    :return: the basename of `filename` if `filename` is not empty,
+    else, return the md5 of string `s`.
+    """
+    if filename:
+        basename, ext = os.path.splitext(filename)
+    else:
+        if not s:
+            return None
+        basename = md5(s).hexdigest()
+    return basename
+
 
 def _file_read(filename):
     '''Read the content of a file and close it properly.'''
@@ -149,9 +137,6 @@ def get_file_data_uri(file_path):
         "mime_type": mime_type,
         "b64": b64encode(buf).decode(),
     }
-
-# }}}
-
 
 # }}}
 
@@ -280,6 +265,7 @@ def strip_comments(source):
 
 # }}}
 
+
 # {{{ remove redundant strings
 
 def strip_spaces(s, allow_single_empty_line=False):
@@ -315,5 +301,17 @@ def strip_spaces(s, allow_single_empty_line=False):
     return s
 
 ## }}}
+
+
+def get_all_indirect_subclasses(cls):
+    all_subcls = []
+
+    for subcls in cls.__subclasses__():
+        if not subcls.__subclasses__():
+            # has no child
+            all_subcls.append(subcls)
+        all_subcls.extend(get_all_indirect_subclasses(subcls))
+
+    return list(set(all_subcls))
 
 # vim: foldmethod=marker

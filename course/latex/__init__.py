@@ -25,33 +25,38 @@ THE SOFTWARE.
 """
 
 import six
+import re
+
 from django.utils.translation import ugettext as _
 
-from course.latex.convertor import get_tex2img_class
+from course.latex.converter import get_tex2img_class
 from course.latex.latex import TexDoc
 
+TIKZ_PGF_RE = re.compile(r"\\begin\{(?:tikzpicture|pgfpicture)\}")
 DEFAULT_IMG_HTML_CLASS = "img-responsive"
 
 
 def tex_to_img_tag(tex_source, *args, **kwargs):
     '''Convert LaTex to IMG tag'''
 
-    output_dir = kwargs.get("output_dir")
-    tex_filename = kwargs.get("tex_filename", None)
     compiler = kwargs.get("compiler", None)
     if not compiler:
         raise ValueError(_("'compiler' must be specified."))
+
     image_format = kwargs.get("image_format", "")
     if not image_format:
         raise ValueError(_("'image_format' must be specified."))
+
+    output_dir = kwargs.get("output_dir")
+
+    tex_filename = kwargs.get("tex_filename", None)
     tex_preamble = kwargs.get("tex_preamble", "")
     tex_preamble_extra = kwargs.get("tex_preamble_extra", "")
-    overwrite = kwargs.get("overwrite", False)
+
+    force_regenerate = kwargs.get("force_regenerate", False)
     html_class_extra = kwargs.get("html_class_extra", "")
     empty_pagestyle = kwargs.get("empty_pagestyle", True)
     alt = kwargs.get("alt", None)
-    imagemagick_bin_path = kwargs.get("imagemagick_bin_path", "")
-    latex_bin_path = kwargs.get("latex_bin_path", "")
 
     if html_class_extra:
         if isinstance(html_class_extra, list):
@@ -62,11 +67,20 @@ def tex_to_img_tag(tex_source, *args, **kwargs):
         html_class = "%s %s" %(DEFAULT_IMG_HTML_CLASS, html_class_extra)
     else: html_class = DEFAULT_IMG_HTML_CLASS
 
-    tex2img_class = get_tex2img_class(compiler, image_format)
-
     texdoc = TexDoc(
         tex_source, preamble=tex_preamble,
         preamble_extra=tex_preamble_extra, empty_pagestyle=empty_pagestyle)
+
+    # empty document
+    if not texdoc.document.strip():
+        return ""
+
+    if (compiler == "latex"
+        and image_format == "png"
+        and re.search(TIKZ_PGF_RE, tex_source)):
+        image_format = "svg"
+
+    tex2img_class = get_tex2img_class(compiler, image_format)
 
     if not alt:
         alt = texdoc.document
@@ -78,17 +92,16 @@ def tex_to_img_tag(tex_source, *args, **kwargs):
     latex2img = tex2img_class(
         tex_source=texdoc.as_latex(),
         tex_filename=tex_filename,
-        output_dir=output_dir,
-        image_format=image_format,
-        latex_bin_path=latex_bin_path,
-        imagemagick_bin_path=imagemagick_bin_path,
+        output_dir=output_dir
         )
 
     return (
         "<img src='%(src)s' "
         "class='%(html_class)s' %(alt)s>"
         % {
-            "src": latex2img.get_data_uri_cached(overwrite),
+            "src": latex2img.get_data_uri_cached(force_regenerate),
             "html_class": html_class,
             "alt": alt,
         })
+
+# vim: foldmethod=marker
