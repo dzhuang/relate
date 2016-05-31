@@ -26,6 +26,7 @@ THE SOFTWARE.
 
 import six
 import os
+import platform
 import sys
 import shutil
 import re
@@ -213,7 +214,7 @@ class Dvipng(Imageconverter, TexCompilerBase):
     output_format = "png"
     def get_converter_cmdline(
             self, input_filepath, output_filepath):
-        return ['dvipng',
+        return [self.bin_path,
                 '-o', output_filepath,
                 '-pp', '1',
                 '-T', 'tight',
@@ -230,7 +231,7 @@ class Dvisvg(Imageconverter, TexCompilerBase):
     output_format = "svg"
     def get_converter_cmdline(
             self, input_filepath, output_filepath):
-        return[self.cmd,
+        return[self.bin_path,
             '--no-fonts',
             '-o', output_filepath,
             input_filepath]
@@ -243,9 +244,12 @@ class ImageMagick(Imageconverter):
 
     # 'shell=True' is strongly discouraged for python subprocess
     # but it is needed for imagemagick to work in a subprocess.
+    # on Windows.
     # Will there be any security hazard for that? If yes, how to
     # avoid it?
-    subprocess_enable_shell = True
+    subprocess_enable_shell = False
+    # if platform.system().lower().startswith("win"):
+    #     subprocess_enable_shell = True
 
     def __init__(self):
         self.name = self.__class__.__name__
@@ -257,7 +261,7 @@ class ImageMagick(Imageconverter):
 
     def get_converter_cmdline(
             self, input_filepath, output_filepath):
-        return [self.cmd,
+        return [self.bin_path,
                 '-density', '96',
                 '-quality', '85',
                 '-trim',
