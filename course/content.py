@@ -31,7 +31,6 @@ import re
 import datetime
 import six
 import sys
-import os
 
 from django.utils.timezone import now
 from django.core.exceptions import ObjectDoesNotExist, ImproperlyConfigured
@@ -780,9 +779,10 @@ def markup_to_html(course, repo, commit_sha, text, reverse_func=None,
             "no image will be generated.")
 
     def jinja_tex_to_img_tag(caller, *args, **kwargs):
+        from os.path import join
         default_saving_folder = getattr(
             settings, "LATEX_IMAGE_SAVING_FOLDER_PATH",
-            os.path.join(settings.MEDIA_ROOT, "latex_image"))
+            join(settings.MEDIA_ROOT, "latex_image"))
         kwargs["output_dir"] = default_saving_folder
         return tex_to_img_tag(caller(), *args, **kwargs)
 
