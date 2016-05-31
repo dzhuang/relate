@@ -62,7 +62,6 @@ class CommandBase(object):
 
     required_version = ""
     bin_path = ""
-    subprocess_enable_shell = False
 
     def check(self):
         error = ""
@@ -72,7 +71,6 @@ class CommandBase(object):
         try:
             out, err, status = popen_wrapper(
                 [self.bin_path, '--version'],
-                shell=self.subprocess_enable_shell,
                 stdout_encoding=DEFAULT_LOCALE_ENCODING
             )
         except CommandError as e:
@@ -195,7 +193,7 @@ class Imageconverter(CommandBase):
     def __init__(self):
         bin_path_dir = getattr(
             settings, "RELATE_%s_BIN_DIR" % self.name.upper(),
-            getattr(settings, "RELATE_LATEX_BIN_DIR", "")
+            ""
         )
         self.bin_path = os.path.join(bin_path_dir,
                                      self.cmd.lower())
@@ -242,22 +240,14 @@ class ImageMagick(Imageconverter):
     cmd = "convert"
     output_format = "png"
 
-    # 'shell=True' is strongly discouraged for python subprocess
-    # but it is needed for imagemagick to work in a subprocess.
-    # on Windows.
-    # Will there be any security hazard for that? If yes, how to
-    # avoid it?
-    subprocess_enable_shell = False
-    # if platform.system().lower().startswith("win"):
-    #     subprocess_enable_shell = True
 
-    def __init__(self):
-        self.name = self.__class__.__name__
-        bin_path_dir = getattr(
-            settings, "RELATE_%s_BIN_DIR" % self.name.upper(),
-            ""
-        )
-        super(ImageMagick,self).__init__()
+    # def __init__(self):
+    #     self.name = self.__class__.__name__
+    #     bin_path_dir = getattr(
+    #         settings, "RELATE_%s_BIN_DIR" % self.name.upper(),
+    #         ""
+    #     )
+    #     super(ImageMagick,self).__init__()
 
     def get_converter_cmdline(
             self, input_filepath, output_filepath):
@@ -457,7 +447,6 @@ class Tex2ImgBase(object):
 
         output, error, status = popen_wrapper(
             cmdline,
-            shell=self.converter.subprocess_enable_shell,
             cwd=self.working_dir
         )
 
