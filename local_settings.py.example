@@ -145,43 +145,34 @@ RELATE_EDITABLE_INST_ID_BEFORE_VERIFICATION = True
 
 # }}}
 
+
 # {{{ covert LaTeX to image dataURI
 
-# The absolute path of LaTex working dir on the server.
-#RELATE_LATEX_OUTPUT_PATH = "\path\to\latex\working\dir"
+# To enable tex2img functionality, uncomment the following line.
+#RELATE_LATEX_TO_IMAGE_ENABLED = True
+
+# The bin dir of tex compiler and image converter should be
+# correctly configured or RELATE will failed to start. The
+# following is an example.
+#if platform.system().lower().startswith("win"):
+#    # For windows, Imagemagick should be installed with legacy
+#    # components (convert.exe etc), or it will raise an Exception
+#    # "invalid parameter" because windows it self has another
+#    # built in 'convert.exe' and that one is called.
+#    RELATE_IMAGEMAGICK_BIN_DIR = \
+#        r"c:\Program Files\ImageMagick-7.0.1-Q16"
+#    RELATE_LATEX_BIN_PATH = "c:/CTEX/MiKTeX/miktex/bin/latex"
+#else:
+#    RELATE_LATEX_BIN_DIR = \
+#        "/usr/local/texlive/2015/bin/x86_64-linux"
 
 # The name of the subfolder if you want to save converted images
-# in MEDIA_ROOT. default value is "latex_image". Set this value
-# when RELATE_LATEX_OUTPUT_PATH is not set.
+# in MEDIA_ROOT. default value is "latex_image".
 #RELATE_LATEX_IMAGE_FOLDER_NAME = "latex_image"
 
-# Default preamble for latex code, the following is the default value.
-#RELATE_LATEX_PREAMBLE = r'''
-#\documentclass{article}
-#\usepackage[fontsize=14px]{scrextend} % render with font size 14px
-#\usepackage{amsmath}
-#\usepackage{amsthm}
-#\usepackage{amssymb}
-#\usepackage{tikz}
-#\usepackage{pgf}
-#\usepackage{bm}
-#\pagestyle{empty}
-#'''
-
-# The starting and ending string of document
-# modify this when you want to wrap your code
-# with some environment, e.g. "CJK"
-#RELATE_LATEX_BEGIN_DOCUMENT = r'''
-#\begin{document}
-#'''
-#RELATE_LATEX_END_DOCUMENT = r'''
-#\end{document}
-#'''
-
-# The prefered image format converted to. If not set, "png"
-# will be used. However, when there are tikz/pgf blocks in
-# the tex source, the output format will be "svg".
-#RELATE_LATEX_TO_IMAGE_FORMAT = "png"
+# image, especially svg have large file size, files with size
+# exceed the following won't be cached.
+RELATE_IMAGE_CACHE_MAX_BYTES = 65536
 
 # }}}
 
