@@ -203,7 +203,7 @@ class Imageconverter(CommandBase):
         raise NotImplementedError
 
 
-class Dvipng(Imageconverter, TexCompilerBase):
+class Dvipng(TexCompilerBase, Imageconverter):
     # Inheritate TexCompilerBase's bin_path
     # since dvipng is usually installed in
     # latex compilers' bin dir.
@@ -220,7 +220,7 @@ class Dvipng(Imageconverter, TexCompilerBase):
                 input_filepath]
 
 
-class Dvisvg(Imageconverter, TexCompilerBase):
+class Dvisvg(TexCompilerBase, Imageconverter):
     # Inheritate TexCompilerBase's bin_path
     # since dvisvgm is usually installed in
     # latex compilers' bin dir.
