@@ -55,11 +55,14 @@ ALLOWED_COMPILER_FORMAT_COMBINATION = (
 
 # {{{ subprocess popen wrapper
 
-def popen_wrapper(args, os_err_exc_type=CommandError, stdout_encoding='utf-8', **kwargs):
+def popen_wrapper(args, os_err_exc_type=CommandError,
+                  stdout_encoding='utf-8', **kwargs):
     """
-    Extended from django.core.management.utils.popen_wrapper,
-    especially to solve UnicodeDecodeError raised on Windows
-    platform where the OS stdout is not utf-8.
+    Extended from django.core.management.utils.popen_wrapper.
+    `**kwargs` is added so that more kwargs can be added.
+
+    This method is especially to solve UnicodeDecodeError
+    raised on Windows platform where the OS stdout is not utf-8.
 
     Friendly wrapper around Popen
 
@@ -174,8 +177,9 @@ def strip_comments(source):
     # copied from https://gist.github.com/amerberg/a273ca1e579ab573b499
 
     tokens = (
-                'PERCENT', 'BEGINCOMMENT', 'ENDCOMMENT', 'BACKSLASH',
-                'CHAR', 'BEGINVERBATIM', 'ENDVERBATIM', 'NEWLINE', 'ESCPCT',
+                'PERCENT', 'BEGINCOMMENT', 'ENDCOMMENT',
+                'BACKSLASH', 'CHAR', 'BEGINVERBATIM',
+                'ENDVERBATIM', 'NEWLINE', 'ESCPCT',
              )
     states = (
                 ('linecomment', 'exclusive'),
@@ -183,7 +187,8 @@ def strip_comments(source):
                 ('verbatim', 'exclusive')
             )
 
-    #Deal with escaped backslashes, so we don't think they're escaping %.
+    # Deal with escaped backslashes, so we don't think they're
+    # escaping %.
     def t_ANY_BACKSLASH(t):
         r"\\\\"
         return t
