@@ -180,16 +180,37 @@ def strip_comments(source):
                 'PERCENT', 'BEGINCOMMENT', 'ENDCOMMENT',
                 'BACKSLASH', 'CHAR', 'BEGINVERBATIM',
                 'ENDVERBATIM', 'NEWLINE', 'ESCPCT',
+#                'MAKEATLETTER', 'MAKEATOTHER',
              )
     states = (
+ #               ('makeatenv', 'exclusive'),
                 ('linecomment', 'exclusive'),
                 ('commentenv', 'exclusive'),
                 ('verbatim', 'exclusive')
             )
 
+    # def t_MAKEATLETTER(t):
+    #     r"\\makeatletter"
+    #     t.lexer.begin("makeatenv")
+    #     return t
+    #
+    # def t_makeatenv_CHAR(t):
+    #     r"."
+    #     return t
+    #
+    # def t_makeatenv_NEWLINE(t):
+    #     r"\n"
+    #     return t
+    #
+    # def t_makeatenv_MAKEATOTHER(t):
+    #     r"\\makeatother"
+    #     t.lexer.begin('INITIAL')
+    #     return t
+
     # Deal with escaped backslashes, so we don't think they're
     # escaping %.
-    def t_ANY_BACKSLASH(t):
+    #def t_ANY_BACKSLASH(t):
+    def t_BACKSLASH(t):
         r"\\\\"
         return t
 
@@ -259,6 +280,10 @@ def strip_comments(source):
         t.lexer.begin("INITIAL")
         #Newline at the end of a line comment is stripped.
 
+    # def t_linecomment_NEWLINE(t):
+    #     r"\n"
+    #     return t
+
     #Ignore anything after a % on a line
     def t_linecomment_CHAR(t):
         r"."
@@ -318,5 +343,8 @@ def get_all_indirect_subclasses(cls):
         all_subcls.extend(get_all_indirect_subclasses(subcls))
 
     return list(set(all_subcls))
+
+def replace_seperator(s, sep):
+    return s.replace(sep, "")
 
 # vim: foldmethod=marker

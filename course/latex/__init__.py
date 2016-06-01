@@ -31,6 +31,7 @@ from django.utils.translation import ugettext as _
 
 from course.latex.converter import get_tex2img_class
 from course.latex.latex import TexDoc
+from course.latex.utils import replace_seperator
 
 TIKZ_PGF_RE = re.compile(r"\\begin\{(?:tikzpicture|pgfpicture)\}")
 DEFAULT_IMG_HTML_CLASS = "img-responsive"
@@ -57,6 +58,16 @@ def tex_to_img_tag(tex_source, *args, **kwargs):
     html_class_extra = kwargs.get("html_class_extra", "")
     empty_pagestyle = kwargs.get("empty_pagestyle", True)
     alt = kwargs.get("alt", None)
+
+    seperator = kwargs.get("seperator", "``")
+
+    tex_source = replace_seperator(tex_source, seperator)
+    tex_preamble = replace_seperator(tex_preamble, seperator)
+    tex_preamble_extra = replace_seperator(
+        tex_preamble_extra, seperator)
+
+    print tex_source
+
 
     if html_class_extra:
         if isinstance(html_class_extra, list):
