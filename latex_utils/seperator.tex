@@ -1,0 +1,1128 @@
+\documentclass[UTF8]{article}
+\usepackage[paperheight=50cm, top=0.5cm,bottom=0.5cm,left=1cm,right=4.5cm,twoside=false]{geometry}
+\usepackage{ctex}
+\pagestyle{empty}
+%----------------------------------------------------------------------added
+\usepackage{etex}%增加计数器总数（原来是256，宏包多，可能不够用），编译需基于eTeX
+\usepackage{ifpdf}
+\makeatletter
+\def\alloc@#1#2#3#4#5%
+ {\ifnum\count1#1<#4% make sure there's still room
+    \allocationnumber\count1#1
+    \global\advance\count1#1\@ne
+    \global#3#5\allocationnumber
+    \wlog{\string#5=\string#2\the\allocationnumber}%
+  \else\ifnum#1<6
+    \def\etex@dummy@definition{}% <-- code added
+    \begingroup \escapechar\m@ne
+    \expandafter\alloc@@\expandafter{\string#2}#5%
+  \else\errmessage{No room for a new #2}\fi\fi
+ }
+\makeatother
+\usepackage{wrapfig}
+\usepackage{epic}
+\usepackage[abs]{overpic}
+
+\usepackage[thinlines,thiklines]{easybmat}%分块矩阵
+\usepackage{multicol} %单双列混合分栏
+%\usepackage{amsthm}
+
+\usepackage{layouts}                    % 打印当前页面格式的宏包
+\usepackage[sf]{titlesec}               % 控制标题的宏包
+\usepackage{titletoc}                   % 控制目录的宏包
+\usepackage[perpage,symbol*]{footmisc}   % 脚注控制
+\usepackage{fancyhdr}                   % fancyhdr宏包 页眉和页脚的相关定义
+\usepackage{fancyref}
+\usepackage{pdfpages}                   %插入pdf页面
+
+%\usepackage{CJK}            % 中文支持宏包
+%\usepackage{CJKutf8}
+\usepackage{CJKnumb}
+\usepackage{zhnumber}
+\usepackage{type1cm}        % tex1cm宏包，控制字体的大小
+\usepackage{times}          % 使用Times字体的宏包
+\usepackage{indentfirst}    % 首行缩进宏包
+\usepackage{color}          % 支持彩色
+\usepackage{xcolor}          % 支持彩色
+
+\usepackage{cleveref} % 引用多个公式，格式为\cref{}
+
+\usepackage{amsmath}        % AMSLaTeX宏包 用来排出更加漂亮的公式
+\usepackage{amssymb}
+\usepackage{mathrsfs}       % 不同于\mathcal or \mathfrak 之类的英文花体字体
+\usepackage{bm}             % 处理数学公式中的黑斜体的宏包
+\usepackage[amsmath,thmmarks]{ntheorem}% 定理类环境宏包，其中 amsmath 选项用来兼容 AMS LaTeX 的宏包
+\usepackage{threeparttable} %三段表，可以表下文加注释
+
+\usepackage{epsfig}         % eps图像
+\usepackage[below]{placeins}%允许上一个section的浮动图形出现在下一个section的开始部分,还提供\FloatBarrier命令,使所有未处理的浮动图形立即被处理
+\usepackage{psfrag}        %替换eps图形中的文字
+\usepackage{floatflt}       % 图文混排用宏包
+\usepackage{rotating}       % 图形和表格的控制 sideway
+\usepackage{setspace}       % 定制表格和图形的多行标题行距
+%\usepackage{flafter}       % 防止图形浮动到当前页的顶部，以免它出现在它所在文本的前面.
+\usepackage{array}          %增强表格的功能
+\usepackage{multirow}       %使用Multirow宏包，使得表格可以合并多个row格
+\usepackage{longtable}      %支持跨页的表格。
+\usepackage[hang]{subfigure}%支持子图 %centerlast 设置最后一行是否居中
+\usepackage[subfigure]{ccaption} %,caption2,
+\usepackage{colortbl}   % 彩色表格
+\usepackage{fancyvrb}
+%\usepackage{slashbox}   %在表格中画斜线
+\usepackage{diagbox}
+\usepackage{cases}   %花括号多行公式带编号
+\usepackage{pict2e}
+\usepackage{float}
+\usepackage{pifont}
+\usepackage{booktabs}
+\usepackage{cancel} %公式删除线
+\usepackage{soul} %删除线 用法\st{}
+\usepackage{ulem}
+%\usepackage[normalem]{ulem}
+%\usepackage{CCTfntef} %中文删除线 用法\CCTsout*{……}
+
+\usepackage{tabularx}
+\usepackage{multirow,bigdelim}
+\usepackage{parallel}
+\usepackage{tikz}
+\usepackage{fancybox}
+\usepackage{tcolorbox}
+\usepackage[linewidth=1pt,linecolor=black,backgroundcolor=black!4,xcolor=cmyk
+] {mdframed}
+
+\usepackage{todonotes}
+\usepackage{marginnote}
+\makeatletter
+
+\newcommand{\todos}[2][]
+{\renewcommand{\@todonotes@drawMarginNoteWithLine}{``%
+\begin{tikzpicture}[remember picture, overlay, baseline=-0.75ex]%
+    \node [coordinate] (inText) {};%
+\end{tikzpicture}%
+\marginnote[{``% Draw note in left margin
+    \@todonotes@drawMarginNote%
+    \@todonotes@drawLineToLeftMargin%
+}]{``% Draw note in right margin
+    \@todonotes@drawMarginNote%
+    \@todonotes@drawLineToRightMargin%
+}``}\todo[color=black!4, linecolor=black, size=\wuhao, #1]{\hei #2}``}
+
+\newcommand{\todosv}[3][]
+{\gdef\@vsp{``#3}\renewcommand{\@todonotes@drawMarginNoteWithLine}{``%
+\begin{tikzpicture}[remember picture, overlay, baseline=-0.75ex]%
+    \node [coordinate] (inText) {};%
+\end{tikzpicture}%
+\marginnote[{``% Draw note in left margin
+    \@todonotes@drawMarginNote%
+    \@todonotes@drawLineToLeftMargin%
+}]{``% Draw note in right margin
+    \@todonotes@drawMarginNote%
+    \@todonotes@drawLineToRightMargin%
+}[\@vsp]}\todo[color=black!4, linecolor=black, size=\wuhao, #1]{\hei #2}``}
+\makeatother
+
+\usepackage{bm}
+\renewcommand{\mathbf}[1]{\bm{\mathit{``#1}``}``}%把黑体变成黑斜体
+
+
+\usepackage{hhline}
+
+\usepackage{newfloat} %新浮动环境
+
+\DeclareFloatingEnvironment[ %答案表
+    fileext=dab,
+    placement=tbhp,
+]{keytable}
+
+\DeclareFloatingEnvironment[ %答案表
+    fileext=daf,
+    placement=tbhp,
+]{keyfigure}
+
+\DeclareFloatingEnvironment[ %案例表
+    fileext=dab,
+    placement=tbhp,
+]{casetable}
+
+\DeclareFloatingEnvironment[ %案例图
+    fileext=daf,
+    placement=tbhp,
+]{casefigure}
+
+\usepackage[sort&compress,numbers]{natbib}% 支持引用缩写的宏包
+\usepackage{hypernat}
+
+\usepackage{paralist}       %使用paralist宏包,改变列表项的格式
+\usepackage{calc}           %长度可以用+ - * / 进行计算
+
+\usepackage{pgfplots} %画坐标图
+\pgfplotsset{
+    standard/.style={
+        enlarge x limits=0.15,
+        enlarge y limits=0.15,
+        every axis x label/.style={at={(current axis.right of origin)},anchor=north,scale=0.8},
+        every axis y label/.style={at={(current axis.above origin)},anchor=north east,scale=0.8},
+    }
+}
+\pgfplotsset{
+    standardmiddle/.style={
+        axis lines=middle,
+        enlarge x limits=0.15,
+        enlarge y limits=0.15,
+        every axis x label/.style={at={(current axis.right of origin)},anchor=north,scale=0.8},
+        every axis y label/.style={at={(current axis.above origin)},anchor=north east,scale=0.8},
+    }
+}
+
+\usetikzlibrary{matrix}
+\usetikzlibrary{arrows,shapes}
+\usetikzlibrary{positioning}
+\usetikzlibrary{svg.path}
+\usepgflibrary{shapes.arrows}
+\usetikzlibrary{backgrounds}
+\usetikzlibrary{petri}
+\usetikzlibrary{decorations.pathreplacing}
+\usetikzlibrary{intersections}
+\usetikzlibrary{decorations.markings}
+\usetikzlibrary{shapes.callouts}
+\usetikzlibrary{decorations.text}
+\usetikzlibrary{calc}
+
+\usepackage{arydshln}       %分块矩阵画虚线，挺好用
+%\usepackage[adobefonts]{ctex}
+
+
+%在\sum下方用\mathclap{}来包围
+\def\mathllap{\mathpalette\mathllapinternal}
+\def\mathllapinternal#1#2{``%
+\llap{$\mathsurround=0pt#1{``#2}$}% $
+}
+\def\clap#1{\hbox to 0pt{\hss#1\hss}``}
+\def\mathclap{\mathpalette\mathclapinternal}
+\def\mathclapinternal#1#2{``%
+\clap{$\mathsurround=0pt#1{``#2}$}%
+}
+\def\mathrlap{\mathpalette\mathrlapinternal}
+\def\mathrlapinternal#1#2{``%
+\rlap{$\mathsurround=0pt#1{``#2}$}% $
+}
+
+
+\ifpdf \DeclareGraphicsRule{*}{mps}{*}{} \fi
+
+%-------------------------------------------------------------------------tikz
+
+\usetikzlibrary{positioning}
+\usetikzlibrary{svg.path}
+\usepgflibrary{shapes.arrows}
+\usetikzlibrary{backgrounds}
+\usetikzlibrary{petri}
+\usetikzlibrary{decorations.pathreplacing}
+\usetikzlibrary{intersections}
+\usetikzlibrary{decorations.markings}
+
+\tikzstyle{bridge path}=[white,line width = 1pt,double=black,double distance=0.5pt,->,rounded corners]
+
+\tikzstyle{bridge path}=[rounded corners,decorate,decoration={show path construction,
+    lineto code={
+    \draw [white,line width = 1pt,double=black,double distance=1pt]
+            (\tikzinputsegmentfirst) -- (\tikzinputsegmentlast);},
+    curveto code={
+      \draw [black,line width = 1pt] (\tikzinputsegmentfirst) .. controls
+        (\tikzinputsegmentsupporta) and (\tikzinputsegmentsupportb)
+        ..(\tikzinputsegmentlast);
+            }``}]
+\tikzstyle{over bridge path}=[black,line width = 0.5pt,->,rounded corners]
+
+
+%以下为运输问题的定义
+
+\def\print#1{\pgfmathparse{``#1}\pgfmathresult}
+\def\ori{``{``{"","","",""},{"","","",""},{"","","",""}``}``}
+\def\total{\footnotesize ""}
+
+\def\sremainder{
+\draw (sr0) node{\footnotesize ""};
+\draw (sr1) node{\footnotesize  ""};
+\draw (sr2) node{\footnotesize ""};
+}
+\def\dremainder{
+\draw (dr0) node{\footnotesize ""};
+\draw (dr1) node{\footnotesize ""};
+\draw (dr2) node{\footnotesize ""};
+\draw (dr3) node{\footnotesize ""};
+}
+
+\def\sremainderOri{
+\draw (sr0) node{\footnotesize ""};
+\draw (sr1) node{\footnotesize ""};
+\draw (sr2) node{\footnotesize ""};
+}
+
+\def\dremainderOri{
+\draw (dr0) node{\footnotesize ""};
+\draw (dr1) node{\footnotesize ""};
+\draw (dr2) node{\footnotesize ""};
+\draw (dr3) node{\footnotesize ""};
+}
+
+\def\flows{``{``{"",""," ","",""},{"",""," ","",""},{"","","","",""}``}``}
+%\def\chan{\shortstack{产\\地}``}
+%\def\di{地}
+%\def\xiaodi{销    地}
+\def\xiaosymbol{``{B}``}
+\def\chansymbol{``{A}``}
+
+\def\gongxiao#1{
+             \draw (-1,#1+1) rectangle ++(1,0.7);
+             \draw (-1, #1+1.7)-- (0,#1+1);
+             \node at (-0.65,#1+1.15) {\footnotesize 产地};
+             \node at (-0.35,#1+1.55) {\footnotesize 销地};}
+
+\def\drawwithoutgongxiao#1#2#3
+          {\foreach \i in {0,1,...,#2}
+             {\draw (-1, \i) rectangle ++(1,1);
+             \node (A\i) at (-0.5, 0.5+\i) {$\chansymbol_{\pgfmathint{``#2-\i+1}\pgfmathresult}$};
+             \coordinate (sr\i) at (#3+1.5, \i+0.5);
+             \coordinate (ui\i) at (#3+2.5, \i+0.5);
+             \foreach \j in {0,1,...,#3}
+                {
+                    \draw (\j,\i) +(.5,.5) rectangle ++(1,1);
+                     \draw (\j, \i)+(0.75,0.75) node{\footnotesize \print{``#1[\i][\j]}``};
+                     \coordinate (s\i\j) at (\j+0.35, \i+0.35);
+                 }
+              }
+             \foreach \j in {0,1,...,#3}
+                {\draw (\j, #2+1) rectangle ++(1, 0.70);
+                \node (B\j) at (\j+0.5, #2+1.35) {$\xiaosymbol_{\pgfmathint{\j+1}\pgfmathresult}$};
+                \coordinate (dr\j) at (\j+0.5, -0.25);
+                \coordinate (vj\j) at (\j+0.5, -0.75);
+                }
+
+                \gongxiao{``#2};
+
+         }
+
+\def\draworigin#1#2#3
+          {\drawwithoutgongxiao#1#2#3
+                \gongxiao{``#2};
+         }
+
+\def\drawnull#1#2 %画无数字无框图。
+          {\foreach \i in {0,1,...,#1}
+             {
+             %\node (A\i) at (-0.3, 0.5+\i) {$\chansymbol_{\pgfmathint{``#2-\i+1}\pgfmathresult}$};
+             %\coordinate (sr\i) at (#3+1.25, \i+0.5);
+             \foreach \j in {0,1,...,#2}
+                {
+                    %\draw (\j,\i) +(.5,.5) rectangle ++(1,1);
+                     %\draw (\j, \i)+(0.75,0.75) node{\footnotesize \print{``#1[\i][\j]}``};
+                     \coordinate (s\i\j) at (\j+0.35, \i+0.35);
+                 }
+              }
+             \foreach \j in {0,1,...,#2}
+                {
+                %\node (B\j) at (\j+0.5, #1+1.2) {$\xiaosymbol_{\pgfmathint{\j+1}\pgfmathresult}$};
+                %\coordinate (dr\j) at (\j+0.5, -0.25);
+                }
+         }
+
+\def\draworiginlabel#1#2#3
+       {         \draw (#3+1,-0.5) rectangle ++(1,0.5);
+         \draw (#3+1.5, -0.25) node{\total};
+         \draw (#3+1, #2+1) rectangle ++(1,0.70);
+             \node at (#3+1.5, #2+1.35) {\footnotesize 产量};
+         \draw (-1, -0.5) rectangle (0,0);
+             \node at (-0.5, -0.25) {\footnotesize  销量};
+       \drawwithoutgongxiao{``#1}{``#2}{``#3}
+            \foreach \i in {0,1,...,#2} {
+            \draw (#3+1,\i) rectangle ++(1,1);
+            %\draw (#3+1.25,\i+.5) node{\pgfmathparse{\dremainder[\i]}\pgfmathresult};
+            }
+       \foreach \j in {0,1,...,#3} {\draw (\j, -0.5)rectangle ++(1,0.5);
+           %\draw (#2*\j-\j, -0.5) node{\pgfmathparse{\sremainder[\j]}\pgfmathresult};
+            }
+       \gongxiao{``#2};
+
+       }
+
+
+
+\def\drawflow#1#2#3
+      {\foreach \i in {0,1,...,#2}
+          \foreach \j in {0,1,...,#3}
+        {\draw (\j+0.35, \i+0.35) node{\footnotesize \print{``#1[\i][\j]}``};
+          }
+      }
+
+\def\drawflowfuzhu#1#2#3
+      {\foreach \i in {0,1,...,#2}
+          \foreach \j in {0,1,...,#3}
+        {\draw (\j+0.35, \i+0.35) node{\footnotesize \textcolor[rgb]{1.00,0.00,0.00}{s\i\j}``};
+          }
+      }
+
+\def\removeh#1#2#3 {\draw[dashed] (0, #1+0.35)--(#3+1,#1+0.35);}
+\def\removev#1#2#3 {\draw[dashed] (#1+0.35, 0)--(#1+0.35,#3);}
+%%=========================================================画闭回路，画法是\drawbhl{起点}{中间路径} 所有点必须含();
+\def\bhl#1{
+     \draw[bridge path] (thepoint)--#1--(thepoint);
+     %\draw[over bridge path] (thepoint)--#1--(thepoint);
+}
+
+\def\addarrow#1{
+\draw[white,line width = 2pt, shorten <= 0.65cm] #1--(thepoint);
+\draw[line width = 1pt, shorten <= 0.65cm,->] #1--(thepoint);
+}
+
+\def\drawbhl#1#2
+    {\node (thepoint) at #1 [pre and post] {};
+     \draw [draw=black, fill=black!15,line width = 1pt] (thepoint) circle (0.1cm);
+     \bhl#2
+    }
+
+
+
+    %====================================位势法
+%\def\flowsForwsf{``{``{"","","","",""},{"","","","",""},{"","","","",""}``}``}
+
+\def\wsflabel#1#2{
+       \draw (#2+2,#1+1) rectangle ++(1, 0.7);
+       \draw (#2+2.5,#1+1.35) node{\footnotesize $u_i$};
+       \draw (-1, -1) rectangle (0,-0.5);
+       \draw (-0.5,-0.75) node{\footnotesize $v_j$};
+       }
+
+
+
+\def\drawwsf#1#2#3#4
+       {
+       \foreach \x [count=\j from 0] in #2
+        \node at (vj\j) {\footnotesize \x};
+       \foreach \y [count=\i from 0] in #1
+        \node at (ui\i) {\footnotesize \y};
+       %
+       \foreach \i in {0,1,...,#3} \draw (#4+2, \i) rectangle ++(1, 1) node {};
+       \foreach \j in {0,1,...,#4} \draw (\j, -1) rectangle ++(1, 0.5) node {};
+       \wsflabel#3#4
+       }
+
+\def\draworiginlabelx#1#2#3 %最右一列稍宽
+       {\draworiginx{``#1}{``#2}{``#3}
+            \foreach \i in {0,1,...,#2}
+            {\draw (#3+1,\i) rectangle ++(1,1);
+            %\draw (#3+1.25,\i+.5) node{\pgfmathparse{\dremainder[\i]}\pgfmathresult};
+
+       \foreach \j in {0,1,...,#3} {\draw (\j, -0.5)rectangle ++(1,0.5);
+           %\draw (#2*\j-\j, -0.5) node{\pgfmathparse{\sremainder[\j]}\pgfmathresult};
+            }
+         \draw (#3+1,-0.5) rectangle ++(1,0.5);
+         \coordinate (ui\i) at (#3+2.5, \i+0.5);
+         \draw (#3+1.5, -0.25) node{\totalx};
+
+                  \draw (#3+1, #2+1) rectangle ++(1,0.70);
+             \node at (#3+1.5, #2+1.35) {\footnotesize 供应量};
+         \draw (-1, -0.5) rectangle (0,0);
+             \node at (-0.5, -0.25) {\footnotesize 需求量};
+       }
+                    \foreach \j in {0,1,...,#3}
+                {
+                 \coordinate (vj\j) at (\j+0.5, -0.75);
+                }
+       }
+\def\draworiginx#1#2#3
+          {\foreach \i in {0,1,...,#2}
+             {\draw (-1, \i) rectangle ++(1,1);
+             \node (A\i) at (-0.5, 0.5+\i) {};
+             \coordinate (sr\i) at (#3+1.5, \i+0.5);
+             \foreach \j in {0,1,...,#3}
+                {
+                    \draw (\j,\i) +(.5,.5) rectangle ++(1,1);
+                     \draw (\j, \i)+(0.75,0.75) node{\footnotesize \print{``#1[\i][\j]}``};
+                     \coordinate (s\i\j) at (\j+0.35, \i+0.35);
+                 }
+              }
+             \foreach \j in {0,1,...,#3}
+                {\draw (\j, #2+1) rectangle ++(1, 0.7);
+                \node (B\j) at (\j+0.5, #2+1.35) {};
+                \coordinate (dr\j) at (\j+0.5, -0.25);
+                }
+
+               \gongxiao{``#2};
+
+         }
+
+
+\def\drawvogel#1#2#3#4#5
+       {
+       \foreach \i in {0,1,...,#4} {\draw (#5+1.5+#1*0.5, \i) rectangle ++(0.5, 1); \draw (#5+1.75+#1*0.5, \i+0.5) node{\footnotesize \print{``#3[\i]}``};}
+       \foreach \j in {0,1,...,#5} {\draw (\j, -0.5*#1) rectangle ++(1, -0.5); \draw (\j+0.5, -0.5*#1-0.25) node{\footnotesize \print{``#2[\j]}``};}
+       }
+\def\vogellabel#1#2#3{
+       \draw (#3+2,#2+1) rectangle ++(#1*0.5, 0.7);
+       \draw (#3+2+0.25*#1,#2+1+0.35) node{\footnotesize{\shortstack{Row}``}``};
+       \draw (-1, -0.5-0.5*#1) rectangle (0,-0.5);
+       \draw (-0.5,-0.5-0.25*#1) node{\footnotesize\shortstack{Column}``};
+       }
+
+
+
+
+%-----------------------------------------------------------------------------Definition-
+
+
+%%============================答案=========================================
+
+%\newcommand{\daan}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\noindent\{\hei 答案：}  #1}``} %定义新命令，用\daan表示答案，用红色字体标出
+
+\newcommand{\daan}[1]{\noindent{\hei 答案：}{``#1}``} %定义新命令，用\daan表示答案，用红色字体标出
+
+%\renewcommand{\daan}[1]{``{``#1}``} %取消答案加红
+
+\renewcommand{\daan}[1]{} %隐藏答案内容，不得注释
+
+\renewcommand{\daan}[1]{\noindent{\hei 答案：}{``#1}``} %显示答案，如不需答案，请注释此句
+
+
+%%============================答案=================================
+
+%%============================勘误=========================================
+
+\newcommand{\kanwu}[1]{\textcolor[rgb]{1.00,0.00,0.00}{``#1}``} %定义新命令，用\kanwu表示勘误，用红色字体标出
+
+%%\renewcommand{\kanwu}[1]{``{``#1}``} %取消勘误加红
+%%
+%\newcommand{\kanwuxin}[1]{} %隐藏勘误内容，不得注释
+%\newcommand{\kanwuold}[1]{``{``#1}``}%不删除勘误中应删除的部分，不得注释
+%
+%\renewcommand{\kanwuxin}[1]{``{``#1}``} %显示新加勘误，如不需勘误，请注释此句
+%\renewcommand{\kanwuold}[1]{}%删除勘误中应删除的部分，如不需勘误，请注释此句
+
+%%============================勘误=================================
+
+%%============================原文=========================================
+
+\renewcommand{\kanwu}[1]{``{``#1}``} %取消勘误加红
+
+\newcommand{\yw}[1]{} %隐藏原文内容，不得注释
+\renewcommand{\yw}[1]{\ywh{``#1}``}%显示应删除的段落
+
+\newcommand{\ywh}[1]{} %隐藏原文内容，不得注释
+%\newcommand{\ywh}[1]{\sout{``#1}``}%不删除原文中应删除的部分，不得注释
+
+%%============================原文=================================
+
+%%============================隐藏=========================================
+\newcommand{\yc}[1]{``{``#1}``} %取消隐藏
+%\renewcommand{\yc}[1]{} %隐藏原文内容，不得注释
+%习题隐藏
+\newcommand{\xtyc}[1]{``{``#1}``} %取消隐藏
+%\renewcommand{\xtyc}[1]{} %隐藏原文内容
+%%============================隐藏=================================
+
+\renewcommand\keytablename{答案表}
+\renewcommand{\thekeytable}{\arabic{keytable}``}
+
+\renewcommand\keyfigurename{答案图}
+\renewcommand{\thekeyfigure}{\arabic{keyfigure}``}
+
+
+%%%---公式中符号描述----start----
+%\begin{formulasymb}{式中}{-3pt}%-3pt,-20pt调与上方的间距。
+%  \fdesfirst{第一标签}{控制控制控制控制控制}
+%  \fdes{其他标签}{控制控制控制控制控制}
+%\end{formulasymb}
+\newenvironment{formulades}[1]%
+{\noindent\begin{list}{}{``%
+\setlength\topsep{0pt}
+\settowidth{\labelwidth}{``#1}
+\setlength{\labelsep}{1mm}
+\setlength{\leftmargin}{\labelwidth+\labelsep}
+}``}{\end{list}``}
+\newenvironment{formulasymb}[2]%-\!-\!-\!-
+{\vspace*{``#2}\newcommand{\fdesfirst}[2]%
+{\begin{formulades}{``#1\hspace*{26pt}##1~\cdash}\item[#1\hspace*{26pt}##1~\cdash]{``##2}\end{formulades}\vspace*{-21pt}``}%自己调距
+\newcommand{\fdes}[2]{\begin{formulades}{``#1\hspace{26pt}##1~\cdash}\item[##1~\cdash]{``##2}\end{formulades}\vspace*{-21pt}``}``}%自己调距
+{\vspace{21pt}\relax}%21pt调距
+%%----公式中符号描述----end-----
+
+
+\newcommand{\cdash}{\mbox{—\!\!\!\!—\!\!\!\!—}``}%输入中文破折号的命令
+\newcommand{\dif}{\mathrm{d}``}%在数学模式中输入微分dx
+
+\newcommand{\topcaption}{``%
+  \setlength{\abovecaptionskip}{0pt}%
+  \setlength{\belowcaptionskip}{-1pt}%
+  \caption}
+\newcommand{\botcaption}{``%
+  \setlength{\abovecaptionskip}{-1.5pt}%
+  \setlength{\belowcaptionskip}{0pt}%
+  \caption}
+\newcommand{\bbotcaption}[1]{``%
+  \setlength{\abovecaptionskip}{``{``#1}``}%
+  \setlength{\belowcaptionskip}{0pt}%
+  \caption}
+
+
+\newcommand{\xiangxi}[1]{``#1} %显示详细答案
+\newcommand{\xxiangxi}[1]{} %隐藏更详细答案，只给结果
+\renewcommand{\xxiangxi}[1]{``#1} %显示更详细答案
+\newcommand{\kanwuxin}[1]{\textcolor[rgb]{0,0,1}{\CJKunderline*{``#1}``}``} %勘误加蓝
+%\renewcommand{\kanwuxin}[1]{``{``#1}``} %取消勘误加蓝
+
+\newcommand{\ywhxin}[1]{} %删除原文行内内容
+\renewcommand{\ywhxin}[1]{\textcolor[rgb]{0,0,1}{\CJKsout*{``#1}``}``}%显示应删除的行内内容
+
+\newcommand{\steppage}[1]{\newpage \thispagestyle{empty}{``#1}\newpage}
+\renewcommand{\steppage}[1]{``#1}
+
+\newcommand{\red}[1]{\textcolor[rgb]{1,0,0}{``#1}``}
+\newcommand{\blue}[1]{\textcolor[rgb]{0,0,1}{``#1}``}
+\newcommand{\purple}[1]{\textcolor[rgb]{1,0,1}{``#1}``}
+
+\newcounter{savedenum}
+\newcommand*{\saveenum}{\setcounter{savedenum}{\theenumi}``}
+\newcommand*{\resumeenum}{\setcounter{enumi}{\thesavedenum}``}
+%%%%%%%%%%%%%%%%%%%%%%记录公式编号以及继续编号%%%%%%%%%%%%%%
+\newcounter{savedeq}
+\newcommand*{\saveeq}{\setcounter{savedeq}{\theequation}``}
+\newcommand*{\resumeeq}{\setcounter{equation}{\thesavedeq}``}
+%%%%%%%%%%%%%%%%%%%%%%%%图%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcounter{savedfig}
+\newcommand*{\savefig}{\setcounter{savedfig}{\thefigure}``}
+\newcommand*{\resumefig}{\setcounter{figure}{\thesavedfig}``}
+%%%%%%%%%%%%%%%%%%%%%%%%表%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcounter{savedtab}
+\newcommand*{\savetab}{\setcounter{savedtab}{\thetable}``}
+\newcommand*{\resumetab}{\setcounter{table}{\thesavedtab}``}
+
+% ----------------------------------------------------------------------------------------------------format 2
+
+\renewcommand{\backslashbox}[2]{\diagbox{``#1}{``#2}``}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%允许公式换页显示,否则大型推导公式都在一页内，
+%一页显示不下放到第二页，导致很大的空白空间，很不好看
+\allowdisplaybreaks[4]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%下面这组命令使浮动对象的缺省值稍微宽松一点，从而防止幅度
+%对象占据过多的文本页面，也可以防止在很大空白的浮动页上放置很小的图形。
+\setcounter{totalnumber}{4}
+\renewcommand{\topfraction}{0.9999999}
+\renewcommand{\textfraction}{0.0000001}
+\renewcommand{\floatpagefraction}{0.9999}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 重定义字体命令
+% 注意win2000,没有 simsun,　最好到网上找一个
+% 一些字体是office2000 带的
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\song}{\CJKfamily{song}``}    % 宋体   (Windows自带simsun.ttf)
+\newcommand{\fs}{\CJKfamily{fs}``}        % 仿宋体 (Windows自带simfs.ttf)
+\newcommand{\kai}{\CJKfamily{kai}``}      % 楷体   (Windows自带simkai.ttf)
+\newcommand{\hei}{\CJKfamily{hei}``}      % 黑体   (Windows自带simhei.ttf)
+\newcommand{\li}{\CJKfamily{li}``}        % 隶书   (Windows自带simli.ttf)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 重定义字号命令
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\chuhao}{\fontsize{44pt}{\baselineskip}\selectfont}       % 初号, 1.倍行距
+\newcommand{\xiaochu}{\fontsize{28pt}{\baselineskip}\selectfont}       % 初号, 1.倍行距
+\newcommand{\yihao}{\fontsize{26pt}{\baselineskip}\selectfont}       % 一号, 1.倍行距
+\newcommand{\erhao}{\fontsize{22pt}{\baselineskip}\selectfont}       % 二号, 1.倍行距
+\newcommand{\xiaoer}{\fontsize{18pt}{\baselineskip}\selectfont}      % 小二, 单倍行距
+\newcommand{\sanhao}{\fontsize{16pt}{\baselineskip}\selectfont}      % 三号, 1.倍行距
+\newcommand{\xiaosan}{\fontsize{15pt}{\baselineskip}\selectfont}     % 小三, 1.倍行距
+\newcommand{\sihao}{\fontsize{14pt}{\baselineskip}\selectfont}       % 四号, 1.0倍行距
+\newcommand{\banxiaosi}{\fontsize{13pt}{\baselineskip}\selectfont}   % 半小四, 1.0倍行距
+\newcommand{\xiaosi}{\fontsize{12pt}{\baselineskip}\selectfont}      % 小四, 1.倍行距
+\newcommand{\dawuhao}{\fontsize{11.5pt}{\baselineskip}\selectfont} % 大五号, 单倍行距
+\newcommand{\wuhao}{\fontsize{10.5pt}{\baselineskip}\selectfont}   % 五号, 单倍行距
+\newcommand{\xiaowu}{\fontsize{9.5pt}{\baselineskip}\selectfont}    % 小五号, 单倍行距
+\newcommand{\liuhao}{\fontsize{8pt}{\baselineskip}\selectfont}    % 六号, 单倍行距
+\newcommand{\xiaoliu}{\fontsize{7pt}{\baselineskip}\selectfont}    % 六号, 单倍行距
+\newcommand{\banbanxiaosi}{\fontsize{12pt}{\baselineskip}\selectfont}% 半半小四, 1.0倍行距
+
+\newenvironment{proof}{\noindent{\CJKfamily{hei} 证明：}``}{\hfill $ \square $ \vskip 4mm}
+\theoremsymbol{$\square$}
+
+\newenvironment{Daan}{\noindent{\CJKfamily{hei} 答案：}``}{\hfill $ \square $ \vskip 4mm}
+\theoremsymbol{$\square$}
+
+\setlength{\parindent}{2em}
+
+\renewcommand\contentsname{\CJKfamily{hei} 目~~~~录}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 设置行距和段落间垂直距离
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\renewcommand{\CJKglue}{\hskip 0.1pt plus 0.08\baselineskip}%加大字间距，使每行33个字
+\setlength{\belowcaptionskip}{5pt}   % 加大标题和表格之间的距离
+\setlength{\parskip}{2pt plus1pt minus1pt} % 段落之间的竖直距离
+\renewcommand{\baselinestretch}{1.2}% 定义行距
+
+
+\setlength\jot{3pt}%庄加 改变多行公式行距
+
+%%%表格的双线条粗细
+\doublerulesep=0.4pt
+%\extracolsep=0.4pt
+
+\hangcaption
+
+\captionnamefont{\xiaowu\CJKfamily{hei}\rmfamily}
+\captiontitlefont{\xiaowu\CJKfamily{song}\rmfamily}
+\captiondelim{~} %~
+
+
+%自定义一个空命令，用于注释掉文本中不需要的部分。
+%\newcommand{\comment}[1]{}
+
+%%%%%%不要拉大行距使得页面充满
+\raggedbottom
+
+% This is the flag for longer version
+\newcommand{\longer}[2]{``#1}
+
+\newcommand{\ds}{\displaystyle}
+
+% define graph scale
+\def\gs{1.0}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 自定义项目列表标签及格式 \begin{mylist} 列表项 \end{mylist}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcounter{myctr} %自定义新计数器
+\newenvironment{mylist}[2]{``%%%%%定义新环境
+\begin{list}{``{\hei \arabic{myctr}、}``} %%标签格式
+    {\kai
+     \usecounter{myctr}
+     \setlength{\leftmargin}{``{``#1}\textwidth}     %左边界
+     \setlength{\rightmargin}{``{``#2}\textwidth}
+     \setlength{\parsep}{0ex}         %段落间距
+     \setlength{\topsep}{0.5pt}         %列表到上下文的垂直距离
+     \setlength{\itemsep}{0.3ex}        %标签间距
+     \setlength{\labelsep}{0.5em}     %标号和列表项之间的距离,默认0.5em
+     \setlength{\itemindent}{-0.5em}    %标签缩进量
+     \setlength{\listparindent}{0em} %段落缩进量
+    }``}
+{\end{list}``}%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 自定义步骤列表标签及格式 \begin{mystep} 列表项 \end{mystep}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcounter{stepctr} %自定义新计数器
+\newenvironment{mystep}[2]{``%%%%%定义新环境
+\begin{list}{``{\hei 第\arabic{stepctr}步}``} %%标签格式
+    {\kai
+     \usecounter{stepctr}
+     \setlength{\leftmargin}{``{``#1}\textwidth}     %左边界
+     \setlength{\rightmargin}{``{``#2}\textwidth}
+     \setlength{\parsep}{0ex}         %段落间距
+     \setlength{\topsep}{0.5pt}         %列表到上下文的垂直距离
+     \setlength{\itemsep}{0.3ex}        %标签间距
+     \setlength{\labelsep}{0.5em}     %标号和列表项之间的距离,默认0.5em
+     \setlength{\itemindent}{-3em}    %标签缩进量
+     \setlength{\listparindent}{0em} %段落缩进量
+    }``}
+{\end{list}``}%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 自定义步骤列表标签及格式 \begin{mystep} 列表项 \end{mystep}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\newcounter{stepctr2} %自定义新计数器
+\newenvironment{mystep2}[2]{``%%%%%定义新环境
+\begin{list}{``{\hei }``} %%标签格式
+    {``{\kai}
+     %\usecounter{stepctr2}
+     \setlength{\leftmargin}{``{``#1}\textwidth}     %左边界
+     \setlength{\rightmargin}{``{``#2}\textwidth}
+     \setlength{\parsep}{0ex}         %段落间距
+     \setlength{\topsep}{0.5pt}         %列表到上下文的垂直距离
+     \setlength{\itemsep}{0.3ex}        %标签间距
+     \setlength{\labelsep}{0.5em}     %标号和列表项之间的距离,默认0.5em
+     \setlength{\itemindent}{-3em}    %标签缩进量
+     \setlength{\listparindent}{0em} %段落缩进量
+    }``}
+{\end{list}``}%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 自定义步骤列表标签及格式 \begin{mystepindent} 列表项 \end{mystepindent}有段落缩进
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcounter{stepindentctr} %自定义新计数器
+\newenvironment{mystepindent}[3]{``%%%%%定义新环境
+\begin{list}{``{\hei 第\arabic{stepindentctr}步}``} %%标签格式
+    {\kai
+     \usecounter{stepindentctr}
+     \setlength{\leftmargin}{``{``#1}\textwidth}     %左边界
+     \setlength{\rightmargin}{``{``#2}\textwidth}
+     \setlength{\parsep}{0ex}         %段落间距
+     \setlength{\topsep}{0.5pt}         %列表到上下文的垂直距离
+     \setlength{\itemsep}{0.3ex}        %标签间距
+     \setlength{\labelsep}{0.5em}     %标号和列表项之间的距离,默认0.5em
+     \setlength{\itemindent}{-3em}    %标签缩进量
+     \setlength{\listparindent}{``#3} %段落缩进量
+    }``}
+{\end{list}``}%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 自定义项目列表标签及格式 \begin{publist} 列表项 \end{publist}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcounter{pubctr} %自定义新计数器
+\newenvironment{publist}{``%%%%%定义新环境
+\begin{list}{\arabic{pubctr}``} %%标签格式
+    {
+     \usecounter{pubctr}
+     \setlength{\leftmargin}{2em}     % 左边界 \leftmargin =\itemindent + \labelwidth + \labelsep
+     \setlength{\itemindent}{0em}     % 标号缩进量
+     \setlength{\labelwidth}{1em}     % 标号宽度
+     \setlength{\labelsep}{0.5em}       % 标号和列表项之间的距离,默认0.5em
+     \setlength{\rightmargin}{0em}    % 右边界
+     \setlength{\topsep}{0ex}         % 列表到上下文的垂直距离
+%     \setlength{\partopsep}{0ex}      % 列表是一个新的段落时，加的额外到上下文的距离
+     \setlength{\parsep}{0ex}         % 段落间距
+     \setlength{\itemsep}{0ex}        % 标签间距
+     \setlength{\listparindent}{20pt} % 段落缩进量
+    }``}
+{\end{list}``}%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 默认字体
+\def\defaultfont{\renewcommand{\baselinestretch}{1}
+\fontsize{9.8pt}{\baselineskip}\selectfont}
+
+
+\makeatletter
+  \newcommand\figcaption{\def\@captype{figure}\caption}
+  \newcommand\figbotcaption{\def\@captype{figure}\botcaption}
+  \newcommand\keyfigcaption{\def\@captype{keyfigure}\botcaption}
+  \newcommand\tabcaption{\def\@captype{table}\caption}
+  \newcommand\tabtopcaption{\def\@captype{table}\topcaption}
+  \newcommand\keytabcaption{\def\@captype{keytable}\topcaption}
+\makeatother %这样在正文中无论是否在图形环境中，都可用 \figcaption 来得到图形标题。 同样地，无论是否在表格环境中，都可用 \tabcaption 来得到表格标题。
+
+\newenvironment{mytabular}{\bgroup\xiaowu\tabular}{\endtabular\egroup}%把tabular中的字体改为小5号
+\newenvironment{mytabularliu}{\bgroup\liuhao\tabular}{\endtabular\egroup}%把tabular中的字体改为小5号
+\newenvironment{mytabularliux}{\bgroup\xiaoliu\tabular}{\endtabular\egroup}%把tabular中的字体改为小5号
+\newenvironment{mytabularx}{\bgroup\xiaowu\tabularx}{\endtabularx\egroup}%把tabular中的字体改为小5号
+%\renewenvironment{tabular}{\bgroup\xiaowu\mytabular}{\endmytabular\egroup}%不成功
+
+\newcommand{\dlab}[2]{\mathop{\mbox{$#1$}``}\limits_{``#2}``}%图论专用命令
+%
+%%$L_1=(\dlab 5*, 5)$
+
+\newcommand{\jg}[1]{\vspace{1em} \noindent {\hei $\mathbf{\Box}$ {\xiaosi #1}``}``}%书中结构字段
+\newcommand{\xxmb}{\jg{学习目标}``}
+\newcommand{\yy}{\jg{引言}``}
+\newcommand{\bzxj}{\jg{本章小结}``}
+\newcommand{\gjgn}{\jg{关键概念}``}
+\newcommand{\fxskt}{\jg{复习思考题}``}
+\newcommand{\xt}{\jg{习~~题}\\\addcontentsline{toc}{section}{\hei 习~~题}``}
+\newcommand{\al}[1]{\jg{案~~例：#1}\\\addcontentsline{toc}{section}{\hei 案~~例：#1}``}
+\newcommand{\alnr}[1]{``#1}
+\newcommand{\aldaan}[1]{\daan{``#1}``}%案例答案
+
+\newlength\LL \settowidth\LL{100}
+
+\newcommand{\minitab}[2][l]{\begin{tabular}{``#1}#2\end{tabular}``}
+
+\newcommand{\cc}[1]{\begin{center}#1\end{center}``}
+
+\newcommand{\qd}[1]{\vspace{0.5em}\noindent {\hei {``#1}``}``} %强调　加黑，前空半行
+
+\newcommand{\jie}{\qd{解：}``}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{``#1}``} %表格加宽居中
+
+\newcommand{\mem}[1]{}
+
+\newcommand{\edaan}{\hfill $ \square $ \vskip 4mm}
+
+%-----------------------------------------------------------------------------------------------after mainmatter
+\renewcommand{\kanwu}[1]{\textcolor[rgb]{1,0,0}{\CJKunderline*{``#1}``}``} %勘误加红
+\renewcommand{\kanwu}[1]{``{``#1}``} %取消勘误加红
+\renewcommand{\ywh}[1]{} %删除原文行内内容
+%\renewcommand{\ywh}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\CJKsout*{``#1}``}``}%显示应删除的行内内容
+
+
+\newcommand{\kanwut}[1]{\textcolor[rgb]{1.00,0.00,0.00}{``#1}``} %标题勘误加红
+\renewcommand{\kanwut}[1]{``{``#1}``} %取消勘误加红
+\newcommand{\ywht}[1]{} %删除原文行内内容
+%\renewcommand{\ywht}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\sout{``#1}``}``}%显示应删除的行内内容
+
+
+\newcommand{\kanwutxin}[1]{\textcolor[rgb]{1.00,0.00,0.00}{``#1}``}
+\renewcommand{\kanwutxin}[1]{``{``#1}``}
+
+\newcommand{\ywhtxin}[1]{} %删除原文行内内容
+
+\renewcommand{\kanwuxin}[1]{\textcolor[rgb]{0,0,1}{\CJKunderline*{``#1}``}``} %勘误加蓝
+\renewcommand{\kanwuxin}[1]{``{``#1}``} %取消勘误加蓝
+
+\renewcommand{\ywhxin}[1]{} %删除原文行内内容
+%\renewcommand{\ywhxin}[1]{\textcolor[rgb]{0,0,1}{\CJKsout*{``#1}``}``}%显示应删除的行内内容
+
+%\setlength{\marginparwidth}{4cm}
+%\setlength{\marginparsep}{-2.5cm}
+
+\newcommand{\kanwuxinstu}[1]{\textcolor[rgb]{1,0,1}{\CJKunderline*{``#1}``}``} %勘误加蓝
+\renewcommand{\kanwuxinstu}[1]{``{``#1}``} %取消勘误加蓝
+%\renewcommand{\kanwuxinstu}[1]{}
+
+\newcommand{\ywhxinstu}[1]{} %删除原文行内内容
+%\renewcommand{\ywhxinstu}[1]{\textcolor[rgb]{1,0,1}{\CJKsout*{``#1}``}``}%显示应删除的行内内容
+
+\renewcommand{\ywhtxin}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\sout{``#1}``}``}
+\renewcommand{\ywhtxin}[1]{} %删除原文行内内容
+
+\renewcommand{\kanwutxin}[1]{\textcolor[rgb]{1.00,0.00,0.00}{``#1}``}
+\renewcommand{\kanwutxin}[1]{``#1}
+
+\renewcommand{\yc}[1]{``{``#1}``} %取消隐藏
+%\renewcommand{\yc}[1]{} %隐藏原文内容
+
+%习题隐藏
+\renewcommand{\xtyc}[1]{``{``#1}``} %取消隐藏
+\renewcommand{\xtyc}[1]{} %隐藏原文内容
+
+\renewcommand{\alnr}[1]{} %不显示案例内容
+\renewcommand{\alnr}[1]{``#1} %不显示案例内容
+
+
+%===============勘误与隐藏======================
+
+%%==============答案=============================
+
+\renewcommand{\xxiangxi}[1]{} %隐藏详细答案，只给结果
+%\renewcommand{\xxiangxi}[1]{``#1} %显示详细答案
+
+
+\newcommand{\xiangxistu}[1]{}
+\renewcommand{\xiangxistu}[1]{``#1}
+
+\renewcommand{\daan}[1]{} %隐藏答案内容，不得注释
+\renewcommand{\daan}[1]{``{``#1}``} %显示答案，如不需答案，请注释此句
+
+\renewcommand{\xiangxi}[1]{} %隐藏详细答案，只给结果
+%\renewcommand{\xiangxi}[1]{``#1} %显示详细答案
+
+
+%-------------------------------------------------------------------------------------------------
+
+
+\begin{document}
+应用表上作业法求解表\ref{tab:5ex1}所示的运输问题，给出各个基本可行方案和检验数表，并用闭回路法判断解的最优性。要求：初始基本可行方案用西北角法给出。\daan{\todos{要求：1、应判断问题是否产销平衡；2、每次迭代应给出作业表及检验数表，不需画出闭回路；3、应判断最优方案是否唯一。}``}
+
+
+\begin{table}[H]\centering \topcaption{}\label{tab:5ex1}
+\begin{mytabular}{c|cccc|c}\hline\hline \diagbox{产地}{单位运费}{销地}
+&B1&B2&B3&B4&供应量\\ \hline
+A1&3&9&8&6&6\\
+A2&12&25&7&10&10\\
+A3&6&11&13&14&7\\ \hline
+需求量&3&5&9&6&\\
+\hline\hline\end{mytabular}\end{table}
+
+%===========答案
+\def\ori{``{``{6,11,13,14},{12,25,7,10},{3,9,8,6}``}``}
+\def\sremainder{
+\draw (sr0) node{\footnotesize 7};
+\draw (sr1) node{\footnotesize 10};
+\draw (sr2) node{\footnotesize 6};
+}
+\def\dremainder{
+\draw (dr0) node{\footnotesize 3};
+\draw (dr1) node{\footnotesize 5};
+\draw (dr2) node{\footnotesize 9};
+\draw (dr3) node{\footnotesize 6};
+}
+\def\total{\footnotesize 23}
+
+
+\daan{\qd{答案：}
+\begin{mdframed}
+\jie {需明确此问题为产销平衡运输问题}\todos{答案中需明确}。
+
+\xiangxistu{\noindent\begin{minipage}[c]{0.5\textwidth}
+\parindent 2em
+
+西北角法的初始基本可行方案：
+
+\begin{keytable}[H]
+\centering
+\topcaption{}
+\def\flows{``{``{"","","1","6",""},{"","2","8","",""},{"3","3","","",""}``}``}
+\begin{tikzpicture}[>=stealth]\draw[thick, draw=black] (0,0) grid (4,3);%%%无运输图
+\draworiginlabel{\ori}{2}{3}
+\drawflow{\flows}{2}{3}
+\sremainder
+\dremainder
+\end{tikzpicture}
+\end{keytable}\end{minipage}%
+\hskip 2em
+\noindent\begin{minipage}[c]{0.5\textwidth}
+\parindent 2em
+检验数表为：
+
+\begin{keytable}[H]
+\centering \topcaption{检验数表}%\label{tab:jysb1}
+\begin{mytabular}{c||C{2.5em}|C{2.5em}|C{2.5em}|C{2.5em}``}
+\hline\hline
+ & $B_1$& $B_2$& $B_3$& $B_4$\\ \hline\hline
+ $A_1$ & &  & 17 & 14\\ \hline
+ $A_2$ & -7 &  & & 2\\ \hline
+ $A_3$ &-19 & -20& & \\ \hline\hline
+\end{mytabular}
+\end{keytable}\end{minipage}
+
+\noindent\begin{minipage}[c]{0.5\textwidth}
+
+\vskip 1em
+
+\parindent 2em
+
+调整$A_3B_2$，调整量为1，得到：
+
+\begin{keytable}[H]
+\centering
+\topcaption{}
+\def\flows{``{``{"","1","","6",""},{"","1","9","",""},{"3","3","","",""}``}``}
+\begin{tikzpicture}[>=stealth]\draw[thick, draw=black] (0,0) grid (4,3);%%%无运输图
+\draworiginlabel{\ori}{2}{3}
+\drawflow{\flows}{2}{3}
+\sremainder
+\dremainder
+\end{tikzpicture}
+\end{keytable}\end{minipage}%
+\hskip 2em
+\noindent\begin{minipage}[c]{0.5\textwidth}
+\parindent 2em
+检验数表为：
+
+\begin{keytable}[H]
+\centering \topcaption{检验数表}%\label{tab:jysb1}
+\begin{mytabular}{c||C{2.5em}|C{2.5em}|C{2.5em}|C{2.5em}``}
+\hline\hline
+ & $B_1$& $B_2$& $B_3$& $B_4$\\ \hline\hline
+ $A_1$ & &  & 17 & -6\\ \hline
+ $A_2$ & -7 &  & & -18\\ \hline
+ $A_3$ &1 & &20 & \\ \hline\hline
+\end{mytabular}
+\end{keytable}\end{minipage}
+
+\noindent\begin{minipage}[c]{0.5\textwidth}
+
+\vskip 1em
+
+\parindent 2em
+
+调整$A_2B_4$，调整量为1，得到：
+
+\begin{keytable}[H]
+\centering
+\topcaption{}
+\def\flows{``{``{"","2","","5",""},{"","","9","1",""},{"3","3","","",""}``}``}
+\begin{tikzpicture}[>=stealth]\draw[thick, draw=black] (0,0) grid (4,3);%%%无运输图
+\draworiginlabel{\ori}{2}{3}
+\drawflow{\flows}{2}{3}
+\sremainder
+\dremainder
+\end{tikzpicture}
+\end{keytable}\end{minipage}%
+\hskip 2em
+\noindent\begin{minipage}[c]{0.5\textwidth}
+\parindent 2em
+检验数表为：
+
+\begin{keytable}[H]
+\centering \topcaption{检验数表}%\label{tab:jysb1}
+\begin{mytabular}{c||C{2.5em}|C{2.5em}|C{2.5em}|C{2.5em}``}
+\hline\hline
+ & $B_1$& $B_2$& $B_3$& $B_4$\\ \hline\hline
+ $A_1$ & &  & -1 & -6\\ \hline
+ $A_2$ &11  & 18 & & \\ \hline
+ $A_3$ & 1& 2& & \\ \hline\hline
+\end{mytabular}
+\end{keytable}\end{minipage}
+
+\noindent\begin{minipage}[c]{0.5\textwidth}
+
+\vskip 1em
+
+\parindent 2em
+
+调整$A_1B_4$，调整量为3，得到：
+
+\begin{keytable}[H]
+\centering
+\topcaption{}
+\def\flows{``{``{"","5"," ","2",""},{"","","9","1",""},{"3","","","3",""}``}``}
+\begin{tikzpicture}[>=stealth]\draw[thick, draw=black] (0,0) grid (4,3);%%%无运输图
+\draworiginlabel{\ori}{2}{3}
+\drawflow{\flows}{2}{3}
+\sremainder
+\dremainder
+\end{tikzpicture}
+\end{keytable}\end{minipage}%
+\hskip 2em
+\noindent\begin{minipage}[c]{0.5\textwidth}
+\parindent 2em
+检验数表为：
+
+\begin{keytable}[H]
+\centering \topcaption{检验数表}%\label{tab:jysb1}
+\begin{mytabular}{c||C{2.5em}|C{2.5em}|C{2.5em}|C{2.5em}``}
+\hline\hline
+ & $B_1$& $B_2$& $B_3$& $B_4$\\ \hline\hline
+ $A_1$ & & 6 & 5 & \\ \hline
+ $A_2$ & 5 & 18 & & \\ \hline
+ $A_3$ & -5& &{2} & \\ \hline\hline
+\end{mytabular}
+\end{keytable}\end{minipage}
+
+\vskip 1em}
+
+\noindent\begin{minipage}[c]{0.5\textwidth}
+\vskip 1em
+
+\parindent 2em
+
+
+第四次迭代\xiangxistu{：调整$A_3B_1$，调整量为2，}得到：
+
+\begin{keytable}[H]
+\centering
+\topcaption{}
+\def\flows{``{``{"2","5"," ","",""},{"","","9","1",""},{"1","","","5",""}``}``}
+\begin{tikzpicture}[>=stealth]\draw[thick, draw=black] (0,0) grid (4,3);%%%无运输图
+\draworiginlabel{\ori}{2}{3}
+\drawflow{\flows}{2}{3}
+\sremainder
+\dremainder
+\end{tikzpicture}
+\end{keytable}
+\end{minipage}%\hskip 2em
+\noindent\begin{minipage}[c]{0.5\textwidth}
+\parindent 2em
+检验数表为：
+
+\begin{keytable}[H]
+\centering \topcaption{检验数表}%\label{tab:jysb1}
+\begin{mytabular}{c||C{2.5em}|C{2.5em}|C{2.5em}|C{2.5em}``}
+\hline\hline
+ & $B_1$& $B_2$& $B_3$& $B_4$\\ \hline\hline
+ $A_1$ & & $1$ & $5$ & \\ \hline
+ $A_2$ & $5$ & $13$ & & \\ \hline
+ $A_3$ & & & $7$& $5$ \\ \hline\hline
+\end{mytabular}
+\end{keytable}
+
+所有非基变量格检验数大于0，当前方案为{唯一}最优方案，总运费为173。
+\end{minipage}
+\end{mdframed}
+
+\edaan}
+\end{document}
