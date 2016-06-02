@@ -174,57 +174,44 @@ def get_abstract_latex_log(log):
 # {{{ strip comments from source
 
 def strip_comments(source):
-    # copied from https://gist.github.com/amerberg/a273ca1e579ab573b499
-
+    # modified from https://gist.github.com/amerberg/a273ca1e579ab573b499
     tokens = (
                 'PERCENT', 'BEGINCOMMENT', 'ENDCOMMENT',
                 'BACKSLASH', 'CHAR', 'BEGINVERBATIM',
                 'ENDVERBATIM', 'NEWLINE', 'ESCPCT',
-#                'MAKEATLETTER', 'MAKEATOTHER',
+                'MAKEATLETTER', 'MAKEATOTHER',
              )
     states = (
- #               ('makeatenv', 'exclusive'),
+                ('makeatblock', 'exclusive'),
+                ('makeatlinecomment', 'exclusive'),
                 ('linecomment', 'exclusive'),
                 ('commentenv', 'exclusive'),
                 ('verbatim', 'exclusive')
             )
 
-    # def t_MAKEATLETTER(t):
-    #     r"\\makeatletter"
-    #     t.lexer.begin("makeatenv")
-    #     return t
-    #
-    # def t_makeatenv_CHAR(t):
-    #     r"."
-    #     return t
-    #
-    # def t_makeatenv_NEWLINE(t):
-    #     r"\n"
-    #     return t
-    #
-    # def t_makeatenv_MAKEATOTHER(t):
-    #     r"\\makeatother"
-    #     t.lexer.begin('INITIAL')
-    #     return t
-
-    # Deal with escaped backslashes, so we don't think they're
-    # escaping %.
-    #def t_ANY_BACKSLASH(t):
+    # Deal with escaped backslashes, so we don't
+    # think they're escaping %
     def t_BACKSLASH(t):
         r"\\\\"
         return t
 
-    #One-line comments
+    # Leaving all % in makeatblock
+    def t_MAKEATLETTER(t):
+        r"\\makeatletter"
+        t.lexer.begin("makeatblock")
+        return t
+
+    # One-line comments
     def t_PERCENT(t):
         r"\%"
         t.lexer.begin("linecomment")
 
-    #Escaped percent signs
+    # Escaped percent signs
     def t_ESCPCT(t):
         r"\\\%"
         return t
 
-    #Comment environment, as defined by verbatim package
+    # Comment environment, as defined by verbatim package
     def t_BEGINCOMMENT(t):
         r"\\begin\s*{\s*comment\s*}"
         t.lexer.begin("commentenv")
@@ -244,13 +231,13 @@ def strip_comments(source):
         r"\n"
         return t
 
-    #End comment environment
+    # End comment environment
     def t_commentenv_ENDCOMMENT(t):
         r"\\end\s*{\s*comment\s*}"
         #Anything after \end{comment} on a line is ignored!
         t.lexer.begin('linecomment')
 
-    #Ignore comments of comment environment
+    # Ignore comments of comment environment
     def t_commentenv_CHAR(t):
         r"."
         pass
@@ -278,16 +265,52 @@ def strip_comments(source):
     def t_linecomment_ENDCOMMENT(t):
         r"\n"
         t.lexer.begin("INITIAL")
-        #Newline at the end of a line comment is stripped.
 
-    # def t_linecomment_NEWLINE(t):
-    #     r"\n"
-    #     return t
+        # Newline at the end of a line comment is presevered.
+        return t
 
     #Ignore anything after a % on a line
     def t_linecomment_CHAR(t):
         r"."
         pass
+
+    def t_makeatblock_MAKEATOTHER(t):
+        r"\\makeatother"
+        t.lexer.begin('INITIAL')
+        return t
+
+    def t_makeatblock_BACKSLASH(t):
+        r"\\\\"
+        return t
+
+    # Escaped percent signs in makeatblock
+    def t_makeatblock_ESCPCT(t):
+        r"\\\%"
+        return t
+
+    # presever % in makeatblock
+    def t_makeatblock_PERCENT(t):
+        r"\%"
+        t.lexer.begin("makeatlinecomment")
+        return t
+
+    def t_makeatlinecomment_NEWLINE(t):
+        r"\n"
+        t.lexer.begin('makeatblock')
+        return t
+
+    # Leave contents of makeatblock alone
+    def t_makeatblock_CHAR(t):
+        r"."
+        return t
+
+    def t_makeatblock_NEWLINE(t):
+        r"\n"
+        return t
+
+    # For bad characters, we just skip over it
+    def t_ANY_error(t):
+        t.lexer.skip(1)
 
     lexer = ply.lex.lex()
     lexer.input(source)
@@ -344,7 +367,27 @@ def get_all_indirect_subclasses(cls):
 
     return list(set(all_subcls))
 
-def replace_seperator(s, sep):
-    return s.replace(sep, "")
+
+def replace_latex_space_sperator(s):
+    """
+    "{{", "}}", "{%", %}", "{#" and "#}" are used in jinja
+    template, so we have to put spaces between those
+    characters in latex source in the latex macro.
+    To compile the source, we are now removing the spaces.
+    """
+    pattern_list = [
+        r'{ {',
+        r'} }',
+        r'{ #',
+        r'# }',
+        r'{ %',
+        r'% }'
+        ]
+    for pattern in pattern_list:
+        while pattern in s:
+            s = s.replace(pattern, pattern.replace(" ", ""))
+
+    return s
+
 
 # vim: foldmethod=marker

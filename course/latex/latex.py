@@ -57,7 +57,9 @@ class TexDoc():
 
     def parse(self, latex, test=False):
         """
-        parse the doc into preamble and document
+        parse the doc into preamble and document. If test=True, the
+        method will try to find out which elements of the latex code
+        is missing.
         """
         ele_re_tuple = (
             (r"\documentclass",
@@ -97,13 +99,11 @@ class TexDoc():
                 _("The occurance of %s are not in proper order")
                 % ",".join(required_ele_list))
 
-        [preamble, document] = latex.split((r"\begin{document}"))
-        document = document.split((r"\end{document}"))[0]
-
-        self.preamble = strip_spaces(preamble)
-        self.document = strip_spaces(document, allow_single_empty_line=True)
-
         if not test:
+            [preamble, document] = latex.split((r"\begin{document}"))
+            document = document.split((r"\end{document}"))[0]
+            self.preamble = strip_spaces(preamble)
+            self.document = strip_spaces(document, allow_single_empty_line=True)
             assert self.preamble is not None
             assert self.document is not None
 
