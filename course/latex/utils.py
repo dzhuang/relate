@@ -368,7 +368,7 @@ def get_all_indirect_subclasses(cls):
     return list(set(all_subcls))
 
 
-def replace_latex_space_sperator(s):
+def replace_latex_space_seperator(s):
     """
     "{{", "}}", "{%", %}", "{#" and "#}" are used in jinja
     template, so we have to put spaces between those
