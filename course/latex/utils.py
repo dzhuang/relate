@@ -346,10 +346,9 @@ def strip_spaces(s, allow_single_empty_line=False):
             s = s.replace('\n\n\n', '\n\n')
 
     # remove redundant white spaces and tabs
-    pattern_list = ['  ', '\t ', '\t\t', ' \t']
-    for pattern in pattern_list:
-        while pattern in s:
-            s = s.replace(pattern, ' ')
+    s = s.replace ("\t", " ")
+    while "  " in s:
+        s = s.replace("  ", " ")
 
     return s
 
