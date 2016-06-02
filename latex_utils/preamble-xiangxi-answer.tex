@@ -568,7 +568,7 @@
 \newcommand{\xxiangxi}[1]{} %隐藏更详细答案，只给结果
 \renewcommand{\xxiangxi}[1]{  #1} %显示更详细答案
 \newcommand{\kanwuxin}[1]{\textcolor[rgb]{0,0,1}{\CJKunderline*{  #1}  }  } %勘误加蓝
-%\renewcommand{\kanwuxin}[1]{  {  #1}  } %取消勘误加蓝
+\renewcommand{\kanwuxin}[1]{  {  #1}  } %取消勘误加蓝
 
 \newcommand{\ywhxin}[1]{} %删除原文行内内容
 \renewcommand{\ywhxin}[1]{\textcolor[rgb]{0,0,1}{\CJKsout*{  #1}  }  }%显示应删除的行内内容
@@ -896,9 +896,7 @@
 
 %%==============答案=============================
 
-\renewcommand{\xxiangxi}[1]{} %隐藏详细答案，只给结果
-%\renewcommand{\xxiangxi}[1]{  #1} %显示详细答案
-
+\renewcommand{\xxiangxi}[1]{  #1} %显示详细答案
 
 \newcommand{\xiangxistu}[1]{}
 \renewcommand{\xiangxistu}[1]{  #1}
@@ -906,8 +904,8 @@
 \renewcommand{\daan}[1]{} %隐藏答案内容，不得注释
 \renewcommand{\daan}[1]{  {  #1}  } %显示答案，如不需答案，请注释此句
 
-\renewcommand{\xiangxi}[1]{} %隐藏详细答案，只给结果
-%\renewcommand{\xiangxi}[1]{  #1} %显示详细答案
+%\renewcommand{\xiangxi}[1]{} %隐藏详细答案，只给结果
+\renewcommand{\xiangxi}[1]{  #1} %显示详细答案
 
 
 %-------------------------------------------------------------------------------------------------

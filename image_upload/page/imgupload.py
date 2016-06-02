@@ -440,6 +440,7 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
         self.exclude_parti_tag = getattr(page_desc, "exclude_parti_tag", None)
         self.exclude_username = getattr(page_desc, "exclude_username", None)
         self.exclude_session_tag = getattr(page_desc, "exclude_session_tag", None)
+        self.include_session_tag = getattr(page_desc, "include_session_tag", None)
         self.attempt_included = getattr(page_desc, "attempt_included", "last")
         self.exclude_grade_percentage_lower_than = getattr(page_desc, "exclude_grade_percentage_lower_than", None)
         self.only_graded_pages = getattr(page_desc, "only_graded_pages", True)
@@ -526,6 +527,22 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                                          'session_tag': session_tag,
                                      })
 
+        if self.include_session_tag:
+            for session_tag in self.include_session_tag:
+                stag_qs = fpv_qs.filter(
+                    flow_session__access_rules_tag__exact=session_tag)
+                if len(stag_qs) == 0 and vctx is not None:
+                    vctx.add_warning(location,
+                                     _("no flow session is taged \"%(session_tag)s\" is submitted "
+                                       "in flow \"%(refered_flow_id)s\" "
+                                       "in course \"%(refered_course_id)s\""
+                                       )
+                                     % {
+                                         'refered_course_id': self.refered_course_id,
+                                         'refered_flow_id': self.refered_flow_id,
+                                         'session_tag': session_tag,
+                                     })
+
         if self.exclude_grade_percentage_lower_than:
             try:
                 grade_percentage = float(self.exclude_grade_percentage_lower_than)
@@ -558,6 +575,7 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
             ("exclude_parti_tag", (str, list)),
             ("exclude_username", (str, list)),
             ("exclude_session_tag", (str, list)),
+            ("include_session_tag", (str, list)),
             ("exclude_grade_percentage_lower_than", (str, float)),
             ("only_graded_pages", bool),
         )
@@ -595,6 +613,10 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
         if self.exclude_session_tag is not None:
             visits = visits.exclude(
                 flow_session__access_rules_tag__in=self.exclude_session_tag)
+
+        if self.include_session_tag is not None:
+            visits = visits.filter(
+                flow_session__access_rules_tag__in=self.include_session_tag)
 
         # visits that are not submitted and not im progress has been filtered
         if self.attempt_included == "first":
