@@ -1,0 +1,630 @@
+\documentclass[UTF8]{article}
+\usepackage[paperheight=50cm, top=0.5cm,bottom=0.5cm,left=1cm,right=4.5cm,twoside=false]{geometry}
+\usepackage{ctex}
+\pagestyle{empty}
+%----------------------------------------------------------------------added
+\usepackage{etex}%增加计数器总数（原来是256，宏包多，可能不够用），编译需基于eTeX
+\usepackage{ifpdf}
+\makeatletter
+\def\alloc@#1#2#3#4#5%
+ {\ifnum\count1#1<#4% make sure there's still room
+\allocationnumber\count1#1
+\global\advance\count1#1\@ne
+\global#3#5\allocationnumber
+\wlog{\string#5=\string#2\the\allocationnumber}%
+\else\ifnum#1<6
+\def\etex@dummy@definition{}% <-- code added
+\begingroup \escapechar\m@ne
+\expandafter\alloc@@\expandafter{\string#2}#5%
+\else\errmessage{No room for a new #2}\fi\fi
+ }
+\makeatother
+
+\usepackage[thinlines,thiklines]{easybmat}%分块矩阵
+\usepackage{multicol} %单双列混合分栏
+\usepackage{titletoc}% 控制目录的宏包
+\usepackage{CJKnumb}
+\usepackage{zhnumber}
+\usepackage{type1cm}% tex1cm宏包，控制字体的大小
+\usepackage{times}% 使用Times字体的宏包
+\usepackage{color}% 支持彩色
+\usepackage{xcolor}% 支持彩色
+
+\usepackage{amsmath}% AMSLaTeX宏包 用来排出更加漂亮的公式
+\usepackage{amssymb}
+\usepackage{mathrsfs}% 不同于\mathcal or \mathfrak 之类的英文花体字体
+\usepackage{bm}% 处理数学公式中的黑斜体的宏包
+\usepackage[amsmath,thmmarks]{ntheorem}% 定理类环境宏包，其中 amsmath 选项用来兼容 AMS LaTeX 的宏包
+\usepackage{threeparttable} %三段表，可以表下文加注释
+
+\usepackage{rotating}% 图形和表格的控制 sideway
+\usepackage{setspace}% 定制表格和图形的多行标题行距
+\usepackage{array}%增强表格的功能
+\usepackage{multirow}%使用Multirow宏包，使得表格可以合并多个row格
+\usepackage{longtable}%支持跨页的表格。
+\usepackage[hang]{subfigure}%支持子图 %centerlast 设置最后一行是否居中
+\usepackage[subfigure]{ccaption} %,caption2,
+\usepackage{colortbl}% 彩色表格
+\usepackage{diagbox}
+\usepackage{float}
+\usepackage{pifont}
+\usepackage{cancel} %公式删除线
+\usepackage{soul} %删除线 用法\st{}
+\usepackage{ulem}
+
+\usepackage{tabularx}
+\usepackage{fancybox}
+\usepackage{tcolorbox}
+
+\renewcommand{\mathbf}[1]{\bm{\mathit{#1}  }  }%把黑体变成黑斜体
+
+
+\usepackage{hhline}
+
+\usepackage{newfloat} %新浮动环境
+
+\DeclareFloatingEnvironment[ %答案表
+fileext=dab,
+placement=tbhp,
+]{keytable}
+
+\DeclareFloatingEnvironment[ %答案表
+fileext=daf,
+placement=tbhp,
+]{keyfigure}
+
+\DeclareFloatingEnvironment[ %案例表
+fileext=dab,
+placement=tbhp,
+]{casetable}
+
+\DeclareFloatingEnvironment[ %案例图
+fileext=daf,
+placement=tbhp,
+]{casefigure}
+
+\usepackage[sort&compress,numbers]{natbib}% 支持引用缩写的宏包
+\usepackage{hypernat}
+
+\usepackage{paralist}%使用paralist宏包,改变列表项的格式
+\usepackage{calc}%长度可以用+ - * / 进行计算
+
+
+%在\sum下方用\mathclap{}来包围
+\def\mathllap{\mathpalette\mathllapinternal}
+\def\mathllapinternal#1#2{ %
+\llap{$\mathsurround=0pt#1{#2}$}% $
+}
+\def\clap#1{\hbox to 0pt{\hss#1\hss}  }
+\def\mathclap{\mathpalette\mathclapinternal}
+\def\mathclapinternal#1#2{ %
+\clap{$\mathsurround=0pt#1{#2}$}%
+}
+\def\mathrlap{\mathpalette\mathrlapinternal}
+\def\mathrlapinternal#1#2{ %
+\rlap{$\mathsurround=0pt#1{#2}$}% $
+}
+
+\usepackage{tikz}
+\usetikzlibrary{matrix}
+\usetikzlibrary{arrows,shapes}
+\usetikzlibrary{positioning}
+\usetikzlibrary{svg.path}
+\usepgflibrary{shapes.arrows}
+\usetikzlibrary{backgrounds}
+\usetikzlibrary{petri}
+\usetikzlibrary{decorations.pathreplacing}
+\usetikzlibrary{intersections}
+\usetikzlibrary{decorations.markings}
+\usetikzlibrary{shapes.callouts}
+\usetikzlibrary{decorations.text}
+\usetikzlibrary{calc}
+
+
+\tikzstyle{bridge path}=[white,line width = 1pt,double=black,double distance=0.5pt,->,rounded corners]
+
+\tikzstyle{bridge path}=[rounded corners,decorate,decoration={show path construction,
+lineto code={
+\draw [white,line width = 1pt,double=black,double distance=1pt]
+(\tikzinputsegmentfirst) -- (\tikzinputsegmentlast);},
+curveto code={
+\draw [black,line width = 1pt] (\tikzinputsegmentfirst) .. controls
+(\tikzinputsegmentsupporta) and (\tikzinputsegmentsupportb)
+..(\tikzinputsegmentlast);
+}  }]
+\tikzstyle{over bridge path}=[black,line width = 0.5pt,->,rounded corners]
+
+
+%以下为运输问题的定义
+
+\def\print#1{\pgfmathparse{#1}\pgfmathresult}
+\def\ori{  {  {"","","",""},{"","","",""},{"","","",""}  }  }
+\def\total{\footnotesize ""}
+
+\def\sremainder{
+\draw (sr0) node{\footnotesize ""};
+\draw (sr1) node{\footnotesize""};
+\draw (sr2) node{\footnotesize ""};
+}
+\def\dremainder{
+\draw (dr0) node{\footnotesize ""};
+\draw (dr1) node{\footnotesize ""};
+\draw (dr2) node{\footnotesize ""};
+\draw (dr3) node{\footnotesize ""};
+}
+
+\def\sremainderOri{
+\draw (sr0) node{\footnotesize ""};
+\draw (sr1) node{\footnotesize ""};
+\draw (sr2) node{\footnotesize ""};
+}
+
+\def\dremainderOri{
+\draw (dr0) node{\footnotesize ""};
+\draw (dr1) node{\footnotesize ""};
+\draw (dr2) node{\footnotesize ""};
+\draw (dr3) node{\footnotesize ""};
+}
+
+\def\flows{  {  {"",""," ","",""},{"",""," ","",""},{"","","","",""}  }  }
+\def\xiaosymbol{  {B}  }
+\def\chansymbol{  {A}  }
+
+\def\gongxiao#1{
+\draw (-1,#1+1) rectangle ++(1,0.7);
+\draw (-1, #1+1.7)-- (0,#1+1);
+\node at (-0.65,#1+1.15) {\footnotesize 产地};
+\node at (-0.35,#1+1.55) {\footnotesize 销地};}
+
+\def\drawwithoutgongxiao#1#2#3
+{\foreach \i in {0,1,...,#2}
+{\draw (-1, \i) rectangle ++(1,1);
+\node (A\i) at (-0.5, 0.5+\i) {$\chansymbol_{\pgfmathint{#2-\i+1}\pgfmathresult}$};
+\coordinate (sr\i) at (#3+1.5, \i+0.5);
+\coordinate (ui\i) at (#3+2.5, \i+0.5);
+\foreach \j in {0,1,...,#3}
+{
+\draw (\j,\i) +(.5,.5) rectangle ++(1,1);
+\draw (\j, \i)+(0.75,0.75) node{\footnotesize \print{#1[\i][\j]}  };
+\coordinate (s\i\j) at (\j+0.35, \i+0.35);
+}
+}
+\foreach \j in {0,1,...,#3}
+{\draw (\j, #2+1) rectangle ++(1, 0.70);
+\node (B\j) at (\j+0.5, #2+1.35) {$\xiaosymbol_{\pgfmathint{\j+1}\pgfmathresult}$};
+\coordinate (dr\j) at (\j+0.5, -0.25);
+\coordinate (vj\j) at (\j+0.5, -0.75);
+}
+
+\gongxiao{#2};
+
+}
+
+\def\draworigin#1#2#3
+{\drawwithoutgongxiao#1#2#3
+\gongxiao{#2};
+}
+
+\def\drawnull#1#2 %画无数字无框图。
+{\foreach \i in {0,1,...,#1}
+{
+\foreach \j in {0,1,...,#2}
+{
+\coordinate (s\i\j) at (\j+0.35, \i+0.35);
+}
+}
+\foreach \j in {0,1,...,#2}
+{
+}
+}
+
+\def\draworiginlabel#1#2#3
+{\draw (#3+1,-0.5) rectangle ++(1,0.5);
+\draw (#3+1.5, -0.25) node{\total};
+\draw (#3+1, #2+1) rectangle ++(1,0.70);
+\node at (#3+1.5, #2+1.35) {\footnotesize 产量};
+\draw (-1, -0.5) rectangle (0,0);
+\node at (-0.5, -0.25) {\footnotesize销量};
+\drawwithoutgongxiao{#1}{#2}{#3}
+\foreach \i in {0,1,...,#2} {
+\draw (#3+1,\i) rectangle ++(1,1);
+}
+\foreach \j in {0,1,...,#3} {\draw (\j, -0.5)rectangle ++(1,0.5);
+}
+\gongxiao{#2};
+
+}
+
+
+
+\def\drawflow#1#2#3
+{\foreach \i in {0,1,...,#2}
+\foreach \j in {0,1,...,#3}
+{\draw (\j+0.35, \i+0.35) node{\footnotesize \print{#1[\i][\j]}  };
+}
+}
+
+\def\drawflowfuzhu#1#2#3
+{\foreach \i in {0,1,...,#2}
+\foreach \j in {0,1,...,#3}
+{\draw (\j+0.35, \i+0.35) node{\footnotesize \textcolor[rgb]{1.00,0.00,0.00}{s\i\j}  };
+}
+}
+
+\def\removeh#1#2#3 {\draw[dashed] (0, #1+0.35)--(#3+1,#1+0.35);}
+\def\removev#1#2#3 {\draw[dashed] (#1+0.35, 0)--(#1+0.35,#3);}
+%%=========================================================画闭回路，画法是\drawbhl{起点}{中间路径} 所有点必须含();
+\def\bhl#1{
+\draw[bridge path] (thepoint)--#1--(thepoint);
+}
+
+\def\addarrow#1{
+\draw[white,line width = 2pt, shorten <= 0.65cm] #1--(thepoint);
+\draw[line width = 1pt, shorten <= 0.65cm,->] #1--(thepoint);
+}
+
+\def\drawbhl#1#2
+{\node (thepoint) at #1 [pre and post] {};
+\draw [draw=black, fill=black!15,line width = 1pt] (thepoint) circle (0.1cm);
+\bhl#2
+}
+
+
+
+%====================================位势法
+
+\def\wsflabel#1#2{
+\draw (#2+2,#1+1) rectangle ++(1, 0.7);
+\draw (#2+2.5,#1+1.35) node{\footnotesize $u_i$};
+\draw (-1, -1) rectangle (0,-0.5);
+\draw (-0.5,-0.75) node{\footnotesize $v_j$};
+}
+
+
+
+\def\drawwsf#1#2#3#4
+{
+\foreach \x [count=\j from 0] in #2
+\node at (vj\j) {\footnotesize \x};
+\foreach \y [count=\i from 0] in #1
+\node at (ui\i) {\footnotesize \y};
+%
+\foreach \i in {0,1,...,#3} \draw (#4+2, \i) rectangle ++(1, 1) node {};
+\foreach \j in {0,1,...,#4} \draw (\j, -1) rectangle ++(1, 0.5) node {};
+\wsflabel#3#4
+}
+
+\def\draworiginlabelx#1#2#3 %最右一列稍宽
+{\draworiginx{#1}{#2}{#3}
+\foreach \i in {0,1,...,#2}
+{\draw (#3+1,\i) rectangle ++(1,1);
+
+\foreach \j in {0,1,...,#3} {\draw (\j, -0.5)rectangle ++(1,0.5);
+}
+\draw (#3+1,-0.5) rectangle ++(1,0.5);
+\coordinate (ui\i) at (#3+2.5, \i+0.5);
+\draw (#3+1.5, -0.25) node{\totalx};
+
+\draw (#3+1, #2+1) rectangle ++(1,0.70);
+\node at (#3+1.5, #2+1.35) {\footnotesize 供应量};
+\draw (-1, -0.5) rectangle (0,0);
+\node at (-0.5, -0.25) {\footnotesize 需求量};
+}
+\foreach \j in {0,1,...,#3}
+{
+\coordinate (vj\j) at (\j+0.5, -0.75);
+}
+}
+\def\draworiginx#1#2#3
+{\foreach \i in {0,1,...,#2}
+{\draw (-1, \i) rectangle ++(1,1);
+\node (A\i) at (-0.5, 0.5+\i) {};
+\coordinate (sr\i) at (#3+1.5, \i+0.5);
+\foreach \j in {0,1,...,#3}
+{
+\draw (\j,\i) +(.5,.5) rectangle ++(1,1);
+\draw (\j, \i)+(0.75,0.75) node{\footnotesize \print{#1[\i][\j]}  };
+\coordinate (s\i\j) at (\j+0.35, \i+0.35);
+}
+}
+\foreach \j in {0,1,...,#3}
+{\draw (\j, #2+1) rectangle ++(1, 0.7);
+\node (B\j) at (\j+0.5, #2+1.35) {};
+\coordinate (dr\j) at (\j+0.5, -0.25);
+}
+
+\gongxiao{#2};
+
+}
+
+
+\def\drawvogel#1#2#3#4#5
+{
+\foreach \i in {0,1,...,#4} {\draw (#5+1.5+#1*0.5, \i) rectangle ++(0.5, 1); \draw (#5+1.75+#1*0.5, \i+0.5) node{\footnotesize \print{#3[\i]}  };}
+\foreach \j in {0,1,...,#5} {\draw (\j, -0.5*#1) rectangle ++(1, -0.5); \draw (\j+0.5, -0.5*#1-0.25) node{\footnotesize \print{#2[\j]}  };}
+}
+\def\vogellabel#1#2#3{
+\draw (#3+2,#2+1) rectangle ++(#1*0.5, 0.7);
+\draw (#3+2+0.25*#1,#2+1+0.35) node{\footnotesize{\shortstack{Row}  }  };
+\draw (-1, -0.5-0.5*#1) rectangle (0,-0.5);
+\draw (-0.5,-0.5-0.25*#1) node{\footnotesize\shortstack{Column}  };
+}
+
+\renewcommand\keytablename{答案表}
+\renewcommand{\thekeytable}{\arabic{keytable}  }
+
+\renewcommand\keyfigurename{答案图}
+\renewcommand{\thekeyfigure}{\arabic{keyfigure}  }
+
+
+
+\newcommand{\cdash}{\mbox{—\!\!\!\!—\!\!\!\!—}  }%输入中文破折号的命令
+\newcommand{\dif}{\mathrm{d}  }%在数学模式中输入微分dx
+
+\newcommand{\topcaption}{ %
+\setlength{\abovecaptionskip}{0pt}%
+\setlength{\belowcaptionskip}{-1pt}%
+\caption}
+\newcommand{\botcaption}{ %
+\setlength{\abovecaptionskip}{-1.5pt}%
+\setlength{\belowcaptionskip}{0pt}%
+\caption}
+\newcommand{\bbotcaption}[1]{ %
+\setlength{\abovecaptionskip}{  {#1}  }%
+\setlength{\belowcaptionskip}{0pt}%
+\caption}
+
+
+
+\newcommand{\steppage}[1]{\newpage \thispagestyle{empty}{#1}\newpage}
+\renewcommand{\steppage}[1]{#1}
+
+\newcommand{\red}[1]{\textcolor[rgb]{1,0,0}{#1}  }
+\newcommand{\blue}[1]{\textcolor[rgb]{0,0,1}{#1}  }
+\newcommand{\purple}[1]{\textcolor[rgb]{1,0,1}{#1}  }
+
+% ----------------------------------------------------------------------------------------------------format 2
+
+\renewcommand{\backslashbox}[2]{\diagbox{#1}{#2}  }
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%下面这组命令使浮动对象的缺省值稍微宽松一点，从而防止幅度
+%对象占据过多的文本页面，也可以防止在很大空白的浮动页上放置很小的图形。
+\setcounter{totalnumber}{4}
+\renewcommand{\topfraction}{0.9999999}
+\renewcommand{\textfraction}{0.0000001}
+\renewcommand{\floatpagefraction}{0.9999}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 重定义字体命令
+% 注意win2000,没有 simsun,　最好到网上找一个
+% 一些字体是office2000 带的
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\song}{\CJKfamily{song}  }% 宋体(Windows自带simsun.ttf)
+\newcommand{\fs}{\CJKfamily{fs}  }% 仿宋体 (Windows自带simfs.ttf)
+\newcommand{\kai}{\CJKfamily{kai}  }% 楷体(Windows自带simkai.ttf)
+\newcommand{\hei}{\CJKfamily{hei}  }% 黑体(Windows自带simhei.ttf)
+\newcommand{\li}{\CJKfamily{li}  }% 隶书(Windows自带simli.ttf)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 重定义字号命令
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\chuhao}{\fontsize{44pt}{\baselineskip}\selectfont}% 初号, 1.倍行距
+\newcommand{\xiaochu}{\fontsize{28pt}{\baselineskip}\selectfont}% 初号, 1.倍行距
+\newcommand{\yihao}{\fontsize{26pt}{\baselineskip}\selectfont}% 一号, 1.倍行距
+\newcommand{\erhao}{\fontsize{22pt}{\baselineskip}\selectfont}% 二号, 1.倍行距
+\newcommand{\xiaoer}{\fontsize{18pt}{\baselineskip}\selectfont}% 小二, 单倍行距
+\newcommand{\sanhao}{\fontsize{16pt}{\baselineskip}\selectfont}% 三号, 1.倍行距
+\newcommand{\xiaosan}{\fontsize{15pt}{\baselineskip}\selectfont}% 小三, 1.倍行距
+\newcommand{\sihao}{\fontsize{14pt}{\baselineskip}\selectfont}% 四号, 1.0倍行距
+\newcommand{\banxiaosi}{\fontsize{13pt}{\baselineskip}\selectfont}% 半小四, 1.0倍行距
+\newcommand{\xiaosi}{\fontsize{12pt}{\baselineskip}\selectfont}% 小四, 1.倍行距
+\newcommand{\dawuhao}{\fontsize{11.5pt}{\baselineskip}\selectfont} % 大五号, 单倍行距
+\newcommand{\wuhao}{\fontsize{10.5pt}{\baselineskip}\selectfont}% 五号, 单倍行距
+\newcommand{\xiaowu}{\fontsize{9.5pt}{\baselineskip}\selectfont}% 小五号, 单倍行距
+\newcommand{\liuhao}{\fontsize{8pt}{\baselineskip}\selectfont}% 六号, 单倍行距
+\newcommand{\xiaoliu}{\fontsize{7pt}{\baselineskip}\selectfont}% 六号, 单倍行距
+\newcommand{\banbanxiaosi}{\fontsize{12pt}{\baselineskip}\selectfont}% 半半小四, 1.0倍行距
+
+\newenvironment{proof}{\noindent{\CJKfamily{hei} 证明：}  }{\hfill $ \square $ \vskip 4mm}
+\theoremsymbol{$\square$}
+
+\newenvironment{Daan}{\noindent{\CJKfamily{hei} 答案：}  }{\hfill $ \square $ \vskip 4mm}
+\theoremsymbol{$\square$}
+
+\setlength{\parindent}{2em}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 设置行距和段落间垂直距离
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\renewcommand{\CJKglue}{\hskip 0.1pt plus 0.08\baselineskip}%加大字间距，使每行33个字
+\setlength{\belowcaptionskip}{5pt}% 加大标题和表格之间的距离
+\setlength{\parskip}{2pt plus1pt minus1pt} % 段落之间的竖直距离
+\renewcommand{\baselinestretch}{1.2}% 定义行距
+
+
+\setlength\jot{3pt}%庄加 改变多行公式行距
+
+%%%表格的双线条粗细
+\doublerulesep=0.4pt
+%\extracolsep=0.4pt
+
+\hangcaption
+
+\captionnamefont{\xiaowu\CJKfamily{hei}\rmfamily}
+\captiontitlefont{\xiaowu\CJKfamily{song}\rmfamily}
+\captiondelim{~} %~
+
+
+%%%%%%不要拉大行距使得页面充满
+\raggedbottom
+
+% This is the flag for longer version
+\newcommand{\longer}[2]{#1}
+
+\newcommand{\ds}{\displaystyle}
+
+% define graph scale
+\def\gs{1.0}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 默认字体
+\def\defaultfont{\renewcommand{\baselinestretch}{1}
+\fontsize{9.8pt}{\baselineskip}\selectfont}
+
+
+\makeatletter
+\newcommand\figcaption{\def\@captype{figure}\caption}
+\newcommand\figbotcaption{\def\@captype{figure}\botcaption}
+\newcommand\keyfigcaption{\def\@captype{keyfigure}\botcaption}
+\newcommand\tabcaption{\def\@captype{table}\caption}
+\newcommand\tabtopcaption{\def\@captype{table}\topcaption}
+\newcommand\keytabcaption{\def\@captype{keytable}\topcaption}
+\makeatother %这样在正文中无论是否在图形环境中，都可用 \figcaption 来得到图形标题。 同样地，无论是否在表格环境中，都可用 \tabcaption 来得到表格标题。
+
+\newenvironment{mytabular}{\bgroup\xiaowu\tabular}{\endtabular\egroup}%把tabular中的字体改为小5号
+\newenvironment{mytabularliu}{\bgroup\liuhao\tabular}{\endtabular\egroup}%把tabular中的字体改为小5号
+\newenvironment{mytabularliux}{\bgroup\xiaoliu\tabular}{\endtabular\egroup}%把tabular中的字体改为小5号
+\newenvironment{mytabularx}{\bgroup\xiaowu\tabularx}{\endtabularx\egroup}%把tabular中的字体改为小5号
+%\renewenvironment{tabular}{\bgroup\xiaowu\mytabular}{\endmytabular\egroup}%不成功
+
+\newcommand{\dlab}[2]{\mathop{\mbox{$#1$}  }\limits_{#2}  }%图论专用命令
+%
+%%$L_1=(\dlab 5*, 5)$
+
+\newlength\LL \settowidth\LL{100}
+
+\newcommand{\minitab}[2][l]{\begin{tabular}{#1}#2\end{tabular}  }
+
+\newcommand{\cc}[1]{\begin{center}#1\end{center}  }
+
+\newcommand{\qd}[1]{\vspace{0.5em}\noindent {\hei {#1}  }  } %强调　加黑，前空半行
+
+\newcommand{\jie}{\qd{解：}  }
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}  } %表格加宽居中
+
+
+\begin{document}
+
+\begin{table}[H]\centering \topcaption{}
+\begin{mytabular}{c|ccc|c}\hline\hline \diagbox{产地}{单位运费}{销地}
+&B1&B2&B3&供应量\\ \hline
+A1&4&6&5&70\\
+A2&2&3&8&80\\
+A3&8&7&9&90\\ \hline
+需求量&60&100&50&\\
+\hline\hline\end{mytabular}\end{table}
+
+
+
+\jie 需明确此问题为产销不平衡运输问题。引入虚拟销地$B4$，将问题标准化为
+
+\begin{keytable}[H]\centering \topcaption{}
+\begin{mytabular}{c|cccc|c}\hline\hline \diagbox{产地}{单位运费}{销地}
+&B1&B2&B3&B4&供应量\\ \hline
+A1&4&6&5&0&70\\
+A2&2&3&8&0&80\\
+A3&8&7&9&0&90\\ \hline
+需求量&60&100&50&30\\
+\hline\hline\end{mytabular}\end{keytable}
+
+%===========答案
+\def\ori{  {  {8,7,9,0},{2,3,8,0},{4,6,5,0}  }  }
+\def\sremainder{
+\draw (sr0) node{\footnotesize 90};
+\draw (sr1) node{\footnotesize 80};
+\draw (sr2) node{\footnotesize 70};
+}
+\def\dremainder{
+\draw (dr0) node{\footnotesize 60};
+\draw (dr1) node{\footnotesize 100};
+\draw (dr2) node{\footnotesize 50};
+\draw (dr3) node{\footnotesize 30};
+}
+\def\total{\footnotesize 240}
+
+用最小元素法得到一个初始基本可行方案。
+
+由于单位运费为0的单元格有多个，所以本问题用最小元素法有多种可能性，
+以下为其中一种。不同的初始方案，迭代次数不同，以下这个方案只需1次优化就能迭代出最优方案。
+
+说明：对于最小元素法，并没有哪种套路保证得到的初始基本可行方案可以减少迭代的次数。
+
+\noindent\begin{minipage}[c]{0.5\textwidth}
+\parindent 2em
+
+
+
+\begin{keytable}[H]
+\centering
+\topcaption{}
+\def\flows{  {  {"","60","","30",""},{"60","20","","",""},{"","20","50","",""}  }  }
+\begin{tikzpicture}[>=stealth]\draw[thick, draw=black] (0,0) grid (4,3);%%%无运输图
+\draworiginlabel{\ori}{2}{3}
+\drawflow{\flows}{2}{3}
+\sremainder
+\dremainder
+\end{tikzpicture}
+\end{keytable}\end{minipage}%
+\hskip 2em
+\noindent\begin{minipage}[c]{0.5\textwidth}
+\parindent 2em
+检验数表为：
+
+\begin{keytable}[H]
+\centering \topcaption{检验数表}%\label{tab:jysb1}
+\begin{mytabular}{c||C{2.5em}|C{2.5em}|C{2.5em}|C{2.5em}  }
+\hline\hline
+     & $B_1$& $B_2$& $B_3$& $B_4$\\ \hline\hline
+ $A_1$ & -1& &  & 1\\ \hline
+ $A_2$ &   & & 6& 4\\ \hline
+ $A_3$ & 2 &&3 & \\ \hline\hline
+\end{mytabular}
+\end{keytable}\end{minipage}
+
+\noindent\begin{minipage}[c]{0.5\textwidth}
+
+\vskip 1em
+
+\parindent 2em
+
+调整$A_1B_1$，调整量为20，得到：
+
+\begin{keytable}[H]
+\centering
+\topcaption{}
+\def\flows{  {  {"","60","","30",""},{"40","40","","",""},{"20","","50","",""}  }  }
+\begin{tikzpicture}[>=stealth]\draw[thick, draw=black] (0,0) grid (4,3);%%%无运输图
+\draworiginlabel{\ori}{2}{3}
+\drawflow{\flows}{2}{3}
+\sremainder
+\dremainder
+\end{tikzpicture}
+\end{keytable}\end{minipage}%
+\hskip 2em
+\noindent\begin{minipage}[c]{0.5\textwidth}
+\parindent 2em
+检验数表为：
+
+\begin{keytable}[H]
+\centering \topcaption{检验数表}%\label{tab:jysb1}
+\begin{mytabular}{c||C{2.5em}|C{2.5em}|C{2.5em}|C{2.5em}  }
+\hline\hline
+ & $B_1$& $B_2$& $B_3$& $B_4$\\ \hline\hline
+ $A_1$ & & 1 &  & 2 \\ \hline
+ $A_2$ &  & & 5 & 4 \\ \hline
+ $A_3$ &2 & &2 & \\ \hline\hline
+\end{mytabular}
+
+\end{keytable}
+
+所有非基变量格检验数大于0，当前方案为{唯一}最优方案，总运费为950。
+
+\end{minipage}
+
+
+\end{document}
