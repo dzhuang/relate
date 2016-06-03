@@ -1,13 +1,13 @@
-\BLOCK{ if description }
+        \BLOCK{ if description -}
         \VAR{description}
-\BLOCK{ endif }
+        \BLOCK{ endif }
 
     {% from "latex.jinja" import transportation_preamble as preamble %}
 
     <p align="middle">
     {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
-\BLOCK{ if pricechart_list }
-\BLOCK{ for chart in pricechart_list }
+    \BLOCK{ if pricechart_list -}
+    \BLOCK{ for chart in pricechart_list -}
         \begin{\VAR{chart.table_type}}[H]\centering \topcaption{}
         \begin{mytabular}{c|\BLOCK{ for x in range(0, chart.n_dem) }c\BLOCK{ endfor }|c}\hline\hline \diagbox{产地}{单位运费}{销地}
         &\BLOCK{ if chart.dem_name } \VAR{chart.dem_name_str} \BLOCK{ else } \BLOCK{ for x in range(0, chart.n_dem ) } B\VAR{x+1} & \BLOCK{ endfor } \BLOCK{ endif }供应量\\ \hline
@@ -23,10 +23,6 @@
 \BLOCK{ endif }
 
         \BLOCK{ if result_list }
-        \BLOCK{ for result in result_list }
-        \BLOCK{ if loop.first }
-        \noindent\begin{minipage}[c]{0.5\textwidth}
-        \parindent 2em
         \def\ori{  {  \VAR{base.price_string}  }  }
         \def\sremainder{
         \BLOCK{ for x in range(0, base.n_sup)|reverse }
@@ -39,7 +35,10 @@
         \BLOCK{ endfor }
         }
         \def\total{\footnotesize \VAR{base.total}}
-        \BLOCK{ endif }
+
+        \BLOCK{ for result in result_list -}
+        \noindent\begin{minipage}[c]{0.5\textwidth}
+        \parindent 2em
 
         \begin{keytable}[H]
         \centering
@@ -51,7 +50,9 @@
         \sremainder
         \dremainder
         \end{tikzpicture}
-        \end{keytable}\end{minipage}%
+        \end{keytable}
+
+        \end{minipage}%
         \hskip 2em
         \BLOCK{ if result.verify }
         \noindent\begin{minipage}[c]{0.5\textwidth}
@@ -69,13 +70,13 @@
         \BLOCK{ endfor }
         \hline
         \end{mytabular}
-        \end{keytable}\end{minipage}
+        \end{keytable}
+
+        \end{minipage}
 
         \BLOCK{ endif }
 
         \BLOCK{ if not loop.last }
-
-        \noindent\begin{minipage}[c]{0.5\textwidth}
 
         \vskip 1em
 
