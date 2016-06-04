@@ -1,9 +1,9 @@
-
+        
     {% from "latex.jinja" import transportation_preamble as preamble %}
 
     <p align="middle">
     {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
-        \begin{keytable}[H]\centering \topcaption{}
+    \begin{keytable}[H]\centering \topcaption{}
         \begin{mytabular}{c|cccc|c}\hline\hline \diagbox{产地}{单位运费}{销地}
         & 城市A&城市B&城市C&城市D& 供应量\\ \hline
           代工厂1  & 3&2&4&0&50 \\
@@ -14,9 +14,7 @@
         \hline\hline
         \end{mytabular}\end{keytable}
         
-                                \noindent\begin{minipage}[c]{0.5\textwidth}
-        \parindent 2em
-        \def\ori{  {  {1,4,2,0},{2,3,5,0},{3,2,4,0}  }  }
+                \def\ori{  {  {1,4,2,0},{2,3,5,0},{3,2,4,0}  }  }
         \def\sremainder{
                 \draw (sr0) node{\footnotesize 45};
                 \draw (sr1) node{\footnotesize 35};
@@ -29,7 +27,10 @@
                 \draw (dr3) node{\footnotesize 10};
                 }
         \def\total{\footnotesize 130}
-        
+
+        \noindent\begin{minipage}[c]{0.5\textwidth}
+        \parindent 2em
+
         \begin{keytable}[H]
         \centering
         \topcaption{}
@@ -40,7 +41,9 @@
         \sremainder
         \dremainder
         \end{tikzpicture}
-        \end{keytable}\end{minipage}%
+        \end{keytable}
+
+        \end{minipage}%
         \hskip 2em
                 \noindent\begin{minipage}[c]{0.5\textwidth}
         \parindent 2em
@@ -57,16 +60,18 @@
                 $A_3$ & &3&&3\\ \hline
                 \hline
         \end{mytabular}
-        \end{keytable}\end{minipage}
+        \end{keytable}
+
+        \end{minipage}
 
         
         
-        \noindent\begin{minipage}[c]{0.5\textwidth}
-
         \vskip 1em
 
         
-                
+        \noindent\begin{minipage}[c]{0.5\textwidth}
+        \parindent 2em
+
         \begin{keytable}[H]
         \centering
         \topcaption{}
@@ -77,7 +82,9 @@
         \sremainder
         \dremainder
         \end{tikzpicture}
-        \end{keytable}\end{minipage}%
+        \end{keytable}
+
+        \end{minipage}%
         \hskip 2em
                 \noindent\begin{minipage}[c]{0.5\textwidth}
         \parindent 2em
@@ -94,16 +101,18 @@
                 $A_3$ & &0&&3\\ \hline
                 \hline
         \end{mytabular}
-        \end{keytable}\end{minipage}
+        \end{keytable}
+
+        \end{minipage}
 
         
         
-        \noindent\begin{minipage}[c]{0.5\textwidth}
-
         \vskip 1em
 
         
-                
+        \noindent\begin{minipage}[c]{0.5\textwidth}
+        \parindent 2em
+
         \begin{keytable}[H]
         \centering
         \topcaption{}
@@ -114,7 +123,9 @@
         \sremainder
         \dremainder
         \end{tikzpicture}
-        \end{keytable}\end{minipage}%
+        \end{keytable}
+
+        \end{minipage}%
         \hskip 2em
                 \noindent\begin{minipage}[c]{0.5\textwidth}
         \parindent 2em
@@ -131,7 +142,9 @@
                 $A_3$ & 0&0&&2\\ \hline
                 \hline
         \end{mytabular}
-        \end{keytable}\end{minipage}
+        \end{keytable}
+
+        \end{minipage}
 
         
         

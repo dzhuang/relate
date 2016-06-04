@@ -73,9 +73,15 @@ class PriceChart(object):
 
 class BaseChart(object):
     # 运输作业表定义
-    def __init__(self, pricechart):
+    def __init__(self, pricechart, use_pricechart_name=True):
         self.sup = pricechart.sup
         self.dem = pricechart.dem
+        self.dem_name = None
+        self.sup_name = None
+        self.use_pricechart_name = use_pricechart_name
+        if use_pricechart_name:
+            self.sup_name = pricechart.sup_name
+            self.dem_name = pricechart.dem_name
         self.price = pricechart.price
         assert isinstance(pricechart.sup, list)
         assert isinstance(pricechart.dem, list)
@@ -116,12 +122,12 @@ class TransportResult(object):
         for i, t in enumerate(transport):
             if len(t) == base.n_dem:
                 # 运输量最右侧一个数为空""
-                t.append("\"\"")
+                t.append("")
             elif len(t) == base.n_dem + 1:
                 if not t[-1] == "":
-                    raise ValueError(u"运输方案第%d行的第%d个数值必须为\"\"" % (i, base.n_dem + 1, ))
+                    raise ValueError(u"运输方案第%d行的第%d个数值必须为\"\"" % (i+1, base.n_dem + 1, ))
             else:
-                raise ValueError(u"运输方案第%d行的维数错误" % (i,))
+                raise ValueError(u"运输方案第%d行的维数错误" % (i+1,))
 
         self.transport = transport
         self.transport_string = self.get_transport_string()
