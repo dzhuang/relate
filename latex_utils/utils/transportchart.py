@@ -113,9 +113,15 @@ class TransportResult(object):
         assert isinstance(base, BaseChart)
         assert isinstance(transport, list)
         assert len(transport) == base.n_sup
-        for t in transport:
-            # 运输量最右侧一个数为空""
-            assert len(t) == base.n_dem + 1
+        for i, t in enumerate(transport):
+            if len(t) == base.n_dem:
+                # 运输量最右侧一个数为空""
+                t.append("\"\"")
+            elif len(t) == base.n_dem + 1:
+                if not t[-1] == "":
+                    raise ValueError(u"运输方案第%d行的第%d个数值必须为\"\"" % (i, base.n_dem + 1, ))
+            else:
+                raise ValueError(u"运输方案第%d行的维数错误" % (i,))
 
         self.transport = transport
         self.transport_string = self.get_transport_string()

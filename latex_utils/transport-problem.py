@@ -72,7 +72,7 @@ result2 = TransportResult(
 result3 = TransportResult(
     base = basechart,
     transport = [
-        ["", "40", "5", "5", ""],
+        ["", "40", "5", "5", ],
         ["30", "", "", "5", ""],
         ["","","45","",""],
     ],
