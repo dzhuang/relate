@@ -73,19 +73,24 @@ class PriceChart(object):
 
 class BaseChart(object):
     # 运输作业表定义
-    def __init__(self, pricechart, use_pricechart_name=True):
+    def __init__(self, pricechart, dem_name=None, sup_name=None):
         self.sup = pricechart.sup
         self.dem = pricechart.dem
-        self.dem_name = None
-        self.sup_name = None
-        self.use_pricechart_name = use_pricechart_name
-        if use_pricechart_name:
-            self.sup_name = pricechart.sup_name
-            self.dem_name = pricechart.dem_name
         self.price = pricechart.price
         assert isinstance(pricechart.sup, list)
         assert isinstance(pricechart.dem, list)
         assert isinstance(pricechart.price, list)
+        if dem_name:
+            assert isinstance(dem_name, list)
+            assert len(self.dem) == len(dem_name)
+            assert sup_name is not None
+        self.dem_name = dem_name
+        if sup_name:
+            assert isinstance(sup_name, list)
+            assert len(self.sup) == len(sup_name)
+            assert dem_name is not None
+        self.sup_name = sup_name
+
         for p in self.price:
             assert isinstance(p, list)
             assert len(self.dem) == len(p)

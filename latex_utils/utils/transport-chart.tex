@@ -34,7 +34,7 @@
         \draw (dr\VAR{x}) node{\footnotesize \VAR{base.dem[x]}};
         \BLOCK{ endfor }
         }
-        \def\total{\footnotesize \VAR{base.total}}
+        \def\total\BLOCK{ if base.sup_name }x\BLOCK{ endif }{\footnotesize \VAR{base.total}}
 
         \BLOCK{ for result in result_list -}
         \noindent\begin{minipage}[c]{0.5\textwidth}
@@ -45,10 +45,18 @@
         \topcaption{}
         \def\flows{  {  \VAR{result.transport_string}  }  }
         \begin{tikzpicture}[>=stealth]\draw[thick, draw=black] (0,0) grid (\VAR{base.n_dem},\VAR{base.n_sup});%%%无运输图
-        \draworiginlabel{\ori}{\VAR{base.n_sup-1}}{\VAR{base.n_dem-1}}
+        \draworiginlabel\BLOCK{ if base.sup_name }x\BLOCK{ endif }{\ori}{\VAR{base.n_sup-1}}{\VAR{base.n_dem-1}}
         \drawflow{\flows}{\VAR{base.n_sup-1}}{\VAR{base.n_dem-1}}
         \sremainder
         \dremainder
+        \BLOCK{ if base.sup_name }
+        \BLOCK{- for x in range(0, base.n_dem) }
+        \node at (B\VAR{x}) {\VAR{base.dem_name[x]}};
+        \BLOCK{ endfor -}
+        \BLOCK{- for x in range(0, base.n_sup) }
+        \node at (A\VAR{base.n_sup-x-1}) {\VAR{base.sup_name[x]}};
+        \BLOCK{ endfor -}
+        \BLOCK{ endif -}
         \end{tikzpicture}
         \end{keytable}
 
@@ -63,10 +71,10 @@
         \centering \topcaption{检验数表}%\label{tab:jysb1}
         \begin{mytabular}{c|\BLOCK{ for x in range(0, base.n_dem) }|C{2.5em}\BLOCK{ endfor }  }
         \hline\hline
-        \BLOCK{ for x in range(1, base.n_dem + 1) }& $B_\VAR{x}$ \BLOCK{ endfor } \\ \hline\hline
+        \BLOCK{ for x in range(0, base.n_dem) }& \BLOCK{ if base.dem_name }\VAR{base.dem_name[x]}\BLOCK{ else }$B\VAR{x+1}$\BLOCK{ endif } \BLOCK{ endfor } \\ \hline\hline
 
-        \BLOCK{ for x in range(1, base.n_sup + 1) }
-        $A_\VAR{x}$ & \VAR{result.verify_list[x-1]}\\ \hline
+        \BLOCK{ for x in range(0, base.n_sup) }
+        \BLOCK{ if base.sup_name }\VAR{base.sup_name[x]}\BLOCK{ else }$A\VAR{x+1}$\BLOCK{ endif } & \VAR{result.verify_list[x]}\\ \hline
         \BLOCK{ endfor }
         \hline
         \end{mytabular}
