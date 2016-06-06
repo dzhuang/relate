@@ -4,14 +4,14 @@ from utils.latex_utils import latex_jinja_env, _file_write
 from utils.transportchart import PriceChart, BaseChart, TransportResult
 
 price = PriceChart(
-    sup=[5, 10, 15],
-    sup_name=[u"A", u"B", u"C"],
-    dem=[6, 9, 10],
-    dem_name=[u"I", u"II", u"III"],
+    sup=[30, 40, 30],
+    #sup_name=[u"A", u"B", u"C"],
+    dem=[25, 20, 40],
+    #dem_name=[u"I", u"II", u"III"],
     price = [
-        [10, 15, 5],
-        [4, 6, 9],
-        [8, 7, 11],
+        [5, 6, 9],
+        [9, 4, 8],
+        [10, 7, 5],
     ],
     table_type="table"
 )
@@ -20,14 +20,14 @@ price = PriceChart(
 standard_price = PriceChart(
     sup=price.sup
     ,
-    sup_name=price.sup_name,
-    dem=price.dem + [5]
+    #sup_name=price.sup_name,
+    dem=price.dem + [15]
     ,
-    dem_name=price.dem_name + [u'IV'],
+    #dem_name=price.dem_name + [u'IV'],
     price = [
-        [10, 15, 5, 0],
-        [4, 6, 9, 0],
-        [8, 7, 11, 0],
+        [5, 6, 9, 0],
+        [9, 4, 8, 0],
+        [10, 7, 5, 0],
     ]
     ,
     table_type="keytable"
@@ -39,21 +39,21 @@ pricechart_list.append(standard_price)
 
 basechart = BaseChart(
     pricechart=standard_price,
-    sup_name=["A","B","C"],
-    dem_name=["I","II","III","IV"]
+    #sup_name=["A","B","C"],
+    #dem_name=["I","II","III","IV"]
 )
 
 result1 = TransportResult(
     base = basechart,
     transport = [
-        ["", "", "5", "", ""],
-        ["6", "", "4", "", ""],
-        ["","9","1","5",""],
+        ["25", "", "", "5", ""],
+        ["", "20", "10", "10", ""],
+        ["","","30","",""],
     ],
     verify=[
-        [10, "14", "", 6],
-        ["", "1", "", "2"],
-        ["2", "", "", ""],
+        ["", "2", "1", ""],
+        ["4", "", "", ""],
+        ["8", "6", "", "3"],
     ]
 )
 
@@ -94,7 +94,7 @@ result_list.extend([result1,
 template = latex_jinja_env.get_template('/utils/transport-chart.tex')
 tex = template.render(
     description = u"""
-某供应商有A、B、C三个供货地，向某制造商供应零件，该制造商有I、II、III三个工厂，各工厂的需求量、各供货地的产量(单位：千件)，以及单位运价(千元/千件)如下表所示。试求使总运费最少的调运方案。
+设有产量分别为30，40，30的三个原料产地，欲将原材料运往销量分别为25，20，40的三个销地，单位运价如下表所示。试求总运费最省的调运方案。
     """,
     pricechart_list=pricechart_list,
     base=basechart,
