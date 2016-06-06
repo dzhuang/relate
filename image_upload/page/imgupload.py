@@ -704,8 +704,8 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                 if img.order == 0:
                     found_img = True
                     break
-        if found_img:
-            return img
+            if found_img:
+                return img
         else:
             return None
 
