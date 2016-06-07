@@ -1,0 +1,16 @@
+\BLOCK{ if pre_description -}
+\VAR{pre_description}
+\BLOCK{ endif }
+
+$$\begin{alignat*}{20}
+\VAR{lp.get_goal_str()}\\
+\text{s.t.}\quad
+\BLOCK{ for c in lp.constraints_str_list }
+\VAR{c}
+\BLOCK{ endfor }
+\VAR{lp.sign_str}
+\end{alignat*}$$
+
+\BLOCK{ if after_description -}
+\VAR{after_description}
+\BLOCK{ endif }
