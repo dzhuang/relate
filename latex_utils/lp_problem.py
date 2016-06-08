@@ -4,27 +4,27 @@ from utils.latex_utils import latex_jinja_env, _file_write
 from utils.lpmodel import LP
 
 # lp = LP(type="max",
-#         goal=[6, -2, 2, 2],
+#         goal=[2, -1, 3, 1],
 #         #x="y",
 #         #x_list=["y_1", "y_2", "w_3"],
 #         constraints=[
-#             [1, 4, -4, 1, "<", 6],
-#             [2, -1, 1, 3, "<", 21],
-#             [-1, 3, 3, -1, "<", 29]
+#             [1, 2, 1, 0, "<", 12],
+#             [2, -1, 0, 1, "<", 10],
+#             [0, 0, 1, 1, "<", 8]
 #         ],
 #         #sign=[">", ">", "<", "="],
 #         )
 
 lp = LP(type="max",
-        goal=[-2, 3, 4],
+        goal=[2, 5, 3, 5],
         # x="y",
         # x_list=["y_1", "y_2", "w_3"],
         constraints=[
-            [1, 2, 0,  "<", 12],
-            [1, 3, 1, "<", 18],
-            [0, 0, 1, "<", 4]
+            [1, 1, 3, 4, "<", 8],
+            [1, 3, 1, 1, "<", 21],
+            [3, 2, 1, 2, "<", 15]
         ],
-        # sign=[">", ">", "<", "="],
+        sign=[">", "<", ">", "="],
         )
 
 template = latex_jinja_env.get_template('/utils/lp_model.tex')
@@ -57,5 +57,3 @@ tex = template.render(
 )
 
 r.clipboard_append(tex)
-
-print tex
