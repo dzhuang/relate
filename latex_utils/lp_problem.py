@@ -21,10 +21,10 @@ lp = LP(type="max",
         # x_list=["y_1", "y_2", "w_3"],
         constraints=[
             [1, 1, 3, 4, "<", 8],
-            [1, 3, 1, 1, "<", 21],
-            [3, 2, 1, 2, "<", 15]
+            [1, 3, 1, 1, ">", 21],
+            [3, 2, 1, 2, ">", 15]
         ],
-        sign=[">", "<", ">", "="],
+#        sign=[">", "<", ">", "="],
         )
 
 template = latex_jinja_env.get_template('/utils/lp_model.tex')
@@ -43,7 +43,9 @@ r.withdraw()
 r.clipboard_clear()
 r.clipboard_append(tex)
 
-lp.solve()
+res=lp.solve()
+
+print res.x
 
 template = latex_jinja_env.get_template('/utils/lp_simplex.tex')
 tex = template.render(

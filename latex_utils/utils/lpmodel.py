@@ -294,6 +294,7 @@ class LP(object):
         from scipy.optimize import linprog
 
         def lin_callback(xk, **kwargs):
+            print kwargs
             tableau = kwargs.pop('tableau')
             t = copy.deepcopy(tableau)
             if self.tableau_origin is None:
@@ -318,7 +319,7 @@ class LP(object):
             if len(t) == len(constraints) + 1:
                 self.tableau_list.append(t)
                 basis = kwargs.pop('basis')
-                print basis
+                #print basis
                 b = copy.deepcopy(basis)
                 b = b.tolist()
                 cb = copy.deepcopy(self.goal)
@@ -352,7 +353,7 @@ class LP(object):
             self.solve_x_list += ["x_{%d}" % (n,)]
         self.solve_x_list = ["$%s$" % x for x in self.solve_x_list]
 
-        print res
+        return res
 
     def modified_solve(self):
         constraints = [c for c in self.constraints_origin]
@@ -458,7 +459,7 @@ class LP(object):
     def standized_LP(self):
         self.solve()
         tableau = copy.deepcopy(self.tableau_origin)
-        print tableau
+        #print tableau
 
         tableau.pop(-1)
         tableau.pop(-1)
@@ -467,14 +468,14 @@ class LP(object):
         for c in constraints:
             c.insert(-1, "=")
 
-        print constraints
+        #print constraints
 
         type = self.type
         goal = copy.deepcopy(self.goal)
         while len(goal) < (len(tableau[0]) -1):
             goal.append(0)
 
-        print goal
+        #print goal
 
         return LP(
             type=type,
