@@ -16,6 +16,9 @@ def transport(supply, demand, costs, init_method="LCM"):
     has_degenerated_init_solution = False
     has_degenerated_mid_solution = True
     has_unique_solution = True
+    vogel_list = []
+    solution_list = []
+    s_matrix_list = []
 
     n, m = C.shape
 
@@ -66,6 +69,8 @@ def transport(supply, demand, costs, init_method="LCM"):
                 except:
                     # only one element in row_allowed_sorted
                     col_diff[j] = np.nan
+
+            vogel_list.append([row_diff.tolist(), col_diff.tolist()])
 
             try:
                 diff = np.concatenate((row_diff, col_diff))
@@ -172,6 +177,8 @@ def transport(supply, demand, costs, init_method="LCM"):
             if s[i] == 0:
                 allow_fill_X[i,:] = False
 
+    solution_list.append(np.copy(X))
+
     # Finding optimal solution
     while True:
         u = np.array([np.nan]*n)
@@ -199,9 +206,11 @@ def transport(supply, demand, costs, init_method="LCM"):
                 if np.isnan(X[i,j]):
                     S[i, j] = C[i, j] - u[i] - v[j]
 
+        s_matrix_list.append(S)
+
         # Stop condition
         s = np.nanmin(S)
-        print S
+        #print S
         if s > 0:
             break
         elif s == 0:
@@ -266,6 +275,8 @@ def transport(supply, demand, costs, init_method="LCM"):
                 X[ne] = np.nan
                 break
 
+        solution_list.append (np.copy (X))
+
     # for calculation of total cost
     X_final = np.copy(X)
     for i in range(0, n):
@@ -273,7 +284,8 @@ def transport(supply, demand, costs, init_method="LCM"):
             if np.isnan(X_final[i, j]):
                 X_final[i, j] = 0
 
-    return X, np.sum(X_final*C), has_degenerated_init_solution,\
+    return X, np.sum(X_final*C), solution_list, vogel_list,\
+           s_matrix_list, has_degenerated_init_solution,\
            has_degenerated_mid_solution, has_unique_solution
 
 
@@ -285,11 +297,15 @@ if __name__ == '__main__':
                       [7., 8., 14., 16.],
                       [20., 14., 8., 14.]])
 
-    routes, z, \
+    routes, z, solution_list, vogel_list, \
+    s_matrix_list,\
     has_degenerated_init_solution, \
     has_degenerated_mid_solution, \
     has_unique_solution = transport(supply, demand, costs, init_method="VOGEL")
     print routes, z, has_degenerated_init_solution, has_degenerated_mid_solution, has_unique_solution
+    print vogel_list
+    print solution_list
+    print s_matrix_list
     assert z == 3125
     assert has_degenerated_init_solution, has_degenerated_mid_solution
     assert not has_unique_solution
