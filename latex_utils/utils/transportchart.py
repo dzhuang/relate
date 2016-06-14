@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+import numpy as np
+from transport_solve import transport
+
 class PriceChart(object):
     def __init__(self, sup, dem, price, sup_name=None, dem_name=None, table_type="table"):
         assert isinstance(sup, list)
@@ -73,7 +76,7 @@ class PriceChart(object):
 
 class BaseChart(object):
     # 运输作业表定义
-    def __init__(self, pricechart, dem_name=None, sup_name=None):
+    def __init__(self, pricechart, sup_name=None, dem_name=None):
         self.sup = pricechart.sup
         self.dem = pricechart.dem
         self.price = pricechart.price
@@ -170,3 +173,64 @@ class TransportResult(object):
             # reversed order
             s_list.append( v_string)
         return s_list
+
+class TransportSolved(object):
+    def __init__(self, routes, z, solution_list,
+                 vogel_list, s_matrix_list, has_degenerated_init_solution,
+                 has_degenerated_mid_solution,
+                 has_unique_solution):
+        self.routes = routes
+        self.z = z
+        self.solution_list = solution_list
+        self.vogel_list = vogel_list
+        self.s_matrix_list = s_matrix_list
+        self.has_degenerated_init_solution = has_degenerated_init_solution
+        self.has_degenerated_mid_solution = has_degenerated_mid_solution
+        self.has_unique_solution = has_unique_solution
+        self.s_matrix = s_matrix_list[-1]
+
+
+class TransportSolve(object):
+    def __init__(self, sup, dem, price, sup_name=None, dem_name=None,
+                 pricechart_table_type="table",
+                 standard_table_type="keytable",
+                 solve_table_type="keytable"):
+        self.pricechart = PriceChart(sup, dem, price, sup_name, dem_name, table_type=pricechart_table_type)
+        if sum(sup) == sum(dem):
+            self.is_standard = True
+        else:
+            self.is_standard = False
+        self.sup = np.array(sup)
+        self.dem = np.array(dem)
+        self.costs = np.array(price)
+        self.sup_name = sup_name
+        self.dem_name = dem_name
+        if self.is_standard:
+            self.standard_pricechart = PriceChart(sup, dem, price, sup_name, dem_name, table_type=standard_table_type)
+        self.basechart = BaseChart(self.pricechart, sup_name, dem_name)
+
+    def get_result(self, method="VOGEL"):
+        (routes, z, solution_list,  vogel_list, s_matrix_list,
+         has_degenerated_init_solution, has_degenerated_mid_solution,
+         has_unique_solution) = transport(self.sup, self.dem, self.costs, init_method=method)
+        return TransportSolved(
+            routes, z, solution_list, vogel_list, s_matrix_list,
+            has_degenerated_init_solution, has_degenerated_mid_solution,
+            has_unique_solution
+            )
+
+    def get_result_lcm(self):
+        return self.get_result(method="LCM")
+
+    def get_result_ncm(self):
+        return self.get_result(method="NCM")
+
+    def get_result_vogel(self):
+        return self.get_result(method="VOGEL")
+
+
+
+
+
+
+

@@ -35,27 +35,68 @@ tex = template.render(
 )
 
 
+
 _file_write("lp_test.tex", tex.encode('UTF-8'))
 
 from Tkinter import Tk
 r = Tk()
 r.withdraw()
 r.clipboard_clear()
-r.clipboard_append(tex)
+# r.clipboard_append(tex)
+#
+# res=lp.solve()
+#
+# print res.x
+#
+# template = latex_jinja_env.get_template('/utils/lp_simplex.tex')
+# tex = template.render(
+#     pre_description = u"""
+#     """,
+#     lp = lp,
+#     simplex_pre_description=u"""解：引入松弛变量$x_4, x_5, x_6$，用单纯形法求解如下：
+#     """,
+#     simplex_after_description=u"""最优解唯一。
+#     """
+# )
+#
+# r.clipboard_append(tex)
 
-res=lp.solve()
+lp2 = LP(type="max",
+        goal=[3, 6, 3, 4],
+        # x="y",
+        # x_list=["y_1", "y_2", "w_3"],
+        constraints=[
+            [1, 1, 3, 4, "<", 8],
+            [1, 3, 1, 1, ">", 21],
+            [3, 2, 1, 2, ">", 15]
+        ],
+        #        sign=[">", "<", ">", "="],
+        )
 
-print res.x
+lp_list = []
+lp_list.append(lp)
+lp_list.append(lp2)
 
-template = latex_jinja_env.get_template('/utils/lp_simplex.tex')
-tex = template.render(
-    pre_description = u"""
-    """,
-    lp = lp,
-    simplex_pre_description=u"""解：引入松弛变量$x_4, x_5, x_6$，用单纯形法求解如下：
-    """,
-    simplex_after_description=u"""最优解唯一。
-    """
-)
+import pickle
+with open('testfile.bin', 'wb') as f:
+    pickle.dump(lp_list, f)
 
-r.clipboard_append(tex)
+with open('testfile.bin', 'rb') as f:
+    lp_list_loaded = pickle.load(f)
+
+for l in lp_list_loaded:
+    print l
+    l.solve()
+    template = latex_jinja_env.get_template('/utils/lp_simplex.tex')
+    tex = template.render(
+        pre_description=u"""
+        """,
+        lp=l,
+        simplex_pre_description=u"""解：引入松弛变量$x_4, x_5, x_6$，用单纯形法求解如下：
+        """,
+        simplex_after_description=u"""最优解唯一。
+        """
+    )
+
+    r.clipboard_append(tex)
+

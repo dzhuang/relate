@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from utils.latex_utils import latex_jinja_env, _file_write
-from utils.transportchart import PriceChart, BaseChart, TransportResult
+from utils.transportchart import PriceChart, BaseChart, TransportResult, TransportSolve
 
 price = PriceChart(
     sup=[30, 40, 30],
@@ -103,4 +103,26 @@ tex = template.render(
 
 #print tex
 
-_file_write("transport.tex", tex.encode('UTF-8'))
+#_file_write("transport.tex", tex.encode('UTF-8'))
+
+solve = TransportSolve(
+    sup=price.sup
+    ,
+    # sup_name=price.sup_name,
+    dem=price.dem + [15]
+    ,
+    # dem_name=price.dem_name + [u'IV'],
+    price=[
+        [5, 6, 9, 0],
+        [9, 4, 8, 0],
+        [10, 7, 5, 0],
+    ]
+    ,
+    pricechart_table_type="table"
+
+)
+
+result =solve.get_result()
+
+print result.routes
+print result.has_unique_solution

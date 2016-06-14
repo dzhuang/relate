@@ -28,6 +28,7 @@ THE SOFTWARE.
 
 import django.forms as forms
 from django.utils.translation import ugettext as _, string_concat
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.conf import settings
 from django.db import transaction
@@ -425,6 +426,55 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         return grade_data
 
 # }}}
+
+class LatexImageUploadQuestion(ImageUploadQuestion):
+    def __init__(self, vctx, location, page_desc):
+        super(LatexImageUploadQuestion, self).__init__(vctx, location, page_desc)
+
+        if vctx is not None:
+            #for data_file in page_desc.data_files:
+                try:
+                    if not isinstance(page_desc.data_files, str):
+                        raise ObjectDoesNotExist()
+
+                    from course.content import get_repo_blob
+                    import pickle
+                    from io import BytesIO
+                    data_file = get_repo_blob(vctx.repo, page_desc.data_files, vctx.commit_sha)
+#                    bio = BytesIO(data_file)
+                    with open(data_file, 'rb') as f:
+                        lp_list_loaded = pickle.load(f)
+                    print len(lp_list_loaded)
+                    print lp_list_loaded[0]
+
+
+                except ObjectDoesNotExist:
+                    raise ValidationError("%s: data file '%s' not found"
+                            % (location, page_desc.data_files))
+        self.process_code = getattr(page_desc, "process_code")
+        #self.data_files = getattr(page_desc, "data_files")
+
+    def required_attrs(self):
+        return super(LatexImageUploadQuestion, self).required_attrs() + (
+            ("data_files", str),
+            ("process_class", str),
+            ("process_args", list),
+            ("result_args", list),
+            ("process_code", str),
+        )
+
+    def body(self, page_context, page_data):
+        try:
+            exec self.process_code
+        except:
+            pass
+            #raise
+        return super(LatexImageUploadQuestion, self).body(page_context, page_data)
+    #     pass
+    #
+    # def make_page_data(self):
+    #     pass
+
 
 
 #{{{
