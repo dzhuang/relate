@@ -97,11 +97,22 @@ def request_python_run(run_req, run_timeout, image=None):
                 "unix://var/run/docker.sock")
         docker_tls = getattr(settings, "RELATE_DOCKER_TLS_CONFIG",
                 None)
-        docker_cnx = docker.Client(
-                base_url=docker_url,
-                tls=docker_tls,
-                timeout=docker_timeout,
-                version="1.19")
+
+        import platform
+        if not platform.system().lower().startswith("win"):
+            docker_cnx = docker.Client(
+                    base_url=docker_url,
+                    tls=docker_tls,
+                    timeout=docker_timeout,
+                    version="1.19")
+        else:
+            from docker.utils import kwargs_from_env
+            docker_cnx = docker.Client(
+                timeout = docker_timeout,
+                **kwargs_from_env(assert_hostname=False)
+            )
+
+        print (docker_cnx.info())
 
         if image is None:
             image = settings.RELATE_DOCKER_RUNPY_IMAGE
@@ -144,6 +155,8 @@ def request_python_run(run_req, run_timeout, image=None):
         else:
             port = RUNPY_PORT
 
+        print ("port", port, connect_host_ip)
+
         from time import time, sleep
         start_time = time()
 
@@ -178,11 +191,13 @@ def request_python_run(run_req, run_timeout, image=None):
                 break
 
             except (http_client.BadStatusLine, InvalidPingResponse):
+                raise
                 ct_res = check_timeout()
                 if ct_res is not None:
                     return ct_res
 
             except socket.error as e:
+                raise
                 if e.errno in [errno.ECONNRESET, errno.ECONNREFUSED]:
                     ct_res = check_timeout()
                     if ct_res is not None:
