@@ -112,8 +112,6 @@ def request_python_run(run_req, run_timeout, image=None):
                 **kwargs_from_env(assert_hostname=False)
             )
 
-        print (docker_cnx.info())
-
         if image is None:
             image = settings.RELATE_DOCKER_RUNPY_IMAGE
 
@@ -148,14 +146,15 @@ def request_python_run(run_req, run_timeout, image=None):
                     ["NetworkSettings"]["Ports"]["%d/tcp" % RUNPY_PORT])
             port_host_ip = port_info.get("HostIp")
 
-            if port_host_ip != "0.0.0.0":
-                connect_host_ip = port_host_ip
+            if platform.system().lower().startswith("win"):
+                connect_host_ip = "192.168.99.100"
+            else:
+                if port_host_ip != "0.0.0.0":
+                    connect_host_ip = port_host_ip
 
             port = int(port_info["HostPort"])
         else:
             port = RUNPY_PORT
-
-        print ("port", port, connect_host_ip)
 
         from time import time, sleep
         start_time = time()
@@ -191,13 +190,11 @@ def request_python_run(run_req, run_timeout, image=None):
                 break
 
             except (http_client.BadStatusLine, InvalidPingResponse):
-                raise
                 ct_res = check_timeout()
                 if ct_res is not None:
                     return ct_res
 
             except socket.error as e:
-                raise
                 if e.errno in [errno.ECONNRESET, errno.ECONNREFUSED]:
                     ct_res = check_timeout()
                     if ct_res is not None:

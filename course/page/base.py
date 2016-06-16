@@ -339,7 +339,7 @@ class PageBase(object):
 
         return permissions
 
-    def make_page_data(self):
+    def make_page_data(self, page_context):
         """Return (possibly randomly generated) data that is used to generate
         the content on this page. This is passed to methods below as the *page_data*
         argument. One possible use for this argument would be a random permutation

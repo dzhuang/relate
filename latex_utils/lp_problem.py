@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from utils.latex_utils import latex_jinja_env, _file_write
-from utils.lpmodel import LP
+from latex_utils.utils.latex_utils import latex_jinja_env, _file_write
+from latex_utils.utils.lpmodel import LP
 
 # lp = LP(type="max",
 #         goal=[2, -1, 3, 1],

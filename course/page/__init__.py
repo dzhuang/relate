@@ -39,8 +39,8 @@ from course.page.code import (
         PythonCodeQuestion, PythonCodeQuestionWithHumanTextFeedback)
 from course.page.upload import FileUploadQuestion
 from image_upload.page.imgupload import (
-        ImageUploadQuestion, ImageUploadQuestionWithAnswer,
-        LatexImageUploadQuestion,)  # added by zd
+        ImageUploadQuestion, ImageUploadQuestionWithAnswer)  # added by zd
+from image_upload.page.latexpage import LatexImageUploadQuestion
 
 __all__ = (
         "InvalidPageData",
