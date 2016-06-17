@@ -108,7 +108,7 @@ def request_python_run(run_req, run_timeout, image=None):
         else:
             from docker.utils import kwargs_from_env
             docker_cnx = docker.Client(
-                timeout = docker_timeout,
+                timeout=docker_timeout,
                 **kwargs_from_env(assert_hostname=False)
             )
 
@@ -147,7 +147,7 @@ def request_python_run(run_req, run_timeout, image=None):
             port_host_ip = port_info.get("HostIp")
 
             if platform.system().lower().startswith("win"):
-                connect_host_ip = "192.168.99.100"
+                connect_host_ip = "192.168.99.101"
             else:
                 if port_host_ip != "0.0.0.0":
                     connect_host_ip = port_host_ip
