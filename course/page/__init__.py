@@ -40,7 +40,10 @@ from course.page.code import (
 from course.page.upload import FileUploadQuestion
 from image_upload.page.imgupload import (
         ImageUploadQuestion, ImageUploadQuestionWithAnswer)  # added by zd
-from image_upload.page.latexpage import LatexImageUploadQuestion
+from image_upload.page.latexpage import (
+        LatexRandomImageUploadQuestion, LatexRandomCodeQuestion,
+        LatexRandomCodeQuestionWithHumanTextFeedback
+)
 
 __all__ = (
         "InvalidPageData",
@@ -55,7 +58,10 @@ __all__ = (
         "ChoiceQuestion", "SurveyChoiceQuestion", "MultipleChoiceQuestion",
         "PythonCodeQuestion", "PythonCodeQuestionWithHumanTextFeedback",
         "FileUploadQuestion",
-        "image_uploadQuestion", "ImageUploadQuestionWithAnswer"  # added by zd
+
+        "image_uploadQuestion", "ImageUploadQuestionWithAnswer",
+        "LatexRandomImageUploadQuestion", "LatexRandomCodeQuestion",
+        "LatexRandomCodeQuestionWithHumanTextFeedback", # added by zd
         )
 
 __doc__ = """

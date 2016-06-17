@@ -1,3 +1,25 @@
+\BLOCK{- if show_question}
+
+\BLOCK{ if pre_description -}
+\VAR{pre_description}
+\BLOCK{ endif }
+
+$$\begin{alignat*}{20}
+\VAR{lp.get_goal_str()}\\
+\text{s.t.}\quad
+\BLOCK{ for c in lp.constraints_str_list }
+\VAR{c}
+\BLOCK{ endfor }
+\VAR{lp.sign_str}
+\end{alignat*}$$
+
+\BLOCK{ if after_description -}
+\VAR{after_description}
+\BLOCK{ endif -}
+
+\BLOCK{ endif -}
+
+\BLOCK{- if show_answer}
 \BLOCK{ if simplex_pre_description -}
 \VAR{simplex_pre_description}
 \BLOCK{ endif }
@@ -28,4 +50,5 @@ $\mathbf{C_B}$&$\mathbf{X_B}$\BLOCK{ for x in lp.solve_x_list }&\VAR{x}\BLOCK{ e
 
 \BLOCK{ if simplex_after_description -}
 \VAR{simplex_after_description}
+\BLOCK{ endif }
 \BLOCK{ endif }

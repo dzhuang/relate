@@ -89,6 +89,8 @@ for l in lp_list_loaded:
     l.solve()
     template = latex_jinja_env.get_template('/utils/lp_simplex.tex')
     tex = template.render(
+        show_question = True,
+        show_answer = False,
         pre_description=u"""
         """,
         lp=l,

@@ -158,6 +158,7 @@ def get_sandbox_data_for_page(pctx, page_desc, key):
 
 @course_view
 def view_page_sandbox(pctx):
+    print pctx
     if pctx.role not in [
             participation_role.instructor,
             participation_role.teaching_assistant]:
@@ -263,11 +264,6 @@ def view_page_sandbox(pctx):
         answer_data = get_sandbox_data_for_page(
                 pctx, page_desc, ANSWER_DATA_SESSION_KEY)
 
-        if page_data is None:
-            page_data = page.make_page_data(pctx)
-            pctx.request.session[PAGE_DATA_SESSION_KEY] = (
-                    page_desc.type, page_desc.id, page_data)
-
         from course.models import FlowSession
         from course.page import PageContext
         page_context = PageContext(
@@ -281,6 +277,12 @@ def view_page_sandbox(pctx):
                     participation=pctx.participation),
 
                 in_sandbox=True)
+
+        if page_data is None:
+            page_data = page.make_page_data(page_context)
+            pctx.request.session[PAGE_DATA_SESSION_KEY] = (
+                    page_desc.type, page_desc.id, page_data)
+
 
         title = page.title(page_context, page_data)
         body = page.body(page_context, page_data)

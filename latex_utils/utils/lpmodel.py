@@ -294,7 +294,7 @@ class LP(object):
         from scipy.optimize import linprog
 
         def lin_callback(xk, **kwargs):
-            print kwargs
+            #print kwargs
             tableau = kwargs.pop('tableau')
             t = copy.deepcopy(tableau)
             if self.tableau_origin is None:
@@ -454,7 +454,7 @@ class LP(object):
             self.solve_x_list += ["x_{%d}" % (n,)]
         self.solve_x_list = ["$%s$" % x for x in self.solve_x_list]
 
-        print res
+        #print res
 
     def standized_LP(self):
         self.solve()

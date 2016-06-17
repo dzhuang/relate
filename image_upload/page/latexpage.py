@@ -24,53 +24,97 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+from io import BytesIO
+import pickle
+
 from django.core.exceptions import ObjectDoesNotExist
 
 from course.page import markup_to_html
 from course.page.base import PageBaseWithTitle, PageBaseWithValue, PageBaseWithHumanTextFeedback, \
     PageBaseWithCorrectAnswer
 from course.validation import ValidationError
+from course.content import get_repo_blob
+
 from image_upload.page.imgupload import ImageUploadQuestion
+from course.page.code import PythonCodeQuestion, PythonCodeQuestionWithHumanTextFeedback
 
+from course.page.code import request_python_run_with_retries
 
-class LatexQuestion(PageBaseWithTitle, PageBaseWithValue,
+class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                           PageBaseWithHumanTextFeedback, PageBaseWithCorrectAnswer):
     def __init__(self, vctx, location, page_desc):
-        super(LatexQuestion, self).__init__(vctx, location, page_desc)
+        super(LatexRandomQuestion, self).__init__(vctx, location, page_desc)
 
-        if vctx is not None:
-            #for data_file in page_desc.data_files:
+        # self.question_data_files_list = []
+        # self.question_data_file = ""
+        # if isinstance(page_desc.question_data_files, str):
+        #     self.question_data_files_list = [page_desc.question_data_files]
+        #     self.question_data_file = page_desc.question_data_files
+        # else:
+        #     self.question_data_files_list = page_desc.question_data_files
+        #     self.question_data_file = self.question_data_files_list[0]
+        #
+        # val_file_list = self.question_data_files_list
+        # if hasattr(page_desc, "setup_code_file"):
+        #     val_file_list += page_desc.setup_code_file
+        #
+        # if vctx is not None:
+        #     for data_file in val_file_list:
+        #         try:
+        #             if not isinstance(data_file, str):
+        #                 raise ObjectDoesNotExist()
+        #
+        #             from course.content import get_repo_blob
+        #             get_repo_blob(vctx.repo, data_file, vctx.commit_sha)
+        #
+        #         except ObjectDoesNotExist:
+        #             raise ValidationError("%s: file '%s' not found"
+        #                     % (location, data_file))
+
+
+        if vctx is not None and hasattr(page_desc, "data_files"):
+            if hasattr(page_desc, "data_file_for_page_data"):
+                if not page_desc.data_file_for_page_data in page_desc.data_files:
+                    raise ValidationError("%s: '%s' should be listed in 'data_files'"
+                                          % (location, page_desc.data_file_for_page_data))
+            for data_file in page_desc.data_files:
                 try:
-                    if not isinstance(page_desc.data_files, str):
+                    if not isinstance(data_file, str):
                         raise ObjectDoesNotExist()
 
                     from course.content import get_repo_blob
-                    get_repo_blob(vctx.repo, page_desc.data_files, vctx.commit_sha)
-
+                    get_repo_blob(vctx.repo, data_file, vctx.commit_sha)
                 except ObjectDoesNotExist:
                     raise ValidationError("%s: data file '%s' not found"
-                            % (location, page_desc.data_files))
-        self.process_code = getattr(page_desc, "process_code")
+                            % (location, data_file))
 
-        # self.lp = lp_list_loaded[0]
-        #self.data_files = getattr(page_desc, "data_files")
+        self.question_process_code = getattr(page_desc, "question_process_code", None)
+        self.answer_process_code = getattr(page_desc, "answer_process_code", None)
+        self.data_file_for_page_data = getattr(page_desc, "answer_process_code", None)
+        self.page_context = None
 
     def required_attrs(self):
-        return super(LatexQuestion, self).required_attrs() + (
-            ("data_files", str),
-            ("process_class", str),
-            ("process_args", list),
-            ("result_args", list),
-            ("process_code", str),
+        return super(LatexRandomQuestion, self).required_attrs() + (
+            ("data_files", (list,str)),
+            ("question_process_code", str),
+        )
+
+    def allowed_attrs(self):
+        return super(LatexRandomQuestion, self).allowed_attrs() + (
+            ("data_file_for_page_data", str),
+            ("setup_code_file", list),
+            ("latex_template_file", list),
+            ("setup_code", str),
+            ("answer_process_code", str),
         )
 
     def make_page_data(self, page_context):
-        if not self.page_desc.data_files:
+        if not hasattr(self.page_desc, "data_file_for_page_data"):
             return {}
-        from course.content import get_repo_blob
-        from io import BytesIO
-        import pickle
-        repo_bytes_data = get_repo_blob(page_context.repo, self.page_desc.data_files, page_context.commit_sha).data
+        repo_bytes_data = get_repo_blob(
+            page_context.repo,
+            self.page_desc.data_file_for_page_data,
+            page_context.commit_sha).data
         bio = BytesIO(repo_bytes_data)
         repo_data_loaded = pickle.load(bio)
         if not isinstance(repo_data_loaded, (list, tuple)):
@@ -108,7 +152,6 @@ class LatexQuestion(PageBaseWithTitle, PageBaseWithValue,
         else:
             return None
 
-
     def body(self, page_context, page_data):
         try:
             exec self.process_code
@@ -118,24 +161,48 @@ class LatexQuestion(PageBaseWithTitle, PageBaseWithValue,
 
         from latex_utils.utils import latex_jinja_env
 
-        l = self.get_problem_data(page_context, page_data)
-        l.solve()
-        template = latex_jinja_env.get_template('latex_utils/utils/lp_simplex.tex')
-        tex = template.render(
-            pre_description=u"""
-                """,
-            lp=l,
-            simplex_pre_description=u"""解：引入松弛变量$x_4, x_5, x_6$，用单纯形法求解如下：
-                """,
-            simplex_after_description=u"""最优解唯一。
-                """
-        )
+        # l = self.get_problem_data(page_context, page_data)
+        # l.solve()
+        # template = latex_jinja_env.get_template('latex_utils/utils/lp_simplex.tex')
+        # tex = template.render(
+        #     show_question = True,
+        #     pre_description=u"""
+        #         """,
+        #     lp=l,
+        #     simplex_pre_description=u"""解：引入松弛变量$x_4, x_5, x_6$，用单纯形法求解如下：
+        #         """,
+        #     simplex_after_description=u"""最优解唯一。
+        #         """
+        # )
 
-        return super(LatexQuestion, self).body(page_context, page_data) + markup_to_html(page_context,tex)
+        return super(LatexRandomQuestion, self).body(page_context, page_data) #+ markup_to_html(page_context, tex)
+
+    # def correct_answer(self, page_context, page_data, answer_data, grade_data):
+    #     from latex_utils.utils import latex_jinja_env
+    #
+    #     l = self.get_problem_data(page_context, page_data)
+    #     l.solve()
+    #     template = latex_jinja_env.get_template('latex_utils/utils/lp_simplex.tex')
+    #     tex = template.render(
+    #         show_answer = True,
+    #         pre_description=u"""
+    #             """,
+    #         lp=l,
+    #         simplex_pre_description=u"""解：引入松弛变量$x_4, x_5, x_6$，用单纯形法求解如下：
+    #             """,
+    #         simplex_after_description=u"""最优解唯一。
+    #             """
+    #     )
+    #     return markup_to_html(page_context, tex)
 
 
-class LatexImageUploadQuestion(LatexQuestion, ImageUploadQuestion):
+class LatexRandomImageUploadQuestion(LatexRandomQuestion, ImageUploadQuestion):
     pass
 
 
+class LatexRandomCodeQuestion(LatexRandomQuestion, PythonCodeQuestion):
+    pass
 
+class LatexRandomCodeQuestionWithHumanTextFeedback(
+    LatexRandomQuestion, PythonCodeQuestionWithHumanTextFeedback):
+    pass
