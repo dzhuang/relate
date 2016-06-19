@@ -77,12 +77,19 @@ lp_list = []
 lp_list.append(lp)
 lp_list.append(lp2)
 
-import pickle
-with open('testfile.bin', 'wb') as f:
-    pickle.dump(lp_list, f)
+# import pickle
+# with open('testfile.bin', 'wb') as f:
+#     pickle.dump(lp_list, f)
+#
+# with open('testfile.bin', 'rb') as f:
+#     lp_list_loaded = pickle.load(f)
 
-with open('testfile.bin', 'rb') as f:
-    lp_list_loaded = pickle.load(f)
+import dill
+with open('dill.bin', 'wb') as f:
+    dill.dump(lp_list, f)
+
+with open('dill.bin', 'rb') as f:
+    lp_list_loaded = dill.load(f)
 
 for l in lp_list_loaded:
     print l

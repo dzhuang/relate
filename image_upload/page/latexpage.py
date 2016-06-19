@@ -24,6 +24,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+import six
 from io import BytesIO
 import pickle
 
@@ -45,38 +46,15 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
     def __init__(self, vctx, location, page_desc):
         super(LatexRandomQuestion, self).__init__(vctx, location, page_desc)
 
-        # self.question_data_files_list = []
-        # self.question_data_file = ""
-        # if isinstance(page_desc.question_data_files, str):
-        #     self.question_data_files_list = [page_desc.question_data_files]
-        #     self.question_data_file = page_desc.question_data_files
-        # else:
-        #     self.question_data_files_list = page_desc.question_data_files
-        #     self.question_data_file = self.question_data_files_list[0]
-        #
-        # val_file_list = self.question_data_files_list
-        # if hasattr(page_desc, "setup_code_file"):
-        #     val_file_list += page_desc.setup_code_file
-        #
-        # if vctx is not None:
-        #     for data_file in val_file_list:
-        #         try:
-        #             if not isinstance(data_file, str):
-        #                 raise ObjectDoesNotExist()
-        #
-        #             from course.content import get_repo_blob
-        #             get_repo_blob(vctx.repo, data_file, vctx.commit_sha)
-        #
-        #         except ObjectDoesNotExist:
-        #             raise ValidationError("%s: file '%s' not found"
-        #                     % (location, data_file))
-
-
         if vctx is not None and hasattr(page_desc, "data_files"):
             if hasattr(page_desc, "data_file_for_page_data"):
                 if not page_desc.data_file_for_page_data in page_desc.data_files:
                     raise ValidationError("%s: '%s' should be listed in 'data_files'"
                                           % (location, page_desc.data_file_for_page_data))
+            if hasattr (page_desc, "jinja_env"):
+                if not page_desc.jinja_env in page_desc.data_files:
+                    raise ValidationError ("%s: '%s' should be listed in 'data_files'"
+                                           % (location, page_desc.jinja_env))
             for data_file in page_desc.data_files:
                 try:
                     if not isinstance(data_file, str):
@@ -104,7 +82,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
             ("data_file_for_page_data", str),
             ("setup_code_file", list),
             ("latex_template_file", list),
-            ("setup_code", str),
+            ("background_code", str),
             ("answer_process_code", str),
         )
 
@@ -135,7 +113,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
 
         return {"problem_data": problem_data}
 
-    def get_problem_data(self, page_context, page_data):
+    def get_problem_b64_data(self, page_context, page_data):
         if page_context.in_sandbox or page_data is None:
             page_data = self.make_page_data(page_context)
 
@@ -143,21 +121,21 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
             problem_b64_data = page_data["problem_data"]
             from base64 import b64decode
             problem_bytes_data = b64decode(problem_b64_data)
-            from io import BytesIO
-            import pickle
-            bio = BytesIO(problem_bytes_data)
-            problem_data = pickle.load(bio)
+            # from io import BytesIO
+            # import pickle
+            # bio = BytesIO(problem_bytes_data)
+            # problem_data = pickle.load(bio)
 
-            return problem_data
+            return problem_b64_data
         else:
             return None
 
     def body(self, page_context, page_data):
-        try:
-            exec self.process_code
-        except:
-            pass
-            #raise
+        # try:
+        #     exec self.process_code
+        # except:
+        #     pass
+        #     #raise
 
         from latex_utils.utils import latex_jinja_env
 
@@ -175,8 +153,93 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
         #         """
         # )
 
-        return super(LatexRandomQuestion, self).body(page_context, page_data) #+ markup_to_html(page_context, tex)
+        jinja2_str = self.get_jinja_tmpl(page_context,page_data,"question_process_code")
 
+        print jinja2_str
+
+        return super(LatexRandomQuestion, self).body(page_context, page_data) + markup_to_html(page_context, jinja2_str)
+
+    def get_jinja_tmpl(self, page_context, page_data, code_name):
+        # {{{ request run
+
+        run_jinja_req = {"compile_only": False}
+
+        def transfer_attr_to(name, from_name=None):
+            if from_name:
+                if hasattr(self.page_desc, from_name):
+                    run_jinja_req[name] = getattr(self.page_desc, from_name)
+            elif hasattr(self.page_desc, name):
+                run_jinja_req[name] = getattr(self.page_desc, name)
+
+        transfer_attr_to("user_code", from_name=code_name)
+
+        transfer_attr_to("setup_code", from_name="background_code")
+
+        if hasattr(self.page_desc, "data_files"):
+            run_jinja_req["data_files"] = {}
+
+            from course.content import get_repo_blob
+
+            for data_file in self.page_desc.data_files:
+                from base64 import b64encode
+                run_jinja_req["data_files"][data_file] = \
+                        b64encode(
+                                get_repo_blob(
+                                    page_context.repo, data_file,
+                                    page_context.commit_sha).data).decode()
+
+            question_b64_data = self.get_problem_b64_data (page_context, page_data)
+#            print question_b64_data
+            if question_b64_data:
+                run_jinja_req["data_files"]["question_data"] = question_b64_data
+
+            # for k,v in run_jinja_req["data_files"].items():
+            #     print k
+
+        try:
+            response_dict = request_python_run_with_retries(run_jinja_req,
+                    run_timeout=self.page_desc.timeout)
+        except:
+            from traceback import format_exc
+            response_dict = {
+                    "result": "uncaught_error",
+                    "message": "Error connecting to container",
+                    "traceback": "".join(format_exc()),
+                    }
+
+        if response_dict["result"] in [
+                "uncaught_error",
+                "setup_compile_error",
+                "setup_error",
+                "test_compile_error",
+                "test_error"]:
+            error_msg_parts = ["RESULT: %s" % response_dict["result"]]
+            for key, val in sorted(response_dict.items()):
+                if (key not in ["result", "figures"]
+                        and val
+                        and isinstance(val, six.string_types)):
+                    error_msg_parts.append("-------------------------------------")
+                    error_msg_parts.append(key)
+                    error_msg_parts.append("-------------------------------------")
+                    error_msg_parts.append(val)
+            error_msg_parts.append("-------------------------------------")
+            error_msg_parts.append("user code")
+            error_msg_parts.append("-------------------------------------")
+            error_msg_parts.append(self.page_desc.question_process_code)
+            error_msg_parts.append("-------------------------------------")
+
+            error_msg = "\n".join(error_msg_parts)
+            raise RuntimeError(error_msg)
+
+        from relate.utils import dict_to_struct
+        response = dict_to_struct(response_dict)
+
+        if hasattr(response, "stdout") and response.stdout:
+            return response.stdout.encode("utf8")
+        else:
+            return ""
+
+        # }}}
     # def correct_answer(self, page_context, page_data, answer_data, grade_data):
     #     from latex_utils.utils import latex_jinja_env
     #
