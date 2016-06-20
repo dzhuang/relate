@@ -26,7 +26,7 @@ THE SOFTWARE.
 
 import six
 from io import BytesIO
-import cloudpickle as pickle
+import pickle
 from hashlib import md5
 
 from django.core.exceptions import ObjectDoesNotExist
@@ -38,9 +38,9 @@ from course.validation import ValidationError
 from course.content import get_repo_blob
 
 from image_upload.page.imgupload import ImageUploadQuestion
-from course.page.code import PythonCodeQuestion, PythonCodeQuestionWithHumanTextFeedback
-
-from course.page.code import request_python_run_with_retries
+from course.page.code import (
+    PythonCodeQuestion, PythonCodeQuestionWithHumanTextFeedback,
+    request_python_run_with_retries)
 
 class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                           PageBaseWithHumanTextFeedback, PageBaseWithCorrectAnswer):
@@ -74,12 +74,14 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
         self.data_file_for_page_data = getattr(page_desc, "answer_process_code", None)
         #self.page_data_md5_file = getattr(page_desc, "page_data_md5_file")
         self.page_context = None
+        self.docker_run_timeout = getattr(page_desc, "docker_timeout", 0.5)
 
     def required_attrs(self):
         return super(LatexRandomQuestion, self).required_attrs() + (
             ("data_files", (list,str)),
             ("question_process_code", str),
             ("page_data_md5_file", str),
+            # ("timeout", (int, float)),
         )
 
     def allowed_attrs(self):
@@ -89,6 +91,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
             ("latex_template_file", list),
             ("background_code", str),
             ("answer_process_code", str),
+            ("docker_timeout", (int, float))
         )
 
     def make_page_data(self, page_context):
@@ -124,13 +127,10 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
         page_data_question_key = self.get_page_data_md5_key(page_context, part="question")
         page_data_answer_key = self.get_page_data_md5_key(page_context, part="answer")
 
-
-
-        question_rendered = self.update_page_data(
-            page_context, question_data, "question_process_code")
-        print question_rendered, page_data_question_key, "question"
-        answer_rendered = self.update_page_data(
-            page_context, question_data, "answer_process_code")
+        question_rendered = self.jinja_runpy(
+            page_context, question_data, "question_process_code", common_code_name="background_code")
+        answer_rendered = self.jinja_runpy(
+            page_context, question_data, "answer_process_code", common_code_name="background_code")
 
         page_data[page_data_question_key] = question_rendered
         page_data[page_data_answer_key] = answer_rendered
@@ -148,18 +148,6 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
 
         return "%s_%s" % (key_pre, part)
 
-
-    # def get_problem_b64_data(self, page_context, page_data):
-    #     if page_context.in_sandbox or page_data is None:
-    #         page_data = self.make_page_data(page_context)
-    #
-    #     if page_data:
-    #         problem_b64_data = page_data["question_data"]
-    #
-    #         return problem_b64_data
-    #     else:
-    #         return None
-
     def body(self, page_context, page_data):
         if page_context.in_sandbox or page_data is None:
             page_data = self.make_page_data(page_context)
@@ -168,16 +156,17 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
 
         question_str = page_data[page_data_question_key]
 
-        print question_str
-
-#        print "question_data" in page_data
-#        print type(page_data)
-
-        #jinja2_str = self.update_page_data(page_context, page_data["question_data"], "question_process_code")
+        if not question_str:
+            #print "no question_str, so we need to generate one"
+            question_str = self.jinja_runpy(
+                page_context,
+                page_data["question_data"],
+                "question_process_code",
+                common_code_name="background_code")
 
         return super(LatexRandomQuestion, self).body(page_context, page_data) + markup_to_html(page_context, question_str)
 
-    def update_page_data(self, page_context, question_data, code_name):
+    def jinja_runpy(self, page_context, question_data, code_name, common_code_name=""):
         # {{{ request run
 
         assert question_data
@@ -187,19 +176,20 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
             if from_name:
                 if hasattr(self.page_desc, from_name):
                     run_jinja_req[name] = getattr(self.page_desc, from_name)
-            # if from_name:
-            #     # allow multiple code to be transfered
-            #     if not isinstance(from_name, list):
-            #         from_name = [from_name]
-            #     for fr in from_name:
-            #         if hasattr(self.page_desc, fr):
-            #             run_jinja_req[name] += getattr(self.page_desc, fr)
             elif hasattr(self.page_desc, name):
                 run_jinja_req[name] = getattr(self.page_desc, name)
 
-        transfer_attr_to("user_code", from_name=code_name)
+        # def prepend_code_to(name, pre_code_name):
+        #     if hasattr(self.page_desc, name) and hasattr(self.page_desc, pre_code_name):
+        #         print pre_code_name
+        #         print getattr(self.page_desc, pre_code_name)
+        #         run_jinja_req[name] = getattr(self.page_desc, pre_code_name)+ u"\n" + run_jinja_req[name]
 
-        transfer_attr_to("setup_code", from_name="background_code")
+        run_jinja_req["user_code"] = ""
+
+        transfer_attr_to("setup_code", from_name=code_name)
+        if common_code_name:
+            run_jinja_req["setup_code"] = getattr(self.page_desc, common_code_name) + u"\n" + run_jinja_req["setup_code"]
 
         if hasattr(self.page_desc, "data_files"):
             run_jinja_req["data_files"] = {}
@@ -216,7 +206,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
 
         try:
             response_dict = request_python_run_with_retries(run_jinja_req,
-                    run_timeout=self.page_desc.timeout)
+                    run_timeout=self.docker_run_timeout)
         except:
             from traceback import format_exc
             response_dict = {
@@ -258,23 +248,25 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
             return ""
 
         # }}}
-    # def correct_answer(self, page_context, page_data, answer_data, grade_data):
-    #     from latex_utils.utils import latex_jinja_env
-    #
-    #     l = self.get_question_data(page_context, page_data)
-    #     l.solve()
-    #     template = latex_jinja_env.get_template('latex_utils/utils/lp_simplex.tex')
-    #     tex = template.render(
-    #         show_answer = True,
-    #         pre_description=u"""
-    #             """,
-    #         lp=l,
-    #         simplex_pre_description=u"""解：引入松弛变量$x_4, x_5, x_6$，用单纯形法求解如下：
-    #             """,
-    #         simplex_after_description=u"""最优解唯一。
-    #             """
-    #     )
-    #     return markup_to_html(page_context, tex)
+
+    def correct_answer(self, page_context, page_data, answer_data, grade_data):
+        page_data_answer_key = self.get_page_data_md5_key(page_context, part="answer")
+
+        answer_str = page_data[page_data_answer_key]
+
+        if not answer_str:
+            #print "no answer_str, so we need to generate one"
+            answer_str = self.jinja_runpy(
+                page_context,
+                page_data["question_data"],
+                "answer_process_code",
+                common_code_name="background_code")
+
+        super_correct_answer = super(LatexRandomQuestion, self).correct_answer(page_context, page_data, answer_data, grade_data)
+        if super_correct_answer:
+            return super_correct_answer + markup_to_html(page_context, answer_str)
+        else:
+            return markup_to_html(page_context, answer_str)
 
 
 class LatexRandomImageUploadQuestion(LatexRandomQuestion, ImageUploadQuestion):

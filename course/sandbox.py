@@ -158,7 +158,6 @@ def get_sandbox_data_for_page(pctx, page_desc, key):
 
 @course_view
 def view_page_sandbox(pctx):
-    print pctx
     if pctx.role not in [
             participation_role.instructor,
             participation_role.teaching_assistant]:
