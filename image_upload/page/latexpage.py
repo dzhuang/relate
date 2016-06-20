@@ -26,7 +26,8 @@ THE SOFTWARE.
 
 import six
 from io import BytesIO
-import pickle
+import cloudpickle as pickle
+from hashlib import md5
 
 from django.core.exceptions import ObjectDoesNotExist
 
@@ -51,7 +52,10 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                 if not page_desc.data_file_for_page_data in page_desc.data_files:
                     raise ValidationError("%s: '%s' should be listed in 'data_files'"
                                           % (location, page_desc.data_file_for_page_data))
-            if hasattr (page_desc, "jinja_env"):
+            if not page_desc.page_data_md5_file in page_desc.data_files:
+                raise ValidationError("%s: '%s' should be listed in 'data_files'"
+                                      % (location, page_desc.page_data_md5_file))
+            if hasattr(page_desc, "jinja_env"):
                 if not page_desc.jinja_env in page_desc.data_files:
                     raise ValidationError ("%s: '%s' should be listed in 'data_files'"
                                            % (location, page_desc.jinja_env))
@@ -60,7 +64,6 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                     if not isinstance(data_file, str):
                         raise ObjectDoesNotExist()
 
-                    from course.content import get_repo_blob
                     get_repo_blob(vctx.repo, data_file, vctx.commit_sha)
                 except ObjectDoesNotExist:
                     raise ValidationError("%s: data file '%s' not found"
@@ -69,12 +72,14 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
         self.question_process_code = getattr(page_desc, "question_process_code", None)
         self.answer_process_code = getattr(page_desc, "answer_process_code", None)
         self.data_file_for_page_data = getattr(page_desc, "answer_process_code", None)
+        #self.page_data_md5_file = getattr(page_desc, "page_data_md5_file")
         self.page_context = None
 
     def required_attrs(self):
         return super(LatexRandomQuestion, self).required_attrs() + (
             ("data_files", (list,str)),
             ("question_process_code", str),
+            ("page_data_md5_file", str),
         )
 
     def allowed_attrs(self):
@@ -89,6 +94,8 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
     def make_page_data(self, page_context):
         if not hasattr(self.page_desc, "data_file_for_page_data"):
             return {}
+
+        # get random question_data
         repo_bytes_data = get_repo_blob(
             page_context.repo,
             self.page_desc.data_file_for_page_data,
@@ -98,7 +105,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
         if not isinstance(repo_data_loaded, (list, tuple)):
             return {}
         n_data = len(repo_data_loaded)
-        if n_data <= 1:
+        if n_data < 1:
             return {}
         import random
         all_data = list(repo_data_loaded)
@@ -107,67 +114,86 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
         selected_data_bytes = BytesIO()
         pickle.dump(random_data, selected_data_bytes)
 
+        page_data = {}
         from base64 import b64encode
+        question_data = b64encode(selected_data_bytes.getvalue()).decode()
 
-        problem_data = b64encode(selected_data_bytes.getvalue()).decode()
+        page_data["question_data"] = question_data
 
-        return {"problem_data": problem_data}
+        # make latex code of question and answer
+        page_data_question_key = self.get_page_data_md5_key(page_context, part="question")
+        page_data_answer_key = self.get_page_data_md5_key(page_context, part="answer")
 
-    def get_problem_b64_data(self, page_context, page_data):
+
+
+        question_rendered = self.update_page_data(
+            page_context, question_data, "question_process_code")
+        print question_rendered, page_data_question_key, "question"
+        answer_rendered = self.update_page_data(
+            page_context, question_data, "answer_process_code")
+
+        page_data[page_data_question_key] = question_rendered
+        page_data[page_data_answer_key] = answer_rendered
+
+        return page_data
+
+    def get_page_data_md5_key(self, page_context, part=""):
+        file_data = get_repo_blob(
+            page_context.repo,
+            self.page_desc.page_data_md5_file,
+            page_context.commit_sha).data
+
+        key_pre = md5(file_data.encode("utf-8")
+                      ).hexdigest()
+
+        return "%s_%s" % (key_pre, part)
+
+
+    # def get_problem_b64_data(self, page_context, page_data):
+    #     if page_context.in_sandbox or page_data is None:
+    #         page_data = self.make_page_data(page_context)
+    #
+    #     if page_data:
+    #         problem_b64_data = page_data["question_data"]
+    #
+    #         return problem_b64_data
+    #     else:
+    #         return None
+
+    def body(self, page_context, page_data):
         if page_context.in_sandbox or page_data is None:
             page_data = self.make_page_data(page_context)
 
-        if page_data:
-            problem_b64_data = page_data["problem_data"]
-            from base64 import b64decode
-            problem_bytes_data = b64decode(problem_b64_data)
-            # from io import BytesIO
-            # import pickle
-            # bio = BytesIO(problem_bytes_data)
-            # problem_data = pickle.load(bio)
+        page_data_question_key = self.get_page_data_md5_key(page_context, part="question")
 
-            return problem_b64_data
-        else:
-            return None
+        question_str = page_data[page_data_question_key]
 
-    def body(self, page_context, page_data):
-        # try:
-        #     exec self.process_code
-        # except:
-        #     pass
-        #     #raise
+        print question_str
 
-        from latex_utils.utils import latex_jinja_env
+#        print "question_data" in page_data
+#        print type(page_data)
 
-        # l = self.get_problem_data(page_context, page_data)
-        # l.solve()
-        # template = latex_jinja_env.get_template('latex_utils/utils/lp_simplex.tex')
-        # tex = template.render(
-        #     show_question = True,
-        #     pre_description=u"""
-        #         """,
-        #     lp=l,
-        #     simplex_pre_description=u"""解：引入松弛变量$x_4, x_5, x_6$，用单纯形法求解如下：
-        #         """,
-        #     simplex_after_description=u"""最优解唯一。
-        #         """
-        # )
+        #jinja2_str = self.update_page_data(page_context, page_data["question_data"], "question_process_code")
 
-        jinja2_str = self.get_jinja_tmpl(page_context,page_data,"question_process_code")
+        return super(LatexRandomQuestion, self).body(page_context, page_data) + markup_to_html(page_context, question_str)
 
-        print jinja2_str
-
-        return super(LatexRandomQuestion, self).body(page_context, page_data) + markup_to_html(page_context, jinja2_str)
-
-    def get_jinja_tmpl(self, page_context, page_data, code_name):
+    def update_page_data(self, page_context, question_data, code_name):
         # {{{ request run
 
+        assert question_data
         run_jinja_req = {"compile_only": False}
 
         def transfer_attr_to(name, from_name=None):
             if from_name:
                 if hasattr(self.page_desc, from_name):
                     run_jinja_req[name] = getattr(self.page_desc, from_name)
+            # if from_name:
+            #     # allow multiple code to be transfered
+            #     if not isinstance(from_name, list):
+            #         from_name = [from_name]
+            #     for fr in from_name:
+            #         if hasattr(self.page_desc, fr):
+            #             run_jinja_req[name] += getattr(self.page_desc, fr)
             elif hasattr(self.page_desc, name):
                 run_jinja_req[name] = getattr(self.page_desc, name)
 
@@ -178,8 +204,6 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
         if hasattr(self.page_desc, "data_files"):
             run_jinja_req["data_files"] = {}
 
-            from course.content import get_repo_blob
-
             for data_file in self.page_desc.data_files:
                 from base64 import b64encode
                 run_jinja_req["data_files"][data_file] = \
@@ -188,13 +212,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                                     page_context.repo, data_file,
                                     page_context.commit_sha).data).decode()
 
-            question_b64_data = self.get_problem_b64_data (page_context, page_data)
-#            print question_b64_data
-            if question_b64_data:
-                run_jinja_req["data_files"]["question_data"] = question_b64_data
-
-            # for k,v in run_jinja_req["data_files"].items():
-            #     print k
+            run_jinja_req["data_files"]["question_data"] = question_data
 
         try:
             response_dict = request_python_run_with_retries(run_jinja_req,
@@ -243,7 +261,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
     # def correct_answer(self, page_context, page_data, answer_data, grade_data):
     #     from latex_utils.utils import latex_jinja_env
     #
-    #     l = self.get_problem_data(page_context, page_data)
+    #     l = self.get_question_data(page_context, page_data)
     #     l.solve()
     #     template = latex_jinja_env.get_template('latex_utils/utils/lp_simplex.tex')
     #     tex = template.render(

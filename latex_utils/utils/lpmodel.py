@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import copy
+import six
 
 EQ = [">", "<", "=", ">=", "<=", "=<", "=>"]
 SIGN = [">", "<", "=", ">=", "<=", "=<", "=>", "int", "bin"]
@@ -53,12 +54,25 @@ class LP(object):
     def __init__(self, type, goal, constraints, x="x", x_list=None, sign=None, z="Z", sign_str=None, dual=False):
         assert type.lower() in ["min", "max"]
         self.type = type.lower()
+        import json
+        json_dict = {
+            "type": type,
+            "constraints": constraints,
+            "x": x,
+            "x_list": x_list,
+            "sign": sign,
+            "z": z,
+            "sign_str": sign_str,
+            "dual": dual,
+            "goal": goal,
+        }
+        self.json = json.dumps(json_dict)
 
         assert isinstance(goal,list)
         assert isinstance(constraints, (list,tuple))
-        assert isinstance(x, str)
+        assert isinstance(x, six.string_types)
         assert len(x) == 1
-        assert isinstance(z, str)
+        assert isinstance(z, six.string_types)
         assert len(z) == 1
 
         self.goal_origin = copy.deepcopy(goal)
@@ -250,7 +264,7 @@ class LP(object):
             dual=True
         )
 
-    def solve(self):
+    def solve(self, disp=False):
         constraints = [c for c in self.constraints_origin]
         goal = self.goal_origin
         C = []
@@ -339,7 +353,7 @@ class LP(object):
                 self.base_list.append(b_index)
 
         res = linprog(c=C, A_ub=A_ub, b_ub=b_ub, bounds=((0, None),) * len(self.x_list),
-                      options = {'disp': True},
+                      options = {'disp': disp},
                       callback= lin_callback,
                       )
 
@@ -440,7 +454,7 @@ class LP(object):
                 self.base_list.append(b_index)
 
         res = linprog(c=C, A_ub=A_ub, b_ub=b_ub, bounds=((0, None),) * len(self.x_list),
-                      options={'disp': True},
+                      #options={'disp': True},
                       callback=lin_callback,
                       )
 
@@ -482,9 +496,6 @@ class LP(object):
             goal=goal,
             constraints=constraints,
         )
-
-
-
 
 
 def trans_latex_fraction(f, wrap=True):

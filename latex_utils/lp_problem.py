@@ -1,24 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from latex_utils.utils.latex_utils import latex_jinja_env, _file_write
-#from latex_utils.utils.lpmodel import LP
+from latex_utils.utils.lpmodel import LP
 
-import os
-from os.path import join
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-print(BASE_DIR)
-
-_execfile = join(BASE_DIR, "latex_utils","utils", "lpmodel.py")
-execfile = {
-        "__file__": _execfile,
-        }
-try:
-    with open(_execfile) as inf:
-        exec_contents = inf.read()
-except IOError:
-    pass
-else:
-    exec(compile(exec_contents, "lpmodel.py", "exec"))
 
 # lp = LP(type="max",
 #         goal=[2, -1, 3, 1],
@@ -90,29 +74,39 @@ lp2 = LP(type="max",
         #        sign=[">", "<", ">", "="],
         )
 
-lp_list = []
-lp_list.append(lp)
-lp_list.append(lp2)
+lp_json_list = []
+lp_json_list.append(lp.json)
+lp_json_list.append(lp2.json)
 
 import pickle
 #import dill as pickle
 with open('lp.bin', 'wb') as f:
-    pickle.dump(lp_list, f)
+    pickle.dump(lp_json_list, f)
 
 with open('lp.bin', 'rb') as f:
-    lp_list_loaded = pickle.load(f)
+    lp_json_list_loaded = pickle.load(f)
 
 
-for l in lp_list_loaded:
-    print l
-    l.solve()
+for l in lp_json_list_loaded:
+    import json
+    lp_dict = json.loads(l)
+
+    # print lp_dict
+    # print type(lp_dict["constraints"])
+    # print lp_dict["constraints"]
+    # print type(lp_dict["x"])
+
+    lp = LP(**lp_dict)
+
+
+    lp.solve()
     template = latex_jinja_env.get_template('/utils/lp_simplex.tex')
     tex = template.render(
         show_question = True,
         show_answer = True,
         pre_description=u"""
         """,
-        lp=l,
+        lp=lp,
         simplex_pre_description=u"""解：引入松弛变量$x_4, x_5, x_6$，用单纯形法求解如下：
         """,
         simplex_after_description=u"""最优解唯一。
