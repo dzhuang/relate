@@ -147,7 +147,7 @@ def request_python_run(run_req, run_timeout, image=None):
             port_host_ip = port_info.get("HostIp")
 
             if platform.system().lower().startswith("win"):
-                connect_host_ip = "192.168.99.101"
+                connect_host_ip = getattr(settings, "RELATE_DOCKER_HOST_IP")
             else:
                 if port_host_ip != "0.0.0.0":
                     connect_host_ip = port_host_ip
