@@ -29,13 +29,16 @@ from io import BytesIO
 import pickle
 from hashlib import md5
 
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, ImproperlyConfigured
+from django.conf import settings
 
 from course.page import markup_to_html
-from course.page.base import PageBaseWithTitle, PageBaseWithValue, PageBaseWithHumanTextFeedback, \
-    PageBaseWithCorrectAnswer
+from course.page.base import (
+    PageBaseWithTitle, PageBaseWithValue, PageBaseWithHumanTextFeedback,
+    PageBaseWithCorrectAnswer)
+from course.page.choice import ChoiceQuestion, MultipleChoiceQuestion
 from course.validation import ValidationError
-from course.content import get_repo_blob
+from course.content import get_repo_blob, get_repo_blob_data_cached
 
 from image_upload.page.imgupload import ImageUploadQuestion
 from course.page.code import (
@@ -48,17 +51,15 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
         super(LatexRandomQuestion, self).__init__(vctx, location, page_desc)
 
         if vctx is not None and hasattr(page_desc, "data_files"):
-            if hasattr(page_desc, "data_file_for_page_data"):
-                if not page_desc.data_file_for_page_data in page_desc.data_files:
+            if hasattr(page_desc, "random_question_data_file"):
+                if not page_desc.random_question_data_file in page_desc.data_files:
                     raise ValidationError("%s: '%s' should be listed in 'data_files'"
-                                          % (location, page_desc.data_file_for_page_data))
-            if not page_desc.page_data_md5_file in page_desc.data_files:
-                raise ValidationError("%s: '%s' should be listed in 'data_files'"
-                                      % (location, page_desc.page_data_md5_file))
-            if hasattr(page_desc, "jinja_env"):
-                if not page_desc.jinja_env in page_desc.data_files:
-                    raise ValidationError ("%s: '%s' should be listed in 'data_files'"
-                                           % (location, page_desc.jinja_env))
+                                          % (location, page_desc.random_question_data_file))
+            if hasattr(page_desc, "cache_key_files"):
+                for cf in page_desc.cache_key_files:
+                    if not cf in page_desc.data_files:
+                        raise ValidationError("%s: '%s' should be listed in 'data_files'"
+                                              % (location, cf))
             for data_file in page_desc.data_files:
                 try:
                     if not isinstance(data_file, str):
@@ -68,41 +69,57 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                 except ObjectDoesNotExist:
                     raise ValidationError("%s: data file '%s' not found"
                             % (location, data_file))
+            if hasattr(page_desc, "cache_key_attrs"):
+                for attr in page_desc.cache_key_attrs:
+                    if not hasattr(page_desc, attr):
+                        raise ValidationError("%s: attribute '%s' not found"
+                                              % (location, attr))
 
-        self.question_process_code = getattr(page_desc, "question_process_code", None)
-        self.answer_process_code = getattr(page_desc, "answer_process_code", None)
-        self.data_file_for_page_data = getattr(page_desc, "answer_process_code", None)
-        #self.page_data_md5_file = getattr(page_desc, "page_data_md5_file")
-        self.page_context = None
         self.docker_run_timeout = getattr(page_desc, "docker_timeout", 0.5)
+
+        # These files/attrs are used to generate rendered body and correct answer
+        
+        # Whether use question data file as cache
+        use_question_data_file_as_cache = getattr(page_desc, "use_question_data_file_as_cache", False)
+        self.cache_key_files = getattr(page_desc, "cache_key_files", getattr(page_desc, "data_files"))
+        if not use_question_data_file_as_cache:
+            self.cache_key_files = [f for f in self.cache_key_files if f != page_desc.random_question_data_file]
+        self.cache_key_attrs = getattr(page_desc, "cache_key_attrs", [])
+        if not self.cache_key_attrs:
+            for attr in [
+                    "question_process_code",
+                    "background_code",
+                    "question_process_code",
+                    "answer_process_code"]:
+                if hasattr(page_desc, attr):
+                    self.cache_key_attrs.append(attr)
 
     def required_attrs(self):
         return super(LatexRandomQuestion, self).required_attrs() + (
             ("data_files", (list,str)),
+            ("random_question_data_file", str),
             ("question_process_code", str),
-            ("page_data_md5_file", str),
-            # ("timeout", (int, float)),
         )
 
     def allowed_attrs(self):
         return super(LatexRandomQuestion, self).allowed_attrs() + (
-            ("data_file_for_page_data", str),
-            ("setup_code_file", list),
-            ("latex_template_file", list),
             ("background_code", str),
             ("answer_process_code", str),
-            ("docker_timeout", (int, float))
+            ("docker_timeout", (int, float)),
+            ("cache_key_files", list),
+            ("cache_key_attrs", list),
+            ("use_question_data_file_as_cache", bool)
         )
 
     def make_page_data(self, page_context):
-        if not hasattr(self.page_desc, "data_file_for_page_data"):
+        if not hasattr(self.page_desc, "random_question_data_file"):
             return {}
 
         # get random question_data
-        repo_bytes_data = get_repo_blob(
+        repo_bytes_data = get_repo_blob_data_cached(
             page_context.repo,
-            self.page_desc.data_file_for_page_data,
-            page_context.commit_sha).data
+            self.page_desc.random_question_data_file,
+            page_context.commit_sha)
         bio = BytesIO(repo_bytes_data)
         repo_data_loaded = pickle.load(bio)
         if not isinstance(repo_data_loaded, (list, tuple)):
@@ -117,56 +134,87 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
         selected_data_bytes = BytesIO()
         pickle.dump(random_data, selected_data_bytes)
 
-        page_data = {}
         from base64 import b64encode
         question_data = b64encode(selected_data_bytes.getvalue()).decode()
 
-        page_data["question_data"] = question_data
+        return {"question_data": question_data}
 
-        # make latex code of question and answer
-        page_data_question_key = self.get_page_data_md5_key(page_context, part="question")
-        page_data_answer_key = self.get_page_data_md5_key(page_context, part="answer")
+    def get_cached_computing_result(self, page_context, page_data, part=""):
+        assert part in ["question", "answer"]
 
-        question_rendered = self.jinja_runpy(
-            page_context, question_data, "question_process_code", common_code_name="background_code")
-        answer_rendered = self.jinja_runpy(
-            page_context, question_data, "answer_process_code", common_code_name="background_code")
+        key_making_string = ""
 
-        page_data[page_data_question_key] = question_rendered
-        page_data[page_data_answer_key] = answer_rendered
+        try:
+            import django.core.cache as cache
+        except ImproperlyConfigured:
+            cache_key = None
+        else:
+            if self.cache_key_files:
+                for cfile in self.cache_key_files:
+                    try:
+                        cfile_data = get_repo_blob_data_cached(
+                            page_context.repo,
+                            cfile,
+                            page_context.commit_sha)
+                        key_making_string += cfile_data.encode("utf-8")
+                    except UnicodeDecodeError:
+                        pass
 
-        return page_data
+            if self.cache_key_attrs:
+                for cattr in self.cache_key_attrs:
+                    key_making_string += str(getattr(self.page_desc, cattr)).encode("utf-8")
 
-    def get_page_data_md5_key(self, page_context, part=""):
-        file_data = get_repo_blob(
-            page_context.repo,
-            self.page_desc.page_data_md5_file,
-            page_context.commit_sha).data
+            cache_key = ("latexpage:%s:%s:%s"
+                         % (str(page_context.commit_sha),
+                            md5(key_making_string).hexdigest(),
+                            part))
 
-        key_pre = md5(file_data.encode("utf-8")
-                      ).hexdigest()
+        if cache_key is None or not key_making_string:
+            result = self.jinja_runpy(
+                page_context,
+                page_data["question_data"],
+                "%s_process_code" % part,
+                common_code_name="background_code")
+            assert isinstance(result, six.string_types)
+            return result
 
-        return "%s_%s" % (key_pre, part)
+        def_cache = cache.caches["default"]
+
+        result = None
+        # Memcache is apparently limited to 250 characters.
+        if len(cache_key) < 240:
+            result = def_cache.get(cache_key)
+        if result is not None:
+            (result,) = result
+            assert isinstance(result, six.string_types), cache_key
+            return result
+
+        result = self.jinja_runpy(
+            page_context,
+            page_data["question_data"],
+            "%s_process_code" % part,
+            common_code_name="background_code")
+
+        if len(result) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
+            def_cache.add(cache_key, (result,), None)
+
+        assert isinstance(result, six.string_types)
+
+        return result
 
     def body(self, page_context, page_data):
         if page_context.in_sandbox or page_data is None:
             page_data = self.make_page_data(page_context)
 
-        page_data_question_key = self.get_page_data_md5_key(page_context, part="question")
+        question_str = self.get_cached_computing_result(
+                page_context, page_data, part="question")
 
-        question_str = page_data[page_data_question_key]
+        return super(LatexRandomQuestion, self).body(page_context, page_data)\
+               + markup_to_html(page_context, question_str)
 
-        if not question_str:
-            #print "no question_str, so we need to generate one"
-            question_str = self.jinja_runpy(
-                page_context,
-                page_data["question_data"],
-                "question_process_code",
-                common_code_name="background_code")
+    def jinja_runpy(
+            self, page_context, question_data, code_name, common_code_name=""):
 
-        return super(LatexRandomQuestion, self).body(page_context, page_data) + markup_to_html(page_context, question_str)
-
-    def jinja_runpy(self, page_context, question_data, code_name, common_code_name=""):
         # {{{ request run
 
         assert question_data
@@ -179,17 +227,12 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
             elif hasattr(self.page_desc, name):
                 run_jinja_req[name] = getattr(self.page_desc, name)
 
-        # def prepend_code_to(name, pre_code_name):
-        #     if hasattr(self.page_desc, name) and hasattr(self.page_desc, pre_code_name):
-        #         print pre_code_name
-        #         print getattr(self.page_desc, pre_code_name)
-        #         run_jinja_req[name] = getattr(self.page_desc, pre_code_name)+ u"\n" + run_jinja_req[name]
-
         run_jinja_req["user_code"] = ""
 
         transfer_attr_to("setup_code", from_name=code_name)
         if common_code_name:
-            run_jinja_req["setup_code"] = getattr(self.page_desc, common_code_name) + u"\n" + run_jinja_req["setup_code"]
+            run_jinja_req["setup_code"] = getattr(
+                self.page_desc, common_code_name) + u"\n" + run_jinja_req["setup_code"]
 
         if hasattr(self.page_desc, "data_files"):
             run_jinja_req["data_files"] = {}
@@ -198,9 +241,9 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                 from base64 import b64encode
                 run_jinja_req["data_files"][data_file] = \
                         b64encode(
-                                get_repo_blob(
+                                get_repo_blob_data_cached(
                                     page_context.repo, data_file,
-                                    page_context.commit_sha).data).decode()
+                                    page_context.commit_sha)).decode()
 
             run_jinja_req["data_files"]["question_data"] = question_data
 
@@ -237,7 +280,11 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
             error_msg_parts.append("-------------------------------------")
 
             error_msg = "\n".join(error_msg_parts)
-            raise RuntimeError(error_msg)
+            print getattr(settings, "DEBUG")
+            if getattr(settings, "DEBUG"):
+                response_dict["stdout"] = error_msg
+            else:
+                raise RuntimeError(error_msg)
 
         from relate.utils import dict_to_struct
         response = dict_to_struct(response_dict)
@@ -250,19 +297,13 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
         # }}}
 
     def correct_answer(self, page_context, page_data, answer_data, grade_data):
-        page_data_answer_key = self.get_page_data_md5_key(page_context, part="answer")
+        answer_str = ""
+        if hasattr(self.page_desc, "answer_process_code"):
+            answer_str = self.get_cached_computing_result(
+                page_context, page_data, part="answer")
 
-        answer_str = page_data[page_data_answer_key]
-
-        if not answer_str:
-            #print "no answer_str, so we need to generate one"
-            answer_str = self.jinja_runpy(
-                page_context,
-                page_data["question_data"],
-                "answer_process_code",
-                common_code_name="background_code")
-
-        super_correct_answer = super(LatexRandomQuestion, self).correct_answer(page_context, page_data, answer_data, grade_data)
+        super_correct_answer = super(LatexRandomQuestion, self)\
+                .correct_answer(page_context, page_data, answer_data, grade_data)
         if super_correct_answer:
             return super_correct_answer + markup_to_html(page_context, answer_str)
         else:
@@ -276,6 +317,25 @@ class LatexRandomImageUploadQuestion(LatexRandomQuestion, ImageUploadQuestion):
 class LatexRandomCodeQuestion(LatexRandomQuestion, PythonCodeQuestion):
     pass
 
+
 class LatexRandomCodeQuestionWithHumanTextFeedback(
     LatexRandomQuestion, PythonCodeQuestionWithHumanTextFeedback):
     pass
+
+class LatexRandomMultipleChoiceQuestion(
+    LatexRandomQuestion, MultipleChoiceQuestion):
+
+    def make_page_data(self, page_context):
+        m_page_data = MultipleChoiceQuestion.make_page_data(self, page_context)
+        l_page_data = LatexRandomQuestion.make_page_data(self, page_context)
+        page_data = dict(m_page_data, **l_page_data)
+        return page_data
+
+class LatexRandomChoiceQuestion(
+    LatexRandomQuestion, ChoiceQuestion):
+
+    def make_page_data(self, page_context):
+        m_page_data = ChoiceQuestion.make_page_data(self, page_context)
+        l_page_data = LatexRandomQuestion.make_page_data(self, page_context)
+        page_data = dict(m_page_data, **l_page_data)
+        return page_data

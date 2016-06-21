@@ -42,7 +42,8 @@ from image_upload.page.imgupload import (
         ImageUploadQuestion, ImageUploadQuestionWithAnswer)  # added by zd
 from image_upload.page.latexpage import (
         LatexRandomImageUploadQuestion, LatexRandomCodeQuestion,
-        LatexRandomCodeQuestionWithHumanTextFeedback
+        LatexRandomCodeQuestionWithHumanTextFeedback,
+        LatexRandomChoiceQuestion, LatexRandomMultipleChoiceQuestion,
 )
 
 __all__ = (
@@ -59,9 +60,12 @@ __all__ = (
         "PythonCodeQuestion", "PythonCodeQuestionWithHumanTextFeedback",
         "FileUploadQuestion",
 
+        # added by zd
         "image_uploadQuestion", "ImageUploadQuestionWithAnswer",
         "LatexRandomImageUploadQuestion", "LatexRandomCodeQuestion",
-        "LatexRandomCodeQuestionWithHumanTextFeedback", # added by zd
+        "LatexRandomCodeQuestionWithHumanTextFeedback",
+        'LatexRandomChoiceQuestion',
+        'LatexRandomMultipleChoiceQuestion',
         )
 
 __doc__ = """
