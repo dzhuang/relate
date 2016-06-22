@@ -414,7 +414,8 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         human_feedback_point_value = self.human_feedback_point_value(
             page_context, page_data)
 
-        return ImgUploadHumanTextFeedbackForm(human_feedback_point_value, post_data, files_data)
+        return ImgUploadHumanTextFeedbackForm(
+            human_feedback_point_value, post_data, files_data, use_access_rules_tag=self.use_access_rules_tag)
 
     @transaction.atomic
     def update_grade_data_from_grading_form(self, page_context, page_data,
@@ -424,7 +425,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                                             grade_data, grading_form, files_data)
 
         if self.use_access_rules_tag:
-            if grading_form.cleaned_data["access_rules_tag"] and page_context.flow_session:
+            if grading_form.cleaned_data["access_rules_tag"] is not None and page_context.flow_session:
                 if not grading_form.cleaned_data["access_rules_tag"] == page_context.flow_session.access_rules_tag:
                     the_flow_session = page_context.flow_session
                     the_flow_session.access_rules_tag = grading_form.cleaned_data["access_rules_tag"]
