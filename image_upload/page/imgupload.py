@@ -118,10 +118,10 @@ class ImageUploadForm(StyledForm):
 
 class ImgUploadHumanTextFeedbackForm(HumanTextFeedbackForm):
     def __init__(self, *args, **kwargs):
-        #use_access_rules_tag = kwargs.pop("use_access_rules_tag", False)
+        use_access_rules_tag = kwargs.pop("use_access_rules_tag", False)
         super(ImgUploadHumanTextFeedbackForm, self).__init__(*args, **kwargs)
 
-        if 1: #use_access_rules_tag:
+        if use_access_rules_tag:
             self.fields["access_rules_tag"] = forms.CharField(
                 required=False,
                 help_text=_("Manually set the access_rules_tag of the session, if necessary."),
@@ -385,14 +385,13 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         return (ext, buf)
 
     def make_grading_form(self, page_context, page_data, grade_data):
-        access_rules_tag = page_context.flow_session.access_rules_tag
         human_feedback_point_value = self.human_feedback_point_value(
             page_context, page_data)
-
         form_data = {}
         if not self.use_access_rules_tag:
             use_access_rules_tag = False
         else:
+            access_rules_tag = page_context.flow_session.access_rules_tag
             use_access_rules_tag = True
             form_data["access_rules_tag"] = access_rules_tag
         if grade_data is not None or access_rules_tag:
@@ -404,11 +403,10 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                 if access_rules_tag is not None:
                     form_data["access_rules_tag"] = access_rules_tag
             return ImgUploadHumanTextFeedbackForm(
-                use_access_rules_tag, human_feedback_point_value, form_data)
+                human_feedback_point_value, form_data, use_access_rules_tag=use_access_rules_tag)
         else:
             return ImgUploadHumanTextFeedbackForm(
-                use_access_rules_tag,
-                human_feedback_point_value)
+                human_feedback_point_value, use_access_rules_tag=use_access_rules_tag)
 
     def post_grading_form(self, page_context, page_data, grade_data,
                           post_data, files_data):
