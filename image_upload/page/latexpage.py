@@ -170,7 +170,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                             part))
 
         if cache_key is None or not key_making_string:
-            result = self.jinja_runpy(
+            success, result = self.jinja_runpy(
                 page_context,
                 page_data["question_data"],
                 "%s_process_code" % part,
@@ -189,13 +189,13 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
             assert isinstance(result, six.string_types), cache_key
             return result
 
-        result = self.jinja_runpy(
+        success, result = self.jinja_runpy(
             page_context,
             page_data["question_data"],
             "%s_process_code" % part,
             common_code_name="background_code")
 
-        if len(result) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
+        if success and len(result) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
             def_cache.add(cache_key, (result,), None)
 
         assert isinstance(result, six.string_types)
@@ -258,6 +258,8 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                     "traceback": "".join(format_exc()),
                     }
 
+        success = True
+
         if response_dict["result"] in [
                 "uncaught_error",
                 "setup_compile_error",
@@ -265,6 +267,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                 "test_compile_error",
                 "test_error"]:
             error_msg_parts = ["RESULT: %s" % response_dict["result"]]
+            success = False
             for key, val in sorted(response_dict.items()):
                 if (key not in ["result", "figures"]
                         and val
@@ -290,9 +293,9 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
         response = dict_to_struct(response_dict)
 
         if hasattr(response, "stdout") and response.stdout:
-            return response.stdout.encode("utf8")
+            return success, response.stdout.encode("utf8")
         else:
-            return ""
+            return False, ""
 
         # }}}
 

@@ -118,12 +118,14 @@ class ImageUploadForm(StyledForm):
 
 class ImgUploadHumanTextFeedbackForm(HumanTextFeedbackForm):
     def __init__(self, *args, **kwargs):
+        #use_access_rules_tag = kwargs.pop("use_access_rules_tag", False)
         super(ImgUploadHumanTextFeedbackForm, self).__init__(*args, **kwargs)
 
-        self.fields["access_rules_tag"] = forms.CharField(
-            required=False,
-            help_text=_("Manually set the access_rules_tag of the session, if necessary."),
-            label=_('Access rules tag'))
+        if 1: #use_access_rules_tag:
+            self.fields["access_rules_tag"] = forms.CharField(
+                required=False,
+                help_text=_("Manually set the access_rules_tag of the session, if necessary."),
+                label=_('Access rules tag'))
 
 
 class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
@@ -222,6 +224,9 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         # disable minFileSize
         self.minFileSize = getattr(self.page_desc, "minFileSize", 0.0005) * 1024 ** 2
         self.minFileSize = 0.0005 * 1024 ** 2
+
+        self.use_access_rules_tag = getattr(self.page_desc, "use_access_rules_tag", False)
+
         #if self.minFileSize >= 0.05 * 1024 ** 2:
         #    self.minFileSize = 0.05 * 1024 ** 2
 
@@ -253,6 +258,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
             ("previewMaxWidth", (int, float)),
             ("previewMaxHeight", (int, float)),
             ("maxNumberOfFiles", (int, float)),
+            ("use_access_rules_tag", bool),
         )
 
     def human_feedback_point_value(self, page_context, page_data):
@@ -384,17 +390,25 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
             page_context, page_data)
 
         form_data = {}
-        form_data["access_rules_tag"] = access_rules_tag
+        if not self.use_access_rules_tag:
+            use_access_rules_tag = False
+        else:
+            use_access_rules_tag = True
+            form_data["access_rules_tag"] = access_rules_tag
         if grade_data is not None or access_rules_tag:
             form_data = {}
             if grade_data is not None:
                 for k in self.grade_data_attrs:
                     form_data[k] = grade_data[k]
-            if access_rules_tag is not None:
-                form_data["access_rules_tag"] = access_rules_tag
-            return ImgUploadHumanTextFeedbackForm(human_feedback_point_value, form_data)
+            if use_access_rules_tag:
+                if access_rules_tag is not None:
+                    form_data["access_rules_tag"] = access_rules_tag
+            return ImgUploadHumanTextFeedbackForm(
+                use_access_rules_tag, human_feedback_point_value, form_data)
         else:
-            return ImgUploadHumanTextFeedbackForm(human_feedback_point_value)
+            return ImgUploadHumanTextFeedbackForm(
+                use_access_rules_tag,
+                human_feedback_point_value)
 
     def post_grading_form(self, page_context, page_data, grade_data,
                           post_data, files_data):
@@ -411,11 +425,12 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         grade_data = super(ImageUploadQuestion,self).update_grade_data_from_grading_form(page_context, page_data,
                                             grade_data, grading_form, files_data)
 
-        if grading_form.cleaned_data["access_rules_tag"] and page_context.flow_session:
-            if not grading_form.cleaned_data["access_rules_tag"] == page_context.flow_session.access_rules_tag:
-                the_flow_session = page_context.flow_session
-                the_flow_session.access_rules_tag = grading_form.cleaned_data["access_rules_tag"]
-                the_flow_session.save()
+        if self.use_access_rules_tag:
+            if grading_form.cleaned_data["access_rules_tag"] and page_context.flow_session:
+                if not grading_form.cleaned_data["access_rules_tag"] == page_context.flow_session.access_rules_tag:
+                    the_flow_session = page_context.flow_session
+                    the_flow_session.access_rules_tag = grading_form.cleaned_data["access_rules_tag"]
+                    the_flow_session.save()
 
         return grade_data
 
