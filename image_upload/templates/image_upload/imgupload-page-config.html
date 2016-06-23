@@ -73,6 +73,8 @@ minFileSize: {{minFileSize}},
 <script src="{% url 'javascript-catalog-image-upload' %}"></script>
 <script src="{{ STATIC_URL }}cropperjs/dist/cropper.js"></script>
 <script src="{{ STATIC_URL }}js/imgupload-page-min.js"></script>
+{% if IN_GRADE_PAGE %}
+<script src="{{ STATIC_URL }}ez-plus/src/jquery.ez-plus.js"></script>
 <script>
 function magnify(x) {
     $(x).ezPlus({
@@ -81,6 +83,7 @@ function magnify(x) {
 });
 }
 </script>
+{% endif %}
 {% endblock %}
 
 {% block JS_UPLOAD_TEMPLATE %}{% endblock %}
