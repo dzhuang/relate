@@ -290,6 +290,18 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         return form
 
     def form_to_html(self, request, page_context, form, answer_data):
+
+        request_path = request.get_full_path()
+        from django.core.urlresolvers import reverse
+        grading_path = reverse(
+            "relate-grade_flow_page",
+            kwargs={'course_identifier': page_context.course.identifier,
+                    'flow_session_id': page_context.flow_session.id,
+                    'page_ordinal': page_context.ordinal
+                    }
+        )
+        in_grading_page = grading_path == request_path
+
         ctx = {"form": form,
                "JQ_OPEN": '{%',
                'JQ_CLOSE': '%}',
@@ -301,6 +313,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                "MAY_CHANGE_ANSWER": form.page_behavior.may_change_answer,
                "SHOW_CREATION_TIME": True,
                "ALLOW_ROTATE_TUNE": True,
+               "IN_GRADE_PAGE": in_grading_page,
 
                "imageMaxWidth": self.imageMaxWidth,
                "imageMaxHeight": self.imageMaxHeight,

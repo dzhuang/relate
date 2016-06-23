@@ -6,7 +6,21 @@
 {% block CSS_HTML5_SHIM %}{# IE 9 lt already supported (Override to keep it empty)#}{% endblock %}
 
 {% block CSS_EXTRA %}
+{% if not IN_GRADE_PAGE %}
 {{ block.super }}
+{% else %}
+<style>
+    .preview img {
+    max-width:40vw;
+}
+@media (max-width: 767px) {
+  .fileupload-buttonbar .delete
+  {
+    display: none;
+  }
+}
+</style>
+{% endif %}
 <link rel="stylesheet" href="{{ STATIC_URL }}css/imgupload-page.css">
 <link rel="stylesheet" href="{{ STATIC_URL }}cropperjs/dist/cropper.css">
 <noscript><link rel="stylesheet" href="{{ STATIC_URL }}css/imgupload-noscript.css"></noscript>
@@ -59,6 +73,14 @@ minFileSize: {{minFileSize}},
 <script src="{% url 'javascript-catalog-image-upload' %}"></script>
 <script src="{{ STATIC_URL }}cropperjs/dist/cropper.js"></script>
 <script src="{{ STATIC_URL }}js/imgupload-page-min.js"></script>
+<script>
+function magnify(x) {
+    $(x).ezPlus({
+    zoomType: 'inner',
+    cursor: 'crosshair'
+});
+}
+</script>
 {% endblock %}
 
 {% block JS_UPLOAD_TEMPLATE %}{% endblock %}

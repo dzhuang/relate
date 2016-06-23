@@ -188,14 +188,6 @@
       </table>
       {# }}} #}
 
-      {# {{{ grading form #}
-
-      {% if grading_form_html != None %}
-        {{ grading_form_html|safe }}
-      {% endif %}
-
-      {# }}} #}
-
       {# {{{ correct answer #}
 
       {% if correct_answer  %}
@@ -205,6 +197,14 @@
             <p>{{ correct_answer|safe }}</p>
           </div>
         </div>
+      {% endif %}
+
+      {# }}} #}
+
+      {# {{{ grading form #}
+
+      {% if grading_form_html != None %}
+        {{ grading_form_html|safe }}
       {% endif %}
 
       {# }}} #}
@@ -394,6 +394,7 @@
       $("#save_next_session").click(save_and_next_session);
 
       $(".relate-grading-form").prepend($(".form-group:last"));
+      $(".form-group:first").clone().appendTo($(".relate-grading-form"));
     }
 
     $(document).ready(add_submit_next);

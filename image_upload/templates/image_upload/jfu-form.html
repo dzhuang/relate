@@ -191,7 +191,13 @@
                                     data-gallery>
                                     <img
                                        id="thumbnail{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
+                                       {% if IN_GRADE_PAGE %}
+                                        src="{{ JQ_OPEN }}=file.url{{ JQ_CLOSE }}"
+                                        {% else %}
                                         src="{{ JQ_OPEN }}=file.thumbnailUrl{{ JQ_CLOSE }}"
+                                        {% endif %}
+                                        onmouseover="magnify(this)"
+                                        data-zoom-image="{{ JQ_OPEN }}=file.url{{ JQ_CLOSE }}"
                                     >
                                 </a>
                             {{ JQ_OPEN }} } {{ JQ_CLOSE }}
@@ -200,6 +206,7 @@
                 {% endblock %}{# //JS_DOWNLOAD_TEMPLATE_PREVIEW #}
 
                 {% block JS_DOWNLOAD_TEMPLATE_DOWNLOAD %}
+                    {% if not IN_GRADE_PAGE %}
                     <td>
                         <p class="name">
                             {{ JQ_OPEN }} if (file.url) { {{ JQ_CLOSE }}
@@ -232,10 +239,11 @@
                             {{ JQ_OPEN }} } {{ JQ_CLOSE }}
                         {% endblock %}{# //block JS_DOWNLOAD_TEMPLATE_ERROR #}
                     </td>
-
+                    {% endif %}
                 {% endblock %}{# block JS_DOWNLOAD_TEMPLATE_DOWNLOAD #}
 
                 {% if SHOW_CREATION_TIME %}
+                    {% if not IN_GRADE_PAGE %}
                     {% block JS_DOWNLOAD_TEMPLATE_TIME %}
                         <td class="td-dl">
                             <span
@@ -247,6 +255,7 @@
                             </span>
                         </td>
                     {% endblock %}{# block JS_DOWNLOAD_TEMPLATE_TIME #}
+                    {% endif %}
                 {% endif %}
                     {% if IS_COURSE_STAFF or MAY_CHANGE_ANSWER %}
                     {% block JS_DOWNLOAD_SORT %}
@@ -274,12 +283,14 @@
                     {% endif %}
 
                 {% block JS_DOWNLOAD_TEMPLATE_FSIZE %}
+                    {% if not IN_GRADE_PAGE %}
                     <td class="td-dl">
                         <span
                             class="size"
                             id="filesize{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
                         >{{ JQ_OPEN }}=o.formatFileSize(file.size){{ JQ_CLOSE }}</span>
                     </td>
+                    {% endif %}
                 {% endblock %}{# //JS_DOWNLOAD_TEMPLATE_FSIZE #}
 
                 <td class="td-dl">
@@ -340,5 +351,7 @@
 
             </tr>
         {{ JQ_OPEN }} } {{ JQ_CLOSE }}
+    </script>
+
     </script>
 {% endblock %}
