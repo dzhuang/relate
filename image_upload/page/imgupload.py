@@ -400,11 +400,11 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
     def make_grading_form(self, page_context, page_data, grade_data):
         human_feedback_point_value = self.human_feedback_point_value(
             page_context, page_data)
+        access_rules_tag = page_context.flow_session.access_rules_tag
         form_data = {}
         if not self.use_access_rules_tag:
             use_access_rules_tag = False
         else:
-            access_rules_tag = page_context.flow_session.access_rules_tag
             use_access_rules_tag = True
             form_data["access_rules_tag"] = access_rules_tag
         if grade_data is not None or access_rules_tag:
