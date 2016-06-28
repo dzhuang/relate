@@ -146,7 +146,7 @@ class LP(object):
                 sign_str.insert(0, ",".join(temp) + self.variable_sign_trans(sign_set[i]))
             return ",\\,".join(sign_str)
         else:
-            # 不适用于整数规划！！！
+            # 适用于写出对偶问题，不适用于整数规划！！！
             sign_str = []
             for i, s in enumerate(sign):
                 try:
@@ -305,7 +305,8 @@ class LP(object):
                 A_eq.append(i_list)
                 b_eq.append(float(c[-1]))
 
-        from scipy.optimize import linprog
+        #from scipy.optimize import linprog
+        from linprog import linprog
 
         def lin_callback(xk, **kwargs):
             #print kwargs
