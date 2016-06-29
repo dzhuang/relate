@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 A top-level linear programming interface. Currently this interface only
 solves linear programming problems via the Simplex Method.
@@ -18,7 +19,8 @@ Functions
 from __future__ import division, print_function, absolute_import
 
 import numpy as np
-from scipy.optimize._linprog import OptimizeResult, _check_unknown_options, _linprog_simplex
+from scipy.optimize._linprog import OptimizeResult, _check_unknown_options
+#from scipy.optimize._linprog import  _linprog_simplex
 #from .optimize import OptimizeResult, _check_unknown_options
 
 __all__ = ['linprog', 'linprog_verbose_callback', 'linprog_terse_callback']
@@ -389,7 +391,7 @@ def _solve_simplex(T, n, basis, maxiter=1000, phase=2, callback=None,
     return nit, status
 
 
-def _linprog_dual_simplex(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
+def _linprog_simplex(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
             bounds=None, maxiter=1000, disp=False, callback=None,
             tol=1.0E-12, bland=False, **unknown_options):
     """
@@ -569,13 +571,12 @@ def _linprog_dual_simplex(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
         if len(bounds) != n:
             status = -1
             message = ("Invalid input for linprog with method = 'simplex'.  "
-                       "Length of bounds is inconsistent with the length of c")
+                      "Length of bounds is inconsistent with the length of c")
         else:
             try:
                 for i in range(n):
                     if len(bounds[i]) != 2:
                         raise IndexError()
-                        have_floor_variable = True
                     L[i] = bounds[i][0] if bounds[i][0] is not None else -np.inf
                     U[i] = bounds[i][1] if bounds[i][1] is not None else np.inf
             except IndexError:
@@ -594,6 +595,7 @@ def _linprog_dual_simplex(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
         cc = np.concatenate([np.array([0]), cc])
         Aeq = np.hstack([np.zeros([Aeq.shape[0], 1]), Aeq])
         Aub = np.hstack([np.zeros([Aub.shape[0], 1]), Aub])
+        have_floor_variable = True
 
     # Now before we deal with any variables with lower bounds < 0,
     # deal with finite bounds which can be simply added as new constraints.
@@ -734,9 +736,11 @@ def _linprog_dual_simplex(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
     # If a row corresponds to an equality constraint or a negative b (a lower
     # bound constraint), then an artificial variable is added for that row.
     # Also, if b is negative, first flip the signs in that constraint.
+    # b < 0 是在这里处理
     slcount = 0
     avcount = 0
     basis = np.zeros(m, dtype=int)
+    print(basis)
     r_artificial = np.zeros(n_artificial, dtype=int)
     for i in range(m):
         if i < meq or b[i] < 0:
@@ -753,6 +757,7 @@ def _linprog_dual_simplex(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
             # basic variable i is in column n+slcount
             basis[i] = n+slcount
             slcount += 1
+    print(basis)
 
     # Make the artificial variables basic feasible variables by subtracting
     # each row with an artificial variable from the Phase 1 objective
@@ -762,12 +767,16 @@ def _linprog_dual_simplex(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
     nit1, status = _solve_simplex(T, n, basis, phase=1, callback=callback,
                                   maxiter=maxiter, tol=tol, bland=bland)
 
+    print("n_artificial", n_artificial)
+
     # if pseudo objective is zero, remove the last row from the tableau and
     # proceed to phase 2
     if abs(T[-1, -1]) < tol:
         # Remove the pseudo-objective row from the tableau
         T = T[:-1, :]
         # Remove the artificial variable columns from the tableau
+        # http://docs.scipy.org/doc/numpy/reference/generated/numpy.s_.html#numpy-s 注意
+        # http://stackoverflow.com/questions/12616821/numpy-slicing-from-variable
         T = np.delete(T, np.s_[n+n_slack:n+n_slack+n_artificial], 1)
     else:
         # Failure to find a feasible starting point
@@ -778,9 +787,10 @@ def _linprog_dual_simplex(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
         if disp:
             print(message)
         return OptimizeResult(x=np.nan, fun=-T[-1, -1], nit=nit1, status=status,
-                              message=message, success=False)
+                      message=message, success=False)
 
     # Phase 2
+    print ("PHASE2")
     nit2, status = _solve_simplex(T, n, basis, maxiter=maxiter-nit1, phase=2,
                                   callback=callback, tol=tol, nit0=nit1,
                                   bland=bland)
@@ -817,7 +827,7 @@ def _linprog_dual_simplex(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
             print("         Iterations: {0:d}".format(nit2))
 
     return OptimizeResult(x=x, fun=obj, nit=int(nit2), status=status, slack=slack,
-                          message=messages[status], success=(status == 0))
+                  message=messages[status], success=(status == 0))
 
 
 def linprog(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,

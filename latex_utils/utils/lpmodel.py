@@ -264,7 +264,7 @@ class LP(object):
             dual=True
         )
 
-    def solve(self, disp=False):
+    def solve(self, disp=True):
         constraints = [c for c in self.constraints_origin]
         goal = self.goal_origin
         C = []
@@ -308,9 +308,15 @@ class LP(object):
         #from scipy.optimize import linprog
         from linprog import linprog
 
+        def lin_callback_temp(xk, **kwargs):
+            #print kwargs
+            tableau = kwargs.pop('tableau')
+            print tableau
+
         def lin_callback(xk, **kwargs):
             #print kwargs
             tableau = kwargs.pop('tableau')
+            print tableau
             t = copy.deepcopy(tableau)
             if self.tableau_origin is None:
                 self.tableau_origin = tableau.tolist()
@@ -333,34 +339,49 @@ class LP(object):
 
             if len(t) == len(constraints) + 1:
                 self.tableau_list.append(t)
-                basis = kwargs.pop('basis')
+                basis = copy.deepcopy(kwargs.pop('basis'))
                 #print basis
-                b = copy.deepcopy(basis)
-                b = b.tolist()
+                basis = basis.tolist()
                 cb = copy.deepcopy(self.goal)
-                for temp in b:
+                for temp in basis:
                     cb.append(0)
-                cb_final = [cb[v] for v in b]
+                print (basis)
+                print (cb)
+
+                cb_final = [cb[v] for v in basis]
                 cb_final = ["$%s$" % trans_latex_fraction(str(c), wrap=False) for c in cb_final]
                 self.solve_cb_list.append(cb_final)
-                b_index = [temp +1 for temp in b]
+                b_index = [temp +1 for temp in basis]
                 xb = copy.deepcopy(self.x_list)
                 for temp_b in range(len(self.x_list)+1, len(self.x_list) + len(b_index) + 1):
                     xb.append("x_{%d}" % temp_b)
 
-                xb_final = [xb[v] for v in b]
+                xb_final = [xb[v] for v in basis]
                 xb_final = ["$%s$" % str(x) for x in xb_final]
                 self.solve_xb_list.append(xb_final)
                 self.base_list.append(b_index)
 
-        res = linprog(c=C, A_ub=A_ub, b_ub=b_ub, bounds=((0, None),) * len(self.x_list),
+        solve_kwarg = {}
+        solve_kwarg["c"] = C
+        if A_ub:
+            solve_kwarg["A_ub"] = A_ub
+            solve_kwarg["b_ub"] = b_ub
+        if A_eq:
+            solve_kwarg["A_eq"] = A_eq
+            solve_kwarg["b_eq"] = b_eq
+
+        print solve_kwarg
+
+        res = linprog(bounds=((0, None),) * len(self.x_list),
                       options = {'disp': disp},
-                      callback= lin_callback,
+                      #callback= lin_callback,
+                      callback= lin_callback_temp,
+                      **solve_kwarg
                       )
 
         n_slack = len(res.slack.tolist())
         self.solve_n_variable = len(self.x_list) + n_slack
-        self.solve_goal_list = self.goal + [0] * 3
+        self.solve_goal_list = self.goal + [0] * n_slack
         self.solve_goal_list = ["$%s$" % trans_latex_fraction(c, wrap=False) for c in self.solve_goal_list]
         self.solve_x_list = self.x_list
 
@@ -436,20 +457,20 @@ class LP(object):
             if len(t) == len(constraints) + 1:
                 self.tableau_list.append(t)
                 basis = kwargs.pop('basis')
-                b = copy.deepcopy(basis)
-                b = b.tolist()
+                basis = copy.deepcopy(basis)
+                basis = basis.tolist()
                 cb = copy.deepcopy(self.goal)
-                for temp in b:
+                for temp in basis:
                     cb.append(0)
-                cb_final = [cb[v] for v in b]
+                cb_final = [cb[v] for v in basis]
                 cb_final = ["$%s$" % trans_latex_fraction(str(c), wrap=False) for c in cb_final]
                 self.solve_cb_list.append(cb_final)
-                b_index = [temp + 1 for temp in b]
+                b_index = [temp + 1 for temp in basis]
                 xb = copy.deepcopy(self.x_list)
                 for temp_b in range(len(self.x_list) + 1, len(self.x_list) + len(b_index) + 1):
                     xb.append("x_{%d}" % temp_b)
 
-                xb_final = [xb[v] for v in b]
+                xb_final = [xb[v] for v in basis]
                 xb_final = ["$%s$" % str(x) for x in xb_final]
                 self.solve_xb_list.append(xb_final)
                 self.base_list.append(b_index)
@@ -461,7 +482,7 @@ class LP(object):
 
         n_slack = len(res.slack.tolist())
         self.solve_n_variable = len(self.x_list) + n_slack
-        self.solve_goal_list = self.goal + [0] * 3
+        self.solve_goal_list = self.goal + [0] * n_slack
         self.solve_goal_list = ["$%s$" % trans_latex_fraction(c, wrap=False) for c in self.solve_goal_list]
         self.solve_x_list = self.x_list
 

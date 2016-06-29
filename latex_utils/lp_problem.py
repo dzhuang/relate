@@ -17,13 +17,13 @@ from latex_utils.utils.lpmodel import LP
 #         )
 
 lp = LP(type="max",
-        goal=[2, 5, 3, 5],
+        goal=[3, -2, -1],
         # x="y",
         # x_list=["y_1", "y_2", "w_3"],
         constraints=[
-            [1, 1, 3, 4, "<", 8],
-            [1, 3, 1, 1, ">", 21],
-            [3, 2, 1, 2, ">", 15]
+            [1, -2, 1, "<", 11],
+            [-4, 1, 2, ">", 3],
+            [-2, 0, 1, "=", 1]
         ],
 #        sign=[">", "<", ">", "="],
         )
@@ -76,7 +76,7 @@ lp2 = LP(type="max",
 
 lp_json_list = []
 lp_json_list.append(lp.json)
-lp_json_list.append(lp2.json)
+#lp_json_list.append(lp2.json)
 
 import pickle
 #import dill as pickle
