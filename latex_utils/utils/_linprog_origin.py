@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 A top-level linear programming interface. Currently this interface only
 solves linear programming problems via the Simplex Method.
@@ -19,9 +18,7 @@ Functions
 from __future__ import division, print_function, absolute_import
 
 import numpy as np
-from scipy.optimize._linprog import OptimizeResult, _check_unknown_options
-#from scipy.optimize._linprog import  _linprog_simplex
-#from .optimize import OptimizeResult, _check_unknown_options
+from .optimize import OptimizeResult, _check_unknown_options
 
 __all__ = ['linprog', 'linprog_verbose_callback', 'linprog_terse_callback']
 
@@ -325,10 +322,6 @@ def _solve_simplex(T, n, basis, maxiter=1000, phase=2, callback=None,
         # Ref: "An Introduction to Linear Programming and Game Theory"
         # by Paul R. Thie, Gerard E. Keough, 3rd Ed,
         # Chapter 3.7 Redundant Systems (pag 102)
-
-        # 考虑了有冗余的约束条件时
-        # 只会在第二阶段出现，因为只有在第二阶段才有方程
-        # 第一阶段的约束条件通常都会引入松弛或剩余变量，而方程都会引入人工变量
         for pivrow in [row for row in range(basis.size)
                        if basis[row] > T.shape[1] - 2]:
             non_zero_row = [col for col in range(T.shape[1] - 1)
@@ -345,7 +338,6 @@ def _solve_simplex(T, n, basis, maxiter=1000, phase=2, callback=None,
                         T[irow, :] = T[irow, :] - T[pivrow, :]*T[irow, pivcol]
                 nit += 1
 
-    # 不清楚是什么意思？没有基变量？
     if len(basis[:m]) == 0:
         solution = np.zeros(T.shape[1] - 1, dtype=np.float64)
     else:
@@ -398,7 +390,7 @@ def _solve_simplex(T, n, basis, maxiter=1000, phase=2, callback=None,
 
 def _linprog_simplex(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
             bounds=None, maxiter=1000, disp=False, callback=None,
-            tol=1.0E-12, bland=False, cnstr_orig_order=None, **unknown_options):
+            tol=1.0E-12, bland=False, **unknown_options):
     """
     Solve the following linear programming problem via a two-phase
     simplex algorithm.
@@ -741,7 +733,6 @@ def _linprog_simplex(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
     # If a row corresponds to an equality constraint or a negative b (a lower
     # bound constraint), then an artificial variable is added for that row.
     # Also, if b is negative, first flip the signs in that constraint.
-    # b < 0 是在这里处理
     slcount = 0
     avcount = 0
     basis = np.zeros(m, dtype=int)
@@ -767,13 +758,6 @@ def _linprog_simplex(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
     for r in r_artificial:
         T[-1, :] = T[-1, :] - T[r, :]
 
-    if cnstr_orig_order:
-        T_copy = np.copy(T)
-        for idx in range(m):
-            T_copy[cnstr_orig_order[idx]] = T[idx]
-
-        T = T_copy
-
     nit1, status = _solve_simplex(T, n, basis, phase=1, callback=callback,
                                   maxiter=maxiter, tol=tol, bland=bland)
 
@@ -783,8 +767,6 @@ def _linprog_simplex(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
         # Remove the pseudo-objective row from the tableau
         T = T[:-1, :]
         # Remove the artificial variable columns from the tableau
-        # http://docs.scipy.org/doc/numpy/reference/generated/numpy.s_.html#numpy-s 注意
-        # http://stackoverflow.com/questions/12616821/numpy-slicing-from-variable
         T = np.delete(T, np.s_[n+n_slack:n+n_slack+n_artificial], 1)
     else:
         # Failure to find a feasible starting point
@@ -798,7 +780,6 @@ def _linprog_simplex(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
                       message=message, success=False)
 
     # Phase 2
-    print ("PHASE2")
     nit2, status = _solve_simplex(T, n, basis, maxiter=maxiter-nit1, phase=2,
                                   callback=callback, tol=tol, nit0=nit1,
                                   bland=bland)
@@ -840,7 +821,6 @@ def _linprog_simplex(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
 
 def linprog(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
             bounds=None, method='simplex', callback=None,
-            cnstr_orig_order = None,
             options=None):
     """
     Minimize a linear objective function subject to linear
@@ -1006,6 +986,6 @@ def linprog(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
 
     if meth == 'simplex':
         return _linprog_simplex(c, A_ub=A_ub, b_ub=b_ub, A_eq=A_eq, b_eq=b_eq,
-                                bounds=bounds, callback=callback, cnstr_orig_order=cnstr_orig_order, **options)
+                                bounds=bounds, callback=callback, **options)
     else:
         raise ValueError('Unknown solver %s' % method)

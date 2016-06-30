@@ -160,38 +160,38 @@ class LP(object):
 
     def get_constraint_str(self):
         c_list = []
-        for c in self.constraints:
-            c_list.append(self.get_single_constraint(c))
+        for cnstr in self.constraints:
+            c_list.append(self.get_single_constraint(cnstr))
         return c_list
 
     def get_single_constraint(self, constraint):
-        constraint = [trans_latex_fraction(str(c), wrap=False) for c in constraint]
+        constraint = [trans_latex_fraction(str(cnstr), wrap=False) for cnstr in constraint]
         x_list = [x for x in self.x_list]
-        for i, c in enumerate(constraint[:len(self.x_list)]):
-            if str(c) == "0":
+        for i, cnstr in enumerate(constraint[:len(self.x_list)]):
+            if str(cnstr) == "0":
                 constraint[i] = ""
                 x_list[i] = ""
-            elif str(c) == "-1":
+            elif str(cnstr) == "-1":
                 constraint[i] = "-"
-            elif str(c) == "1":
+            elif str(cnstr) == "1":
                 constraint[i] = " "
 
         found_first_sign = False
-        for i, c in enumerate(constraint[:len(self.x_list)]):
+        for i, cnstr in enumerate(constraint[:len(self.x_list)]):
             if not found_first_sign:
-                if str(c) != "":
+                if str(cnstr) != "":
                     found_first_sign = True
-                    if str(c).startswith("-"):
-                        constraint[i] = "\\mbox{$-$}%s" % str(c)[1:]
-                    elif str(c).startswith("+"):
+                    if str(cnstr).startswith("-"):
+                        constraint[i] = "\\mbox{$-$}%s" % str(cnstr)[1:]
+                    elif str(cnstr).startswith("+"):
                         constraint[i] = " "
                     constraint[i] = "%s%s&" % (constraint[i], x_list[i])
                 else:
                     constraint[i] = "{}{}&%s%s&" % (constraint[i][1:], x_list[i])
             else:
-                if str(c).startswith("-"):
+                if str(cnstr).startswith("-"):
                     constraint[i] = "{}-{}&%s%s&" % (constraint[i][1:], x_list[i])
-                elif str(c) == "":
+                elif str(cnstr) == "":
                     constraint[i] = "{}{}&%s%s&" % (constraint[i][1:], x_list[i])
                 else:
                     constraint[i] = "{}+{}&%s%s&" % (constraint[i], x_list[i])
@@ -250,7 +250,7 @@ class LP(object):
         else:
             constraints_sign = [self.sign_reverse(s) for s in constraints_sign]
 
-        for i, c in enumerate(constraints):
+        for i, cnstr in enumerate(constraints):
             constraints[i].append(constraints_sign[i])
             constraints[i].append(rhs[i])
 
@@ -265,7 +265,7 @@ class LP(object):
         )
 
     def solve(self, disp=True):
-        constraints = [c for c in self.constraints_origin]
+        constraints = [cnstr for cnstr in self.constraints_origin]
         goal = self.goal_origin
         C = []
         for g in goal:
@@ -278,32 +278,39 @@ class LP(object):
         A_ub=[]
         b_eq=[]
         A_eq=[]
-        for c in constraints:
+        ub_cnstr_orig_order = []
+        eq_cnstr_orig_order = []
+        for i, cnstr in enumerate(constraints):
             i_list = []
-            if self.sign_trans(c[-2]) == self.sign_trans(">"):
-                for cx in c[:-2]:
+            if self.sign_trans(cnstr[-2]) == self.sign_trans(">"):
+                for cx in cnstr[:-2]:
                     try:
                         i_list.append(-float(cx))
                     except:
                         pass
                 A_ub.append(i_list)
-                b_ub.append(-float(c[-1]))
-            elif self.sign_trans(c[-2]) == self.sign_trans("<"):
-                for cx in c[:-2]:
+                b_ub.append(-float(cnstr[-1]))
+                ub_cnstr_orig_order.append(i)
+            elif self.sign_trans(cnstr[-2]) == self.sign_trans("<"):
+                for cx in cnstr[:-2]:
                     try:
                         i_list.append(float(cx))
                     except:
                         pass
                 A_ub.append(i_list)
-                b_ub.append(float(c[-1]))
-            elif self.sign_trans(c[-2]) == self.sign_trans("="):
-                for cx in c[:-2]:
+                b_ub.append(float(cnstr[-1]))
+                ub_cnstr_orig_order.append(i)
+            elif self.sign_trans(cnstr[-2]) == self.sign_trans("="):
+                for cx in cnstr[:-2]:
                     try:
                         i_list.append(float(cx))
                     except:
                         pass
                 A_eq.append(i_list)
-                b_eq.append(float(c[-1]))
+                b_eq.append(float(cnstr[-1]))
+                eq_cnstr_orig_order.append(i)
+
+        cnstr_orig_order = eq_cnstr_orig_order + ub_cnstr_orig_order
 
         #from scipy.optimize import linprog
         from linprog import linprog
@@ -370,12 +377,14 @@ class LP(object):
             solve_kwarg["A_eq"] = A_eq
             solve_kwarg["b_eq"] = b_eq
 
+        solve_kwarg["cnstr_orig_order"] = cnstr_orig_order
+
         print solve_kwarg
 
         res = linprog(bounds=((0, None),) * len(self.x_list),
                       options = {'disp': disp},
-                      #callback= lin_callback,
-                      callback= lin_callback_temp,
+                      callback= lin_callback,
+                      #callback= lin_callback_temp,
                       **solve_kwarg
                       )
 
@@ -392,7 +401,7 @@ class LP(object):
         return res
 
     def modified_solve(self):
-        constraints = [c for c in self.constraints_origin]
+        constraints = [cnstr for cnstr in self.constraints_origin]
         goal = self.goal_origin
         C = []
         for g in goal:
@@ -405,32 +414,32 @@ class LP(object):
         A_ub = []
         b_eq = []
         A_eq = []
-        for c in constraints:
+        for cnstr in constraints:
             i_list = []
-            if self.sign_trans(c[-2]) == self.sign_trans(">"):
-                for cx in c[:-2]:
+            if self.sign_trans(cnstr[-2]) == self.sign_trans(">"):
+                for cx in cnstr[:-2]:
                     try:
                         i_list.append(-float(cx))
                     except:
                         pass
                 A_ub.append(i_list)
-                b_ub.append(-float(c[-1]))
-            elif self.sign_trans(c[-2]) == self.sign_trans("<"):
-                for cx in c[:-2]:
+                b_ub.append(-float(cnstr[-1]))
+            elif self.sign_trans(cnstr[-2]) == self.sign_trans("<"):
+                for cx in cnstr[:-2]:
                     try:
                         i_list.append(float(cx))
                     except:
                         pass
                 A_ub.append(i_list)
-                b_ub.append(float(c[-1]))
-            elif self.sign_trans(c[-2]) == self.sign_trans("="):
-                for cx in c[:-2]:
+                b_ub.append(float(cnstr[-1]))
+            elif self.sign_trans(cnstr[-2]) == self.sign_trans("="):
+                for cx in cnstr[:-2]:
                     try:
                         i_list.append(float(cx))
                     except:
                         pass
                 A_eq.append(i_list)
-                b_eq.append(float(c[-1]))
+                b_eq.append(float(cnstr[-1]))
 
         from scipy.optimize import linprog
 
@@ -501,8 +510,8 @@ class LP(object):
         tableau.pop(-1)
 
         constraints = copy.deepcopy(tableau)
-        for c in constraints:
-            c.insert(-1, "=")
+        for cnstr in constraints:
+            cnstr.insert(-1, "=")
 
         #print constraints
 
