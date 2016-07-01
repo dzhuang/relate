@@ -29,7 +29,7 @@ $$\begin{alignat*}{20}
 <p align="middle">
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
 \begin{keytable}[H]\centering
-\topcaption{}
+\topcaption{\BLOCK{ if lp.two_phase }第二阶段\BLOCK{ endif }}
 \begin{tabular}{c|c|\BLOCK{ for x in range(0, lp.solve_n_variable) }C{1cm}\BLOCK{ endfor }|c}\hline\hline
 \multicolumn{2}{c|}{$c_j$}\BLOCK{ for c in lp.solve_goal_list }&\VAR{c}\BLOCK{ endfor }&\multirow{2}*{$\mathbf{b}$} \\ \cline{1-\VAR{lp.solve_n_variable+2}}
 $\mathbf{C_B}$&$\mathbf{X_B}$\BLOCK{ for x in lp.solve_x_list }&\VAR{x}\BLOCK{ endfor }&\\ \hline
@@ -37,11 +37,8 @@ $\mathbf{C_B}$&$\mathbf{X_B}$\BLOCK{ for x in lp.solve_x_list }&\VAR{x}\BLOCK{ e
 \BLOCK{ for j in range(0, lp.solve_cb_list[i]|length + 1) }
 \BLOCK{ if not loop.last } \VAR{lp.solve_cb_list[i][j]}&\VAR{lp.solve_xb_list[i][j]}&\BLOCK{ else } \multicolumn{2}{c|}{$\bar c_j$}& \BLOCK{ endif } \VAR{lp.tableau_list[i][j]|join("&") } \\
 \BLOCK{- if loop.revindex0 <= 1 } \hline \BLOCK{ endif }
-
 \BLOCK{ endfor }
-
 \BLOCK{ endfor }
-
 \hline\end{tabular}
 \end{keytable}%
 

@@ -2,9 +2,22 @@
 
 import copy
 import six
+import numpy as np
 
 EQ = [">", "<", "=", ">=", "<=", "=<", "=>"]
 SIGN = [">", "<", "=", ">=", "<=", "=<", "=>", "int", "bin"]
+
+class LpSolution(object):
+    def __init__(self):
+        self.tableau_list = []
+        pass
+
+class LpSolutionPhase1(LpSolution):
+    pass
+
+class LpSolutionPhase2(LpSolution):
+    pass
+
 
 class LP(object):
     @staticmethod
@@ -51,8 +64,10 @@ class LP(object):
         """
         return "%s_{%d}" % (x, i)
 
-    def __init__(self, type, goal, constraints, x="x", x_list=None, sign=None, z="Z", sign_str=None, dual=False):
+    def __init__(self, type, goal, constraints, x="x", x_list=None, sign=None, z="Z", sign_str=None, dual=False, required_solve_status=[0]):
         assert type.lower() in ["min", "max"]
+        assert isinstance(required_solve_status, list)
+        self.required_solve_status = required_solve_status
         self.type = type.lower()
         import json
         json_dict = {
@@ -120,12 +135,20 @@ class LP(object):
         self.base_list = []
         self.tableau_list = []
         self.fun = []
+        self.two_phase = False
+        self.solve_n_variable = 0
         self.solve_n_variable = 0
         self.solve_x_list = []
         self.solve_goal_list =[]
+        self.solve_goal_list = []
+        self.solve_cb_list = []
         self.solve_cb_list = []
         self.solve_xb_list = []
+        self.solve_xb_list = []
         self.tableau_origin = None
+        
+        self.solutionPhase1 = LpSolutionPhase1()
+        self.solutionPhase2 = LpSolutionPhase2()
 
     def get_sign_str(self, dual):
         """
@@ -315,42 +338,94 @@ class LP(object):
         #from scipy.optimize import linprog
         from linprog import linprog
 
-        def lin_callback_temp(xk, **kwargs):
-            #print kwargs
-            tableau = kwargs.pop('tableau')
-            print tableau
+        # linprog will make the constraints out of order
+        def adjust_order(modified_list, cnstr_orig_order=cnstr_orig_order):
+            m = len(cnstr_orig_order)
+            t = copy.deepcopy(modified_list)
+            for idx in range(m):
+                t[cnstr_orig_order[idx]] = modified_list[idx]
+            return t
 
         def lin_callback(xk, **kwargs):
-            #print kwargs
-            tableau = kwargs.pop('tableau')
-            print tableau
-            t = copy.deepcopy(tableau)
-            if self.tableau_origin is None:
-                self.tableau_origin = tableau.tolist()
-            i_p, j_p = kwargs.pop('pivot')
-            i_p = copy.deepcopy(i_p)
-            j_p = copy.deepcopy(j_p)
-            t = t.tolist()
-            if self.type == "max":
-                for i, bar_c in enumerate(t[-1][:-1]):
-                    t[-1][i] = -bar_c
+            t = np.copy(kwargs['tableau'])
+            phase = np.copy(kwargs['phase'])
+            nit = np.copy(kwargs['nit'])
+            basis = np.copy(kwargs['basis'])
+            i_p, j_p = np.copy(kwargs['pivot'])
+
+            print t
+
+            # used to generate latex formula of the model
+            if nit == 0:
+                self.tableau_origin = t.tolist()
+                if t[-1].max() != 0:
+                    self.two_phase = True
+
+            if self.two_phase:
+                k = 2
             else:
-                t[-1][-1] = -t[-1][-1]
-            for i, tl in enumerate(t):
-                t[i] = [trans_latex_fraction(temp) for temp in tl]
+                k = 1
+
+            if self.type == "max":
+                t[-1, :-1] *= -1
+                t[-k, :-1] *= -1
+            else:
+                t[-1, -1] *= -1
+                t[-k, -1] *= -1
+            t = t.tolist()
+
+            if nit == 0:
+                self.solve_goal_list = t[-k]
+#                print goal_list
+
+            for idx, e in enumerate(t):
+                t[idx] = [trans_latex_fraction(v) for v in e]
             try:
                 t[int(i_p)][int(j_p)] = "[$\mathbf{%s}$]" % t[int(i_p)][int(j_p)].replace("$", "")
             except ValueError:
                 # completed, no pivot
                 pass
 
-            if len(t) == len(constraints) + 1:
+            if self.two_phase and phase == 1:
+                #self.solutionPhase1
+                stage_klass = self.solutionPhase1
+                t.pop(-2)
+            else:
+                stage_klass = self.solutionPhase2
+                pass
+
+            stage_klass.tableau_list.append(adjust_order(t))
+            # print basis
+            #basis = basis.tolist()
+            basis = adjust_order(basis.tolist())
+            print 'basis', basis
+            cb = [self.solve_goal_list[v] for v in basis]
+            cb_string = ["$%s$" % trans_latex_fraction(str(c), wrap=False) for c in cb]
+            x_idx = range(len(t[0][0]))
+            xb_list = ["$x_%s$" % str(x + 1) for x in basis]
+            print xb_list
+
+
+            #xb_idx = [x_idx[v] for v in basis]
+            #print xb
+            #print cb
+
+            # cb = copy.deepcopy(self.goal)
+            # for i in basis:
+            #     cb.append(0)
+            # print (basis)
+            # print (cb)
+
+
+            if phase == 2:
+                print "stage2", t
+                t = adjust_order(t)
                 self.tableau_list.append(t)
-                basis = copy.deepcopy(kwargs.pop('basis'))
                 #print basis
-                basis = basis.tolist()
+                #basis = basis.tolist()
+                #basis = adjust_order(basis)
                 cb = copy.deepcopy(self.goal)
-                for temp in basis:
+                for i in basis:
                     cb.append(0)
                 print (basis)
                 print (cb)
@@ -360,8 +435,8 @@ class LP(object):
                 self.solve_cb_list.append(cb_final)
                 b_index = [temp +1 for temp in basis]
                 xb = copy.deepcopy(self.x_list)
-                for temp_b in range(len(self.x_list)+1, len(self.x_list) + len(b_index) + 1):
-                    xb.append("x_{%d}" % temp_b)
+                for idx in range(len(self.x_list)+1, len(self.x_list) + len(b_index) + 1):
+                    xb.append("x_{%d}" % idx)
 
                 xb_final = [xb[v] for v in basis]
                 xb_final = ["$%s$" % str(x) for x in xb_final]
@@ -377,129 +452,30 @@ class LP(object):
             solve_kwarg["A_eq"] = A_eq
             solve_kwarg["b_eq"] = b_eq
 
-        solve_kwarg["cnstr_orig_order"] = cnstr_orig_order
-
-        print solve_kwarg
-
         res = linprog(bounds=((0, None),) * len(self.x_list),
                       options = {'disp': disp},
                       callback= lin_callback,
-                      #callback= lin_callback_temp,
                       **solve_kwarg
                       )
+        #print "slack", res.slack
 
-        n_slack = len(res.slack.tolist())
-        self.solve_n_variable = len(self.x_list) + n_slack
-        self.solve_goal_list = self.goal + [0] * n_slack
+        # solve finished
+        if res.status not in self.required_solve_status:
+            raise RuntimeError("This question can not be solved according to solve status")
+
+        n_slack = len(res.slack_list)
+        n_artificial = len(res.artificial_list)
+        self.solve_n_variable = len(self.x_list) + n_slack + n_artificial
+        #self.solve_goal_list = self.goal + [0] * (n_slack + n_artificial)
+        self.solve_goal_list = self.solve_goal_list[:self.solve_n_variable]
         self.solve_goal_list = ["$%s$" % trans_latex_fraction(c, wrap=False) for c in self.solve_goal_list]
         self.solve_x_list = self.x_list
 
-        for n in range(len(self.x_list)+1, len(self.x_list) + n_slack + 1):
+        for n in range(len(self.x_list)+1, len(self.x_list) + n_slack + n_artificial + 1):
             self.solve_x_list += ["x_{%d}" % (n,)]
         self.solve_x_list = ["$%s$" % x for x in self.solve_x_list]
 
-        return res
-
-    def modified_solve(self):
-        constraints = [cnstr for cnstr in self.constraints_origin]
-        goal = self.goal_origin
-        C = []
-        for g in goal:
-            if self.type == "max":
-                C.append(-float(g))
-            else:
-                C.append(float(g))
-
-        b_ub = []
-        A_ub = []
-        b_eq = []
-        A_eq = []
-        for cnstr in constraints:
-            i_list = []
-            if self.sign_trans(cnstr[-2]) == self.sign_trans(">"):
-                for cx in cnstr[:-2]:
-                    try:
-                        i_list.append(-float(cx))
-                    except:
-                        pass
-                A_ub.append(i_list)
-                b_ub.append(-float(cnstr[-1]))
-            elif self.sign_trans(cnstr[-2]) == self.sign_trans("<"):
-                for cx in cnstr[:-2]:
-                    try:
-                        i_list.append(float(cx))
-                    except:
-                        pass
-                A_ub.append(i_list)
-                b_ub.append(float(cnstr[-1]))
-            elif self.sign_trans(cnstr[-2]) == self.sign_trans("="):
-                for cx in cnstr[:-2]:
-                    try:
-                        i_list.append(float(cx))
-                    except:
-                        pass
-                A_eq.append(i_list)
-                b_eq.append(float(cnstr[-1]))
-
-        from scipy.optimize import linprog
-
-        def lin_callback(xk, **kwargs):
-            tableau = kwargs.pop('tableau')
-            t = copy.deepcopy(tableau)
-            i_p, j_p = kwargs.pop('pivot')
-            i_p = copy.deepcopy(i_p)
-            j_p = copy.deepcopy(j_p)
-            t = t.tolist()
-            if self.type == "max":
-                for i, bar_c in enumerate(t[-1][:-1]):
-                    t[-1][i] = -bar_c
-            else:
-                t[-1][-1] = -t[-1][-1]
-            for i, tl in enumerate(t):
-                t[i] = [trans_latex_fraction(temp) for temp in tl]
-            try:
-                t[int(i_p)][int(j_p)] = "[$\mathbf{%s}$]" % t[int(i_p)][int(j_p)].replace("$", "")
-            except ValueError:
-                # completed, no pivot
-                pass
-
-            if len(t) == len(constraints) + 1:
-                self.tableau_list.append(t)
-                basis = kwargs.pop('basis')
-                basis = copy.deepcopy(basis)
-                basis = basis.tolist()
-                cb = copy.deepcopy(self.goal)
-                for temp in basis:
-                    cb.append(0)
-                cb_final = [cb[v] for v in basis]
-                cb_final = ["$%s$" % trans_latex_fraction(str(c), wrap=False) for c in cb_final]
-                self.solve_cb_list.append(cb_final)
-                b_index = [temp + 1 for temp in basis]
-                xb = copy.deepcopy(self.x_list)
-                for temp_b in range(len(self.x_list) + 1, len(self.x_list) + len(b_index) + 1):
-                    xb.append("x_{%d}" % temp_b)
-
-                xb_final = [xb[v] for v in basis]
-                xb_final = ["$%s$" % str(x) for x in xb_final]
-                self.solve_xb_list.append(xb_final)
-                self.base_list.append(b_index)
-
-        res = linprog(c=C, A_ub=A_ub, b_ub=b_ub, bounds=((0, None),) * len(self.x_list),
-                      #options={'disp': True},
-                      callback=lin_callback,
-                      )
-
-        n_slack = len(res.slack.tolist())
-        self.solve_n_variable = len(self.x_list) + n_slack
-        self.solve_goal_list = self.goal + [0] * n_slack
-        self.solve_goal_list = ["$%s$" % trans_latex_fraction(c, wrap=False) for c in self.solve_goal_list]
-        self.solve_x_list = self.x_list
-
-        for n in range(len(self.x_list) + 1, len(self.x_list) + n_slack + 1):
-            self.solve_x_list += ["x_{%d}" % (n,)]
-        self.solve_x_list = ["$%s$" % x for x in self.solve_x_list]
-
-        #print res
+        return res.status
 
     def standized_LP(self):
         self.solve()
