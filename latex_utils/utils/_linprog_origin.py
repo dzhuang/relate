@@ -749,7 +749,7 @@ def _linprog_simplex(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
     for i in range(m):
         if i < meq or b[i] < 0:
             # basic variable i is in column n+n_slack+avcount
-            basis[i] = n+n_slack+avcount
+            basis[i] = n + n_slack + avcount
             r_artificial[avcount] = i
             avcount += 1
             if b[i] < 0:

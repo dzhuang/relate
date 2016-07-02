@@ -10,6 +10,8 @@ SIGN = [">", "<", "=", ">=", "<=", "=<", "=>", "int", "bin"]
 class LpSolution(object):
     def __init__(self):
         self.tableau_list = []
+        self.xb_list = []
+        self.cb_list = []
         pass
 
 class LpSolutionPhase1(LpSolution):
@@ -368,7 +370,7 @@ class LP(object):
 
             if self.type == "max":
                 t[-1, :-1] *= -1
-                t[-k, :-1] *= -1
+                #t[-k, :-1] *= -1
             else:
                 t[-1, -1] *= -1
                 t[-k, -1] *= -1
@@ -389,21 +391,25 @@ class LP(object):
             if self.two_phase and phase == 1:
                 #self.solutionPhase1
                 stage_klass = self.solutionPhase1
-                t.pop(-2)
+                #t.pop(-2)
             else:
                 stage_klass = self.solutionPhase2
                 pass
 
-            stage_klass.tableau_list.append(adjust_order(t))
+            stage_klass.tableau_list.append(t)
             # print basis
             #basis = basis.tolist()
-            basis = adjust_order(basis.tolist())
-            print 'basis', basis
+            basis = basis.tolist()
+            #print 'basis', basis
             cb = [self.solve_goal_list[v] for v in basis]
             cb_string = ["$%s$" % trans_latex_fraction(str(c), wrap=False) for c in cb]
             x_idx = range(len(t[0][0]))
             xb_list = ["$x_%s$" % str(x + 1) for x in basis]
-            print xb_list
+            #print xb_list
+            stage_klass.xb_list.append(xb_list)
+#            print "stage_klass.xb_list", stage_klass.xb_list
+            print "stage1 xb_list", self.solutionPhase1.xb_list
+            print "stage2 xb_list", self.solutionPhase2.xb_list
 
 
             #xb_idx = [x_idx[v] for v in basis]
@@ -419,11 +425,9 @@ class LP(object):
 
             if phase == 2:
                 print "stage2", t
-                t = adjust_order(t)
                 self.tableau_list.append(t)
                 #print basis
                 #basis = basis.tolist()
-                #basis = adjust_order(basis)
                 cb = copy.deepcopy(self.goal)
                 for i in basis:
                     cb.append(0)
@@ -442,6 +446,8 @@ class LP(object):
                 xb_final = ["$%s$" % str(x) for x in xb_final]
                 self.solve_xb_list.append(xb_final)
                 self.base_list.append(b_index)
+                print self.base_list
+                print self.solve_xb_list
 
         solve_kwarg = {}
         solve_kwarg["c"] = C
@@ -452,6 +458,8 @@ class LP(object):
             solve_kwarg["A_eq"] = A_eq
             solve_kwarg["b_eq"] = b_eq
 
+        solve_kwarg["cnstr_orig_order"] = cnstr_orig_order
+
         res = linprog(bounds=((0, None),) * len(self.x_list),
                       options = {'disp': disp},
                       callback= lin_callback,
@@ -461,7 +469,7 @@ class LP(object):
 
         # solve finished
         if res.status not in self.required_solve_status:
-            raise RuntimeError("This question can not be solved according to solve status")
+            raise RuntimeError("This problem can not be solved according to solve status")
 
         n_slack = len(res.slack_list)
         n_artificial = len(res.artificial_list)

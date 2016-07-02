@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 A top-level linear programming interface. Currently this interface only
 solves linear programming problems via the Simplex Method.
@@ -18,6 +19,7 @@ Functions
 from __future__ import division, print_function, absolute_import
 
 import numpy as np
+import copy
 from scipy.optimize._linprog import OptimizeResult, _check_unknown_options
 #from scipy.optimize._linprog import  _linprog_simplex
 #from .optimize import OptimizeResult, _check_unknown_options
@@ -26,6 +28,13 @@ __all__ = ['linprog', 'linprog_verbose_callback', 'linprog_terse_callback']
 
 __docformat__ = "restructuredtext en"
 
+
+def adjust_order(modified_iter, order_list):
+    m = len(order_list)
+    t = copy.deepcopy(modified_iter)
+    for idx in range(m):
+        t[order_list[idx]] = modified_iter[idx]
+    return t
 
 def linprog_verbose_callback(xk, **kwargs):
     """
@@ -324,6 +333,10 @@ def _solve_simplex(T, n, basis, maxiter=1000, phase=2, callback=None,
         # Ref: "An Introduction to Linear Programming and Game Theory"
         # by Paul R. Thie, Gerard E. Keough, 3rd Ed,
         # Chapter 3.7 Redundant Systems (pag 102)
+
+        # 考虑了有冗余的约束条件时
+        # 只会在第二阶段出现，因为只有在第二阶段才有方程
+        # 第一阶段的约束条件通常都会引入松弛或剩余变量，而方程都会引入人工变量
         for pivrow in [row for row in range(basis.size)
                        if basis[row] > T.shape[1] - 2]:
             non_zero_row = [col for col in range(T.shape[1] - 1)
@@ -349,6 +362,7 @@ def _solve_simplex(T, n, basis, maxiter=1000, phase=2, callback=None,
     while not complete:
         # Find the pivot column
         pivcol_found, pivcol = _pivot_col(T, tol, bland)
+        print("pivcol operation")
         if not pivcol_found:
             pivcol = np.nan
             pivrow = np.nan
@@ -362,6 +376,7 @@ def _solve_simplex(T, n, basis, maxiter=1000, phase=2, callback=None,
                 complete = True
 
         if callback is not None:
+            print("callback called")
             solution[:] = 0
             solution[basis[:m]] = T[:m, -1]
             callback(solution[:n], **{"tableau": T,
@@ -392,7 +407,7 @@ def _solve_simplex(T, n, basis, maxiter=1000, phase=2, callback=None,
 
 def _linprog_simplex(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
             bounds=None, maxiter=1000, disp=False, callback=None,
-            tol=1.0E-12, bland=False, **unknown_options):
+            tol=1.0E-12, bland=False, cnstr_orig_order=None, **unknown_options):
     """
     Solve the following linear programming problem via a two-phase
     simplex algorithm.
@@ -736,34 +751,78 @@ def _linprog_simplex(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
     # If a row corresponds to an equality constraint or a negative b (a lower
     # bound constraint), then an artificial variable is added for that row.
     # Also, if b is negative, first flip the signs in that constraint.
+    # b < 0 是在这里处理
     slcount = 0
     avcount = 0
     basis = np.zeros(m, dtype=int)
     r_artificial = np.zeros(n_artificial, dtype=int)
     artificial_list = []
-    for i in range(m):
-        if i < meq or b[i] < 0:
-            # basic variable i is in column n+n_slack+avcount
-            basis[i] = n+n_slack+avcount
-            artificial_list.append(basis[i])
-            r_artificial[avcount] = i
-            avcount += 1
-            if b[i] < 0:
-                b[i] *= -1
-                T[i, :-1] *= -1
 
-                # negative slack -- surplus variable
-                # use negative to represent it is a negative slack
-                for j, sl in enumerate(slack_list):
-                    if sl == n + i - 1:
-                        slack_list[j] = -sl
+    # recover the order of constraints
+    if cnstr_orig_order:
+        r_need_artificial = np.zeros(m, dtype=bool)
+        for i in range(m):
+            if i < meq or b[i] < 0:
+                r_need_artificial[i] = True
 
-            T[i, basis[i]] = 1
-            T[-1, basis[i]] = 1
-        else:
-            # basic variable i is in column n+slcount
-            basis[i] = n+slcount
-            slcount += 1
+        T = adjust_order(T, cnstr_orig_order)
+        r_need_artificial = adjust_order(r_need_artificial, cnstr_orig_order)
+        b = adjust_order(b, cnstr_orig_order)
+
+        for i in range (m):
+            if r_need_artificial[i]:
+                # basic variable i is in column n+n_slack+avcount
+                basis[i] = n + n_slack + avcount
+                artificial_list.append(basis[i])
+                r_artificial[avcount] = i
+                avcount += 1
+                if b[i] < 0:
+                    b[i] *= -1
+                    T[i, :-1] *= -1
+
+                    # This line is needed since T and b
+                    # are modified
+                    T[i, -1] = b[i]
+
+                    # negative slack -- surplus variable
+                    # use negative to represent it is a negative slack
+                    for j, sl in enumerate(slack_list):
+                        if sl == n + i - 1:
+                            slack_list[j] = -sl
+
+                T[i, basis[i]] = 1
+                T[-1, basis[i]] = 1
+            else:
+                # basic variable i is in column n+slcount
+                basis[i] = n + slcount
+                slcount += 1
+
+            #print(T)
+
+    else:
+        for i in range(m):
+            if i < meq or b[i] < 0:
+                # basic variable i is in column n+n_slack+avcount
+                basis[i] = n + n_slack + avcount
+                artificial_list.append(basis[i])
+                r_artificial[avcount] = i
+                avcount += 1
+                if b[i] < 0:
+                    b[i] *= -1
+                    T[i, :-1] *= -1
+
+                    # negative slack -- surplus variable
+                    # use negative to represent it is a negative slack
+                    for j, sl in enumerate(slack_list):
+                        if sl == n + i - 1:
+                            slack_list[j] = -sl
+
+                T[i, basis[i]] = 1
+                T[-1, basis[i]] = 1
+            else:
+                # basic variable i is in column n+slcount
+                basis[i] = n+slcount
+                slcount += 1
 
     #print("slack_list", slack_list)
     #print("artificial_list", artificial_list)
@@ -772,6 +831,13 @@ def _linprog_simplex(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
     # each row with an artificial variable from the Phase 1 objective
     for r in r_artificial:
         T[-1, :] = T[-1, :] - T[r, :]
+
+    # if cnstr_orig_order:
+    #     T_copy = np.copy(T)
+    #     for idx in range(m):
+    #         T_copy[cnstr_orig_order[idx]] = T[idx]
+    #
+    #     T = T_copy
 
     nit1, status = _solve_simplex(T, n, basis, phase=1, callback=callback,
                                   maxiter=maxiter, tol=tol, bland=bland)
@@ -782,6 +848,8 @@ def _linprog_simplex(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
         # Remove the pseudo-objective row from the tableau
         T = T[:-1, :]
         # Remove the artificial variable columns from the tableau
+        # http://docs.scipy.org/doc/numpy/reference/generated/numpy.s_.html#numpy-s ע��
+        # http://stackoverflow.com/questions/12616821/numpy-slicing-from-variable
         T = np.delete(T, np.s_[n+n_slack:n+n_slack+n_artificial], 1)
     else:
         # Failure to find a feasible starting point
@@ -792,6 +860,7 @@ def _linprog_simplex(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
         if disp:
             print(message)
         return OptimizeResult(x=np.nan, fun=-T[-1, -1], nit=nit1, status=status,
+                      slack_list=slack_list, artificial_list=artificial_list,
                       message=message, success=False)
 
     # Phase 2
@@ -837,6 +906,7 @@ def _linprog_simplex(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
 
 def linprog(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
             bounds=None, method='simplex', callback=None,
+            cnstr_orig_order = None,
             options=None):
     """
     Minimize a linear objective function subject to linear
@@ -1002,6 +1072,6 @@ def linprog(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
 
     if meth == 'simplex':
         return _linprog_simplex(c, A_ub=A_ub, b_ub=b_ub, A_eq=A_eq, b_eq=b_eq,
-                                bounds=bounds, callback=callback, **options)
+                                bounds=bounds, callback=callback, cnstr_orig_order=cnstr_orig_order, **options)
     else:
         raise ValueError('Unknown solver %s' % method)
