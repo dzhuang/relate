@@ -4,7 +4,7 @@ from latex_utils.utils.latex_utils import latex_jinja_env, _file_write
 from latex_utils.utils.lpmodel import LP
 
 
-# lp = LP(type="max",
+# lp = LP(qtype="max",
 #         goal=[2, -1, 3, 1],
 #         #x="y",
 #         #x_list=["y_1", "y_2", "w_3"],
@@ -16,18 +16,32 @@ from latex_utils.utils.lpmodel import LP
 #         #sign=[">", ">", "<", "="],
 #         )
 
-lp = LP(type="max",
+lp = LP(qtype="max",
         goal=[3, -2, -1],
         # x="y",
         # x_list=["y_1", "y_2", "w_3"],
         constraints=[
             [1, -2, 1, "<", 11],
-            [-4, 1, 2, "<", 3],
-            [2, 0, 1, "<", 1],
+            [-4, 1, 2, ">", 3],
+            [-2, 0, 1, "=", 1],
             #[-4, 0, 2, "=", 2]
         ],
 #        sign=[">", "<", ">", "="],
         )
+
+# lp = LP(qtype="min",
+#         goal=[-3, -5],
+#         # x="y",
+#         # x_list=["y_1", "y_2", "w_3"],
+#         constraints=[
+#             [1, 0, "<", 4],
+#             [0, 1, "<", 6],
+#             [3, 2, "<", 18],
+#             # [-4, 0, 2, "=", 2]
+#         ],
+#         #        sign=[">", "<", ">", "="],
+#         )
+
 
 template = latex_jinja_env.get_template('/utils/lp_model.tex')
 tex = template.render(
@@ -63,7 +77,7 @@ r.clipboard_clear()
 #
 # r.clipboard_append(tex)
 
-lp2 = LP(type="max",
+lp2 = LP(qtype="max",
         goal=[3, 6, 3, 4],
         # x="y",
         # x_list=["y_1", "y_2", "w_3"],
@@ -93,15 +107,14 @@ for l in lp_json_list_loaded:
     lp_dict = json.loads(l)
 
     # print lp_dict
-    # print type(lp_dict["constraints"])
+    # print qtype(lp_dict["constraints"])
     # print lp_dict["constraints"]
-    # print type(lp_dict["x"])
+    # print qtype(lp_dict["x"])
 
     lp = LP(**lp_dict)
 
-
     lp.solve()
-    template = latex_jinja_env.get_template('/utils/lp_simplex.tex')
+    template = latex_jinja_env.get_template('/utils/lp_2_stage_simplex.tex')
     tex = template.render(
         show_question = True,
         show_answer = True,

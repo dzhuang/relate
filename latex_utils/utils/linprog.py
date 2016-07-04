@@ -362,7 +362,7 @@ def _solve_simplex(T, n, basis, maxiter=1000, phase=2, callback=None,
     while not complete:
         # Find the pivot column
         pivcol_found, pivcol = _pivot_col(T, tol, bland)
-        print("pivcol operation")
+        #print("pivcol operation")
         if not pivcol_found:
             pivcol = np.nan
             pivrow = np.nan
@@ -376,7 +376,7 @@ def _solve_simplex(T, n, basis, maxiter=1000, phase=2, callback=None,
                 complete = True
 
         if callback is not None:
-            print("callback called")
+            #print("callback called")
             solution[:] = 0
             solution[basis[:m]] = T[:m, -1]
             callback(solution[:n], **{"tableau": T,
@@ -848,7 +848,7 @@ def _linprog_simplex(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
         # Remove the pseudo-objective row from the tableau
         T = T[:-1, :]
         # Remove the artificial variable columns from the tableau
-        # http://docs.scipy.org/doc/numpy/reference/generated/numpy.s_.html#numpy-s ע��
+        # http://docs.scipy.org/doc/numpy/reference/generated/numpy.s_.html#numpy-s 注意
         # http://stackoverflow.com/questions/12616821/numpy-slicing-from-variable
         T = np.delete(T, np.s_[n+n_slack:n+n_slack+n_artificial], 1)
     else:
