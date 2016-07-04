@@ -41,7 +41,19 @@ lp = LP(qtype="max",
 #         ],
 #         #        sign=[">", "<", ">", "="],
 #         )
-
+#
+# lp = LP (qtype="max",
+#          goal=[1, 1, -5],
+#          # x="y",
+#          # x_list=["y_1", "y_2", "w_3"],
+#          constraints=[
+#              [1, 1, 1, ">", 7],
+#              [2, -5, 1, "=", 10],
+# #             [2, 2, 1, "<", 6],
+#              # [-4, 0, 2, "=", 2]
+#          ],
+#          #        sign=[">", "<", ">", "="],
+#          )
 
 template = latex_jinja_env.get_template('/utils/lp_model.tex')
 tex = template.render(
@@ -113,7 +125,7 @@ for l in lp_json_list_loaded:
 
     lp = LP(**lp_dict)
 
-    lp.solve()
+    lp.solve(method="big_m_simplex")
     template = latex_jinja_env.get_template('/utils/lp_2_stage_simplex.tex')
     tex = template.render(
         show_question = True,
@@ -121,10 +133,10 @@ for l in lp_json_list_loaded:
         pre_description=u"""
         """,
         lp=lp,
-        simplex_pre_description=u"""解：引入松弛变量$x_4, x_5, x_6$，用单纯形法求解如下：
-        """,
-        simplex_after_description=u"""最优解唯一。
-        """
+        # simplex_pre_description=u"""解：引入松弛变量$x_4, x_5, x_6$，用单纯形法求解如下：
+        # """,
+        # simplex_after_description=u"""最优解唯一。
+        # """
     )
 
     r.clipboard_append(tex)
