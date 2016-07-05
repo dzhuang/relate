@@ -16,7 +16,7 @@ from latex_utils.utils.lpmodel import LP
 #         #sign=[">", ">", "<", "="],
 #         )
 
-lp = LP(qtype="max",
+lp = LP(qtype="min",
         goal=[3, -2, -1],
         # x="y",
         # x_list=["y_1", "y_2", "w_3"],

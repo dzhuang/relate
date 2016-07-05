@@ -1067,7 +1067,8 @@ def linprog(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
     else:
         raise ValueError('Unknown solver %s' % method)
 
-BIG_M = 1E+12
+#BIG_M = 1E+12
+BIG_M = 100
 
 def _linprog_big_m_simplex(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
             bounds=None, maxiter=1000, disp=False, callback=None,

@@ -61,7 +61,7 @@ $\mathbf{C_B}$&$\mathbf{X_B}$\BLOCK{ for x in lp.solutionPhase1.all_variable_str
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
 \begin{keytable}[H]\centering
 \topcaption{\BLOCK{ if lp.solutionPhase1.need_two_phase }第二阶段\BLOCK{ endif }}
-\begin{tabular}{c|c|\BLOCK{ for x in range(0, lp.solutionPhase2.all_variable_str_list|length) }C{1cm}\BLOCK{ endfor }|c}\hline\hline
+\begin{tabular}{c|c|\BLOCK{ for x in range(0, lp.solutionPhase2.all_variable_str_list|length) }C\BLOCK{ if lp.solutionPhase2.method=="big_m_simplex" }{1.2cm}\BLOCK{ else }{1cm}\BLOCK{ endif }\BLOCK{ endfor }|c}\hline\hline
 \multicolumn{2}{c|}{$c_j$}\BLOCK{ for c in lp.solutionPhase2.goal_str_list }&\VAR{c}\BLOCK{ endfor }&\multirow{2}*{$\mathbf{b}$} \\ \cline{1-\VAR{lp.solutionPhase2.all_variable_str_list|length + 2 }}
 $\mathbf{C_B}$&$\mathbf{X_B}$\BLOCK{ for x in lp.solutionPhase2.all_variable_str_list }&\VAR{x}\BLOCK{ endfor }&\\ \hline
 \BLOCK{ for i in range(0, lp.solutionPhase2.tableau_str_list|length) }

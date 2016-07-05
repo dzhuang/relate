@@ -3,6 +3,7 @@
 import copy
 import six
 import numpy as np
+import re
 
 EQ = [">", "<", "=", ">=", "<=", "=<", "=>"]
 SIGN = [">", "<", "=", ">=", "<=", "=<", "=>", "int", "bin"]
@@ -20,6 +21,7 @@ class LpSolution(object):
         self.original_goal_list = []
         self.need_two_phase = False
         self.qtype = ""
+        self.method = ""
 
         # 已字符串化
         self.m = 0
@@ -38,13 +40,75 @@ class LpSolution(object):
     def get_goal_list(self):
         raise NotImplementedError()
 
+    def transform_big_m(self):
+        from sympy import symbols, Matrix
+        M = symbols("M")
+        artificial_list = self.artificial_variable_list
+        tableau_list = self.tableau_list
+        #goal_list = self.original_goal_list
+        basis_list = self.basis_list
+
+        # need self
+        for a in artificial_list:
+            if self.qtype == "max":
+                self.original_goal_list[a] = -M
+            else:
+                self.original_goal_list[a] = M
+
+        C = Matrix(self.original_goal_list[:-1]).T
+
+        CB_list = []
+        for bs in basis_list:
+            CB_list_single = []
+            for bsi in bs:
+                CB_list_single.append(self.original_goal_list[bsi])
+                CB_vector = Matrix([CB_list_single])
+            CB_list.append(CB_vector)
+
+
+        #print CB_list
+
+        A_np = tableau_list[0][:-1, :-1]
+        A = Matrix(A_np.tolist())
+        b_np = tableau_list[0][:-1, -1]
+        b = Matrix(b_np.tolist())
+
+        for i, t in enumerate(tableau_list):
+            t = t.tolist()
+            B_list = []
+            for j, bs in enumerate(basis_list[i]):
+                B_list.append(A_np[:, bs].tolist())
+                B = Matrix(B_list).T
+            CB = CB_list[i]
+            B_1 = B.inv()
+            C_j_BAR = C - CB*B_1*A
+            Z = CB*B_1*b
+            t[-1] = C_j_BAR.tolist()[0] + Z.tolist()[0]
+            self.tableau_list[i] = Matrix(t)
+
+
+        #print t
+        #print t[-1, :]
+
+
+
+
+
+
+
     def get_solution_string(self):
         if not self.m:
             self.m = len(self.basis_list[0])
 
         self.get_variable_instro_str_list()
+        all_variable = self.get_all_variable()
+
+        if isinstance(self, LpSolutionPhase2) and self.method == "big_m_simplex":
+            self.transform_big_m()
 
         tableau_list = self.tableau_list
+
+        #print tableau_list
 
         for t in tableau_list:
             if self.qtype == "max":
@@ -52,7 +116,6 @@ class LpSolution(object):
             else:
                 t[-1, -1] *= -1
 
-        all_variable = self.get_all_variable()
         self.all_variable_str_list = ["$x_{%d}$" % (abs(idx) + 1) for idx in all_variable]
 
         goal_list = self.get_goal_list()
@@ -420,6 +483,7 @@ class LP(object):
             stage_klass.tableau_list.append(t)
             stage_klass.basis_list.append(basis)
             stage_klass.pivot_list.append([i_p, j_p])
+            stage_klass.method = method
 
         solve_kwarg = {}
         solve_kwarg["c"] = C
@@ -459,10 +523,12 @@ class LP(object):
             origin_goal_list *= -1
         self.solutionPhase1.original_goal_list \
             = self.solutionPhase2.original_goal_list \
-            = origin_goal_list
+            = origin_goal_list.tolist()
 
         if len(self.solutionPhase1.tableau_list) > 1:
             self.solutionPhase1.need_two_phase = self.solutionPhase2.need_two_phase = True
+
+        final_tableau = np.copy(self.solutionPhase2.tableau_list[-1])
 
         if method != "big_m_simplex":
             self.solutionPhase1.get_solution_string()
@@ -477,7 +543,7 @@ class LP(object):
 
         self.solve_status = res.status
         if res.status == 0:
-            t = self.solutionPhase2.tableau_list[-1]
+            t = final_tableau
             tol = 1.0E-12
             ma = np.ma.masked_where(abs(t[-1, :-1]) <= tol, t[-1, :-1], copy=False)
             n_non_basis_variable_0_cjbar = ma.count()
@@ -531,7 +597,12 @@ def trans_latex_fraction(f, wrap=True):
     from fractions import Fraction
     try:
         frac = str(Fraction(f).limit_denominator())
-    except:
+    except ValueError:
+        if "M" in f:
+            try:
+                return trans_latex_big_m(f)
+            except:
+                return f
         return f
     negative = False
     if frac.startswith("-"):
@@ -549,6 +620,38 @@ def trans_latex_fraction(f, wrap=True):
             frac = r"\mbox{$-$}" + frac
         return "$%s$" % frac
 
+
+BIG_M_RE = re.compile("([-0-9.]*)[\*]*M([ +-]*)([0-9.]*)")
+
+def trans_latex_big_m(f):
+    #print f
+    if f == "-M":
+        return "$\mbox{$-$}M$"
+    else:
+        m = BIG_M_RE.match(f)
+        if not m:
+            "------"
+            return f
+        exp_list = []
+        for i, match in enumerate(m.groups()):
+            #print match
+            if i == 0:
+                s = trans_latex_fraction(match, wrap=False)
+                #print s
+                if s == "1":
+                    exp_list.append("M")
+                elif s == "-1":
+                    exp_list.append(r"\mbox{$-$}M")
+                else:
+                    exp_list.append("%sM" % s)
+            #exp_list.append("M")
+            if i == 1 and match:
+                assert match.strip() in ['-', '+']
+                exp_list.append(match)
+            if i == 2 and match:
+                exp_list.append(trans_latex_fraction(match, wrap=False))
+
+        return r"\liuhao{$%s$}" % "".join(exp_list)
 
 def sign_trans(s):
     if ">" in s:
