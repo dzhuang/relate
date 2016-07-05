@@ -24,10 +24,20 @@ $$\begin{alignat*}{20}
 \VAR{simplex_pre_description}
 \BLOCK{ endif }
 
-解: 引入\BLOCK{ if lp.solutionPhase1.slack_str_list_intro }松弛变量$\VAR{lp.solutionPhase1.slack_str_list_intro|join(",\,") }$，\BLOCK{ endif -}
-\BLOCK{- if lp.solutionPhase1.neg_slack_str_list_intro }剩余变量$\VAR{lp.solutionPhase1.neg_slack_str_list_intro|join(",\,") }$，\BLOCK{ endif -}
-\BLOCK{- if lp.solutionPhase1.artificial_str_list_intro }人工变量$\VAR{lp.solutionPhase1.artificial_str_list_intro|join(",\,") }$，\BLOCK{ endif -}
-\BLOCK{ if lp.solutionPhase1.need_two_phase }用两阶段法\BLOCK{ else }用单纯形法\BLOCK{ endif -}求解如下：
+解: 引入\BLOCK{ if lp.solutionPhase2.slack_str_list_intro }松弛变量$\VAR{lp.solutionPhase2.slack_str_list_intro|join(",\,") }$，\BLOCK{ endif -}
+\BLOCK{- if lp.solutionPhase2.neg_slack_str_list_intro }剩余变量$\VAR{lp.solutionPhase2.neg_slack_str_list_intro|join(",\,") }$，\BLOCK{ endif -}
+\BLOCK{- if lp.solutionPhase2.artificial_str_list_intro }人工变量$\VAR{lp.solutionPhase2.artificial_str_list_intro|join(",\,") }$，\BLOCK{ endif -}
+\BLOCK{- if standardized_lp }
+\BLOCK{ if lp.solutionPhase2.need_two_phase }用两阶段法\BLOCK{ else }用单纯形法\BLOCK{ endif -}求解如下：
+$$\begin{alignat*}{20}
+\VAR{standardized_lp.get_goal_str()}\\
+\text{s.t.}\quad
+\BLOCK{ for c in standardized_lp.constraints_str_list }
+\VAR{c}
+\BLOCK{ endfor }
+\VAR{standardized_lp.sign_str}
+\end{alignat*}$$
+\BLOCK{ endif -}
 
 {% from "latex.jinja" import mytabular_preamble as preamble %}
 

@@ -40,15 +40,17 @@ class LpSolution(object):
     def get_goal_list(self):
         raise NotImplementedError()
 
+    def get_standard_goal_list(self):
+        pass
+
     def transform_big_m(self):
+        # 输出大M法单纯形表格
         from sympy import symbols, Matrix
         M = symbols("M")
         artificial_list = self.artificial_variable_list
         tableau_list = self.tableau_list
-        #goal_list = self.original_goal_list
         basis_list = self.basis_list
 
-        # need self
         for a in artificial_list:
             if self.qtype == "max":
                 self.original_goal_list[a] = -M
@@ -65,11 +67,9 @@ class LpSolution(object):
                 CB_vector = Matrix([CB_list_single])
             CB_list.append(CB_vector)
 
-
-        #print CB_list
-
         A_np = tableau_list[0][:-1, :-1]
         A = Matrix(A_np.tolist())
+        print A_np
         b_np = tableau_list[0][:-1, -1]
         b = Matrix(b_np.tolist())
 
@@ -86,16 +86,6 @@ class LpSolution(object):
             t[-1] = C_j_BAR.tolist()[0] + Z.tolist()[0]
             self.tableau_list[i] = Matrix(t)
 
-
-        #print t
-        #print t[-1, :]
-
-
-
-
-
-
-
     def get_solution_string(self):
         if not self.m:
             self.m = len(self.basis_list[0])
@@ -103,18 +93,20 @@ class LpSolution(object):
         self.get_variable_instro_str_list()
         all_variable = self.get_all_variable()
 
+        if not self.artificial_variable_list and self.method == "big_m_simplex":
+            raise ValueError("This problem can't be solved by Big M method")
+
         if isinstance(self, LpSolutionPhase2) and self.method == "big_m_simplex":
             self.transform_big_m()
 
         tableau_list = self.tableau_list
 
-        #print tableau_list
-
-        for t in tableau_list:
-            if self.qtype == "max":
-                t[-1, :-1] *= -1
-            else:
-                t[-1, -1] *= -1
+        if self.method != "big_m_simplex":
+            for t in tableau_list:
+                if self.qtype == "max":
+                    t[-1, :-1] *= -1
+                else:
+                    t[-1, -1] *= -1
 
         self.all_variable_str_list = ["$x_{%d}$" % (abs(idx) + 1) for idx in all_variable]
 
@@ -253,13 +245,6 @@ class LP(object):
         self.base_list = []
         self.tableau_list = []
         self.fun = []
-        self.two_phase = False
-        self.solve_n_variable = 0
-        self.solve_n_variable = 0
-        self.solve_x_list = []
-        self.solve_goal_list = []
-        self.solve_cb_list = []
-        self.solve_xb_list = []
         self.tableau_origin = None
 
         self.solutionPhase1 = LpSolutionPhase1()
@@ -470,6 +455,8 @@ class LP(object):
             basis = np.copy(kwargs['basis'])
             i_p, j_p = np.copy(kwargs['pivot'])
 
+            print t
+
             if nit == 0:
                 self.tableau_origin = t.tolist()
 
@@ -503,6 +490,9 @@ class LP(object):
                        **solve_kwarg
                        )
 
+        if res.status == 2:
+            return
+
         n_original_variable = len(self.x_list)
         m_constraint_number = len(cnstr_orig_order)
 
@@ -528,7 +518,11 @@ class LP(object):
         if len(self.solutionPhase1.tableau_list) > 1:
             self.solutionPhase1.need_two_phase = self.solutionPhase2.need_two_phase = True
 
-        final_tableau = np.copy(self.solutionPhase2.tableau_list[-1])
+        try:
+            final_tableau = np.copy(self.solutionPhase2.tableau_list[-1])
+        except IndexError:
+            print "no 2nd phase."
+            pass
 
         if method != "big_m_simplex":
             self.solutionPhase1.get_solution_string()
@@ -570,27 +564,45 @@ class LP(object):
         return res.status
 
     def standized_LP(self):
-        self.solve()
+        #self.solve(method=method)
         tableau = copy.deepcopy(self.tableau_origin)
-        # print tableau
+        method = self.solutionPhase2.method
+        z = self.z
+        qtype = self.qtype
+        goal = None
+        if method == "simplex":
+            if self.solutionPhase1.need_two_phase:
+                tableau = tableau[:-2]
+                z = [w for w in set(["W", "Z"]) - set([z])][0]
+                goal = self.solutionPhase1.get_goal_list()
+                qtype = "min"
+            else:
+                tableau = tableau[:-1]
+                goal = self.solutionPhase2.get_goal_list ()
 
-        tableau.pop(-1)
-        tableau.pop(-1)
+        elif method == "big_m_simplex":
+            tableau = tableau[:-1]
+            goal = copy.deepcopy(self.goal)
+
+            goal_sym = self.solutionPhase2.get_goal_list()
+            goal = [str(g) for g in goal_sym]
 
         constraints = copy.deepcopy(tableau)
         for cnstr in constraints:
             cnstr.insert(-1, "=")
 
-        qtype = self.qtype
-        goal = copy.deepcopy(self.goal)
-        while len(goal) < (len(tableau[0]) - 1):
-            goal.append(0)
+        if goal:
+            while len(goal) < (len(tableau[0]) - 1):
+                goal.append(0)
 
-        return LP(
-            qtype=qtype,
-            goal=goal,
-            constraints=constraints,
-        )
+            return LP(
+                z = z,
+                qtype=qtype,
+                goal=goal,
+                constraints=constraints,
+            )
+        else:
+            return None
 
 
 def trans_latex_fraction(f, wrap=True):
@@ -599,10 +611,13 @@ def trans_latex_fraction(f, wrap=True):
         frac = str(Fraction(f).limit_denominator())
     except ValueError:
         if "M" in f:
-            try:
-                return trans_latex_big_m(f)
-            except:
-                return f
+            if f == "-M" and not wrap:
+                frac = "-M"
+            else:
+                try:
+                    return trans_latex_big_m(f)
+                except:
+                    return f
         return f
     negative = False
     if frac.startswith("-"):

@@ -16,7 +16,7 @@ from latex_utils.utils.lpmodel import LP
 #         #sign=[">", ">", "<", "="],
 #         )
 
-lp = LP(qtype="min",
+lp = LP(qtype="max",
         goal=[3, -2, -1],
         # x="y",
         # x_list=["y_1", "y_2", "w_3"],
@@ -29,31 +29,31 @@ lp = LP(qtype="min",
 #        sign=[">", "<", ">", "="],
         )
 
-# lp = LP(qtype="min",
-#         goal=[-3, -5],
-#         # x="y",
-#         # x_list=["y_1", "y_2", "w_3"],
-#         constraints=[
-#             [1, 0, "<", 4],
-#             [0, 1, "<", 6],
-#             [3, 2, "<", 18],
-#             # [-4, 0, 2, "=", 2]
-#         ],
-#         #        sign=[">", "<", ">", "="],
-#         )
-#
-# lp = LP (qtype="max",
-#          goal=[1, 1, -5],
-#          # x="y",
-#          # x_list=["y_1", "y_2", "w_3"],
-#          constraints=[
-#              [1, 1, 1, ">", 7],
-#              [2, -5, 1, "=", 10],
-# #             [2, 2, 1, "<", 6],
-#              # [-4, 0, 2, "=", 2]
-#          ],
-#          #        sign=[">", "<", ">", "="],
-#          )
+lp = LP(qtype="min",
+        goal=[-3, -5],
+        # x="y",
+        # x_list=["y_1", "y_2", "w_3"],
+        constraints=[
+            [1, 0, "<", 4],
+            [0, 1, "<", 6],
+            [3, 2, "<", 18],
+            # [-4, 0, 2, "=", 2]
+        ],
+        #        sign=[">", "<", ">", "="],
+        )
+
+lp = LP (qtype="max",
+         goal=[1, 1, -5],
+         # x="y",
+         # x_list=["y_1", "y_2", "w_3"],
+         constraints=[
+             [1, 1, 1, ">", 7],
+             [2, -5, 1, "=", 10],
+             [2, 2, 1, "<", 6],
+             [-4, 0, 2, "=", 2]
+         ],
+         #        sign=[">", "<", ">", "="],
+         )
 
 template = latex_jinja_env.get_template('/utils/lp_model.tex')
 tex = template.render(
@@ -118,18 +118,14 @@ for l in lp_json_list_loaded:
     import json
     lp_dict = json.loads(l)
 
-    # print lp_dict
-    # print qtype(lp_dict["constraints"])
-    # print lp_dict["constraints"]
-    # print qtype(lp_dict["x"])
-
     lp = LP(**lp_dict)
 
-    lp.solve(method="big_m_simplex")
+    lp.solve(method="simplex")
     template = latex_jinja_env.get_template('/utils/lp_2_stage_simplex.tex')
     tex = template.render(
         show_question = True,
         show_answer = True,
+        standardized_lp = lp.standized_LP(),
         pre_description=u"""
         """,
         lp=lp,
