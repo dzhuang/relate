@@ -47,10 +47,11 @@ $$\begin{alignat*}{20}
 \BLOCK{ if not lp.solutionCommon.need_two_phase }用单纯形法求解：\BLOCK{ else }第一阶段，求解辅助问题：\BLOCK{ endif -}
 
 {% from "latex.jinja" import mytabular_preamble as preamble %}
-{% set fig_counter = 2 -%}
 
+\BLOCK{ if show_2_stage and lp.solutionCommon.artificial_str_list_intro }
 <p align="middle">
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
+\setcounter{keytable}{\VAR{iters.next()}}
 \BLOCK{ if lp.solutionPhase1.need_two_phase }
 \begin{keytable}[H]\centering
 \topcaption{\BLOCK{ if lp.solutionCommon.need_two_phase }第一阶段\BLOCK{ endif }}
@@ -68,17 +69,22 @@ $\mathbf{C_B}$&$\mathbf{X_B}$\BLOCK{ for x in lp.solutionPhase1.all_variable_str
 \end{keytable}%
 \BLOCK{ endif }
 
+
 \BLOCK{ if pre_stage_2_description -}
 \VAR{pre_stage_2_description}
 \BLOCK{ endif }
 {% endcall %}
 </p>
+\BLOCK{ endif }
 
 \BLOCK{ if lp.has_phase_2 }
+\BLOCK{ if show_2_stage and lp.solutionCommon.artificial_str_list_intro }
 由于第一阶段目标函数值为0，进入第二阶段求解：
+\BLOCK{ endif }
 
 <p align="middle">
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
+\setcounter{keytable}{\VAR{iters.next()}}
 \begin{keytable}[H]\centering
 \topcaption{\BLOCK{ if lp.solutionPhase1.need_two_phase }第二阶段\BLOCK{ endif }}
 \begin{tabular}{c|c|\BLOCK{ for x in range(0, lp.solutionPhase2.all_variable_str_list|length) }C\BLOCK{ if lp.solutionPhase2.method=="big_m_simplex" }{1.2cm}\BLOCK{ else }{1cm}\BLOCK{ endif }\BLOCK{ endfor }|c}\hline\hline
@@ -121,6 +127,7 @@ $$\begin{alignat*}{20}
 
 <p align="middle">
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
+\setcounter{keytable}{\VAR{iters.next()}}
 \begin{keytable}[H]\centering
 \topcaption{}
 \begin{tabular}{c|c|\BLOCK{ for x in range(0, lpBigM.solutionPhase2.all_variable_str_list|length) }C{1.5cm}\BLOCK{ endfor }|c}\hline\hline

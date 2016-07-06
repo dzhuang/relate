@@ -5,17 +5,17 @@ from latex_utils.utils.lpmodel import LP
 from copy import deepcopy
 
 
-# lp = LP(qtype="max",
-#         goal=[2, -1, 3, 1],
-#         #x="y",
-#         #x_list=["y_1", "y_2", "w_3"],
-#         constraints=[
-#             [1, 2, 1, 0, "<", 12],
-#             [2, -1, 0, 1, "<", 10],
-#             [0, 0, 1, 1, "<", 8]
-#         ],
-#         #sign=[">", ">", "<", "="],
-#         )
+lp = LP(qtype="max",
+        goal=[2, -1, 3, 1],
+        #x="y",
+        #x_list=["y_1", "y_2", "w_3"],
+        constraints=[
+            [1, 2, 1, 0, "<", 12],
+            [2, -1, 0, 1, "<", 10],
+            [0, 0, 1, 1, "<", 8]
+        ],
+        #sign=[">", ">", "<", "="],
+        )
 
 lp = LP(qtype="max",
         goal=[3, -2, -1],
@@ -132,6 +132,7 @@ for l in lp_json_list_loaded:
         standardized_lp_big_m = None
     template = latex_jinja_env.get_template('/utils/lp_2_stage_simplex.tex')
     tex = template.render(
+        iters = iter(range(0,5)),
         show_question = True,
         show_answer = True,
         show_2_stage = True, # 显示两阶段法
