@@ -1,0 +1,34 @@
+\BLOCK{- if show_question}
+
+\BLOCK{ if pre_description -}
+\VAR{pre_description}
+\BLOCK{ endif } %# \BLOCK{ if pre_description -}
+
+$$\begin{alignat*}{20}
+\VAR{lp.get_goal_str()}\\
+\text{s.t.}\quad
+\BLOCK{ for c in lp.constraints_str_list }
+\VAR{c}
+\BLOCK{ endfor }
+\VAR{lp.sign_str}
+\end{alignat*}$$
+
+\BLOCK{ if after_description -}
+\VAR{after_description}
+\BLOCK{ endif -} %# \BLOCK{ if after_description -}
+
+\BLOCK{ endif -} %# \BLOCK{- if show_question}
+
+\BLOCK{- if show_answer}
+
+\BLOCK{ if simplex_pre_description -}
+\VAR{simplex_pre_description}
+\BLOCK{ endif } %# \BLOCK{ if simplex_pre_description -}
+
+解: \BLOCK{ if lp.solutionCommon.slack_str_list_intro or lp.solutionCommon.slack_str_list_intro }将问题标准化，引入\BLOCK{ endif -}
+\BLOCK{- if lp.solutionCommon.slack_str_list_intro }松弛变量$\VAR{lp.solutionCommon.slack_str_list_intro|join(",\,") }$\BLOCK{ endif -}
+\BLOCK{- if lp.solutionCommon.slack_str_list_intro and lp.solutionCommon.slack_str_list_intro}，\BLOCK{ endif -}
+\BLOCK{- if lp.solutionCommon.neg_slack_str_list_intro }剩余变量$\VAR{lp.solutionCommon.neg_slack_str_list_intro|join(",\,") }$\BLOCK{ endif -}
+\BLOCK{ if lp.solutionCommon.slack_str_list_intro or lp.solutionCommon.slack_str_list_intro }。\BLOCK{ endif -}
+
+\BLOCK{ endif } %# \BLOCK{- if show_answer}

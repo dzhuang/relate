@@ -33,15 +33,15 @@ class LpSolution(object):
         self.neg_slack_str_list_intro = []
         self.artificial_str_list_intro = []
         self.all_variable_str_list = []
+        self.non_zero_artificial_in_opt = []
 
     def get_all_variable(self):
-        raise NotImplementedError()
+        if not isinstance(self, LpSolutionCommon):
+            raise NotImplementedError()
 
     def get_goal_list(self):
-        raise NotImplementedError()
-
-    def get_standard_goal_list(self):
-        pass
+        if not isinstance(self, LpSolutionCommon):
+            raise NotImplementedError()
 
     def transform_big_m(self):
         # 输出大M法单纯形表格
@@ -50,6 +50,7 @@ class LpSolution(object):
         artificial_list = self.artificial_variable_list
         tableau_list = self.tableau_list
         basis_list = self.basis_list
+
 
         for a in artificial_list:
             if self.qtype == "max":
@@ -69,7 +70,6 @@ class LpSolution(object):
 
         A_np = tableau_list[0][:-1, :-1]
         A = Matrix(A_np.tolist())
-        print A_np
         b_np = tableau_list[0][:-1, -1]
         b = Matrix(b_np.tolist())
 
@@ -146,6 +146,13 @@ class LpSolution(object):
             self.artificial_str_list_intro.append(get_variable_symbol("x", v + 1))
 
 
+class LpSolutionCommon(LpSolution):
+    """
+    用于表示独立于解法的部分
+    """
+    pass
+
+
 class LpSolutionPhase1(LpSolution):
     def get_all_variable(self):
         return self.variable_list + [abs(v) for v in self.slack_variable_list] + self.artificial_variable_list
@@ -175,7 +182,7 @@ class LpSolutionPhase2(LpSolution):
 
 class LP(object):
     def __init__(self, qtype, goal, constraints, x="x", x_list=None, sign=None, z="Z", sign_str=None, dual=False,
-                 required_solve_status=[0, 1, 2, 3, -1]):
+                 required_solve_status=[0, 0.1, 1, 2, 3]):
         assert qtype.lower() in ["min", "max"]
         assert isinstance(required_solve_status, list)
         self.required_solve_status = required_solve_status
@@ -247,10 +254,14 @@ class LP(object):
         self.fun = []
         self.tableau_origin = None
 
+        self.solutionCommon = LpSolutionCommon()
         self.solutionPhase1 = LpSolutionPhase1()
+        self.has_phase_2 = True
         self.solutionPhase2 = LpSolutionPhase2()
         self.solve_status = 0
-        self.solve_message = ""
+        self.solve_status_reason = ""
+        self.solve_status_message = ""
+        self.solve_opt_res_str = ""
 
     def get_sign_str(self, dual):
         """
@@ -455,8 +466,6 @@ class LP(object):
             basis = np.copy(kwargs['basis'])
             i_p, j_p = np.copy(kwargs['pivot'])
 
-            print t
-
             if nit == 0:
                 self.tableau_origin = t.tolist()
 
@@ -470,7 +479,7 @@ class LP(object):
             stage_klass.tableau_list.append(t)
             stage_klass.basis_list.append(basis)
             stage_klass.pivot_list.append([i_p, j_p])
-            stage_klass.method = method
+            stage_klass.method = self.solutionCommon.method = method
 
         solve_kwarg = {}
         solve_kwarg["c"] = C
@@ -491,42 +500,56 @@ class LP(object):
                        )
 
         if res.status == 2:
-            return
+            # 原始问题不可行
+            self.has_phase_2 = False
 
         n_original_variable = len(self.x_list)
         m_constraint_number = len(cnstr_orig_order)
 
         self.solutionPhase1.variable_list \
             = self.solutionPhase2.variable_list \
+            = self.solutionCommon.variable_list \
             = range(n_original_variable)
         self.solutionPhase1.slack_variable_list \
             = self.solutionPhase2.slack_variable_list \
+            = self.solutionCommon.slack_variable_list \
             = res.slack_list
         self.solutionPhase1.artificial_variable_list \
             = self.solutionPhase2.artificial_variable_list \
+            = self.solutionCommon.artificial_variable_list \
             = res.artificial_list
-        if method != "big_m_simplex":
+
+        origin_goal_list = []
+        if method == "simplex":
             origin_goal_list = self.solutionPhase1.tableau_list[0][m_constraint_number]
-        else:
+        elif method == "big_m_simplex":
             origin_goal_list = res.init_tablaeu[m_constraint_number]
+
         if self.qtype == "max":
             origin_goal_list *= -1
+
         self.solutionPhase1.original_goal_list \
             = self.solutionPhase2.original_goal_list \
+            = self.solutionCommon.original_goal_list \
             = origin_goal_list.tolist()
 
         if len(self.solutionPhase1.tableau_list) > 1:
-            self.solutionPhase1.need_two_phase = self.solutionPhase2.need_two_phase = True
-
-        try:
-            final_tableau = np.copy(self.solutionPhase2.tableau_list[-1])
-        except IndexError:
-            print "no 2nd phase."
-            pass
+            self.solutionPhase1.need_two_phase \
+                = self.solutionPhase2.need_two_phase \
+                = self.solutionCommon.need_two_phase \
+                = True
 
         if method != "big_m_simplex":
             self.solutionPhase1.get_solution_string()
-        self.solutionPhase2.get_solution_string()
+
+        self.solutionCommon.get_variable_instro_str_list()
+
+        # final_tableau 用于判断是否有无穷多最优解
+        final_tableau = None
+        if self.has_phase_2:
+            final_tableau = np.copy(self.solutionPhase2.tableau_list[-1])
+            final_basis = np.copy(self.solutionPhase2.basis_list[-1])
+            self.solutionPhase2.get_solution_string()
 
         # status:
         #    0 : Optimization terminated successfully
@@ -537,25 +560,52 @@ class LP(object):
 
         self.solve_status = res.status
         if res.status == 0:
-            t = final_tableau
             tol = 1.0E-12
-            ma = np.ma.masked_where(abs(t[-1, :-1]) <= tol, t[-1, :-1], copy=False)
-            n_non_basis_variable_0_cjbar = ma.count()
-            n_non_basis_variable = \
-                len(self.solutionPhase2.all_variable_str_list) \
-                - len(self.solutionPhase2.basis_list[0])
-            if n_non_basis_variable > n_non_basis_variable_0_cjbar:
-                self.solve_status = -1
-                self.solve_message = u"有无穷多最优解"
-            else:
-                self.solve_message = u"有唯一最优解"
+            if final_tableau is not None:
+                if self.solutionCommon.method == "big_m_simplex":
+                    for av in self.solutionCommon.artificial_variable_list:
+                        if av in final_basis:
+                            final_av_idx = np.where(final_basis==av)
+                            if final_tableau[final_av_idx, -1] > tol:
+                                self.solutionCommon.non_zero_artificial_in_opt.append(get_variable_symbol("x", av + 1))
+                    if len(self.solutionCommon.non_zero_artificial_in_opt) > 0:
+                        self.solve_status = 2
+                        self.solve_status_reason = u"最优表中存在非零的人工变量$%s$" % ",\,".join(
+                            self.solutionCommon.non_zero_artificial_in_opt)
+                        self.solve_status_message = u"无可行解"
+                if self.solve_status == 0:
+                    ma = np.ma.masked_where(
+                        abs(final_tableau[-1, :-1]) <= tol, final_tableau[-1, :-1], copy=False)
+                    n_non_basis_variable_0_cjbar = ma.count()
+                    n_non_basis_variable = \
+                        len(self.solutionPhase2.all_variable_str_list) \
+                        - len(self.solutionPhase2.basis_list[0])
+                    if n_non_basis_variable > n_non_basis_variable_0_cjbar:
+                        self.solve_status = 0.1
+                        self.solve_status_message = u"有无穷多最优解"
+                    else:
+                        self.solve_status_message = u"有唯一最优解"
+
+                    opt_x = []
+                    opt_value = []
+                    for idx in range(len(res.x)):
+                        opt_x.append(get_variable_symbol(self.x, idx+1, superscript="*"))
+                        opt_value.append(trans_latex_fraction(res.x[idx], wrap=False))
+                    opt_x_str = r"(%s)^T" % ",\,".join(opt_x)
+                    opt_value_str = r"(%s)^T" % ",\,".join(opt_value)
+                    opt_solution = "%s = %s" % (opt_x_str, opt_value_str)
+                    opt_fun_value = res.fun if self.qtype == "min" else res.fun *(-1)
+                    opt_fun = "%s^* = %s" % (self.z, trans_latex_fraction(opt_fun_value, wrap=False))
+                    self.solve_opt_res_str = "$%s,\, %s$" % (opt_solution, opt_fun)
 
         elif res.status == 1:
-            self.solve_message = u"超过迭代次数仍未优化"
+            self.solve_status_message = u"超过迭代次数仍未优化"
         elif res.status == 2:
-            self.solve_message = u"不可行"
+            if self.solutionCommon.method == "simplex":
+                self.solve_status_reason = u"辅助问题最优目标值不为0"
+            self.solve_status_message = u"无可行解"
         elif res.status == 3:
-            self.solve_message = u"有无界解"
+            self.solve_status_message = u"有无界解"
 
         if res.status not in self.required_solve_status:
             raise RuntimeError(
@@ -563,15 +613,14 @@ class LP(object):
 
         return res.status
 
-    def standized_LP(self):
-        #self.solve(method=method)
+    def standardized_LP(self):
         tableau = copy.deepcopy(self.tableau_origin)
-        method = self.solutionPhase2.method
+        method = self.solutionCommon.method
         z = self.z
         qtype = self.qtype
         goal = None
         if method == "simplex":
-            if self.solutionPhase1.need_two_phase:
+            if self.solutionCommon.need_two_phase:
                 tableau = tableau[:-2]
                 z = [w for w in set(["W", "Z"]) - set([z])][0]
                 goal = self.solutionPhase1.get_goal_list()
@@ -582,8 +631,6 @@ class LP(object):
 
         elif method == "big_m_simplex":
             tableau = tableau[:-1]
-            goal = copy.deepcopy(self.goal)
-
             goal_sym = self.solutionPhase2.get_goal_list()
             goal = [str(g) for g in goal_sym]
 
@@ -639,7 +686,6 @@ def trans_latex_fraction(f, wrap=True):
 BIG_M_RE = re.compile("([-0-9.]*)[\*]*M([ +-]*)([0-9.]*)")
 
 def trans_latex_big_m(f):
-    #print f
     if f == "-M":
         return "$\mbox{$-$}M$"
     else:
@@ -649,17 +695,14 @@ def trans_latex_big_m(f):
             return f
         exp_list = []
         for i, match in enumerate(m.groups()):
-            #print match
             if i == 0:
                 s = trans_latex_fraction(match, wrap=False)
-                #print s
                 if s == "1":
                     exp_list.append("M")
                 elif s == "-1":
                     exp_list.append(r"\mbox{$-$}M")
                 else:
                     exp_list.append("%sM" % s)
-            #exp_list.append("M")
             if i == 1 and match:
                 assert match.strip() in ['-', '+']
                 exp_list.append(match)
@@ -705,8 +748,11 @@ def variable_sign_trans(s):
         raise ValueError()
 
 
-def get_variable_symbol(x, i):
+def get_variable_symbol(x, i, superscript=""):
     """
     得到x_{i}的形式
     """
-    return "%s_{%d}" % (x, i)
+    if superscript:
+        return "%s_{%d}^{%s}" % (x, i, superscript)
+    else:
+        return "%s_{%d}" % (x, i)

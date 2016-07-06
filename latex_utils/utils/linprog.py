@@ -733,6 +733,9 @@ def _linprog_simplex(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
 
     b = T[:-2, -1]
 
+    slack_list = []
+    slack_idx = [0] * m
+
     if meq > 0:
         # Add Aeq to the tableau
         T[:meq, :n] = Aeq
@@ -746,6 +749,7 @@ def _linprog_simplex(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
         # Add the slack variables to the tableau
         np.fill_diagonal(T[meq:m, n:n+n_slack], 1)
         slack_list = [i for i in range(n, n+n_slack)]
+        slack_idx = [0] * meq + range(n, n+n_slack)
 
     # Further set up the tableau.
     # If a row corresponds to an equality constraint or a negative b (a lower
@@ -768,6 +772,7 @@ def _linprog_simplex(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
         T = adjust_order(T, cnstr_orig_order)
         r_need_artificial = adjust_order(r_need_artificial, cnstr_orig_order)
         b = adjust_order(b, cnstr_orig_order)
+        slack_idx = adjust_order(slack_idx, cnstr_orig_order)
 
         for i in range (m):
             if r_need_artificial[i]:
@@ -793,8 +798,7 @@ def _linprog_simplex(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
                 T[i, basis[i]] = 1
                 T[-1, basis[i]] = 1
             else:
-                # basic variable i is in column n+slcount
-                basis[i] = n + slcount
+                basis[i] = slack_idx[i]
                 slcount += 1
 
     else:
@@ -1257,6 +1261,9 @@ def _linprog_big_m_simplex(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
 
     b = T[:-1, -1]
 
+    slack_list = []
+    slack_idx = [0] * m
+
     if meq > 0:
         # Add Aeq to the tableau
         T[:meq, :n] = Aeq
@@ -1270,6 +1277,7 @@ def _linprog_big_m_simplex(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
         # Add the slack variables to the tableau
         np.fill_diagonal(T[meq:m, n:n+n_slack], 1)
         slack_list = [i for i in range(n, n+n_slack)]
+        slack_idx = [0] * meq + range(n, n + n_slack)
 
     # Further set up the tableau.
     # If a row corresponds to an equality constraint or a negative b (a lower
@@ -1292,6 +1300,7 @@ def _linprog_big_m_simplex(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
         T = adjust_order(T, cnstr_orig_order)
         r_need_artificial = adjust_order(r_need_artificial, cnstr_orig_order)
         b = adjust_order(b, cnstr_orig_order)
+        slack_idx = adjust_order(slack_idx, cnstr_orig_order)
 
         for i in range (m):
             if r_need_artificial[i]:
@@ -1319,8 +1328,7 @@ def _linprog_big_m_simplex(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
                 T[-1, -1] = f0
                 T[-1, basis[i]] = BIG_M
             else:
-                # basic variable i is in column n+slcount
-                basis[i] = n + slcount
+                basis[i] = slack_idx[i]
                 slcount += 1
 
     else:

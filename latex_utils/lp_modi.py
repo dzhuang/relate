@@ -78,13 +78,13 @@ r.clipboard_append(tex)
 #
 # r.clipboard_append(tex)
 
-#standLP =  lp.standized_LP()
+#standLP =  lp.standardized_LP()
 
 template = latex_jinja_env.get_template('/utils/lp_model.tex')
 tex = template.render(
     description = u"""
     """,
-    lp = lp.standized_LP()
+    lp = lp.standardized_LP()
 )
 
 r.clipboard_append(tex)

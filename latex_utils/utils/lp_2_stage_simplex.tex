@@ -2,7 +2,7 @@
 
 \BLOCK{ if pre_description -}
 \VAR{pre_description}
-\BLOCK{ endif }
+\BLOCK{ endif } \#{ pre_description }
 
 $$\begin{alignat*}{20}
 \VAR{lp.get_goal_str()}\\
@@ -15,20 +15,26 @@ $$\begin{alignat*}{20}
 
 \BLOCK{ if after_description -}
 \VAR{after_description}
-\BLOCK{ endif -}
+\BLOCK{ endif -} \#{ after_description }
 
-\BLOCK{ endif -}
+\BLOCK{ endif -} \#{ show_question }
 
 \BLOCK{- if show_answer}
+
 \BLOCK{ if simplex_pre_description -}
 \VAR{simplex_pre_description}
-\BLOCK{ endif }
+\BLOCK{ endif } \#{ simplex_pre_description }
 
-解: 引入\BLOCK{ if lp.solutionPhase2.slack_str_list_intro }松弛变量$\VAR{lp.solutionPhase2.slack_str_list_intro|join(",\,") }$，\BLOCK{ endif -}
-\BLOCK{- if lp.solutionPhase2.neg_slack_str_list_intro }剩余变量$\VAR{lp.solutionPhase2.neg_slack_str_list_intro|join(",\,") }$，\BLOCK{ endif -}
-\BLOCK{- if lp.solutionPhase2.artificial_str_list_intro }人工变量$\VAR{lp.solutionPhase2.artificial_str_list_intro|join(",\,") }$，\BLOCK{ endif -}
-\BLOCK{- if standardized_lp }
-\BLOCK{ if lp.solutionPhase2.need_two_phase }用两阶段法\BLOCK{ else }用单纯形法\BLOCK{ endif -}求解如下：
+解: \BLOCK{ if lp.solutionCommon.slack_str_list_intro or lp.solutionCommon.slack_str_list_intro }将问题标准化，引入\BLOCK{ endif -}
+\BLOCK{- if lp.solutionCommon.slack_str_list_intro }松弛变量$\VAR{lp.solutionCommon.slack_str_list_intro|join(",\,") }$\BLOCK{ endif -}
+\BLOCK{- if lp.solutionCommon.slack_str_list_intro and lp.solutionCommon.slack_str_list_intro}，\BLOCK{ endif -}
+\BLOCK{- if lp.solutionCommon.neg_slack_str_list_intro }剩余变量$\VAR{lp.solutionCommon.neg_slack_str_list_intro|join(",\,") }$\BLOCK{ endif -}
+\BLOCK{ if lp.solutionCommon.slack_str_list_intro or lp.solutionCommon.slack_str_list_intro }.\BLOCK{ endif }
+
+
+\BLOCK{ if show_2_stage and lp.solutionCommon.artificial_str_list_intro }<strong>两阶段法</strong>：引入人工变量$\VAR{lp.solutionCommon.artificial_str_list_intro|join(",\,") }$，构造辅助问题：\BLOCK{ endif -}
+
+\BLOCK{ if standardized_lp }
 $$\begin{alignat*}{20}
 \VAR{standardized_lp.get_goal_str()}\\
 \text{s.t.}\quad
@@ -37,15 +43,17 @@ $$\begin{alignat*}{20}
 \BLOCK{ endfor }
 \VAR{standardized_lp.sign_str}
 \end{alignat*}$$
-\BLOCK{ endif -}
+\BLOCK{ endif }
+\BLOCK{ if not lp.solutionCommon.need_two_phase }用单纯形法求解：\BLOCK{ else }第一阶段，求解辅助问题：\BLOCK{ endif -}
 
 {% from "latex.jinja" import mytabular_preamble as preamble %}
+{% set fig_counter = 2 -%}
 
 <p align="middle">
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
 \BLOCK{ if lp.solutionPhase1.need_two_phase }
 \begin{keytable}[H]\centering
-\topcaption{第一阶段}
+\topcaption{\BLOCK{ if lp.solutionCommon.need_two_phase }第一阶段\BLOCK{ endif }}
 \begin{tabular}{c|c|\BLOCK{ for x in range(0, lp.solutionPhase1.all_variable_str_list|length) }C{1cm}\BLOCK{ endfor }|c}\hline\hline
 \multicolumn{2}{c|}{$c_j$}\BLOCK{ for c in lp.solutionPhase1.goal_str_list }&\VAR{c}\BLOCK{ endfor }&\multirow{2}*{$\mathbf{b}$} \\ \cline{1-\VAR{lp.solutionPhase1.all_variable_str_list|length + 2 }}
 $\mathbf{C_B}$&$\mathbf{X_B}$\BLOCK{ for x in lp.solutionPhase1.all_variable_str_list }&\VAR{x}\BLOCK{ endfor }&\\ \hline
@@ -53,6 +61,7 @@ $\mathbf{C_B}$&$\mathbf{X_B}$\BLOCK{ for x in lp.solutionPhase1.all_variable_str
 \BLOCK{ for j in range(0, lp.solutionPhase1.cb_str_list[i]|length + 1) }
 \BLOCK{ if not loop.last } \VAR{lp.solutionPhase1.cb_str_list[i][j]}&\VAR{lp.solutionPhase1.xb_str_list[i][j]}&\BLOCK{ else } \multicolumn{2}{c|}{$\bar c_j$}& \BLOCK{ endif } \VAR{lp.solutionPhase1.tableau_str_list[i][j]|join("&") } \\
 \BLOCK{- if loop.revindex0 <= 1 } \hline \BLOCK{ endif }
+
 \BLOCK{ endfor }
 \BLOCK{ endfor }
 \hline\end{tabular}
@@ -65,7 +74,8 @@ $\mathbf{C_B}$&$\mathbf{X_B}$\BLOCK{ for x in lp.solutionPhase1.all_variable_str
 {% endcall %}
 </p>
 
-
+\BLOCK{ if lp.has_phase_2 }
+由于第一阶段目标函数值为0，进入第二阶段求解：
 
 <p align="middle">
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
@@ -78,6 +88,7 @@ $\mathbf{C_B}$&$\mathbf{X_B}$\BLOCK{ for x in lp.solutionPhase2.all_variable_str
 \BLOCK{ for j in range(0, lp.solutionPhase2.cb_str_list[i]|length + 1) }
 \BLOCK{ if not loop.last } \VAR{lp.solutionPhase2.cb_str_list[i][j]}&\VAR{lp.solutionPhase2.xb_str_list[i][j]}&\BLOCK{ else } \multicolumn{2}{c|}{$\bar c_j$}& \BLOCK{ endif } \VAR{lp.solutionPhase2.tableau_str_list[i][j]|join("&") } \\
 \BLOCK{- if loop.revindex0 <= 1 } \hline \BLOCK{ endif }
+
 \BLOCK{ endfor }
 \BLOCK{ endfor }
 \hline\end{tabular}
@@ -85,10 +96,56 @@ $\mathbf{C_B}$&$\mathbf{X_B}$\BLOCK{ for x in lp.solutionPhase2.all_variable_str
 {% endcall %}
 </p>
 
-\BLOCK{ if lp.solutionPhase1.need_two_phase }原始问题\BLOCK{ else }本问题\BLOCK{ endif }\VAR{lp.solve_message}。
+\BLOCK{ endif }
 
+\BLOCK{ if lp.solve_status_reason -}\VAR{lp.solve_status_reason}，\BLOCK{ endif -}
+该问题\VAR{lp.solve_status_message}
+\BLOCK{- if lp.solve_opt_res_str -}，\VAR{lp.solve_opt_res_str}\BLOCK{ endif -}.
+
+\BLOCK{ if show_big_m and lpBigM }
+<hr>
+
+<strong>大M法</strong>：引入人工变量$\VAR{lpBigM.solutionCommon.artificial_str_list_intro|join(",\,") }$，构造人工问题：
+
+\BLOCK{ if standardized_lp_big_m }
+$$\begin{alignat*}{20}
+\VAR{standardized_lp_big_m.get_goal_str()}\\
+\text{s.t.}\quad
+\BLOCK{ for c in standardized_lp_big_m.constraints_str_list }
+\VAR{c}
+\BLOCK{ endfor }
+\VAR{standardized_lp_big_m.sign_str}
+\end{alignat*}$$
+\BLOCK{ endif }
+用单纯形法求解如下：
+
+<p align="middle">
+{% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
+\begin{keytable}[H]\centering
+\topcaption{}
+\begin{tabular}{c|c|\BLOCK{ for x in range(0, lpBigM.solutionPhase2.all_variable_str_list|length) }C{1.5cm}\BLOCK{ endfor }|c}\hline\hline
+\multicolumn{2}{c|}{$c_j$}\BLOCK{ for c in lpBigM.solutionPhase2.goal_str_list }&\VAR{c}\BLOCK{ endfor }&\multirow{2}*{$\mathbf{b}$} \\ \cline{1-\VAR{lpBigM.solutionPhase2.all_variable_str_list|length + 2 }}
+$\mathbf{C_B}$&$\mathbf{X_B}$\BLOCK{ for x in lpBigM.solutionPhase2.all_variable_str_list }&\VAR{x}\BLOCK{ endfor }&\\ \hline
+\BLOCK{ for i in range(0, lpBigM.solutionPhase2.tableau_str_list|length) }
+\BLOCK{ for j in range(0, lpBigM.solutionPhase2.cb_str_list[i]|length + 1) }
+\BLOCK{ if not loop.last } \VAR{lpBigM.solutionPhase2.cb_str_list[i][j]}&\VAR{lpBigM.solutionPhase2.xb_str_list[i][j]}&\BLOCK{ else } \multicolumn{2}{c|}{$\bar c_j$}& \BLOCK{ endif } \VAR{lpBigM.solutionPhase2.tableau_str_list[i][j]|join("&") } \\
+\BLOCK{- if loop.revindex0 <= 1 } \hline \BLOCK{ endif }
+
+\BLOCK{ endfor }
+\BLOCK{ endfor }
+\hline\end{tabular}
+\end{keytable}%
+{% endcall %}
+</p>
+
+\BLOCK{ if lpBigM.solve_status_reason -}\VAR{lpBigM.solve_status_reason}，\BLOCK{ endif -}
+原始问题\VAR{lpBigM.solve_status_message}
+\BLOCK{- if lpBigM.solve_opt_res_str -}，\VAR{lpBigM.solve_opt_res_str}\BLOCK{ endif -}.
+
+\BLOCK{ endif -} \#{ show_big_m }
 
 \BLOCK{ if simplex_after_description -}
 \VAR{simplex_after_description}
 \BLOCK{ endif }
-\BLOCK{ endif }
+
+\BLOCK{ endif } \#{ show_answer }
