@@ -5,6 +5,9 @@
 %----------------------------------------------------------------------added
 \usepackage{etex}%增加计数器总数（原来是256，宏包多，可能不够用），编译需基于eTeX
 \usepackage{ifpdf}
+
+\usepackage[tracking=true]{microtype}
+\newcommand\narrowstyle{\SetTracking{encoding=*}{-50}\lsstyle}
 \makeatletter
 \def\alloc@#1#2#3#4#5%
  {\ifnum\count1#1<#4% make sure there's still room
@@ -510,121 +513,66 @@ curveto code={
 
 \begin{document}
 
-\begin{table}[H]\centering \topcaption{}
-\begin{mytabular}{c|ccc|c}\hline\hline \diagbox{产地}{单位运费}{销地}
-&B1&B2&B3&供应量\\ \hline
-A1&4&6&5&70\\
-A2&2&3&8&80\\
-A3&8&7&9&90\\ \hline
-需求量&60&100&50&\\
-\hline\hline\end{mytabular}\end{table}
-
-
-
-\jie 需明确此问题为产销不平衡运输问题。引入虚拟销地$B4$，将问题标准化为
-
-\begin{keytable}[H]\centering \topcaption{}
-\begin{mytabular}{c|cccc|c}\hline\hline \diagbox{产地}{单位运费}{销地}
-&B1&B2&B3&B4&供应量\\ \hline
-A1&4&6&5&0&70\\
-A2&2&3&8&0&80\\
-A3&8&7&9&0&90\\ \hline
-需求量&60&100&50&30\\
-\hline\hline\end{mytabular}\end{keytable}
-
-%===========答案
-\def\ori{  {  {8,7,9,0},{2,3,8,0},{4,6,5,0}  }  }
-\def\sremainder{
-\draw (sr0) node{\footnotesize 90};
-\draw (sr1) node{\footnotesize 80};
-\draw (sr2) node{\footnotesize 70};
-}
-\def\dremainder{
-\draw (dr0) node{\footnotesize 60};
-\draw (dr1) node{\footnotesize 100};
-\draw (dr2) node{\footnotesize 50};
-\draw (dr3) node{\footnotesize 30};
-}
-\def\total{\footnotesize 240}
-
-用最小元素法得到一个初始基本可行方案。
-
-由于单位运费为0的单元格有多个，所以本问题用最小元素法有多种可能性，
-以下为其中一种。不同的初始方案，迭代次数不同，以下这个方案只需1次优化就能迭代出最优方案。
-
-说明：对于最小元素法，并没有哪种套路保证得到的初始基本可行方案可以减少迭代的次数。
-
-\noindent\begin{minipage}[c]{0.5\textwidth}
-\parindent 2em
-
-
-
-\begin{keytable}[H]
-\centering
+\begin{keytable}[H]\centering
 \topcaption{}
-\def\flows{  {  {"","60","","30",""},{"60","20","","",""},{"","20","50","",""}  }  }
-\begin{tikzpicture}[>=stealth]\draw[thick, draw=black] (0,0) grid (4,3);%%%无运输图
-\draworiginlabel{\ori}{2}{3}
-\drawflow{\flows}{2}{3}
-\sremainder
-\dremainder
-\end{tikzpicture}
-\end{keytable}\end{minipage}%
-\hskip 2em
-\noindent\begin{minipage}[c]{0.5\textwidth}
-\parindent 2em
-检验数表为：
+\begin{tabular}{c|c|C{1.5cm}C{1.5cm}C{1.5cm}C{1.5cm}C{1.5cm}C{1.5cm}C{1.5cm}C{1.5cm}|c}\hline\hline
+\multicolumn{2}{c|}{$c_j$}&$320$&$100$&$0$&$0$&$0$&$\xiaoliu{M}$&$\xiaoliu{M}$&$\xiaoliu{M}$&\multirow{2}*{$\mathbf{b}$} \\ \cline{1-10}
+$\mathbf{C_B}$&$\mathbf{X_B}$&$x_{1}$&$x_{2}$&$x_{3}$&$x_{4}$&$x_{5}$&$x_{6}$&$x_{7}$&$x_{8}$&\\ \hline
+ $\xiaoliu{M}$&$x_{6}$& $8$&$2$&$\mbox{$-$}1$&$0$&$0$&$1$&$0$&$0$&$5$ \\
+ $\xiaoliu{M}$&$x_{7}$& $4$&$2$&$0$&$\mbox{$-$}1$&$0$&$0$&$1$&$0$&$4$ \\
+ $\xiaoliu{M}$&$x_{8}$& [$\mathbf{5}$]&$1$&$0$&$0$&$\mbox{$-$}1$&$0$&$0$&$1$&$2$ \\ \hline
+ \multicolumn{2}{c|}{$\bar c_j$}&  $\xiaoliu{-17M\mbox{$+$}320}$&$\xiaoliu{-5M\mbox{$+$}100}$&$\xiaoliu{M}$&$\xiaoliu{M}$&$\xiaoliu{M}$&$0$&$0$&$0$&$\xiaoliu{11M}$ \\ \hline
+ $\xiaoliu{M}$&$x_{6}$& $0$&$\frac{2}{5}$&$\mbox{$-$}1$&$0$&[$\mathbf{\frac{8}{5}}$]&$1$&$0$&$\mbox{$-$}\frac{8}{5}$&$\frac{9}{5}$ \\
+ $\xiaoliu{M}$&$x_{7}$& $0$&$\frac{6}{5}$&$0$&$\mbox{$-$}1$&$\frac{4}{5}$&$0$&$1$&$\mbox{$-$}\frac{4}{5}$&$\frac{12}{5}$ \\
+ $320$&$x_{1}$& $1$&$\frac{1}{5}$&$0$&$0$&$\mbox{$-$}\frac{1}{5}$&$0$&$0$&$\frac{1}{5}$&$\frac{2}{5}$ \\ \hline
+ \multicolumn{2}{c|}{$\bar c_j$}&  $0$&$\xiaoliu{-\frac{8}{5}M\mbox{$+$}36}$&$\xiaoliu{M}$&$\xiaoliu{M}$&$\xiaoliu{-\frac{12}{5}M\mbox{$+$}64}$&$0$&$0$&$\xiaoliu{\frac{17}{5}M\mbox{$-$}64}$&$\xiaoliu{\frac{21}{5}M\mbox{$+$}128}$ \\ \hline
+ $0$&$x_{5}$& $0$&$\frac{1}{4}$&$\mbox{$-$}\frac{5}{8}$&$0$&$1$&$\frac{5}{8}$&$0$&$\mbox{$-$}1$&$\frac{9}{8}$ \\
+ $\xiaoliu{M}$&$x_{7}$& $0$&[$\mathbf{1}$]&$\frac{1}{2}$&$\mbox{$-$}1$&$0$&$\mbox{$-$}\frac{1}{2}$&$1$&$0$&$\frac{3}{2}$ \\
+ $320$&$x_{1}$& $1$&$\frac{1}{4}$&$\mbox{$-$}\frac{1}{8}$&$0$&$0$&$\frac{1}{8}$&$0$&$0$&$\frac{5}{8}$ \\ \hline
+ \multicolumn{2}{c|}{$\bar c_j$}&  $0$&$\xiaoliu{\mbox{$-$}M\mbox{$+$}20}$&$\xiaoliu{-\frac{1}{2}M\mbox{$+$}40}$&$\xiaoliu{M}$&$0$&$\xiaoliu{\frac{3}{2}M\mbox{$-$}40}$&$0$&$\xiaoliu{M}$&$\xiaoliu{\frac{3}{2}M\mbox{$+$}200}$ \\ \hline
+ $0$&$x_{5}$& $0$&$0$&$\mbox{$-$}\frac{3}{4}$&$\frac{1}{4}$&$1$&$\frac{3}{4}$&$\mbox{$-$}\frac{1}{4}$&$\mbox{$-$}1$&$\frac{3}{4}$ \\
+ $100$&$x_{2}$& $0$&$1$&$\frac{1}{2}$&$\mbox{$-$}1$&$0$&$\mbox{$-$}\frac{1}{2}$&$1$&$0$&$\frac{3}{2}$ \\
+ $320$&$x_{1}$& $1$&$0$&$\mbox{$-$}\frac{1}{4}$&$\frac{1}{4}$&$0$&$\frac{1}{4}$&$\mbox{$-$}\frac{1}{4}$&$0$&$\frac{1}{4}$ \\ \hline
+ \multicolumn{2}{c|}{$\bar c_j$}&  $0$&$0$&$30$&$20$&$0$&$\xiaoliu{M\mbox{$-$}30}$&$\xiaoliu{M\mbox{$-$}20}$&$\xiaoliu{M}$&$230$ \\ \hline
+\hline\end{tabular}
+\end{keytable}%
 
-\begin{keytable}[H]
-\centering \topcaption{检验数表}%\label{tab:jysb1}
-\begin{mytabular}{c||C{2.5em}|C{2.5em}|C{2.5em}|C{2.5em}  }
-\hline\hline
-     & $B_1$& $B_2$& $B_3$& $B_4$\\ \hline\hline
- $A_1$ & -1& &  & 1\\ \hline
- $A_2$ &   & & 6& 4\\ \hline
- $A_3$ & 2 &&3 & \\ \hline\hline
-\end{mytabular}
-\end{keytable}\end{minipage}
 
-\noindent\begin{minipage}[c]{0.5\textwidth}
-
-\vskip 1em
-
-\parindent 2em
-
-调整$A_1B_1$，调整量为20，得到：
-
-\begin{keytable}[H]
-\centering
+\begin{keytable}[H]\centering
 \topcaption{}
-\def\flows{  {  {"","60","","30",""},{"40","40","","",""},{"20","","50","",""}  }  }
-\begin{tikzpicture}[>=stealth]\draw[thick, draw=black] (0,0) grid (4,3);%%%无运输图
-\draworiginlabel{\ori}{2}{3}
-\drawflow{\flows}{2}{3}
-\sremainder
-\dremainder
-\end{tikzpicture}
-\end{keytable}\end{minipage}%
-\hskip 2em
-\noindent\begin{minipage}[c]{0.5\textwidth}
-\parindent 2em
-检验数表为：
+\resizebox{\linewidth}{!}{
+\begin{tabular}{c|c|C{1.5cm}C{1.5cm}C{1.5cm}C{1.5cm}C{1.5cm}C{1.5cm}C{1.5cm}C{1.5cm}|c}\hline\hline
+\multicolumn{2}{c|}{$c_j$}&$320$&$100$&$0$&$0$&$0$&$\xiaoliu{M}$&$\xiaoliu{M}$&$\xiaoliu{M}$&\multirow{2}*{$\mathbf{b}$} \\ \cline{1-10}
+$\mathbf{C_B}$&$\mathbf{X_B}$&$x_{1}$&$x_{2}$&$x_{3}$&$x_{4}$&$x_{5}$&$x_{6}$&$x_{7}$&$x_{8}$&\\ \hline
+ $\xiaoliu{M}$&$x_{6}$& $8$&$2$&$\mbox{$-$}1$&$0$&$0$&$1$&$0$&$0$&$5$ \\
+ $\xiaoliu{M}$&$x_{7}$& $4$&$2$&$0$&$\mbox{$-$}1$&$0$&$0$&$1$&$0$&$4$ \\
+ $\xiaoliu{M}$&$x_{8}$& [$\mathbf{5}$]&$1$&$0$&$0$&$\mbox{$-$}1$&$0$&$0$&$1$&$2$ \\ \hline
+ \multicolumn{2}{c|}{$\bar c_j$}&  $\xiaoliu{-17M\mbox{$+$}320}$&$\xiaoliu{-5M\mbox{$+$}100}$&$\xiaoliu{M}$&$\xiaoliu{M}$&$\xiaoliu{M}$&$0$&$0$&$0$&$\xiaoliu{11M}$ \\ \hline
+ $\xiaoliu{M}$&$x_{6}$& $0$&$\frac{2}{5}$&$\mbox{$-$}1$&$0$&[$\mathbf{\frac{8}{5}}$]&$1$&$0$&$\mbox{$-$}\frac{8}{5}$&$\frac{9}{5}$ \\
+ $\xiaoliu{M}$&$x_{7}$& $0$&$\frac{6}{5}$&$0$&$\mbox{$-$}1$&$\frac{4}{5}$&$0$&$1$&$\mbox{$-$}\frac{4}{5}$&$\frac{12}{5}$ \\
+ $320$&$x_{1}$& $1$&$\frac{1}{5}$&$0$&$0$&$\mbox{$-$}\frac{1}{5}$&$0$&$0$&$\frac{1}{5}$&$\frac{2}{5}$ \\ \hline
+ \multicolumn{2}{c|}{$\bar c_j$}&  $0$&$\xiaoliu{-\frac{8}{5}M\mbox{$+$}36}$&$\xiaoliu{M}$&$\xiaoliu{M}$&$\xiaoliu{-\frac{12}{5}M\mbox{$+$}64}$&$0$&$0$&$\xiaoliu{\frac{17}{5}M\mbox{$-$}64}$&$\xiaoliu{\frac{21}{5}M\mbox{$+$}128}$ \\ \hline
+ $0$&$x_{5}$& $0$&$\frac{1}{4}$&$\mbox{$-$}\frac{5}{8}$&$0$&$1$&$\frac{5}{8}$&$0$&$\mbox{$-$}1$&$\frac{9}{8}$ \\
+ $\xiaoliu{M}$&$x_{7}$& $0$&[$\mathbf{1}$]&$\frac{1}{2}$&$\mbox{$-$}1$&$0$&$\mbox{$-$}\frac{1}{2}$&$1$&$0$&$\frac{3}{2}$ \\
+ $320$&$x_{1}$& $1$&$\frac{1}{4}$&$\mbox{$-$}\frac{1}{8}$&$0$&$0$&$\frac{1}{8}$&$0$&$0$&$\frac{5}{8}$ \\ \hline
+ \multicolumn{2}{c|}{$\bar c_j$}&  $0$&$\xiaoliu{\mbox{$-$}M\mbox{$+$}20}$&$\xiaoliu{-\frac{1}{2}M\mbox{$+$}40}$&$\xiaoliu{M}$&$0$&$\xiaoliu{\frac{3}{2}M\mbox{$-$}40}$&$0$&$\xiaoliu{M}$&$\xiaoliu{\frac{3}{2}M\mbox{$+$}200}$ \\ \hline
+ $0$&$x_{5}$& $0$&$0$&$\mbox{$-$}\frac{3}{4}$&$\frac{1}{4}$&$1$&$\frac{3}{4}$&$\mbox{$-$}\frac{1}{4}$&$\mbox{$-$}1$&$\frac{3}{4}$ \\
+ $100$&$x_{2}$& $0$&$1$&$\frac{1}{2}$&$\mbox{$-$}1$&$0$&$\mbox{$-$}\frac{1}{2}$&$1$&$0$&$\frac{3}{2}$ \\
+ $320$&$x_{1}$& $1$&$0$&$\mbox{$-$}\frac{1}{4}$&$\frac{1}{4}$&$0$&$\frac{1}{4}$&$\mbox{$-$}\frac{1}{4}$&$0$&$\frac{1}{4}$ \\ \hline
+ \multicolumn{2}{c|}{$\bar c_j$}&  $0$&$0$&$30$&$20$&$0$&$\xiaoliu{M\mbox{$-$}30}$&$\xiaoliu{M\mbox{$-$}20}$&$\xiaoliu{M}$&$230$ \\ \hline
+\hline\end{tabular} }
+\end{keytable}%
 
-\begin{keytable}[H]
-\centering \topcaption{检验数表}%\label{tab:jysb1}
-\begin{mytabular}{c||C{2.5em}|C{2.5em}|C{2.5em}|C{2.5em}  }
-\hline\hline
- & $B_1$& $B_2$& $B_3$& $B_4$\\ \hline\hline
- $A_1$ & & 1 &  & 2 \\ \hline
- $A_2$ &  & & 5 & 4 \\ \hline
- $A_3$ &2 & &2 & \\ \hline\hline
-\end{mytabular}
-
-\end{keytable}
-
-所有非基变量格检验数大于0，当前方案为{唯一}最优方案，总运费为950。
-
-\end{minipage}
-
-
+\begin{keytable}[H]\centering
+\topcaption{}
+\resizebox{\columnwidth}{!}{
+\begin{tabular}{c|c|C{1cm}C{1cm}C{1cm}C{1cm}C{1cm}|c}\hline\hline
+\multicolumn{2}{c|}{$c_j$}&$320$&$100$&$0$&$0$&$0$&\multirow{2}*{$\mathbf{b}$} \\ \cline{1-7}
+$\mathbf{C_B}$&$\mathbf{X_B}$&$x_{1}$&$x_{2}$&$x_{3}$&$x_{4}$&$x_{5}$&\\ \hline
+ $0$&$x_{5}$& $0$&$0$&$\mbox{$-$}\frac{3}{4}$&$\frac{1}{4}$&$1$&$\frac{3}{4}$ \\
+ $100$&$x_{2}$& $0$&$1$&$\frac{1}{2}$&$\mbox{$-$}1$&$0$&$\frac{3}{2}$ \\
+ $320$&$x_{1}$& $1$&$0$&$\mbox{$-$}\frac{1}{4}$&$\frac{1}{4}$&$0$&$\frac{1}{4}$ \\ \hline
+ \multicolumn{2}{c|}{$\bar c_j$}&  $0$&$0$&$30$&$20$&$0$&$230$ \\ \hline
+\hline\end{tabular} }
+\end{keytable}%
 \end{document}

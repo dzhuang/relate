@@ -499,7 +499,9 @@ class LP(object):
                        **solve_kwarg
                        )
 
-        if res.status == 2:
+        #print res
+
+        if res.status == 2 and self.solutionCommon.method != "dual_simplex":
             # 原始问题不可行
             self.has_phase_2 = False
 
@@ -524,6 +526,8 @@ class LP(object):
             origin_goal_list = self.solutionPhase1.tableau_list[0][m_constraint_number]
         elif method == "big_m_simplex":
             origin_goal_list = res.init_tablaeu[m_constraint_number]
+        elif method == "dual_simplex":
+            origin_goal_list = res.init_tablaeu[m_constraint_number]
 
         if self.qtype == "max":
             origin_goal_list *= -1
@@ -539,7 +543,7 @@ class LP(object):
                 = self.solutionCommon.need_two_phase \
                 = True
 
-        if method != "big_m_simplex":
+        if method == "simplex":
             self.solutionPhase1.get_solution_string()
 
         self.solutionCommon.get_variable_instro_str_list()
@@ -603,6 +607,8 @@ class LP(object):
         elif res.status == 2:
             if self.solutionCommon.method == "simplex":
                 self.solve_status_reason = u"辅助问题最优目标值不为0"
+            elif self.solutionCommon.method == "dual_simplex":
+                self.solve_status_reason = u"找不到入基变量"
             self.solve_status_message = u"无可行解"
         elif res.status == 3:
             self.solve_status_message = u"有无界解"
@@ -628,6 +634,10 @@ class LP(object):
             else:
                 tableau = tableau[:-1]
                 goal = self.solutionPhase2.get_goal_list ()
+
+        elif method == "dual_simplex":
+            tableau = tableau[:-1]
+            goal = self.solutionPhase2.get_goal_list()
 
         elif method == "big_m_simplex":
             tableau = tableau[:-1]
@@ -660,12 +670,15 @@ def trans_latex_fraction(f, wrap=True):
         if "M" in f:
             if f == "-M" and not wrap:
                 frac = "-M"
+            elif f == "M" and not wrap:
+                frac = "M"
             else:
                 try:
-                    return trans_latex_big_m(f)
+                    frac = trans_latex_big_m(f)
                 except:
                     return f
-        return f
+        else:
+            return f
     negative = False
     if frac.startswith("-"):
         negative = True
@@ -683,15 +696,15 @@ def trans_latex_fraction(f, wrap=True):
         return "$%s$" % frac
 
 
-BIG_M_RE = re.compile("([-0-9.]*)[\*]*M([ +-]*)([0-9.]*)")
+BIG_M_RE = re.compile("([-0-9.e]*)[\*]*M([ +-]*)([0-9.]*)")
 
 def trans_latex_big_m(f):
     if f == "-M":
-        return "$\mbox{$-$}M$"
+        return "\mbox{$-$}M"
     else:
+        zeroM = False
         m = BIG_M_RE.match(f)
         if not m:
-            "------"
             return f
         exp_list = []
         for i, match in enumerate(m.groups()):
@@ -701,15 +714,21 @@ def trans_latex_big_m(f):
                     exp_list.append("M")
                 elif s == "-1":
                     exp_list.append(r"\mbox{$-$}M")
+                elif s == "0":
+                    zeroM = True
                 else:
                     exp_list.append("%sM" % s)
             if i == 1 and match:
                 assert match.strip() in ['-', '+']
-                exp_list.append(match)
+                exp_list.append(r"\mbox{$%s$}" % match.strip())
             if i == 2 and match:
                 exp_list.append(trans_latex_fraction(match, wrap=False))
 
-        return r"\liuhao{$%s$}" % "".join(exp_list)
+        big_m_str = "".join(exp_list)
+        if not big_m_str:
+            return "0"
+        else:
+            return r"\xiaoliu{%s}" % big_m_str
 
 def sign_trans(s):
     if ">" in s:
