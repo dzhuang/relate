@@ -1076,8 +1076,6 @@ class lpBigMSolver(lpSolver):
 
                     T[i, basis[i]] = 1
                     T[i, basis[i]] = 1
-                    T[-1, :n] = self.cc
-                    T[-1, -1] = self.f0
                     T[-1, basis[i]] = BIG_M
                 else:
                     # basic variable i is in column n+slcount
@@ -1085,6 +1083,8 @@ class lpBigMSolver(lpSolver):
                     slcount += 1
 
         # 大M法的目标函数所在的TGet the goal of the big-m problem
+        T[-1, :n] = self.cc
+        T[-1, -1] = self.f0
         self.init_tablaeu = np.copy(T)
 
         # Make the artificial variables basic feasible variables by subtracting
@@ -1151,6 +1151,8 @@ class lpBigMSolver(lpSolver):
             if disp:
                 print (messages[status])
                 print ("         Iterations: {0:d}".format (nit))
+
+        print("self.init_tablaeu", self.init_tablaeu)
 
         return OptimizeResult (x=x, fun=obj, nit=int (nit), status=status, slack=slack,
                                slack_list=slack_list, artificial_list=artificial_list, init_tablaeu=self.init_tablaeu,

@@ -17,31 +17,31 @@ lp = LP(qtype="max",
         #sign=[">", ">", "<", "="],
         )
 
-lp = LP(qtype="max",
-        goal=[3, -2, -1],
-        # x="y",
-        # x_list=["y_1", "y_2", "w_3"],
-        constraints=[
-            [1, -2, 1, "<", 11],
-            [-4, 1, 2, ">", 3],
-            [-2, 0, 1, "=", 1],
-            #[-4, 0, 2, "=", 2]
-        ],
-#        sign=[">", "<", ">", "="],
-        )
-
-lp = LP(qtype="min",
-        goal=[-3, -5],
-        # x="y",
-        # x_list=["y_1", "y_2", "w_3"],
-        constraints=[
-            [1, 0, "<", 4],
-            [0, 1, "<", 6],
-            [3, 2, "<", 18],
-            # [-4, 0, 2, "=", 2]
-        ],
-        #        sign=[">", "<", ">", "="],
-        )
+# lp = LP(qtype="max",
+#         goal=[3, -2, -1],
+#         # x="y",
+#         # x_list=["y_1", "y_2", "w_3"],
+#         constraints=[
+#             [1, -2, 1, "<", 11],
+#             [-4, 1, 2, ">", 3],
+#             [-2, 0, 1, "=", 1],
+#             #[-4, 0, 2, "=", 2]
+#         ],
+# #        sign=[">", "<", ">", "="],
+#         )
+#
+# lp = LP(qtype="min",
+#         goal=[-3, -5],
+#         # x="y",
+#         # x_list=["y_1", "y_2", "w_3"],
+#         constraints=[
+#             [1, 0, "<", 4],
+#             [0, 1, "<", 6],
+#             [3, 2, "<", 18],
+#             # [-4, 0, 2, "=", 2]
+#         ],
+#         #        sign=[">", "<", ">", "="],
+#         )
 
 # lp = LP (qtype="max",
 #          goal=[1, 1, -5],
@@ -71,17 +71,17 @@ lp = LP(qtype="min",
 #         #        sign=[">", "<", ">", "="],
 #         )
 
-lp = LP(qtype="max",
-        goal=[-320, -100],
-        # x="y",
-        # x_list=["y_1", "y_2", "w_3"],
-        constraints=[
-            [-8, -2, "<", 5],
-            [4, 2, ">", 4],
-            [5, 1, ">", 2],
-        ],
-        #        sign=[">", "<", ">", "="],
-        )
+# lp = LP(qtype="max",
+#         goal=[-320, -100],
+#         # x="y",
+#         # x_list=["y_1", "y_2", "w_3"],
+#         constraints=[
+#             [-8, -2, "<", 5],
+#             [4, 2, ">", 4],
+#             [5, 1, ">", 2],
+#         ],
+#         #        sign=[">", "<", ">", "="],
+#         )
 
 template = latex_jinja_env.get_template('/utils/lp_model.tex')
 tex = template.render(
@@ -149,22 +149,27 @@ for l in lp_json_list_loaded:
     lp = LP(**lp_dict)
     lpBigM = deepcopy(lp)
 
-    lp.solve(method="dual_simplex")
-    # try:
-    #     #lpBigM.solve(method="big_m_simplex")
-    #     standardized_lp_big_m = lpBigM.standardized_LP()
-    # except ValueError:
+    lp.solve(method="simplex")
+    lpBigM.solve(method="big_m_simplex")
+    try:
+        lpBigM.solve(method="big_m_simplex")
+        standardized_lp_big_m = lpBigM.standardized_LP()
+    except ValueError:
+        lpBigM = None
+        standardized_lp_big_m = None
+    # except:
     #     lpBigM = None
     #     standardized_lp_big_m = None
+
     template = latex_jinja_env.get_template('/utils/lp_2_stage_simplex.tex')
     tex = template.render(
         iters = iter(range(0,5)),
         show_question = True,
         show_answer = True,
         show_2_stage = True, # 显示两阶段法
-        #show_big_m=True,  # 显示大M法
+        show_big_m=True,  # 显示大M法
         standardized_lp = lp.standardized_LP(),
-        #standardized_lp_big_m=standardized_lp_big_m,
+        standardized_lp_big_m=standardized_lp_big_m,
         pre_description=u"""
         """,
         lp=lp,

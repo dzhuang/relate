@@ -93,8 +93,11 @@ class LpSolution(object):
         self.get_variable_instro_str_list()
         all_variable = self.get_all_variable()
 
-        if not self.artificial_variable_list and self.method == "big_m_simplex":
-            raise ValueError("This problem can't be solved by Big M method")
+        if self.artificial_variable_list:
+            self.need_artificial_variable = True
+
+        # if not self.artificial_variable_list and self.method == "big_m_simplex":
+        #     raise ValueError("This problem can't be solved by Big M method")
 
         if isinstance(self, LpSolutionPhase2) and self.method == "big_m_simplex":
             self.transform_big_m()
@@ -262,6 +265,7 @@ class LP(object):
         self.solve_status_reason = ""
         self.solve_status_message = ""
         self.solve_opt_res_str = ""
+        self.need_artificial_variable = False
 
     def get_sign_str(self, dual):
         """
@@ -499,7 +503,7 @@ class LP(object):
                        **solve_kwarg
                        )
 
-        #print res
+        print res
 
         if res.status == 2 and self.solutionCommon.method != "dual_simplex":
             # 原始问题不可行
@@ -642,6 +646,7 @@ class LP(object):
         elif method == "big_m_simplex":
             tableau = tableau[:-1]
             goal_sym = self.solutionPhase2.get_goal_list()
+            print goal_sym
             goal = [str(g) for g in goal_sym]
 
         constraints = copy.deepcopy(tableau)
