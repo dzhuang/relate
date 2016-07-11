@@ -45,6 +45,7 @@ class LpSolution(object):
         self.modi_b_list = []
         self.modi_basis_list = []
         self.modi_bp_list = []
+        self.modi_pj_list = []
 
     def get_all_variable(self):
         if not isinstance(self, LpSolutionCommon):
@@ -105,19 +106,14 @@ class LpSolution(object):
             self.modi_b_list.append(self.tableau_list[i][:-1, -1])
             self.modi_CJBAR_list.append(C_j_BAR.tolist())
 
-
     def transform_modified_simplex(self):
         self.transform_big_m()
-        #print "self.modi_b_list", self.modi_b_list
-        #print "self.modi_B_list", self.modi_B_list
-        #print "self.modi_B_1_list", self.modi_B_1_list
-        #print "self.modi_CJBAR_list", self.modi_CJBAR_list
         self.modi_basis_list = copy.deepcopy(self.basis_list)
         self.modi_bp_list  = copy.deepcopy(self.basis_list)
+        self.modi_b_list = []
         for i in range(len(self.basis_list)):
             self.modi_basis_list[i] = [get_variable_symbol("x", j+1) for j in self.modi_basis_list[i]]
             self.modi_bp_list[i] = [get_variable_symbol("p", j+1) for j in self.modi_bp_list[i]]
-            # print self.modi_B_list[i]
             self.modi_B_list[i] = [list_to_matrix(self.modi_B_list[i])]
             self.modi_B_1_list[i] = [list_to_matrix(self.modi_B_1_list[i].tolist())]
 
@@ -128,11 +124,16 @@ class LpSolution(object):
                     non_basis_index.append(idx)
 
             self.modi_CJBAR_idx_list.append(non_basis_index)
-            print self.modi_CJBAR_list[i]
-            self.modi_CJBAR_list[i] = [trans_latex_fraction(str(cjbar), wrap=False) for cjbar in self.modi_CJBAR_list[i][0]]
-            # for idx in range(len(self.modi_CJBAR_list[i])):
-            #     self.modi_CJBAR_list[i][idx] = trans_latex_fraction(str(self.modi_CJBAR_list[i][idx]), wrap=False)
-            #     print self.modi_CJBAR_list[i]
+            self.modi_CJBAR_list[i] = [trans_latex_fraction (str (cjbar), wrap=False) for cjbar in
+                                       self.modi_CJBAR_list[i][0]]
+            self.modi_b_list.append(
+                [trans_latex_fraction(str(bi[0]), wrap=False) for bi in self.tableau_list[i][:-1, -1].tolist()])
+            try:
+                p_j = self.tableau_list[i][:-1, self.pivot_list[i][1]]
+            except IndexError:
+                p_j = None
+            if p_j:
+                self.modi_pj_list.append([trans_latex_fraction(str(pj[0]), wrap=False) for pj in p_j.tolist()])
 
     def get_solution_string(self):
         if not self.m:
@@ -519,7 +520,10 @@ class LP(object):
 
             stage_klass.tableau_list.append(t)
             stage_klass.basis_list.append(basis)
-            stage_klass.pivot_list.append([i_p, j_p])
+            if not (np.isnan(i_p) and np.isnan(j_p)):
+                stage_klass.pivot_list.append([i_p, j_p])
+            else:
+                stage_klass.pivot_list.append ([np.nan, np.nan])
             stage_klass.method = self.solutionCommon.method = method
 
         solve_kwarg = {}
@@ -577,6 +581,10 @@ class LP(object):
 
         if self.qtype == "max":
             origin_goal_list *= -1
+            opt_judge_literal = u"非正"
+        else:
+            opt_judge_literal = u"非负"
+
 
         self.solutionPhase1.original_goal_list \
             = self.solutionPhase2.original_goal_list \
@@ -612,7 +620,7 @@ class LP(object):
         if res.status == 0:
             tol = 1.0E-12
             if final_tableau is not None:
-                if self.solutionCommon.method == "big_m_simplex":
+                if self.solutionCommon.method in ["big_m_simplex", "modified_simplex"]:
                     for av in self.solutionCommon.artificial_variable_list:
                         if av in final_basis:
                             final_av_idx = np.where(final_basis==av)
@@ -620,19 +628,26 @@ class LP(object):
                                 self.solutionCommon.non_zero_artificial_in_opt.append(get_variable_symbol("x", av + 1))
                     if len(self.solutionCommon.non_zero_artificial_in_opt) > 0:
                         self.solve_status = 2
-                        self.solve_status_reason = u"最优表中存在非零的人工变量$%s$" % ",\,".join(
+                        self.solve_status_reason = u"人工问题的最优解中存在非零的人工变量$%s$" % ",\,".join(
                             self.solutionCommon.non_zero_artificial_in_opt)
                         self.solve_status_message = u"无可行解"
                 if self.solve_status == 0:
                     ma = np.ma.masked_where(
                         abs(final_tableau[-1, :-1]) <= tol, final_tableau[-1, :-1], copy=False)
-                    n_non_basis_variable_0_cjbar = ma.count()
-                    n_non_basis_variable = \
-                        len(self.solutionPhase2.all_variable_str_list) \
-                        - len(self.solutionPhase2.basis_list[0])
-                    if n_non_basis_variable > n_non_basis_variable_0_cjbar:
+                    variable_non_0_cjbar = np.ma.where(ma>tol)[0]
+                    m, n_variable = np.shape(self.solutionPhase2.tableau_list[0][:-1, :-1])
+                    non_basis_variable_set = set(range(n_variable)) - set(self.solutionPhase2.basis_list[-1])
+                    non_basis_variable_0_cjbar_set = non_basis_variable_set - set(variable_non_0_cjbar.tolist())
+
+                    self.solve_status_reason = u"所有非基变量的检验数%s" % opt_judge_literal
+                    if len(non_basis_variable_0_cjbar_set) > 0:
+                        self.solve_status_reason += u"，且最优解中非基变量$%s$" % \
+                                                    [get_variable_symbol("x", idx + 1)
+                                                     for idx in list(non_basis_variable_0_cjbar_set)]
                         self.solve_status = 0.1
                         self.solve_status_message = u"有无穷多最优解"
+                        if self.solutionCommon.method == "modified_simplex":
+                            self.solve_status_message += u"，其中一个最优解为"
                     else:
                         self.solve_status_message = u"有唯一最优解"
 
@@ -645,8 +660,12 @@ class LP(object):
                     opt_value_str = r"(%s)^T" % ",\,".join(opt_value)
                     opt_solution = "%s = %s" % (opt_x_str, opt_value_str)
                     opt_fun_value = res.fun if self.qtype == "min" else res.fun *(-1)
-                    opt_fun = "%s^* = %s" % (self.z, trans_latex_fraction(opt_fun_value, wrap=False))
-                    self.solve_opt_res_str = "$%s,\, %s$" % (opt_solution, opt_fun)
+                    if self.solutionCommon.method != "modified_simplex":
+                        opt_fun = "%s^* = %s" % (self.z, trans_latex_fraction(opt_fun_value, wrap=False))
+                        self.solve_opt_res_str = "$%s,\, %s$" % (opt_solution, opt_fun)
+                    else:
+                        opt_fun = r"%s^* = \mathbf{C_BB^{-1}b} = %s" % (self.z, trans_latex_fraction (opt_fun_value, wrap=False))
+                        self.solve_opt_res_str = u"即$%s$，最优值为$$%s.$$" % (opt_solution, opt_fun)
 
         elif res.status == 1:
             self.solve_status_message = u"超过迭代次数仍未优化"

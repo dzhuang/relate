@@ -183,20 +183,29 @@ $$\begin{align*}
 \BLOCK{ endfor }
 \end{align*}$$
 
-$x_2$为入基变量。计算$\bar p_2$和$\bar b$以确定出基变量：
-$$\mathbf{\bar p}_2=\mathbf{B}^{-1}{\mathbf{p}_2}=\begin{pmatrix}
-   1  \\
-   \mbox{$-$}2  \\
-   \mbox{$-$}2  \\
+\BLOCK{ if not loop.last }
+$x_{\VAR{lp.solutionPhase2.pivot_list[idx][1]+1}}$为入基变量。计算$\bar p_{\VAR{lp.solutionPhase2.pivot_list[idx][0]+1}}$和$\bar b$以确定出基变量：
+\BLOCK{ endif }
+\BLOCK{ if not loop.last }$$\mathbf{\bar p}_{\VAR{lp.solutionPhase2.pivot_list[idx][0]+1}}=\mathbf{B}^{-1}{\mathbf{p}_{\VAR{lp.solutionPhase2.pivot_list[idx][0]+1}}}=\begin{pmatrix}
+\VAR{lp.solutionPhase2.modi_pj_list[idx]|join(" \\\\ ")}
 \end{pmatrix},
 \quad
-\mathbf{\bar b}=\mathbf{B}^{-1}\mathbf{b}=\begin{pmatrix}
-   8  \\
-   14  \\
-   18  \\
-\end{pmatrix}$$
-选择$x_4$为出基变量，从而得到新的基变量向量。
+\mathbf{\bar b}=\mathbf{B}^{-1}\mathbf{b}=\begin{pmatrix} \VAR{lp.solutionPhase2.modi_b_list[idx]|join(" \\\\ ")} \end{pmatrix}$$
 
+应用最小比值准则选择$x_{\VAR{lp.solutionPhase2.basis_list[idx][lp.solutionPhase2.pivot_list[idx][0]]+1}}$为出基变量，从而得到新的基变量向量；
+\BLOCK{ else }
+
+\BLOCK{ if lp.solve_status_reason -}\VAR{lp.solve_status_reason}，\BLOCK{ endif -}
+\BLOCK{ if lp.need_artificial_variable }
+原始问题\VAR{lp.solve_status_message}
+\BLOCK{ else }
+该问题\VAR{lp.solve_status_message}
+\BLOCK{ endif }
+$$\mathbf{X^*_B}= \mathbf{\bar b}=\mathbf{B}^{-1}\mathbf{b}=\begin{pmatrix} \VAR{lp.solutionPhase2.modi_b_list[idx]|join(" \\\\ ")} \end{pmatrix}$$
+
+\BLOCK{- if lp.solve_opt_res_str -}\VAR{lp.solve_opt_res_str}\BLOCK{ endif -}.
+
+\BLOCK{ endif }
 
 \BLOCK{ endfor }
 
