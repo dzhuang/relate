@@ -35,6 +35,17 @@ class LpSolution(object):
         self.all_variable_str_list = []
         self.non_zero_artificial_in_opt = []
 
+        # 用于改进单纯形法
+        self.modi_CB_list = []
+        self.modi_B_list = []
+        self.modi_B_1_list = []
+        self.modi_XB_list = []
+        self.modi_CJBAR_list = []
+        self.modi_CJBAR_idx_list = []
+        self.modi_b_list = []
+        self.modi_basis_list = []
+        self.modi_bp_list = []
+
     def get_all_variable(self):
         if not isinstance(self, LpSolutionCommon):
             raise NotImplementedError()
@@ -67,6 +78,9 @@ class LpSolution(object):
                 CB_vector = Matrix([CB_list_single])
             CB_list.append(CB_vector)
 
+        # 用于改进单纯形法
+        self.modi_CB_list = CB_list
+
         A_np = tableau_list[0][:-1, :-1]
         A = Matrix(A_np.tolist())
         b_np = tableau_list[0][:-1, -1]
@@ -74,41 +88,68 @@ class LpSolution(object):
 
         for i, t in enumerate(tableau_list):
             t = t.tolist()
-            B_list = []
+            B_list_i = []
             for j, bs in enumerate(basis_list[i]):
-                B_list.append(A_np[:, bs].tolist())
-                B = Matrix(B_list).T
+                B_list_i.append(A_np[:, bs].tolist())
+                B = Matrix(B_list_i).T
             CB = CB_list[i]
             B_1 = B.inv()
             C_j_BAR = C - CB*B_1*A
             Z = CB*B_1*b
             t[-1] = C_j_BAR.tolist()[0] + Z.tolist()[0]
+
+            # 用于改进单纯形法
             self.tableau_list[i] = Matrix(t)
-        #print "self.tableau_list", len(self.tableau_list)
-        #print self.tableau_list
+            self.modi_B_list.append(B_list_i)
+            self.modi_B_1_list.append(B_1)
+            self.modi_b_list.append(self.tableau_list[i][:-1, -1])
+            self.modi_CJBAR_list.append(C_j_BAR.tolist())
+
+
+    def transform_modified_simplex(self):
+        self.transform_big_m()
+        #print "self.modi_b_list", self.modi_b_list
+        #print "self.modi_B_list", self.modi_B_list
+        #print "self.modi_B_1_list", self.modi_B_1_list
+        #print "self.modi_CJBAR_list", self.modi_CJBAR_list
+        self.modi_basis_list = copy.deepcopy(self.basis_list)
+        self.modi_bp_list  = copy.deepcopy(self.basis_list)
+        for i in range(len(self.basis_list)):
+            self.modi_basis_list[i] = [get_variable_symbol("x", j+1) for j in self.modi_basis_list[i]]
+            self.modi_bp_list[i] = [get_variable_symbol("p", j+1) for j in self.modi_bp_list[i]]
+            # print self.modi_B_list[i]
+            self.modi_B_list[i] = [list_to_matrix(self.modi_B_list[i])]
+            self.modi_B_1_list[i] = [list_to_matrix(self.modi_B_1_list[i].tolist())]
+
+            all_variable = self.get_all_variable()
+            non_basis_index = []
+            for idx in range(len(all_variable)):
+                if idx not in self.basis_list[i]:
+                    non_basis_index.append(idx)
+
+            self.modi_CJBAR_idx_list.append(non_basis_index)
+            print self.modi_CJBAR_list[i]
+            self.modi_CJBAR_list[i] = [trans_latex_fraction(str(cjbar), wrap=False) for cjbar in self.modi_CJBAR_list[i][0]]
+            # for idx in range(len(self.modi_CJBAR_list[i])):
+            #     self.modi_CJBAR_list[i][idx] = trans_latex_fraction(str(self.modi_CJBAR_list[i][idx]), wrap=False)
+            #     print self.modi_CJBAR_list[i]
 
     def get_solution_string(self):
-        # print "here"
-        # print self.method
-        # print len(self.tableau_list)
         if not self.m:
             self.m = len(self.basis_list[0])
 
         self.get_variable_instro_str_list()
         all_variable = self.get_all_variable()
 
-        if self.artificial_variable_list:
-            self.need_artificial_variable = True
-
-        # if not self.artificial_variable_list and self.method == "big_m_simplex":
-        #     raise ValueError("This problem can't be solved by Big M method")
-
         if isinstance(self, LpSolutionPhase2) and self.method == "big_m_simplex":
             self.transform_big_m()
 
+        if isinstance(self, LpSolutionPhase2) and self.method == "modified_simplex":
+            self.transform_modified_simplex()
+
         tableau_list = self.tableau_list
 
-        if self.method != "big_m_simplex":
+        if self.method not in ["big_m_simplex", "modified_simplex"]:
             for t in tableau_list:
                 if self.qtype == "max":
                     t[-1, :-1] *= -1
@@ -477,7 +518,6 @@ class LP(object):
                 stage_klass.qtype = self.qtype
 
             stage_klass.tableau_list.append(t)
-            #print "stage_klass.tableau_list", stage_klass.tableau_list
             stage_klass.basis_list.append(basis)
             stage_klass.pivot_list.append([i_p, j_p])
             stage_klass.method = self.solutionCommon.method = method
@@ -506,6 +546,9 @@ class LP(object):
             # 原始问题不可行
             self.has_phase_2 = False
 
+        if res.artificial_list:
+            self.need_artificial_variable = True
+
         n_original_variable = len(self.x_list)
         m_constraint_number = len(cnstr_orig_order)
 
@@ -527,7 +570,7 @@ class LP(object):
         origin_goal_list = []
         if method == "simplex":
             origin_goal_list = self.solutionPhase1.tableau_list[0][m_constraint_number]
-        elif method == "big_m_simplex":
+        elif method in ["big_m_simplex", "modified_simplex"]:
             origin_goal_list = res.init_tablaeu[m_constraint_number]
         elif method == "dual_simplex":
             origin_goal_list = res.init_tablaeu[m_constraint_number]
@@ -643,10 +686,9 @@ class LP(object):
             tableau = tableau[:-1]
             goal = self.solutionPhase2.get_goal_list()
 
-        elif method == "big_m_simplex":
+        elif method in ["big_m_simplex", "modified_simplex"]:
             tableau = tableau[:-1]
             goal_sym = self.solutionPhase2.get_goal_list()
-            print goal_sym
             goal = [str(g) for g in goal_sym]
 
         constraints = copy.deepcopy(tableau)
@@ -733,7 +775,7 @@ def trans_latex_big_m(f):
         if not big_m_str:
             return "0"
         else:
-            return r"\xiaoliu{%s}" % big_m_str
+            return big_m_str
 
 def sign_trans(s):
     if ">" in s:
@@ -780,3 +822,13 @@ def get_variable_symbol(x, i, superscript=""):
         return "%s_{%d}^{%s}" % (x, i, superscript)
     else:
         return "%s_{%d}" % (x, i)
+
+def list_to_matrix(l, trans_latex=True):
+    # l is a list of list
+    for i in range(len(l)):
+        if trans_latex:
+            l[i] = " & ".join([trans_latex_fraction(str(li), wrap=False) for li in l[i]])
+        else:
+            l[i] = " & ".join(l[i])
+
+    return r"\\".join(l)

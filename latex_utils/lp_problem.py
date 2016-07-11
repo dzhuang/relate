@@ -117,17 +117,17 @@ r.clipboard_clear()
 #
 # r.clipboard_append(tex)
 
-lp = LP(qtype="max",
-        goal=[3, 6, 3, 4],
-        # x="y",
-        # x_list=["y_1", "y_2", "w_3"],
-        constraints=[
-            [1, 1, 3, 4, "<", 8],
-            [1, 3, 1, 1, ">", 21],
-            [3, 2, 1, 2, ">", 15]
-        ],
-        #        sign=[">", "<", ">", "="],
-        )
+# lp = LP(qtype="max",
+#         goal=[3, 6, 3, 4],
+#         # x="y",
+#         # x_list=["y_1", "y_2", "w_3"],
+#         constraints=[
+#             [1, 1, 3, 4, "<", 8],
+#             [1, 3, 1, 1, ">", 21],
+#             [3, 2, 1, 2, ">", 15]
+#         ],
+#         #        sign=[">", "<", ">", "="],
+#         )
 
 lp_json_list = []
 lp_json_list.append(lp.json)
@@ -147,19 +147,16 @@ for l in lp_json_list_loaded:
     lp_dict = json.loads(l)
 
     lp = LP(**lp_dict)
-    lpBigM = deepcopy(lp)
+    lp2phase = deepcopy(lp)
 
-    lp.solve(method="simplex")
-    #lpBigM.solve(method="big_m_simplex")
+    lp.solve(method="modified_simplex")
     try:
-        lpBigM.solve(method="big_m_simplex")
-        standardized_lp_big_m = lpBigM.standardized_LP()
+        lp2phase.solve(method="simplex")
+        standardized_lp_2_phase = lp2phase.standardized_LP()
     except ValueError:
-        lpBigM = None
-        standardized_lp_big_m = None
-    # except:
-    #     lpBigM = None
-    #     standardized_lp_big_m = None
+        lp2phase = None
+        standardized_lp_2_phase = None
+
 
     template = latex_jinja_env.get_template('/utils/lp_2_stage_simplex.tex')
     tex = template.render(
@@ -169,11 +166,11 @@ for l in lp_json_list_loaded:
         show_2_stage = True, # 显示两阶段法
         show_big_m=True,  # 显示大M法
         standardized_lp = lp.standardized_LP(),
-        standardized_lp_big_m=standardized_lp_big_m,
+        standardized_lp_2_phase=standardized_lp_2_phase,
         pre_description=u"""
         """,
         lp=lp,
-        lpBigM = lpBigM,
+        lp2phase = lp2phase,
         # simplex_pre_description=u"""解：引入松弛变量$x_4, x_5, x_6$，用单纯形法求解如下：
         # """,
         # simplex_after_description=u"""最优解唯一。

@@ -1171,10 +1171,14 @@ def linprog(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
         lp = lpSimplexSolver(c, A_ub=A_ub, b_ub=b_ub, A_eq=A_eq, b_eq=b_eq,
                              bounds=bounds, callback=callback, cnstr_orig_order=cnstr_orig_order, **options)
         return lp.solve()
-    elif meth == 'big_m_simplex':
+    elif meth in ['big_m_simplex', 'modified_simplex']:
         lp = lpBigMSolver(c, A_ub=A_ub, b_ub=b_ub, A_eq=A_eq, b_eq=b_eq,
                              bounds=bounds, callback=callback, cnstr_orig_order=cnstr_orig_order, **options)
         return lp.solve()
+    # elif meth == 'modified_simplex':
+    #     lp = lpBigMSolver(c, A_ub=A_ub, b_ub=b_ub, A_eq=A_eq, b_eq=b_eq,
+    #                          bounds=bounds, callback=callback, cnstr_orig_order=cnstr_orig_order, **options)
+    #     return lp.solve()
     elif meth == 'dual_simplex':
         lp = lpDualSimplexSolver(c, A_ub=A_ub, b_ub=b_ub, A_eq=A_eq, b_eq=b_eq,
                              bounds=bounds, callback=callback, cnstr_orig_order=cnstr_orig_order, **options)
