@@ -5,31 +5,31 @@ from latex_utils.utils.lpmodel import LP
 from copy import deepcopy
 
 
+# lp = LP(qtype="max",
+#         goal=[2, -1, 3, 1],
+#         #x="y",
+#         #x_list=["y_1", "y_2", "w_3"],
+#         constraints=[
+#             [1, 2, 1, 0, "<", 12],
+#             [2, -1, 0, 1, "<", 10],
+#             [0, 0, 1, 1, "<", 8]
+#         ],
+#         #sign=[">", ">", "<", "="],
+#         )
+
 lp = LP(qtype="max",
-        goal=[2, -1, 3, 1],
-        #x="y",
-        #x_list=["y_1", "y_2", "w_3"],
+        goal=[3, -2, -1],
+        # x="y",
+        # x_list=["y_1", "y_2", "w_3"],
         constraints=[
-            [1, 2, 1, 0, "<", 12],
-            [2, -1, 0, 1, "<", 10],
-            [0, 0, 1, 1, "<", 8]
+            [1, -2, 1, "<", 11],
+            [-4, 1, 2, ">", 3],
+            [-2, 0, 1, "=", 1],
+            #[-4, 0, 2, "=", 2]
         ],
-        #sign=[">", ">", "<", "="],
+#        sign=[">", "<", ">", "="],
         )
 
-# lp = LP(qtype="max",
-#         goal=[3, -2, -1],
-#         # x="y",
-#         # x_list=["y_1", "y_2", "w_3"],
-#         constraints=[
-#             [1, -2, 1, "<", 11],
-#             [-4, 1, 2, ">", 3],
-#             [-2, 0, 1, "=", 1],
-#             #[-4, 0, 2, "=", 2]
-#         ],
-# #        sign=[">", "<", ">", "="],
-#         )
-#
 # lp = LP(qtype="min",
 #         goal=[-3, -5],
 #         # x="y",
@@ -117,7 +117,7 @@ r.clipboard_clear()
 #
 # r.clipboard_append(tex)
 
-lp2 = LP(qtype="max",
+lp = LP(qtype="max",
         goal=[3, 6, 3, 4],
         # x="y",
         # x_list=["y_1", "y_2", "w_3"],
@@ -150,7 +150,7 @@ for l in lp_json_list_loaded:
     lpBigM = deepcopy(lp)
 
     lp.solve(method="simplex")
-    lpBigM.solve(method="big_m_simplex")
+    #lpBigM.solve(method="big_m_simplex")
     try:
         lpBigM.solve(method="big_m_simplex")
         standardized_lp_big_m = lpBigM.standardized_LP()

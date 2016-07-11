@@ -1117,11 +1117,11 @@ class lpBigMSolver(lpSolver):
         have_floor_variable = self.have_floor_variable
         L = self.L
 
-        nit, status = _solve_simplex (T, n, basis, maxiter=maxiter, phase=2,
+        nit, status = _solve_simplex(T, n, basis, maxiter=maxiter, phase=2,
                                       callback=callback, tol=tol,
                                       bland=bland)
 
-        solution = np.zeros (n + n_slack + n_artificial)
+        solution = np.zeros(n + n_slack + n_artificial)
         solution[basis[:m]] = T[:m, -1]
         x = solution[:n]
         slack = solution[n:n + n_slack]
@@ -1152,9 +1152,9 @@ class lpBigMSolver(lpSolver):
                 print (messages[status])
                 print ("         Iterations: {0:d}".format (nit))
 
-        print("self.init_tablaeu", self.init_tablaeu)
+        #print("self.init_tablaeu", self.init_tablaeu)
 
-        return OptimizeResult (x=x, fun=obj, nit=int (nit), status=status, slack=slack,
+        return OptimizeResult(x=x, fun=obj, nit=int (nit), status=status, slack=slack,
                                slack_list=slack_list, artificial_list=artificial_list, init_tablaeu=self.init_tablaeu,
                                message=messages[status], success=(status == 0))
 

@@ -51,7 +51,6 @@ class LpSolution(object):
         tableau_list = self.tableau_list
         basis_list = self.basis_list
 
-
         for a in artificial_list:
             if self.qtype == "max":
                 self.original_goal_list[a] = -M
@@ -85,8 +84,13 @@ class LpSolution(object):
             Z = CB*B_1*b
             t[-1] = C_j_BAR.tolist()[0] + Z.tolist()[0]
             self.tableau_list[i] = Matrix(t)
+        #print "self.tableau_list", len(self.tableau_list)
+        #print self.tableau_list
 
     def get_solution_string(self):
+        # print "here"
+        # print self.method
+        # print len(self.tableau_list)
         if not self.m:
             self.m = len(self.basis_list[0])
 
@@ -455,14 +459,6 @@ class LP(object):
         # from scipy.optimize import linprog
         from linprog import linprog
 
-        # linprog will make the constraints out of order
-        def adjust_order(modified_list, cnstr_orig_order=cnstr_orig_order):
-            m = len(cnstr_orig_order)
-            t = copy.deepcopy(modified_list)
-            for idx in range(m):
-                t[cnstr_orig_order[idx]] = modified_list[idx]
-            return t
-
         def lin_callback(xk, **kwargs):
             t = np.copy(kwargs['tableau'])
             phase = np.copy(kwargs['phase'])
@@ -481,6 +477,7 @@ class LP(object):
                 stage_klass.qtype = self.qtype
 
             stage_klass.tableau_list.append(t)
+            #print "stage_klass.tableau_list", stage_klass.tableau_list
             stage_klass.basis_list.append(basis)
             stage_klass.pivot_list.append([i_p, j_p])
             stage_klass.method = self.solutionCommon.method = method
@@ -503,7 +500,7 @@ class LP(object):
                        **solve_kwarg
                        )
 
-        print res
+#        print res
 
         if res.status == 2 and self.solutionCommon.method != "dual_simplex":
             # 原始问题不可行
@@ -516,10 +513,12 @@ class LP(object):
             = self.solutionPhase2.variable_list \
             = self.solutionCommon.variable_list \
             = range(n_original_variable)
+
         self.solutionPhase1.slack_variable_list \
             = self.solutionPhase2.slack_variable_list \
             = self.solutionCommon.slack_variable_list \
             = res.slack_list
+
         self.solutionPhase1.artificial_variable_list \
             = self.solutionPhase2.artificial_variable_list \
             = self.solutionCommon.artificial_variable_list \
@@ -615,6 +614,7 @@ class LP(object):
                 self.solve_status_reason = u"找不到入基变量"
             self.solve_status_message = u"无可行解"
         elif res.status == 3:
+            self.solve_status_reason = u"找不到出基变量"
             self.solve_status_message = u"有无界解"
 
         if res.status not in self.required_solve_status:
