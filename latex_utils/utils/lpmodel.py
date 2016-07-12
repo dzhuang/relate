@@ -313,6 +313,10 @@ class LP(object):
         self.solve_opt_res_str = ""
         self.need_artificial_variable = False
 
+        # 对偶问题的最优解（列表） 第1个为只看松弛变量的，第2个为所有变量
+        self.dual_opt_solution_str_list = []
+
+
     def get_sign_str(self, dual):
         """
         得到变量的符号 x_{1},x_{3}\geqslant 0,\,x_{2}\text{无限制},\,x_{3}\text{为整数}
@@ -608,6 +612,18 @@ class LP(object):
             final_tableau = np.copy(self.solutionPhase2.tableau_list[-1])
             final_basis = np.copy(self.solutionPhase2.basis_list[-1])
             self.solutionPhase2.get_solution_string()
+
+        #self.dual_opt_solution_str
+        final_cjbar = final_tableau[-1]
+        dual_opt_solution_abstract = [abs(final_cjbar[idx]) for idx in self.solutionCommon.slack_variable_list]
+        cjbar_origin_variable = [abs(final_cjbar[idx]) for idx in self.solutionCommon.variable_list]
+        dual_opt_solution = dual_opt_solution_abstract + cjbar_origin_variable
+
+        if not self.need_artificial_variable and res.status == 0:
+            # 只有引入松弛变量的问题才计算对偶问题的最优解，否则不计算
+            dual_opt_solution_abstract_str = [trans_latex_fraction(v, wrap=False) for v in dual_opt_solution_abstract]
+            dual_opt_solution_str = [trans_latex_fraction(v, wrap=False) for v in dual_opt_solution]
+            self.dual_opt_solution_str_list = [dual_opt_solution_abstract_str] + [dual_opt_solution_str]
 
         # status:
         #    0 : Optimization terminated successfully
