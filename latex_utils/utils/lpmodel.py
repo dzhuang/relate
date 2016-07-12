@@ -56,6 +56,7 @@ class LpSolution(object):
             raise NotImplementedError()
 
     def transform_big_m(self):
+
         # 输出大M法单纯形表格
         from sympy import symbols, Matrix
         M = symbols("M")
@@ -107,6 +108,12 @@ class LpSolution(object):
             self.modi_CJBAR_list.append(C_j_BAR.tolist())
 
     def transform_modified_simplex(self):
+        self.modi_B_list =[]
+        self.modi_B_1_list = []
+        self.modi_b_list = []
+        self.modi_CJBAR_list= []
+        self.modi_pj_list = []
+
         self.transform_big_m()
         self.modi_basis_list = copy.deepcopy(self.basis_list)
         self.modi_bp_list  = copy.deepcopy(self.basis_list)
@@ -169,6 +176,8 @@ class LpSolution(object):
                 cb_str_list_single.append(self.goal_str_list[idx])
             self.cb_str_list.append(cb_str_list_single)
 
+        self.tableau_str_list = [[],] * len(tableau_list)
+
         for i, tableau in enumerate(tableau_list):
             t = tableau.tolist()
             for j, t_line in enumerate(t):
@@ -177,7 +186,7 @@ class LpSolution(object):
                 t[j] = ["%s" % trans_latex_fraction(str(c)) for c in t_line_filtered]
             temp_list = t[0:self.m]
             temp_list.append(t[-1])
-            self.tableau_str_list.append(temp_list)
+            self.tableau_str_list[i] = temp_list
             try:
                 t_i, t_j = self.pivot_list[i]
                 t[int(t_i)][int(t_j)] = "[$\mathbf{%s}$]" % t[int(t_i)][int(t_j)].replace("$", "")
@@ -186,6 +195,9 @@ class LpSolution(object):
                 pass
 
     def get_variable_instro_str_list(self):
+        self.slack_str_list_intro = []
+        self.neg_slack_str_list_intro = []
+        self.artificial_str_list_intro = []
         for v in self.slack_variable_list:
             if v >= 0:
                 self.slack_str_list_intro.append(get_variable_symbol("x", v + 1))
@@ -455,6 +467,16 @@ class LP(object):
         )
 
     def solve(self, disp=False, method="simplex"):
+        for solution in [self.solutionCommon, self.solutionPhase1, self.solutionPhase2]:
+            solution.pivot_list = []
+            solution.tableau_list = []
+            solution.basis_list = []
+            solution.variable_list = []
+            solution.slack_variable_list = []
+            solution.artificial_variable_list = []
+
+        self.tableau_str_list = []
+
         constraints = [cnstr for cnstr in self.constraints_origin]
         goal = self.goal_origin
         C = []
@@ -527,7 +549,7 @@ class LP(object):
             if not (np.isnan(i_p) and np.isnan(j_p)):
                 stage_klass.pivot_list.append([i_p, j_p])
             else:
-                stage_klass.pivot_list.append ([np.nan, np.nan])
+                stage_klass.pivot_list.append([np.nan, np.nan])
             stage_klass.method = self.solutionCommon.method = method
 
         solve_kwarg = {}

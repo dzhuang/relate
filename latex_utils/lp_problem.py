@@ -150,6 +150,7 @@ for l in lp_json_list_loaded:
     lp2phase = deepcopy(lp)
 
     lp.solve(method="modified_simplex")
+    lp.solve(method="modified_simplex")
     try:
         lp2phase.solve(method="simplex")
         standardized_lp_2_phase = lp2phase.standardized_LP()
