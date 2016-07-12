@@ -117,17 +117,17 @@ r.clipboard_clear()
 #
 # r.clipboard_append(tex)
 
-# lp = LP(qtype="max",
-#         goal=[3, 6, 3, 4],
-#         # x="y",
-#         # x_list=["y_1", "y_2", "w_3"],
-#         constraints=[
-#             [1, 1, 3, 4, "<", 8],
-#             [1, 3, 1, 1, ">", 21],
-#             [3, 2, 1, 2, ">", 15]
-#         ],
-#         #        sign=[">", "<", ">", "="],
-#         )
+lp = LP(qtype="max",
+        goal=[3, 6, 3, 4],
+        # x="y",
+        # x_list=["y_1", "y_2", "w_3"],
+        constraints=[
+            [1, 1, 3, 4, "<", 8],
+            [1, 3, 1, 1, ">", 21],
+            [3, 2, 1, 2, ">", 15]
+        ],
+        #        sign=[">", "<", ">", "="],
+        )
 
 lp_json_list = []
 lp_json_list.append(lp.json)
