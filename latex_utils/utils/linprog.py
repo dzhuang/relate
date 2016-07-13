@@ -611,8 +611,14 @@ class lpSolver(object):
                 if (self.T[row, -1] >= 0 and ele > 0) or (self.T[row, -1] < 0 and ele < 0):
                     ma = np.ma.masked_where(abs(self.T[:-n_T_extra_lines, col]) <= self.tol,
                                             self.T[:-n_T_extra_lines, col], copy=False)
-                    if ma.count() == 1:
+                    if ma.count() == 1 and col < self.n:
                         self.existing_basic_variable[row] = col
+
+                        # 减少人工变量的数量，从T中删除1列空白p列
+                        if row < self.meq or self.b[row] < 0:
+                            self.n_artificial -= 1
+                            self.T = np.delete(
+                                self.T, np.s_[self.n + self.n_slack:self.n + self.n_slack + 1], 1)
                         break
 
     def create_tableau(self):
@@ -687,7 +693,6 @@ class lpSimplexSolver(lpSolver):
         slack_idx = self.slack_idx
         cnstr_orig_order = self.cnstr_orig_order
         existing_basic_variable = self.existing_basic_variable
-        #print("before adjust", existing_basic_variable)
         m = self.m
         n = self.n
         b = self.b
@@ -743,9 +748,21 @@ class lpSimplexSolver(lpSolver):
                     T[i, basis[i]] = 1
                     T[-1, basis[i]] = 1
                 elif existing_basic_variable[i]:
+                    if b[i] < 0:
+                        # negative slack -- surplus variable
+                        # use negative to represent it is a negative slack
+                        for j, sl in enumerate (slack_list):
+                            if sl == n + i:
+                                slack_list[j] = -sl
+
                     pivot_value = T[i, existing_basic_variable[i]]
                     b[i] /= pivot_value
-                    T[i, :-1] /= pivot_value
+
+                    # 以下使得引入的松弛或剩余变量不被除（系数为1或-1）
+                    T[i, :n] /= pivot_value
+                    if pivot_value < 0:
+                        T[i, n+1:-1] *= -1
+
                     T[i, -1] = b[i]
                     basis[i] = existing_basic_variable[i]
                 else:
@@ -782,14 +799,10 @@ class lpSimplexSolver(lpSolver):
         for r in r_artificial:
             T[-1, :] = T[-1, :] - T[r, :]
 
-        #print(existing_basic_variable)
         for i, exist_bv in enumerate(existing_basic_variable):
-            print(i, exist_bv)
-            print("T", T)
             if exist_bv:
-                substract_value = T[-1, exist_bv]
-                print("substract_value",substract_value)
-                T[-1, :] -=  T[i, :] * substract_value
+                substract_value = T[-2, exist_bv]
+                T[-2, :] -= T[i, :] * substract_value
 
         self.T = T
         self.init_basis = basis
@@ -821,7 +834,7 @@ class lpSimplexSolver(lpSolver):
         # if pseudo objective is zero, remove the last row from the tableau and
         # proceed to phase 2
 
-        if abs (T[-1, -1]) < tol:
+        if abs(T[-1, -1]) < tol:
             # Remove the pseudo-objective row from the tableau
             T = T[:-1, :]
             # Remove the artificial variable columns from the tableau
@@ -837,6 +850,7 @@ class lpSimplexSolver(lpSolver):
             if disp:
                 print (message)
             return OptimizeResult (x=np.nan, fun=-T[-1, -1], nit=nit1, status=status,
+                                   existing_basic_variable_list=self.existing_basic_variable,
                                    slack_list=slack_list, artificial_list=artificial_list,
                                    message=message, success=False)
 
@@ -877,6 +891,7 @@ class lpSimplexSolver(lpSolver):
                 print ("         Iterations: {0:d}".format (nit2))
 
         return OptimizeResult (x=x, fun=obj, nit=int(nit2), status=status, slack=slack,
+                               existing_basic_variable_list=self.existing_basic_variable,
                                slack_list=slack_list, artificial_list=artificial_list,
                                message=messages[status], success=(status == 0))
 
@@ -1018,9 +1033,10 @@ class lpDualSimplexSolver(lpSolver):
                 print (messages[status])
                 print ("         Iterations: {0:d}".format (nit2))
 
-        return OptimizeResult(x=x, fun=obj, nit=int(nit2), status=status, slack=slack,
-                              slack_list=slack_list, artificial_list=artificial_list, init_tablaeu=self.init_tablaeu,
-                              message=messages[status], success=(status == 0))
+        return OptimizeResult(x=x, fun=obj, nit=int (nit2), status=status, slack=slack,
+                               existing_basic_variable_list=self.existing_basic_variable,
+                               slack_list=slack_list, artificial_list=artificial_list, init_tablaeu=self.init_tablaeu,
+                               message=messages[status], success=(status == 0))
 
 
 class lpBigMSolver(lpSolver):
@@ -1057,7 +1073,8 @@ class lpBigMSolver(lpSolver):
             r_need_artificial = np.zeros (m, dtype=bool)
             for i in range (m):
                 if i < meq or b[i] < 0:
-                    r_need_artificial[i] = True
+                    if not existing_basic_variable[i]:
+                        r_need_artificial[i] = True
 
             T = adjust_order(T, cnstr_orig_order)
             r_need_artificial = adjust_order(r_need_artificial, cnstr_orig_order)
@@ -1090,6 +1107,24 @@ class lpBigMSolver(lpSolver):
                     T[-1, :n] = self.cc
                     T[-1, -1] = self.f0
                     T[-1, basis[i]] = BIG_M
+                elif existing_basic_variable[i]:
+                    if b[i] < 0:
+                        # negative slack -- surplus variable
+                        # use negative to represent it is a negative slack
+                        for j, sl in enumerate (slack_list):
+                            if sl == n + i:
+                                slack_list[j] = -sl
+
+                    pivot_value = T[i, existing_basic_variable[i]]
+                    b[i] /= pivot_value
+
+                    # 以下使得引入的松弛或剩余变量不被除（系数为1或-1）
+                    T[i, :n] /= pivot_value
+                    if pivot_value < 0:
+                        T[i, n+1:-1] *= -1
+
+                    T[i, -1] = b[i]
+                    basis[i] = existing_basic_variable[i]
                 else:
                     basis[i] = slack_idx[i]
                     slcount += 1
@@ -1130,6 +1165,11 @@ class lpBigMSolver(lpSolver):
         for r in r_artificial:
             T[-1, :-1] = T[-1, :-1] - T[r, :-1] * BIG_M
             T[-1, -1] -= T[r, -1] * BIG_M
+
+        for i, exist_bv in enumerate(existing_basic_variable):
+            if exist_bv:
+                substract_value = T[-1, exist_bv]
+                T[-1, :] -= T[i, :] * substract_value
 
         self.T = T
         self.init_basis = basis
@@ -1192,7 +1232,8 @@ class lpBigMSolver(lpSolver):
 
         #print("self.init_tablaeu", self.init_tablaeu)
 
-        return OptimizeResult(x=x, fun=obj, nit=int (nit), status=status, slack=slack,
+        return OptimizeResult (x=x, fun=obj, nit=int (nit), status=status, slack=slack,
+                               existing_basic_variable_list=self.existing_basic_variable,
                                slack_list=slack_list, artificial_list=artificial_list, init_tablaeu=self.init_tablaeu,
                                message=messages[status], success=(status == 0))
 

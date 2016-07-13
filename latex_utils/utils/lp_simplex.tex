@@ -27,7 +27,10 @@ $$\begin{alignat*}{20}
 \BLOCK{ endif } \#{ simplex_pre_description }
 
 \BLOCK{ if lp }
-<strong>解:</strong> \BLOCK{ if lp.solutionCommon.slack_str_list_intro or lp.solutionCommon.neg_slack_str_list_intro }引入\BLOCK{ endif -}
+<strong>解:</strong> \BLOCK{ if lp.solutionCommon.existing_basic_variable_str_list }
+现有变量$\VAR{lp.solutionCommon.existing_basic_variable_str_list|join(", ")}$
+可直接作为基变量使用，\BLOCK{ endif -}
+\BLOCK{ if lp.solutionCommon.slack_str_list_intro or lp.solutionCommon.neg_slack_str_list_intro }引入\BLOCK{ endif -}
 \BLOCK{- if lp.solutionCommon.slack_str_list_intro }松弛变量$\VAR{lp.solutionCommon.slack_str_list_intro|join(",\,") }$\BLOCK{ endif -}
 \BLOCK{- if lp.solutionCommon.slack_str_list_intro and lp.solutionCommon.neg_slack_str_list_intro}，\BLOCK{ endif -}
 \BLOCK{- if lp.solutionCommon.neg_slack_str_list_intro }剩余变量$\VAR{lp.solutionCommon.neg_slack_str_list_intro|join(",\,") }$\BLOCK{ endif -}
@@ -206,19 +209,19 @@ $$\mathbf{X^*_B}= \mathbf{\bar b}=\mathbf{B}^{-1}\mathbf{b}=\begin{bmatrix} \VAR
 \BLOCK{ endif }
 \BLOCK{ if lp.solve_status<1 }
 $$\mathbf{X^*_B}= \mathbf{\bar b}=\mathbf{B}^{-1}\mathbf{b}=\begin{bmatrix} \VAR{lp.solutionPhase2.modi_b_list[idx]|join(" \\\\ ")} \end{bmatrix}$$
-\BLOCK{ endif }
+\BLOCK{ endif -}
 \BLOCK{- if lp.solve_opt_res_str -}\VAR{lp.solve_opt_res_str}\BLOCK{ endif -}.
 
-\BLOCK{ endif }
+\BLOCK{ endif -}
 
-\BLOCK{ endfor }
+\BLOCK{ endfor -}
 
 %# 改进单纯形法结束
-\BLOCK{ endif }
+\BLOCK{ endif -}
 
 
-\BLOCK{ if simplex_after_description -}
+\BLOCK{- if simplex_after_description -}
 \VAR{simplex_after_description}
-\BLOCK{ endif }
+\BLOCK{ endif -}
 
-\BLOCK{ endif } \#{ show_answer }
+\BLOCK{ endif -} \#{ show_answer }

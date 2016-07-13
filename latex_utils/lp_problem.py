@@ -64,7 +64,7 @@ lp = LP(qtype="min",
         constraints=[
             [2, 2, 0, 0, "<", 6],
             # [1, 1, 1, ">", 7],
-            [1, 1, 1, 0, ">", 8],
+            [2, 2, 2, 0, ">", 16],
             [2, -5, 0, 1, "=", 10],
             [-4, 1, 0, 0, "=", 2]
         ],
@@ -85,17 +85,17 @@ lp = LP(qtype="min",
 #         #        sign=[">", "<", ">", "="],
 #         )
 
-# lp = LP(qtype="max",
-#         goal=[-320, -100],
-#         # x="y",
-#         # x_list=["y_1", "y_2", "w_3"],
-#         constraints=[
-#             [-8, -2, "<", 5],
-#             [4, 2, ">", 4],
-#             [5, 1, ">", 2],
-#         ],
-#         #        sign=[">", "<", ">", "="],
-#         )
+lp = LP(qtype="max",
+        goal=[-320, -100],
+        # x="y",
+        # x_list=["y_1", "y_2", "w_3"],
+        constraints=[
+            [-8, -2, "<", -5],
+            [4, 2, ">", 4],
+            [5, 1, ">", 2],
+        ],
+        #        sign=[">", "<", ">", "="],
+        )
 
 # lp = LP(qtype="max",
 #         goal=[-5, 5, 13],
@@ -178,7 +178,7 @@ for l in lp_json_list_loaded:
     lp = LP(**lp_dict)
     lp2phase = deepcopy(lp)
 
-    lp.solve(method="big_m_simplex")
+    lp.solve(method="dual_simplex")
     #lp.solve(method="simplex")
     try:
         lp2phase.solve(method="simplex")

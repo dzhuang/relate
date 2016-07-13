@@ -70,7 +70,7 @@ class LpSolution(object):
             else:
                 self.original_goal_list[a] = M
 
-        C = Matrix(self.original_goal_list[:-1]).T
+        C = Matrix(self.original_goal_list).T
 
         CB_list = []
         for bs in basis_list:
@@ -590,6 +590,12 @@ class LP(object):
             = self.solutionCommon.variable_list \
             = range(n_original_variable)
 
+        existing_basic_variable_list = sorted([idx for idx in res.existing_basic_variable_list if idx is not None])
+        self.solutionPhase1.existing_basic_variable_str_list \
+            = self.solutionPhase2.existing_basic_variable_str_list \
+            = self.solutionCommon.existing_basic_variable_str_list \
+            = [get_variable_symbol(self.x, idx+1) for idx in existing_basic_variable_list]
+
         self.solutionPhase1.slack_variable_list \
             = self.solutionPhase2.slack_variable_list \
             = self.solutionCommon.slack_variable_list \
@@ -600,11 +606,22 @@ class LP(object):
             = self.solutionCommon.artificial_variable_list \
             = res.artificial_list
 
-        origin_goal_list = []
+        n_original_goal_list = n_original_variable + len(res.slack_list) + len(res.artificial_list)
+
+        origin_goal_list = np.zeros(n_original_goal_list, dtype=np.float64)
+        origin_goal_list[:n_original_variable] = C
+
         if method == "simplex":
-            origin_goal_list = self.solutionPhase1.tableau_list[0][m_constraint_number]
+            pass
+            #origin_goal_list = self.solutionPhase1.tableau_list[0][m_constraint_number]
+ #           print origin_goal_list
         elif method in ["big_m_simplex", "modified_simplex"]:
-            origin_goal_list = res.init_tablaeu[m_constraint_number]
+            pass
+            #import sympy
+#            print origin_goal_list
+            #origin_goal_list[res.artificial_list] = C
+
+            #origin_goal_list = res.init_tablaeu[m_constraint_number]
         elif method == "dual_simplex":
             origin_goal_list = res.init_tablaeu[m_constraint_number]
 
