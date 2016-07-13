@@ -243,11 +243,13 @@ class LpSolutionPhase2(LpSolution):
 
 class LP(object):
     def __init__(self, qtype, goal, constraints, x="x", x_list=None, sign=None, z="Z", sign_str=None, dual=False,
-                 required_solve_status=[0, 0.1, 1, 2, 3]):
+                 sensitive={}, required_solve_status=[0, 0.1, 1, 2, 3]):
         assert qtype.lower() in ["min", "max"]
         assert isinstance(required_solve_status, list)
         self.required_solve_status = required_solve_status
         self.qtype = qtype.lower()
+        if sensitive:
+            assert isinstance(sensitive, dict)
         import json
         json_dict = {
             "qtype": qtype,
@@ -259,6 +261,7 @@ class LP(object):
             "sign_str": sign_str,
             "dual": dual,
             "goal": goal,
+            "sensitive": sensitive,
         }
         self.json = json.dumps(json_dict)
 
@@ -635,11 +638,11 @@ class LP(object):
             final_basis = np.copy(self.solutionPhase2.basis_list[-1])
             self.solutionPhase2.get_solution_string()
 
-        #self.dual_opt_solution_str
-        final_cjbar = final_tableau[-1]
-        dual_opt_solution_abstract = [abs(final_cjbar[idx]) for idx in self.solutionCommon.slack_variable_list]
-        cjbar_origin_variable = [abs(final_cjbar[idx]) for idx in self.solutionCommon.variable_list]
-        dual_opt_solution = dual_opt_solution_abstract + cjbar_origin_variable
+        if final_tableau is not None:
+            final_cjbar = final_tableau[-1]
+            dual_opt_solution_abstract = [abs(final_cjbar[idx]) for idx in self.solutionCommon.slack_variable_list]
+            cjbar_origin_variable = [abs(final_cjbar[idx]) for idx in self.solutionCommon.variable_list]
+            dual_opt_solution = dual_opt_solution_abstract + cjbar_origin_variable
 
         if not self.need_artificial_variable and res.status == 0:
             # 只有引入松弛变量的问题才计算对偶问题的最优解，否则不计算
@@ -679,9 +682,8 @@ class LP(object):
 
                     self.solve_status_reason = u"所有非基变量的检验数%s" % opt_judge_literal
                     if len(non_basis_variable_0_cjbar_set) > 0:
-                        self.solve_status_reason += u"，且最优解中非基变量$%s$" % \
-                                                    [get_variable_symbol("x", idx + 1)
-                                                     for idx in list(non_basis_variable_0_cjbar_set)]
+                        self.solve_status_reason += u"，且最优解中非基变量$%s$检验数为0" % ",".join(
+                            [get_variable_symbol("x", idx + 1) for idx in list(non_basis_variable_0_cjbar_set)])
                         self.solve_status = 0.1
                         self.solve_status_message = u"有无穷多最优解"
                         if self.solutionCommon.method == "modified_simplex":

@@ -386,7 +386,6 @@ class lpSolver(object):
 
         # problem
         self.maxiter = maxiter
-        #self.method = self.get_method_name()
 
         self.T_extra_n = self.get_T_extra_n()
 
@@ -598,6 +597,23 @@ class lpSolver(object):
         self.slack_idx = []
         self.artificial_list = []
         self.L = L
+        self.existing_basic_variable = [None] * m
+
+    def update_exsiting_basis_variable(self):
+        n_T_extra_lines = self.get_T_extra_n()
+
+        for row in range(self.m):
+            for col, ele in enumerate(self.T[row, :-1]):
+                # p列(col)中仅row行元素为非零，区分两种情况：
+                # 1. p[row]为正，右侧为非负
+                # 2. p{row]为负，右侧为负
+                # 则p所在的列(col)可以为备选的基变量
+                if (self.T[row, -1] >= 0 and ele > 0) or (self.T[row, -1] < 0 and ele < 0):
+                    ma = np.ma.masked_where(abs(self.T[:-n_T_extra_lines, col]) <= self.tol,
+                                            self.T[:-n_T_extra_lines, col], copy=False)
+                    if ma.count() == 1:
+                        self.existing_basic_variable[row] = col
+                        break
 
     def create_tableau(self):
         m = self.m
@@ -644,6 +660,8 @@ class lpSolver(object):
 
         self.b = b
         self.T = T
+        self.update_exsiting_basis_variable()
+        #print(self.existing_basic_variable)
         self.set_up_tableau()
 
     def set_up_tableau(self):
@@ -662,15 +680,14 @@ class lpSimplexSolver(lpSolver):
     def get_T_extra_n(self):
         return 2
 
-    def get_method_name(self):
-        return "simplex"
-
     def set_up_tableau(self):
         n_artificial = self.n_artificial
         n_slack = self.n_slack
         slack_list = self.slack_list
         slack_idx = self.slack_idx
         cnstr_orig_order = self.cnstr_orig_order
+        existing_basic_variable = self.existing_basic_variable
+        #print("before adjust", existing_basic_variable)
         m = self.m
         n = self.n
         b = self.b
@@ -693,10 +710,12 @@ class lpSimplexSolver(lpSolver):
             r_need_artificial = np.zeros(m, dtype=bool)
             for i in range(m):
                 if i < meq or b[i] < 0:
-                    r_need_artificial[i] = True
+                    if not existing_basic_variable[i]:
+                        r_need_artificial[i] = True
 
             T = adjust_order(T, cnstr_orig_order)
             r_need_artificial = adjust_order(r_need_artificial, cnstr_orig_order)
+            existing_basic_variable = adjust_order(existing_basic_variable, cnstr_orig_order)
             b = adjust_order(b, cnstr_orig_order)
             slack_idx = adjust_order(slack_idx, cnstr_orig_order)
 
@@ -723,6 +742,12 @@ class lpSimplexSolver(lpSolver):
 
                     T[i, basis[i]] = 1
                     T[-1, basis[i]] = 1
+                elif existing_basic_variable[i]:
+                    pivot_value = T[i, existing_basic_variable[i]]
+                    b[i] /= pivot_value
+                    T[i, :-1] /= pivot_value
+                    T[i, -1] = b[i]
+                    basis[i] = existing_basic_variable[i]
                 else:
                     basis[i] = slack_idx[i]
                     slcount += 1
@@ -756,6 +781,15 @@ class lpSimplexSolver(lpSolver):
         # each row with an artificial variable from the Phase 1 objective
         for r in r_artificial:
             T[-1, :] = T[-1, :] - T[r, :]
+
+        #print(existing_basic_variable)
+        for i, exist_bv in enumerate(existing_basic_variable):
+            print(i, exist_bv)
+            print("T", T)
+            if exist_bv:
+                substract_value = T[-1, exist_bv]
+                print("substract_value",substract_value)
+                T[-1, :] -=  T[i, :] * substract_value
 
         self.T = T
         self.init_basis = basis
@@ -878,6 +912,7 @@ class lpDualSimplexSolver(lpSolver):
         slack_list = self.slack_list
         slack_idx = self.slack_idx
         cnstr_orig_order = self.cnstr_orig_order
+        existing_basic_variable = self.existing_basic_variable
         m = self.m
         n = self.n
         b = self.b
@@ -896,6 +931,7 @@ class lpDualSimplexSolver(lpSolver):
         # recover the order of constraints
         if cnstr_orig_order:
             T = adjust_order(T, cnstr_orig_order)
+            existing_basic_variable = adjust_order(existing_basic_variable, cnstr_orig_order)
             b = adjust_order(b, cnstr_orig_order)
             slack_idx = adjust_order(slack_idx, cnstr_orig_order)
 
@@ -998,6 +1034,7 @@ class lpBigMSolver(lpSolver):
         slack_list = self.slack_list
         slack_idx = self.slack_idx
         cnstr_orig_order = self.cnstr_orig_order
+        existing_basic_variable = self.existing_basic_variable
         m = self.m
         n = self.n
         b = self.b
@@ -1022,10 +1059,11 @@ class lpBigMSolver(lpSolver):
                 if i < meq or b[i] < 0:
                     r_need_artificial[i] = True
 
-            T = adjust_order (T, cnstr_orig_order)
-            r_need_artificial = adjust_order (r_need_artificial, cnstr_orig_order)
-            b = adjust_order (b, cnstr_orig_order)
-            slack_idx = adjust_order (slack_idx, cnstr_orig_order)
+            T = adjust_order(T, cnstr_orig_order)
+            r_need_artificial = adjust_order(r_need_artificial, cnstr_orig_order)
+            existing_basic_variable = adjust_order(existing_basic_variable, cnstr_orig_order)
+            b = adjust_order(b, cnstr_orig_order)
+            slack_idx = adjust_order(slack_idx, cnstr_orig_order)
 
             for i in range (m):
                 if r_need_artificial[i]:

@@ -58,18 +58,32 @@ lp = LP(qtype="max",
 #          )
 
 lp = LP(qtype="min",
-        goal=[-1, -1, 5],
+        goal=[-1, -1, 1, 5],
         # x="y",
         # x_list=["y_1", "y_2", "w_3"],
         constraints=[
-            [2, 2, 1, "<", 6],
+            [2, 2, 0, 0, "<", 6],
             # [1, 1, 1, ">", 7],
-            [1, 1, 1, ">", 8],
-            [2, -5, 1, "=", 10],
-            [-4, 0, 2, "=", 2]
+            [1, 1, 1, 0, ">", 8],
+            [2, -5, 0, 1, "=", 10],
+            [-4, 1, 0, 0, "=", 2]
         ],
         #        sign=[">", "<", ">", "="],
         )
+
+# lp = LP(qtype="min",
+#         goal=[-1, -1, 1, 5],
+#         # x="y",
+#         # x_list=["y_1", "y_2", "w_3"],
+#         constraints=[
+#             [2, 2, 0, 0, "<", 6],
+#             # [1, 1, 1, ">", 7],
+#             [1, 1, 1, 0, "<", 8],
+#             [2, -5, 0, 1, "<", 10],
+#             [-4, 1, 0, 0, "<", 2]
+#         ],
+#         #        sign=[">", "<", ">", "="],
+#         )
 
 # lp = LP(qtype="max",
 #         goal=[-320, -100],
@@ -83,13 +97,26 @@ lp = LP(qtype="min",
 #         #        sign=[">", "<", ">", "="],
 #         )
 
+# lp = LP(qtype="max",
+#         goal=[-5, 5, 13],
+#         constraints=[
+#             [-1, 1, 3, "<", 20],
+#             [12, 4, 10, "<", 90],
+#         ],
+#         sensitive={
+#             "c": [[2, 8],],
+#             "p": [[0, [0, 5]],],
+#             "b": [[0, 30], [1, None]],
+#             "A": [[2, 3, 5, "<", 80],]
+#         },
+#         )
+
 template = latex_jinja_env.get_template('/utils/lp_model.tex')
 tex = template.render(
     description = u"""
     """,
     lp = lp
 )
-
 
 
 _file_write("lp_test.tex", tex.encode('UTF-8'))
@@ -117,21 +144,23 @@ r.clipboard_clear()
 #
 # r.clipboard_append(tex)
 
-lp = LP(qtype="max",
-        goal=[3, 6, 3, 4],
-        # x="y",
-        # x_list=["y_1", "y_2", "w_3"],
-        constraints=[
-            [1, 1, 3, 4, "<", 8],
-            [1, 3, 1, 1, ">", 21],
-            [3, 2, 1, 2, ">", 15]
-        ],
-        #        sign=[">", "<", ">", "="],
-        )
+# lp = LP(qtype="max",
+#         goal=[3, 6, 3, 4],
+#         # x="y",
+#         # x_list=["y_1", "y_2", "w_3"],
+#         constraints=[
+#             [1, 1, 3, 4, "<", 8],
+#             [1, 3, 1, 1, ">", 21],
+#             [3, 2, 1, 2, ">", 15]
+#         ],
+#         #        sign=[">", "<", ">", "="],
+#         )
 
 lp_json_list = []
 lp_json_list.append(lp.json)
 #lp_json_list.append(lp2.json)
+#print lp_json_list
+
 
 import pickle
 #import dill as pickle
@@ -149,8 +178,8 @@ for l in lp_json_list_loaded:
     lp = LP(**lp_dict)
     lp2phase = deepcopy(lp)
 
-    lp.solve(method="modified_simplex")
-    lp.solve(method="modified_simplex")
+    lp.solve(method="big_m_simplex")
+    #lp.solve(method="simplex")
     try:
         lp2phase.solve(method="simplex")
         standardized_lp_2_phase = lp2phase.standardized_LP()
