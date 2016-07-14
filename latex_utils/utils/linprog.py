@@ -33,6 +33,8 @@ __docformat__ = "restructuredtext en"
 def adjust_order(modified_iter, order_list):
     m = len(order_list)
     t = copy.deepcopy(modified_iter)
+    if not len(t):
+        return t
     for idx in range(m):
         t[order_list[idx]] = modified_iter[idx]
     return t
@@ -667,7 +669,6 @@ class lpSolver(object):
         self.b = b
         self.T = T
         self.update_exsiting_basis_variable()
-        #print(self.existing_basic_variable)
         self.set_up_tableau()
 
     def set_up_tableau(self):
@@ -715,7 +716,7 @@ class lpSimplexSolver(lpSolver):
             r_need_artificial = np.zeros(m, dtype=bool)
             for i in range(m):
                 if i < meq or b[i] < 0:
-                    if not existing_basic_variable[i]:
+                    if existing_basic_variable[i] is None:
                         r_need_artificial[i] = True
 
             T = adjust_order(T, cnstr_orig_order)
@@ -747,11 +748,11 @@ class lpSimplexSolver(lpSolver):
 
                     T[i, basis[i]] = 1
                     T[-1, basis[i]] = 1
-                elif existing_basic_variable[i]:
+                elif existing_basic_variable[i] is not None:
                     if b[i] < 0:
                         # negative slack -- surplus variable
                         # use negative to represent it is a negative slack
-                        for j, sl in enumerate (slack_list):
+                        for j, sl in enumerate(slack_list):
                             if sl == n + i:
                                 slack_list[j] = -sl
 
@@ -770,29 +771,51 @@ class lpSimplexSolver(lpSolver):
                     slcount += 1
 
         else:
-            for i in range(m):
-                if i < meq or b[i] < 0:
-                    # basic variable i is in column n+n_slack+avcount
-                    basis[i] = n + n_slack + avcount
-                    artificial_list.append(basis[i])
-                    r_artificial[avcount] = i
-                    avcount += 1
-                    if b[i] < 0:
-                        b[i] *= -1
-                        T[i, :-1] *= -1
-
-                        # negative slack -- surplus variable
-                        # use negative to represent it is a negative slack
-                        for j, sl in enumerate(slack_list):
-                            if sl == n + i - 1:
-                                slack_list[j] = -sl
-
-                    T[i, basis[i]] = 1
-                    T[-1, basis[i]] = 1
-                else:
-                    # basic variable i is in column n+slcount
-                    basis[i] = n + slcount
-                    slcount += 1
+            pass
+            # for i in range(m):
+            #     if i < meq or b[i] < 0:
+            #         if not existing_basic_variable[i]:
+            #             # basic variable i is in column n+n_slack+avcount
+            #             basis[i] = n + n_slack + avcount
+            #             artificial_list.append(basis[i])
+            #             r_artificial[avcount] = i
+            #             avcount += 1
+            #             if b[i] < 0:
+            #                 b[i] *= -1
+            #                 T[i, :-1] *= -1
+            #
+            #                 # negative slack -- surplus variable
+            #                 # use negative to represent it is a negative slack
+            #                 for j, sl in enumerate(slack_list):
+            #                     if sl == n + i - 1:
+            #                         slack_list[j] = -sl
+            #
+            #             T[i, basis[i]] = 1
+            #             T[-1, basis[i]] = 1
+            #         elif existing_basic_variable[i]:
+            #             if b[i] < 0:
+            #                 # negative slack -- surplus variable
+            #                 # use negative to represent it is a negative slack
+            #                 for j, sl in enumerate(slack_list):
+            #                     # 剩余变量找不到.
+            #                     if sl == n + i:
+            #                         slack_list[j] = -sl
+            #
+            #             pivot_value = T[i, existing_basic_variable[i]]
+            #             print(pivot_value)
+            #             b[i] /= pivot_value
+            #
+            #             # 以下使得引入的松弛或剩余变量不被除（系数为1或-1）
+            #             T[i, :n] /= pivot_value
+            #             if pivot_value < 0:
+            #                 T[i, n+1:-1] *= -1
+            #
+            #             T[i, -1] = b[i]
+            #             basis[i] = existing_basic_variable[i]
+            #     else:
+            #         # basic variable i is in column n+slcount
+            #         basis[i] = n + slcount
+            #         slcount += 1
 
         # Make the artificial variables basic feasible variables by subtracting
         # each row with an artificial variable from the Phase 1 objective
@@ -899,30 +922,36 @@ class lpSimplexSolver(lpSolver):
 class lpDualSimplexSolver(lpSolver):
     method = "dual_simplex"
 
-    def __init__(self, c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
-                 bounds=None, maxiter=1000, disp=False, callback=None,
-                 tol=1.0E-12, bland=False, cnstr_orig_order=None, **unknown_options):
-        super(lpDualSimplexSolver, self).__init__(c=c, A_ub=A_ub, b_ub=b_ub, A_eq=A_eq, b_eq=b_eq,
-                 bounds=bounds, maxiter=maxiter, disp=disp, callback=callback,
-                 tol=tol, bland=bland, cnstr_orig_order=cnstr_orig_order, **unknown_options)
-        beq = np.ravel(np.asarray(b_eq)) if b_eq is not None else np.empty([0])
-        status = 0
-        message = ""
-        if len(beq) > 0:
-            status = -1
-            message = ("Invalid input for linprog with method = '%s'.  "
-                       "This method cannot solve problems with equation constraints." % self.method)
-        if status != 0:
-            # Invalid inputs provided
-            raise ValueError(message)
-        self.n_neg_slack = self.n_artificial - len(beq)
-        self.n_artificial = 0
+    def update_exsiting_basis_variable(self):
+        # 与基本单纯形法不同，需重新定义
+        n_T_extra_lines = self.get_T_extra_n()
+
+        for row in range(self.m):
+            for col, ele in enumerate(self.T[row, :-1]):
+                # p列(col)中仅row行元素为非零，区分两种情况：
+                # 注意与基本单纯形法的不同
+                # 1. p[row]为正，右侧不限
+                # 2. p{row]为负，右侧必须也为负
+                # 则p所在的列(col)可以为备选的基变量
+                if (ele > 0) or (self.T[row, -1] < 0 and ele < 0):
+                    ma = np.ma.masked_where(abs(self.T[:-n_T_extra_lines, col]) <= self.tol,
+                                            self.T[:-n_T_extra_lines, col], copy=False)
+                    if ma.count() == 1 and col < self.n:
+                        self.existing_basic_variable[row] = col
+
+                        # 减少人工变量的数量，从T中删除1列空白p列，
+                        # 注意这里减少的是由于问题原有变量可作为基变量的约束条件在初始化时带来的人工变量数量
+                        if row < self.meq or self.b[row] < 0:
+                            self.n_artificial -= 1
+                            self.T = np.delete(
+                                self.T, np.s_[self.n + self.n_slack:self.n + self.n_slack + 1], 1)
+                        break
 
     def get_T_extra_n(self):
         return 1
 
     def set_up_tableau(self):
-        n_neg_slack = self.n_neg_slack
+        n_artificial = self.n_artificial
         n_slack = self.n_slack
         slack_list = self.slack_list
         slack_idx = self.slack_idx
@@ -932,41 +961,121 @@ class lpDualSimplexSolver(lpSolver):
         n = self.n
         b = self.b
         meq = self.meq
-        T = np.copy(self.T)
+        mub = self.mub
         tol = self.tol
-        f0 = self.f0
 
-        T[-1, :self.n] = self.cc
-        T[-1, -1] = f0
+        T = np.copy(self.T)
+        T[-1, :n] = self.cc
+        T[-1, -1] = self.f0
 
         slcount = 0
+        avcount = 0
         basis = np.zeros(m, dtype=int)
         artificial_list = []
+        introduced_basis_idx = [None] * m
 
-        # recover the order of constraints
         if cnstr_orig_order:
+
+            # 按传统解法该行需要引入人工变量
+            r_need_introduce_artificial = np.zeros(m, dtype=bool)
+            introduced_slack_count = 0
+            for i in range (m):
+                if i < meq or b[i] < 0:
+                    if existing_basic_variable[i] is None:
+                        r_need_introduce_artificial[i] = True
+
+                # 得到标准化时引入的松弛变量的index
+                if i >= meq and i < meq + mub:
+                    introduced_basis_idx[i] = n + introduced_slack_count
+                    introduced_slack_count += 1
+
+            av_ma = np.ma.masked_where(r_need_introduce_artificial==False, r_need_introduce_artificial, copy=False)
+            n_artificial_to_be_introduced = av_ma.count()
+
             T = adjust_order(T, cnstr_orig_order)
+            r_need_introduce_artificial = adjust_order(r_need_introduce_artificial, cnstr_orig_order)
             existing_basic_variable = adjust_order(existing_basic_variable, cnstr_orig_order)
             b = adjust_order(b, cnstr_orig_order)
             slack_idx = adjust_order(slack_idx, cnstr_orig_order)
+            introduced_basis_idx = adjust_order(introduced_basis_idx, cnstr_orig_order)
 
-            for i in range(m):
-                if b[i] < 0:
-                    for j, sl in enumerate(slack_list):
-                        if sl == n + i:
-                            slack_list[j] = -sl
-                basis[i] = slack_idx[i]
-                slcount += 1
+            for i in range (m):
+                if r_need_introduce_artificial[i]:
+
+                    # 如果该行(按传统解法）需要引入人工变量，但该行没有基变量，则问题不适合用对偶单纯形法求解
+                    if not introduced_basis_idx[i]:
+                        raise ValueError(
+                            "Invalid input for linprog with method = '%s'.  "
+                            "This method cannot solve problems with constraints line %d "
+                            "because it need to introduce an artificial variable."
+                            % (self.method, i+1))
+
+                    # 由于该行有基变量，所以避免了引入人工变量
+                    basis[i] = introduced_basis_idx[i]
+
+                    n_artificial_to_be_introduced -= 1
+                    n_artificial -= 1
+                    T = np.delete(
+                        T, np.s_[n + n_slack:n + n_slack + 1], 1)
+                    assert T.shape[1] == n + n_slack + n_artificial_to_be_introduced + 1
+
+                elif existing_basic_variable[i] is not None:
+                    if b[i] < 0:
+                        # negative slack -- surplus variable
+                        # use negative to represent it is a negative slack
+                        for j, sl in enumerate (slack_list):
+                            if sl == n + i:
+                                slack_list[j] = -sl
+
+                    pivot_value = T[i, existing_basic_variable[i]]
+                    b[i] /= pivot_value
+
+                    # 以下使得引入的松弛或剩余变量不被除（保持系数为1或-1）
+                    T[i, :n] /= pivot_value
+                    if pivot_value < 0:
+                        T[i, n+1:-1] *= -1
+
+                    T[i, -1] = b[i]
+                    basis[i] = existing_basic_variable[i]
+                else:
+                    basis[i] = slack_idx[i]
+                    slcount += 1
+
+            # 确保问题中没有人工变量
+            assert n_artificial == 0
 
         else:
-            for i in range(m):
-                if b[i] < 0:
-                    for j, sl in enumerate(slack_list):
-                        if sl == n + i:
-                            slack_list[j] = -sl
-                basis[i] = slack_idx[i]
-                slcount += 1
+            pass
+            # #未修订
+            # for i in range (m):
+            #     if i < meq or b[i] < 0:
+            #         # basic variable i is in column n+n_slack+avcount
+            #         basis[i] = n + n_slack + avcount
+            #         artificial_list.append (basis[i])
+            #         # r_artificial[avcount] = i
+            #         avcount += 1
+            #         if b[i] < 0:
+            #             b[i] *= -1
+            #             T[i, :-1] *= -1
+            #
+            #             # negative slack -- surplus variable
+            #             # use negative to represent it is a negative slack
+            #             for j, sl in enumerate (slack_list):
+            #                 if sl == n + i - 1:
+            #                     slack_list[j] = -sl
+            #
+            #         T[i, basis[i]] = 1
+            #         T[i, basis[i]] = 1
+            #         T[-1, basis[i]] = BIG_M
+            #     else:
+            #         # basic variable i is in column n+slcount
+            #         basis[i] = n + slcount
+            #         slcount += 1
 
+        for i, exist_bv in enumerate(existing_basic_variable):
+            if exist_bv is not None:
+                substract_value = T[-1, exist_bv]
+                T[-1, :] -= T[i, :] * substract_value
         self.T = T
 
         ma = np.ma.masked_where(T[-1, :-1] >= -tol, T[-1, :-1], copy=False)
@@ -981,6 +1090,7 @@ class lpDualSimplexSolver(lpSolver):
 
     def solve(self):
         self.create_tableau()
+        #print(self.T)
         T = np.copy(self.T)
         n = self.n
         basis = np.copy(self.init_basis)
@@ -1073,7 +1183,7 @@ class lpBigMSolver(lpSolver):
             r_need_artificial = np.zeros (m, dtype=bool)
             for i in range (m):
                 if i < meq or b[i] < 0:
-                    if not existing_basic_variable[i]:
+                    if existing_basic_variable[i] is None:
                         r_need_artificial[i] = True
 
             T = adjust_order(T, cnstr_orig_order)
@@ -1104,10 +1214,8 @@ class lpBigMSolver(lpSolver):
                                 slack_list[j] = -sl
 
                     T[i, basis[i]] = 1
-                    T[-1, :n] = self.cc
-                    T[-1, -1] = self.f0
                     T[-1, basis[i]] = BIG_M
-                elif existing_basic_variable[i]:
+                elif existing_basic_variable[i] is not None:
                     if b[i] < 0:
                         # negative slack -- surplus variable
                         # use negative to represent it is a negative slack
@@ -1130,30 +1238,32 @@ class lpBigMSolver(lpSolver):
                     slcount += 1
 
         else:
-            for i in range (m):
-                if i < meq or b[i] < 0:
-                    # basic variable i is in column n+n_slack+avcount
-                    basis[i] = n + n_slack + avcount
-                    artificial_list.append (basis[i])
-                    r_artificial[avcount] = i
-                    avcount += 1
-                    if b[i] < 0:
-                        b[i] *= -1
-                        T[i, :-1] *= -1
-
-                        # negative slack -- surplus variable
-                        # use negative to represent it is a negative slack
-                        for j, sl in enumerate (slack_list):
-                            if sl == n + i - 1:
-                                slack_list[j] = -sl
-
-                    T[i, basis[i]] = 1
-                    T[i, basis[i]] = 1
-                    T[-1, basis[i]] = BIG_M
-                else:
-                    # basic variable i is in column n+slcount
-                    basis[i] = n + slcount
-                    slcount += 1
+            pass
+            # 未修订
+            # for i in range (m):
+            #     if i < meq or b[i] < 0:
+            #         # basic variable i is in column n+n_slack+avcount
+            #         basis[i] = n + n_slack + avcount
+            #         artificial_list.append (basis[i])
+            #         r_artificial[avcount] = i
+            #         avcount += 1
+            #         if b[i] < 0:
+            #             b[i] *= -1
+            #             T[i, :-1] *= -1
+            #
+            #             # negative slack -- surplus variable
+            #             # use negative to represent it is a negative slack
+            #             for j, sl in enumerate (slack_list):
+            #                 if sl == n + i - 1:
+            #                     slack_list[j] = -sl
+            #
+            #         T[i, basis[i]] = 1
+            #         T[i, basis[i]] = 1
+            #         T[-1, basis[i]] = BIG_M
+            #     else:
+            #         # basic variable i is in column n+slcount
+            #         basis[i] = n + slcount
+            #         slcount += 1
 
         # 大M法的目标函数所在的TGet the goal of the big-m problem
         T[-1, :n] = self.cc

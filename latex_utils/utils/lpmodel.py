@@ -536,7 +536,8 @@ class LP(object):
             nit = np.copy(kwargs['nit'])
             basis = np.copy(kwargs['basis'])
             i_p, j_p = np.copy(kwargs['pivot'])
-
+            # if self.solutionCommon.method == "dual_simplex":
+            #     print t
             if nit == 0:
                 self.tableau_origin = t.tolist()
 
@@ -574,6 +575,7 @@ class LP(object):
                        )
 
 #        print res
+        #print res.status
 
         if res.status == 2 and self.solutionCommon.method != "dual_simplex":
             # 原始问题不可行
@@ -623,7 +625,8 @@ class LP(object):
 
             #origin_goal_list = res.init_tablaeu[m_constraint_number]
         elif method == "dual_simplex":
-            origin_goal_list = res.init_tablaeu[m_constraint_number]
+            pass
+            #origin_goal_list = res.init_tablaeu[m_constraint_number]
 
         if self.qtype == "max":
             origin_goal_list *= -1
@@ -757,6 +760,7 @@ class LP(object):
             else:
                 tableau = tableau[:-1]
                 goal = self.solutionPhase2.get_goal_list ()
+
 
         elif method == "dual_simplex":
             tableau = tableau[:-1]
