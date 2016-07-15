@@ -7,239 +7,34 @@ import re
 
 EQ = [">", "<", "=", ">=", "<=", "=<", "=>"]
 SIGN = [">", "<", "=", ">=", "<=", "=<", "=>", "int", "bin"]
+SA_TYPE = ["SA_c", "SA_p", "SA_b", "SA_A", "SA_x"]
 
+class SA_base(object):
+    def __init__(self, sa_type, param, n, init_tableau, opt_tableau, opt_basis, opt_method="simplex"):
+        assert sa_type in SA_TYPE
+        self.sa_type = sa_type
+        self.param = param
+        self.n = n
+        self.init_tableau = init_tableau
+        self.opt_tableau = opt_tableau
+        self.opt_basis = opt_basis
+        assert opt_method in ["simplex", "dual_simplex"]
+        self.opt_method = opt_method
 
-class LpSolution(object):
-    def __init__(self):
-        # 未字符串化
-        self.tableau_list = []
-        self.basis_list = []
-        self.pivot_list = []
-        self.variable_list = []
-        self.slack_variable_list = []
-        self.artificial_variable_list = []
-        self.original_goal_list = []
-        self.need_two_phase = False
-        self.qtype = ""
-        self.method = ""
-
-        # 已字符串化
-        self.m = 0
-        self.goal_str_list = []
-        self.xb_str_list = []
-        self.cb_str_list = []
-        self.tableau_str_list = []
-        self.slack_str_list_intro = []
-        self.neg_slack_str_list_intro = []
-        self.artificial_str_list_intro = []
-        self.all_variable_str_list = []
-        self.non_zero_artificial_in_opt = []
-
-        # 用于改进单纯形法
-        self.modi_CB_list = []
-        self.modi_B_list = []
-        self.modi_B_1_list = []
-        self.modi_XB_list = []
-        self.modi_CJBAR_list = []
-        self.modi_CJBAR_idx_list = []
-        self.modi_b_list = []
-        self.modi_basis_list = []
-        self.modi_bp_list = []
-        self.modi_pj_list = []
-
-    def get_all_variable(self):
-        if not isinstance(self, LpSolutionCommon):
-            raise NotImplementedError()
-
-    def get_goal_list(self):
-        if not isinstance(self, LpSolutionCommon):
-            raise NotImplementedError()
-
-    def transform_big_m(self):
-
-        # 输出大M法单纯形表格
-        from sympy import symbols, Matrix
-        M = symbols("M")
-        artificial_list = self.artificial_variable_list
-        tableau_list = self.tableau_list
-        basis_list = self.basis_list
-
-        for a in artificial_list:
-            if self.qtype == "max":
-                self.original_goal_list[a] = -M
-            else:
-                self.original_goal_list[a] = M
-
-        C = Matrix(self.original_goal_list).T
-
-        CB_list = []
-        for bs in basis_list:
-            CB_list_single = []
-            for bsi in bs:
-                CB_list_single.append(self.original_goal_list[bsi])
-                CB_vector = Matrix([CB_list_single])
-            CB_list.append(CB_vector)
-
-        # 用于改进单纯形法
-        self.modi_CB_list = CB_list
-
-        A_np = tableau_list[0][:-1, :-1]
-        A = Matrix(A_np.tolist())
-        b_np = tableau_list[0][:-1, -1]
-        b = Matrix(b_np.tolist())
-
-        for i, t in enumerate(tableau_list):
-            t = t.tolist()
-            B_list_i = []
-            for j, bs in enumerate(basis_list[i]):
-                B_list_i.append(A_np[:, bs].tolist())
-                B = Matrix(B_list_i).T
-            CB = CB_list[i]
-            B_1 = B.inv()
-            C_j_BAR = C - CB*B_1*A
-            Z = CB*B_1*b
-            t[-1] = C_j_BAR.tolist()[0] + Z.tolist()[0]
-
-            # 用于改进单纯形法
-            self.tableau_list[i] = Matrix(t)
-            self.modi_B_list.append(B_list_i)
-            self.modi_B_1_list.append(B_1)
-            self.modi_b_list.append(self.tableau_list[i][:-1, -1])
-            self.modi_CJBAR_list.append(C_j_BAR.tolist())
-
-    def transform_modified_simplex(self):
-        self.modi_B_list =[]
-        self.modi_B_1_list = []
-        self.modi_b_list = []
-        self.modi_CJBAR_list= []
-        self.modi_pj_list = []
-
-        self.transform_big_m()
-        self.modi_basis_list = copy.deepcopy(self.basis_list)
-        self.modi_bp_list  = copy.deepcopy(self.basis_list)
-        self.modi_b_list = []
-        for i in range(len(self.basis_list)):
-            self.modi_basis_list[i] = [get_variable_symbol("x", j+1) for j in self.modi_basis_list[i]]
-            self.modi_bp_list[i] = [get_variable_symbol("p", j+1) for j in self.modi_bp_list[i]]
-            self.modi_B_list[i] = [list_to_matrix(self.modi_B_list[i])]
-            self.modi_B_1_list[i] = [list_to_matrix(self.modi_B_1_list[i].tolist())]
-
-            all_variable = self.get_all_variable()
-            non_basis_index = []
-            for idx in range(len(all_variable)):
-                if idx not in self.basis_list[i]:
-                    non_basis_index.append(idx)
-
-            self.modi_CJBAR_idx_list.append(non_basis_index)
-            self.modi_CJBAR_list[i] = [trans_latex_fraction (str (cjbar), wrap=False) for cjbar in
-                                       self.modi_CJBAR_list[i][0]]
-            self.modi_b_list.append(
-                [trans_latex_fraction(str(bi[0]), wrap=False) for bi in self.tableau_list[i][:-1, -1].tolist()])
-            try:
-                p_j = self.tableau_list[i][:-1, self.pivot_list[i][1]]
-            except IndexError:
-                p_j = None
-            if p_j:
-                self.modi_pj_list.append([trans_latex_fraction(str(pj[0]), wrap=False) for pj in p_j.tolist()])
-
-    def get_solution_string(self):
-        if not self.m:
-            self.m = len(self.basis_list[0])
-
-        self.get_variable_instro_str_list()
-        all_variable = self.get_all_variable()
-
-        if isinstance(self, LpSolutionPhase2) and self.method == "big_m_simplex":
-            self.transform_big_m()
-
-        if isinstance(self, LpSolutionPhase2) and self.method == "modified_simplex":
-            self.transform_modified_simplex()
-
-        tableau_list = self.tableau_list
-
-        if self.method not in ["big_m_simplex", "modified_simplex"]:
-            for t in tableau_list:
-                if self.qtype == "max":
-                    t[-1, :-1] *= -1
-                else:
-                    t[-1, -1] *= -1
-
-        self.all_variable_str_list = ["$x_{%d}$" % (abs(idx) + 1) for idx in all_variable]
-
-        goal_list = self.get_goal_list()
-        self.goal_str_list = ["%s" % trans_latex_fraction(str(c)) for c in goal_list]
-
-        for basis in self.basis_list:
-            self.xb_str_list.append(["$x_{%d}$" % (idx + 1) for idx in basis])
-            cb_str_list_single = []
-            for idx in basis:
-                cb_str_list_single.append(self.goal_str_list[idx])
-            self.cb_str_list.append(cb_str_list_single)
-
-        self.tableau_str_list = [[],] * len(tableau_list)
-
-        for i, tableau in enumerate(tableau_list):
-            t = tableau.tolist()
-            for j, t_line in enumerate(t):
-                t_line_filtered = [t_line[v] for v in all_variable]
-                t_line_filtered.append(t_line[-1])
-                t[j] = ["%s" % trans_latex_fraction(str(c)) for c in t_line_filtered]
-            temp_list = t[0:self.m]
-            temp_list.append(t[-1])
-            self.tableau_str_list[i] = temp_list
-            try:
-                t_i, t_j = self.pivot_list[i]
-                t[int(t_i)][int(t_j)] = "[$\mathbf{%s}$]" % t[int(t_i)][int(t_j)].replace("$", "")
-            except ValueError:
-                # completed, no pivot
-                pass
-
-    def get_variable_instro_str_list(self):
-        self.slack_str_list_intro = []
-        self.neg_slack_str_list_intro = []
-        self.artificial_str_list_intro = []
-        for v in self.slack_variable_list:
-            if v >= 0:
-                self.slack_str_list_intro.append(get_variable_symbol("x", v + 1))
-            else:
-                self.neg_slack_str_list_intro.append(get_variable_symbol("x", -v + 1))
-        for v in self.artificial_variable_list:
-            self.artificial_str_list_intro.append(get_variable_symbol("x", v + 1))
-
-
-class LpSolutionCommon(LpSolution):
-    """
-    用于表示独立于解法的部分
-    """
+class sa_c(SA_base):
     pass
 
+class sa_p(SA_base):
+    pass
 
-class LpSolutionPhase1(LpSolution):
-    def get_all_variable(self):
-        return self.variable_list + [abs(v) for v in self.slack_variable_list] + self.artificial_variable_list
+class sa_b(SA_base):
+    pass
 
-    def get_goal_list(self):
-        if self.need_two_phase:
-            n_variable = len(self.get_all_variable())
-            goal_list = [0] * n_variable
-            for idx in self.artificial_variable_list:
-                goal_list[idx] = 1
-            return goal_list
-        else:
-            return self.original_goal_list
+class sa_A(SA_base):
+    pass
 
-
-class LpSolutionPhase2(LpSolution):
-    def get_all_variable(self):
-        if self.need_two_phase:
-            return self.variable_list + [abs(v) for v in self.slack_variable_list]
-        else:
-            return self.variable_list + [abs(v) for v in self.slack_variable_list] + self.artificial_variable_list
-
-    def get_goal_list(self):
-        n_variable = len(self.get_all_variable())
-        return self.original_goal_list[:n_variable]
-
+class sa_x(SA_base):
+    pass
 
 class LP(object):
     def __init__(self, qtype, goal, constraints, x="x", x_list=None, sign=None, z="Z", sign_str=None, dual=False,
@@ -250,6 +45,142 @@ class LP(object):
         self.qtype = qtype.lower()
         if sensitive:
             assert isinstance(sensitive, dict)
+
+            # 灵敏度分析，可以分析系数的取值变化后的结果，也可以分析系数在什么范围内变化时，最优解(基)不变（限于c和b）
+            for k in sensitive:
+                if k not in ["c", "p", "x", "A", "b"]:
+                    raise ValueError("Unknown key '%s' for sensitivity analysis" % k)
+                if not isinstance(sensitive[k], list):
+                    raise ValueError("Sensitivity analysis with key '%s' should be an instance of list" % k)
+                for item in sensitive[k]:
+                    if k in ["c", "p", "b"]:
+                        if not isinstance(item, (list, tuple)):
+                            raise ValueError("Items in sensitivity analysis with key '%s' should be instances of list or tuple" % k)
+                        if len(item) < 2:
+                            raise ValueError(
+                                "Items in sensitivity analysis with key '%s' should have at least 2 elements: %s" % (k, str(item)))
+                        for item_j in item[1:]:
+                            if item[1:].count(item_j) > 1:
+                                raise ValueError(
+                                    "There are duplicate elements in item in sensitivity analysis with key '%s': %s" % (
+                                        k, str(item)))
+
+                        # c, p, b的每个灵敏度分析，各参数的维数限制
+                        value_range = 0
+                        if k in ["c", "p"]:
+                            value_range = range(len(goal))
+                        elif k in ["b"]:
+                            value_range = range(len(constraints))
+
+                        if isinstance(item[0], list):
+                            item1list = item[0]
+                        else:
+                            item1list = [item[0]]
+                        for i in item1list:
+                            if i is not None:
+                                if int(i) not in value_range:
+                                    raise ValueError(
+                                        "The 1st element in item '%s' in sensitivity analysis with key '%s' "
+                                        "should be within %s, while got %s" % (
+                                            str(item), k, str(value_range), str(i)))
+
+                        # p的灵敏度分析，不能分析取值范围
+                        if k in ["p"]:
+                            for item_j in item[1:]:
+                                if item_j is None:
+                                    raise ValueError(
+                                        "The 2nd afterward elements in item in sensitivity analysis with key '%s' "
+                                        "can't be None, while got %s" % (
+                                            k, str(str(item))))
+                                if not isinstance(item_j, list):
+                                    raise ValueError(
+                                        "The 2nd afterward element in item in sensitivity analysis with key '%s' "
+                                        "must be a list, while got '%s'" % (
+                                            k, str(str(item))))
+                                if len(item_j) != len(constraints):
+                                    raise ValueError(
+                                        "The size of 2nd afterward element in item in sensitivity analysis with key '%s' "
+                                        "must be %d, while got %d: %s" % (
+                                            k, len(constraints), len(item_j), str(str(item))))
+
+
+                        if k in ["c", "b"]:
+                            # 如果item中第2个以后的元素为None，则前面只能是一个维数，item中的其它分析项也必须为一个数字
+                            if None in item[1:]:
+                                if isinstance(item[0], list):
+                                    if len(item[0]) > 1:
+                                        raise ValueError(
+                                            "The 1st element in item in sensitivity analysis with key '%s' "
+                                            "can't have more than 1 index when one of the 2nd afterward element is None, while got %s: %s" % (
+                                                k, str(len(item[0])), str(item) ))
+                                    if item_j is not None:
+                                        if isinstance(item_j, list) and len(item_j) > 1:
+                                            raise ValueError(
+                                                "The lenght of 2nd afterward element in item in sensitivity analysis with key '%s' "
+                                                "can't have more than 1 element when one of the 2nd afterward element is None, while got %s: %s" % (
+                                                k, str(len(item_j)), str(item) ))
+
+
+                            # 如果item中第1个元素为None，则后面必须提供全部系数
+                            if item[0] is None:
+                                # if len(item) > 2:
+                                #     raise ValueError(
+                                #         "The size of list in sensitivity analysis with key '%s' with 1st element as 'None' "
+                                #         "must be 2, while got '%d': %s" % (
+                                #             k, len(item), str(item)))
+                                for item_j in item[1:]:
+                                    if not isinstance(item_j, (list, tuple)):
+                                        raise ValueError(
+                                            "The 2nd afterward element in item in sensitivity analysis with key '%s' "
+                                            "must be a list or tuple when the 1st element is None, while got '%s': %s" % (
+                                                k, str(item_j), str(item)))
+                                    if len(item_j) != len(value_range):
+                                        raise ValueError(
+                                            "The 1st element in item in sensitivity analysis with key '%s' "
+                                            "must have the size of %d when the 2nd afterward element is None, while got %d: %s" % (
+                                                k, len(value_range), len(item_j), str(item) ))
+
+                    elif k in ["A"]:
+                        # A 的灵敏度分析仅限于添加约束条件，添加变量的为'x'
+                        if not isinstance(item, list):
+                            raise ValueError("Items in sensitivity analysis with key '%s' should be instances of list" % k)
+                        if len(item) != len(constraints[0]):
+                            raise ValueError(
+                                "List in items in sensitivity analysis with key '%s' should be have exactly "
+                                "the length %d, while got %d: %s"
+                                % (k, len(constraints[0]), len(item), str(item)))
+                        if not item[-2] in EQ:
+                            raise ValueError(
+                                "The -2 element in list in items in sensitivity analysis with key '%s' "
+                                "should be within %s while got '%s': %s"
+                                % (k, ",".join(EQ), str(item[-2]), str(item)))
+
+                    elif k in ["x"]:
+
+                        # 添加新的变量
+                        if not isinstance(item, dict):
+                            raise ValueError("Items in sensitivity analysis with key '%s' should be instances of dict: %s" % (k, str(item)))
+                        for attr in item:
+                            if attr not in ["c", "p"]:
+                                raise ValueError("Unkown items '%s' in sensitivity analysis with key '%s': '%s'" % (attr, k, str(item)))
+                        for attr in ["c", "p"]:
+                            if not attr in item:
+                                raise ValueError(
+                                    "Dict in items in sensitivity analysis with key '%s' must "
+                                    "contain key '%s': %s" % (k, attr, str(item)))
+                        if not isinstance(item['p'], list):
+                            raise ValueError(
+                                "The 2nd afterward element in item in sensitivity analysis with key '%s' "
+                                "must be a list, while got '%s'" % (
+                                    k, str(str(item))))
+                        if len(item['p']) != len(constraints):
+                            raise ValueError(
+                                "The size of 2nd afterward element in item in sensitivity analysis with key '%s' "
+                                "must be %d, while got %d: %s" % (
+                                    k, len(constraints), len(item['p']), str(str(item))))
+
+        self.sensitive = sensitive
+
         import json
         json_dict = {
             "qtype": qtype,
@@ -468,6 +399,14 @@ class LP(object):
             z=z,
             dual=True
         )
+
+    def sensitive_analysis(self):
+        sensitive = self.sensitive
+        # "c", "p", "x", "A", "b"
+
+
+
+
 
     def solve(self, disp=False, method="simplex"):
         for solution in [self.solutionCommon, self.solutionPhase1, self.solutionPhase2]:
@@ -912,3 +851,236 @@ def list_to_matrix(l, trans_latex=True):
             l[i] = " & ".join(l[i])
 
     return r"\\".join(l)
+
+
+class LpSolution(object):
+    def __init__(self):
+        # 未字符串化
+        self.tableau_list = []
+        self.basis_list = []
+        self.pivot_list = []
+        self.variable_list = []
+        self.slack_variable_list = []
+        self.artificial_variable_list = []
+        self.original_goal_list = []
+        self.need_two_phase = False
+        self.qtype = ""
+        self.method = ""
+
+        # 已字符串化
+        self.m = 0
+        self.goal_str_list = []
+        self.xb_str_list = []
+        self.cb_str_list = []
+        self.tableau_str_list = []
+        self.slack_str_list_intro = []
+        self.neg_slack_str_list_intro = []
+        self.artificial_str_list_intro = []
+        self.all_variable_str_list = []
+        self.non_zero_artificial_in_opt = []
+
+        # 用于改进单纯形法
+        self.modi_CB_list = []
+        self.modi_B_list = []
+        self.modi_B_1_list = []
+        self.modi_XB_list = []
+        self.modi_CJBAR_list = []
+        self.modi_CJBAR_idx_list = []
+        self.modi_b_list = []
+        self.modi_basis_list = []
+        self.modi_bp_list = []
+        self.modi_pj_list = []
+
+    def get_all_variable(self):
+        if not isinstance(self, LpSolutionCommon):
+            raise NotImplementedError()
+
+    def get_goal_list(self):
+        if not isinstance(self, LpSolutionCommon):
+            raise NotImplementedError()
+
+    def transform_big_m(self):
+
+        # 输出大M法单纯形表格
+        from sympy import symbols, Matrix
+        M = symbols("M")
+        artificial_list = self.artificial_variable_list
+        tableau_list = self.tableau_list
+        basis_list = self.basis_list
+
+        for a in artificial_list:
+            if self.qtype == "max":
+                self.original_goal_list[a] = -M
+            else:
+                self.original_goal_list[a] = M
+
+        C = Matrix(self.original_goal_list).T
+
+        CB_list = []
+        for bs in basis_list:
+            CB_list_single = []
+            for bsi in bs:
+                CB_list_single.append(self.original_goal_list[bsi])
+                CB_vector = Matrix([CB_list_single])
+            CB_list.append(CB_vector)
+
+        # 用于改进单纯形法
+        self.modi_CB_list = CB_list
+
+        A_np = tableau_list[0][:-1, :-1]
+        A = Matrix(A_np.tolist())
+        b_np = tableau_list[0][:-1, -1]
+        b = Matrix(b_np.tolist())
+
+        for i, t in enumerate(tableau_list):
+            t = t.tolist()
+            B_list_i = []
+            for j, bs in enumerate(basis_list[i]):
+                B_list_i.append(A_np[:, bs].tolist())
+                B = Matrix(B_list_i).T
+            CB = CB_list[i]
+            B_1 = B.inv()
+            C_j_BAR = C - CB*B_1*A
+            Z = CB*B_1*b
+            t[-1] = C_j_BAR.tolist()[0] + Z.tolist()[0]
+
+            # 用于改进单纯形法
+            self.tableau_list[i] = Matrix(t)
+            self.modi_B_list.append(B_list_i)
+            self.modi_B_1_list.append(B_1)
+            self.modi_b_list.append(self.tableau_list[i][:-1, -1])
+            self.modi_CJBAR_list.append(C_j_BAR.tolist())
+
+    def transform_modified_simplex(self):
+        self.modi_B_list =[]
+        self.modi_B_1_list = []
+        self.modi_b_list = []
+        self.modi_CJBAR_list= []
+        self.modi_pj_list = []
+
+        self.transform_big_m()
+        self.modi_basis_list = copy.deepcopy(self.basis_list)
+        self.modi_bp_list  = copy.deepcopy(self.basis_list)
+        self.modi_b_list = []
+        for i in range(len(self.basis_list)):
+            self.modi_basis_list[i] = [get_variable_symbol("x", j+1) for j in self.modi_basis_list[i]]
+            self.modi_bp_list[i] = [get_variable_symbol("p", j+1) for j in self.modi_bp_list[i]]
+            self.modi_B_list[i] = [list_to_matrix(self.modi_B_list[i])]
+            self.modi_B_1_list[i] = [list_to_matrix(self.modi_B_1_list[i].tolist())]
+
+            all_variable = self.get_all_variable()
+            non_basis_index = []
+            for idx in range(len(all_variable)):
+                if idx not in self.basis_list[i]:
+                    non_basis_index.append(idx)
+
+            self.modi_CJBAR_idx_list.append(non_basis_index)
+            self.modi_CJBAR_list[i] = [trans_latex_fraction (str (cjbar), wrap=False) for cjbar in
+                                       self.modi_CJBAR_list[i][0]]
+            self.modi_b_list.append(
+                [trans_latex_fraction(str(bi[0]), wrap=False) for bi in self.tableau_list[i][:-1, -1].tolist()])
+            try:
+                p_j = self.tableau_list[i][:-1, self.pivot_list[i][1]]
+            except IndexError:
+                p_j = None
+            if p_j:
+                self.modi_pj_list.append([trans_latex_fraction(str(pj[0]), wrap=False) for pj in p_j.tolist()])
+
+    def get_solution_string(self):
+        if not self.m:
+            self.m = len(self.basis_list[0])
+
+        self.get_variable_instro_str_list()
+        all_variable = self.get_all_variable()
+
+        if isinstance(self, LpSolutionPhase2) and self.method == "big_m_simplex":
+            self.transform_big_m()
+
+        if isinstance(self, LpSolutionPhase2) and self.method == "modified_simplex":
+            self.transform_modified_simplex()
+
+        tableau_list = self.tableau_list
+
+        if self.method not in ["big_m_simplex", "modified_simplex"]:
+            for t in tableau_list:
+                if self.qtype == "max":
+                    t[-1, :-1] *= -1
+                else:
+                    t[-1, -1] *= -1
+
+        self.all_variable_str_list = ["$x_{%d}$" % (abs(idx) + 1) for idx in all_variable]
+
+        goal_list = self.get_goal_list()
+        self.goal_str_list = ["%s" % trans_latex_fraction(str(c)) for c in goal_list]
+
+        for basis in self.basis_list:
+            self.xb_str_list.append(["$x_{%d}$" % (idx + 1) for idx in basis])
+            cb_str_list_single = []
+            for idx in basis:
+                cb_str_list_single.append(self.goal_str_list[idx])
+            self.cb_str_list.append(cb_str_list_single)
+
+        self.tableau_str_list = [[],] * len(tableau_list)
+
+        for i, tableau in enumerate(tableau_list):
+            t = tableau.tolist()
+            for j, t_line in enumerate(t):
+                t_line_filtered = [t_line[v] for v in all_variable]
+                t_line_filtered.append(t_line[-1])
+                t[j] = ["%s" % trans_latex_fraction(str(c)) for c in t_line_filtered]
+            temp_list = t[0:self.m]
+            temp_list.append(t[-1])
+            self.tableau_str_list[i] = temp_list
+            try:
+                t_i, t_j = self.pivot_list[i]
+                t[int(t_i)][int(t_j)] = "[$\mathbf{%s}$]" % t[int(t_i)][int(t_j)].replace("$", "")
+            except ValueError:
+                # completed, no pivot
+                pass
+
+    def get_variable_instro_str_list(self):
+        self.slack_str_list_intro = []
+        self.neg_slack_str_list_intro = []
+        self.artificial_str_list_intro = []
+        for v in self.slack_variable_list:
+            if v >= 0:
+                self.slack_str_list_intro.append(get_variable_symbol("x", v + 1))
+            else:
+                self.neg_slack_str_list_intro.append(get_variable_symbol("x", -v + 1))
+        for v in self.artificial_variable_list:
+            self.artificial_str_list_intro.append(get_variable_symbol("x", v + 1))
+
+
+class LpSolutionCommon(LpSolution):
+    """
+    用于表示独立于解法的部分
+    """
+    pass
+
+
+class LpSolutionPhase1(LpSolution):
+    def get_all_variable(self):
+        return self.variable_list + [abs(v) for v in self.slack_variable_list] + self.artificial_variable_list
+
+    def get_goal_list(self):
+        if self.need_two_phase:
+            n_variable = len(self.get_all_variable())
+            goal_list = [0] * n_variable
+            for idx in self.artificial_variable_list:
+                goal_list[idx] = 1
+            return goal_list
+        else:
+            return self.original_goal_list
+
+
+class LpSolutionPhase2(LpSolution):
+    def get_all_variable(self):
+        if self.need_two_phase:
+            return self.variable_list + [abs(v) for v in self.slack_variable_list]
+        else:
+            return self.variable_list + [abs(v) for v in self.slack_variable_list] + self.artificial_variable_list
+
+    def get_goal_list(self):
+        n_variable = len(self.get_all_variable())
+        return self.original_goal_list[:n_variable]
+
