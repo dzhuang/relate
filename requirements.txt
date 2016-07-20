@@ -76,6 +76,7 @@ celery
 # django-celery (release) is broken: https://github.com/celery/django-celery/issues/411
 # but fixed in git:
 git+https://github.com/celery/django-celery.git@d3656b3919ad38
+# git+git://github.com/celery/django-celery.git@918b90eb3f69addeba73fa8a77a38aecd6af0a3e
 
 # For searchable select widgets
 django_select2>=5.5.0

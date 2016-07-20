@@ -26,6 +26,7 @@ THE SOFTWARE.
 
 
 from django.utils.translation import ugettext as _, string_concat
+from django.db import connection
 from django.shortcuts import (  # noqa
         get_object_or_404, redirect)
 from relate.utils import retry_transaction_decorator
@@ -39,7 +40,9 @@ from course.models import (
         get_flow_grading_opportunity,
         get_feedback_for_grade,
         update_bulk_feedback)
-from course.constants import participation_role
+from course.constants import (
+        participation_role,
+        grade_aggregation_strategy)
 from course.utils import (
         course_view, render_course_page,
         get_session_grading_rule,
@@ -84,20 +87,38 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     adjust_flow_session_page_data(pctx.repo, flow_session,
             pctx.course.identifier, fpctx.flow_desc)
 
+    grading_rule = get_session_grading_rule(
+        flow_session, flow_session.participation.role,
+        fpctx.flow_desc, get_now_or_fake_time(pctx.request))
+
     # {{{ enable flow session zapping
 
-    all_flow_sessions = list(FlowSession.objects
-            .filter(
-                course=pctx.course,
-                flow_id=flow_session.flow_id,
-                participation__isnull=False,
-                in_progress=flow_session.in_progress)
-            .order_by(
-                # Datatables will default to sorting the user list
-                # by the first column, which happens to be the username.
-                # Match that sorting.
-                "participation__user__username",
-                "start_time"))
+    all_flow_qs = FlowSession.objects.filter(
+        course=pctx.course,
+        flow_id=flow_session.flow_id,
+        participation__isnull=False,
+        in_progress=flow_session.in_progress)
+
+    if connection.features.can_distinct_on_fields:
+        if grading_rule.grade_aggregation_strategy \
+                == grade_aggregation_strategy.use_latest:
+            all_flow_qs = all_flow_qs.order_by(
+                'participation__user__username', 'completion_time')\
+                .distinct('participation__user__username')
+        elif grading_rule.grade_aggregation_strategy \
+                == grade_aggregation_strategy.use_earliest:
+            all_flow_qs = all_flow_qs.order_by(
+                'participation__user__username', '-completion_time')\
+                .distinct('participation__user__username')
+    else:
+        all_flow_qs = all_flow_qs.order_by(
+            # Datatables will default to sorting the user list
+            #  by the first column, which happens to be the username.
+            #  Match that sorting.
+            "participation__user__username",
+            "start_time")
+
+    all_flow_sessions = list(all_flow_qs)
 
     # {{{ session select2 
     graded_flow_sessions_json = []
@@ -317,10 +338,6 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
             points_awarded = max_points * feedback.correctness
 
     # }}}
-
-    grading_rule = get_session_grading_rule(
-            flow_session, flow_session.participation.role,
-            fpctx.flow_desc, get_now_or_fake_time(pctx.request))
 
     if grading_rule.grade_identifier is not None:
         grading_opportunity = get_flow_grading_opportunity(

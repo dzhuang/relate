@@ -381,20 +381,20 @@
     {
       if (next_page_url)
         $(".grading-page-grade-entry .form-group:last .controls:last").append(
-            " <button class='btn btn-primary' id='save_next_page' type='button'>"
+            " <button class='btn btn-primary relate-grading-save-and-next-page-button' type='button'>"
             + "{% trans "Submit and next page" %} &raquo;"
             + "</button>");
       if (next_session_url)
         $(".grading-page-grade-entry .form-group:last .controls:last").append(
-            " <button class='btn btn-primary' id='save_next_session' type='button'>"
+            " <button class='btn btn-primary relate-grading-save-and-next-session-button' type='button'>"
             + "{% trans "Submit and next session" %} &raquo;"
             + "</button>");
 
-      $("#save_next_page").click(save_and_next_page);
-      $("#save_next_session").click(save_and_next_session);
-
       $(".relate-grading-form").prepend($(".form-group:last"));
       $(".form-group:first").clone().appendTo($(".relate-grading-form"));
+
+      $(".relate-grading-save-and-next-page-button").click(save_and_next_page);
+      $(".relate-grading-save-and-next-session-button").click(save_and_next_session);
     }
 
     $(document).ready(add_submit_next);
