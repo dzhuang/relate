@@ -103,12 +103,12 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
         if grading_rule.grade_aggregation_strategy \
                 == grade_aggregation_strategy.use_latest:
             all_flow_qs = all_flow_qs.order_by(
-                'participation__user__username', 'completion_time')\
+                'participation__user__username', 'start_time')\
                 .distinct('participation__user__username')
         elif grading_rule.grade_aggregation_strategy \
                 == grade_aggregation_strategy.use_earliest:
             all_flow_qs = all_flow_qs.order_by(
-                'participation__user__username', '-completion_time')\
+                'participation__user__username', '-start_time')\
                 .distinct('participation__user__username')
     else:
         all_flow_qs = all_flow_qs.order_by(
