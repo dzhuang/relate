@@ -193,11 +193,11 @@
                                        id="thumbnail{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
                                        {% if IN_GRADE_PAGE %}
                                         src="{{ JQ_OPEN }}=file.url{{ JQ_CLOSE }}"
+                                        onmouseover="magnify(this)"
+                                        data-zoom-image="{{ JQ_OPEN }}=file.url{{ JQ_CLOSE }}"
                                         {% else %}
                                         src="{{ JQ_OPEN }}=file.thumbnailUrl{{ JQ_CLOSE }}"
                                         {% endif %}
-                                        onmouseover="magnify(this)"
-                                        data-zoom-image="{{ JQ_OPEN }}=file.url{{ JQ_CLOSE }}"
                                     >
                                 </a>
                             {{ JQ_OPEN }} } {{ JQ_CLOSE }}

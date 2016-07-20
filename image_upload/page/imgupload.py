@@ -744,11 +744,16 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                     pass
             else:
                 question_img_url = img.get_absolute_url(private=False)
-                question_thumbnail_url = img.file_thumbnail.url
 
                 body_html += (
-                    '<div><p><a href="' + question_img_url + '" data-gallery="#question"><img src="' + question_thumbnail_url + '"></a></p>'
-                    '</div>'
+                    '<div id="question_img">'
+                    '<style> #question_img img {max-width:40vw;}</style>'
+                    '<p>'
+                    '<a href="%s" data-gallery="#question">'
+                    '<img src="%s" onmouseover="magnify(this)" data-zoom-image="%s">'
+                    '</a>'
+                    '</p>'
+                    '</div>' % (question_img_url, question_img_url, question_img_url)
                 )
 
             if self.question_requirement:
@@ -849,9 +854,11 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                     pass
             else:
                 for answer in answer_qs:
-                    key_thumbnail = answer.file_thumbnail
-                    key_img = answer.get_absolute_url(private=False, key=True)
-                    ca = ca + '<a href="' + key_img + '"><img src="' + key_thumbnail.url + '"></a>\n'
+                    key_img_url = answer.get_absolute_url(private=False, key=True)
+                    ca = ca + ('<a href="%s">'
+                               '<img src="%s" onmouseover="magnify(this)" data-zoom-image="%s">'
+                               '</a>\n'
+                               % (key_img_url, key_img_url, key_img_url))
 
                 js = """<br/><script>
                         document.getElementById('key').onclick = function (event) {
@@ -890,7 +897,9 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
             student_feedback_message += feedbackbutton
             student_feedback = "<br/> <div style='float:right'>%s </div>"  % student_feedback_message
 
-        CA_PATTERN = string_concat (_ ("A correct answer is"), ": <br/> <div id='key'>%s</div> %s")  # noqa
+        CA_PATTERN = string_concat (_ ("A correct answer is"),
+                                    ": <br/> <div id='key'>"
+                                    "<style> #key img {max-width:40vw;}</style> %s</div> %s")  # noqa
 
         return CA_PATTERN % (ca, student_feedback)
 
