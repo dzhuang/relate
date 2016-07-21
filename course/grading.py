@@ -80,6 +80,8 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
             page_ordinal, participation=flow_session.participation,
             flow_session=flow_session, request=pctx.request)
 
+    print "fpctx.page_data", type(fpctx.page_data.data)
+
     if fpctx.page_desc is None:
         raise http.Http404()
 
@@ -118,9 +120,27 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
             "participation__user__username",
             "start_time")
 
+    # {{{ order flow_session by data in flow_page_data
+    all_flow_session_page_data = []
+    this_flow_page_data = FlowPageData.objects.get(
+        flow_session=flow_session, ordinal=fpctx.page_data.ordinal)
+    if this_flow_page_data.data:
+        all_flow_sessions_ids = all_flow_qs.values_list('id', flat=True)
+        all_flow_session_page_data = FlowPageData.objects.filter(
+            flow_session__id__in=all_flow_sessions_ids,
+            ordinal=fpctx.page_data.ordinal).values_list("data")
+
     all_flow_sessions = list(all_flow_qs)
 
-    # {{{ session select2 
+    if all_flow_session_page_data:
+        all_flow_session_page_data, all_flow_sessions = (
+            list(t) for t in (
+                zip(*sorted(zip(all_flow_session_page_data, all_flow_sessions)))
+            )
+        )
+    # }}}
+
+    # {{{ session select2
     graded_flow_sessions_json = []
     ungraded_flow_sessions_json = []
 
@@ -164,10 +184,10 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
         if grade_time:
             text += (
-                    string_concat(", ", 
+                    string_concat(", ",
                         _("graded at %(grade_time)s"), ".") %
                     {"grade_time": compact_local_datetime_str(
-                        as_local_time(grade_time), 
+                        as_local_time(grade_time),
                         get_now_or_fake_time(pctx.request),
                         in_python=True)}
                     )
