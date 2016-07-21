@@ -133,11 +133,17 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     all_flow_sessions = list(all_flow_qs)
 
     if all_flow_session_page_data:
+        print "data_list", len(all_flow_session_page_data)
+        print "sessions", len(all_flow_sessions)
+
         all_flow_session_page_data, all_flow_sessions = (
             list(t) for t in (
                 zip(*sorted(zip(all_flow_session_page_data, all_flow_sessions)))
             )
         )
+
+        print "data_list", len(all_flow_session_page_data)
+        print "sessions", len(all_flow_sessions)
     # }}}
 
     # {{{ session select2
