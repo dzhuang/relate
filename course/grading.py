@@ -119,10 +119,14 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
             "start_time")
 
     # {{{ order flow_session by data in flow_page_data
+
     all_flow_session_page_data = []
     if connection.features.can_distinct_on_fields:
         this_flow_page_data = FlowPageData.objects.get(
             flow_session=flow_session, ordinal=fpctx.page_data.ordinal)
+
+        # for random generated question, put pages with same page_data.data
+        # closer for grading
         if this_flow_page_data.data:
             all_flow_sessions_pks = all_flow_qs.values_list('pk', flat=True)
             all_flow_session_page_data = list(FlowPageData.objects.filter(
@@ -130,19 +134,22 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 ordinal=fpctx.page_data.ordinal).\
                 order_by("flow_session__participation__user__username")\
                 .values_list("data", flat=True))
-            print type(all_flow_session_page_data)
+
+            # add index to each of the item the resulting queryset so that preserve
+            # the ordering of page with the same page_data.data when do the following sorting
             for idx in range(len(all_flow_session_page_data)):
-                all_flow_session_page_data[idx] = all_flow_session_page_data[idx] + str(idx)
-            print all_flow_session_page_data
+                all_flow_session_page_data[idx] += str(idx)
 
     all_flow_sessions = list(all_flow_qs)
 
+    # sorting the flowsessions according to the page_data.data
     if all_flow_session_page_data:
         all_flow_session_page_data, all_flow_sessions = (
             list(t) for t in (
                 zip(*sorted(zip(all_flow_session_page_data, all_flow_sessions)))
             )
         )
+
     # }}}
 
     # {{{ session select2
