@@ -80,8 +80,6 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
             page_ordinal, participation=flow_session.participation,
             flow_session=flow_session, request=pctx.request)
 
-    print "fpctx.page_data", type(fpctx.page_data.data)
-
     if fpctx.page_desc is None:
         raise http.Http404()
 
@@ -122,28 +120,24 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
     # {{{ order flow_session by data in flow_page_data
     all_flow_session_page_data = []
-    this_flow_page_data = FlowPageData.objects.get(
-        flow_session=flow_session, ordinal=fpctx.page_data.ordinal)
-    if this_flow_page_data.data:
-        all_flow_sessions_ids = all_flow_qs.values_list('id', flat=True)
-        all_flow_session_page_data = FlowPageData.objects.filter(
-            flow_session__id__in=all_flow_sessions_ids,
-            ordinal=fpctx.page_data.ordinal).values_list("data")
+    if connection.features.can_distinct_on_fields:
+        this_flow_page_data = FlowPageData.objects.get(
+            flow_session=flow_session, ordinal=fpctx.page_data.ordinal)\
+            .order_by("flow_session__participation__user__username")
+        if this_flow_page_data.data:
+            all_flow_sessions_pks = all_flow_qs.values_list('pk', flat=True)
+            all_flow_session_page_data = FlowPageData.objects.filter(
+                flow_session__pk__in=all_flow_sessions_pks,
+                ordinal=fpctx.page_data.ordinal).values_list("data")
 
     all_flow_sessions = list(all_flow_qs)
 
     if all_flow_session_page_data:
-        print "data_list", len(all_flow_session_page_data)
-        print "sessions", len(all_flow_sessions)
-
         all_flow_session_page_data, all_flow_sessions = (
             list(t) for t in (
                 zip(*sorted(zip(all_flow_session_page_data, all_flow_sessions)))
             )
         )
-
-        print "data_list", len(all_flow_session_page_data)
-        print "sessions", len(all_flow_sessions)
     # }}}
 
     # {{{ session select2
