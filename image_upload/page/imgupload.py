@@ -61,6 +61,7 @@ def is_course_staff(request, page_context):
 # {{{ image upload question
 
 class ImageUploadForm(StyledForm):
+    show_save_button = False
     def __init__(self, page_context,
                  page_behavior, page_data, *args, **kwargs):
         super(ImageUploadForm, self).__init__(*args, **kwargs)
@@ -117,6 +118,7 @@ class ImageUploadForm(StyledForm):
 
 
 class ImgUploadHumanTextFeedbackForm(HumanTextFeedbackForm):
+    show_save_button = False
     def __init__(self, *args, **kwargs):
         use_access_rules_tag = kwargs.pop("use_access_rules_tag", False)
         super(ImgUploadHumanTextFeedbackForm, self).__init__(*args, **kwargs)
