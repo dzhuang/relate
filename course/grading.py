@@ -110,6 +110,10 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
             all_flow_qs = all_flow_qs.order_by(
                 'participation__user__username', '-start_time')\
                 .distinct('participation__user__username')
+        else:
+            all_flow_qs = all_flow_qs.order_by(
+                "participation__user__username",
+                "start_time")
     else:
         all_flow_qs = all_flow_qs.order_by(
             # Datatables will default to sorting the user list
@@ -150,6 +154,9 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
         # the ordering of page with the same page_data.data when do the following sorting
         for idx in range(len(all_flow_session_page_data)):
             all_flow_session_page_data[idx] += str(idx)
+
+        for x in all_flow_session_page_data:
+            print x
 
     all_flow_sessions = list(all_flow_qs)
 
