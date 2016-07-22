@@ -324,7 +324,10 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
     except IOError:
         raise CropImageError(_('There are errors，please re-upload the image'))
 
-    image_orig = image_orig.rotate(-rotate, expand=True)
+    try:
+        image_orig = image_orig.rotate(-rotate, expand=True)
+    except:
+        pass
     box =  (x, y, x+width, y+height)
     image_orig = image_orig.crop(box)
 
