@@ -192,8 +192,8 @@
 
       {% if correct_answer  %}
         <div class="panel panel-default">
-          <div class="panel-heading">{% trans "Correct Answer" %}</div>
-          <div class="panel-body" id="correct-answer">
+          <div class="panel-heading" id="correct-answer">{% trans "Correct Answer" %}</div>
+          <div class="panel-body">
             <p>{{ correct_answer|safe }}</p>
           </div>
         </div>
