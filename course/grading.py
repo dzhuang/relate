@@ -99,21 +99,18 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
         participation__isnull=False,
         in_progress=flow_session.in_progress)
 
-    if connection.features.can_distinct_on_fields:
-        if grading_rule.grade_aggregation_strategy \
-                == grade_aggregation_strategy.use_latest:
+    if (connection.features.can_distinct_on_fields
+        and grading_rule.grade_aggregation_strategy
+                == grade_aggregation_strategy.use_latest):
             all_flow_qs = all_flow_qs.order_by(
                 'participation__user__username', 'start_time')\
                 .distinct('participation__user__username')
-        elif grading_rule.grade_aggregation_strategy \
-                == grade_aggregation_strategy.use_earliest:
+    elif (connection.features.can_distinct_on_fields
+        and grading_rule.grade_aggregation_strategy
+                == grade_aggregation_strategy.use_earliest):
             all_flow_qs = all_flow_qs.order_by(
                 'participation__user__username', '-start_time')\
                 .distinct('participation__user__username')
-        else:
-            all_flow_qs = all_flow_qs.order_by(
-                "participation__user__username",
-                "start_time")
     else:
         all_flow_qs = all_flow_qs.order_by(
             # Datatables will default to sorting the user list
