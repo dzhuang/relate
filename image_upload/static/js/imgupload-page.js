@@ -325,7 +325,13 @@ window.addEventListener('DOMContentLoaded', function () {
             })
                 .done(function (response) {
                     var new_img = response.file;
-                    $("#thumbnail" + new_img.pk).prop('src', new_img.thumbnailUrl);
+                    if (window.location.pathname.indexOf("/grading/") === -1){
+                        $("#thumbnail" + new_img.pk).prop('src', new_img.thumbnailUrl);
+                    }
+                    else{
+                        $("#thumbnail" + new_img.pk).prop('src', new_img.url);
+                        $("#thumbnail" + new_img.pk).prop('style', "width:40vw");
+                    }
                     $("#previewid" + new_img.pk).prop('href', new_img.url);
                     $("#filename" + new_img.pk).prop('href', new_img.url);
                     $("#filetime" + new_img.pk).prop('title', new_img.timestr_title).html(new_img.timestr_short);
