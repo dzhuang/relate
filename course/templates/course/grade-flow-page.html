@@ -23,7 +23,7 @@
       {{ body|safe }}
 
       {% if form_html %}
-        <div class="well">
+        <div class="well relate-interaction-container">
           {{ form_html|safe }}
         </div>
       {% endif %}
@@ -193,7 +193,7 @@
       {% if correct_answer  %}
         <div class="panel panel-default">
           <div class="panel-heading">{% trans "Correct Answer" %}</div>
-          <div class="panel-body">
+          <div class="panel-body" id="correct-answer">
             <p>{{ correct_answer|safe }}</p>
           </div>
         </div>
@@ -397,7 +397,29 @@
       $(".relate-grading-save-and-next-session-button").click(save_and_next_session);
     }
 
-    $(document).ready(add_submit_next);
+    function scroll_to_answer()
+    {
+      $('html, body > div.grading-page-student-work').animate(
+        {scrollTop: $(".relate-interaction-container")
+        .position().top}, 1000);
+
+      {% if correct_answer %}
+        var item = document.getElementById("correct-answer");
+      {% else %}
+        var item = document.getElementById("rubric");
+        if(item === null){
+        var item = document.getElementById("grading-form");
+        }
+      {% endif %}
+      $('html, body > div.grading-page-grade-entry').animate(
+          {scrollTop: $(item)
+          .position().top}, 1000)
+    }
+
+    $(document).ready(function() {
+        add_submit_next();
+        scroll_to_answer();
+        });
   </script>
 
   {# }}} #}

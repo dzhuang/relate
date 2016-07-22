@@ -653,6 +653,8 @@ class HumanTextFeedbackForm(StyledForm):
     def __init__(self, point_value, *args, **kwargs):
         super(HumanTextFeedbackForm, self).__init__(*args, **kwargs)
 
+        self.helper.attrs = {"id": "grading-form"}
+
         self.point_value = point_value
 
         self.fields["grade_percent"] = forms.FloatField(
