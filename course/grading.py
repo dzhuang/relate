@@ -99,14 +99,15 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
         participation__isnull=False,
         in_progress=flow_session.in_progress)
 
-    if connection.features.can_distinct_on_fields:
-        if grading_rule.grade_aggregation_strategy \
-                == grade_aggregation_strategy.use_latest:
+    if (connection.features.can_distinct_on_fields
+        and grading_rule.grade_aggregation_strategy
+                == grade_aggregation_strategy.use_latest):
             all_flow_qs = all_flow_qs.order_by(
                 'participation__user__username', 'start_time')\
                 .distinct('participation__user__username')
-        elif grading_rule.grade_aggregation_strategy \
-                == grade_aggregation_strategy.use_earliest:
+    elif (connection.features.can_distinct_on_fields
+        and grading_rule.grade_aggregation_strategy
+                == grade_aggregation_strategy.use_earliest):
             all_flow_qs = all_flow_qs.order_by(
                 'participation__user__username', '-start_time')\
                 .distinct('participation__user__username')
@@ -121,24 +122,38 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     # {{{ order flow_session by data in flow_page_data
 
     all_flow_session_page_data = []
-    if connection.features.can_distinct_on_fields:
-        this_flow_page_data = FlowPageData.objects.get(
-            flow_session=flow_session, ordinal=fpctx.page_data.ordinal)
+    this_flow_page_data = FlowPageData.objects.get(
+        flow_session=flow_session, ordinal=fpctx.page_data.ordinal)
 
-        # for random generated question, put pages with same page_data.data
-        # closer for grading
-        if this_flow_page_data.data:
-            all_flow_sessions_pks = all_flow_qs.values_list('pk', flat=True)
-            all_flow_session_page_data = list(FlowPageData.objects.filter(
-                flow_session__pk__in=all_flow_sessions_pks,
-                ordinal=fpctx.page_data.ordinal).\
-                order_by("flow_session__participation__user__username")\
-                .values_list("data", flat=True))
+    # for random generated question, put pages with same page_data.data
+    # closer for grading
+    if this_flow_page_data.data:
+        all_flow_sessions_pks = all_flow_qs.values_list('pk', flat=True)
+        all_flow_session_page_data_qs = FlowPageData.objects.filter(
+            flow_session__pk__in=all_flow_sessions_pks,
+            ordinal=fpctx.page_data.ordinal)
+        if (connection.features.can_distinct_on_fields
+            and grading_rule.grade_aggregation_strategy
+                == grade_aggregation_strategy.use_earliest):
+            all_flow_session_page_data_qs = \
+                all_flow_session_page_data_qs.order_by(
+                    "flow_session__participation__user__username",
+                    "-flow_session__start_time")
+        else:
+            all_flow_session_page_data_qs = \
+                all_flow_session_page_data_qs.order_by(
+                    "flow_session__participation__user__username",
+                     "flow_session__start_time")
+        all_flow_session_page_data = list(
+            all_flow_session_page_data_qs.values_list("data", flat=True))
 
-            # add index to each of the item the resulting queryset so that preserve
-            # the ordering of page with the same page_data.data when do the following sorting
-            for idx in range(len(all_flow_session_page_data)):
-                all_flow_session_page_data[idx] += str(idx)
+        # add index to each of the item the resulting queryset so that preserve
+        # the ordering of page with the same page_data.data when do the following sorting
+        for idx in range(len(all_flow_session_page_data)):
+            all_flow_session_page_data[idx] += str(idx)
+
+        for x in all_flow_session_page_data:
+            print x
 
     all_flow_sessions = list(all_flow_qs)
 
