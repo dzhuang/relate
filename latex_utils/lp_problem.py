@@ -109,6 +109,21 @@ lp = LP(qtype="max",
         #        sign=[">", "<", ">", "="],
         )
 
+# 作业题
+
+lp = LP(qtype="max",
+        goal=[1, 2, 1],
+        # x="y",
+        # x_list=["y_1", "y_2", "w_3"],
+        constraints=[
+            [1, 1, -2, "<", 10],
+            [2, -1, 4,  "<", 8],
+            [-1, 2, -4,  "<", 4],
+            #            [5, 1, ">", 2],
+        ],
+        #        sign=[">", "<", ">", "="],
+        )
+
 # lp = LP(qtype="max",
 #         goal=[-320, -100, 0, 0],
 #         # x="y",
@@ -214,7 +229,7 @@ for l in lp_json_list_loaded:
     lp = LP(**lp_dict)
     lp2phase = deepcopy(lp)
 
-    lp.solve(method="dual_simplex")
+    lp.solve(method="modified_simplex")
     #lp.solve(method="simplex")
     try:
         lp2phase.solve(method="simplex")
@@ -227,16 +242,16 @@ for l in lp_json_list_loaded:
     template = latex_jinja_env.get_template('/utils/lp_simplex.tex')
     tex = template.render(
         iters = iter(range(0,5)),
-        show_question = True,
+        #show_question = True,
         show_answer = True,
-        show_2_stage = True, # 显示两阶段法
-        show_big_m=True,  # 显示大M法
+        #show_2_stage = True, # 显示两阶段法
+        #show_big_m=True,  # 显示大M法
         standardized_lp = lp.standardized_LP(),
         standardized_lp_2_phase=standardized_lp_2_phase,
         pre_description=u"""
         """,
         lp=lp,
-        lp2phase = lp2phase,
+        #lp2phase = lp2phase,
         # simplex_pre_description=u"""解：引入松弛变量$x_4, x_5, x_6$，用单纯形法求解如下：
         # """,
         # simplex_after_description=u"""最优解唯一。
