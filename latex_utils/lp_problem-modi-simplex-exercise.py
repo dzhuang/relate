@@ -223,7 +223,7 @@ lp = LP(qtype="max",
         ],
         )
 
-lp = LP(qtype="max",
+lp = LP(qtype="min",
         goal=[1, -2, -1],
         constraints=[
             [1, 1, -2, "<", 15],
