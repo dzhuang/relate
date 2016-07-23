@@ -34,6 +34,87 @@ lp = LP(qtype="max",
         ],
         )
 
+lp = LP (qtype="max",
+         goal=[1, 2, 1],
+         constraints=[
+             [1, 1, 1, "<", 4],
+             [-1, 2, -2, "<", 6],
+             [2, 1, 0, "<", 5],
+         ],
+         )
+
+lp = LP (qtype="max",
+         goal=[3, 5, 4],
+         constraints=[
+             [1, 0, 2, "<", 4],
+             [2, 0, 1, "<", 12],
+             [3, 2, 1, "<", 18],
+         ],
+         )
+
+lp = LP (qtype="max",
+         goal=[2, -1, 1],
+         constraints=[
+             [3, 1, 1, "<", 60],
+             [1, -1, 2, "<", 10],
+             [1, 1, -1, "<", 20],
+         ],
+         )
+
+lp = LP (qtype="max",
+         goal=[2, -1, 1],
+         constraints=[
+             [1, -1, 2, "<", 10],
+             [1, 1, -1, "<", 20],
+             [3, 1, 1, "<", 60],
+         ],
+         )
+
+lp = LP (qtype="max",
+         goal=[2, 4],
+         constraints=[
+             [-1, 2, "<", 4],
+             [1, 2, "<", 10],
+             [1, -1, "<", 2],
+         ],
+         )
+
+lp = LP (qtype="max",
+         goal=[2, 1, 2],
+         constraints=[
+             [4, 3, 8, "<", 12],
+             [4, 1, 12, "<", 8],
+             [4, -1, 3, "<", 8],
+         ],
+         )
+
+lp = LP (qtype="min",
+         goal=[-1, -4, -5],
+         constraints=[
+             [1, 1, 0, "<", 6],
+             [-1, 1, 3, "<", 8],
+             [3, 1, 1, "<", 10],
+         ],
+         )
+
+lp = LP (qtype="max",
+         goal=[3, 5, 1],
+         constraints=[
+             [2, 3, -1, "<", 32],
+             [3, 1, 1, "<", 30],
+             [-1, 2, 3, "<", 22],
+         ],
+         )
+
+lp = LP (qtype="max",
+         goal=[6, -3, 3],
+         constraints=[
+             [2, 1, 0, "<", 8],
+             [-4, -2, 3, "<", 14],
+             [1, -2, 1, "<", 18],
+         ],
+         )
+
 template = latex_jinja_env.get_template('/utils/lp_model.tex')
 tex = template.render(
     description = u"""
