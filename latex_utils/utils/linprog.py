@@ -743,7 +743,7 @@ class lpSimplexSolver(lpSolver):
                         # negative slack -- surplus variable
                         # use negative to represent it is a negative slack
                         for j, sl in enumerate(slack_list):
-                            if sl == n + i:
+                            if sl == slack_idx[i]:
                                 slack_list[j] = -sl
 
                     T[i, basis[i]] = 1
@@ -753,7 +753,7 @@ class lpSimplexSolver(lpSolver):
                         # negative slack -- surplus variable
                         # use negative to represent it is a negative slack
                         for j, sl in enumerate(slack_list):
-                            if sl == n + i:
+                            if sl == slack_idx[i]:
                                 slack_list[j] = -sl
 
                     pivot_value = T[i, existing_basic_variable[i]]
@@ -1024,7 +1024,7 @@ class lpDualSimplexSolver(lpSolver):
                         # negative slack -- surplus variable
                         # use negative to represent it is a negative slack
                         for j, sl in enumerate (slack_list):
-                            if sl == n + i:
+                            if sl == slack_idx[i]:
                                 slack_list[j] = -sl
 
                     pivot_value = T[i, existing_basic_variable[i]]
@@ -1210,7 +1210,7 @@ class lpBigMSolver(lpSolver):
                         # negative slack -- surplus variable
                         # use negative to represent it is a negative slack
                         for j, sl in enumerate (slack_list):
-                            if sl == n + i:
+                            if sl == slack_idx[i]:
                                 slack_list[j] = -sl
 
                     T[i, basis[i]] = 1
@@ -1220,7 +1220,7 @@ class lpBigMSolver(lpSolver):
                         # negative slack -- surplus variable
                         # use negative to represent it is a negative slack
                         for j, sl in enumerate (slack_list):
-                            if sl == n + i:
+                            if sl == slack_idx[i]:
                                 slack_list[j] = -sl
 
                     pivot_value = T[i, existing_basic_variable[i]]
