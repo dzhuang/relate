@@ -33,14 +33,23 @@ lp = LP (qtype="max",
          ],
          )
 
-# lp = LP (qtype="max",
-#          goal=[-6, 3, 5],
-#          constraints=[
-#              [2, 1, 0, "<", 8],
-#              [-4, -2, 3, ">", 56],
-#              [1, -1, 1, "<", 16],
-#          ],
-#          )
+lp = LP (qtype="max",
+         goal=[1, 2, 1],
+         constraints=[
+             [2, 3, 1, ">", 12],
+             [1, 1, 3, "=", 9],
+#             [1, 2, "<", 3],
+         ],
+         )
+
+lp = LP (qtype="max",
+         goal=[3, -2, -1],
+         constraints=[
+             [1, -2, 1, "<", 11],
+             [-4, 1, 2, ">", 3],
+             [-2, 0, 1, "=", 1],
+         ],
+         )
 
 
 template = latex_jinja_env.get_template('/utils/lp_model.tex')
@@ -110,7 +119,7 @@ for l in lp_json_list_loaded:
     lp = LP(**lp_dict)
     lp2phase = deepcopy(lp)
 
-    lp.solve(method="big_m_simplex")
+    lp.solve(method="modified_simplex")
     #lp.solve(method="simplex")
     try:
         lp2phase.solve(method="simplex")
