@@ -399,6 +399,12 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
 
         return (ext, buf)
 
+    # def correct_answer(self, page_context, page_data, answer_data, grade_data):
+    #     if answer_data is None:
+    #         return None
+
+
+
     def make_grading_form(self, page_context, page_data, grade_data):
         human_feedback_point_value = self.human_feedback_point_value(
             page_context, page_data)
