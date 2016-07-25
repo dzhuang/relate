@@ -16,14 +16,50 @@ from copy import deepcopy
 #          ],
 #          )
 
-lp = LP (qtype="max",
-         goal=[1, 1, -5],
+lp = LP (qtype="min",
+         goal=[-3, 1, 1],
          constraints=[
-             [1, 1, 1, ">", 7],
-             [2, -5, 1, "=", 10],
+             [1, -2, 1, "<", 11],
+             [-4, 1, 2, ">", 3],
+             [-2, 0, 1, "=", 1],
          ],
          )
 
+lp = LP(qtype="max",
+        goal=[3, -1, -1],
+        constraints=[
+            [1, -2, 1, "<", 10],
+            [-4, 1, 2, ">", 4],
+            [-2, 0, 1, "=", 1],
+        ],
+        )
+
+lp = LP(qtype="min",
+        goal=[1, 1, -3],
+        constraints=[
+            [1, -2, 1, "<", 11],
+            [2, 1, -4, ">", 3],
+            [1, 0, -2, "=", 1],
+        ],
+        )
+
+lp = LP(qtype="min",
+        goal=[3, 2, 1],
+        constraints=[
+            [1, 1, 1, "=", 50],
+            [4, 5, 2, ">", 80],
+#            [1, 0, -2, "=", 1],
+        ],
+        )
+
+lp = LP(qtype="min",
+        goal=[3, 7, 3],
+        constraints=[
+            [1, 4, 2, ">", 8],
+            [3, 2, 0, ">", 6],
+            #            [1, 0, -2, "=", 1],
+        ],
+        )
 
 template = latex_jinja_env.get_template('/utils/lp_model.tex')
 tex = template.render(

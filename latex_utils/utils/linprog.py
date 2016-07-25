@@ -762,7 +762,7 @@ class lpSimplexSolver(lpSolver):
                     # 以下使得引入的松弛或剩余变量不被除（系数为1或-1）
                     T[i, :n] /= pivot_value
                     if pivot_value < 0:
-                        T[i, n+1:-1] *= -1
+                        T[i, n:-1] *= -1
 
                     T[i, -1] = b[i]
                     basis[i] = existing_basic_variable[i]
@@ -808,7 +808,7 @@ class lpSimplexSolver(lpSolver):
             #             # 以下使得引入的松弛或剩余变量不被除（系数为1或-1）
             #             T[i, :n] /= pivot_value
             #             if pivot_value < 0:
-            #                 T[i, n+1:-1] *= -1
+            #                 T[i, n:-1] *= -1
             #
             #             T[i, -1] = b[i]
             #             basis[i] = existing_basic_variable[i]
@@ -1033,7 +1033,7 @@ class lpDualSimplexSolver(lpSolver):
                     # 以下使得引入的松弛或剩余变量不被除（保持系数为1或-1）
                     T[i, :n] /= pivot_value
                     if pivot_value < 0:
-                        T[i, n+1:-1] *= -1
+                        T[i, n:-1] *= -1
 
                     T[i, -1] = b[i]
                     basis[i] = existing_basic_variable[i]
@@ -1229,7 +1229,7 @@ class lpBigMSolver(lpSolver):
                     # 以下使得引入的松弛或剩余变量不被除（系数为1或-1）
                     T[i, :n] /= pivot_value
                     if pivot_value < 0:
-                        T[i, n+1:-1] *= -1
+                        T[i, n:-1] *= -1
 
                     T[i, -1] = b[i]
                     basis[i] = existing_basic_variable[i]
