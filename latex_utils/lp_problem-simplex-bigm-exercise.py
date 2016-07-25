@@ -71,13 +71,14 @@ lp = LP (qtype="max",
          ],
          )
 
-lp = LP (qtype="min",
-         goal=[2, 3, 1],
-         constraints=[
-             [1, 4, 2, ">", 8],
-             [3, 2, 0, ">", 6],
-         ],
-         )
+# # 迭代次数太少，有无穷多最优解
+# lp = LP (qtype="min",
+#          goal=[2, 3, 1],
+#          constraints=[
+#              [1, 4, 2, ">", 8],
+#              [3, 2, 0, ">", 6],
+#          ],
+#          )
 
 lp = LP (qtype="min",
          goal=[2, 3, 4],
@@ -234,13 +235,14 @@ lp = LP (qtype="max",
          ],
          )
 
-lp = LP (qtype="max",
-         goal=[1, 5, 3],
-         constraints=[
-             [1, 2, 1, "=", 5],
-             [2, -1, 0, ">", 4],
-         ],
-         )
+# # 迭代次数太少
+# lp = LP (qtype="max",
+#          goal=[1, 5, 3],
+#          constraints=[
+#              [1, 2, 1, "=", 5],
+#              [2, -1, 0, ">", 4],
+#          ],
+#          )
 
 # 无可行解
 # lp = LP (qtype="max",
@@ -252,13 +254,6 @@ lp = LP (qtype="max",
 #          ],
 #          )
 
-# lp = LP(qtype="min",
-#          goal=[2, 3, 1],
-#          constraints=[
-#              [1, 4, 2, ">", 8],
-#              [3, 2, 0, ">", 6],
-#          ],
-#          )
 
 lp = LP (qtype="max",
          goal=[2, 3, 1],
@@ -309,9 +304,46 @@ lp = LP (qtype="max",
          ],
          )
 
+lp = LP (qtype="min",
+         goal=[2, 3, 1],
+         constraints=[
+             [1, 3, 4, ">", 8],
+             [3, 2, 2, ">", 18],
+         ],
+         )
 
+lp = LP (qtype="min",
+         goal=[2, 3, 1],
+         constraints=[
+             [1, 4, 2, ">", 8],
+             [3, 2, 0, ">", 6],
+         ],
+         )
 
+lp = LP (qtype="min",
+         goal=[1, 1, -3],
+         constraints=[
+             [1, -2, 1, "<", 1],
+             [2, 1, -4, ">", 3],
+             [1, 0, -2, "=", 1],
+         ],
+         )
 
+lp = LP (qtype="max",
+         goal=[1, 5, 3],
+         constraints=[
+             [1, 2, 1, "=", 5],
+             [2, -1, 1, ">", 6],
+         ],
+         )
+
+lp = LP (qtype="max",
+         goal=[-3, 0, 1],
+         constraints=[
+             [-2, 1, -1, ">", 1],
+             [0, 3, 1, "=", 9],
+         ],
+         )
 
 template = latex_jinja_env.get_template('/utils/lp_model.tex')
 tex = template.render(
