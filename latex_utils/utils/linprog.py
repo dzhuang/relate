@@ -1143,7 +1143,7 @@ class lpDualSimplexSolver(lpSolver):
                 print (messages[status])
                 print ("         Iterations: {0:d}".format (nit2))
 
-        return OptimizeResult(x=x, fun=obj, nit=int (nit2), status=status, slack=slack,
+        return OptimizeResult(x=x, fun=obj, nit=int(nit2), status=status, slack=slack,
                                existing_basic_variable_list=self.existing_basic_variable,
                                slack_list=slack_list, artificial_list=artificial_list, init_tablaeu=self.init_tablaeu,
                                message=messages[status], success=(status == 0))

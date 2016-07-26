@@ -513,6 +513,9 @@ class LP(object):
                        **solve_kwarg
                        )
 
+        if res.status == 0:
+            self.solutionCommon.nit = res.nit
+
 #        print res
         #print res.status
 
@@ -878,6 +881,7 @@ class LpSolution(object):
         self.artificial_str_list_intro = []
         self.all_variable_str_list = []
         self.non_zero_artificial_in_opt = []
+        self.nit = 0
 
         # 用于改进单纯形法
         self.modi_CB_list = []
