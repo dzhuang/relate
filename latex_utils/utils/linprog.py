@@ -19,6 +19,7 @@ Functions
 from __future__ import division, print_function, absolute_import
 
 import numpy as np
+import itertools
 import copy
 from scipy.optimize._linprog import OptimizeResult, _check_unknown_options
 from scipy.optimize._linprog import  _solve_simplex
@@ -215,7 +216,7 @@ def _solve_dual_simplex(T, n, basis, maxiter=1000, phase=2, callback=None,
         if callback is not None:
             solution[:] = 0
             solution[basis[:m]] = T[:m, -1]
-            callback(solution[:n], **{"tableau": T,
+            callback(solution[:n], **{"tablaeu": T,
                                       "phase": phase,
                                       "nit": nit,
                                       "pivot": (pivrow, pivcol),
@@ -283,7 +284,7 @@ class lpSolver(object):
         iteration of the simplex algorithm. The callback must have the
         signature `callback(xk, **kwargs)` where xk is the current solution
         vector and kwargs is a dictionary containing the following::
-        "tableau" : The current Simplex algorithm tableau
+        "tablaeu" : The current Simplex algorithm tablaeu
         "nit" : The current iteration.
         "pivot" : The pivot (row, column) used for the next iteration.
         "phase" : Whether the algorithm is in Phase 1 or Phase 2.
@@ -412,7 +413,7 @@ class lpSolver(object):
 
         cc = np.asarray(c)
 
-        # The initial value of the objective function element in the tableau
+        # The initial value of the objective function element in the tablaeu
         f0 = 0
 
         # The number of variables as given by c
@@ -623,7 +624,7 @@ class lpSolver(object):
                                 self.T, np.s_[self.n + self.n_slack:self.n + self.n_slack + 1], 1)
                         break
 
-    def create_tableau(self):
+    def create_tablaeu(self):
         m = self.m
         n = self.n
         n_slack = self.n_slack
@@ -635,7 +636,7 @@ class lpSolver(object):
         Aub = self.Aub
         bub = self.bub
 
-        # Create the tableau
+        # Create the tablaeu
 
         n_T_extra_lines = self.get_T_extra_n()
         # 2 extra lines for 2 stage simplex method
@@ -645,23 +646,23 @@ class lpSolver(object):
         T = np.zeros([m + n_T_extra_lines, n + n_slack + n_artificial + 1])
 
         if n_T_extra_lines == 2:
-            # Insert objective into tableau
+            # Insert objective into tablaeu
             T[-n_T_extra_lines, :self.n] = self.cc
             T[-n_T_extra_lines, -1] = self.f0
 
         b = T[:-n_T_extra_lines, -1]
 
         if meq > 0:
-            # Add Aeq to the tableau
+            # Add Aeq to the tablaeu
             T[:meq, :n] = Aeq
-            # Add beq to the tableau
+            # Add beq to the tablaeu
             b[:meq] = beq
         if mub > 0:
-            # Add Aub to the tableau
+            # Add Aub to the tablaeu
             T[meq:meq + mub, :n] = Aub
-            # At bub to the tableau
+            # At bub to the tablaeu
             b[meq:meq + mub] = bub
-            # Add the slack variables to the tableau
+            # Add the slack variables to the tablaeu
             np.fill_diagonal(T[meq:m, n:n + n_slack], 1)
             self.slack_list = [i for i in range(n, n + n_slack)]
             self.slack_idx = [0] * meq + range(n, n + n_slack)
@@ -669,9 +670,9 @@ class lpSolver(object):
         self.b = b
         self.T = T
         self.update_exsiting_basis_variable()
-        self.set_up_tableau()
+        self.set_up_tablaeu()
 
-    def set_up_tableau(self):
+    def set_up_tablaeu(self):
         raise NotImplementedError()
 
     def get_T_extra_n(self):
@@ -687,7 +688,7 @@ class lpSimplexSolver(lpSolver):
     def get_T_extra_n(self):
         return 2
 
-    def set_up_tableau(self):
+    def set_up_tablaeu(self):
         n_artificial = self.n_artificial
         n_slack = self.n_slack
         slack_list = self.slack_list
@@ -700,7 +701,7 @@ class lpSimplexSolver(lpSolver):
         meq = self.meq
         T = np.copy(self.T)
 
-        # Further set up the tableau.
+        # Further set up the tablaeu.
         # If a row corresponds to an equality constraint or a negative b (a lower
         # bound constraint), then an artificial variable is added for that row.
         # Also, if b is negative, first flip the signs in that constraint.
@@ -833,7 +834,7 @@ class lpSimplexSolver(lpSolver):
         self.slack_list = slack_list
 
     def solve(self):
-        self.create_tableau()
+        self.create_tablaeu()
         T = np.copy(self.T)
         n = self.n
         basis = np.copy(self.init_basis)
@@ -854,13 +855,13 @@ class lpSimplexSolver(lpSolver):
         nit1, status = _solve_simplex (T, n, basis, phase=1, callback=callback,
                                        maxiter=maxiter, tol=tol, bland=bland)
 
-        # if pseudo objective is zero, remove the last row from the tableau and
+        # if pseudo objective is zero, remove the last row from the tablaeu and
         # proceed to phase 2
 
         if abs(T[-1, -1]) < tol:
-            # Remove the pseudo-objective row from the tableau
+            # Remove the pseudo-objective row from the tablaeu
             T = T[:-1, :]
-            # Remove the artificial variable columns from the tableau
+            # Remove the artificial variable columns from the tablaeu
             # http://docs.scipy.org/doc/numpy/reference/generated/numpy.s_.html#numpy-s 注意
             # http://stackoverflow.com/questions/12616821/numpy-slicing-from-variable
             T = np.delete (T, np.s_[n + n_slack:n + n_slack + n_artificial], 1)
@@ -922,7 +923,7 @@ class lpSimplexSolver(lpSolver):
 class lpDualSimplexSolver(lpSolver):
     method = "dual_simplex"
 
-    def update_exsiting_basis_variable(self):
+    def update_exsiting_basis_variable(self, exclude_varible_idx_list=[]):
         # 与基本单纯形法不同，需重新定义
         n_T_extra_lines = self.get_T_extra_n()
 
@@ -933,11 +934,17 @@ class lpDualSimplexSolver(lpSolver):
                 # 1. p[row]为正，右侧不限
                 # 2. p{row]为负，右侧必须也为负
                 # 则p所在的列(col)可以为备选的基变量
+                # if col in exclude_varible_idx_list:
+                #     print(row)
+                #     print("exclude_varible_idx_list", exclude_varible_idx_list)
+                #     continue
                 if (ele > 0) or (self.T[row, -1] < 0 and ele < 0):
                     ma = np.ma.masked_where(abs(self.T[:-n_T_extra_lines, col]) <= self.tol,
                                             self.T[:-n_T_extra_lines, col], copy=False)
                     if ma.count() == 1 and col < self.n:
-                        self.existing_basic_variable[row] = col
+                        if col not in exclude_varible_idx_list:
+                            print(col, exclude_varible_idx_list)
+                            self.existing_basic_variable[row] = col
 
                         # 减少人工变量的数量，从T中删除1列空白p列，
                         # 注意这里减少的是由于问题原有变量可作为基变量的约束条件在初始化时带来的人工变量数量
@@ -950,13 +957,14 @@ class lpDualSimplexSolver(lpSolver):
     def get_T_extra_n(self):
         return 1
 
-    def set_up_tableau(self):
-        n_artificial = self.n_artificial
+    def set_up_tablaeu(self):
+        n_artificial = copy.deepcopy(self.n_artificial)
         n_slack = self.n_slack
         slack_list = self.slack_list
         slack_idx = self.slack_idx
         cnstr_orig_order = self.cnstr_orig_order
-        existing_basic_variable = self.existing_basic_variable
+        existing_basic_variable = copy.deepcopy(self.existing_basic_variable)
+        #existing_basic_variable[0] = None
         m = self.m
         n = self.n
         b = self.b
@@ -964,122 +972,148 @@ class lpDualSimplexSolver(lpSolver):
         mub = self.mub
         tol = self.tol
 
-        T = np.copy(self.T)
-        T[-1, :n] = self.cc
-        T[-1, -1] = self.f0
+        existing_bv_idx = [existing_basic_variable.index(v) for v in existing_basic_variable if v is not None]
+        exclude_possiblity = []
+        for L in range(len(existing_bv_idx) + 1):
+            for subset in itertools.combinations(existing_bv_idx, L):
+                exclude_possiblity.append(list(subset))
+        
+        found_dual_tablaeu = False
+        
+        for exc in exclude_possiblity:
+            print(exc)
+            n_artificial = copy.deepcopy(self.n_artificial)
+            if exc:
+                self.update_exsiting_basis_variable(exclude_varible_idx_list=exc)
+                existing_basic_variable = self.existing_basic_variable
+                assert existing_basic_variable[0] == None
+                print(existing_basic_variable)
 
-        slcount = 0
-        avcount = 0
-        basis = np.zeros(m, dtype=int)
-        artificial_list = []
-        introduced_basis_idx = [None] * m
+            T = np.copy(self.T)
+            T[-1, :n] = self.cc
+            T[-1, -1] = self.f0
+    
+            slcount = 0
+            avcount = 0
+            basis = np.zeros(m, dtype=int)
+            artificial_list = []
+            introduced_basis_idx = [None] * m
+    
+            if cnstr_orig_order:
+    
+                # 按传统解法该行需要引入人工变量
+                r_need_introduce_artificial = np.zeros(m, dtype=bool)
+                introduced_slack_count = 0
+                for i in range (m):
+                    if i < meq or b[i] < 0:
+                        if existing_basic_variable[i] is None:
+                            r_need_introduce_artificial[i] = True
+    
+                    # 得到标准化时引入的松弛变量的index
+                    if i >= meq and i < meq + mub:
+                        introduced_basis_idx[i] = n + introduced_slack_count
+                        introduced_slack_count += 1
+    
+                av_ma = np.ma.masked_where(r_need_introduce_artificial==False, r_need_introduce_artificial, copy=False)
+                n_artificial_to_be_introduced = av_ma.count()
+    
+                T = adjust_order(T, cnstr_orig_order)
+                r_need_introduce_artificial = adjust_order(r_need_introduce_artificial, cnstr_orig_order)
+                existing_basic_variable = adjust_order(existing_basic_variable, cnstr_orig_order)
+                b = adjust_order(b, cnstr_orig_order)
+                slack_idx = adjust_order(slack_idx, cnstr_orig_order)
+                introduced_basis_idx = adjust_order(introduced_basis_idx, cnstr_orig_order)
+    
+                for i in range (m):
+                    print(r_need_introduce_artificial)
+                    if r_need_introduce_artificial[i]:
+    
+                        # 如果该行(按传统解法）需要引入人工变量，但该行没有基变量，则问题不适合用对偶单纯形法求解
+                        if not introduced_basis_idx[i]:
+                            raise ValueError(
+                                "Invalid input for linprog with method = '%s'.  "
+                                "This method cannot solve problems with constraints line %d "
+                                "because it need to introduce an artificial variable."
+                                % (self.method, i+1))
+    
+                        # 由于该行有基变量，所以避免了引入人工变量
+                        basis[i] = introduced_basis_idx[i]
+                        print(basis)
+    
+                        n_artificial_to_be_introduced -= 1
+                        n_artificial -= 1
+                        print("n_artificial", n_artificial)
+                        T = np.delete(
+                            T, np.s_[n + n_slack:n + n_slack + 1], 1)
+                        print(T)
+                        assert T.shape[1] == n + n_slack + n_artificial_to_be_introduced + 1
+    
+                    elif existing_basic_variable[i] is not None:
+                        if b[i] < 0:
+                            # negative slack -- surplus variable
+                            # use negative to represent it is a negative slack
+                            for j, sl in enumerate (slack_list):
+                                if sl == slack_idx[i]:
+                                    slack_list[j] = -sl
+    
+                        pivot_value = T[i, existing_basic_variable[i]]
+                        b[i] /= pivot_value
+    
+                        # 以下使得引入的松弛或剩余变量不被除（保持系数为1或-1）
+                        T[i, :n] /= pivot_value
+                        if pivot_value < 0:
+                            T[i, n:-1] *= -1
+    
+                        T[i, -1] = b[i]
+                        basis[i] = existing_basic_variable[i]
+                    else:
+                        basis[i] = slack_idx[i]
+                        slcount += 1
+    
+                # 确保问题中没有人工变量
+                assert n_artificial == 0
+    
+            else:
+                pass
+                # #未修订
+                # for i in range (m):
+                #     if i < meq or b[i] < 0:
+                #         # basic variable i is in column n+n_slack+avcount
+                #         basis[i] = n + n_slack + avcount
+                #         artificial_list.append (basis[i])
+                #         # r_artificial[avcount] = i
+                #         avcount += 1
+                #         if b[i] < 0:
+                #             b[i] *= -1
+                #             T[i, :-1] *= -1
+                #
+                #             # negative slack -- surplus variable
+                #             # use negative to represent it is a negative slack
+                #             for j, sl in enumerate (slack_list):
+                #                 if sl == n + i - 1:
+                #                     slack_list[j] = -sl
+                #
+                #         T[i, basis[i]] = 1
+                #         T[i, basis[i]] = 1
+                #         T[-1, basis[i]] = BIG_M
+                #     else:
+                #         # basic variable i is in column n+slcount
+                #         basis[i] = n + slcount
+                #         slcount += 1
+    
+            for i, exist_bv in enumerate(existing_basic_variable):
+                if exist_bv is not None:
+                    substract_value = T[-1, exist_bv]
+                    T[-1, :] -= T[i, :] * substract_value
+            self.T = T
+    
+            ma = np.ma.masked_where(T[-1, :-1] >= -tol, T[-1, :-1], copy=False)
+            if ma.count() > 0:
+                continue
+            else:
+                found_dual_tablaeu = True
 
-        if cnstr_orig_order:
-
-            # 按传统解法该行需要引入人工变量
-            r_need_introduce_artificial = np.zeros(m, dtype=bool)
-            introduced_slack_count = 0
-            for i in range (m):
-                if i < meq or b[i] < 0:
-                    if existing_basic_variable[i] is None:
-                        r_need_introduce_artificial[i] = True
-
-                # 得到标准化时引入的松弛变量的index
-                if i >= meq and i < meq + mub:
-                    introduced_basis_idx[i] = n + introduced_slack_count
-                    introduced_slack_count += 1
-
-            av_ma = np.ma.masked_where(r_need_introduce_artificial==False, r_need_introduce_artificial, copy=False)
-            n_artificial_to_be_introduced = av_ma.count()
-
-            T = adjust_order(T, cnstr_orig_order)
-            r_need_introduce_artificial = adjust_order(r_need_introduce_artificial, cnstr_orig_order)
-            existing_basic_variable = adjust_order(existing_basic_variable, cnstr_orig_order)
-            b = adjust_order(b, cnstr_orig_order)
-            slack_idx = adjust_order(slack_idx, cnstr_orig_order)
-            introduced_basis_idx = adjust_order(introduced_basis_idx, cnstr_orig_order)
-
-            for i in range (m):
-                if r_need_introduce_artificial[i]:
-
-                    # 如果该行(按传统解法）需要引入人工变量，但该行没有基变量，则问题不适合用对偶单纯形法求解
-                    if not introduced_basis_idx[i]:
-                        raise ValueError(
-                            "Invalid input for linprog with method = '%s'.  "
-                            "This method cannot solve problems with constraints line %d "
-                            "because it need to introduce an artificial variable."
-                            % (self.method, i+1))
-
-                    # 由于该行有基变量，所以避免了引入人工变量
-                    basis[i] = introduced_basis_idx[i]
-
-                    n_artificial_to_be_introduced -= 1
-                    n_artificial -= 1
-                    T = np.delete(
-                        T, np.s_[n + n_slack:n + n_slack + 1], 1)
-                    assert T.shape[1] == n + n_slack + n_artificial_to_be_introduced + 1
-
-                elif existing_basic_variable[i] is not None:
-                    if b[i] < 0:
-                        # negative slack -- surplus variable
-                        # use negative to represent it is a negative slack
-                        for j, sl in enumerate (slack_list):
-                            if sl == slack_idx[i]:
-                                slack_list[j] = -sl
-
-                    pivot_value = T[i, existing_basic_variable[i]]
-                    b[i] /= pivot_value
-
-                    # 以下使得引入的松弛或剩余变量不被除（保持系数为1或-1）
-                    T[i, :n] /= pivot_value
-                    if pivot_value < 0:
-                        T[i, n:-1] *= -1
-
-                    T[i, -1] = b[i]
-                    basis[i] = existing_basic_variable[i]
-                else:
-                    basis[i] = slack_idx[i]
-                    slcount += 1
-
-            # 确保问题中没有人工变量
-            assert n_artificial == 0
-
-        else:
-            pass
-            # #未修订
-            # for i in range (m):
-            #     if i < meq or b[i] < 0:
-            #         # basic variable i is in column n+n_slack+avcount
-            #         basis[i] = n + n_slack + avcount
-            #         artificial_list.append (basis[i])
-            #         # r_artificial[avcount] = i
-            #         avcount += 1
-            #         if b[i] < 0:
-            #             b[i] *= -1
-            #             T[i, :-1] *= -1
-            #
-            #             # negative slack -- surplus variable
-            #             # use negative to represent it is a negative slack
-            #             for j, sl in enumerate (slack_list):
-            #                 if sl == n + i - 1:
-            #                     slack_list[j] = -sl
-            #
-            #         T[i, basis[i]] = 1
-            #         T[i, basis[i]] = 1
-            #         T[-1, basis[i]] = BIG_M
-            #     else:
-            #         # basic variable i is in column n+slcount
-            #         basis[i] = n + slcount
-            #         slcount += 1
-
-        for i, exist_bv in enumerate(existing_basic_variable):
-            if exist_bv is not None:
-                substract_value = T[-1, exist_bv]
-                T[-1, :] -= T[i, :] * substract_value
-        self.T = T
-
-        ma = np.ma.masked_where(T[-1, :-1] >= -tol, T[-1, :-1], copy=False)
-        if ma.count() > 0:
+        if not found_dual_tablaeu:                
             raise ValueError(
                 "Invalid input for linprog with method = '%s'.  "
                 "This method cannot solve problems with non-optimized bar cj." % self.method)
@@ -1089,7 +1123,7 @@ class lpDualSimplexSolver(lpSolver):
         self.slack_list = slack_list
 
     def solve(self):
-        self.create_tableau()
+        self.create_tablaeu()
         #print(self.T)
         T = np.copy(self.T)
         n = self.n
@@ -1154,7 +1188,7 @@ class lpBigMSolver(lpSolver):
     def get_T_extra_n(self):
         return 1
 
-    def set_up_tableau(self):
+    def set_up_tablaeu(self):
         n_artificial = self.n_artificial
         n_slack = self.n_slack
         slack_list = self.slack_list
@@ -1167,7 +1201,7 @@ class lpBigMSolver(lpSolver):
         meq = self.meq
         T = np.copy(self.T)
 
-        # Further set up the tableau.
+        # Further set up the tablaeu.
         # If a row corresponds to an equality constraint or a negative b (a lower
         # bound constraint), then an artificial variable is added for that row.
         # Also, if b is negative, first flip the signs in that constraint.
@@ -1287,7 +1321,7 @@ class lpBigMSolver(lpSolver):
         self.slack_list = slack_list
 
     def solve(self):
-        self.create_tableau()
+        self.create_tablaeu()
         T = np.copy(self.T)
         n = self.n
         basis = np.copy(self.init_basis)
