@@ -216,7 +216,7 @@ def _solve_dual_simplex(T, n, basis, maxiter=1000, phase=2, callback=None,
         if callback is not None:
             solution[:] = 0
             solution[basis[:m]] = T[:m, -1]
-            callback(solution[:n], **{"tablaeu": T,
+            callback(solution[:n], **{"tableau": T,
                                       "phase": phase,
                                       "nit": nit,
                                       "pivot": (pivrow, pivcol),
@@ -284,7 +284,7 @@ class lpSolver(object):
         iteration of the simplex algorithm. The callback must have the
         signature `callback(xk, **kwargs)` where xk is the current solution
         vector and kwargs is a dictionary containing the following::
-        "tablaeu" : The current Simplex algorithm tablaeu
+        "tableau" : The current Simplex algorithm tableau
         "nit" : The current iteration.
         "pivot" : The pivot (row, column) used for the next iteration.
         "phase" : Whether the algorithm is in Phase 1 or Phase 2.
@@ -413,7 +413,7 @@ class lpSolver(object):
 
         cc = np.asarray(c)
 
-        # The initial value of the objective function element in the tablaeu
+        # The initial value of the objective function element in the tableau
         f0 = 0
 
         # The number of variables as given by c
@@ -595,7 +595,7 @@ class lpSolver(object):
         self.b = None
 
         self.T = None
-        self.init_tablaeu = None
+        self.init_tableau = None
         self.slack_list =[]
         self.slack_idx = []
         self.artificial_list = []
@@ -624,7 +624,7 @@ class lpSolver(object):
                                 self.T, np.s_[self.n + self.n_slack:self.n + self.n_slack + 1], 1)
                         break
 
-    def create_tablaeu(self):
+    def create_tableau(self):
         m = self.m
         n = self.n
         n_slack = self.n_slack
@@ -636,7 +636,7 @@ class lpSolver(object):
         Aub = self.Aub
         bub = self.bub
 
-        # Create the tablaeu
+        # Create the tableau
 
         n_T_extra_lines = self.get_T_extra_n()
         # 2 extra lines for 2 stage simplex method
@@ -646,23 +646,23 @@ class lpSolver(object):
         T = np.zeros([m + n_T_extra_lines, n + n_slack + n_artificial + 1])
 
         if n_T_extra_lines == 2:
-            # Insert objective into tablaeu
+            # Insert objective into tableau
             T[-n_T_extra_lines, :self.n] = self.cc
             T[-n_T_extra_lines, -1] = self.f0
 
         b = T[:-n_T_extra_lines, -1]
 
         if meq > 0:
-            # Add Aeq to the tablaeu
+            # Add Aeq to the tableau
             T[:meq, :n] = Aeq
-            # Add beq to the tablaeu
+            # Add beq to the tableau
             b[:meq] = beq
         if mub > 0:
-            # Add Aub to the tablaeu
+            # Add Aub to the tableau
             T[meq:meq + mub, :n] = Aub
-            # At bub to the tablaeu
+            # At bub to the tableau
             b[meq:meq + mub] = bub
-            # Add the slack variables to the tablaeu
+            # Add the slack variables to the tableau
             np.fill_diagonal(T[meq:m, n:n + n_slack], 1)
             self.slack_list = [i for i in range(n, n + n_slack)]
             self.slack_idx = [0] * meq + range(n, n + n_slack)
@@ -670,9 +670,9 @@ class lpSolver(object):
         self.b = b
         self.T = T
         self.update_exsiting_basis_variable()
-        self.set_up_tablaeu()
+        self.set_up_tableau()
 
-    def set_up_tablaeu(self):
+    def set_up_tableau(self):
         raise NotImplementedError()
 
     def get_T_extra_n(self):
@@ -688,7 +688,7 @@ class lpSimplexSolver(lpSolver):
     def get_T_extra_n(self):
         return 2
 
-    def set_up_tablaeu(self):
+    def set_up_tableau(self):
         n_artificial = self.n_artificial
         n_slack = self.n_slack
         slack_list = self.slack_list
@@ -701,7 +701,7 @@ class lpSimplexSolver(lpSolver):
         meq = self.meq
         T = np.copy(self.T)
 
-        # Further set up the tablaeu.
+        # Further set up the tableau.
         # If a row corresponds to an equality constraint or a negative b (a lower
         # bound constraint), then an artificial variable is added for that row.
         # Also, if b is negative, first flip the signs in that constraint.
@@ -834,7 +834,7 @@ class lpSimplexSolver(lpSolver):
         self.slack_list = slack_list
 
     def solve(self):
-        self.create_tablaeu()
+        self.create_tableau()
         T = np.copy(self.T)
         n = self.n
         basis = np.copy(self.init_basis)
@@ -855,13 +855,13 @@ class lpSimplexSolver(lpSolver):
         nit1, status = _solve_simplex (T, n, basis, phase=1, callback=callback,
                                        maxiter=maxiter, tol=tol, bland=bland)
 
-        # if pseudo objective is zero, remove the last row from the tablaeu and
+        # if pseudo objective is zero, remove the last row from the tableau and
         # proceed to phase 2
 
         if abs(T[-1, -1]) < tol:
-            # Remove the pseudo-objective row from the tablaeu
+            # Remove the pseudo-objective row from the tableau
             T = T[:-1, :]
-            # Remove the artificial variable columns from the tablaeu
+            # Remove the artificial variable columns from the tableau
             # http://docs.scipy.org/doc/numpy/reference/generated/numpy.s_.html#numpy-s 注意
             # http://stackoverflow.com/questions/12616821/numpy-slicing-from-variable
             T = np.delete (T, np.s_[n + n_slack:n + n_slack + n_artificial], 1)
@@ -923,7 +923,7 @@ class lpSimplexSolver(lpSolver):
 class lpDualSimplexSolver(lpSolver):
     method = "dual_simplex"
 
-    def update_exsiting_basis_variable(self, exclude_varible_idx_list=[]):
+    def update_exsiting_basis_variable(self):
         # 与基本单纯形法不同，需重新定义
         n_T_extra_lines = self.get_T_extra_n()
 
@@ -934,17 +934,11 @@ class lpDualSimplexSolver(lpSolver):
                 # 1. p[row]为正，右侧不限
                 # 2. p{row]为负，右侧必须也为负
                 # 则p所在的列(col)可以为备选的基变量
-                # if col in exclude_varible_idx_list:
-                #     print(row)
-                #     print("exclude_varible_idx_list", exclude_varible_idx_list)
-                #     continue
                 if (ele > 0) or (self.T[row, -1] < 0 and ele < 0):
                     ma = np.ma.masked_where(abs(self.T[:-n_T_extra_lines, col]) <= self.tol,
                                             self.T[:-n_T_extra_lines, col], copy=False)
                     if ma.count() == 1 and col < self.n:
-                        if col not in exclude_varible_idx_list:
-                            print(col, exclude_varible_idx_list)
-                            self.existing_basic_variable[row] = col
+                        self.existing_basic_variable[row] = col
 
                         # 减少人工变量的数量，从T中删除1列空白p列，
                         # 注意这里减少的是由于问题原有变量可作为基变量的约束条件在初始化时带来的人工变量数量
@@ -957,14 +951,13 @@ class lpDualSimplexSolver(lpSolver):
     def get_T_extra_n(self):
         return 1
 
-    def set_up_tablaeu(self):
+    def set_up_tableau(self):
         n_artificial = copy.deepcopy(self.n_artificial)
         n_slack = self.n_slack
         slack_list = self.slack_list
         slack_idx = self.slack_idx
         cnstr_orig_order = self.cnstr_orig_order
         existing_basic_variable = copy.deepcopy(self.existing_basic_variable)
-        #existing_basic_variable[0] = None
         m = self.m
         n = self.n
         b = self.b
@@ -978,15 +971,15 @@ class lpDualSimplexSolver(lpSolver):
             for subset in itertools.combinations(existing_bv_idx, L):
                 exclude_possiblity.append(list(subset))
         
-        found_dual_tablaeu = False
+        found_dual_tableau = False
         
-        for exc in exclude_possiblity:
-            print(exc)
+        for exclude in exclude_possiblity:
+            existing_basic_variable = copy.deepcopy (self.existing_basic_variable)
             n_artificial = copy.deepcopy(self.n_artificial)
-            if exc:
-                self.update_exsiting_basis_variable(exclude_varible_idx_list=exc)
-                existing_basic_variable = self.existing_basic_variable
-                assert existing_basic_variable[0] == None
+            if exclude:
+                for i, bv in enumerate(existing_basic_variable):
+                    if bv and bv in exclude:
+                        existing_basic_variable[i] = None
                 print(existing_basic_variable)
 
             T = np.copy(self.T)
@@ -1008,6 +1001,8 @@ class lpDualSimplexSolver(lpSolver):
                     if i < meq or b[i] < 0:
                         if existing_basic_variable[i] is None:
                             r_need_introduce_artificial[i] = True
+
+                    
     
                     # 得到标准化时引入的松弛变量的index
                     if i >= meq and i < meq + mub:
@@ -1111,19 +1106,19 @@ class lpDualSimplexSolver(lpSolver):
             if ma.count() > 0:
                 continue
             else:
-                found_dual_tablaeu = True
+                found_dual_tableau = True
 
-        if not found_dual_tablaeu:                
+        if not found_dual_tableau:                
             raise ValueError(
                 "Invalid input for linprog with method = '%s'.  "
                 "This method cannot solve problems with non-optimized bar cj." % self.method)
-        self.init_tablaeu = np.copy(T)
+        self.init_tableau = np.copy(T)
         self.init_basis = basis
         self.artificial_list = artificial_list
         self.slack_list = slack_list
 
     def solve(self):
-        self.create_tablaeu()
+        self.create_tableau()
         #print(self.T)
         T = np.copy(self.T)
         n = self.n
@@ -1179,7 +1174,7 @@ class lpDualSimplexSolver(lpSolver):
 
         return OptimizeResult(x=x, fun=obj, nit=int(nit2), status=status, slack=slack,
                                existing_basic_variable_list=self.existing_basic_variable,
-                               slack_list=slack_list, artificial_list=artificial_list, init_tablaeu=self.init_tablaeu,
+                               slack_list=slack_list, artificial_list=artificial_list, init_tableau=self.init_tableau,
                                message=messages[status], success=(status == 0))
 
 
@@ -1188,7 +1183,7 @@ class lpBigMSolver(lpSolver):
     def get_T_extra_n(self):
         return 1
 
-    def set_up_tablaeu(self):
+    def set_up_tableau(self):
         n_artificial = self.n_artificial
         n_slack = self.n_slack
         slack_list = self.slack_list
@@ -1201,7 +1196,7 @@ class lpBigMSolver(lpSolver):
         meq = self.meq
         T = np.copy(self.T)
 
-        # Further set up the tablaeu.
+        # Further set up the tableau.
         # If a row corresponds to an equality constraint or a negative b (a lower
         # bound constraint), then an artificial variable is added for that row.
         # Also, if b is negative, first flip the signs in that constraint.
@@ -1302,7 +1297,7 @@ class lpBigMSolver(lpSolver):
         # 大M法的目标函数所在的TGet the goal of the big-m problem
         T[-1, :n] = self.cc
         T[-1, -1] = self.f0
-        self.init_tablaeu = np.copy(T)
+        self.init_tableau = np.copy(T)
 
         # Make the artificial variables basic feasible variables by subtracting
         # each row with an artificial variable from the Phase 1 objective
@@ -1321,7 +1316,7 @@ class lpBigMSolver(lpSolver):
         self.slack_list = slack_list
 
     def solve(self):
-        self.create_tablaeu()
+        self.create_tableau()
         T = np.copy(self.T)
         n = self.n
         basis = np.copy(self.init_basis)
@@ -1374,11 +1369,11 @@ class lpBigMSolver(lpSolver):
                 print (messages[status])
                 print ("         Iterations: {0:d}".format (nit))
 
-        #print("self.init_tablaeu", self.init_tablaeu)
+        #print("self.init_tableau", self.init_tableau)
 
         return OptimizeResult (x=x, fun=obj, nit=int (nit), status=status, slack=slack,
                                existing_basic_variable_list=self.existing_basic_variable,
-                               slack_list=slack_list, artificial_list=artificial_list, init_tablaeu=self.init_tablaeu,
+                               slack_list=slack_list, artificial_list=artificial_list, init_tableau=self.init_tableau,
                                message=messages[status], success=(status == 0))
 
 
