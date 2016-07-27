@@ -108,13 +108,13 @@ lp = LP(qtype="min",
         ],
         )
 
-lp = LP(qtype="min",
-        goal=[7, 8, 9],
-        constraints=[
-            [1, 2, 3, ">", 48],
-            [0, 2, 1, ">", 20],
-        ],
-        )
+# lp = LP(qtype="min",
+#         goal=[7, 0, 8, 9],
+#         constraints=[
+#             [1, 0, 2, 3, ">", 48],
+#             [0, 1, 2, 1, ">", 20],
+#         ],
+#         )
 
 template = latex_jinja_env.get_template('/utils/lp_model.tex')
 tex = template.render(

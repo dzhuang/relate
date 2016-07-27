@@ -952,9 +952,7 @@ class lpDualSimplexSolver(lpSolver):
         return 1
 
     def set_up_tableau(self):
-        n_artificial = copy.deepcopy(self.n_artificial)
         n_slack = self.n_slack
-        slack_list = self.slack_list
         slack_idx = self.slack_idx
         cnstr_orig_order = self.cnstr_orig_order
         existing_basic_variable = copy.deepcopy(self.existing_basic_variable)
@@ -965,22 +963,29 @@ class lpDualSimplexSolver(lpSolver):
         mub = self.mub
         tol = self.tol
 
-        existing_bv_idx = [existing_basic_variable.index(v) for v in existing_basic_variable if v is not None]
-        exclude_possiblity = []
+        existing_bv_idx = [
+            existing_basic_variable.index(v) for v in existing_basic_variable if v is not None]
+        
+        # 有时原有的变量作为基变量时，不符合使用对偶单纯形法的条件，
+        # 这时需要把原有的变量排除出基变量向量。
+        # 这里的做法是，把所有原有变量包含在基变量向量中的可能性全部列举出来，即exclude_possibility
+        # 当发现某个排除的可能性可以使用对偶单纯形法时，则使用该方案
+        exclude_possibility = []
         for L in range(len(existing_bv_idx) + 1):
             for subset in itertools.combinations(existing_bv_idx, L):
-                exclude_possiblity.append(list(subset))
-        
+                exclude_possibility.append(list(subset))
+
         found_dual_tableau = False
         
-        for exclude in exclude_possiblity:
-            existing_basic_variable = copy.deepcopy (self.existing_basic_variable)
+        for exclude in exclude_possibility:
+            existing_basic_variable = copy.deepcopy(self.existing_basic_variable)
             n_artificial = copy.deepcopy(self.n_artificial)
+            slack_list = copy.deepcopy(self.slack_list)
             if exclude:
                 for i, bv in enumerate(existing_basic_variable):
-                    if bv and bv in exclude:
+                    if bv is not None and bv in exclude:
                         existing_basic_variable[i] = None
-                print(existing_basic_variable)
+            print("existing_basic_variable",existing_basic_variable)
 
             T = np.copy(self.T)
             T[-1, :n] = self.cc
@@ -1002,8 +1007,11 @@ class lpDualSimplexSolver(lpSolver):
                         if existing_basic_variable[i] is None:
                             r_need_introduce_artificial[i] = True
 
-                    
-    
+                    # 如果原本可以作基变量的变量被排除在基变量向量之外，
+                    # 说明该变量
+                    if self.existing_basic_variable[i] != existing_basic_variable[i]:
+                        r_need_introduce_artificial[i] = False
+
                     # 得到标准化时引入的松弛变量的index
                     if i >= meq and i < meq + mub:
                         introduced_basis_idx[i] = n + introduced_slack_count
@@ -1100,18 +1108,23 @@ class lpDualSimplexSolver(lpSolver):
                 if exist_bv is not None:
                     substract_value = T[-1, exist_bv]
                     T[-1, :] -= T[i, :] * substract_value
-            self.T = T
-    
+
             ma = np.ma.masked_where(T[-1, :-1] >= -tol, T[-1, :-1], copy=False)
             if ma.count() > 0:
+                print("failed")
                 continue
             else:
                 found_dual_tableau = True
+                print("found!")
+                break
 
-        if not found_dual_tableau:                
+        if not found_dual_tableau:
             raise ValueError(
                 "Invalid input for linprog with method = '%s'.  "
                 "This method cannot solve problems with non-optimized bar cj." % self.method)
+
+        self.existing_basic_variable = existing_basic_variable
+        self.T = T
         self.init_tableau = np.copy(T)
         self.init_basis = basis
         self.artificial_list = artificial_list
