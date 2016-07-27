@@ -824,7 +824,7 @@ class lpSimplexSolver(lpSolver):
             T[-1, :] = T[-1, :] - T[r, :]
 
         for i, exist_bv in enumerate(existing_basic_variable):
-            if exist_bv:
+            if exist_bv is not None:
                 substract_value = T[-2, exist_bv]
                 T[-2, :] -= T[i, :] * substract_value
 
@@ -963,9 +963,10 @@ class lpDualSimplexSolver(lpSolver):
         mub = self.mub
         tol = self.tol
 
+        # 现有的可作为基变量的变量，注意：由于特定的目的，去掉了等式约束中已有的基变量
         existing_bv_idx = [
-            existing_basic_variable.index(v) for v in existing_basic_variable if v is not None]
-        
+            existing_basic_variable.index(v) for v in existing_basic_variable[meq:] if v is not None]
+
         # 有时原有的变量作为基变量时，不符合使用对偶单纯形法的条件，
         # 这时需要把原有的变量排除出基变量向量。
         # 这里的做法是，把所有原有变量包含在基变量向量中的可能性全部列举出来，即exclude_possibility
@@ -981,24 +982,24 @@ class lpDualSimplexSolver(lpSolver):
             existing_basic_variable = copy.deepcopy(self.existing_basic_variable)
             n_artificial = copy.deepcopy(self.n_artificial)
             slack_list = copy.deepcopy(self.slack_list)
+            b = copy.deepcopy(self.b)
             if exclude:
                 for i, bv in enumerate(existing_basic_variable):
                     if bv is not None and bv in exclude:
                         existing_basic_variable[i] = None
-            print("existing_basic_variable",existing_basic_variable)
 
             T = np.copy(self.T)
             T[-1, :n] = self.cc
             T[-1, -1] = self.f0
-    
+
             slcount = 0
             avcount = 0
             basis = np.zeros(m, dtype=int)
             artificial_list = []
             introduced_basis_idx = [None] * m
-    
+
             if cnstr_orig_order:
-    
+
                 # 按传统解法该行需要引入人工变量
                 r_need_introduce_artificial = np.zeros(m, dtype=bool)
                 introduced_slack_count = 0
@@ -1008,7 +1009,7 @@ class lpDualSimplexSolver(lpSolver):
                             r_need_introduce_artificial[i] = True
 
                     # 如果原本可以作基变量的变量被排除在基变量向量之外，
-                    # 说明该变量
+                    # 则设置该变量不需要引入人工变量
                     if self.existing_basic_variable[i] != existing_basic_variable[i]:
                         r_need_introduce_artificial[i] = False
 
@@ -1016,21 +1017,28 @@ class lpDualSimplexSolver(lpSolver):
                     if i >= meq and i < meq + mub:
                         introduced_basis_idx[i] = n + introduced_slack_count
                         introduced_slack_count += 1
-    
+
                 av_ma = np.ma.masked_where(r_need_introduce_artificial==False, r_need_introduce_artificial, copy=False)
                 n_artificial_to_be_introduced = av_ma.count()
-    
+
                 T = adjust_order(T, cnstr_orig_order)
                 r_need_introduce_artificial = adjust_order(r_need_introduce_artificial, cnstr_orig_order)
                 existing_basic_variable = adjust_order(existing_basic_variable, cnstr_orig_order)
                 b = adjust_order(b, cnstr_orig_order)
                 slack_idx = adjust_order(slack_idx, cnstr_orig_order)
                 introduced_basis_idx = adjust_order(introduced_basis_idx, cnstr_orig_order)
-    
+
                 for i in range (m):
-                    print(r_need_introduce_artificial)
+                    if i >= meq and b[i] < 0:
+                        # negative slack -- surplus variable
+                        # use negative to represent it is a negative slack
+                        for j, sl in enumerate (slack_list):
+                            if sl == slack_idx[i]:
+                                slack_list[j] = -sl
+
+                for i in range (m):
                     if r_need_introduce_artificial[i]:
-    
+
                         # 如果该行(按传统解法）需要引入人工变量，但该行没有基变量，则问题不适合用对偶单纯形法求解
                         if not introduced_basis_idx[i]:
                             raise ValueError(
@@ -1038,44 +1046,33 @@ class lpDualSimplexSolver(lpSolver):
                                 "This method cannot solve problems with constraints line %d "
                                 "because it need to introduce an artificial variable."
                                 % (self.method, i+1))
-    
+
                         # 由于该行有基变量，所以避免了引入人工变量
                         basis[i] = introduced_basis_idx[i]
-                        print(basis)
-    
                         n_artificial_to_be_introduced -= 1
                         n_artificial -= 1
-                        print("n_artificial", n_artificial)
                         T = np.delete(
                             T, np.s_[n + n_slack:n + n_slack + 1], 1)
-                        print(T)
                         assert T.shape[1] == n + n_slack + n_artificial_to_be_introduced + 1
-    
+
                     elif existing_basic_variable[i] is not None:
-                        if b[i] < 0:
-                            # negative slack -- surplus variable
-                            # use negative to represent it is a negative slack
-                            for j, sl in enumerate (slack_list):
-                                if sl == slack_idx[i]:
-                                    slack_list[j] = -sl
-    
                         pivot_value = T[i, existing_basic_variable[i]]
                         b[i] /= pivot_value
-    
+
                         # 以下使得引入的松弛或剩余变量不被除（保持系数为1或-1）
                         T[i, :n] /= pivot_value
                         if pivot_value < 0:
                             T[i, n:-1] *= -1
-    
+
                         T[i, -1] = b[i]
                         basis[i] = existing_basic_variable[i]
                     else:
                         basis[i] = slack_idx[i]
                         slcount += 1
-    
+
                 # 确保问题中没有人工变量
                 assert n_artificial == 0
-    
+
             else:
                 pass
                 # #未修订
@@ -1103,7 +1100,7 @@ class lpDualSimplexSolver(lpSolver):
                 #         # basic variable i is in column n+slcount
                 #         basis[i] = n + slcount
                 #         slcount += 1
-    
+
             for i, exist_bv in enumerate(existing_basic_variable):
                 if exist_bv is not None:
                     substract_value = T[-1, exist_bv]
@@ -1111,11 +1108,11 @@ class lpDualSimplexSolver(lpSolver):
 
             ma = np.ma.masked_where(T[-1, :-1] >= -tol, T[-1, :-1], copy=False)
             if ma.count() > 0:
-                print("failed")
+                # print("failed")
                 continue
             else:
                 found_dual_tableau = True
-                print("found!")
+                # print("found!")
                 break
 
         if not found_dual_tableau:
@@ -1132,7 +1129,6 @@ class lpDualSimplexSolver(lpSolver):
 
     def solve(self):
         self.create_tableau()
-        #print(self.T)
         T = np.copy(self.T)
         n = self.n
         basis = np.copy(self.init_basis)
@@ -1319,7 +1315,7 @@ class lpBigMSolver(lpSolver):
             T[-1, -1] -= T[r, -1] * BIG_M
 
         for i, exist_bv in enumerate(existing_basic_variable):
-            if exist_bv:
+            if exist_bv is not None:
                 substract_value = T[-1, exist_bv]
                 T[-1, :] -= T[i, :] * substract_value
 
