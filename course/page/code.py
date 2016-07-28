@@ -74,6 +74,7 @@ class InvalidPingResponse(RuntimeError):
 
 
 def request_python_run(run_req, run_timeout, image=None):
+    import platform
     import json
     from six.moves import http_client
     import docker
@@ -97,11 +98,19 @@ def request_python_run(run_req, run_timeout, image=None):
                 "unix://var/run/docker.sock")
         docker_tls = getattr(settings, "RELATE_DOCKER_TLS_CONFIG",
                 None)
-        docker_cnx = docker.Client(
-                base_url=docker_url,
-                tls=docker_tls,
+
+        if platform.system().lower().startswith("linux"):
+            docker_cnx = docker.Client(
+                    base_url=docker_url,
+                    tls=docker_tls,
+                    timeout=docker_timeout,
+                    version="1.19")
+        else:
+            from docker.utils import kwargs_from_env
+            docker_cnx = docker.Client(
                 timeout=docker_timeout,
-                version="1.19")
+                **kwargs_from_env(assert_hostname=False)
+            )
 
         if image is None:
             image = settings.RELATE_DOCKER_RUNPY_IMAGE
@@ -137,8 +146,11 @@ def request_python_run(run_req, run_timeout, image=None):
                     ["NetworkSettings"]["Ports"]["%d/tcp" % RUNPY_PORT])
             port_host_ip = port_info.get("HostIp")
 
-            if port_host_ip != "0.0.0.0":
-                connect_host_ip = port_host_ip
+            if platform.system().lower().startswith("linux"):
+                if port_host_ip != "0.0.0.0":
+                    connect_host_ip = port_host_ip
+            else:
+                connect_host_ip = getattr(settings, "RELATE_DOCKER_HOST_IP")
 
             port = int(port_info["HostPort"])
         else:
@@ -415,17 +427,23 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
 
           feedback.check_numpy_array_sanity(name, num_axes, data)
 
-          feedback.check_numpy_array_features(name, ref, data)
+          feedback.check_numpy_array_features(name, ref, data, report_failure=True)
 
           feedback.check_numpy_array_allclose(name, ref, data,
-              accuracy_critical=True, rtol=1e-5, atol=1e-8,
-              report_success=True)
-          # returns True if accurate
+                  accuracy_critical=True, rtol=1e-5, atol=1e-8,
+                  report_success=True, report_failure=True)
+              # If report_failure is True, this function will only return
+              # if *data* passes the tests. It will return *True* in this
+              # case.
+              #
+              # If report_failure is False, this function will always return,
+              # and the return value will indicate whether *data* passed the
+              # accuracy/shape/kind checks.
 
           feedback.check_list(name, ref, data, entry_type=None)
 
           feedback.check_scalar(name, ref, data, accuracy_critical=True,
-              rtol=1e-5, atol=1e-8, report_success=True)
+              rtol=1e-5, atol=1e-8, report_success=True, report_failure=True)
           # returns True if accurate
 
     * ``data_files``: A dictionary mapping file names from :attr:`data_files`
@@ -535,23 +553,10 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
         if correct_code is None:
             correct_code = ""
 
-        import re
-        CORRECT_CODE_TAG = re.compile(r"^(\s*)###CORRECT_CODE###\s*$")  # noqa
-
-        new_test_code_lines = []
-        for l in test_code.split("\n"):
-            match = CORRECT_CODE_TAG.match(l)
-            if match is not None:
-                prefix = match.group(1)
-                for cc_l in correct_code.split("\n"):
-                    new_test_code_lines.append(prefix+cc_l)
-            else:
-                new_test_code_lines.append(l)
-
-        return "\n".join(new_test_code_lines)
+        from .code_runpy_backend import substitute_correct_code_into_test_code
+        return substitute_correct_code_into_test_code(test_code, correct_code)
 
     def grade(self, page_context, page_data, answer_data, grade_data):
-
         if answer_data is None:
             return AnswerFeedback(correctness=0,
                     feedback=_("No answer provided."))

@@ -145,6 +145,37 @@ RELATE_EDITABLE_INST_ID_BEFORE_VERIFICATION = True
 
 # }}}
 
+
+# {{{ covert LaTeX to image dataURI
+
+# To enable tex2img functionality, uncomment the following line.
+#RELATE_LATEX_TO_IMAGE_ENABLED = True
+
+# The bin dir of tex compiler and image converter should be
+# correctly configured or RELATE will failed to start. The
+# following is an example.
+#if platform.system().lower().startswith("win"):
+#    # For windows, Imagemagick should be installed with legacy
+#    # components (convert.exe etc), or it will raise an Exception
+#    # "invalid parameter" because windows it self has another
+#    # built in 'convert.exe' and that one is called.
+#    RELATE_IMAGEMAGICK_BIN_DIR = \
+#        r"c:\Program Files\ImageMagick-7.0.1-Q16"
+#    RELATE_LATEX_BIN_PATH = "c:/CTEX/MiKTeX/miktex/bin/latex"
+#else:
+#    RELATE_LATEX_BIN_DIR = \
+#        "/usr/local/texlive/2015/bin/x86_64-linux"
+
+# The name of the subfolder if you want to save converted images
+# in MEDIA_ROOT. default value is "latex_image".
+#RELATE_LATEX_IMAGE_FOLDER_NAME = "latex_image"
+
+# image, especially svg have large file size, files with size
+# exceed the following won't be cached.
+RELATE_IMAGE_CACHE_MAX_BYTES = 65536
+
+# }}}
+
 # {{{ docker
 
 # A string containing the image ID of the docker image to be used to run
@@ -195,6 +226,30 @@ RELATE_SITE_ANNOUNCEMENT = None
 #LANGUAGE_CODE='en-us'
 
 # {{{ exams and testing
+
+# This may also be a callable that receives a local-timezone datetime and returns
+# an equivalent dictionary.
+#
+# def RELATE_FACILITIES(now_datetime):
+#     from relate.utils import localize_datetime
+#     from datetime import datetime
+#
+#     if (now_datetime >= localize_datetime(datetime(2016, 5, 5, 0, 0))
+#             and now_datetime < localize_datetime(datetime(2016, 5, 6, 0, 0))):
+#         ip_ranges = [
+#             "127.0.0.1/32",
+#             "192.168.77.0/24",
+#             ]
+#     else:
+#         ip_ranges = []
+#
+#     return {
+#         "test_center": {
+#             "ip_ranges": ip_ranges,
+#             "exams_only": True,
+#             },
+#     }
+
 
 RELATE_FACILITIES = {
     "test_center": {

@@ -65,6 +65,11 @@ class SandboxForm(forms.Form):
                     + cm_help_text),
                 label=_("Content"))
 
+        # 'strip' attribute was added to CharField in Django 1.9
+        # with 'True' as default value.
+        if hasattr(self.fields["content"], "strip"):
+            self.fields["content"].strip = False
+
         self.helper.add_input(
                 Submit(
                     "preview", _("Preview"),
@@ -186,10 +191,14 @@ def view_page_sandbox(pctx):
 
     if is_preview_post:
         edit_form = make_form(pctx.request.POST)
+        new_page_source = None
 
         if edit_form.is_valid():
             try:
-                new_page_source = edit_form.cleaned_data["content"]
+                from pytools.py_codegen import remove_common_indentation
+                new_page_source = remove_common_indentation(
+                        edit_form.cleaned_data["content"],
+                        require_leading_newline=False)
                 page_desc = dict_to_struct(yaml.load(new_page_source))
 
                 if not isinstance(page_desc, Struct):
@@ -254,11 +263,6 @@ def view_page_sandbox(pctx):
         answer_data = get_sandbox_data_for_page(
                 pctx, page_desc, ANSWER_DATA_SESSION_KEY)
 
-        if page_data is None:
-            page_data = page.make_page_data()
-            pctx.request.session[PAGE_DATA_SESSION_KEY] = (
-                    page_desc.type, page_desc.id, page_data)
-
         from course.models import FlowSession
         from course.page import PageContext
         page_context = PageContext(
@@ -272,6 +276,12 @@ def view_page_sandbox(pctx):
                     participation=pctx.participation),
 
                 in_sandbox=True)
+
+        if page_data is None:
+            page_data = page.make_page_data(page_context)
+            pctx.request.session[PAGE_DATA_SESSION_KEY] = (
+                    page_desc.type, page_desc.id, page_data)
+
 
         title = page.title(page_context, page_data)
         body = page.body(page_context, page_data)
@@ -303,8 +313,22 @@ def view_page_sandbox(pctx):
                             page_desc.type, page_desc.id, answer_data)
 
             else:
-                page_form = page.make_form(page_context, page_data,
-                        answer_data, page_behavior)
+                try:
+                    page_form = page.make_form(page_context, page_data,
+                            answer_data, page_behavior)
+
+                except:
+                    import sys
+                    tp, e, _ = sys.exc_info()
+
+                    page_errors = (
+                            ugettext("Page failed to load/validate")
+                            + ": "
+                            + "%(err_type)s: %(err_str)s" % {
+                                "err_type": tp.__name__, "err_str": e})
+                    have_valid_page = False
+
+                    page_form = None
 
             if page_form is not None:
                 page_form.helper.add_input(

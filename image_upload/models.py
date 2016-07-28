@@ -38,6 +38,7 @@ from course.models import Course, FlowSession, FlowPageData
 from imagekit.models import ImageSpecField
 from imagekit.processors import ResizeToFit
 
+
 @deconstructible
 class UserImageStorage(FileSystemStorage):
     def __init__(self):
@@ -56,7 +57,7 @@ def user_directory_path(instance, filename):
     return 'user_images/{0}(user_{1})/{2}'.format(
         user_full_name,
         instance.creator_id,
-        file_name)
+        filename)
 
 class UserImage(models.Model):
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
@@ -64,7 +65,8 @@ class UserImage(models.Model):
     file = models.ImageField(upload_to=user_directory_path, 
             storage=sendfile_storage)
     slug = models.SlugField(max_length=256, blank=True)
-    creation_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=now,
+                                         verbose_name=_('Creation Time'))
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -116,6 +118,8 @@ def user_flowsession_img_path(instance, file_name):
         instance.creator_id,
         file_name)
 
+from jsonfield import JSONField
+
 class FlowPageImage(models.Model):
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
             verbose_name=_('Creator'), on_delete=models.CASCADE)
@@ -126,9 +130,9 @@ class FlowPageImage(models.Model):
     file_last_modified = models.DateTimeField(default=now)
     file_thumbnail = ImageSpecField(
             source='file',
-            processors=[ResizeToFit(200, 200)],
+            processors=[ResizeToFit(100, 100)],
             format='PNG',
-            options={'quality': 85}
+            options={'quality': 50}
             )
     course = models.ForeignKey(
             Course, null=True,
@@ -137,6 +141,21 @@ class FlowPageImage(models.Model):
             FlowSession, null=True, related_name="page_image_data",
             verbose_name=_('Flow session'), on_delete=models.CASCADE)
     image_page_id = models.CharField(max_length=200, null=True)
+
+    is_image_textify = models.BooleanField(default=False, verbose_name=_("Load textified Image?"))
+
+    image_text = models.TextField(
+        verbose_name=_("Related Html"),
+        help_text=_("The html for the FlowPageImage"),
+        blank=True, null=True
+    )
+
+    image_data = JSONField(null=True, blank=True,
+                      # Show correct characters in admin for non ascii languages.
+                      dump_kwargs={'ensure_ascii': False},
+                      verbose_name=_('External image data'))
+
+    use_image_data = models.BooleanField(default=False, verbose_name=_("Use external Image data?"))
 
     # The order of the img in a flow session page.
     order = models.SmallIntegerField(default=0)
@@ -157,16 +176,45 @@ class FlowPageImage(models.Model):
         super(FlowPageImage, self).delete(*args, **kwargs)
 
     @models.permalink
-    def get_absolute_url(self):
+    def get_absolute_url(self, private=True, key=False):
         import os
         file_name = os.path.basename(self.file.path)
-        return ('flow_page_image_download', [
-                self.course.identifier,
-                self.flow_session_id,
-                self.creator_id,
+        if private:
+            return ('flow_page_image_download', [
+                    self.course.identifier,
+                    self.flow_session_id,
+                    self.creator_id,
+                    self.pk,
+                    file_name], {}
+                    )
+        elif key==False:
+            return ('flow_page_image_problem', [
                 self.pk,
                 file_name], {}
-                )
+                    )
+        elif key==True:
+            return ('flow_page_image_key', [
+                self.pk,
+                self.creator_id,
+                file_name], {}
+                    )
+
+    def admin_image(self):
+        if self.order == 0:
+            img_url = self.get_absolute_url(private=False)
+        else:
+            img_url = self.get_absolute_url(key=True)
+        return '<img src="%s" class="img-responsive" style="max-height:300pt"/>' % img_url
+    admin_image.short_description = 'Image'
+    admin_image.allow_tags = True
+
+    def get_image_text(self):
+        if self.is_image_textify:
+            if self.image_text:
+                return self.image_text
+            else:
+                return None
+        return None
 
     def get_random_filename(self):
         import os, uuid
@@ -184,9 +232,12 @@ class FlowPageImage(models.Model):
         ordering = ("id", "creation_time")
 
     def __unicode__(self):
-        return _("%(url)s uploaded by %(creator)s") % {
-            'url': self.get_absolute_url(),
-            'creator': self.creator}
+        try:
+            return _("%(url)s uploaded by %(creator)s") % {
+                'url': self.get_absolute_url(),
+                'creator': self.creator}
+        except:
+            return ""
 
     if six.PY3:
         __str__ = __unicode__

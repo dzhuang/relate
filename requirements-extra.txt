@@ -23,3 +23,7 @@ django-braces
 
 # For jsonview decorator
 django-jsonview
+
+# For markdown in admin
+django-markdownx
+

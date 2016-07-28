@@ -2,22 +2,40 @@
 <div class="modal-header visible-lg">
     <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
     <h4 class="modal-title" id="modalLabel">{% trans "Edit image" %}</h4>
+    <!--[if lt IE 9]>
+        <div class="browser alert alert-danger warning"><i class="fa fa-warning"></i> {% trans "This page requires a modern browser so that it can work properly" %}. {% trans "Chrome/Firefox are prefered browsers. If you want use Internet Explorer, please install one with version higher than 10." %}</div>
+    <![endif]-->
 </div>
 <div class="modal-body">
+    {% if file %}
     <div class="img-container">
         <img id="image" src="{{ file.get_absolute_url }}" alt="Picture{{file.id}}" id="target{{file.id}}">
     </div>
     <div class="preview_container">
         <div id="preview"></div>
     </div>
+    {% endif %}
 </div>
 <div class="modal-footer">
+        {% if STAFF_EDIT_WARNNING %}
+        <div class="alert alert-danger warning" style="text-align: left;"><i class="fa fa-warning"></i>{% blocktrans trimmed %}
+            <strong>WATCH OUT!!!</strong> You are currently editting <strong>{{owner}}</strong>'s image. 
+            Take care especially if you want to crop the image. Your revision will not be able to undo upon submission!
+            {% endblocktrans %}</div>
+        {% endif %}
+        {% if error_message %}
+        <div class="alert alert alert-danger">
+          <i class="fa fa-warning"></i>
+            {{ error_message }}
+        </div>
+        {% endif %}
+        {% if file %}
         <div id="crp-result"></div>
-        <button type="button" class="btn btn-primary btn-crp-rtt" data-step="90">
+        <button type="button" class="btn btn-primary btn-crp-rtt" data-step="-90">
               <i class="fa fa-rotate-left"></i>
                 <span>90&deg;</span>
         </button>            
-        <button type="button" class="btn btn-primary btn-crp-rtt" data-step="-90">
+        <button type="button" class="btn btn-primary btn-crp-rtt" data-step="90">
               <i class="fa fa-rotate-right"></i>
                 <span>90&deg;</span>
         </button>
@@ -46,7 +64,6 @@
         {# <input id="dataScaleX" type="text" name="scalex"/> #}
         {# <input id="dataScaleY" type="text" name="scaley"/> #}
     </form>
-    
     <button type="button" class="btn btn-success disabled btn-crp-submit">
         <i class="fa fa-check"></i>
         <span>{% trans "Submit" %}</span></button>
@@ -56,6 +73,7 @@
     <button type="button" class="btn btn-primary btn-crp-preview">
         <i class="fa fa-eye"></i>
         <span>{% trans "Preview" %}</span></button>
+    {% endif %}
     <button type="button" class="btn btn-danger" data-dismiss="modal">
         <i class="fa fa-remove"></i>
         <span>{% trans "Close" %}</span>

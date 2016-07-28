@@ -26,6 +26,7 @@ THE SOFTWARE.
 
 
 from django.utils.translation import ugettext as _, string_concat
+from django.db import connection
 from django.shortcuts import (  # noqa
         get_object_or_404, redirect)
 from relate.utils import retry_transaction_decorator
@@ -39,7 +40,9 @@ from course.models import (
         get_flow_grading_opportunity,
         get_feedback_for_grade,
         update_bulk_feedback)
-from course.constants import participation_role
+from course.constants import (
+        participation_role,
+        grade_aggregation_strategy)
 from course.utils import (
         course_view, render_course_page,
         get_session_grading_rule,
@@ -53,8 +56,9 @@ import json
 # {{{ grading driver
 
 @course_view
-@retry_transaction_decorator()
 def grade_flow_page(pctx, flow_session_id, page_ordinal):
+    now_datetime = get_now_or_fake_time(pctx.request)
+
     page_ordinal = int(page_ordinal)
 
     if pctx.role not in [
@@ -79,19 +83,91 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     if fpctx.page_desc is None:
         raise http.Http404()
 
+    from course.flow import adjust_flow_session_page_data
+    adjust_flow_session_page_data(pctx.repo, flow_session,
+            pctx.course.identifier, fpctx.flow_desc)
+
+    grading_rule = get_session_grading_rule(
+        flow_session, flow_session.participation.role,
+        fpctx.flow_desc, get_now_or_fake_time(pctx.request))
+
     # {{{ enable flow session zapping
 
-    all_flow_sessions = list(FlowSession.objects
-            .filter(
-                course=pctx.course,
-                flow_id=flow_session.flow_id,
-                participation__isnull=False,
-                in_progress=flow_session.in_progress)
-            .order_by(
-                "participation__user__last_name",
-                "start_time"))
+    all_flow_qs = FlowSession.objects.filter(
+        course=pctx.course,
+        flow_id=flow_session.flow_id,
+        participation__isnull=False,
+        in_progress=flow_session.in_progress)
 
-    # {{{ session select2 
+    if (connection.features.can_distinct_on_fields
+        and grading_rule.grade_aggregation_strategy
+                == grade_aggregation_strategy.use_latest):
+            all_flow_qs = all_flow_qs.order_by(
+                'participation__user__username', 'start_time')\
+                .distinct('participation__user__username')
+    elif (connection.features.can_distinct_on_fields
+        and grading_rule.grade_aggregation_strategy
+                == grade_aggregation_strategy.use_earliest):
+            all_flow_qs = all_flow_qs.order_by(
+                'participation__user__username', '-start_time')\
+                .distinct('participation__user__username')
+    else:
+        all_flow_qs = all_flow_qs.order_by(
+            # Datatables will default to sorting the user list
+            #  by the first column, which happens to be the username.
+            #  Match that sorting.
+            "participation__user__username",
+            "start_time")
+
+    # {{{ order flow_session by data in flow_page_data
+
+    all_flow_session_page_data = []
+    this_flow_page_data = FlowPageData.objects.get(
+        flow_session=flow_session, ordinal=fpctx.page_data.ordinal)
+
+    # for random generated question, put pages with same page_data.data
+    # closer for grading
+    if this_flow_page_data.data:
+        all_flow_sessions_pks = all_flow_qs.values_list('pk', flat=True)
+        all_flow_session_page_data_qs = FlowPageData.objects.filter(
+            flow_session__pk__in=all_flow_sessions_pks,
+            ordinal=fpctx.page_data.ordinal)
+        if (connection.features.can_distinct_on_fields
+            and grading_rule.grade_aggregation_strategy
+                == grade_aggregation_strategy.use_earliest):
+            all_flow_session_page_data_qs = \
+                all_flow_session_page_data_qs.order_by(
+                    "flow_session__participation__user__username",
+                    "-flow_session__start_time")
+        else:
+            all_flow_session_page_data_qs = \
+                all_flow_session_page_data_qs.order_by(
+                    "flow_session__participation__user__username",
+                     "flow_session__start_time")
+        all_flow_session_page_data = list(
+            all_flow_session_page_data_qs.values_list("data", flat=True))
+
+        # add index to each of the item the resulting queryset so that preserve
+        # the ordering of page with the same page_data.data when do the following sorting
+        for idx in range(len(all_flow_session_page_data)):
+            all_flow_session_page_data[idx] += str(idx)
+
+        for x in all_flow_session_page_data:
+            print x
+
+    all_flow_sessions = list(all_flow_qs)
+
+    # sorting the flowsessions according to the page_data.data
+    if all_flow_session_page_data:
+        all_flow_session_page_data, all_flow_sessions = (
+            list(t) for t in (
+                zip(*sorted(zip(all_flow_session_page_data, all_flow_sessions)))
+            )
+        )
+
+    # }}}
+
+    # {{{ session select2
     graded_flow_sessions_json = []
     ungraded_flow_sessions_json = []
 
@@ -111,9 +187,9 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
         else:
             page_data = FlowPageData.objects.get(
                 flow_session=flowsession, ordinal=fpctx.page_data.ordinal)
-            prev_flow_page_visit_grade = get_prev_answer_visit(page_data)\
-                    .get_most_recent_grade()
             try:
+                prev_flow_page_visit_grade = get_prev_answer_visit(page_data)\
+                    .get_most_recent_grade()
                 if prev_flow_page_visit_grade.feedback:
                     grade_time = prev_flow_page_visit_grade.grade_time
                 else:
@@ -135,10 +211,10 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
         if grade_time:
             text += (
-                    string_concat(", ", 
+                    string_concat(", ",
                         _("graded at %(grade_time)s"), ".") %
                     {"grade_time": compact_local_datetime_str(
-                        as_local_time(grade_time), 
+                        as_local_time(grade_time),
                         get_now_or_fake_time(pctx.request),
                         in_python=True)}
                     )
@@ -272,20 +348,8 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                         correctness=correctness,
                         feedback=feedback_json)
 
-                most_recent_grade.save()
-
-                update_bulk_feedback(
-                        fpctx.prev_answer_visit.page_data,
-                        most_recent_grade,
-                        bulk_feedback_json)
-
-                grading_rule = get_session_grading_rule(
-                        flow_session, flow_session.participation.role,
-                        fpctx.flow_desc, get_now_or_fake_time(request))
-
-                from course.flow import grade_flow_session
-                grade_flow_session(fpctx, flow_session, grading_rule)
-
+                _save_grade(fpctx, flow_session, most_recent_grade,
+                        bulk_feedback_json, now_datetime)
         else:
             grading_form = fpctx.page.make_grading_form(
                     fpctx.page_context, fpctx.page_data, grade_data)
@@ -321,10 +385,6 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
             points_awarded = max_points * feedback.correctness
 
     # }}}
-
-    grading_rule = get_session_grading_rule(
-            flow_session, flow_session.participation.role,
-            fpctx.flow_desc, get_now_or_fake_time(pctx.request))
 
     if grading_rule.grade_identifier is not None:
         grading_opportunity = get_flow_grading_opportunity(
@@ -366,6 +426,24 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                     fpctx.page_context, fpctx.page_data.data,
                     answer_data, grade_data),
             })
+
+
+@retry_transaction_decorator()
+def _save_grade(fpctx, flow_session, most_recent_grade, bulk_feedback_json,
+        now_datetime):
+    most_recent_grade.save()
+
+    update_bulk_feedback(
+            fpctx.prev_answer_visit.page_data,
+            most_recent_grade,
+            bulk_feedback_json)
+
+    grading_rule = get_session_grading_rule(
+            flow_session, flow_session.participation.role,
+            fpctx.flow_desc, now_datetime)
+
+    from course.flow import grade_flow_session
+    grade_flow_session(fpctx, flow_session, grading_rule)
 
 # }}}
 

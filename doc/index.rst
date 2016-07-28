@@ -1,11 +1,17 @@
-Welcome to RELATE's documentation!
+欢迎来到 RELATE 中文文档!
 ======================================
 
 +-------------------------------------+-------------------------------------+
 | .. image:: images/screenshot.png    | .. image:: images/screenshot-2.png  |
 +-------------------------------------+-------------------------------------+
 
-Features
+本站宗旨
+--------
+
+实现RELATE文档的汉化，尝试建立在国内的实例，推进RELATE项目在课程学习和自我学习记录的应用。
+
+
+特点
 --------
 
 RELATE is a web-based courseware package.  It is set apart by the following
@@ -49,7 +55,7 @@ pages, each of which can be both static or interactive content, for exapmle a
 video, a quiz question, a page of text, or, within the confines of HTML,
 something completely different.
 
-Links
+链接
 -----
 
 More information around the web:
@@ -57,7 +63,7 @@ More information around the web:
 * `Documentation <http://documen.tician.de/relate>`_
 * `Source code <https://github.com/inducer/relate>`_
 
-Table of Contents
+目录
 -----------------
 
 .. toctree::

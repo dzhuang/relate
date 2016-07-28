@@ -138,23 +138,6 @@ When described in YAML, a flow has the following components:
         (Optional) A list of email addresses which to notify about a flow submission by
         a participant.
 
-    .. attribute:: max_points
-
-        (Optional, an integer or floating point number if given)
-        The number of points on the flow which constitute
-        "100% of the achievable points". If not given, this is automatically
-        computed by summing point values from all constituent pages.
-
-        This may be used to 'grade out of N points', where N is a number that
-        is lower than the actually achievable count.
-
-    .. attribute:: max_points_enforced_cap
-
-        (Optional, an integer or floating point number if given)
-        No participant will have a grade higher than this recorded for this flow.
-        This may be used to limit the amount of 'extra credit' achieved beyond
-        :attr:`max_points`.
-
     .. attribute:: rules
 
         (Optional) Some rules governing students' use and grading of the flow.
@@ -345,6 +328,11 @@ Rules for starting new sessions
         (Optional) An integer. The rule applies if the participant has fewer than this
         number of sessions with access rule tags.
 
+    .. attribute:: if_signed_in_with_matching_exam_ticket
+
+        (Optional) The rule applies if the participant signed in with an exam
+        ticket matching this flow.
+
     .. rubric:: Rules specified
 
     .. attribute:: may_start_new_session
@@ -384,6 +372,11 @@ Rules about accessing and interacting with a flow
         (Optional) A :ref:`datespec <datespec>` that determines a date/time before which this rule
         applies.
 
+    .. attribute:: if_started_before
+
+        (Optional) A :ref:`datespec <datespec>`. Rule applies if the session was started before
+        this time.
+
     .. attribute:: if_has_role
 
         (Optional) A list of a subset of ``[unenrolled, ta, student, instructor]``.
@@ -420,6 +413,11 @@ Rules about accessing and interacting with a flow
         (Optional) The rule applies if the current session has been going on for
         less than the specified number of minutes. Fractional values (e.g. "0.5")
         are accepted here.
+
+    .. attribute:: if_signed_in_with_matching_exam_ticket
+
+        (Optional) The rule applies if the participant signed in with an exam
+        ticket matching this flow.
 
     .. rubric:: Rules specified
 
@@ -458,6 +456,11 @@ Determining how final (overall) grades of flows are computed
     .. attribute:: if_has_role
 
         (Optional) A list of a subset of ``[unenrolled, ta, student, instructor]``.
+
+    .. attribute:: if_started_before
+
+        (Optional) A :ref:`datespec <datespec>`. Rule applies if the session was started before
+        this time.
 
     .. attribute:: if_has_tag
 
@@ -501,6 +504,28 @@ Determining how final (overall) grades of flows are computed
 
         (Optional) A description of this set of grading rules being applied to the flow.
         Shown to the participant on the flow start page.
+
+    .. attribute:: max_points
+
+        (Optional, an integer or floating point number if given)
+        The number of points on the flow which constitute
+        "100% of the achievable points". If not given, this is automatically
+        computed by summing point values from all constituent pages.
+
+        This may be used to 'grade out of N points', where N is a number that
+        is lower than the actually achievable count.
+
+    .. attribute:: max_points_enforced_cap
+
+        (Optional, an integer or floating point number if given)
+        No participant will have a grade higher than this recorded for this flow.
+        This may be used to limit the amount of 'extra credit' achieved beyond
+        :attr:`max_points`.
+
+    .. attribute:: bonus_points
+
+        (Optional, an integer or floating point number if given)
+        This number of points will be added to every participant's score.
 
 .. autoclass:: grade_aggregation_strategy
 
@@ -709,3 +734,387 @@ Life cycle
 .. currentmodule:: course.constants
 
 .. autoclass:: flow_session_expiration_mode
+
+Sample Rule Sets
+----------------
+
+RELATE's rule system is quite flexible and allows many different styles
+of interaction. Some of what's possible may not be readily apparent
+from the reference documentation above, so the following examples
+serve to illustrate the possibilities.
+
+Simple Single-Submission Assignment with a Due Date
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The rules for this can be written as follows::
+
+    title: "An assignment"
+    description: |
+
+        # An Assignment
+
+    rules:
+        start:
+        -
+            if_before: my_assignment_due
+            if_has_role: [student, ta, instructor]
+            if_has_fewer_sessions_than: 1
+            may_start_new_session: True
+            may_list_existing_sessions: True
+
+        -
+            may_start_new_session: False
+            may_list_existing_sessions: True
+
+        access:
+        -
+            # 'modify'-type permissions are automatically removed at
+            # session end. Add the following if desired:
+            #
+            # see_correctness
+            # change_answer
+            #
+            permissions: [view, submit_answer, end_session]
+
+        grade_identifier: "my_assignment"
+        grade_aggregation_strategy: max_grade
+
+        grading:
+        -
+            credit_percent: 100
+            due: my_assignment_due
+            description: "Full credit"
+
+    pages:
+
+    -   ....
+
+Exam
+^^^^
+
+This rule set describes the following:
+
+* An exam that can be taken at most once in a specified facility.
+* Instructors can preview and take the exam from anywhere, at any time,
+  as many times as needed.
+* No feedback on correctness is provided during the exam.
+
+The rules for this can be written as follows::
+
+    title: "Midterm exam 1"
+    description: |
+        # Midterm exam 1
+
+    rules:
+        grade_identifier: exam_1
+        grade_aggregation_strategy: use_earliest
+
+        start:
+        -
+            if_has_role: [instructor]
+            may_start_new_session: True
+            may_list_existing_sessions: True
+
+        -
+            if_in_facility: "cbtf"
+            if_has_role: [student, instructor]
+            if_has_fewer_sessions_than: 1
+            may_start_new_session: True
+            may_list_existing_sessions: True
+
+        -
+            if_in_facility: "cbtf"
+            if_has_role: [student, instructor]
+            may_start_new_session: False
+            may_list_existing_sessions: True
+
+        -
+            may_start_new_session: False
+            may_list_existing_sessions: False
+
+        access:
+        -
+            if_after: end_of_class
+            if_has_role: [unenrolled, student]
+            permissions: []
+
+        -
+            if_in_facility: "cbtf"
+            if_has_role: [student, instructor]
+            if_after: exam 1 - 1 week
+            if_before: end:exam 1 + 2 weeks
+            permissions: [view, submit_answer, end_sesion, cannot_see_flow_result, lock_down_as_exam_session]
+
+        -
+            if_has_role: [instructor]
+            permissions: [view, submit_answer, end_sesion, cannot_see_flow_result, lock_down_as_exam_session]
+
+        -
+            permissions: []
+
+        grading:
+        -   generates_grade: true
+
+    pages:
+
+    -   ....
+
+
+Pre-Lecture Quiz with Multiple Attempts and Practice Sessions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This rule set describes the following:
+
+* A quiz is due at the start of a lecture.
+* After that deadline, the quiz remains available to take
+  for half-credit for a week.
+* After that week, the quiz will remain available for practice,
+  but no attempt will be counted for credit.
+* Three for-credit attempts are allowed. Any attempts beyond
+  that are simply for practice and not counted for credit.
+* Visitors/unenrolled students can view the questions, but not interact with them.
+* Feedback on correctness is provided after an answer is submitted.
+* The correct answer is revealed after completion.
+
+The rules for this can be written as follows::
+
+    title: "Quiz: Lecture 13"
+    description: |
+
+        # Quiz: Lecture 13
+
+    rules:
+        tags:
+        - regular
+        - practice
+
+        start:
+        -
+            if_has_role: [unenrolled]
+            may_start_new_session: True
+            may_list_existing_sessions: False
+
+        -
+            if_after: lecture 13 - 4 weeks
+            if_before: lecture 13 + 1 week
+            if_has_role: [student, ta, instructor]
+            if_has_fewer_sessions_than: 3
+            tag_session: regular
+            may_start_new_session: True
+            may_list_existing_sessions: True
+
+        -
+            if_has_role: [student, ta, instructor]
+            tag_session: practice
+            may_start_new_session: True
+            may_list_existing_sessions: True
+
+        access:
+
+        -
+            if_has_role: [unenrolled]
+            permissions: [view]
+            message: |
+
+                It does not look like you are enrolled in the class, that's why you
+                cannot make changes below. Please verify that you are signed in,
+                and then go back to the class web page and find the big blue "Enroll"
+                button near the top.
+
+        -
+            if_after: end_of_class
+            if_has_role: [student]
+            permissions: []
+
+        -
+            if_has_role: [student, instructor, ta]
+            if_in_progress: True
+            permissions: [view, submit_answer, end_session, see_correctness]
+
+        -
+            if_has_role: [student, instructor, ta]
+            if_in_progress: False
+            permissions: [view, see_correctness, see_answer_after_submission]
+
+        grade_identifier: "quiz_13"
+        grade_aggregation_strategy: max_grade
+
+        grading:
+
+        -
+            if_has_tag: practice
+            description: "Practice session"
+            generates_grade: false
+
+        -
+            if_completed_before: lecture 13
+            description: "Graded session at full credit"
+            due: lecture 13
+
+        -
+            if_completed_before: lecture 13 + 1 week
+            description: "Graded session at half credit"
+            credit_percent: 50
+            due: lecture 13 + 1 week
+
+        -
+            credit_percent: 0
+
+    pages:
+
+    -   ....
+
+Homework Set with Grace Period
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This rule set describes the following:
+
+* Homework that is due at a time given by an event ``hw_due 2``.
+* Visitors/unenrolled students can view the questions, but not interact with them.
+* For-credit sessions are tagged as "full-credit" (``main``) or
+  "half-credit" (``grace``) and earn credit correspondingly.
+* Students are allowed to decide whether they would like to
+  auto-submit their work at the deadline or keep working.
+* Due dates are shown as given by ``hw_due 2`` and a week
+  after that.
+* At the deadlines (or soon after them), an instructor
+  "expires" the sessions using a button in the grading interface,
+  thereby actually "realizing" the deadline.
+* Correct solutions are revealed after the main deadline passes.
+
+The rules for this can be written as follows::
+
+    title: "Homework 2"
+    description: |
+
+        # Homework 2
+
+    rules:
+        tags:
+        - main
+        - grace
+
+        start:
+        -
+            if_has_role: [unenrolled]
+            tag_session: null
+            may_start_new_session: True
+            may_list_existing_sessions: False
+
+        -
+            if_after: hw_due 2 - 3 weeks
+            if_before: hw_due 2
+            if_has_role: [student, ta, instructor]
+            if_has_fewer_tagged_sessions_than: 1
+            tag_session: main
+            may_start_new_session: True
+            may_list_existing_sessions: True
+
+        -
+            if_after: hw_due 2
+            if_before: hw_due 2 + 7 days
+            if_has_role: [student, ta, instructor]
+            if_has_fewer_tagged_sessions_than: 1
+            tag_session: grace
+            may_start_new_session: True
+            may_list_existing_sessions: True
+
+        -
+            may_start_new_session: False
+            may_list_existing_sessions: True
+
+        access:
+        -
+            if_has_tag: null
+            permissions: [view]
+
+        -
+            if_after: end_of_class
+            if_has_role: [student]
+            permissions: []
+
+        -
+            # Unfinished full-credit session marked 'end' after due date.
+            if_has_tag: main
+            if_in_progress: True
+            if_after: hw_due 2
+            if_expiration_mode: end
+            message: |
+              The due date has passed. If you have marked your session to
+              end at the deadline, it will receive full credit, but it
+              will end automatically fairly soon. If you would like to
+              continue working, please mark your session to roll over
+              into 50% credit by selecting 'Keep session and apply new rules'.
+            permissions: [view, submit_answer, end_session, see_correctness, change_answer, set_roll_over_expiration_mode]
+
+        -
+            # Unfinished full-credit session marked 'roll_over' before due date.
+            if_has_tag: main
+            if_in_progress: True
+            if_expiration_mode: roll_over
+            message: |
+              You have marked your session to roll over to 50% credit at the due
+              date. If you would like to have your current answers graded as-is
+              (and recieve full credit for them), please select 'End session
+              and grade'.
+            permissions: [view, submit_answer, end_session, see_correctness, change_answer, set_roll_over_expiration_mode]
+
+        -
+            # Unfinished Full-credit session before due date.
+            if_has_tag: main
+            if_in_progress: True
+            permissions: [view, submit_answer, end_session, see_correctness, change_answer, set_roll_over_expiration_mode]
+
+        -
+            # Full-credit session before due date. Don't show answer.
+            if_has_tag: main
+            if_before: hw_due 2
+            if_in_progress: False
+            permissions: [view, see_correctness]
+
+        -
+            # Full-credit session after due date? Reveal answer.
+            if_has_tag: main
+            if_after: hw_due 2
+            if_in_progress: False
+            permissions: [view, see_correctness, see_answer_before_submission, see_answer_after_submission]
+
+        -
+            # You're allowed to keep working during the grace period
+            if_has_tag: grace
+            if_in_progress: True
+            permissions: [view, submit_answer, end_session, see_correctness, change_answer, see_answer_before_submission, see_answer_after_submission]
+
+        -
+            if_has_tag: grace
+            if_in_progress: False
+            permissions: [view, see_correctness, see_answer_before_submission, see_answer_after_submission]
+
+        grade_identifier: "hw_2"
+        grade_aggregation_strategy: max_grade
+
+        grading:
+        -
+            if_has_tag: null
+            description: "No-credit preview session"
+            generates_grade: false
+
+        -
+            if_has_tag: main
+            credit_percent: 100
+            due: hw_due 2
+            description: "Full credit"
+
+        -
+            if_has_tag: grace
+            credit_percent: 50
+            due: hw_due 2 + 7 days
+            description: "Half credit"
+
+        -
+            credit_percent: 0
+
+    pages:
+
+    -   ....
+

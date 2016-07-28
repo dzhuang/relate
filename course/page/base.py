@@ -108,6 +108,12 @@ def get_auto_feedback(correctness):
         return six.text_type(_("Your answer is not correct."))
     elif correctness == 1:
         return six.text_type(_("Your answer is correct."))
+    elif correctness > 1:
+        return six.text_type(
+                string_concat(
+                    _("Your answer is correct and earned bonus points."),
+                    " (%.1f %%)")
+                % (100*correctness))
     elif correctness > 0.5:
         return six.text_type(
                 string_concat(
@@ -119,8 +125,8 @@ def get_auto_feedback(correctness):
     else:
         return six.text_type(
                 string_concat(
-                    _("Your answer is somewhat correct."),
-                    "(%.1f %%)")
+                    _("Your answer is somewhat correct. "),
+                    "(%.1f%%)")
                 % (100*correctness))
 
 
@@ -333,7 +339,7 @@ class PageBase(object):
 
         return permissions
 
-    def make_page_data(self):
+    def make_page_data(self, page_context):
         """Return (possibly randomly generated) data that is used to generate
         the content on this page. This is passed to methods below as the *page_data*
         argument. One possible use for this argument would be a random permutation
@@ -647,6 +653,8 @@ class HumanTextFeedbackForm(StyledForm):
     def __init__(self, point_value, *args, **kwargs):
         super(HumanTextFeedbackForm, self).__init__(*args, **kwargs)
 
+        self.helper.attrs = {"id": "grading-form"}
+
         self.point_value = point_value
 
         self.fields["grade_percent"] = forms.FloatField(
@@ -795,6 +803,16 @@ class PageBaseWithHumanTextFeedback(PageBase):
         if grading_form.cleaned_data["notify"] and page_context.flow_session:
             with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
                 from django.template.loader import render_to_string
+                
+                allow_nonauthorized_sender = getattr(settings, "RELATE_EMAIL_SMTP_ALLOW_NONAUTHORIZED_SENDER", False)
+                
+                if allow_nonauthorized_sender:
+                    reply_email = page_context.course.from_email
+                    from_email = page_context.course.from_email
+                else:
+                    reply_email = page_context.course.notify_email
+                    from_email = settings.DEFAULT_FROM_EMAIL
+             
                 message = render_to_string("course/grade-notify.txt", {
                     "page_title": self.title(page_context, page_data),
                     "course": page_context.course,
@@ -811,9 +829,10 @@ class PageBaseWithHumanTextFeedback(PageBase):
                         % {'identifier': page_context.course.identifier,
                             'flow_id': page_context.flow_session.flow_id},
                         message,
-                        page_context.course.from_email,
+                        from_email,
                         [page_context.flow_session.participation.user.email])
                 msg.bcc = [page_context.course.notify_email]
+                msg.reply_to = [reply_email]
                 msg.send()
 
         return grade_data

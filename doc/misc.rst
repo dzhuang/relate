@@ -1,4 +1,4 @@
-Installation
+安装
 ============
 
 RELATE currently works with Python 2.7. (This is because `dulwich
@@ -247,10 +247,10 @@ Then run::
     # systemctl status relate-celery.service
     # systemctl enable relate-celery.service
 
-Tips
-====
+小Tips
+======
 
-User-visible Changes
+用户可见的变化
 ====================
 
 Version 2015.1

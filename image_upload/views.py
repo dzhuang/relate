@@ -44,14 +44,51 @@ from image_upload.models import FlowPageImage
 
 from jsonview.decorators import json_view
 from jsonview.exceptions import BadRequest
+from braces.views import JSONResponseMixin
 import json
 from PIL import Image
 
-class ImageCreateView(LoginRequiredMixin, ImageOperationMixin, CreateView):
+def is_course_staff(pctx):
+    request = pctx.request
+    course = pctx.course
+    from course.constants import participation_role
+    from course.auth import get_role_and_participation
+    role, participation = get_role_and_participation(request, course)
+    if role in [participation_role.teaching_assistant,
+            participation_role.instructor]:
+        return True
+    else:
+        return False
+
+class ImageCreateView(LoginRequiredMixin, ImageOperationMixin, JSONResponseMixin, CreateView):
+    # Prevent download Json response in IE 7-10
+    # http://stackoverflow.com/a/13944206/3437454
+    content_type = 'text/plain'
     model = FlowPageImage
     fields = ("file", "slug")
 
     def form_valid(self, form):
+        file = form.cleaned_data.get('file')
+        from django.conf import settings
+
+        max_allowed_jfu_size = getattr(
+            settings, "RELATE_JFU_MAX_IMAGE_SIZE", 2) * 1024**2
+
+        if file._size > max_allowed_jfu_size:
+            file_data = {
+                    "files": [{
+                        "name": form.cleaned_data.get('slug'),
+                        "size": file._size,
+                        "error": ugettext(
+                            "The file is too big. Please use "
+                            "Chrome/Firefox or mobile browser by "
+                            "which images will be cropped "
+                            "automatically before upload.")
+                        },]
+                    }
+
+            return self.render_json_response(file_data)
+
         self.object = form.save(commit=False)
         self.object.creator = self.request.user
         self.object.save()
@@ -78,16 +115,11 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin, CreateView):
 
         files = [serialize(self.request, self.object, 'file')]
         data = {'files': files}
-        response = http.JsonResponse(data)
-        response['Content-Disposition'] = 'inline; filename=files.json'
-        return response
+        return self.render_json_response(data)
 
     def form_invalid(self, form):
         data = json.dumps(form.errors)
-        return http.HttpResponse(
-                content=data, 
-                status=400, 
-                content_type='application/json')
+        return self.render_json_response(data, status=400)
 
 class ImageItemForm(forms.ModelForm):
     class Meta:
@@ -100,20 +132,34 @@ class ImageDeleteView(LoginRequiredMixin, ImageOperationMixin, DeleteView):
 
     def delete(self, request, *args, **kwargs):
         self.object = self.get_object()
-        self.object.delete()
-        response = http.JsonResponse(True, safe=False)
-        response['Content-Disposition'] = 'inline; filename=files.json'
-        return response
+        if self.request.user != self.object.creator:
+            from django.core.exceptions import PermissionDenied
+            raise PermissionDenied(_("may not delete other people's image"))
+        else:
+            self.object.delete()
+            response = http.JsonResponse(True, safe=False)
+            response['Content-Disposition'] = 'inline; filename=files.json'
+            response['Content-Type'] = 'text/plain'
+            return response
 
 
-class ImageListView(LoginRequiredMixin, ListView):
+class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
+    # Prevent download Json response in IE 7-10
+    # http://stackoverflow.com/a/13944206/3437454):
     model = FlowPageImage
 
     def get_queryset(self):
         flow_session_id = self.kwargs["flow_session_id"]
         ordinal = self.kwargs["ordinal"]
-        fpd = FlowPageData.objects.get(
-                flow_session=flow_session_id, ordinal=ordinal)
+
+        try:
+            fpd = FlowPageData.objects.get(
+                    flow_session=flow_session_id, ordinal=ordinal)
+        except ValueError:
+
+            # in sandbox
+            if flow_session_id == "None" or ordinal == "None":
+                return None
 
         return FlowPageImage.objects\
                 .filter(flow_session=flow_session_id)\
@@ -121,13 +167,14 @@ class ImageListView(LoginRequiredMixin, ListView):
                 .order_by("order","pk")
 
     def render_to_response(self, context, **response_kwargs):
-        files = [serialize(self.request, p, 'file')
-                for p in self.get_queryset()]
-        data = {'files': files}
-        response = http.JsonResponse(data)
-        response['Content-Disposition'] = 'inline; filename=files.json'
-        return response
-
+        queryset = self.get_queryset()
+        if queryset:
+            files = [serialize(self.request, p, 'file')
+                    for p in self.get_queryset()]
+            data = {'files': files}
+        else:
+            data = {}
+        return self.render_json_response(data)
 # }}}
 
 
@@ -142,7 +189,7 @@ def user_image_download(request, creator_id, download_id):
 
 @login_required
 @course_view
-def flow_page_image_download(pctx, flow_session_id, creator_id, 
+def flow_page_image_download(pctx, flow_session_id, creator_id,
                              download_id, file_name):
     request = pctx.request
     download_object = get_object_or_404(FlowPageImage, pk=download_id)
@@ -151,7 +198,6 @@ def flow_page_image_download(pctx, flow_session_id, creator_id,
     # whether the user is allowed to view the private image
     participation = Participation.objects.get(
         course=pctx.course, user=request.user)
-    print "request.user.is_staff", request.user.is_staff
     if (
         participation.role in (
             [participation_role.instructor,
@@ -160,6 +206,22 @@ def flow_page_image_download(pctx, flow_session_id, creator_id,
         or request.user.is_staff):
         privilege = True
     
+    return _auth_download(request, download_object, privilege)
+
+@login_required
+def flow_page_image_problem(request, download_id, file_name):
+    # show the problem image
+    download_object = get_object_or_404(FlowPageImage, pk=download_id)
+    if download_object.order == 0:
+        privilege = True
+    else:
+        privilege = False
+    return _auth_download(request, download_object, privilege)
+
+@login_required
+def flow_page_image_key(request, download_id, creator_id, file_name):
+    download_object = get_object_or_404(FlowPageImage, pk=download_id)
+    privilege = True
     return _auth_download(request, download_object, privilege)
 
 @login_required
@@ -183,19 +245,55 @@ class CropImageError(BadRequest):
 @course_view
 def image_crop_modal(pctx, flow_session_id, ordinal, pk):
     request = pctx.request
-    file = FlowPageImage.objects.get(id=pk)
-    return render(request, 'image_upload/cropper-modal.html', {'file': file})
+    error_message = None
+    try:
+        file = FlowPageImage.objects.get(id=pk)
+    except FlowPageImage.DoesNotExist:
+        error_message = (
+            string_concat(_('File not found.'),
+                          _('Please upload the image first.')))
+        return render(
+            request,
+            'image_upload/cropper-modal.html',
+            {'file': None,
+             'error_message': error_message,
+             'STAFF_EDIT_WARNNING': False,
+             'owner': None
+            })
+    course_staff_status = is_course_staff(pctx)
+    staff_edit_warnning = False
+    if (
+        course_staff_status
+        and
+        request.user != file.creator
+        ):
+        staff_edit_warnning = True
+    return render(
+            request,
+            'image_upload/cropper-modal.html',
+            {'file': file,
+             'error_message': error_message,
+             'STAFF_EDIT_WARNNING': staff_edit_warnning,
+             'owner': file.creator
+            })
 
 @json_view
 @login_required
 @transaction.atomic
 @course_view
 def image_crop(pctx, flow_session_id, ordinal, pk):
-    page_image_behavior = get_page_image_behavior(pctx, flow_session_id, ordinal)
-    may_change_answer = page_image_behavior.may_change_answer
-    if not may_change_answer:
-        raise CropImageError(_('Not allowd to modify answer.'))
+    
+    try:
+        page_image_behavior = get_page_image_behavior(pctx, flow_session_id, ordinal)
+        may_change_answer = page_image_behavior.may_change_answer
+    except ValueError:
+        may_change_answer = True
+
+    course_staff_status = is_course_staff(pctx)
     request = pctx.request
+
+    if not (may_change_answer or course_staff_status):
+        raise CropImageError(_('Not allowd to modify answer.'))
     try:
         crop_instance = FlowPageImage.objects.get(pk=pk)
     except FlowPageImage.DoesNotExist:
@@ -226,7 +324,11 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
     except IOError:
         raise CropImageError(_('There are errors，please re-upload the image'))
 
-    image_orig = image_orig.rotate(-rotate, expand=True)
+    if rotate != 0:
+        # or it will raise "AttributeError: 'NoneType' object has no attribute 'mode' error
+        # in pillow 3.3.0
+        image_orig = image_orig.rotate(-rotate, expand=True)
+
     box =  (x, y, x+width, y+height)
     image_orig = image_orig.crop(box)
 
@@ -238,12 +340,13 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
     from relate.utils import as_local_time, local_now
     import datetime
 
-    if local_now() < as_local_time(
-            crop_instance.creation_time + datetime.timedelta(minutes=5)):
-        crop_instance.file_last_modified = crop_instance.creation_time = local_now()
+    if not course_staff_status:
+        if local_now() < as_local_time(
+                crop_instance.creation_time + datetime.timedelta(minutes=5)):
+            crop_instance.file_last_modified = crop_instance.creation_time = local_now()
 
-    else:
-        crop_instance.file_last_modified = local_now()
+        else:
+            crop_instance.file_last_modified = local_now()
 
     crop_instance.file = image_modified_path
     crop_instance.save()
@@ -256,7 +359,6 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
 
     new_instance = FlowPageImage.objects.get(id=pk)
 
-    response = None
     response_file = serialize(request, new_instance, 'file')
 
     data = {'file': response_file}
@@ -273,30 +375,32 @@ class ImgTableOrderError(BadRequest):
 @transaction.atomic
 @course_view
 def image_order(pctx, flow_session_id, ordinal):
-    page_image_behavior = get_page_image_behavior(pctx, flow_session_id, ordinal)
-    may_change_answer = page_image_behavior.may_change_answer
-    if not may_change_answer:
+    
+    try:
+        page_image_behavior = get_page_image_behavior(pctx, flow_session_id, ordinal)
+        may_change_answer = page_image_behavior.may_change_answer
+    except ValueError:
+        may_change_answer = True
+
+    course_staff_status = is_course_staff(pctx)
+    if not (may_change_answer or course_staff_status):
         raise ImgTableOrderError(_('Not allowd to modify answer.'))
     request = pctx.request
     if not request.is_ajax():
         raise ImgTableOrderError(_('Only Ajax Post is allowed.'))
 
-#    print request.POST['chg_data']
-    
     chg_data_list = json.loads(request.POST['chg_data'])
-
-#    print len(chg_data_list)
 
     for chg_data in chg_data_list:
         try:
             chg_instance = FlowPageImage.objects.get(pk=chg_data['pk'])
         except FlowPageImage.DoesNotExist:
             raise ImgTableOrderError(_('Please upload the image first.'))
-#        try:
-        chg_instance.order = chg_data['new_ord']
-        chg_instance.save()
-#        except:
-#            raise ImgTableOrderError(_('There are errors, please refresh the page or try again later'))
+        try:
+            chg_instance.order = chg_data['new_ord']
+            chg_instance.save()
+        except:
+            raise ImgTableOrderError(_('There are errors, please refresh the page or try again later'))
 
     response = {'message': ugettext('Done')}
 

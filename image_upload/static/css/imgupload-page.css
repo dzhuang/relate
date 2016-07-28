@@ -22,9 +22,16 @@ tr:nth-last-child(1) > td.td-srt > a.button.btn.btn-success.down,
     .modal-footer > button >span {
         display: none;
     }
-    #fileupload > table > tbody > * > td:nth-child(2) {
+    #fileupload > table > tbody > * > td:nth-child(2){
         display: none;
     }
+    #fileupload > table > tbody > * > td:nth-child(3){
+        display: none;
+    }
+    #fileupload > table > tbody > * > td:nth-child(4){
+        display: none;
+    }
+
     #fileupload > div.row.fileupload-buttonbar > div.col-lg-7 > * > span {
         display: none;
     }

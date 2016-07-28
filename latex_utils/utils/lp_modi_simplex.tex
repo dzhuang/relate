@@ -1,0 +1,80 @@
+\begin{alignat*}{20}
+\text{(1)\quad}\max\quad &\rlap{$Z=\mbox{$-$}6x_1+3x_2-3x_3$}\\
+\text{s.t.\quad}
+&&2x_1&{}+{}&x_2&&&&{}\leqslant{}&8\\
+&&\mbox{$-$}4x_1&{}-{}&2x_2&{}+{}&3x_3&&{}\leqslant{}&14\\
+&&x_1&{}-{}&2x_2&{}+{}&x_3&&{}\leqslant{}&18\\
+\rlap{$x_1,x_2,x_3\geqslant0$}
+\end{alignat*}
+
+\qd{答案：\todosv{\hei 不得使用表上作业法求解！}{1cm}}
+\begin{mdframed}
+\jie 将问题标准化为
+
+\begin{alignat*}{20}
+\max\quad &\rlap{$Z=\mbox{$-$}6x_1+3x_2-3x_3$}\\
+\text{s.t.\quad}
+&&2	x_1&	{}+{}&	x_2&	&	&	{}+{}&	x_4&	&	&	&	&	&{}={}&8\\
+&&\mbox{$-$}4	x_1&	{}-{}&2	x_2&	{}+{}&3	x_3&	&	&	{}+{}&	x_5&	&	&	&{}={}&14\\
+&&	x_1&	{}-{}&2	x_2&	{}+{}&	x_3&	&	&	&	&	{}+{}&	x_6&	&{}={}&18\\
+\rlap{$x_1,x_2,x_3,x_4,x_5,x_6\geqslant0$}
+\end{alignat*}
+
+\qd{(1)} {\hei 基变量向量为}$\mathbf{X_B}=( x_4,x_5,x_6 )^T$，有：
+\[\mathbf{B}=( \mathbf{p}_4,\mathbf{p}_5,\mathbf{p}_6 )=\begin{pmatrix}
+   1 & 0 & 0  \\
+   0 & 1 & 0  \\
+   0 & 0 & 1  \\
+\end{pmatrix}\quad \Rightarrow \quad \mathbf{B}^{-1}=\begin{pmatrix}
+   1 & 0 & 0  \\
+   0 & 1 & 0  \\
+   0 & 0 & 1  \\
+\end{pmatrix}\]
+计算非基变量的检验数$\bar c_j$：
+\begin{align*}
+\bar c_1&=c_1-\mathbf{C_B}{\mathbf{B}^{-1}}{\mathbf{p}_1}=\mbox{$-$}6-( 0,0,0 )\begin{pmatrix}
+   1 & 0 & 0  \\
+   0 & 1 & 0  \\
+   0 & 0 & 1  \\
+\end{pmatrix}\begin{pmatrix}
+   2  \\
+   \mbox{$-$}4  \\
+   1  \\
+\end{pmatrix}=\mbox{$-$}6 \\
+  \bar c_2&=c_2-\mathbf{C_B}{\mathbf{B}^{-1}}{\mathbf{p}_2}=3\\
+\bar c_3&=c_3-\mathbf{C_B}{\mathbf{B}^{-1}}{\mathbf{p}_3}=\mbox{$-$}3
+\end{align*}
+$x_2$为入基变量。计算${{\bar p}_2}$和$\bar b$以确定出基变量：
+\[\mathbf{\bar p}_2=\mathbf{B}^{-1}{\mathbf{p}_2}=\begin{pmatrix}
+   1  \\
+   \mbox{$-$}2  \\
+   \mbox{$-$}2  \\
+\end{pmatrix},\quad  \mathbf{\bar b}=\mathbf{B}^{-1}\mathbf{b}=\begin{pmatrix}
+   8  \\
+   14  \\
+   18  \\
+\end{pmatrix}\]
+选择$x_4$为出基变量，从而得到新的基变量向量。
+
+
+
+所有$\bar c_j$非正，表明已取得最优解，由\[\mathbf{X_B}=\mathbf{\bar b}=\mathbf{B}^{-1}\mathbf{b}=\begin{pmatrix}
+   1 & 0 & 0  \\
+   2 & 1 & 0  \\
+   2 & 0 & 1  \\
+\end{pmatrix}\begin{pmatrix}
+   8  \\
+   14  \\
+   18  \\
+\end{pmatrix}=\begin{pmatrix}
+   8  \\
+   30  \\
+   34  \\
+\end{pmatrix}\]
+可知最优解为：
+\[\mathbf{X}^*=( 0,8,0,0,30,34 )^T,\]
+最优值为：
+\[{Z^*}=\mathbf{C_B}\mathbf{B}^{-1}\mathbf{b}=24.\]
+\end{mdframed}
+
+\edaan}

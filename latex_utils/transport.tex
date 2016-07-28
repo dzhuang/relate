@@ -1,0 +1,84 @@
+
+设有产量分别为30，40，30的三个原料产地，欲将原材料运往销量分别为25，20，40的三个销地，单位运价如下表所示。试求总运费最省的调运方案。
+    
+
+{% from "latex.jinja" import transportation_preamble as preamble %}
+
+<p align="middle">
+{% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
+\begin{table}[H]\centering \topcaption{}
+\begin{mytabular}{c|ccc|c}\hline\hline \diagbox{产地}{单位运费}{销地}
+&  B1 &  B2 &  B3 &  供应量\\ \hline
+   A1  & 5&6&9&30 \\
+   A2  & 9&4&8&40 \\
+   A3  & 10&7&5&30 \\
+ \hline
+需求量&25&20&40 & \\
+\hline\hline
+\end{mytabular}\end{table}
+
+\begin{keytable}[H]\centering \topcaption{}
+\begin{mytabular}{c|cccc|c}\hline\hline \diagbox{产地}{单位运费}{销地}
+&  B1 &  B2 &  B3 &  B4 &  供应量\\ \hline
+   A1  & 5&6&9&0&30 \\
+   A2  & 9&4&8&0&40 \\
+   A3  & 10&7&5&0&30 \\
+ \hline
+需求量&25&20&40&15 & 100\\
+\hline\hline
+\end{mytabular}\end{keytable}
+
+\def\ori{  {  {10,7,5,0},{9,4,8,0},{5,6,9,0}  }  }
+\def\sremainder{
+\draw (sr0) node{\footnotesize 30};
+\draw (sr1) node{\footnotesize 40};
+\draw (sr2) node{\footnotesize 30};
+}
+\def\dremainder{
+\draw (dr0) node{\footnotesize 25};
+\draw (dr1) node{\footnotesize 20};
+\draw (dr2) node{\footnotesize 40};
+\draw (dr3) node{\footnotesize 15};
+}
+\def\total{\footnotesize 100}
+
+\noindent\begin{minipage}[c]{0.5\textwidth}
+\parindent 2em
+
+\begin{keytable}[H]
+\centering
+\topcaption{}
+\def\flows{  {  {"","","30","",""},{"","20","10","10",""},{"25","","","5",""}  }  }
+\begin{tikzpicture}[>=stealth]\draw[thick, draw=black] (0,0) grid (4,3);%%%无运输图
+\draworiginlabel{\ori}{2}{3}
+\drawflow{\flows}{2}{3}
+\sremainder
+\dremainder
+\end{tikzpicture}
+\end{keytable}
+
+\end{minipage}%
+\hskip 2em
+\noindent\begin{minipage}[c]{0.5\textwidth}
+\parindent 2em
+检验数表为：
+
+\begin{keytable}[H]
+\centering \topcaption{检验数表}%\label{tab:jysb1}
+\begin{mytabular}{c||C{2.5em}|C{2.5em}|C{2.5em}|C{2.5em}  }
+\hline\hline
+& $B1$ & $B2$ & $B3$ & $B4$  \\ \hline\hline
+
+$A1$ & &2&1&\\ \hline
+$A2$ & 4&&&\\ \hline
+$A3$ & 8&6&&3\\ \hline
+\hline
+\end{mytabular}
+\end{keytable}
+
+\end{minipage}
+
+
+
+
+{% endcall %}</p>

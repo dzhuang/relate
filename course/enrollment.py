@@ -242,13 +242,22 @@ def send_enrollment_decision(participation, approved, request=None):
                 })
 
             from django.core.mail import EmailMessage
+            allow_nonauthorized_sender = getattr(settings, "RELATE_EMAIL_SMTP_ALLOW_NONAUTHORIZED_SENDER", False)
+
+            if allow_nonauthorized_sender:
+                reply_email = course.from_email
+                from_email = course.from_email
+            else:
+                reply_email = course.notify_email
+                from_email = settings.DEFAULT_FROM_EMAIL
             msg = EmailMessage(
                     string_concat("[%s] ", _("Your enrollment request"))
                     % course.identifier,
                     message,
-                    course.from_email,
+                    from_email,
                     [participation.user.email])
             msg.bcc = [course.notify_email]
+            msg.reply_to = [reply_email]
             msg.send()
 
 
@@ -481,6 +490,7 @@ class BulkPreapprovalsFormCsv(StyledForm):
 
 def csv_to_preapproval(
         file_contents, inst_id_column, provided_name_column, header_count):
+    print "i am here =============================="
     result = []
     error_lines = []
     need_convert_to_utf8 = False
@@ -490,8 +500,10 @@ def csv_to_preapproval(
     line_count = 0
     n_csv_count = 0
     spamreader = csv.reader(file_contents)
+    print spamreader
     is_utf8_format = isinstance(spamreader, unicode)
     for row in spamreader:
+        print row
         line_count += 1
         if header_count > 0 and line_count <= header_count:
             continue
@@ -500,7 +512,9 @@ def csv_to_preapproval(
         provided_name_str = row[provided_name_column-1].strip()
         
         total_count += 1
-
+        result.append(",".join([inst_id_str,provided_name_str]))
+    print "here's the result =============================="
+    print result
     return total_count, result, error_lines
 
 @login_required
@@ -627,6 +641,7 @@ def create_preapprovals_csv(pctx):
                     elif preapp_type == "institutional_id_with_name":
 
                         [inst_id, full_name] = l.split(",")
+                        print l
 
                         if not (inst_id and full_name):
                             continue
@@ -728,6 +743,8 @@ _user_contains = intern("user_contains")
 _tagged = intern("tagged")
 _role = intern("role")
 _status = intern("status")
+_has_started = intern("has_started")
+_has_submitted = intern("has_submitted")
 _whitespace = intern("whitespace")
 
 # }}}
@@ -755,6 +772,8 @@ _LEX_TABLE = [
     (_tagged, RE(r"tagged:([-\w]+)")),
     (_role, RE(r"role:(\w+)")),
     (_status, RE(r"status:(\w+)")),
+    (_has_started, RE(r"has-started:([-_\w]+)")),
+    (_has_submitted, RE(r"has-submitted:([-_\w]+)")),
 
     (_whitespace, RE("[ \t]+")),
     ]
@@ -826,6 +845,23 @@ def parse_query(course, expr_str):
             pstate.advance()
             return result
 
+        elif next_tag is _has_started:
+            flow_id = pstate.next_match_obj().group(1)
+            result = (
+                    Q(flow_sessions__flow_id=flow_id)
+                    & Q(flow_sessions__course=course))
+            pstate.advance()
+            return result
+
+        elif next_tag is _has_submitted:
+            flow_id = pstate.next_match_obj().group(1)
+            result = (
+                    Q(flow_sessions__flow_id=flow_id)
+                    & Q(flow_sessions__course=course)
+                    & Q(flow_sessions__in_progress=False))
+            pstate.advance()
+            return result
+
         else:
             pstate.expected("terminal")
 
@@ -892,9 +928,9 @@ class ParticipationQueryForm(StyledForm):
     queries = forms.CharField(
             required=True,
             widget=forms.Textarea,
-            help_text=_(
-                "Enter queries, one per line. "
-                "Allowed: "
+            help_text=string_concat(
+                _("Enter queries, one per line."), " ",
+                _("Allowed"), ": ",
                 "<code>and</code>, "
                 "<code>or</code>, "
                 "<code>not</code>, "
@@ -906,7 +942,9 @@ class ParticipationQueryForm(StyledForm):
                 "<code>tagged:abc</code>, "
                 "<code>role:instructor|teaching_assistant|"
                 "student|observer|auditor</code>, "
-                "<code>status:requested|active|dropped|denied</code>."
+                "<code>status:requested|active|dropped|denied</code>|"
+                "<code>has-started:flow_id</code>|"
+                "<code>has-submitted:flow_id</code>."
                 ),
             label=_("Queries"))
     op = forms.ChoiceField(
@@ -958,7 +996,7 @@ def query_participations(pctx):
                     else:
                         parsed_query = parsed_query | parsed_subquery
 
-            except KeyboardInterrupt as e:
+            except Exception as e:
                 messages.add_message(request, messages.ERROR,
                         _("Error in line %(lineno)d: %(error_type)s: %(error)s")
                         % {

@@ -37,6 +37,14 @@ from course.utils import CoursePageContext
 
 # extracted from course.flow
 def get_page_image_behavior(pctx, flow_session_id, ordinal):
+    
+    if ordinal == "None" and flow_session_id == "None":
+        from course.page.base import PageBehavior
+        return PageBehavior(
+            show_correctness=True,
+            show_answer=True,
+            may_change_answer=True,
+        )
 
     request = pctx.request
 
@@ -132,4 +140,74 @@ class ImageOperationMixin(UserPassesTestMixin):
         course_identifier = self.kwargs['course_identifier']
 
         pctx = CoursePageContext(request, course_identifier)
-        return get_page_image_behavior(pctx, flow_session_id, ordinal).may_change_answer
+        
+        try:
+            return get_page_image_behavior(pctx, flow_session_id, ordinal).may_change_answer
+        except ValueError:
+            return True
+
+# {{{
+
+from django import forms
+from django.template import Context
+from django.template.loader import get_template
+from django.contrib.admin import widgets
+
+class MarkdownWidget(forms.Textarea):
+    def render(self, name, value, attrs=None):
+        if attrs is None:
+            attrs = {}
+        if 'class' in attrs:
+            attrs['class'] += ' markdown-editor'
+        else:
+            attrs.update({'class': 'markdown-editor'})
+        attrs.update(
+            {
+                #'id': "marked-mathjax-input",
+                'onkeyup': "Preview.Update()",
+                #'name': "comment",
+             }
+        )
+        #attrs.update({"autofocus": ""})
+
+        widget = super(MarkdownWidget, self).render(name, value, attrs)
+
+        t = get_template('image_upload/widget.html')
+        c = Context({
+            'markdown_editor': widget,
+        })
+
+        return t.render(c)
+
+    class Media:
+        js = (
+            "/static/marked/marked.min.js",
+        )
+
+class AdminMarkdownWidget(MarkdownWidget, widgets.AdminTextareaWidget):
+    class Media:
+        css = {
+            'all': ('/static/css/markdown-mathjax.css',)
+        }
+        js = (
+            "/static/marked/marked.min.js",
+              )
+
+
+    # }}}
+
+   #{{{ enable query filter charfield by 'len'
+from django.db.models import Transform
+from django.db.models import CharField, TextField
+
+class CharacterLength(Transform):
+    lookup_name = 'len'
+    def as_sql(self, compiler, connection):
+        lhs, params = compiler.compile(self.lhs)
+        return "LENGTH(%s)" % lhs, params
+
+CharField.register_lookup(CharacterLength)
+TextField.register_lookup(CharacterLength)
+
+# }}}
+

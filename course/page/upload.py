@@ -42,6 +42,7 @@ from crispy_forms.layout import Layout, Field
 # {{{ upload question
 
 class FileUploadForm(StyledForm):
+    show_save_button = False
     uploaded_file = forms.FileField(required=True,
             label=ugettext_lazy('Uploaded file'))
 
@@ -51,9 +52,18 @@ class FileUploadForm(StyledForm):
         self.max_file_size = maximum_megabytes * 1024**2
         self.mime_types = mime_types
 
+        # 'accept=' doesn't work right for at least application/octet-stream.
+        # We'll start with a whitelist.
+        allow_accept = False
+        if mime_types == ["application/pdf"]:
+            allow_accept = True
+
+        field_kwargs = {}
+        if allow_accept:
+            field_kwargs["accept"] = ",".join(mime_types)
+
         self.helper.layout = Layout(
-                Field("uploaded_file", accept=",".join(mime_types))
-                )
+                Field("uploaded_file", **field_kwargs))
 
     def clean_uploaded_file(self):
         uploaded_file = self.cleaned_data['uploaded_file']

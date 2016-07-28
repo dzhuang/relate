@@ -36,7 +36,7 @@ from crispy_forms.layout import Submit, Layout, Div
 from django.db.models import Q
 from django.conf import settings
 from django.contrib.auth import (get_user_model, REDIRECT_FIELD_NAME,
-        login as auth_login,)
+        login as auth_login, logout as auth_logout)
 from django.contrib.auth.forms import \
         AuthenticationForm as AuthenticationFormBase
 from django.contrib.sites.shortcuts import get_current_site
@@ -269,8 +269,14 @@ class TokenBackend(object):
 
 # {{{ choice
 
-def sign_in_choice(request):
-    return render(request, "sign-in-choice.html")
+def sign_in_choice(request, redirect_field_name=REDIRECT_FIELD_NAME):
+    redirect_to = request.POST.get(redirect_field_name,
+                                   request.GET.get(redirect_field_name, ''))
+    next_uri = ""
+    if redirect_to:
+        next_uri = "?%s=%s" % (redirect_field_name, redirect_to)
+
+    return render(request, "sign-in-choice.html", {"next_uri": next_uri})
 
 # }}}
 
@@ -318,11 +324,16 @@ def sign_in_by_user_pw(request, redirect_field_name=REDIRECT_FIELD_NAME):
 
     current_site = get_current_site(request)
 
+    next_uri = ""
+    if redirect_to:
+        next_uri = "?%s=%s" % (redirect_field_name, redirect_to)
+
     context = {
         'form': form,
         redirect_field_name: redirect_to,
         'site': current_site,
         'site_name': current_site.name,
+        'next_uri': next_uri,
     }
 
     return TemplateResponse(request, "course/login.html", context)
@@ -628,7 +639,9 @@ class SignInByEmailForm(StyledForm):
 
 def sign_in_by_email(request):
     if not settings.RELATE_SIGN_IN_BY_EMAIL_ENABLED:
-        raise SuspiciousOperation(_("email-based sign-in is not being used"))
+        messages.add_message(request, messages.ERROR,
+                _("Email-based sign-in is not being used"))
+        return redirect("relate-sign_in_choice")
 
     if request.method == 'POST':
         form = SignInByEmailForm(request.POST)
@@ -676,7 +689,9 @@ def sign_in_by_email(request):
 
 def sign_in_stage2_with_token(request, user_id, sign_in_key):
     if not settings.RELATE_SIGN_IN_BY_EMAIL_ENABLED:
-        raise SuspiciousOperation(_("email-based sign-in is not being used"))
+        messages.add_message(request, messages.ERROR,
+                _("Email-based sign-in is not being used"))
+        return redirect("relate-sign_in_choice")
 
     from django.contrib.auth import authenticate, login
     user = authenticate(user_id=int(user_id), token=sign_in_key)
@@ -927,5 +942,26 @@ class Saml2Backend(Saml2BackendBase):
 
 # }}}
 
+
+# {{{ sign-out
+
+@never_cache
+def sign_out(request):
+
+    response = None
+
+    if settings.RELATE_SIGN_IN_BY_SAML2_ENABLED:
+        from djangosaml2.views import _get_subject_id, logout as saml2_logout
+        if _get_subject_id(request.session) is not None:
+            response = saml2_logout(request)
+
+    auth_logout(request)
+
+    if response is not None:
+        return response
+    else:
+        return redirect("relate-home")
+
+# }}}
 
 # vim: foldmethod=marker

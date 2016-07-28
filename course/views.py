@@ -298,7 +298,6 @@ def current_repo_file_etag_func(request, course_identifier, path):
     return ":".join([course_identifier, commit_sha.decode(), path])
 
 
-@cache_control(max_age=3600*24*31)  # cache for a month
 @http_dec.condition(etag_func=current_repo_file_etag_func)
 def get_current_repo_file(request, course_identifier, path):
     course = get_object_or_404(Course, identifier=course_identifier)
@@ -381,7 +380,7 @@ class FakeTimeForm(StyledForm):
 
 
 def get_fake_time(request):
-    if "relate_fake_time" in request.session:
+    if request is not None and "relate_fake_time" in request.session:
         import datetime
 
         from django.conf import settings
@@ -404,7 +403,16 @@ def get_now_or_fake_time(request):
 
 
 def set_fake_time(request):
-    if not request.user.is_staff:
+
+    # allow staff to set fake time when impersonating
+    def is_original_user_staff(request):
+        is_impersonating = hasattr(
+                request, "relate_impersonate_original_user")
+        if is_impersonating:
+            return request.relate_impersonate_original_user.is_staff
+        return False
+
+    if not (request.user.is_staff or is_original_user_staff(request)):
         raise PermissionDenied(_("only staff may set fake time"))
 
     if request.method == "POST":
@@ -445,14 +453,13 @@ def fake_time_context_processor(request):
 
 class FakeFacilityForm(StyledForm):
     def __init__(self, *args, **kwargs):
-        from django.conf import settings
-
         super(FakeFacilityForm, self).__init__(*args, **kwargs)
 
+        from course.utils import get_facilities_config
         self.fields["facilities"] = forms.MultipleChoiceField(
                 choices=(
                     (name, name)
-                    for name in settings.RELATE_FACILITIES),
+                    for name in get_facilities_config()),
                 widget=forms.CheckboxSelectMultiple,
                 required=False,
                 label=_("Facilities"),
@@ -526,7 +533,8 @@ class InstantFlowRequestForm(StyledForm):
         self.fields["flow_id"] = forms.ChoiceField(
                 choices=[(fid, fid) for fid in flow_ids],
                 required=True,
-                label=_("Flow ID"))
+                label=_("Flow ID"),
+                widget=Select2Widget())
         self.fields["duration_in_minutes"] = forms.IntegerField(
                 required=True, initial=20,
                 label=pgettext_lazy("Duration for instant flow",
@@ -608,7 +616,8 @@ class FlowTestForm(StyledForm):
         self.fields["flow_id"] = forms.ChoiceField(
                 choices=[(fid, fid) for fid in flow_ids],
                 required=True,
-                label=_("Flow ID"))
+                label=_("Flow ID"),
+                widget=Select2Widget())
 
         self.helper.add_input(
                 Submit(

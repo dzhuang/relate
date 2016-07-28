@@ -1,0 +1,122 @@
+\BLOCK{- if show_question -}
+\BLOCK{- if pre_description -}
+\VAR{pre_description}
+\BLOCK{- endif -} \#{ pre_description }
+
+{% from "latex.jinja" import mytabular_preamble as preamble %}
+
+<p align="middle">
+{% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
+\begin{table}[H]\centering
+\topcaption{}
+\begin{tabular}{c|c|c|\BLOCK{ for x in range(0, lp.solutionPhase2.all_variable_str_list|length) }
+C{1cm}\BLOCK{ endfor }|c}\hline\hline
+& \multicolumn{2}{c|}{$c_j$}\BLOCK{ for c in lp.solutionPhase2.goal_str_list }&\VAR{c}\BLOCK{ endfor }&\multirow{2}*{$\mathbf{b}$} \\ \cline{2-\VAR{lp.solutionPhase2.all_variable_str_list|length + 3 }}
+& $\mathbf{C_B}$&$\mathbf{X_B}$\BLOCK{ for x in lp.solutionPhase2.all_variable_str_list }&\VAR{x}\BLOCK{ endfor }&\\ \hline
+\BLOCK{ for i in range(0, lp.solutionPhase2.tableau_str_list|length) }
+\BLOCK{ if loop.first or loop.last }
+\BLOCK{ set outer_loop = loop }
+\multirow{\VAR{lp.solutionPhase2.tableau_str_list[0]|length}}{*}{\begin{sideways} \BLOCK{ if loop.first}初始表\BLOCK{ else }最优表\BLOCK{ endif } \end{sideways}}
+\BLOCK{ for j in range(0, lp.solutionPhase2.cb_str_list[i]|length + 1) }
+\BLOCK{ if not loop.last -} & \VAR{lp.solutionPhase2.cb_str_list[i][j]}&\VAR{lp.solutionPhase2.xb_str_list[i][j]}&
+\BLOCK{- else -}
+& \multicolumn{2}{c|}{$\bar c_j$}&\BLOCK{- endif }
+\BLOCK{ if not outer_loop.last } \VAR{(lp.solutionPhase2.tableau_str_list[i][j]|join("&"))|replace("[$\mathbf{", "$")|replace("}$]","$") } \BLOCK{ else }
+\BLOCK{ if not loop.last }
+\VAR{([""]*(lp.solutionPhase2.tableau_str_list[i][j]|length-3))|join("&") } & \VAR{lp.solutionPhase2.tableau_str_list[i][j][-3:-1]|join("&")} &
+\BLOCK{ else } \VAR{([" "]*(lp.solutionPhase2.tableau_str_list[i][j]|length))|join("&") }\BLOCK{ endif }\BLOCK{ endif }\\
+
+\BLOCK{- if loop.revindex0 == 1 } \cline{2-\VAR{lp.solutionPhase2.all_variable_str_list|length + 4 }} \BLOCK{ endif }
+\BLOCK{- if loop.revindex0 == 0 } \hline\hline \BLOCK{ endif }
+
+\BLOCK{ endfor }
+\BLOCK{ endif }
+\BLOCK{ endfor }
+\hline\end{tabular}
+\end{table}%
+{% endcall %}
+</p>
+
+
+
+\BLOCK{ if final_description -}
+\VAR{final_description}
+\BLOCK{ endif }
+
+
+\BLOCK{ if after_description -}
+\VAR{after_description}
+\BLOCK{ endif -} \#{ after_description }
+
+\BLOCK{- endif -} \#{ show_question }
+
+
+
+\BLOCK{ if simplex_pre_description -}
+\VAR{simplex_pre_description}
+\BLOCK{ endif } \#{ simplex_pre_description }
+
+
+
+
+
+\BLOCK{- if show_answer}
+<strong>答案：</strong>
+
+\BLOCK{ if show_lp }
+$$\begin{alignat*}{20}
+\VAR{lp.get_goal_str()}\\
+\text{s.t.}\quad
+\BLOCK{ for c in lp.constraints_str_list }
+\VAR{c}
+\BLOCK{ endfor }
+\VAR{lp.sign_str}
+\end{alignat*}$$
+\BLOCK{ endif }
+
+\BLOCK{ if standardized_lp }
+$$\begin{alignat*}{20}
+\VAR{standardized_lp.get_goal_str()}\\
+\text{s.t.}\quad
+\BLOCK{ for c in standardized_lp.constraints_str_list }
+\VAR{c}
+\BLOCK{ endfor }
+\VAR{standardized_lp.sign_str}
+\end{alignat*}$$
+\BLOCK{ endif }
+
+
+{% from "latex.jinja" import mytabular_preamble as preamble %}
+
+<p align="middle">
+{% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
+\begin{keytable}[H]\centering
+\topcaption{}
+\begin{tabular}{c|c|c|\BLOCK{ for x in range(0, lp.solutionPhase2.all_variable_str_list|length) }
+C{1cm}\BLOCK{ endfor }|c}\hline\hline
+& \multicolumn{2}{c|}{$c_j$}\BLOCK{ for c in lp.solutionPhase2.goal_str_list }&\VAR{c}\BLOCK{ endfor }&\multirow{2}*{$\mathbf{b}$} \\ \cline{2-\VAR{lp.solutionPhase2.all_variable_str_list|length + 3 }}
+& $\mathbf{C_B}$&$\mathbf{X_B}$\BLOCK{ for x in lp.solutionPhase2.all_variable_str_list }&\VAR{x}\BLOCK{ endfor }&\\ \hline
+\BLOCK{ for i in range(0, lp.solutionPhase2.tableau_str_list|length) }
+\BLOCK{ if loop.first or loop.last }
+\multirow{\VAR{lp.solutionPhase2.tableau_str_list[0]|length}}{*}{\begin{sideways} \BLOCK{ if loop.first}初始表\BLOCK{ else }最优表\BLOCK{ endif } \end{sideways}}
+\BLOCK{ for j in range(0, lp.solutionPhase2.cb_str_list[i]|length + 1) }
+\BLOCK{ if not loop.last -} & \VAR{lp.solutionPhase2.cb_str_list[i][j]}&\VAR{lp.solutionPhase2.xb_str_list[i][j]}&
+\BLOCK{- else -}
+& \multicolumn{2}{c|}{$\bar c_j$}&
+\BLOCK{- endif } \VAR{(lp.solutionPhase2.tableau_str_list[i][j]|join("&"))|replace("[$\mathbf{", "$")|replace("}$]","$") } \\
+
+\BLOCK{- if loop.revindex0 == 1 } \cline{2-\VAR{lp.solutionPhase2.all_variable_str_list|length + 4 }} \BLOCK{ endif }
+\BLOCK{- if loop.revindex0 == 0 } \hline\hline \BLOCK{ endif }
+
+\BLOCK{ endfor }
+\BLOCK{ endif }
+\BLOCK{ endfor }
+\hline\end{tabular}
+\end{keytable}%
+{% endcall %}
+</p>
+\BLOCK{ if answer_after_description -}
+\VAR{answer_after_description}
+\BLOCK{ endif -} \#{ answer_after_description }
+
+\BLOCK{ endif } \#{ show_answer }

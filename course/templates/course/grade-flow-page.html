@@ -23,14 +23,14 @@
       {{ body|safe }}
 
       {% if form_html %}
-        <div class="well">
+        <div class="well relate-interaction-container">
           {{ form_html|safe }}
         </div>
       {% endif %}
 
       {% if feedback %}
         <div class="alert
-          {% if feedback.correctness == 1 %}
+          {% if feedback.correctness >= 1 %}
             alert-success
           {% elif feedback.correctness == 0 %}
             alert-danger
@@ -188,23 +188,23 @@
       </table>
       {# }}} #}
 
-      {# {{{ grading form #}
-
-      {% if grading_form_html != None %}
-        {{ grading_form_html|safe }}
-      {% endif %}
-
-      {# }}} #}
-
       {# {{{ correct answer #}
 
       {% if correct_answer  %}
         <div class="panel panel-default">
-          <div class="panel-heading">{% trans "Correct Answer" %}</div>
+          <div class="panel-heading" id="correct-answer">{% trans "Correct Answer" %}</div>
           <div class="panel-body">
             <p>{{ correct_answer|safe }}</p>
           </div>
         </div>
+      {% endif %}
+
+      {# }}} #}
+
+      {# {{{ grading form #}
+
+      {% if grading_form_html != None %}
+        {{ grading_form_html|safe }}
       {% endif %}
 
       {# }}} #}
@@ -235,6 +235,14 @@
         }).
         replace(/</g, '&lt;').
         replace(/>/g, '&gt;');
+    }
+
+    function truncate_text(s, length)
+    {
+      if (s.length > length)
+        return s.slice(0, length) + "...";
+      else
+        return s;
     }
 
     function set_grade_percent(p)
@@ -311,7 +319,7 @@
         var fb = items[i];
         buttons += ("<button class='btn btn-xs btn-default' type='button' "
             + "onclick='add_feedback(" + i + ")'>"
-            + encode_entities(fb)
+            + truncate_text(encode_entities(fb), 25)
             + "</button>"
             + " <a class='remove_fb_button' id='remove_fb_"+i+"' href='#'>"
             +   "<i class='fa fa-times-circle'></i>"
@@ -373,22 +381,47 @@
     {
       if (next_page_url)
         $(".grading-page-grade-entry .form-group:last .controls:last").append(
-            " <button class='btn btn-primary' id='save_next_page' type='button'>"
+            " <button class='btn btn-primary relate-grading-save-and-next-page-button' type='button'>"
             + "{% trans "Submit and next page" %} &raquo;"
             + "</button>");
       if (next_session_url)
         $(".grading-page-grade-entry .form-group:last .controls:last").append(
-            " <button class='btn btn-primary' id='save_next_session' type='button'>"
+            " <button class='btn btn-primary relate-grading-save-and-next-session-button' type='button'>"
             + "{% trans "Submit and next session" %} &raquo;"
             + "</button>");
 
-      $("#save_next_page").click(save_and_next_page);
-      $("#save_next_session").click(save_and_next_session);
-
       $(".relate-grading-form").prepend($(".form-group:last"));
+      $(".form-group:first").clone().appendTo($(".relate-grading-form"));
+
+      $(".relate-grading-save-and-next-page-button").click(save_and_next_page);
+      $(".relate-grading-save-and-next-session-button").click(save_and_next_session);
     }
 
-    $(document).ready(add_submit_next);
+    function scroll_to_answer()
+    {
+      $('html, body > div.grading-page-student-work').animate(
+        {scrollTop: $(".relate-interaction-container")
+        .position().top}, 1000);
+
+      {% if correct_answer %}
+        var item = document.getElementById("correct-answer");
+      {% else %}
+        var item = document.getElementById("rubric");
+        if(item === null){
+        var item = document.getElementById("grading-form");
+        }
+      {% endif %}
+      $('html, body > div.grading-page-grade-entry').animate(
+          {scrollTop: $(item)
+          .position().top}, 1000)
+    }
+
+    $(document).ready(function() {
+        add_submit_next();
+        scroll_to_answer();
+        document.getElementById("id_grade_percent").tabIndex = "1";
+        document.getElementById("id_grade_points").tabIndex = "2";
+        });
   </script>
 
   {# }}} #}

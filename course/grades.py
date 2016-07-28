@@ -50,6 +50,7 @@ from course.models import (
         GradingOpportunity, GradeChange, GradeStateMachine,
         grade_state_change_types,
         FlowSession, FlowPageVisit)
+from course.flow import adjust_flow_session_page_data
 from course.views import get_now_or_fake_time
 
 
@@ -158,7 +159,7 @@ def view_participant_list(pctx):
                 status=participation_status.active)
             .order_by("id")
             .select_related("user"))
-    
+
     from course.models import ParticipationPreapproval
 
     registered_inst_id_list = []
@@ -358,10 +359,11 @@ def export_gradebook_csv(pctx):
 
 # {{{ grades by grading opportunity
 
-class OpportunityGradeInfo(object):
-    def __init__(self, grade_state_machine, flow_sessions):
+class OpportunitySessionGradeInfo(object):
+    def __init__(self, grade_state_machine, flow_session, grades=None):
         self.grade_state_machine = grade_state_machine
-        self.flow_sessions = flow_sessions
+        self.flow_session = flow_session
+        self.grades = grades
 
 
 class ModifySessionsForm(StyledForm):
@@ -512,56 +514,95 @@ def view_grades_by_opportunity(pctx, opp_id):
             .select_related("participation__user")
             .select_related("opportunity"))
 
-    idx = 0
+    if opportunity.flow_id:
+        flow_sessions = list(FlowSession.objects
+                .filter(
+                    flow_id=opportunity.flow_id,
+                    )
+                .order_by(
+                    "participation__id",
+                    "start_time"
+                    ))
+    else:
+        flow_sessions = None
+
+    view_page_grades = pctx.request.GET.get("view_page_grades") == "1"
+
+    gchng_idx = 0
+    fsess_idx = 0
 
     finished_sessions = 0
     total_sessions = 0
 
     grade_table = []
-    for participation in participations:
+    for idx, participation in enumerate(participations):
+        # Advance in grade change list
         while (
-                idx < len(grade_changes)
-                and grade_changes[idx].participation.id < participation.id):
-            idx += 1
+                gchng_idx < len(grade_changes)
+                and grade_changes[gchng_idx].participation.pk < participation.pk):
+            gchng_idx += 1
 
         my_grade_changes = []
         while (
-                idx < len(grade_changes)
-                and grade_changes[idx].participation.pk == participation.pk):
-            my_grade_changes.append(grade_changes[idx])
-            idx += 1
+                gchng_idx < len(grade_changes)
+                and grade_changes[gchng_idx].participation.pk == participation.pk):
+            my_grade_changes.append(grade_changes[gchng_idx])
+            gchng_idx += 1
+
+        # Advance in flow session list
+        if flow_sessions is None:
+            my_flow_sessions = []
+        else:
+            while (
+                    fsess_idx < len(flow_sessions) and (
+                    flow_sessions[fsess_idx].participation is None or
+                    flow_sessions[fsess_idx].participation.pk < participation.pk)):
+                fsess_idx += 1
+
+            my_flow_sessions = []
+            while (
+                    fsess_idx < len(flow_sessions) and
+                    flow_sessions[fsess_idx].participation is not None and
+                    flow_sessions[fsess_idx].participation.pk == participation.pk):
+                my_flow_sessions.append(flow_sessions[fsess_idx])
+                fsess_idx += 1
 
         state_machine = GradeStateMachine()
         state_machine.consume(my_grade_changes)
 
-        if opportunity.flow_id:
-            flow_sessions = (FlowSession.objects
-                    .filter(
-                        participation=participation,
-                        flow_id=opportunity.flow_id,
-                        )
-                    .order_by("start_time"))
+        for fsession in my_flow_sessions:
+            total_sessions += 1
 
-            for fsession in flow_sessions:
-                total_sessions += 1
-                if not fsession.in_progress:
-                    finished_sessions += 1
+            if fsession is None:
+                continue
 
-        else:
-            flow_sessions = None
+            if not fsession.in_progress:
+                finished_sessions += 1
 
-        grade_table.append(
-                OpportunityGradeInfo(
-                    grade_state_machine=state_machine,
-                    flow_sessions=flow_sessions))
+            grade_table.append(
+                    (participation, OpportunitySessionGradeInfo(
+                        grade_state_machine=state_machine,
+                        flow_session=fsession)))
 
-    def grade_key(entry):
-        (participation, grades) = entry
-        return (participation.user.last_name.lower(),
-                    participation.user.first_name.lower())
+    if view_page_grades and len(grade_table) > 0:
+        # Query grades for flow pages
+        all_flow_sessions = [info.flow_session for _dummy, info in grade_table]
+        max_page_count = max(fsess.page_count for fsess in all_flow_sessions)
+        page_numbers = list(range(1, 1 + max_page_count))
 
-    grade_table = sorted(zip(participations, grade_table),
-            key=grade_key)
+        from course.flow import assemble_page_grades
+        page_grades = assemble_page_grades(all_flow_sessions)
+
+        for (_dummy, grade_info), grade_list in zip(grade_table, page_grades):
+            # Not all pages exist in all sessions
+            grades = list(enumerate(grade_list))
+            if len(grades) < max_page_count:
+                grades.extend([(None, None)] * (max_page_count - len(grades)))
+            grade_info.grades = grades
+    else:
+        page_numbers = []
+
+    # No need to sort here, datatables resorts anyhow.
 
     return render_course_page(pctx, "course/gradebook-by-opp.html", {
         "opportunity": opportunity,
@@ -569,6 +610,8 @@ def view_grades_by_opportunity(pctx, opp_id):
         "grade_state_change_types": grade_state_change_types,
         "grade_table": grade_table,
         "batch_session_ops_form": batch_session_ops_form,
+        "page_numbers": page_numbers,
+        "view_page_grades": view_page_grades,
 
         "total_sessions": total_sessions,
         "finished_sessions": finished_sessions,
@@ -771,6 +814,9 @@ def view_single_grade(pctx, participation_id, opportunity_id):
             session = FlowSession.objects.get(id=int(action_match.group(2)))
             op = action_match.group(1)
 
+            adjust_flow_session_page_data(
+                    pctx.repo, session, pctx.course.identifier)
+
             from course.flow import (
                     regrade_session,
                     recalculate_session_grade,
@@ -806,7 +852,7 @@ def view_single_grade(pctx, participation_id, opportunity_id):
                 else:
                     raise SuspiciousOperation(_("invalid session operation"))
 
-            except Exception as e:
+            except KeyboardInterrupt as e:
                 messages.add_message(pctx.request, messages.ERROR,
                         string_concat(
                             pgettext_lazy("Starting of Error message",
@@ -857,6 +903,10 @@ def view_single_grade(pctx, participation_id, opportunity_id):
         else:
             flow_sessions_and_session_properties = []
             for session in flow_sessions:
+                adjust_flow_session_page_data(
+                        pctx.repo, session, pctx.course.identifier,
+                        flow_desc)
+
                 grading_rule = get_session_grading_rule(
                         session, pctx.role, flow_desc, now_datetime)
 
@@ -878,6 +928,18 @@ def view_single_grade(pctx, participation_id, opportunity_id):
     show_page_grades = (
             show_privileged_info
             or opportunity.page_scores_in_participant_gradebook)
+
+    # {{{ filter out pre-public grade changes
+
+    if (not show_privileged_info and
+            opportunity.hide_superseded_grade_history_before is not None):
+        grade_changes = [gchange
+                for gchange in grade_changes
+                if not gchange.is_superseded
+                or gchange.grade_time >=
+                        opportunity.hide_superseded_grade_history_before]
+
+    # }}}
 
     return render_course_page(pctx, "course/gradebook-single.html", {
         "opportunity": opportunity,
@@ -926,13 +988,20 @@ class ImportGradesForm(StyledForm):
                     ),
                 label=_("Format"))
 
-        self.fields["id_column"] = forms.IntegerField(
+        self.fields["attr_type"] = forms.ChoiceField(
+                choices=(
+                    ("email_or_id", _("Email or NetID")),
+                    ("inst_id", _("Institutional ID")),
+                    ),
+                label=_("User attribute"))
+
+        self.fields["attr_column"] = forms.IntegerField(
                 # Translators: the following strings are for the format
                 # informatioin for a CSV file to be imported.
-                help_text=_("1-based column index for the Email or NetID "
-                "used to locate student record"),
+                help_text=_("1-based column index for the user attribute "
+                "selected above to locate student record"),
                 min_value=1,
-                label=_("User ID column"))
+                label=_("User attribute column"))
         self.fields["points_column"] = forms.IntegerField(
                 help_text=_("1-based column index for the (numerical) grade"),
                 min_value=1,
@@ -951,14 +1020,14 @@ class ImportGradesForm(StyledForm):
 
     def clean(self):
         data = super(ImportGradesForm, self).clean()
-        file_contents=data.get("file")
+        file_contents = data.get("file")
         if file_contents:
             column_idx_list = [
-                data["id_column"],
+                data["attr_column"],
                 data["points_column"],
                 data["feedback_column"]
             ]
-            has_header=data["format"] == "csvhead"
+            has_header = data["format"] == "csvhead"
             header_count = 1 if has_header else 0
 
             from course.utils import csv_data_importable
@@ -974,6 +1043,32 @@ class ImportGradesForm(StyledForm):
 
 class ParticipantNotFound(ValueError):
     pass
+
+
+def find_participant_from_inst_id(course, inst_id_str):
+    inst_id_str = inst_id_str.strip()
+
+    matches = (Participation.objects
+            .filter(
+                course=course,
+                status=participation_status.active,
+                user__institutional_id__exact=inst_id_str)
+            .select_related("user"))
+
+    if not matches:
+        raise ParticipantNotFound(
+                # Translators: use institutional_id_string to find user
+                # (participant).
+                _("no participant found with institutional ID "
+                "'%(inst_id_string)s'") % {
+                    "inst_id_string": inst_id_str})
+    if len(matches) > 1:
+        raise ParticipantNotFound(
+                _("more than one participant found with institutional ID "
+                "'%(inst_id_string)s'") % {
+                    "inst_id_string": inst_id_str})
+
+    return matches[0]
 
 
 def find_participant_from_id(course, id_str):
@@ -1029,8 +1124,8 @@ def fix_decimal(s):
 def csv_to_grade_changes(
         log_lines,
         course, grading_opportunity, attempt_id, file_contents,
-        id_column, points_column, feedback_column, max_points,
-        creator, grade_time, has_header):
+        attr_type, attr_column, points_column, feedback_column,
+        max_points, creator, grade_time, has_header):
     result = []
 
     import csv
@@ -1045,8 +1140,16 @@ def csv_to_grade_changes(
         gchange = GradeChange()
         gchange.opportunity = grading_opportunity
         try:
-            gchange.participation = find_participant_from_id(
-                    course, row[id_column-1])
+            if attr_type == "email_or_id":
+                gchange.participation = find_participant_from_id(
+                        course, row[attr_column-1])
+            elif attr_type == "inst_id":
+                gchange.participation = find_participant_from_inst_id(
+                        course, row[attr_column-1])
+            else:
+                raise ParticipantNotFound(
+                    _("Unknown user attribute '%(attr_type)s'") % {
+                        "attr_type": attr_type})
         except ParticipantNotFound as e:
             log_lines.append(e)
             continue
@@ -1082,18 +1185,20 @@ def csv_to_grade_changes(
 
                 updated = []
                 if last_grade.points != gchange.points:
-                    updated.append("points")
+                    updated.append(ugettext("points"))
                 if last_grade.max_points != gchange.max_points:
-                    updated.append("max_points")
+                    updated.append(ugettext("max_points"))
                 if last_grade.comment != gchange.comment:
-                    updated.append("comment")
+                    updated.append(ugettext("comment"))
 
                 if updated:
                     log_lines.append(
-                            "%(participation)s: %(updated)s "
-                            "updated" % {
-                                'participation': gchange.participation,
-                                'updated': ", ".join(updated)})
+                            string_concat(
+                                "%(participation)s: %(updated)s ",
+                                _("updated")
+                                ) % {
+                                    'participation': gchange.participation,
+                                    'updated': ", ".join(updated)})
 
                     result.append(gchange)
             else:
@@ -1131,7 +1236,8 @@ def import_grades(pctx):
                         grading_opportunity=form.cleaned_data["grading_opportunity"],
                         attempt_id=form.cleaned_data["attempt_id"],
                         file_contents=request.FILES["file"],
-                        id_column=form.cleaned_data["id_column"],
+                        attr_type=form.cleaned_data["attr_type"],
+                        attr_column=form.cleaned_data["attr_column"],
                         points_column=form.cleaned_data["points_column"],
                         feedback_column=form.cleaned_data["feedback_column"],
                         max_points=form.cleaned_data["max_points"],
@@ -1313,19 +1419,26 @@ def download_all_submissions(pctx, flow_id):
                         course=pctx.course,
                         repo=pctx.repo,
                         commit_sha=pctx.course_commit_sha,
-                        flow_session=visit.flow_session)
+                        flow_session=visit.flow_session,
+                        ordinal=visit.page_data.ordinal
+                        )
 
                 bytes_answer = page.normalized_bytes_answer(
                         grading_page_context, visit.page_data.data,
                         visit.answer)
+                
+                username = visit.flow_session.participation.user.get_full_name()
+                if not username:
+                    username = visit.flow_session.participation.user.username
+                institutional_id = visit.flow_session.participation.user.institutional_id
+                if not institutional_id:
+                    institutional_id = ""
 
                 if which_attempt in ["first", "last"]:
-                    key = (visit.flow_session.participation.user.get_full_name(),
-                            visit.flow_session.participation.user.institutional_id)
+                    key = (username, institutional_id)
                 elif which_attempt == "all":
-                    key = (visit.flow_session.participation.user.get_full_name(),
-                            visit.flow_session.participation.user.institutional_id,
-                            str(visit.flow_session.id))
+                    key = (username, institutional_id,
+                           str(visit.flow_session.id))
                 else:
                     raise NotImplementedError()
 

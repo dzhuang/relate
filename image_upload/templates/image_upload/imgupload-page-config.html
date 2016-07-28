@@ -6,14 +6,36 @@
 {% block CSS_HTML5_SHIM %}{# IE 9 lt already supported (Override to keep it empty)#}{% endblock %}
 
 {% block CSS_EXTRA %}
+{% if not IN_GRADE_PAGE %}
 {{ block.super }}
+{% else %}
+<style>
+    .preview img {
+    max-width:40vw;
+}
+@media (max-width: 767px) {
+  .fileupload-buttonbar .delete
+  {
+    display: none;
+  }
+}
+</style>
+{% endif %}
 <link rel="stylesheet" href="{{ STATIC_URL }}css/imgupload-page.css">
 <link rel="stylesheet" href="{{ STATIC_URL }}cropperjs/dist/cropper.css">
+<noscript><link rel="stylesheet" href="{{ STATIC_URL }}css/imgupload-noscript.css"></noscript>
+    <!--[if lt IE 9]>
+        <link rel="stylesheet" href="{{ STATIC_URL }}css/imgupload-noscript.css">
+    <![endif]-->
 {% endblock %}
 
 {% block JS_BOOTSTRAP %}{# BOOTSTRAP js (Override to keep it empty) #}{% endblock %}
 
 {% block UPLOAD_FORM %}
+    <noscript><div class="alert alert-danger warning noscript"><i class="fa fa-warning"></i> {% trans "This page requires Javascript enabled in your browser. Please refer to <a href='https://www.whatismybrowser.com/guides/how-to-enable-javascript/' target='_blank'> this link </a> to see how to do it." %}<br/></div></noscript>
+    <!--[if lte IE 9]>
+        <div class="browser alert alert-danger warning"><i class="fa fa-warning"></i> {% trans "This page requires a modern browser so that it can work properly" %}, {% trans "especially when you want to sort image correctly and enable image editting" %}. {% trans "Chrome/Firefox are prefered browsers. If you want use Internet Explorer, please install one with version higher than 10." %}<br/></div>
+    <![endif]-->
 {% load i18n crispy_forms_tags %}
 {% crispy form %}
 {% endblock %}
@@ -47,9 +69,21 @@ minFileSize: {{minFileSize}},
 
 {% block JS_EXTRA %}
 {{ block.super }}
+<script src="{{ STATIC_URL }}clipboard/dist/clipboard.min.js"></script>
 <script src="{% url 'javascript-catalog-image-upload' %}"></script>
 <script src="{{ STATIC_URL }}cropperjs/dist/cropper.js"></script>
 <script src="{{ STATIC_URL }}js/imgupload-page-min.js"></script>
+{# % if IN_GRADE_PAGE % #}
+<script src="{{ STATIC_URL }}ez-plus/src/jquery.ez-plus.js"></script>
+<script>
+function magnify(x) {
+    $(x).ezPlus({
+    zoomType: 'inner',
+    cursor: 'crosshair'
+});
+}
+</script>
+{# % endif % #}
 {% endblock %}
 
 {% block JS_UPLOAD_TEMPLATE %}{% endblock %}

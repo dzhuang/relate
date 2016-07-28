@@ -41,7 +41,8 @@ from markdown.treeprocessors import Treeprocessor
 
 from six.moves import html_parser
 
-from jinja2 import BaseLoader as BaseTemplateLoader, TemplateNotFound
+from jinja2 import (
+        BaseLoader as BaseTemplateLoader, TemplateNotFound, FileSystemLoader)
 
 from relate.utils import dict_to_struct
 
@@ -100,6 +101,17 @@ def get_repo_blob(repo, full_name, commit_sha, allow_tree=True):
     tree_sha = repo[commit_sha].tree
     tree = repo[tree_sha]
 
+    def access_directory_content(maybe_tree, name):
+        try:
+            mode_and_blob_sha = tree[name.encode()]
+        except TypeError:
+            raise ObjectDoesNotExist(_("resource '%s' is a file, "
+                "not a directory")
+                % full_name.decode("utf-8"))
+
+        mode, blob_sha = mode_and_blob_sha
+        return mode_and_blob_sha
+
     if not full_name:
         if allow_tree:
             return tree
@@ -113,10 +125,11 @@ def get_repo_blob(repo, full_name, commit_sha, allow_tree=True):
                 # tolerate empty path components (begrudgingly)
                 continue
 
-            mode, blob_sha = tree[name.encode()]
+            mode, blob_sha = access_directory_content(tree, name)
             tree = repo[blob_sha]
 
-        mode, blob_sha = tree[names[-1].encode()]
+        mode, blob_sha = access_directory_content(tree, names[-1])
+
         result = repo[blob_sha]
         if not allow_tree and not hasattr(result, "data"):
             raise ObjectDoesNotExist(
@@ -254,7 +267,12 @@ JINJA_YAML_RE = re.compile(
     r"^\[JINJA\]\s*$(.*?)^\[\/JINJA\]\s*$",
     re.MULTILINE | re.DOTALL)
 YAML_BLOCK_START_SCALAR_RE = re.compile(
-    r":\s*[|>](?:[0-9][-+]?|[-+][0-9]?)?(?:\s*\#.*)?$")
+    r"(:\s*[|>])"
+    "(J?)"
+    "((?:[0-9][-+]?|[-+][0-9]?)?)"
+    "(?:\s*\#.*)?"
+    "$")
+
 GROUP_COMMENT_START = re.compile(r"^\s*#\s*\{\{\{")
 LEADING_SPACES_RE = re.compile(r"^( *)")
 
@@ -268,14 +286,14 @@ def process_yaml_for_expansion(yaml_str):
 
     while i < line_count:
         l = lines[i]
-        if GROUP_COMMENT_START.match(l):
-            jinja_lines.append("{% raw %}")
-            jinja_lines.append(l)
-            jinja_lines.append("{% endraw %}")
-            i += 1
+        yaml_block_scalar_match = YAML_BLOCK_START_SCALAR_RE.search(l)
 
-        elif YAML_BLOCK_START_SCALAR_RE.search(l):
+        if yaml_block_scalar_match is not None:
             unprocessed_block_lines = []
+            allow_jinja = bool(yaml_block_scalar_match.group(2))
+            l = YAML_BLOCK_START_SCALAR_RE.sub(
+                    r"\1\3", l)
+
             unprocessed_block_lines.append(l)
 
             block_start_indent = len(LEADING_SPACES_RE.match(l).group(1))
@@ -297,9 +315,17 @@ def process_yaml_for_expansion(yaml_str):
                     unprocessed_block_lines.append(l)
                     i += 1
 
-            jinja_lines.append("{% raw %}")
+            if not allow_jinja:
+                jinja_lines.append("{% raw %}")
             jinja_lines.extend(unprocessed_block_lines)
+            if not allow_jinja:
+                jinja_lines.append("{% endraw %}")
+
+        elif GROUP_COMMENT_START.match(l):
+            jinja_lines.append("{% raw %}")
+            jinja_lines.append(l)
             jinja_lines.append("{% endraw %}")
+            i += 1
 
         else:
             jinja_lines.append(l)
@@ -335,6 +361,24 @@ class YamlBlockEscapingGitTemplateLoader(GitTemplateLoader):
     def get_source(self, environment, template):
         source, path, is_up_to_date = \
                 super(YamlBlockEscapingGitTemplateLoader, self).get_source(
+                        environment, template)
+
+        from os.path import splitext
+        _, ext = splitext(template)
+        ext = ext.lower()
+
+        if ext in [".yml", ".yaml"]:
+            source = process_yaml_for_expansion(source)
+
+        return source, path, is_up_to_date
+
+
+class YamlBlockEscapingFileSystemLoader(FileSystemLoader):
+    # https://github.com/inducer/relate/issues/130
+
+    def get_source(self, environment, template):
+        source, path, is_up_to_date = \
+                super(YamlBlockEscapingFileSystemLoader, self).get_source(
                         environment, template)
 
         from os.path import splitext
@@ -486,7 +530,7 @@ class TagProcessingHTMLParser(html_parser.HTMLParser):
         attrs.update(self.process_tag_func(tag, attrs))
 
         self.out_file.write("<%s %s/>" % (tag, " ".join(
-            _attr_to_string(k, v) for k, v in attrs.iteritems())))
+            _attr_to_string(k, v) for k, v in six.iteritems(attrs))))
 
     def handle_data(self, data):
         self.out_file.write(data)
@@ -725,8 +769,44 @@ def markup_to_html(course, repo, commit_sha, text, reverse_func=None,
 
     env.globals["parse_date_spec"] = parse_date_spec_jinja
 
+    # {{{ tex2img
+
+    from course.latex import tex_to_img_tag
+
+    def latex_not_enabled_warning(caller, *args, **kwargs):
+        return  "<div class='alert alert-danger'>%s</div>" % _(
+            "RELATE_LATEX_TO_IMAGE_ENABLED is set to False, "
+            "no image will be generated.")
+
+    def jinja_tex_to_img_tag(caller, *args, **kwargs):
+        from os.path import join
+        default_saving_folder = getattr(
+            settings, "LATEX_IMAGE_SAVING_FOLDER_PATH",
+            join(settings.MEDIA_ROOT, "latex_image"))
+        kwargs["output_dir"] = default_saving_folder
+        return tex_to_img_tag(caller(), *args, **kwargs)
+
     template = env.from_string(text)
-    text = template.render(**jinja_env)
+    latex2image_enabled = getattr(
+        settings, "RELATE_LATEX_TO_IMAGE_ENABLED", False)
+    if latex2image_enabled:
+        try:
+            env.globals["latex"] = jinja_tex_to_img_tag
+            text = template.render(**jinja_env)
+        except:
+            if validate_only:
+                raise
+            else:
+                # fail silently
+                text = template.render(**jinja_env)
+    else:
+        if not validate_only:
+            env.globals["latex"] = latex_not_enabled_warning
+        else:
+            raise ImproperlyConfigured(_(
+            "RELATE_LATEX_TO_IMAGE_ENABLED is set to False, "
+            "no image will be generated."))
+        text = template.render(**jinja_env)
 
     # }}}
 
@@ -770,6 +850,8 @@ def extract_title_from_markup(markup_text):
 
 DATE_RE = re.compile(r"^([0-9]+)\-([01][0-9])\-([0-3][0-9])$")
 TRAILING_NUMERAL_RE = re.compile(r"^(.*)\s+([0-9]+)$")
+
+END_PREFIX = "end:"
 
 
 class InvalidDatespec(ValueError):
@@ -913,36 +995,26 @@ def parse_date_spec(course, datespec, vctx=None, location=None):
                 datetime.datetime.combine(result, datetime.time.min))
         return apply_postprocs(result)
 
+    is_end = datespec.startswith(END_PREFIX)
+    if is_end:
+        datespec = datespec[len(END_PREFIX):]
+
     match = TRAILING_NUMERAL_RE.match(datespec)
     if match:
-        if vctx is not None:
-            from course.validation import validate_identifier
-            validate_identifier(vctx, "%s: event kind" % location,
-                    match.group(1))
+        # event with numeral
 
-        if course is None:
-            return now()
+        event_kind = match.group(1)
+        ordinal = int(match.group(2))
 
-        from course.models import Event
-        try:
-            return apply_postprocs(
-                    Event.objects.get(
-                        course=course,
-                        kind=match.group(1),
-                        ordinal=int(match.group(2))).time)
+    else:
+        # event without numeral
 
-        except ObjectDoesNotExist:
-            if vctx is not None:
-                vctx.add_warning(
-                        location,
-                        _("unrecognized date/time specification: '%s' "
-                        "(interpreted as 'now')")
-                        % orig_datespec)
-            return now()
+        event_kind = datespec
+        ordinal = None
 
     if vctx is not None:
         from course.validation import validate_identifier
-        validate_identifier(vctx, "%s: event kind" % location, datespec)
+        validate_identifier(vctx, "%s: event kind" % location, event_kind)
 
     if course is None:
         return now()
@@ -950,11 +1022,10 @@ def parse_date_spec(course, datespec, vctx=None, location=None):
     from course.models import Event
 
     try:
-        return apply_postprocs(
-                Event.objects.get(
-                    course=course,
-                    kind=datespec,
-                    ordinal=None).time)
+        event_obj = Event.objects.get(
+            course=course,
+            kind=event_kind,
+            ordinal=ordinal)
 
     except ObjectDoesNotExist:
         if vctx is not None:
@@ -964,6 +1035,23 @@ def parse_date_spec(course, datespec, vctx=None, location=None):
                     "(interpreted as 'now')")
                     % orig_datespec)
         return now()
+
+    if is_end:
+        if event_obj.end_time is not None:
+            result = event_obj.end_time
+        else:
+            result = event_obj.time
+            if vctx is not None:
+                vctx.add_warning(
+                        location,
+                        _("event '%s' has no end time, using start time instead")
+                        % orig_datespec)
+
+    else:
+        result = event_obj.time
+
+    return apply_postprocs(result)
+
 
 # }}}
 
@@ -1243,204 +1331,22 @@ def instantiate_flow_page(location, repo, page_desc, commit_sha):
 # }}}
 
 
-# {{{ page data wrangling
-
-def _adjust_flow_session_page_data_inner(repo, flow_session,
-        course_identifier, flow_desc):
-    commit_sha = get_course_commit_sha(
-            flow_session.course, flow_session.participation)
-    revision_key = "2:"+commit_sha.decode()
-
-    if flow_session.page_data_at_revision_key == revision_key:
-        return
-
-    from course.page.base import PageContext
-    pctx = PageContext(
-            course=flow_session.course,
-            repo=repo,
-            commit_sha=commit_sha,
-            flow_session=flow_session,
-            in_sandbox=False,
-            page_uri=None)
-
-    from course.models import FlowPageData
-
-    def remove_page(fpd):
-        if fpd.ordinal is not None:
-            fpd.ordinal = None
-            fpd.save()
-
-    desc_group_ids = []
-
-    ordinal = [0]
-    for grp in flow_desc.groups:
-        desc_group_ids.append(grp.id)
-
-        shuffle = getattr(grp, "shuffle", False)
-        max_page_count = getattr(grp, "max_page_count", None)
-
-        available_page_ids = [page_desc.id for page_desc in grp.pages]
-
-        if max_page_count is None:
-            max_page_count = len(available_page_ids)
-
-        group_pages = []
-
-        # {{{ helper functions
-
-        def find_page_desc(page_id):
-            new_page_desc = None
-
-            for page_desc in grp.pages:
-                if page_desc.id == page_id:
-                    new_page_desc = page_desc
-                    break
-
-            assert new_page_desc is not None
-
-            return new_page_desc
-
-        def instantiate_page(page_desc):
-            return instantiate_flow_page(
-                    "course '%s', flow '%s', page '%s/%s'"
-                    % (course_identifier, flow_session.flow_id,
-                        grp.id, page_desc.id),
-                    repo, page_desc, commit_sha)
-
-        def create_fpd(new_page_desc):
-            page = instantiate_page(new_page_desc)
-
-            data = page.make_page_data()
-            return FlowPageData(
-                    flow_session=flow_session,
-                    ordinal=None,
-                    page_type=new_page_desc.type,
-                    group_id=grp.id,
-                    page_id=new_page_desc.id,
-                    data=data,
-                    title=page.title(pctx, data))
-
-        def add_page(fpd):
-            if fpd.ordinal != ordinal[0]:
-                fpd.ordinal = ordinal[0]
-                fpd.save()
-
-            page_desc = find_page_desc(fpd.page_id)
-            page = instantiate_page(page_desc)
-            title = page.title(pctx, fpd.data)
-
-            if fpd.title != title:
-                fpd.title = title
-                fpd.save()
-
-            ordinal[0] += 1
-            available_page_ids.remove(fpd.page_id)
-
-            group_pages.append(fpd)
-
-        # }}}
-
-        if shuffle:
-            # maintain order of existing pages as much as possible
-            for fpd in (FlowPageData.objects
-                    .filter(
-                        flow_session=flow_session,
-                        group_id=grp.id,
-                        ordinal__isnull=False)
-                    .order_by("ordinal")):
-
-                if (fpd.page_id in available_page_ids
-                        and len(group_pages) < max_page_count):
-                    add_page(fpd)
-                else:
-                    remove_page(fpd)
-
-            assert len(group_pages) <= max_page_count
-
-            from random import choice
-
-            # then add randomly chosen new pages
-            while len(group_pages) < max_page_count and available_page_ids:
-                new_page_id = choice(available_page_ids)
-
-                new_page_fpds = (FlowPageData.objects
-                        .filter(
-                            flow_session=flow_session,
-                            group_id=grp.id,
-                            page_id=new_page_id))
-
-                if new_page_fpds.count():
-                    # We already have FlowPageData for this page, revive it
-                    new_page_fpd, = new_page_fpds
-                    assert new_page_fpd.id == new_page_id
-                else:
-                    # Make a new FlowPageData instance
-                    page_desc = find_page_desc(new_page_id)
-                    assert page_desc.id == new_page_id
-                    new_page_fpd = create_fpd(page_desc)
-                    assert new_page_fpd.page_id == new_page_id
-
-                add_page(new_page_fpd)
-
-        else:
-            # reorder pages to order in flow
-            id_to_fpd = dict(
-                    ((fpd.group_id, fpd.page_id), fpd)
-                    for fpd in FlowPageData.objects.filter(
-                        flow_session=flow_session,
-                        group_id=grp.id))
-
-            for page_desc in grp.pages:
-                key = (grp.id, page_desc.id)
-
-                if key in id_to_fpd:
-                    fpd = id_to_fpd.pop(key)
-                else:
-                    fpd = create_fpd(page_desc)
-
-                if len(group_pages) < max_page_count:
-                    add_page(fpd)
-
-            for fpd in id_to_fpd.values():
-                remove_page(fpd)
-
-    # {{{ remove pages orphaned because of group renames
-
-    for fpd in (
-            FlowPageData.objects
-            .filter(
-                flow_session=flow_session,
-                ordinal__isnull=False)
-            .exclude(group_id__in=desc_group_ids)
-            ):
-        remove_page(fpd)
-
-    # }}}
-
-    flow_session.page_count = ordinal[0]
-    flow_session.page_data_at_revision_key = revision_key
-    flow_session.save()
-
-
-def adjust_flow_session_page_data(repo, flow_session,
-        course_identifier, flow_desc):
-    # The atomicity is not done as a decorator above because we can't import
-    # django.db at the module level here. The relate-validate script wants to
-    # import this module, and it obviously has no database.
-
-    from django.db import transaction
-    with transaction.atomic():
-        return _adjust_flow_session_page_data_inner(
-                repo, flow_session, course_identifier, flow_desc)
-
-# }}}
-
-
 def get_course_commit_sha(course, participation):
+    # logic duplicated in course.utils.CoursePageContext
+
     sha = course.active_git_commit_sha
 
     if participation is not None and participation.preview_git_commit_sha:
-        sha = participation.preview_git_commit_sha
+        preview_sha = participation.preview_git_commit_sha
+
+        repo = get_course_repo(course)
+        try:
+            repo[preview_sha.encode()]
+        except KeyError:
+            preview_sha = None
+
+        if preview_sha is not None:
+            sha = preview_sha
 
     return sha.encode()
 

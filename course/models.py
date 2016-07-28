@@ -459,7 +459,7 @@ class FlowSession(models.Model):
             verbose_name=_('Course'), on_delete=models.CASCADE)
 
     participation = models.ForeignKey(Participation, null=True, blank=True,
-            db_index=True,
+            db_index=True, related_name="flow_sessions",
             verbose_name=_('Participation'), on_delete=models.CASCADE)
 
     # This looks like it's redundant with participation, above--but it's not.
@@ -482,7 +482,7 @@ class FlowSession(models.Model):
     # This field allows avoiding redundant checks for whether the
     # page data is in line with the course material and the current
     # version of RELATE.
-    # See course.content.adjust_flow_session_page_data.
+    # See course.flow.adjust_flow_session_page_data.
     page_data_at_revision_key = models.CharField(
             max_length=200, null=True, blank=True,
             verbose_name=_('Page data at course revision'),
@@ -650,6 +650,13 @@ class FlowPageVisit(models.Model):
     remote_address = models.GenericIPAddressField(null=True, blank=True,
             verbose_name=_('Remote address'))
 
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
+            blank=True, related_name="visitor",
+            verbose_name=_('User'), on_delete=models.CASCADE)
+    impersonated_by = models.ForeignKey(settings.AUTH_USER_MODEL,
+            null=True, blank=True, related_name="impersonator",
+            verbose_name=_('Impersonated by'), on_delete=models.CASCADE)
+
     is_synthetic = models.BooleanField(default=False,
             help_text=_("Synthetic flow page visits are generated for "
             "unvisited pages once a flow is finished. This is needed "
@@ -717,6 +724,12 @@ class FlowPageVisit(models.Model):
             return None
         else:
             return get_feedback_for_grade(grade)
+
+    def is_impersonated(self):
+        if self.impersonated_by:
+            return True
+        else:
+            return False
 
 # }}}
 
@@ -1082,6 +1095,17 @@ class GradingOpportunity(models.Model):
     page_scores_in_participant_gradebook = models.BooleanField(default=False,
             verbose_name=_("Scores for individual pages are shown "
                 "in the participants' grade book"))
+    hide_superseded_grade_history_before = models.DateTimeField(
+            verbose_name=_('Hide superseded grade history before'),
+            blank=True, null=True,
+            help_text=_(
+                'Grade changes dated before this date that are '
+                'superseded by later grade changes will not be shown to '
+                'participants. '
+                'This can help avoid discussions about pre-release grading '
+                'adjustments.'
+                'May be blank. In that case, the entire grade history is '
+                'shown.'))
 
     class Meta:
         verbose_name = _("Grading opportunity")
@@ -1177,7 +1201,9 @@ class GradeChange(models.Model):
                     "in the same course"))
 
     def percentage(self):
-        if self.max_points is not None and self.points is not None:
+        if (self.max_points is not None
+                and self.points is not None
+                and self.max_points != 0):
             return 100*self.points/self.max_points
         else:
             return None
@@ -1411,7 +1437,7 @@ class InstantMessage(models.Model):
 # }}}
 
 
-# {{{ exam tickets
+# {{{ exams
 
 class Exam(models.Model):
     course = models.ForeignKey(Course,

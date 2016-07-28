@@ -4,6 +4,7 @@
 <noscript>
     <input type="hidden" name="redirect" value="{{ request.path }}"> </noscript>
 
+{% if IS_COURSE_STAFF or MAY_CHANGE_ANSWER %}
 {% block UPLOAD_FORM_BUTTON_BAR %}
     <div class="row fileupload-buttonbar">
         {# The fileupload-buttonbar contains buttons to add/delete files and start/cancel the upload #}
@@ -56,6 +57,7 @@
                 </button>
                 <input type="checkbox" class="toggle">
             {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR_CONTROL #}
+            {% if IS_COURSE_STAFF or MAY_CHANGE_ANSWER  %}
             {% block UPLOAD_FORM_BUTTON_BAR_EXTRA %}
                 <button type="button" class="btn btn-success btn-srt-tbl" style="float:right;">
                     <i class="fa fa-sort"></i>
@@ -67,6 +69,7 @@
                 </button>
                 <span id="srt_prgrs" style="float:right; padding-right: 15px"></span>
             {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR_EXTRA #}
+            {% endif %}
 
         </div>
 
@@ -88,6 +91,7 @@
         {% endblock %}
     </div>
 {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR #}
+{% endif %}
 
 {# The loading indicator is shown during file processing #}
 {% block UPLOAD_FORM_LINDICATOR %}
@@ -187,7 +191,13 @@
                                     data-gallery>
                                     <img
                                        id="thumbnail{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
+                                       {% if IN_GRADE_PAGE %}
+                                        src="{{ JQ_OPEN }}=file.url{{ JQ_CLOSE }}"
+                                        onmouseover="magnify(this)"
+                                        data-zoom-image="{{ JQ_OPEN }}=file.url{{ JQ_CLOSE }}"
+                                        {% else %}
                                         src="{{ JQ_OPEN }}=file.thumbnailUrl{{ JQ_CLOSE }}"
+                                        {% endif %}
                                     >
                                 </a>
                             {{ JQ_OPEN }} } {{ JQ_CLOSE }}
@@ -196,6 +206,7 @@
                 {% endblock %}{# //JS_DOWNLOAD_TEMPLATE_PREVIEW #}
 
                 {% block JS_DOWNLOAD_TEMPLATE_DOWNLOAD %}
+                    {% if not IN_GRADE_PAGE %}
                     <td>
                         <p class="name">
                             {{ JQ_OPEN }} if (file.url) { {{ JQ_CLOSE }}
@@ -228,10 +239,11 @@
                             {{ JQ_OPEN }} } {{ JQ_CLOSE }}
                         {% endblock %}{# //block JS_DOWNLOAD_TEMPLATE_ERROR #}
                     </td>
-
+                    {% endif %}
                 {% endblock %}{# block JS_DOWNLOAD_TEMPLATE_DOWNLOAD #}
 
                 {% if SHOW_CREATION_TIME %}
+                    {% if not IN_GRADE_PAGE %}
                     {% block JS_DOWNLOAD_TEMPLATE_TIME %}
                         <td class="td-dl">
                             <span
@@ -243,11 +255,12 @@
                             </span>
                         </td>
                     {% endblock %}{# block JS_DOWNLOAD_TEMPLATE_TIME #}
+                    {% endif %}
                 {% endif %}
-                
+                    {% if IS_COURSE_STAFF or MAY_CHANGE_ANSWER %}
                     {% block JS_DOWNLOAD_SORT %}
                         <td class="td-srt hidden">
-                            <a 
+                            <a
                                 class="button btn btn-success btn-srt up"
                                 id="sort-up{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
                             >
@@ -267,19 +280,41 @@
                             </a>
                         </td>
                     {% endblock %}{# block JS_DOWNLOAD_SORT #}
+                    {% endif %}
 
                 {% block JS_DOWNLOAD_TEMPLATE_FSIZE %}
+                    {% if not IN_GRADE_PAGE %}
                     <td class="td-dl">
                         <span
                             class="size"
                             id="filesize{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
                         >{{ JQ_OPEN }}=o.formatFileSize(file.size){{ JQ_CLOSE }}</span>
                     </td>
+                    {% endif %}
                 {% endblock %}{# //JS_DOWNLOAD_TEMPLATE_FSIZE #}
 
-                {% block JS_DOWNLOAD_TEMPLATE_DELETE %}
-                    <td class="td-dl">
+                <td class="td-dl">
                         {{ JQ_OPEN }} if (file.deleteUrl) { {{ JQ_CLOSE }}
+                        {% if IS_COURSE_STAFF %}
+                        {% block JS_DOWNLOAD_TEMPLATE_EDIT %}
+                            {% if IS_COURSE_STAFF %}
+                                {% block COPY_IMAGE_DATA %}
+                                {{ JQ_OPEN }} if (file.image_data_dict) { {{ JQ_CLOSE }}
+                                        <a
+                                            class="btn-data-copy"
+                                            data-clipboard-text="{{ JQ_OPEN }}=file.image_data_dict{{ JQ_CLOSE }}"
+                                        >
+                                            <i class="fa fa-clipboard" aria-hidden="true"></i></a>
+                                {{ JQ_OPEN }} } {{ JQ_CLOSE }}
+                                {{ JQ_OPEN }} if (file.imageAdminUrl) { {{ JQ_CLOSE }}
+                                        <a
+                                            href={{ JQ_OPEN }}=file.imageAdminUrl{{ JQ_CLOSE }}
+                                            target='_blank'
+                                        >
+                                            <i class="fa fa-user"></i></a>
+                                {{ JQ_OPEN }} } {{ JQ_CLOSE }}
+                                {% endblock %}{# block COPY_IMAGE_DATA #}
+                            {% endif %}
                             <a 
                                 class="btn btn-success btn-edit-image"
                                 data-toggle="modal"
@@ -289,6 +324,9 @@
                                 <i class="fa fa-pencil"></i>
                                 <span>{% trans "Edit" %}</span>
                             </a>
+                        {% endblock %}{# //block JS_DOWNLOAD_TEMPLATE_EDIT #}
+                        {% endif %}
+                        {% block JS_DOWNLOAD_TEMPLATE_DELETE %}
                             <button
                                 class="btn btn-danger delete"
                                 data-type="{{ JQ_OPEN }}=file.deleteType{{ JQ_CLOSE }}"
@@ -307,10 +345,13 @@
                                 <i class="glyphicon glyphicon-ban-circle"></i>
                                 <span>{% trans "Cancel" %}</span>
                             </button>
+                        {% endblock %}{# //block JS_DOWNLOAD_TEMPLATE_DELETE #}
                         {{ JQ_OPEN }} } {{ JQ_CLOSE }}
-                    </td>
-                {% endblock %}{# //block JS_DOWNLOAD_TEMPLATE_DELETE #}
+                </td>
+
             </tr>
         {{ JQ_OPEN }} } {{ JQ_CLOSE }}
+    </script>
+
     </script>
 {% endblock %}

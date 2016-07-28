@@ -26,10 +26,18 @@ THE SOFTWARE.
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext
 
+from course.views import get_now_or_fake_time
+from relate.utils import (
+    as_local_time, format_datetime_local,
+    compact_local_datetime_str)
+
+from datetime import timedelta
 import mimetypes
 import re
 import os
+import json
 
+from image_upload.models import FlowPageImage
 
 def order_name(name):
     """order_name
@@ -45,6 +53,26 @@ def order_name(name):
         return name
     return name[:15] + "..." + name[-7:]
 
+def get_image_page_data_str(image):
+    if not isinstance(image, FlowPageImage):
+        return None
+    if image.flow_session.in_progress:
+        return None
+
+    image_data_dict = {
+        'flow_pk': image.flow_session.id,
+        'page_id': image.image_page_id,
+        'order_set': list((image.order,)),
+    }
+
+    return json.dumps(image_data_dict).encode("utf-8")
+
+def get_image_admin_url(image):
+    if not isinstance(image, FlowPageImage):
+        return None
+    if image.flow_session.in_progress:
+        return None
+    return reverse('admin:image_upload_flowpageimage_change', args=(image.pk,))
 
 def serialize(request, instance, file_attr='file'):
     """serialize -- Serialize a Picture instance into a dict.
@@ -53,11 +81,6 @@ def serialize(request, instance, file_attr='file'):
     file_attr -- attribute name that contains the FileField or ImageField
 
     """
-
-    from course.views import get_now_or_fake_time
-    from relate.utils import (
-        as_local_time, format_datetime_local,
-        compact_local_datetime_str)
 
     obj = getattr(instance, file_attr)
 
@@ -81,11 +104,11 @@ def serialize(request, instance, file_attr='file'):
     deleteUrl = reverse('jfu_delete',
             kwargs={
                 'course_identifier': instance.course.identifier,
-        	    'flow_session_id': instance.flow_session_id,
-        	    'ordinal': instance.get_page_ordinal(),
-        	    'pk': instance.pk,
-        	    }
-	    )
+                'flow_session_id': instance.flow_session_id,
+                'ordinal': instance.get_page_ordinal(),
+                'pk': instance.pk,
+                }
+        )
 
     updateUrl = reverse('jfu_update',
             kwargs={
@@ -109,14 +132,25 @@ def serialize(request, instance, file_attr='file'):
             as_local_time(instance.creation_time))
 
     creationTimeShort = compact_local_datetime_str(
-		    as_local_time(instance.creation_time),
-		    get_now_or_fake_time(request),
-		    in_python=True)
+            as_local_time(instance.creation_time),
+            get_now_or_fake_time(request),
+            in_python=True)
+
+    timestr_title = ugettext("Created at") + " " + creationTime
+    timestr_short = creationTimeShort
+
+    show_modifiedTime = False
+    # Only display file_last_modified time when modification is 
+    # within 5 minutes on creation.
+    if instance.file_last_modified > (
+            instance.creation_time + timedelta(minutes=5)):
+        show_modifiedTime = True
+
 
     modifiedTime = ""
     modifiedTimeShort = ""
 
-    if instance.creation_time != instance.file_last_modified:
+    if show_modifiedTime:
         modifiedTime = format_datetime_local(
                 as_local_time(instance.file_last_modified))
 
@@ -124,10 +158,6 @@ def serialize(request, instance, file_attr='file'):
                             as_local_time(instance.file_last_modified),
                             get_now_or_fake_time(request),
                             in_python=True)
-
-    timestr_title = ugettext("Created at") + " " + creationTime
-    timestr_short = creationTimeShort
-    if modifiedTime:
         timestr_title = timestr_title + ", " + ugettext("modified at") + " " + modifiedTime
         timestr_short = timestr_short + " (" + modifiedTimeShort + ")"
 
@@ -145,5 +175,7 @@ def serialize(request, instance, file_attr='file'):
         'updateUrl': updateUrl,
         'deleteUrl': deleteUrl,
         'cropHandlerUrl': cropHandlerUrl,
+        'imageAdminUrl': get_image_admin_url(instance),
+        'image_data_dict': get_image_page_data_str(instance),
         'deleteType': 'POST',
     }
