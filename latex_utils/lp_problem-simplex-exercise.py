@@ -7,17 +7,6 @@ from copy import deepcopy
 
 # 作业题
 
-
-
-lp = LP(qtype="max",
-        goal=[1, 2, 1],
-        constraints=[
-            [1, 1, -1, "<", 10],
-            [-1, 2, 1, "<", 12],
-            [2, 3, 2, "<", 20],
-        ],
-        )
-
 lp = LP(qtype="max",
         goal=[2, -3, 4],
         constraints=[
@@ -64,14 +53,6 @@ lp = LP (qtype="min",
          ],
          )
 
-lp = LP (qtype="max",
-         goal=[3, 5, 1],
-         constraints=[
-             [2, 3, -1, "<", 32],
-             [3, 1, 1, "<", 30],
-             [-1, 2, 3, "<", 22],
-         ],
-         )
 
 
 lp = LP(qtype="max",
@@ -102,14 +83,7 @@ lp = LP(qtype="max",
 #        ],
 #        )
 
-lp = LP(qtype="max",
-        goal=[6, 1, 2],
-        constraints=[
-            [1, 3, 1, "<", 12],
-            [2, 0, 1, "<", 6],
-            [1, 1, 0, "<", 2],
-        ],
-        )
+
 
 # # 求解太复杂
 #lp = LP(qtype="max",
@@ -399,14 +373,6 @@ lp = LP (qtype="max",
          ],
          )
 
-lp = LP (qtype="max",
-         goal=[2, -1, 1],
-         constraints=[
-             [3, 1, 1, "<", 60],
-             [1, -1, 2, "<", 10],
-             [1, 1, -1, "<", 20],
-         ],
-         )
 
 lp = LP (qtype="max",
          goal=[6, -3, 5],
@@ -533,6 +499,136 @@ lp = LP(qtype="max",
             [3, 2, 1, "<", 18],
         ],
         )
+
+lp = LP (qtype="max",
+         goal=[1, 6, 5],
+         constraints=[
+             [1, 1, -2, "<", 20],
+             [1, 0, 1, "<", 15],
+             [2, 1, 3, "<", 30],
+         ],
+         )
+
+lp = LP (qtype="max",
+         goal=[2, 1, 1],
+         constraints=[
+             [1, 1, 1, "<", 10],
+             [5, 2, 0, "<", 25],
+             [0, 1, 2, "<", 8],
+         ],
+         )
+
+lp = LP (qtype="max",
+         goal=[4, 0, 3],
+         constraints=[
+             [1, -1, 0, "<", 2],
+             [2, 0, 1, "<", 5],
+             [1, 1, 1, "<", 4],
+         ],
+         )
+
+lp = LP (qtype="max",
+         goal=[5, 0, 3],
+         constraints=[
+             [1, -1, 0, "<", 2],
+             [2, 0, 1, "<", 5],
+             [1, 1, 1, "<", 4],
+         ],
+         )
+
+lp = LP (qtype="max",
+         goal=[2, 3, 4],
+         constraints=[
+             [1, 2, -1, "<", 20],
+             [2, 1, 2, "<", 30],
+             [-1, 3, 2, "<", 60],
+         ],
+         )
+
+lp = LP (qtype="max",
+         goal=[5, 3, 2],
+         constraints=[
+             [1, 1, 1, "<", 16],
+             [10, 4, 5, "<", 60],
+             [1, -1, 3, "<", 15],
+         ],
+         )
+
+lp = LP (qtype="max",
+         goal=[2, -1, 1],
+         constraints=[
+             [3, 1, 1, "<", 60],
+             [1, -1, 2, "<", 10],
+             [1, 1, -1, "<", 20],
+         ],
+         )
+
+# 4 次迭代
+lp = LP (qtype="max",
+         goal=[6, 1, 2],
+         constraints=[
+             [1, 3, 1, "<", 12],
+             [2, 0, 1, "<", 6],
+             [1, 1, 0, "<", 2],
+         ],
+         )
+
+lp = LP (qtype="max",
+         goal=[1, 2, 1],
+         constraints=[
+             [1, 1, -1, "<", 10],
+             [-1, 2, 1, "<", 12],
+             [0, 3, 2, "<", 20],
+         ],
+         )
+
+# 4 次迭代
+lp = LP (qtype="max",
+         goal=[1, 2, 1],
+         constraints=[
+             [1, 1, -1, "<", 10],
+             [-1, 2, 1, "<", 12],
+             [1, 3, 2, "<", 20],
+         ],
+         )
+
+lp = LP (qtype="max",
+         goal=[1, 1, 2],
+         constraints=[
+             [1, 1, 0, "<", 12],
+             [0, 2, 1, "<", 18],
+             [1, -1, 1, "<", 6],
+         ],
+         )
+
+lp = LP (qtype="max",
+         goal=[3, 5, 1],
+         constraints=[
+             [2, 3, -1, "<", 32],
+             [3, 1, 1, "<", 30],
+             [-1, 2, 3, "<", 22],
+         ],
+         )
+
+# 4 次迭代
+lp = LP (qtype="max",
+         goal=[10, 15, 3],
+         constraints=[
+             [1, 2, 0, "<", 10],
+             [1, 1, 1, "<", 9],
+             [0, 3, 1, "<", 15],
+         ],
+         )
+
+lp = LP (qtype="max",
+         goal=[5, 2, 3],
+         constraints=[
+             [1, 0, 1, "<", 16],
+             [1, 2, 1, "<", 32],
+             [2, 3, 2, "<", 60],
+         ],
+         )
+
 template = latex_jinja_env.get_template('/utils/lp_model.tex')
 tex = template.render(
     description = u"""
