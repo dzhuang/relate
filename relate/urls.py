@@ -42,8 +42,7 @@ import course.analytics
 import course.exam
 
 urlpatterns = [
-    url(r"^usrlogin/$",
-    #url(r"^login/$",
+    url(r"^login/$",
         course.auth.sign_in_choice,
         name="relate-sign_in_choice"),
     url(r"^login/user-password/$",
@@ -72,12 +71,10 @@ urlpatterns = [
         "/$",
         course.auth.sign_in_stage2_with_token,
         name="relate-sign_in_stage2_with_token"),
-    url(r"^usrlogout/$",
-    #url(r"^logout/$",
+    url(r"^logout/$",
         course.auth.sign_out,
         name="relate-logout"),
-    url(r"^usrprofile/$",
-    #url(r"^profile/$",
+    url(r"^profile/$",
         course.auth.user_profile,
         name="relate-user_profile"),
 
@@ -112,8 +109,7 @@ urlpatterns = [
 
     # {{{ course
 
-    #url(r'^$', course.views.home, name='relate-home'),
-    url(r'^course/$', course.views.home, name='relate-home'),
+    url(r'^$', course.views.home, name='relate-home'),
 
     url(r"^course"
         "/" + COURSE_ID_REGEX +
@@ -480,7 +476,6 @@ urlpatterns = [
 
     #}}}
 
-    #url(r'^usradmin/', include(admin.site.urls)),
     url(r'^admin/', include(admin.site.urls)),
     
     # {{{ image_upload
@@ -502,7 +497,7 @@ if settings.RELATE_SIGN_IN_BY_SAML2_ENABLED:
             url(r'^saml2-test/', 'djangosaml2.views.echo_attributes'),
             ])
 
-        
+
 from django.conf.urls.static import static
 
 if settings.DEBUG:
