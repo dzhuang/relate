@@ -26,4 +26,3 @@ django-jsonview
 
 # For markdown in admin
 django-markdownx
-
