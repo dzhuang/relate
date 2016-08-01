@@ -20,18 +20,152 @@ class SA_base(object):
         self.opt_basis = opt_basis
         assert opt_method in ["simplex", "dual_simplex"]
         self.opt_method = opt_method
+        self.opt_changed = False
+        self.problem_description = ""
+
+    def analysis(self):
+        raise NotImplementedError
+
+    def get_problem_description(self):
+        raise NotImplementedError
 
 class sa_c(SA_base):
-    pass
+
+    def get_problem_description(self):
+        c_index = None
+        desc = ""
+        if isinstance(self.param[0], list):
+            assert len(self.param[0]) == 1
+            c_index = self.param[0][0]
+        else:
+            c_index = self.param[0]
+
+        if c_index is not None:
+            c_index_str = get_variable_symbol("c", c_index + 1)
+            next_same_desc = False
+            for i, v in enumerate(self.param[1:]):
+                if v is None:
+                    desc += u"$%s$在什么范围内变化时，最优解保持不变？" % c_index_str
+                    next_same_desc = False
+                else:
+                    if next_same_desc:
+                        desc += u"$%s=%s$时呢？" % (c_index_str, trans_latex_fraction(v, wrap=False))
+                    else:
+                        desc += u"$%s=%s$时最优解是什么？" % (c_index_str, trans_latex_fraction(v, wrap=False))
+                    next_same_desc = True
+        else:
+            next_same_desc = False
+            for i, v in enumerate(self.param[1:]):
+                assert isinstance(v, list)
+                #assert len(v) == self.n
+                if next_same_desc:
+                    desc += u"$\\mathbf{C}=(%s)$时呢？" % ", ".join(trans_latex_fraction(s, wrap=False) for s in v)
+                else:
+                    desc += u"当$\\mathbf{C}=(%s)$时，最优解是什么？" % ", ".join(trans_latex_fraction(s, wrap=False) for s in v)
+                    next_same_desc = True
+
+
+        print desc
+        return desc
+
+    def analysis(self):
+        self.get_problem_description()
+
+        pass
+
 
 class sa_p(SA_base):
-    pass
+    def get_problem_description(self):
+        p_index = None
+        desc = ""
+        if isinstance(self.param[0], list):
+            assert len(self.param[0]) == 1
+            p_index = self.param[0][0]
+        else:
+            p_index = self.param[0]
+
+        p_index_str = get_variable_symbol(r"\mathbf{p}", p_index + 1)
+        next_same_desc = False
+        for i, v in enumerate(self.param[1:]):
+            assert v is not None
+            if next_same_desc:
+                desc += u"$%s=(%s)^T$时呢？" % (p_index_str, ", ".join(trans_latex_fraction(s, wrap=False) for s in v))
+            else:
+                desc += u"$%s=(%s)^T$时最优解是什么？" % (p_index_str, ", ".join(trans_latex_fraction(s, wrap=False) for s in v))
+                next_same_desc = True
+
+        print desc
+        return desc
+
+    def analysis(self):
+        self.get_problem_description()
+
+        pass
 
 class sa_b(SA_base):
-    pass
+    def get_problem_description(self):
+        b_index = None
+        desc = ""
+        if isinstance(self.param[0], list):
+            assert len(self.param[0]) == 1
+            b_index = self.param[0][0]
+        else:
+            b_index = self.param[0]
+
+        if b_index is not None:
+            b_index_str = get_variable_symbol("b", b_index + 1)
+            next_same_desc = False
+            for i, v in enumerate(self.param[1:]):
+                if v is None:
+                    desc += u"$%s$在什么范围内变化时，最优基保持不变？" % b_index_str
+                    next_same_desc = False
+                else:
+                    if next_same_desc:
+                        desc += u"当$%s=%s$时呢？" % (b_index_str, trans_latex_fraction(v, wrap=False))
+                    else:
+                        desc += u"当$%s=%s$时最优解是什么？" % (b_index_str, trans_latex_fraction(v, wrap=False))
+                    next_same_desc = True
+        else:
+            next_same_desc = False
+            for i, v in enumerate(self.param[1:]):
+                assert isinstance(v, list)
+                #assert len(v) == self.n
+                if next_same_desc:
+                    desc += u"当$\\mathbf{b}=(%s)^T$时呢？" % ", ".join(trans_latex_fraction(s, wrap=False) for s in v)
+                else:
+                    desc += u"当$\\mathbf{b}=(%s)^T$时，最优解是什么？" % ", ".join(trans_latex_fraction(s, wrap=False) for s in v)
+                    next_same_desc = True
+
+
+        #print desc
+        return desc
+
+    def analysis(self):
+        self.get_problem_description()
+
+        pass
 
 class sa_A(SA_base):
-    pass
+    def get_problem_description(self):
+        desc = ""
+        for i, v in enumerate(self.param):
+            if v is None:
+                desc += u"$%s$在什么范围内变化时，最优基保持不变？" % b_index_str
+                next_same_desc = False
+            else:
+                if next_same_desc:
+                    desc += u"当$%s=%s$时呢？" % (b_index_str, trans_latex_fraction(v, wrap=False))
+                else:
+                    desc += u"当$%s=%s$时最优解是什么？" % (b_index_str, trans_latex_fraction(v, wrap=False))
+                next_same_desc = True
+
+        #print desc
+        return desc
+
+    def analysis(self):
+        self.get_problem_description()
+
+        pass
 
 class sa_x(SA_base):
     pass
@@ -116,7 +250,7 @@ class LP(object):
                                     if item_j is not None:
                                         if isinstance(item_j, list) and len(item_j) > 1:
                                             raise ValueError(
-                                                "The lenght of 2nd afterward element in item in sensitivity analysis with key '%s' "
+                                                "The length of 2nd afterward element in item in sensitivity analysis with key '%s' "
                                                 "can't have more than 1 element when one of the 2nd afterward element is None, while got %s: %s" % (
                                                 k, str(len(item_j)), str(item) ))
 
@@ -262,6 +396,8 @@ class LP(object):
         # 对偶问题的最优解（列表） 第1个为只看松弛变量的，第2个为所有变量
         self.dual_opt_solution_str_list = []
 
+        self.sa_result = []
+
 
     def get_sign_str(self, dual):
         """
@@ -402,9 +538,52 @@ class LP(object):
 
     def sensitive_analysis(self):
         sensitive = self.sensitive
+        tableau_list = copy.deepcopy(self.solutionPhase2.tableau_list)
+        opt_basis = copy.deepcopy(self.solutionPhase2.basis_list[-1])
+        n = len(self.x_list)
+        #print n
+        init_tableau = copy.deepcopy(tableau_list[0])
+        opt_tableau = copy.deepcopy(tableau_list[-1])
+
+        #print self.solutionPhase2.tableau_list
+        # print sensitive
+        for key in ["c", "b","p", "x", "A"]:
+            #print sensitive[key]
+            if key == "c":
+                print sensitive[key]
+                for ana in sensitive[key]:
+                    analysis = sa_c(
+                        sa_type="SA_c", param=ana, n=n, init_tableau=init_tableau,
+                        opt_tableau=opt_tableau, opt_basis=opt_basis)
+                    analysis.analysis()
+            if key == "b":
+                print sensitive[key]
+                for ana in sensitive[key]:
+                    analysis = sa_b(
+                        sa_type="SA_b", param=ana, n=n, init_tableau=init_tableau,
+                        opt_tableau=opt_tableau, opt_basis=opt_basis)
+                    analysis.analysis()
+            if key == "p":
+                print sensitive[key]
+                for ana in sensitive[key]:
+                    analysis = sa_p(
+                        sa_type="SA_p", param=ana, n=n, init_tableau=init_tableau,
+                        opt_tableau=opt_tableau, opt_basis=opt_basis)
+                    analysis.analysis()
+            if key == "A":
+                print sensitive[key]
+                for ana in sensitive[key]:
+                    analysis = sa_A(
+                        sa_type="SA_A", param=ana, n=n, init_tableau=init_tableau,
+                        opt_tableau=opt_tableau, opt_basis=opt_basis)
+                    analysis.analysis()
+
+
+
+
+                #sa_c(sa_type=c,param=)
+
         # "c", "p", "x", "A", "b"
-
-
 
 
 

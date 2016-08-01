@@ -83,8 +83,11 @@ lp = LP(qtype="max",
         #        sign=[">", "<", ">", "="],
         sensitive={
             "p": [([0], [1,2,3], [2,3,4]), ],
-            "c": [([0], None, 5), (None, [2, 5])],
-            "b": [([2], 4, None), (None, [5, 7, 8])],
+
+            # ([0], None, 5) 表示分析c_1的取值范围，以及c_1=5时的结果
+            # (None, [2, 5]) 表示分析所有c取值为[2, 5]时的结果
+            "c": [([0], None, 5, 6), (None, [2, 5], [3,5])],
+            "b": [([2], None, 4, 5), (None, [5, 7, 8], [6, 7, 8])],
             "A": [[1, 2, "<", 4]],
             "x": [{"c": 3, "p":[2,1,3]}]
         }
@@ -111,6 +114,8 @@ for l in lp_json_list_loaded:
     lp2phase = deepcopy(lp)
 
     lp.solve(method="simplex")
+    lp.sensitive_analysis()
+
     # try:
     #     lp2phase.solve(method="simplex")
     #     standardized_lp_2_phase = lp2phase.standardized_LP()
