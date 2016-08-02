@@ -14,11 +14,12 @@ SA_klass_dict = {"c": "sa_c", "p": "sa_p", "b": "sa_b", "A": "sa_A", "x": "sa_x"
 class SA_base(object):
     def __init__(
             self, LP, param, n, x_list, init_tableau,
-            opt_tableau, opt_basis, opt_method="simplex"):
+            goal, opt_tableau, opt_basis, opt_method="simplex"):
         self.LP = LP
         self.param = param
         self.n = n
         self.init_tableau = init_tableau
+        self.goal = goal
         self.opt_tableau = opt_tableau
         self.opt_basis = opt_basis
         assert opt_method in ["simplex", "dual_simplex"]
@@ -221,8 +222,12 @@ class sa_x(SA_base):
         pass
 
 class LP(object):
-    def __init__(self, qtype="max", goal=None, constraints=None, x="x", x_list=None, sign=None, z="Z", sign_str=None, dual=False,
-                 sensitive={}, required_solve_status=[0, 0.1, 1, 2, 3], start_tableau = None, start_basis=None):
+    def __init__(self, qtype="max", goal=None, constraints=None, x="x", x_list=None, sign=None, z="Z",
+                 sign_str=None, dual=False,
+                 sensitive={}, required_solve_status=[0, 0.1, 1, 2, 3],
+                 #start_goal_list=None,
+                 start_tableau=None, start_basis=None
+                 ):
 
         assert qtype.lower() in ["min", "max"]
         assert isinstance(required_solve_status, list)
@@ -400,10 +405,7 @@ class LP(object):
         self.goal = copy.deepcopy(goal)
         self.constraints = copy.deepcopy(constraints)
 
-        print start_tableau
-
         if start_tableau is None and start_basis is None:
-
             n_variable = len(goal)
         else:
             n_variable = start_tableau.shape[1] - 1
@@ -465,9 +467,11 @@ class LP(object):
 
         # 灵敏度分析
         self.sa_result = []
+
+        # 灵敏度分析时的目标函数系数向量
+        #self.start_goal_list = start_goal_list
         self.start_tableau = start_tableau
         self.start_basis = start_basis
-
 
     def get_sign_str(self, dual):
         """
@@ -576,6 +580,7 @@ class LP(object):
         n = len(self.x_list)
         init_tableau = copy.deepcopy(tableau_list[0])
         opt_tableau = copy.deepcopy(tableau_list[-1])
+        goal_list = self.solutionCommon.original_goal_list
 
         for key in ["c", "b", "p", "x", "A"]:
             sa_klass = getattr(sys.modules[__name__], SA_klass_dict[key])
@@ -584,7 +589,7 @@ class LP(object):
                 for ana in sensitive[key]:
                     analysis = sa_klass(
                         LP = self,
-                        param=ana, n=n, x_list=self.x_list, init_tableau=init_tableau,
+                        param=ana, n=n, x_list=self.x_list, goal_list=goal_list, init_tableau=init_tableau,
                         opt_tableau=opt_tableau, opt_basis=opt_basis)
                     analysis.analysis()
 
@@ -604,16 +609,16 @@ class LP(object):
         b_eq = []
         A_eq = []
         C = []
+        goal = self.goal_origin
+        for g in goal:
+            if self.qtype == "max":
+                C.append(-float(g))
+            else:
+                C.append(float(g))
         cnstr_orig_order = []
 
         if not (self.start_tableau is not None and self.start_basis):
             constraints = [cnstr for cnstr in self.constraints_origin]
-            goal = self.goal_origin
-            for g in goal:
-                if self.qtype == "max":
-                    C.append(-float(g))
-                else:
-                    C.append(float(g))
 
             ub_cnstr_orig_order = []
             eq_cnstr_orig_order = []
@@ -703,7 +708,7 @@ class LP(object):
         if res.status == 0:
             self.solutionCommon.nit = res.nit
 
-        print res
+        #print res
         #print res.status
 
         if res.status == 2 and self.solutionCommon.method != "dual_simplex":
@@ -739,35 +744,19 @@ class LP(object):
 
         n_original_goal_list = n_original_variable + len(res.slack_list) + len(res.artificial_list)
 
-        # origin_goal_list = np.zeros(n_original_goal_list, dtype=np.float64)
-        # origin_goal_list[:n_original_variable] = C
-
-        if method == "simplex":
-            pass
-            #origin_goal_list = self.solutionPhase1.tableau_list[0][m_constraint_number]
- #           print origin_goal_list
-        elif method in ["big_m_simplex", "modified_simplex"]:
-            pass
-            #import sympy
-#            print origin_goal_list
-            #origin_goal_list[res.artificial_list] = C
-
-            #origin_goal_list = res.init_tablaeu[m_constraint_number]
-        elif method == "dual_simplex":
-            pass
-            #origin_goal_list = res.init_tablaeu[m_constraint_number]
-
+        origin_goal_list = np.zeros(n_original_goal_list, dtype=np.float64)
+        origin_goal_list[:len(C)] = C
         if self.qtype == "max":
-            #origin_goal_list *= -1
+            origin_goal_list *= -1
             opt_judge_literal = u"非正"
         else:
             opt_judge_literal = u"非负"
 
 
-        # self.solutionPhase1.original_goal_list \
-        #     = self.solutionPhase2.original_goal_list \
-        #     = self.solutionCommon.original_goal_list \
-        #     = origin_goal_list.tolist()
+        self.solutionPhase1.original_goal_list \
+            = self.solutionPhase2.original_goal_list \
+            = self.solutionCommon.original_goal_list \
+            = origin_goal_list.tolist()
 
         if len(self.solutionPhase1.tableau_list) > 1:
             self.solutionPhase1.need_two_phase \
@@ -775,7 +764,7 @@ class LP(object):
                 = self.solutionCommon.need_two_phase \
                 = True
 
-        if method == "simplex":
+        if method == "simplex" and self.start_tableau is None:
             self.solutionPhase1.get_solution_string()
 
         self.solutionCommon.get_variable_instro_str_list()
@@ -839,6 +828,7 @@ class LP(object):
                             self.solve_status_message += u"，其中一个最优解为"
                     else:
                         self.solve_status_message = u"有唯一最优解"
+
 
                     opt_x = []
                     opt_value = []

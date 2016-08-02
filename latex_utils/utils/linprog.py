@@ -535,8 +535,11 @@ class lpSolver(object):
         # The number of equality constraints (rows in A_eq and elements in b_eq)
         meq = len(beq)
 
-        # The total number of constraints
-        m = mub + meq
+        if start_tableau is not None and start_basis:
+            m = start_tableau.shape[0] - 1
+        else:
+            # The total number of constraints
+            m = mub + meq
 
         # The number of slack variables (one for each of the upper-bound constraints)
         n_slack = mub
@@ -893,11 +896,9 @@ class lpSimplexSolver(lpSolver):
         if self.start_tableau is not None and self.start_basis:
             T = self.start_tableau
             basis = np.array(self.start_basis)
-            n_slack = 0
+            n_slack = self.start_tableau.shape[1] - 1 - n
             n_artificial = 0
             nit1 = 0
-
-        print(T)
 
         nit2, status = _solve_simplex(T, n, basis, maxiter=maxiter - nit1, phase=2,
                                        callback=callback, tol=tol, nit0=nit1,

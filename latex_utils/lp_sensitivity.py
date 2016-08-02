@@ -121,6 +121,17 @@ lp = LP(qtype="max",
             [ -4,  -3,   0,   0,   0,   0.]])
         )
 
+#
+# import numpy as np
+# lp = LP(qtype="max",
+#         goal=[4.0, 3.0],
+#         start_basis=[2, 3, 4],
+#         start_tableau=np.array([
+#             [3, 4, 1, 0, 0, 12],
+#             [3, 3, 0, 1, 0, 10.],
+#             [4, 2, 0, 0, 1, 8.],
+#             [-4, -3, 0, 0, 0, 0.]])
+#         )
 
 
 
