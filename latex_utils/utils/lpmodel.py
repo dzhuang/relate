@@ -352,11 +352,11 @@ class LP(object):
             for i, s in enumerate(x_list):
                 x_list[i] = get_variable_symbol(x_list[i], i + 1)
 
-        for m in self.constraints:
-            assert len(m) == n_variable + 2
-            assert isinstance(m, list)
-            assert m[-2] in EQ
-            m[-2] = sign_trans(m[-2])
+        for cstr in self.constraints:
+            assert len(cstr) == n_variable + 2
+            assert isinstance(cstr, list)
+            assert cstr[-2] in EQ
+            cstr[-2] = sign_trans(cstr[-2])
 
         if sign:
             assert isinstance(sign, list)
