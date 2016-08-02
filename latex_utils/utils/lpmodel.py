@@ -508,7 +508,10 @@ class LP(object):
 
     def get_goal_str(self):
         goal = self.goal
-        goal = [trans_latex_fraction(str(g), wrap=False) for g in goal]
+        try:
+            goal = [trans_latex_fraction(str(g), wrap=False) for g in goal]
+        except TypeError:
+            return ""
         x_list = self.x_list
 
         for i, g in reversed(list(enumerate(goal))):
@@ -700,7 +703,7 @@ class LP(object):
         if res.status == 0:
             self.solutionCommon.nit = res.nit
 
-#        print res
+        print res
         #print res.status
 
         if res.status == 2 and self.solutionCommon.method != "dual_simplex":
@@ -736,8 +739,8 @@ class LP(object):
 
         n_original_goal_list = n_original_variable + len(res.slack_list) + len(res.artificial_list)
 
-        origin_goal_list = np.zeros(n_original_goal_list, dtype=np.float64)
-        origin_goal_list[:n_original_variable] = C
+        # origin_goal_list = np.zeros(n_original_goal_list, dtype=np.float64)
+        # origin_goal_list[:n_original_variable] = C
 
         if method == "simplex":
             pass
@@ -755,16 +758,16 @@ class LP(object):
             #origin_goal_list = res.init_tablaeu[m_constraint_number]
 
         if self.qtype == "max":
-            origin_goal_list *= -1
+            #origin_goal_list *= -1
             opt_judge_literal = u"非正"
         else:
             opt_judge_literal = u"非负"
 
 
-        self.solutionPhase1.original_goal_list \
-            = self.solutionPhase2.original_goal_list \
-            = self.solutionCommon.original_goal_list \
-            = origin_goal_list.tolist()
+        # self.solutionPhase1.original_goal_list \
+        #     = self.solutionPhase2.original_goal_list \
+        #     = self.solutionCommon.original_goal_list \
+        #     = origin_goal_list.tolist()
 
         if len(self.solutionPhase1.tableau_list) > 1:
             self.solutionPhase1.need_two_phase \

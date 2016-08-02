@@ -694,6 +694,9 @@ class lpSimplexSolver(lpSolver):
         return 2
 
     def set_up_tableau(self):
+        if self.start_tableau is not None and self.start_basis:
+            self.init_basis = self.start_basis
+            return
         n_artificial = self.n_artificial
         n_slack = self.n_slack
         slack_list = self.slack_list
@@ -726,6 +729,7 @@ class lpSimplexSolver(lpSolver):
                         r_need_artificial[i] = True
 
             T = adjust_order(T, cnstr_orig_order)
+
             r_need_artificial = adjust_order(r_need_artificial, cnstr_orig_order)
             existing_basic_variable = adjust_order(existing_basic_variable, cnstr_orig_order)
             b = adjust_order(b, cnstr_orig_order)
@@ -857,7 +861,7 @@ class lpSimplexSolver(lpSolver):
         have_floor_variable = self.have_floor_variable
         L = self.L
 
-        if not (self.start_tableau and self.start_basis):
+        if not (self.start_tableau is not None and self.start_basis):
             # 如果是灵敏度分析，则跳过这个步骤，直接进入第2阶段
             nit1, status = _solve_simplex(T, n, basis, phase=1, callback=callback,
                                            maxiter=maxiter, tol=tol, bland=bland)
@@ -886,11 +890,12 @@ class lpSimplexSolver(lpSolver):
                                        message=message, success=False)
 
         # Phase 2
-        if self.start_tableau and self.start_basis:
+        if self.start_tableau is not None and self.start_basis:
             T = self.start_tableau
-            basis = self.start_basis
+            basis = np.array(self.start_basis)
             n_slack = 0
             n_artificial = 0
+            nit1 = 0
 
         print(T)
 
@@ -1413,20 +1418,21 @@ def linprog(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
 
     if meth == 'simplex':
         lp = lpSimplexSolver(c, A_ub=A_ub, b_ub=b_ub, A_eq=A_eq, b_eq=b_eq,
-                             bounds=bounds, callback=callback, cnstr_orig_order=cnstr_orig_order, start_tableau=start_tableau, start_basis=start_basis,**options)
+                             bounds=bounds, callback=callback, cnstr_orig_order=cnstr_orig_order,
+                             start_tableau=start_tableau, start_basis=start_basis,
+                             **options)
         return lp.solve()
     elif meth in ['big_m_simplex', 'modified_simplex']:
         lp = lpBigMSolver(c, A_ub=A_ub, b_ub=b_ub, A_eq=A_eq, b_eq=b_eq,
-                             bounds=bounds, callback=callback, cnstr_orig_order=cnstr_orig_order, **options)
+                          bounds=bounds, callback=callback, cnstr_orig_order=cnstr_orig_order,
+                          start_tableau=start_tableau, start_basis=start_basis,
+                          **options)
         return lp.solve()
-    # elif meth == 'modified_simplex':
-    #     lp = lpBigMSolver(c, A_ub=A_ub, b_ub=b_ub, A_eq=A_eq, b_eq=b_eq,
-    #                          bounds=bounds, callback=callback, cnstr_orig_order=cnstr_orig_order, **options)
-    #     return lp.solve()
     elif meth == 'dual_simplex':
         lp = lpDualSimplexSolver(c, A_ub=A_ub, b_ub=b_ub, A_eq=A_eq, b_eq=b_eq,
-                             bounds=bounds, callback=callback, cnstr_orig_order=cnstr_orig_order, **options)
+                                 bounds=bounds, callback=callback, cnstr_orig_order=cnstr_orig_order,
+                                 start_tableau=start_tableau, start_basis=start_basis,
+                                 **options)
         return lp.solve()
     else:
         raise ValueError('Unknown solver %s' % method)
-

@@ -628,16 +628,16 @@ lp = LP (qtype="max",
              [2, 3, 2, "<", 60],
          ],
          )
-
-import numpy as np
-lp = LP(qtype="max",
-        start_basis=[0, 1, 2],
-        start_tableau=np.array([
-            [3, 4, 1, 0, 0, 12],
-            [3, 3, 0, 1, 0, 10.],
-            [4, 2, 0, 0, 1, 8.],
-            [-4, -3, 0, 0, 0, 0.]])
-        )
+#
+# import numpy as np
+# lp = LP(qtype="max",
+#         start_basis=[2, 3, 4],
+#         start_tableau=np.array([
+#             [3, 4, 1, 0, 0, 12],
+#             [3, 3, 0, 1, 0, 10.],
+#             [4, 2, 0, 0, 1, 8.],
+#             [-4, -3, 0, 0, 0, 0.]])
+#         )
 
 template = latex_jinja_env.get_template('/utils/lp_model.tex')
 tex = template.render(
