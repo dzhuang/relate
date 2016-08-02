@@ -4,15 +4,18 @@ import copy
 import six
 import numpy as np
 import re
+import sys
 
 EQ = [">", "<", "=", ">=", "<=", "=<", "=>"]
 SIGN = [">", "<", "=", ">=", "<=", "=<", "=>", "int", "bin"]
 SA_TYPE = ["SA_c", "SA_p", "SA_b", "SA_A", "SA_x"]
+SA_klass_dict = {"c": "sa_c", "p": "sa_p", "b": "sa_b", "A": "sa_A", "x": "sa_x"}
 
 class SA_base(object):
-    def __init__(self, sa_type, param, n, init_tableau, opt_tableau, opt_basis, opt_method="simplex"):
-        assert sa_type in SA_TYPE
-        self.sa_type = sa_type
+    def __init__(
+            self, LP, param, n, x_list, init_tableau,
+            opt_tableau, opt_basis, opt_method="simplex"):
+        self.LP = LP
         self.param = param
         self.n = n
         self.init_tableau = init_tableau
@@ -22,6 +25,7 @@ class SA_base(object):
         self.opt_method = opt_method
         self.opt_changed = False
         self.problem_description = ""
+        self.x_list = x_list
 
     def analysis(self):
         raise NotImplementedError
@@ -30,16 +34,23 @@ class SA_base(object):
         raise NotImplementedError
 
 class sa_c(SA_base):
-
-    def get_problem_description(self):
+    def __init__(self, *args, **kwargs):
+        super(sa_c, self).__init__(*args, **kwargs)
         c_index = None
-        desc = ""
         if isinstance(self.param[0], list):
             assert len(self.param[0]) == 1
             c_index = self.param[0][0]
         else:
             c_index = self.param[0]
+        self.c_index = c_index
+        self.c_in_opt_basis = False
+        if c_index is not None:
+            if c_index in self.opt_basis:
+                self.c_in_opt_basis = True
 
+    def get_problem_description(self):
+        c_index = self.c_index
+        desc = ""
         if c_index is not None:
             c_index_str = get_variable_symbol("c", c_index + 1)
             next_same_desc = False
@@ -70,13 +81,17 @@ class sa_c(SA_base):
 
     def analysis(self):
         self.get_problem_description()
+        print self.opt_tableau
+        print self.c_in_opt_basis
+
+
+
 
         pass
 
 
 class sa_p(SA_base):
     def get_problem_description(self):
-        p_index = None
         desc = ""
         if isinstance(self.param[0], list):
             assert len(self.param[0]) == 1
@@ -94,7 +109,7 @@ class sa_p(SA_base):
                 desc += u"$%s=(%s)^T$时最优解是什么？" % (p_index_str, ", ".join(trans_latex_fraction(s, wrap=False) for s in v))
                 next_same_desc = True
 
-        print desc
+        #print desc
         return desc
 
     def analysis(self):
@@ -147,20 +162,22 @@ class sa_b(SA_base):
 
 class sa_A(SA_base):
     def get_problem_description(self):
+        param = copy.deepcopy(self.param)
         desc = ""
-        for i, v in enumerate(self.param):
-            if v is None:
-                desc += u"$%s$在什么范围内变化时，最优基保持不变？" % b_index_str
-                next_same_desc = False
-            else:
-                if next_same_desc:
-                    desc += u"当$%s=%s$时呢？" % (b_index_str, trans_latex_fraction(v, wrap=False))
-                else:
-                    desc += u"当$%s=%s$时最优解是什么？" % (b_index_str, trans_latex_fraction(v, wrap=False))
+        next_same_desc = False
+        for i, v in enumerate(param):
+            if i > 0:
                 next_same_desc = True
+            v[-2] = sign_trans(v[-2])
+            new_constraint = get_single_constraint(v, self.x_list, use_seperator=False)
+            if next_same_desc:
+                desc += u"当添加的约束条件为$%s$时呢？" % new_constraint.strip()
+            else:
+                desc += u"若向原始问题中添加一个新的约束条件$%s$，求解出新的最优解。" % new_constraint.strip()
 
         #print desc
         return desc
+
 
     def analysis(self):
         self.get_problem_description()
@@ -168,11 +185,45 @@ class sa_A(SA_base):
         pass
 
 class sa_x(SA_base):
-    pass
+    def get_problem_description(self):
+        param = copy.deepcopy(self.param)
+        desc = ""
+        next_same_desc = False
+        opt_tableau = copy.deepcopy(self.opt_tableau)
+        new_variable_index = opt_tableau.shape[1] - 1
+        new_variable_str = get_variable_symbol("x", new_variable_index+1)
+
+        for i, v in enumerate(param):
+            if i > 0:
+                next_same_desc = True
+            new_c = trans_latex_fraction(v["c"], wrap=False)
+            new_p_list = [trans_latex_fraction(p_j, wrap=False) for p_j in v["p"]]
+            if next_same_desc:
+                desc += (
+                    u"若$c_{%s}=%s,\, \mathbf{p}_{%s}=(%s)^T$，"
+                    u"结果又是怎样？"
+                    % (new_variable_index, new_c, new_variable_index, ", ".join(new_p_list))
+                )
+            else:
+                desc += (
+                    u"若向原始问题中添加一个新的变量$%s$, 且"
+                    u"$c_{%s}=%s,\, \mathbf{p}_{%s}=(%s)^T$，"
+                    u"最优解会有怎样的变化？"
+                    % (new_variable_str, new_variable_index, new_c, new_variable_index, ", ".join(new_p_list)))
+
+        #print desc
+        return desc
+
+
+    def analysis(self):
+        self.get_problem_description()
+
+        pass
 
 class LP(object):
-    def __init__(self, qtype, goal, constraints, x="x", x_list=None, sign=None, z="Z", sign_str=None, dual=False,
-                 sensitive={}, required_solve_status=[0, 0.1, 1, 2, 3]):
+    def __init__(self, qtype="max", goal=None, constraints=None, x="x", x_list=None, sign=None, z="Z", sign_str=None, dual=False,
+                 sensitive={}, required_solve_status=[0, 0.1, 1, 2, 3], start_tableau = None, start_basis=None):
+
         assert qtype.lower() in ["min", "max"]
         assert isinstance(required_solve_status, list)
         self.required_solve_status = required_solve_status
@@ -276,42 +327,45 @@ class LP(object):
 
                     elif k in ["A"]:
                         # A 的灵敏度分析仅限于添加约束条件，添加变量的为'x'
-                        if not isinstance(item, list):
-                            raise ValueError("Items in sensitivity analysis with key '%s' should be instances of list" % k)
-                        if len(item) != len(constraints[0]):
-                            raise ValueError(
-                                "List in items in sensitivity analysis with key '%s' should be have exactly "
-                                "the length %d, while got %d: %s"
-                                % (k, len(constraints[0]), len(item), str(item)))
-                        if not item[-2] in EQ:
-                            raise ValueError(
-                                "The -2 element in list in items in sensitivity analysis with key '%s' "
-                                "should be within %s while got '%s': %s"
-                                % (k, ",".join(EQ), str(item[-2]), str(item)))
+                        if not isinstance(item, (list, tuple)):
+                            raise ValueError("Items in sensitivity analysis with key '%s' should be instances of list of tuple" % k)
+                        for item_j in item:
+                            if len(item_j) != len(constraints[0]):
+                                raise ValueError(
+                                    "List in items in sensitivity analysis with key '%s' should be have exactly "
+                                    "the length %d, while got %d: %s"
+                                    % (k, len(constraints[0]), len(item_j), str(item_j)))
+                            if not item_j[-2] in EQ:
+                                raise ValueError(
+                                    "The -2 element in list in items in sensitivity analysis with key '%s' "
+                                    "should be within %s while got '%s': %s"
+                                    % (k, ",".join(EQ), str(item_j[-2]), str(item_j)))
 
                     elif k in ["x"]:
-
                         # 添加新的变量
-                        if not isinstance(item, dict):
-                            raise ValueError("Items in sensitivity analysis with key '%s' should be instances of dict: %s" % (k, str(item)))
-                        for attr in item:
-                            if attr not in ["c", "p"]:
-                                raise ValueError("Unkown items '%s' in sensitivity analysis with key '%s': '%s'" % (attr, k, str(item)))
-                        for attr in ["c", "p"]:
-                            if not attr in item:
+                        if not isinstance(item, (list, tuple)):
+                            raise ValueError("Items in sensitivity analysis with key '%s' should be instances of list of tuple" % k)
+                        for item_j in item:
+                            if not isinstance(item_j, dict):
+                                raise ValueError("Items in sensitivity analysis with key '%s' should be instances of dict: %s" % (k, str(item_j)))
+                            for attr in item_j:
+                                if attr not in ["c", "p"]:
+                                    raise ValueError("Unkown items '%s' in sensitivity analysis with key '%s': '%s'" % (attr, k, str(item_j)))
+                            for attr in ["c", "p"]:
+                                if not attr in item_j:
+                                    raise ValueError(
+                                        "Dict in items in sensitivity analysis with key '%s' must "
+                                        "contain key '%s': %s" % (k, attr, str(item_j)))
+                            if not isinstance(item_j['p'], list):
                                 raise ValueError(
-                                    "Dict in items in sensitivity analysis with key '%s' must "
-                                    "contain key '%s': %s" % (k, attr, str(item)))
-                        if not isinstance(item['p'], list):
-                            raise ValueError(
-                                "The 2nd afterward element in item in sensitivity analysis with key '%s' "
-                                "must be a list, while got '%s'" % (
-                                    k, str(str(item))))
-                        if len(item['p']) != len(constraints):
-                            raise ValueError(
-                                "The size of 2nd afterward element in item in sensitivity analysis with key '%s' "
-                                "must be %d, while got %d: %s" % (
-                                    k, len(constraints), len(item['p']), str(str(item))))
+                                    "The 2nd afterward element in item in sensitivity analysis with key '%s' "
+                                    "must be a list, while got '%s'" % (
+                                        k, str(str(item_j))))
+                            if len(item_j['p']) != len(constraints):
+                                raise ValueError(
+                                    "The size of 2nd afterward element in item in sensitivity analysis with key '%s' "
+                                    "must be %d, while got %d: %s" % (
+                                        k, len(constraints), len(item_j['p']), str(str(item_j))))
 
         self.sensitive = sensitive
 
@@ -330,19 +384,29 @@ class LP(object):
         }
         self.json = json.dumps(json_dict)
 
-        assert isinstance(goal, list)
-        assert isinstance(constraints, (list, tuple))
-        assert isinstance(x, six.string_types)
-        assert len(x) == 1
-        assert isinstance(z, six.string_types)
-        assert len(z) == 1
+        if goal:
+            assert isinstance(goal, list)
+        if constraints:
+            assert isinstance(constraints, (list, tuple))
+        if x:
+            assert isinstance(x, six.string_types)
+            assert len(x) == 1
+        if z:
+            assert isinstance(z, six.string_types)
+            assert len(z) == 1
 
         self.goal_origin = copy.deepcopy(goal)
         self.constraints_origin = copy.deepcopy(constraints)
         self.goal = copy.deepcopy(goal)
         self.constraints = copy.deepcopy(constraints)
 
-        n_variable = len(goal)
+        print start_tableau
+
+        if start_tableau is None and start_basis is None:
+
+            n_variable = len(goal)
+        else:
+            n_variable = start_tableau.shape[1] - 1
 
         if x_list:
             assert isinstance(x_list, list)
@@ -352,31 +416,34 @@ class LP(object):
             for i, s in enumerate(x_list):
                 x_list[i] = get_variable_symbol(x_list[i], i + 1)
 
-        for cstr in self.constraints:
-            assert len(cstr) == n_variable + 2
-            assert isinstance(cstr, list)
-            assert cstr[-2] in EQ
-            cstr[-2] = sign_trans(cstr[-2])
+        if not (start_tableau is not None and start_basis):
+            for cstr in self.constraints:
+                assert len(cstr) == n_variable + 2
+                assert isinstance(cstr, list)
+                assert cstr[-2] in EQ
+                cstr[-2] = sign_trans(cstr[-2])
 
-        if sign:
-            assert isinstance(sign, list)
-            for i, s in enumerate(sign):
-                assert s in SIGN
-        else:
-            sign = [">"] * n_variable
-        assert len(sign) == n_variable
+            if sign:
+                assert isinstance(sign, list)
+                for i, s in enumerate(sign):
+                    assert s in SIGN
+            else:
+                sign = [">"] * n_variable
+            assert len(sign) == n_variable
 
         self.x = x
         self.x_list = x_list
-        self.sign = sign[:]
         self.z = z
-        if not sign_str:
-            self.sign_str = self.get_sign_str(dual)
-        else:
-            self.sign_str = sign_str
 
-        self.sign_str = r"\rlap{%s}" % self.sign_str
-        self.constraints_str_list = self.get_constraint_str()
+        if not (start_tableau is not None and start_basis):
+            self.sign = sign[:]
+            if not sign_str:
+                self.sign_str = self.get_sign_str(dual)
+            else:
+                self.sign_str = sign_str
+
+            self.sign_str = r"\rlap{%s}" % self.sign_str
+            self.constraints_str_list = self.get_constraint_str()
 
         self.base_list = []
         self.tableau_list = []
@@ -396,7 +463,10 @@ class LP(object):
         # 对偶问题的最优解（列表） 第1个为只看松弛变量的，第2个为所有变量
         self.dual_opt_solution_str_list = []
 
+        # 灵敏度分析
         self.sa_result = []
+        self.start_tableau = start_tableau
+        self.start_basis = start_basis
 
 
     def get_sign_str(self, dual):
@@ -431,50 +501,10 @@ class LP(object):
             return ",\\,".join(sign_str)
 
     def get_constraint_str(self):
-        c_list = []
+        cstr_list = []
         for cnstr in self.constraints:
-            c_list.append(self.get_single_constraint(cnstr))
-        return c_list
-
-    def get_single_constraint(self, constraint):
-        constraint = [trans_latex_fraction(str(cnstr), wrap=False) for cnstr in constraint]
-        x_list = [x for x in self.x_list]
-        for i, cnstr in enumerate(constraint[:len(self.x_list)]):
-            if str(cnstr) == "0":
-                constraint[i] = ""
-                x_list[i] = ""
-            elif str(cnstr) == "-1":
-                constraint[i] = "-"
-            elif str(cnstr) == "1":
-                constraint[i] = " "
-
-        found_first_sign = False
-        for i, cnstr in enumerate(constraint[:len(self.x_list)]):
-            if not found_first_sign:
-                if str(cnstr) != "":
-                    found_first_sign = True
-                    if str(cnstr).startswith("-"):
-                        constraint[i] = "\\mbox{$-$}%s" % str(cnstr)[1:]
-                    elif str(cnstr).startswith("+"):
-                        constraint[i] = " "
-                    constraint[i] = "%s%s&" % (constraint[i], x_list[i])
-                else:
-                    constraint[i] = "{}{}&%s%s&" % (constraint[i][1:], x_list[i])
-            else:
-                if str(cnstr).startswith("-"):
-                    constraint[i] = "{}-{}&%s%s&" % (constraint[i][1:], x_list[i])
-                elif str(cnstr) == "":
-                    constraint[i] = "{}{}&%s%s&" % (constraint[i][1:], x_list[i])
-                else:
-                    constraint[i] = "{}+{}&%s%s&" % (constraint[i], x_list[i])
-
-        lhs = r"%s" % ("".join(constraint[:len(self.x_list)]),)
-        eq = constraint[len(self.x_list)]
-        rhs = constraint[-1]
-        if rhs.startswith("-"):
-            rhs = "\\mbox{$-$}%s" % rhs[1:]
-
-        return r"&&%s&{}%s{}&%s\\" % (lhs, eq, rhs)
+            cstr_list.append(get_single_constraint(cnstr, self.x_list))
+        return cstr_list
 
     def get_goal_str(self):
         goal = self.goal
@@ -541,50 +571,19 @@ class LP(object):
         tableau_list = copy.deepcopy(self.solutionPhase2.tableau_list)
         opt_basis = copy.deepcopy(self.solutionPhase2.basis_list[-1])
         n = len(self.x_list)
-        #print n
         init_tableau = copy.deepcopy(tableau_list[0])
         opt_tableau = copy.deepcopy(tableau_list[-1])
 
-        #print self.solutionPhase2.tableau_list
-        # print sensitive
-        for key in ["c", "b","p", "x", "A"]:
-            #print sensitive[key]
-            if key == "c":
-                print sensitive[key]
+        for key in ["c", "b", "p", "x", "A"]:
+            sa_klass = getattr(sys.modules[__name__], SA_klass_dict[key])
+            if key in sensitive:
+                #print sensitive[key]
                 for ana in sensitive[key]:
-                    analysis = sa_c(
-                        sa_type="SA_c", param=ana, n=n, init_tableau=init_tableau,
+                    analysis = sa_klass(
+                        LP = self,
+                        param=ana, n=n, x_list=self.x_list, init_tableau=init_tableau,
                         opt_tableau=opt_tableau, opt_basis=opt_basis)
                     analysis.analysis()
-            if key == "b":
-                print sensitive[key]
-                for ana in sensitive[key]:
-                    analysis = sa_b(
-                        sa_type="SA_b", param=ana, n=n, init_tableau=init_tableau,
-                        opt_tableau=opt_tableau, opt_basis=opt_basis)
-                    analysis.analysis()
-            if key == "p":
-                print sensitive[key]
-                for ana in sensitive[key]:
-                    analysis = sa_p(
-                        sa_type="SA_p", param=ana, n=n, init_tableau=init_tableau,
-                        opt_tableau=opt_tableau, opt_basis=opt_basis)
-                    analysis.analysis()
-            if key == "A":
-                print sensitive[key]
-                for ana in sensitive[key]:
-                    analysis = sa_A(
-                        sa_type="SA_A", param=ana, n=n, init_tableau=init_tableau,
-                        opt_tableau=opt_tableau, opt_basis=opt_basis)
-                    analysis.analysis()
-
-
-
-
-                #sa_c(sa_type=c,param=)
-
-        # "c", "p", "x", "A", "b"
-
 
 
     def solve(self, disp=False, method="simplex"):
@@ -597,53 +596,57 @@ class LP(object):
             solution.artificial_variable_list = []
 
         self.tableau_str_list = []
-
-        constraints = [cnstr for cnstr in self.constraints_origin]
-        goal = self.goal_origin
-        C = []
-        for g in goal:
-            if self.qtype == "max":
-                C.append(-float(g))
-            else:
-                C.append(float(g))
-
         b_ub = []
         A_ub = []
         b_eq = []
         A_eq = []
-        ub_cnstr_orig_order = []
-        eq_cnstr_orig_order = []
-        for i, cnstr in enumerate(constraints):
-            i_list = []
-            if sign_trans(cnstr[-2]) == sign_trans(">"):
-                for cx in cnstr[:-2]:
-                    try:
-                        i_list.append(-float(cx))
-                    except:
-                        pass
-                A_ub.append(i_list)
-                b_ub.append(-float(cnstr[-1]))
-                ub_cnstr_orig_order.append(i)
-            elif sign_trans(cnstr[-2]) == sign_trans("<"):
-                for cx in cnstr[:-2]:
-                    try:
-                        i_list.append(float(cx))
-                    except:
-                        pass
-                A_ub.append(i_list)
-                b_ub.append(float(cnstr[-1]))
-                ub_cnstr_orig_order.append(i)
-            elif sign_trans(cnstr[-2]) == sign_trans("="):
-                for cx in cnstr[:-2]:
-                    try:
-                        i_list.append(float(cx))
-                    except:
-                        pass
-                A_eq.append(i_list)
-                b_eq.append(float(cnstr[-1]))
-                eq_cnstr_orig_order.append(i)
+        C = []
+        cnstr_orig_order = []
 
-        cnstr_orig_order = eq_cnstr_orig_order + ub_cnstr_orig_order
+        if not (self.start_tableau is not None and self.start_basis):
+            constraints = [cnstr for cnstr in self.constraints_origin]
+            goal = self.goal_origin
+            for g in goal:
+                if self.qtype == "max":
+                    C.append(-float(g))
+                else:
+                    C.append(float(g))
+
+            ub_cnstr_orig_order = []
+            eq_cnstr_orig_order = []
+            for i, cnstr in enumerate(constraints):
+                i_list = []
+                if sign_trans(cnstr[-2]) == sign_trans(">"):
+                    for cx in cnstr[:-2]:
+                        try:
+                            i_list.append(-float(cx))
+                        except:
+                            pass
+                    A_ub.append(i_list)
+                    b_ub.append(-float(cnstr[-1]))
+                    ub_cnstr_orig_order.append(i)
+                elif sign_trans(cnstr[-2]) == sign_trans("<"):
+                    for cx in cnstr[:-2]:
+                        try:
+                            i_list.append(float(cx))
+                        except:
+                            pass
+                    A_ub.append(i_list)
+                    b_ub.append(float(cnstr[-1]))
+                    ub_cnstr_orig_order.append(i)
+                elif sign_trans(cnstr[-2]) == sign_trans("="):
+                    for cx in cnstr[:-2]:
+                        try:
+                            i_list.append(float(cx))
+                        except:
+                            pass
+                    A_eq.append(i_list)
+                    b_eq.append(float(cnstr[-1]))
+                    eq_cnstr_orig_order.append(i)
+
+            cnstr_orig_order = eq_cnstr_orig_order + ub_cnstr_orig_order
+        else:
+            cnstr_orig_order = range(len(self.start_basis))
 
         # from scipy.optimize import linprog
         from linprog import linprog
@@ -684,6 +687,8 @@ class LP(object):
             solve_kwarg["b_eq"] = b_eq
 
         solve_kwarg["cnstr_orig_order"] = cnstr_orig_order
+        solve_kwarg["start_tableau"] = self.start_tableau
+        solve_kwarg["start_basis"] = self.start_basis
 
         res = linprog(bounds=((0, None),) * len(self.x_list),
                        options={'disp': disp},
@@ -908,6 +913,51 @@ class LP(object):
             )
         else:
             return None
+
+
+def get_single_constraint(constraint, x_list, use_seperator=True):
+    constraint = [trans_latex_fraction(str(cnstr), wrap=False) for cnstr in constraint]
+    x_list = [x for x in x_list]
+    for i, cnstr in enumerate(constraint[:len(x_list)]):
+        if str(cnstr) == "0":
+            constraint[i] = ""
+            x_list[i] = ""
+        elif str(cnstr) == "-1":
+            constraint[i] = "-"
+        elif str(cnstr) == "1":
+            constraint[i] = " "
+
+    found_first_sign = False
+    for i, cnstr in enumerate(constraint[:len(x_list)]):
+        if not found_first_sign:
+            if str(cnstr) != "":
+                found_first_sign = True
+                if str(cnstr).startswith("-"):
+                    constraint[i] = "\\mbox{$-$}%s" % str(cnstr)[1:]
+                elif str(cnstr).startswith("+"):
+                    constraint[i] = " "
+                constraint[i] = "%s%s&" % (constraint[i], x_list[i])
+            else:
+                constraint[i] = "{}{}&%s%s&" % (constraint[i][1:], x_list[i])
+        else:
+            if str(cnstr).startswith("-"):
+                constraint[i] = "{}-{}&%s%s&" % (constraint[i][1:], x_list[i])
+            elif str(cnstr) == "":
+                constraint[i] = "{}{}&%s%s&" % (constraint[i][1:], x_list[i])
+            else:
+                constraint[i] = "{}+{}&%s%s&" % (constraint[i], x_list[i])
+
+    lhs = r"%s" % ("".join(constraint[:len(x_list)]),)
+    eq = constraint[len(x_list)]
+    rhs = constraint[-1]
+    if rhs.startswith("-"):
+        rhs = "\\mbox{$-$}%s" % rhs[1:]
+
+    constraint_str = r"&&%s&{}%s{}&%s\\" % (lhs, eq, rhs)
+    if not use_seperator:
+        constraint_str = constraint_str.replace("&", "").replace("{}", " ").replace(r"\\", "")
+
+    return constraint_str
 
 
 def trans_latex_fraction(f, wrap=True):

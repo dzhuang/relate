@@ -3,8 +3,7 @@
 from latex_utils.utils.latex_utils import latex_jinja_env, _file_write
 from latex_utils.utils.lpmodel import LP
 from copy import deepcopy
-
-
+import numpy as np
 
 lp = LP(qtype="max",
         goal=[3, -2, -1],
@@ -88,10 +87,42 @@ lp = LP(qtype="max",
             # (None, [2, 5]) 表示分析所有c取值为[2, 5]时的结果
             "c": [([0], None, 5, 6), (None, [2, 5], [3,5])],
             "b": [([2], None, 4, 5), (None, [5, 7, 8], [6, 7, 8])],
-            "A": [[1, 2, "<", 4]],
-            "x": [{"c": 3, "p":[2,1,3]}]
+            "A": [([1, 2, "<", 4],[1, 2, "<", 5])],
+            "x": [[{"c": 3, "p":[2,1,3]},{"c": 4, "p":[2,1,3]}]]
         }
         )
+
+lp = LP(qtype="max",
+        goal=[4, 3],
+        # x="y",
+        # x_list=["y_1", "y_2", "w_3"],
+        constraints=[
+            [3, 4, "<", 12],
+            [3, 3, "<", 10],
+            [4, 2, "<", 8],
+            #            [3, 2, 1, 2, ">", 15]
+        ],
+        #        sign=[">", "<", ">", "="],
+        sensitive={
+            "p": [([0], [1, 2, 3], [2, 3, 4]), ],
+
+            # ([0], None, 5) 表示分析c_1的取值范围，以及c_1=5时的结果
+            # (None, [2, 5]) 表示分析所有c取值为[2, 5]时的结果
+            "c": [([0], None, 5, 6), (None, [2, 5], [3, 5])],
+            "b": [([2], None, 4, 5), (None, [5, 7, 8], [6, 7, 8])],
+            "A": [([1, 2, "<", 4], [1, 2, "<", 5])],
+            "x": [[{"c": 3, "p": [2, 1, 3]}, {"c": 4, "p": [2, 1, 3]}]]
+        },
+        start_basis=[0,1,2],
+        start_tableau=np.array([
+            [  3,   4,   1,   0,   0,  12],
+            [  3,   3,   0,   1,   0,  10.],
+            [  4,   2,   0,   0,   1,   8.],
+            [ -4,  -3,   0,   0,   0,   0.]])
+        )
+
+
+
 
 lp_json_list = []
 lp_json_list.append(lp.json)

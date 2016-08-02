@@ -629,6 +629,16 @@ lp = LP (qtype="max",
          ],
          )
 
+import numpy as np
+lp = LP(qtype="max",
+        start_basis=[0, 1, 2],
+        start_tableau=np.array([
+            [3, 4, 1, 0, 0, 12],
+            [3, 3, 0, 1, 0, 10.],
+            [4, 2, 0, 0, 1, 8.],
+            [-4, -3, 0, 0, 0, 0.]])
+        )
+
 template = latex_jinja_env.get_template('/utils/lp_model.tex')
 tex = template.render(
     description = u"""
@@ -663,7 +673,8 @@ for l in lp_json_list_loaded:
     import json
     lp_dict = json.loads(l)
 
-    lp = LP(**lp_dict)
+    #lp = LP(**lp_dict)
+    lp = lp
     lp2phase = deepcopy(lp)
 
     lp.solve(method="simplex")

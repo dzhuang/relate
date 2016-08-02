@@ -385,7 +385,8 @@ class lpSolver(object):
 
     def __init__(self, c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
                  bounds=None, maxiter=1000, disp=False, callback=None,
-                 tol=1.0E-12, bland=False, cnstr_orig_order=None, **unknown_options):
+                 tol=1.0E-12, bland=False, cnstr_orig_order=None,
+                 start_tableau=None, start_basis=None, **unknown_options):
 
         # problem
         self.maxiter = maxiter
@@ -439,9 +440,10 @@ class lpSolver(object):
             U = np.asarray(n * [b], dtype=np.float64)
         else:
             if len(bounds) != n:
-                status = -1
-                message = ("Invalid input for linprog with method = '%s'.  "
-                           "Length of bounds is inconsistent with the length of c" % self.method)
+                if start_tableau is None:
+                    status = -1
+                    message = ("Invalid input for linprog with method = '%s'.  "
+                               "Length of bounds is inconsistent with the length of c" % self.method)
             else:
                 try:
                     for i in range(n):
@@ -601,6 +603,9 @@ class lpSolver(object):
         self.artificial_list = []
         self.L = L
         self.existing_basic_variable = [None] * m
+
+        self.start_tableau = start_tableau
+        self.start_basis = start_basis
 
     def update_exsiting_basis_variable(self):
         n_T_extra_lines = self.get_T_extra_n()
@@ -852,38 +857,48 @@ class lpSimplexSolver(lpSolver):
         have_floor_variable = self.have_floor_variable
         L = self.L
 
-        nit1, status = _solve_simplex (T, n, basis, phase=1, callback=callback,
-                                       maxiter=maxiter, tol=tol, bland=bland)
+        if not (self.start_tableau and self.start_basis):
+            # 如果是灵敏度分析，则跳过这个步骤，直接进入第2阶段
+            nit1, status = _solve_simplex(T, n, basis, phase=1, callback=callback,
+                                           maxiter=maxiter, tol=tol, bland=bland)
 
-        # if pseudo objective is zero, remove the last row from the tableau and
-        # proceed to phase 2
+            # if pseudo objective is zero, remove the last row from the tableau and
+            # proceed to phase 2
 
-        if abs(T[-1, -1]) < tol:
-            # Remove the pseudo-objective row from the tableau
-            T = T[:-1, :]
-            # Remove the artificial variable columns from the tableau
-            # http://docs.scipy.org/doc/numpy/reference/generated/numpy.s_.html#numpy-s 注意
-            # http://stackoverflow.com/questions/12616821/numpy-slicing-from-variable
-            T = np.delete (T, np.s_[n + n_slack:n + n_slack + n_artificial], 1)
-        else:
-            # Failure to find a feasible starting point
-            status = 2
+            if abs(T[-1, -1]) < tol:
+                # Remove the pseudo-objective row from the tableau
+                T = T[:-1, :]
+                # Remove the artificial variable columns from the tableau
+                # http://docs.scipy.org/doc/numpy/reference/generated/numpy.s_.html#numpy-s 注意
+                # http://stackoverflow.com/questions/12616821/numpy-slicing-from-variable
+                T = np.delete (T, np.s_[n + n_slack:n + n_slack + n_artificial], 1)
+            else:
+                # Failure to find a feasible starting point
+                status = 2
 
-        if status != 0:
-            message = messages[status]
-            if disp:
-                print (message)
-            return OptimizeResult (x=np.nan, fun=-T[-1, -1], nit=nit1, status=status,
-                                   existing_basic_variable_list=self.existing_basic_variable,
-                                   slack_list=slack_list, artificial_list=artificial_list,
-                                   message=message, success=False)
+            if status != 0:
+                message = messages[status]
+                if disp:
+                    print (message)
+                return OptimizeResult(x=np.nan, fun=-T[-1, -1], nit=nit1, status=status,
+                                       existing_basic_variable_list=self.existing_basic_variable,
+                                       slack_list=slack_list, artificial_list=artificial_list,
+                                       message=message, success=False)
 
-            # Phase 2
-        nit2, status = _solve_simplex (T, n, basis, maxiter=maxiter - nit1, phase=2,
+        # Phase 2
+        if self.start_tableau and self.start_basis:
+            T = self.start_tableau
+            basis = self.start_basis
+            n_slack = 0
+            n_artificial = 0
+
+        print(T)
+
+        nit2, status = _solve_simplex(T, n, basis, maxiter=maxiter - nit1, phase=2,
                                        callback=callback, tol=tol, nit0=nit1,
                                        bland=bland)
 
-        solution = np.zeros (n + n_slack + n_artificial)
+        solution = np.zeros(n + n_slack + n_artificial)
         solution[basis[:m]] = T[:m, -1]
         x = solution[:n]
         slack = solution[n:n + n_slack]
@@ -1389,6 +1404,8 @@ class lpBigMSolver(lpSolver):
 def linprog(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
             bounds=None, method='simplex', callback=None,
             cnstr_orig_order=None,
+            start_tableau = None,
+            start_basis = None,
             options=None):
     meth = method.lower()
     if options is None:
@@ -1396,7 +1413,7 @@ def linprog(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
 
     if meth == 'simplex':
         lp = lpSimplexSolver(c, A_ub=A_ub, b_ub=b_ub, A_eq=A_eq, b_eq=b_eq,
-                             bounds=bounds, callback=callback, cnstr_orig_order=cnstr_orig_order, **options)
+                             bounds=bounds, callback=callback, cnstr_orig_order=cnstr_orig_order, start_tableau=start_tableau, start_basis=start_basis,**options)
         return lp.solve()
     elif meth in ['big_m_simplex', 'modified_simplex']:
         lp = lpBigMSolver(c, A_ub=A_ub, b_ub=b_ub, A_eq=A_eq, b_eq=b_eq,
