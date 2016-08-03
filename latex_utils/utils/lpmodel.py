@@ -5,7 +5,10 @@ import six
 import numpy as np
 import re
 import sys
+from sympy import symbols, Matrix, Poly, latex
+from sympy.solvers.inequalities import reduce_rational_inequalities as ineq_solver, solve_rational_inequalities
 
+tol = 1.0E-12
 EQ = [">", "<", "=", ">=", "<=", "=<", "=>"]
 SIGN = [">", "<", "=", ">=", "<=", "=<", "=>", "int", "bin"]
 SA_TYPE = ["SA_c", "SA_p", "SA_b", "SA_A", "SA_x"]
@@ -13,13 +16,13 @@ SA_klass_dict = {"c": "sa_c", "p": "sa_p", "b": "sa_b", "A": "sa_A", "x": "sa_x"
 
 class SA_base(object):
     def __init__(
-            self, LP, param, n, x_list, init_tableau,
-            goal, opt_tableau, opt_basis, opt_method="simplex"):
-        self.LP = LP
+            self, lp, param, n, x_list, init_tableau,
+            opt_tableau, opt_basis, opt_method="simplex"):
+        self.LP = lp
         self.param = param
         self.n = n
         self.init_tableau = init_tableau
-        self.goal = goal
+        #self.goal = goal
         self.opt_tableau = opt_tableau
         self.opt_basis = opt_basis
         assert opt_method in ["simplex", "dual_simplex"]
@@ -27,12 +30,103 @@ class SA_base(object):
         self.opt_changed = False
         self.problem_description = ""
         self.x_list = x_list
+        self.n_variable = init_tableau.shape[1] - 1
+
+        C_np = self.init_tableau[-1, :-1]
+        self.C = Matrix(C_np.tolist()).T
+        self.CB = Matrix(C_np[self.opt_basis].tolist()).T
+        A_np = self.init_tableau[:-1, :-1]
+        self.A = Matrix(A_np.tolist())
+        b_np = self.init_tableau[:-1, -1]
+        self.b = Matrix(b_np.tolist())
+        self.B = Matrix(A_np[:, self.opt_basis].tolist())
+        self.B_1 = self.B.inv()
+        self.C_j_BAR = self.C - self.CB * self.B_1 * self.A
+        self.z = self.CB * self.B_1 * self.b
+        self.non_basis_variable = list(set(range(self.n_variable)) - set(opt_basis))
+
+        # 创建副本
+        self.init_tableau_copy = None
+        self.opt_tableau_copy = None
+        self.opt_basis_copy = None
+        self.C_copy = None
+        self.CB_copy = None
+        self.A_copy = None
+        self.b_copy = None
+        self.B_copy = None
+        self.B_1_copy = None
+        self.C_j_BAR_copy = None
+        self.goal_copy = None
+        self.z_copy = None
+        self.problem_copy()
+
+
+    def problem_copy(self):
+        self.goal_copy = copy.deepcopy(self.LP.goal)
+        self.init_tableau_copy = copy.deepcopy(self.init_tableau)
+        self.opt_tableau_copy = copy.deepcopy(self.opt_tableau)
+        self.opt_basis_copy = copy.deepcopy(self.opt_basis)
+        self.C_copy = copy.deepcopy(self.C)
+        self.CB_copy = copy.deepcopy(self.CB)
+        self.A_copy = copy.deepcopy(self.A)
+        self.b_copy = copy.deepcopy(self.b)
+        self.B_copy = copy.deepcopy(self.B)
+        self.B_1_copy = copy.deepcopy(self.B_1)
+        self.C_j_BAR_copy = copy.deepcopy(self.C_j_BAR)
+        self.z_copy = copy.deepcopy(self.z)
+
+    def update_tableau(self, exclude=[]):
+        if "C" not in exclude:
+            C_np = self.init_tableau_copy[-1, :-1]
+            self.C_copy = Matrix(C_np.tolist()).T
+        if "CB" not in exclude:
+            CB_copy = [self.C_copy[idx] for idx in self.opt_basis_copy]
+            self.CB_copy = Matrix(CB_copy).T
+        if "A" not in exclude:
+            A_np = self.init_tableau_copy[:-1, :-1]
+            self.A_copy = Matrix(A_np.tolist())
+        if "b" not in exclude:
+            b_np = self.init_tableau_copy[:-1, -1]
+            self.b_copy = Matrix(b_np.tolist())
+        if "B" not in exclude:
+            self.B_copy = Matrix(A_np[:, self.opt_basis_copy].tolist())
+            self.B_1_copy = self.B_copy.inv()
+        if "C_j_BAR" not in exclude:
+            self.C_j_BAR_copy = self.C_copy - self.CB_copy * self.B_1_copy * self.A_copy
+        if "z" not in exclude:
+            self.z_copy = self.CB_copy * self.B_1_copy * self.b_copy
+
+    def solve_inequality(self, variable, ineq_list, ineq_sign):
+        ineq_system = [[
+                ((Poly(ineq),Poly(1, variable)), ineq_sign) for ineq in ineq_list]]
+        range_str = latex(solve_rational_inequalities(ineq_system))
+        return range_str
 
     def analysis(self):
         raise NotImplementedError
 
     def get_problem_description(self):
         raise NotImplementedError
+
+
+class sa_result(object):
+    def __getattr__(self, name):
+        try:
+            return self[name]
+        except KeyError:
+            raise AttributeError(name)
+
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
+
+    def __repr__(self):
+        if self.keys():
+            m = max(map(len, list(self.keys()))) + 1
+            return '\n'.join([k.rjust(m) + ': ' + repr(v)
+                              for k, v in sorted(self.items())])
+        else:
+            return self.__class__.__name__ + "()"
+
 
 class sa_c(SA_base):
     def __init__(self, *args, **kwargs):
@@ -77,28 +171,119 @@ class sa_c(SA_base):
                     next_same_desc = True
 
 
-        print desc
+        #print desc
         return desc
 
     def analysis(self):
-        self.get_problem_description()
-        print self.opt_tableau
-        print self.c_in_opt_basis
+        c_index = self.c_index
+        result = []
+        desc = self.get_problem_description()
+        if self.LP.qtype == "max":
+            c_ineq = "<="
+        else:
+            c_ineq = ">="
+        if c_index is not None:
+            for i, v in enumerate(self.param[1:]):
+                result_i = sa_result()
+                result.append(result_i)
+
+                self.problem_copy()
+                if v is None:
+                    c_j = symbols("c_%s" % str(c_index+1), real=True)
+                    self.C_copy[c_index] = c_j
+                    self.update_tableau(exclude=["C"])
+
+                    ineq_list = []
+                    if not self.c_in_opt_basis:
+                        ineq_list = [self.C_j_BAR_copy[c_index]]
+                    else:
+                        ineq_list = [self.C_j_BAR_copy[idx] for idx in self.non_basis_variable]
+
+                    c_range_str = self.solve_inequality(c_j, ineq_list, c_ineq)
+                    #print c_range_str
+
+                else:
+                    self.init_tableau_copy[-1, c_index] = v
+                    self.update_tableau()
+                    nb_c_j_bar_np = np.array(self.C_j_BAR_copy.tolist())[0][self.non_basis_variable]
+                    if self.LP.qtype == "max":
+                        ma = np.ma.masked_where(nb_c_j_bar_np < tol, nb_c_j_bar_np, copy=False)
+                    else:
+                        ma = np.ma.masked_where(nb_c_j_bar_np > -tol, nb_c_j_bar_np, copy=False)
+                    if ma.count() > 0:
+                        change = True
+                    else:
+                        change = False
+
+                    if change:
+                        start_tableau = self.opt_tableau_copy
+                        c_j_bar = np.array(self.C_j_BAR_copy.tolist())[0]
+                        if self.LP.qtype == "max":
+                            c_j_bar *= -1
+                        start_tableau[-1, :-1] = c_j_bar
+                        start_tableau[-1, -1] = self.z_copy[0]
+                        goal = self.goal_copy
+                        goal[c_index] = v
+                        #print "goal", goal
+                        #print start_tableau
+                        new_lp = LP(qtype=self.LP.qtype, goal=goal,
+                                    start_tableau=start_tableau, start_basis=self.opt_basis.tolist())
+                        new_lp.solve(method="simplex")
+                        #print new_lp.res
+
+                    if self.c_in_opt_basis:
+                        non_basis_varaible = self.non_basis_variable
+                        # nb_c_j_bar_np = np.array(self.C_j_BAR_copy.tolist())
+                        # ma = np.ma.masked_where(nb_c_j_bar_np > tol, nb_c_j_bar_np, copy=False)
+                        # print ma.count()
 
 
+                        # report all c_j_bar
+                        pass
+                    else:
+                        # report c_j_bar of itself
+                        pass
+
+
+        else:
+            self.problem_copy()
+            for i, v in enumerate(self.param[1:]):
+                self.init_tableau_copy[-1, :self.n] = v
+                self.update_tableau()
+                start_tableau = self.opt_tableau_copy
+                c_j_bar = np.array(self.C_j_BAR_copy.tolist())[0]
+                if self.LP.qtype == "max":
+                    c_j_bar *= -1
+                start_tableau[-1, :-1] = c_j_bar
+                start_tableau[-1, -1] = self.z_copy[0]
+                self.goal_copy = v
+                goal = self.goal_copy
+                new_lp = LP(qtype=self.LP.qtype, goal=goal,
+                            start_tableau=start_tableau, start_basis=self.opt_basis.tolist())
+                new_lp.solve(method="simplex")
 
 
         pass
 
 
 class sa_p(SA_base):
-    def get_problem_description(self):
-        desc = ""
+    def __init__(self, *args, **kwargs):
+        super(sa_p, self).__init__(*args, **kwargs)
+        p_index = None
         if isinstance(self.param[0], list):
             assert len(self.param[0]) == 1
             p_index = self.param[0][0]
         else:
             p_index = self.param[0]
+        self.p_index = p_index
+        self.p_in_opt_basis = False
+        if p_index is not None:
+            if p_index in self.opt_basis:
+                self.p_in_opt_basis = True
+
+    def get_problem_description(self):
+        p_index = self.p_index
+        desc = ""
 
         p_index_str = get_variable_symbol(r"\mathbf{p}", p_index + 1)
         next_same_desc = False
@@ -114,19 +299,119 @@ class sa_p(SA_base):
         return desc
 
     def analysis(self):
-        self.get_problem_description()
+        p_index = self.p_index
+        result = []
+        desc = self.get_problem_description()
+        print desc
+        if self.LP.qtype == "max":
+            c_ineq = "<="
+        else:
+            c_ineq = ">="
+        for i, v in enumerate(self.param[1:]):
+            result_i = sa_result()
+            result.append(result_i)
 
-        pass
+            self.problem_copy()
+            p_j = symbols("p_%s" % str(p_index+1), real=True)
+            self.init_tableau_copy[:-1, p_index] = np.array(v)
+            self.update_tableau()
+
+            if not self.p_in_opt_basis:
+
+                # this should be reported
+                c_j_bar = self.C_j_BAR_copy[p_index]
+                if self.LP.qtype == "max":
+                    if c_j_bar > tol:
+                        change = True
+                    else:
+                        change = False
+                else:
+                    if c_j_bar < -tol:
+                        change = True
+                    else:
+                        change = False
+
+                print change
+
+                if change:
+                    start_tableau = self.opt_tableau_copy
+                    A_bar = self.B_1 * self.A_copy
+                    new_p = A_bar.col(p_index).T.tolist()
+                    print start_tableau
+                    start_tableau[:-1, p_index] = np.array(new_p)
+                    start_tableau[-1, p_index] = c_j_bar
+                    print start_tableau
+
+                    if self.LP.qtype == "max":
+                        start_tableau[-1, :-1] *= -1
+                    goal = self.goal_copy
+                    new_lp = LP(qtype=self.LP.qtype, goal=goal,
+                                start_tableau=start_tableau, start_basis=self.opt_basis.tolist())
+                    new_lp.solve(method="simplex")
+
+            else:
+                change = True
+                print change
+                if change:
+                    origin_lp = copy.deepcopy(self.LP)
+                    constraints = origin_lp.constraints_origin
+                    for i, cnstr in enumerate(constraints):
+                        constraints[i][p_index] = v[i]
+                    new_lp = LP(qtype=origin_lp.qtype, goal=origin_lp.goal,
+                                constraints=constraints, x=origin_lp.x,
+                                x_list=origin_lp.x_list,
+                                z=origin_lp.z
+                                )
+                    new_lp.solve(method="simplex")
+
+
+
+            # if change:
+            #     start_tableau = self.opt_tableau_copy
+            #     c_j_bar = np.array(self.C_j_BAR_copy.tolist())[0]
+            #     if self.LP.qtype == "max":
+            #         c_j_bar *= -1
+            #     start_tableau[-1, :-1] = c_j_bar
+            #     start_tableau[-1, -1] = self.z_copy[0]
+            #     goal = self.goal_copy
+            #     goal[p_index] = v
+            #     #print "goal", goal
+            #     #print start_tableau
+            #     new_lp = LP(qtype=self.LP.qtype, goal=goal,
+            #                 start_tableau=start_tableau, start_basis=self.opt_basis.tolist())
+            #     new_lp.solve(method="simplex")
+            #     #print new_lp.res
+        #
+        #         if self.c_in_opt_basis:
+        #             non_basis_varaible = self.non_basis_variable
+        #             # nb_c_j_bar_np = np.array(self.C_j_BAR_copy.tolist())
+        #             # ma = np.ma.masked_where(nb_c_j_bar_np > tol, nb_c_j_bar_np, copy=False)
+        #             # print ma.count()
+        #
+        #
+        #             # report all c_j_bar
+        #             pass
+        #         else:
+        #             # report c_j_bar of itself
+        #             pass
+        #
+        #
+        # pass
 
 class sa_b(SA_base):
-    def get_problem_description(self):
+    def __init__(self, *args, **kwargs):
+        super(sa_b, self).__init__(*args, **kwargs)
         b_index = None
-        desc = ""
         if isinstance(self.param[0], list):
             assert len(self.param[0]) == 1
             b_index = self.param[0][0]
         else:
             b_index = self.param[0]
+        self.b_index = b_index
+
+    def get_problem_description(self):
+        b_index = self.b_index
+        desc = ""
 
         if b_index is not None:
             b_index_str = get_variable_symbol("b", b_index + 1)
@@ -153,13 +438,82 @@ class sa_b(SA_base):
                     next_same_desc = True
 
 
-        #print desc
+        print desc
         return desc
 
     def analysis(self):
-        self.get_problem_description()
+        b_index = self.b_index
+        result = []
+        desc = self.get_problem_description()
+        b_ineq = ">="
+        if b_index is not None:
+            for i, v in enumerate(self.param[1:]):
+                result_i = sa_result()
+                result.append(result_i)
 
-        pass
+                self.problem_copy()
+                if v is None:
+                    b_i = symbols("b_%s" % str(b_index+1), real=True)
+                    self.b_copy[b_index] = b_i
+                    self.update_tableau(exclude=["b"])
+                    b_bar = self.B_1 * self.b_copy
+                    ineq_list = [b_bar[idx] for idx in range(len(self.b))]
+                    b_range_str = self.solve_inequality(b_i, ineq_list, b_ineq)
+                    #print b_range_str
+
+                else:
+                    self.b_copy[b_index] = v
+                    self.update_tableau(exclude="b")
+                    b_bar_sympy = self.B_1 * self.b_copy
+                    b_bar_np = np.array(b_bar_sympy.T.tolist()[0])
+                    #print b_bar_np, self.z_copy
+                    ma = np.ma.masked_where(b_bar_np > tol, b_bar_np, copy=False)
+                    if ma.count() > 0:
+                        change = True
+                    else:
+                        change = False
+                    #print change
+
+                    if change:
+                        start_tableau = self.opt_tableau_copy
+                        # c_j_bar = np.array(self.C_j_BAR_copy.tolist())[0]
+                        # if self.LP.qtype == "max":
+                        #     c_j_bar *= -1
+                        start_tableau[:-1, -1] = b_bar_np
+                        if self.LP.qtype == "max":
+                            start_tableau[-1, -1] = -self.z_copy[0]
+                        else:
+                            start_tableau[-1, -1] = self.z_copy[0]
+
+                        new_lp = LP(qtype=self.LP.qtype, goal=self.goal_copy,
+                                    start_tableau=start_tableau, start_basis=self.opt_basis.tolist())
+                        new_lp.solve(method="dual_simplex")
+        #
+        else:
+            for i, v in enumerate(self.param[1:]):
+                self.problem_copy()
+                print self.b_copy
+                self.b_copy = Matrix(v)
+                self.update_tableau(exclude="b")
+                b_bar_sympy = self.B_1 * self.b_copy
+                b_bar_np = np.array(b_bar_sympy.T.tolist()[0])
+                start_tableau = self.opt_tableau_copy
+                # c_j_bar = np.array(self.C_j_BAR_copy.tolist())[0]
+                # if self.LP.qtype == "max":
+                #     c_j_bar *= -1
+                start_tableau[:-1, -1] = b_bar_np
+                if self.LP.qtype == "max":
+                    start_tableau[-1, -1] = -self.z_copy[0]
+                else:
+                    start_tableau[-1, -1] = self.z_copy[0]
+                goal = self.goal_copy
+                new_lp = LP(qtype=self.LP.qtype, goal=goal,
+                            start_tableau=start_tableau, start_basis=self.opt_basis.tolist())
+                new_lp.solve(method="dual_simplex")
+        #
+        #
+        #
+        # pass
 
 class sa_A(SA_base):
     def get_problem_description(self):
@@ -225,7 +579,6 @@ class LP(object):
     def __init__(self, qtype="max", goal=None, constraints=None, x="x", x_list=None, sign=None, z="Z",
                  sign_str=None, dual=False,
                  sensitive={}, required_solve_status=[0, 0.1, 1, 2, 3],
-                 #start_goal_list=None,
                  start_tableau=None, start_basis=None
                  ):
 
@@ -233,6 +586,16 @@ class LP(object):
         assert isinstance(required_solve_status, list)
         self.required_solve_status = required_solve_status
         self.qtype = qtype.lower()
+
+        if start_tableau is not None or start_basis:
+            if not (start_tableau is not None and start_basis is not None):
+                raise ValueError(
+                    "start_tableau and start_basis should both be "
+                    "specified if one of them is specified")
+            if not goal:
+                raise ValueError(
+                    "goal should both be specified if start_tableau "
+                    "and start_basis are specified")
         if sensitive:
             assert isinstance(sensitive, dict)
 
@@ -418,7 +781,7 @@ class LP(object):
             for i, s in enumerate(x_list):
                 x_list[i] = get_variable_symbol(x_list[i], i + 1)
 
-        if not (start_tableau is not None and start_basis):
+        if start_tableau is None:
             for cstr in self.constraints:
                 assert len(cstr) == n_variable + 2
                 assert isinstance(cstr, list)
@@ -580,7 +943,7 @@ class LP(object):
         n = len(self.x_list)
         init_tableau = copy.deepcopy(tableau_list[0])
         opt_tableau = copy.deepcopy(tableau_list[-1])
-        goal_list = self.solutionCommon.original_goal_list
+        #goal_list = self.solutionCommon.original_goal_list
 
         for key in ["c", "b", "p", "x", "A"]:
             sa_klass = getattr(sys.modules[__name__], SA_klass_dict[key])
@@ -588,8 +951,8 @@ class LP(object):
                 #print sensitive[key]
                 for ana in sensitive[key]:
                     analysis = sa_klass(
-                        LP = self,
-                        param=ana, n=n, x_list=self.x_list, goal_list=goal_list, init_tableau=init_tableau,
+                        lp=self,
+                        param=ana, n=n, x_list=self.x_list, init_tableau=init_tableau,
                         opt_tableau=opt_tableau, opt_basis=opt_basis)
                     analysis.analysis()
 
@@ -623,6 +986,7 @@ class LP(object):
             ub_cnstr_orig_order = []
             eq_cnstr_orig_order = []
             for i, cnstr in enumerate(constraints):
+                print cnstr
                 i_list = []
                 if sign_trans(cnstr[-2]) == sign_trans(">"):
                     for cx in cnstr[:-2]:
@@ -708,7 +1072,7 @@ class LP(object):
         if res.status == 0:
             self.solutionCommon.nit = res.nit
 
-        #print res
+        print res
         #print res.status
 
         if res.status == 2 and self.solutionCommon.method != "dual_simplex":
@@ -797,7 +1161,6 @@ class LP(object):
 
         self.solve_status = res.status
         if res.status == 0:
-            tol = 1.0E-12
             if final_tableau is not None:
                 if self.solutionCommon.method in ["big_m_simplex", "modified_simplex"]:
                     for av in self.solutionCommon.artificial_variable_list:
@@ -1128,7 +1491,6 @@ class LpSolution(object):
     def transform_big_m(self):
 
         # 输出大M法单纯形表格
-        from sympy import symbols, Matrix
         M = symbols("M")
         artificial_list = self.artificial_variable_list
         tableau_list = self.tableau_list

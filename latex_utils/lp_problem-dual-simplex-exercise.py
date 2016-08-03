@@ -424,6 +424,15 @@ lp = LP (qtype="min",
          ],
          )
 
+lp = LP(qtype="max",
+        goal=[-5, -35, -20],
+        constraints=[
+            [-1, 1, 1, ">", 2],
+            [1, 3, 0, ">", 3],
+        ],
+        )
+
+
 template = latex_jinja_env.get_template('/utils/lp_model.tex')
 tex = template.render(
     description = u"""
@@ -488,6 +497,7 @@ for l in lp_json_list_loaded:
     import json
     lp_dict = json.loads(l)
 
+    #lp = lp
     lp = LP(**lp_dict)
     lp2phase = deepcopy(lp)
 

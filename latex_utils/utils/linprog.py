@@ -403,6 +403,12 @@ class lpSolver(object):
         # validation
         _check_unknown_options(unknown_options)
 
+        if start_tableau is not None or start_basis:
+            if not (start_tableau is not None and start_basis):
+                raise ValueError(
+                    "start_tableau and start_basis should both be "
+                    "specified if one of them is specified")
+
         status = 0
         self.messages = {0: "Optimization terminated successfully.",
                     1: "Iteration limit reached.",
@@ -535,7 +541,7 @@ class lpSolver(object):
         # The number of equality constraints (rows in A_eq and elements in b_eq)
         meq = len(beq)
 
-        if start_tableau is not None and start_basis:
+        if start_tableau is not None:
             m = start_tableau.shape[0] - 1
         else:
             # The total number of constraints
@@ -697,7 +703,7 @@ class lpSimplexSolver(lpSolver):
         return 2
 
     def set_up_tableau(self):
-        if self.start_tableau is not None and self.start_basis:
+        if self.start_tableau is not None:
             self.init_basis = self.start_basis
             return
         n_artificial = self.n_artificial
@@ -732,7 +738,6 @@ class lpSimplexSolver(lpSolver):
                         r_need_artificial[i] = True
 
             T = adjust_order(T, cnstr_orig_order)
-
             r_need_artificial = adjust_order(r_need_artificial, cnstr_orig_order)
             existing_basic_variable = adjust_order(existing_basic_variable, cnstr_orig_order)
             b = adjust_order(b, cnstr_orig_order)
@@ -864,8 +869,8 @@ class lpSimplexSolver(lpSolver):
         have_floor_variable = self.have_floor_variable
         L = self.L
 
-        if not (self.start_tableau is not None and self.start_basis):
-            # 如果是灵敏度分析，则跳过这个步骤，直接进入第2阶段
+        if self.start_tableau is None:
+            # 如果是arbitary模式(指定了T和基），则跳过这个步骤，直接进入第2阶段
             nit1, status = _solve_simplex(T, n, basis, phase=1, callback=callback,
                                            maxiter=maxiter, tol=tol, bland=bland)
 
@@ -893,7 +898,7 @@ class lpSimplexSolver(lpSolver):
                                        message=message, success=False)
 
         # Phase 2
-        if self.start_tableau is not None and self.start_basis:
+        if self.start_tableau is not None:
             T = self.start_tableau
             basis = np.array(self.start_basis)
             n_slack = self.start_tableau.shape[1] - 1 - n
@@ -973,6 +978,9 @@ class lpDualSimplexSolver(lpSolver):
         return 1
 
     def set_up_tableau(self):
+        if self.start_tableau is not None and self.start_basis:
+            self.init_basis = self.start_basis
+            return
         n_slack = self.n_slack
         slack_idx = self.slack_idx
         cnstr_orig_order = self.cnstr_orig_order
@@ -1168,10 +1176,16 @@ class lpDualSimplexSolver(lpSolver):
         L = self.L
 
         # Phase 2
+        if self.start_tableau is not None:
+            T = self.start_tableau
+            basis = np.array(self.start_basis)
+            n_slack = self.start_tableau.shape[1] - 1 - n
+            n_artificial = 0
+
         nit2, status = _solve_dual_simplex(T, n, basis, maxiter=maxiter, phase=2,
                                            callback=callback, tol=tol, bland=bland)
 
-        solution = np.zeros (n + n_slack + n_artificial)
+        solution = np.zeros(n + n_slack + n_artificial)
         solution[basis[:m]] = T[:m, -1]
         x = solution[:n]
         slack = solution[n:n + n_slack]
@@ -1401,7 +1415,7 @@ class lpBigMSolver(lpSolver):
 
         #print("self.init_tableau", self.init_tableau)
 
-        return OptimizeResult (x=x, fun=obj, nit=int (nit), status=status, slack=slack,
+        return OptimizeResult(x=x, fun=obj, nit=int (nit), status=status, slack=slack,
                                existing_basic_variable_list=self.existing_basic_variable,
                                slack_list=slack_list, artificial_list=artificial_list, init_tableau=self.init_tableau,
                                message=messages[status], success=(status == 0))
