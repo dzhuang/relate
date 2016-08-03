@@ -365,39 +365,6 @@ class sa_p(SA_base):
                     new_lp.solve(method="simplex")
 
 
-
-            # if change:
-            #     start_tableau = self.opt_tableau_copy
-            #     c_j_bar = np.array(self.C_j_BAR_copy.tolist())[0]
-            #     if self.LP.qtype == "max":
-            #         c_j_bar *= -1
-            #     start_tableau[-1, :-1] = c_j_bar
-            #     start_tableau[-1, -1] = self.z_copy[0]
-            #     goal = self.goal_copy
-            #     goal[p_index] = v
-            #     #print "goal", goal
-            #     #print start_tableau
-            #     new_lp = LP(qtype=self.LP.qtype, goal=goal,
-            #                 start_tableau=start_tableau, start_basis=self.opt_basis.tolist())
-            #     new_lp.solve(method="simplex")
-            #     #print new_lp.res
-        #
-        #         if self.c_in_opt_basis:
-        #             non_basis_varaible = self.non_basis_variable
-        #             # nb_c_j_bar_np = np.array(self.C_j_BAR_copy.tolist())
-        #             # ma = np.ma.masked_where(nb_c_j_bar_np > tol, nb_c_j_bar_np, copy=False)
-        #             # print ma.count()
-        #
-        #
-        #             # report all c_j_bar
-        #             pass
-        #         else:
-        #             # report c_j_bar of itself
-        #             pass
-        #
-        #
-        # pass
-
 class sa_b(SA_base):
     def __init__(self, *args, **kwargs):
         super(sa_b, self).__init__(*args, **kwargs)
@@ -510,10 +477,8 @@ class sa_b(SA_base):
                 new_lp = LP(qtype=self.LP.qtype, goal=goal,
                             start_tableau=start_tableau, start_basis=self.opt_basis.tolist())
                 new_lp.solve(method="dual_simplex")
-        #
-        #
-        #
         # pass
+
 
 class sa_A(SA_base):
     def get_problem_description(self):
@@ -535,9 +500,65 @@ class sa_A(SA_base):
 
 
     def analysis(self):
-        self.get_problem_description()
+        result = []
+        desc = self.get_problem_description()
+        for i, v in enumerate(self.param):
+            result_i = sa_result()
+            result.append(result_i)
 
-        pass
+            n_variable = self.n_variable
+
+            original_solution_sympy = Matrix(self.LP.res.x.tolist())
+            new_cnstr_eq = Matrix(v[:self.n]).T
+            new_cnstr_rhs = v[-1]
+            new_cnstr_sign = v[-2]
+
+            # this need to be reported.
+            new_cnstr_lhs_sympy = new_cnstr_eq * original_solution_sympy
+            new_cnstr_lhs = new_cnstr_lhs_sympy[0]
+
+            if new_cnstr_sign in [">", ">="]:
+                if new_cnstr_lhs >= new_cnstr_rhs:
+                    change = False
+                else:
+                    change = True
+                raise ValueError("New constraint with '>=' is currently not supported.")
+            elif new_cnstr_sign in ["<", "<="]:
+                if new_cnstr_lhs <= new_cnstr_rhs:
+                    change = False
+                else:
+                    change = True
+            else:
+                raise ValueError ("New constraint with '=' is currently not supported.")
+
+            print change
+
+            if change:
+                self.problem_copy()
+                new_T = np.zeros([self.init_tableau.shape[0]+1, self.init_tableau.shape[1]+1])
+                new_T[:-2, :-2] = self.opt_tableau_copy[:-1, :-1]
+                new_T[-1, :-2] = self.opt_tableau_copy[-1, :-1]
+                new_T[:-2, -1] = self.opt_tableau_copy[:-1, -1]
+                new_T[-2, :self.n] = np.array(v[:self.n])
+                new_T[-2, -2] = 1
+                new_T[-2, -1] = v[-1]
+                if self.LP.qtype == "max":
+                    new_T[-1, -1] = -self.z[0]
+                else:
+                    new_T[-1, -1] = self.z[0]
+                for i, basis in enumerate(self.opt_basis_copy):
+                    new_T[-2] -= new_T[-2, basis] * new_T[i]
+
+                opt_basis = np.copy(self.opt_basis)
+                from numpy import append
+                new_variable_index = self.init_tableau.shape[1]-1
+                opt_basis = append(opt_basis, new_variable_index)
+
+                new_lp = LP(qtype=self.LP.qtype, goal=self.goal_copy,
+                            start_tableau=new_T,
+                            start_basis=opt_basis.tolist())
+                new_lp.solve(method="dual_simplex")
+
 
 class sa_x(SA_base):
     def get_problem_description(self):
@@ -812,6 +833,7 @@ class LP(object):
 
         self.base_list = []
         self.tableau_list = []
+        self.res = []
         self.fun = []
         self.tableau_origin = None
 
@@ -986,7 +1008,6 @@ class LP(object):
             ub_cnstr_orig_order = []
             eq_cnstr_orig_order = []
             for i, cnstr in enumerate(constraints):
-                print cnstr
                 i_list = []
                 if sign_trans(cnstr[-2]) == sign_trans(">"):
                     for cx in cnstr[:-2]:
@@ -1071,9 +1092,11 @@ class LP(object):
 
         if res.status == 0:
             self.solutionCommon.nit = res.nit
+            self.res = res
 
         print res
         #print res.status
+
 
         if res.status == 2 and self.solutionCommon.method != "dual_simplex":
             # 原始问题不可行
