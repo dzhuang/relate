@@ -24,14 +24,6 @@ $$\begin{alignat*}{20}
 \VAR{simplex_pre_description}
 \BLOCK{ endif } \#{ simplex_pre_description }
 
-%#- \BLOCK{ if lp }
-%#- <strong>解:</strong> \BLOCK{ if lp.solutionCommon.slack_str_list_intro or lp.solutionCommon.neg_slack_str_list_intro }引入\BLOCK{ endif -}
-%#- \BLOCK{- if lp.solutionCommon.slack_str_list_intro }松弛变量$\VAR{lp.solutionCommon.slack_str_list_intro|join(",\,") }$\BLOCK{ endif -}
-%#- \BLOCK{- if lp.solutionCommon.slack_str_list_intro and lp.solutionCommon.neg_slack_str_list_intro}，\BLOCK{ endif -}
-%#- \BLOCK{- if lp.solutionCommon.neg_slack_str_list_intro }剩余变量$\VAR{lp.solutionCommon.neg_slack_str_list_intro|join(",\,") }$\BLOCK{ endif -}
-%#- \BLOCK{ if lp.solutionCommon.slack_str_list_intro or lp.solutionCommon.neg_slack_str_list_intro }，将问题标准化. \BLOCK{ endif }
-%#- \BLOCK{if lp.solutionPhase2.method=="dual_simplex" }由于对偶可行，本问题可以用对偶单纯形法求解，将其转化为适当的形式：\BLOCK{ endif }
-%#- \BLOCK{ endif }
 
 {% from "latex.jinja" import mytabular_preamble as preamble %}
 
@@ -49,7 +41,7 @@ $$\begin{alignat*}{20}
 
 <p align="middle">
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
-\setcounter{table}{\VAR{iters.next()}}
+\setcounter{table}{\VAR{question_iters.next()}}
 \begin{table}[H]\centering
 \topcaption{}
 \begin{tabular}{c|c|\BLOCK{ for x in range(0, lp.solutionPhase2.all_variable_str_list|length) }C{1cm}\BLOCK{ endfor }|c}\hline\hline
@@ -68,13 +60,55 @@ $\mathbf{C_B}$&$\mathbf{X_B}$\BLOCK{ for x in lp.solutionPhase2.all_variable_str
 {% endcall %}
 </p>
 
-%#- \BLOCK{ if lp.solve_status_reason -}\VAR{lp.solve_status_reason}，\BLOCK{ endif -}
-%#- \BLOCK{ if lp.need_artificial_variable }
-%#- 原始问题\VAR{lp.solve_status_message}
-%#- \BLOCK{ else }
-%#- 该问题\VAR{lp.solve_status_message}
-%#- \BLOCK{ endif }
-%#- \BLOCK{- if lp.solve_opt_res_str -}，\VAR{lp.solve_opt_res_str}\BLOCK{ endif -}.
+用线性规划的灵敏度分析解决以下问题:
+
+\BLOCK{ if lp.sa_result }
+\BLOCK{ for result in  lp.sa_result}
+<strong>(\VAR{loop.index}).</strong>\VAR{result.description}
+
+\BLOCK{ if show_answer}
+<strong>解:</strong>
+\BLOCK{- if result.answer }
+\BLOCK{- for ans in result.answer }
+
+\BLOCK{- if ans.answer_description } \VAR{ans.answer_description} \BLOCK{ endif }
+\BLOCK{ if ans.change }
+
+<p align="middle">
+{% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
+\setcounter{keytable}{\VAR{iters.next()}}
+\begin{keytable}[H]\centering
+\topcaption{}
+\begin{tabular}{c|c|\BLOCK{ for x in range(0, ans.new_lp.solutionPhase2.all_variable_str_list|length) }
+\BLOCK{ if ans.new_lp.need_artificial_variable }C{1.5cm}\BLOCK{ else }C{1cm}\BLOCK{ endif }
+\BLOCK{ endfor }|c}\hline\hline
+\multicolumn{2}{c|}{$c_j$}\BLOCK{ for c in ans.new_lp.solutionPhase2.goal_str_list }&\VAR{c}\BLOCK{ endfor }&\multirow{2}*{$\mathbf{b}$} \\ \cline{1-\VAR{ans.new_lp.solutionPhase2.all_variable_str_list|length + 2 }}
+$\mathbf{C_B}$&$\mathbf{X_B}$\BLOCK{ for x in ans.new_lp.solutionPhase2.all_variable_str_list }&\VAR{x}\BLOCK{ endfor }&\\ \hline
+\BLOCK{ for i in range(0, ans.new_lp.solutionPhase2.tableau_str_list|length) }
+\BLOCK{ for j in range(0, ans.new_lp.solutionPhase2.cb_str_list[i]|length + 1) }
+\BLOCK{ if not loop.last } \VAR{ans.new_lp.solutionPhase2.cb_str_list[i][j]}&\VAR{ans.new_lp.solutionPhase2.xb_str_list[i][j]}&\BLOCK{ else } \multicolumn{2}{c|}{$\bar c_j$}& \BLOCK{ endif } \VAR{ans.new_lp.solutionPhase2.tableau_str_list[i][j]|join("&") } \\
+\BLOCK{- if loop.revindex0 <= 1 } \hline \BLOCK{ endif }
+
+\BLOCK{ endfor }
+\BLOCK{ endfor }
+\hline\end{tabular}
+\end{keytable}%
+{% endcall %}
+</p>
+
+\BLOCK{ if ans.new_lp.solve_opt_res_str -}新的最优解为\VAR{ans.new_lp.solve_opt_res_str}\BLOCK{ endif -}.
+
+\BLOCK{ endif }\#{ ans.change }
+
+\BLOCK{ endfor }\#{ ans loop }
+
+\BLOCK{ endif }
+
+\BLOCK{- endif } \#{ show_answer }
+\BLOCK{ endfor }\#{ lp.sa_result loop }
+\BLOCK{- endif } \#{ lp.sa_result }
+
+
 
 \BLOCK{- if show_answer}
 

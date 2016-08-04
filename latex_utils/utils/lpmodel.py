@@ -13,8 +13,18 @@ EQ = [">", "<", "=", ">=", "<=", "=<", "=>"]
 SIGN = [">", "<", "=", ">=", "<=", "=<", "=>", "int", "bin"]
 SA_TYPE = ["SA_c", "SA_p", "SA_b", "SA_A", "SA_x"]
 SA_klass_dict = {"c": "sa_c", "p": "sa_p", "b": "sa_b", "A": "sa_A", "x": "sa_x"}
+METHOD_NAME_DICT = {"simplex": u"单纯形法", "dual_simplex": u"对偶单纯形法"}
+OPT_CRITERIA_LITERAL_DICT = {"max": u"非正", "min": u"非负"}
+
+
 
 class SA_base(object):
+    def get_method_name(self):
+        return METHOD_NAME_DICT[self.opt_method]
+
+    def get_opt_criteria_name(self):
+        return OPT_CRITERIA_LITERAL_DICT[self.LP.qtype]
+
     def __init__(
             self, lp, param, n, x_list, init_tableau,
             opt_tableau, opt_basis, opt_method="simplex"):
@@ -108,8 +118,7 @@ class SA_base(object):
     def get_problem_description(self):
         raise NotImplementedError
 
-
-class sa_result(object):
+class sa_result(dict):
     def __getattr__(self, name):
         try:
             return self[name]
@@ -126,6 +135,9 @@ class sa_result(object):
                               for k, v in sorted(self.items())])
         else:
             return self.__class__.__name__ + "()"
+
+class sa_single_result(sa_result):
+    pass
 
 
 class sa_c(SA_base):
@@ -178,17 +190,37 @@ class sa_c(SA_base):
         c_index = self.c_index
         result = []
         desc = self.get_problem_description()
+        print desc
         if self.LP.qtype == "max":
             c_ineq = "<="
         else:
             c_ineq = ">="
         if c_index is not None:
             for i, v in enumerate(self.param[1:]):
+                new_lp = None
                 result_i = sa_result()
                 result.append(result_i)
 
                 self.problem_copy()
+
+                answer_description = ""
+
+                if self.c_in_opt_basis:
+                    non_basis_varaible = self.non_basis_variable
+
+                    # nb_c_j_bar_np = np.array(self.C_j_BAR_copy.tolist())
+                    # ma = np.ma.masked_where(nb_c_j_bar_np > tol, nb_c_j_bar_np, copy=False)
+                    # print ma.count()
+
+
+                    # report all c_j_bar
+                    pass
+                else:
+                    # report c_j_bar of itself
+                    pass
+
                 if v is None:
+                    # 求解指定变量的目标函数系数的范围
                     c_j = symbols("c_%s" % str(c_index+1), real=True)
                     self.C_copy[c_index] = c_j
                     self.update_tableau(exclude=["C"])
@@ -200,9 +232,10 @@ class sa_c(SA_base):
                         ineq_list = [self.C_j_BAR_copy[idx] for idx in self.non_basis_variable]
 
                     c_range_str = self.solve_inequality(c_j, ineq_list, c_ineq)
-                    #print c_range_str
+                    print c_range_str
 
                 else:
+                    # 当指定变量的目标函数系数取固定值时求最优解
                     self.init_tableau_copy[-1, c_index] = v
                     self.update_tableau()
                     nb_c_j_bar_np = np.array(self.C_j_BAR_copy.tolist())[0][self.non_basis_variable]
@@ -231,18 +264,6 @@ class sa_c(SA_base):
                         new_lp.solve(method="simplex")
                         #print new_lp.res
 
-                    if self.c_in_opt_basis:
-                        non_basis_varaible = self.non_basis_variable
-                        # nb_c_j_bar_np = np.array(self.C_j_BAR_copy.tolist())
-                        # ma = np.ma.masked_where(nb_c_j_bar_np > tol, nb_c_j_bar_np, copy=False)
-                        # print ma.count()
-
-
-                        # report all c_j_bar
-                        pass
-                    else:
-                        # report c_j_bar of itself
-                        pass
 
 
         else:
@@ -337,10 +358,8 @@ class sa_p(SA_base):
                     start_tableau = self.opt_tableau_copy
                     A_bar = self.B_1 * self.A_copy
                     new_p = A_bar.col(p_index).T.tolist()
-                    print start_tableau
                     start_tableau[:-1, p_index] = np.array(new_p)
                     start_tableau[-1, p_index] = c_j_bar
-                    print start_tableau
 
                     if self.LP.qtype == "max":
                         start_tableau[-1, :-1] *= -1
@@ -459,7 +478,6 @@ class sa_b(SA_base):
         else:
             for i, v in enumerate(self.param[1:]):
                 self.problem_copy()
-                print self.b_copy
                 self.b_copy = Matrix(v)
                 self.update_tableau(exclude="b")
                 b_bar_sympy = self.B_1 * self.b_copy
@@ -531,7 +549,7 @@ class sa_A(SA_base):
             else:
                 raise ValueError ("New constraint with '=' is currently not supported.")
 
-            print change
+            #print change
 
             if change:
                 self.problem_copy()
@@ -561,15 +579,19 @@ class sa_A(SA_base):
 
 
 class sa_x(SA_base):
+    def __init__(self, *args, **kwargs):
+        super(sa_x, self).__init__(*args, **kwargs)
+        self.new_variable_index = self.opt_tableau.shape[1] - 1
+
+
     def get_problem_description(self):
-        param = copy.deepcopy(self.param)
         desc = ""
         next_same_desc = False
         opt_tableau = copy.deepcopy(self.opt_tableau)
-        new_variable_index = opt_tableau.shape[1] - 1
+        new_variable_index = self.new_variable_index
         new_variable_str = get_variable_symbol("x", new_variable_index+1)
 
-        for i, v in enumerate(param):
+        for i, v in enumerate(self.param):
             if i > 0:
                 next_same_desc = True
             new_c = trans_latex_fraction(v["c"], wrap=False)
@@ -578,23 +600,106 @@ class sa_x(SA_base):
                 desc += (
                     u"若$c_{%s}=%s,\, \mathbf{p}_{%s}=(%s)^T$，"
                     u"结果又是怎样？"
-                    % (new_variable_index, new_c, new_variable_index, ", ".join(new_p_list))
+                    % (new_variable_index+1, new_c, new_variable_index+1, ", ".join(new_p_list))
                 )
             else:
                 desc += (
                     u"若向原始问题中添加一个新的变量$%s$, 且"
                     u"$c_{%s}=%s,\, \mathbf{p}_{%s}=(%s)^T$，"
                     u"最优解会有怎样的变化？"
-                    % (new_variable_str, new_variable_index, new_c, new_variable_index, ", ".join(new_p_list)))
+                    % (new_variable_str, new_variable_index+1, new_c, new_variable_index+1, ", ".join(new_p_list)))
 
         #print desc
         return desc
 
 
     def analysis(self):
-        self.get_problem_description()
+        result = []
+        desc = self.get_problem_description()
+        new_variable_index = self.new_variable_index
 
-        pass
+        for i, v in enumerate(self.param):
+            new_lp = None
+            new_c = v["c"]
+            new_p_list = v["p"]
+            new_p_sympy = Matrix(new_p_list)
+            new_p_bar_sympy = self.B_1_copy * new_p_sympy
+            new_p_bar_np = np.array(new_p_bar_sympy.T.tolist()[0])
+            new_c_j_bar_sympy = Matrix([new_c]) - self.CB_copy * self.B_1_copy * new_p_sympy
+            new_c_j_bar = new_c_j_bar_sympy[0]
+            change = False
+            if self.LP.qtype == "max":
+                if new_c_j_bar >= 0:
+                    change = True
+            else:
+                if new_c_j_bar <= 0:
+                    change = True
+
+            answer_description = ""
+
+            answer_description += (
+                u"当$c_{%(v_index)s}=%(new_c)s,\, \mathbf{p}_{%(v_index)s}=(%(new_p_list)s)^T$时，"
+                % {"v_index": new_variable_index + 1,
+                   "new_c": new_c,
+                   "new_p_list": ", ".join([trans_latex_fraction(p_ele, wrap=False) for p_ele in new_p_list])}
+            )
+
+            answer_description += (
+                u"先将$x_{%(v_index)s}$视为最优解中的非基变量，计算其检验数:"
+                u"$$\\bar c_{%(v_index)s} =c_{%(v_index)s} - C_B B^{-1}\\mathbf{p}_{%(v_index)s} = %(new_c_j_bar)s$$"
+                % {"v_index": new_variable_index + 1,
+                   "new_c_j_bar": trans_latex_fraction(str(new_c_j_bar), wrap=False),
+                   }
+            )
+
+            if not change:
+                answer_description += (
+                    u"由于$\\bar c_{%(v_index)s}$%(opt_criteria)s，原最优解不受影响.<br/><br/>"
+                    % {"v_index": new_variable_index + 1,
+                       "opt_criteria": self.get_opt_criteria_name()}
+                )
+
+
+            else:
+                self.problem_copy()
+                new_T = np.zeros([self.init_tableau.shape[0], self.init_tableau.shape[1]+1])
+                new_T[:, :-2] = self.opt_tableau_copy[:, :-1]
+                new_T[:, -1] = self.opt_tableau_copy[:, -1]
+                new_T[:-1, -2] = new_p_bar_np
+                new_T[-1, -2] = new_c_j_bar
+
+                if self.LP.qtype == "max":
+                    new_T[-1, :-1] *= -1
+
+                goal_np = np.zeros([new_T.shape[1]-1])
+                goal_np[:len(self.goal_copy)] = np.array(self.goal_copy)
+                goal_np[-1] = new_c
+                goal = goal_np.tolist()
+
+                opt_basis = np.copy(self.opt_basis)
+                new_lp = LP(qtype=self.LP.qtype, goal=goal,
+                            start_tableau=new_T,
+                            start_basis=opt_basis.tolist())
+                new_lp.solve(method="simplex")
+
+                answer_description += (
+                    u"由于$\\bar c_{%(v_index)s}$不满足%(opt_criteria)s，需进一步求解。将$x_{%(v_index)s}$作为非基变量添加到最优表前，"
+                    u"需计算$\\mathbf{\\bar p}_{%(v_index)s}$: "
+                    u"$$\\mathbf{\\bar p}_{%(v_index)s} = B^{-1}\\mathbf{p}_{%(v_index)s} = (%(new_p_bar)s)^T$$"
+                    u"将$c_{%(v_index)s}$, $\\bar c_{%(v_index)s}$和$\\mathbf{\\bar p}_{%(v_index)s}$作为一列"
+                    u"加入最优表中，用%(method)s继续求解:"
+                    % {"opt_criteria": self.get_opt_criteria_name(),
+                       "v_index": new_variable_index + 1,
+                       "new_p_bar": ", ".join([trans_latex_fraction(p_ele, wrap=False) for p_ele in new_p_bar_np]),
+                       "method": self.get_method_name()
+                       }
+                )
+
+            result_i = sa_single_result(answer_description=answer_description, change=change, new_lp=new_lp)
+            result.append(result_i)
+        full_result = sa_result(description=desc, answer=result)
+        return full_result
+
 
 class LP(object):
     def __init__(self, qtype="max", goal=None, constraints=None, x="x", x_list=None, sign=None, z="Z",
@@ -901,7 +1006,7 @@ class LP(object):
             goal = [trans_latex_fraction(str(g), wrap=False) for g in goal]
         except TypeError:
             return ""
-        x_list = self.x_list
+        x_list = copy.deepcopy(self.x_list)
 
         for i, g in reversed(list(enumerate(goal))):
             if str(g) == "0":
@@ -976,7 +1081,7 @@ class LP(object):
                         lp=self,
                         param=ana, n=n, x_list=self.x_list, init_tableau=init_tableau,
                         opt_tableau=opt_tableau, opt_basis=opt_basis)
-                    analysis.analysis()
+                    self.sa_result.append(analysis.analysis())
 
 
     def solve(self, disp=False, method="simplex"):
@@ -1094,7 +1199,7 @@ class LP(object):
             self.solutionCommon.nit = res.nit
             self.res = res
 
-        print res
+        #print res
         #print res.status
 
 
@@ -1132,13 +1237,12 @@ class LP(object):
         n_original_goal_list = n_original_variable + len(res.slack_list) + len(res.artificial_list)
 
         origin_goal_list = np.zeros(n_original_goal_list, dtype=np.float64)
+
         origin_goal_list[:len(C)] = C
         if self.qtype == "max":
             origin_goal_list *= -1
-            opt_judge_literal = u"非正"
-        else:
-            opt_judge_literal = u"非负"
 
+        opt_judge_literal = OPT_CRITERIA_LITERAL_DICT[self.qtype]
 
         self.solutionPhase1.original_goal_list \
             = self.solutionPhase2.original_goal_list \
@@ -1341,6 +1445,11 @@ def get_single_constraint(constraint, x_list, use_seperator=True):
 
 def trans_latex_fraction(f, wrap=True):
     from fractions import Fraction
+    if not isinstance(f, str):
+        try:
+            f = str(f)
+        except:
+            pass
     try:
         frac = str(Fraction(f).limit_denominator())
     except ValueError:

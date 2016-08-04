@@ -148,10 +148,10 @@ lp = LP(qtype="max",
 
             # ([0], None, 5) 表示分析c_1的取值范围，以及c_1=5时的结果
             # (None, [2, 5]) 表示分析所有c取值为[2, 5]时的结果
-            #"c": [([2], None, 4), ([0], None, 10), (None, [6, 3, 4], [6, 3, 5])],
+            "c": [([2], None, 4), ([0], None, 10), (None, [6, 3, 4], [6, 3, 5])],
             #"b": [([0], 360, None, 500), (None, [500, 600], [400, 700])],
-            "A": [([12, 10, 6, "<", 720], [12, 10, 6, "<", 480])],
-            "x": [[{"c": 3, "p": [3, 2]}, {"c": 4, "p": [3, 2]}]]
+            #"A": [([12, 10, 6, "<", 720], [12, 10, 6, "<", 480])],
+            #"x": [[{"c": 3, "p": [3, 2]}, {"c": 4, "p": [3, 2]}]]
         }
         )
 
@@ -200,7 +200,8 @@ for l in lp_json_list_loaded:
 
     template = latex_jinja_env.get_template('/utils/lp_sensitivity.tex')
     tex = template.render(
-        iters = iter(range(0,5)),
+        question_iters = iter(range(0,5)),
+        iters=iter(range(0, 10)),
         show_question = True,
         show_answer = True,
 #        standardized_lp = lp.standardized_LP(),

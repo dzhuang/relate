@@ -641,16 +641,16 @@ lp = LP (qtype="max",
 #             [-4, -3, 0, 0, 0, 0.]])
 #         )
 
-import numpy as np
-lp = LP(qtype="max",
-        goal=[5, 4, 4],
-        start_basis=[0, 1],
-        start_tableau=np.array([
-            [1, 0, 0.75, 0.25, -0.5, 30.],
-            [0,   1., -0.25, -0.25,  1,  20.],
-            [0., 0., -1.25, 0.25, 1.5, 230.]
-        ])
-        )
+# import numpy as np
+# lp = LP(qtype="max",
+#         goal=[5.0, 4.0, 2.0, 0.0, 0.0, 4.0],
+#         start_basis=[0, 1],
+#         start_tableau=np.array([
+#             [1, 0, 0.75, 0.25, -0.5, -0.25, 30],
+#              [0, 1, -0.25, -0.25, 1, 1.25, 20],
+#              [0, 0, 0.75, 0.25, 1.5, -0.25, 230]
+#         ])
+#         )
 
 template = latex_jinja_env.get_template('/utils/lp_model.tex')
 tex = template.render(
