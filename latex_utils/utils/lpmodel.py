@@ -16,6 +16,8 @@ SA_klass_dict = {"c": "sa_c", "p": "sa_p", "b": "sa_b", "A": "sa_A", "x": "sa_x"
 METHOD_NAME_DICT = {"simplex": u"单纯形法", "dual_simplex": u"对偶单纯形法"}
 OPT_CRITERIA_LITERAL_DICT = {"max": u"非正", "min": u"非负"}
 
+def latexify(s):
+    return latex(s)
 
 
 class SA_base(object):
@@ -193,8 +195,10 @@ class sa_c(SA_base):
         print desc
         if self.LP.qtype == "max":
             c_ineq = "<="
+            c_ineq_latex = "\\leqslant "
         else:
             c_ineq = ">="
+            c_ineq_latex = "\\geqslant "
         if c_index is not None:
             for i, v in enumerate(self.param[1:]):
                 new_lp = None
@@ -206,18 +210,15 @@ class sa_c(SA_base):
                 answer_description = ""
 
                 if self.c_in_opt_basis:
-                    non_basis_varaible = self.non_basis_variable
-
-                    # nb_c_j_bar_np = np.array(self.C_j_BAR_copy.tolist())
-                    # ma = np.ma.masked_where(nb_c_j_bar_np > tol, nb_c_j_bar_np, copy=False)
-                    # print ma.count()
-
-
-                    # report all c_j_bar
-                    pass
+                    answer_description += (
+                        u"由于$x_{%(c_index)s}$为基变量，$c_{%(c_index)s}$的变化将影响所有检验数:"
+                        % {"c_index": c_index + 1}
+                    )
                 else:
-                    # report c_j_bar of itself
-                    pass
+                    answer_description += (
+                        u"由于$x_{%(c_index)s}$为非基变量，$c_{%(c_index)s}$的变化只影响$x_{%(c_index)s}$的检验数:"
+                        % {"c_index": c_index + 1}
+                    )
 
                 if v is None:
                     # 求解指定变量的目标函数系数的范围
@@ -227,12 +228,25 @@ class sa_c(SA_base):
 
                     ineq_list = []
                     if not self.c_in_opt_basis:
-                        ineq_list = [self.C_j_BAR_copy[c_index]]
+                        ineq = self.C_j_BAR_copy[c_index]
+                        answer_description += u"$$%s%s0$$" % (latexify(ineq), c_ineq_latex)
+                        ineq_list = [ineq]
+                        answer_description += u"求解不等式可知"
                     else:
                         ineq_list = [self.C_j_BAR_copy[idx] for idx in self.non_basis_variable]
+                        answer_description += u"$$%s%s\\mathbf{0}$$" % (latexify(Matrix(ineq_list)), c_ineq_latex)
+                        answer_description += u"求解不等式组可知"
+                        #print answer_description
+
 
                     c_range_str = self.solve_inequality(c_j, ineq_list, c_ineq)
-                    print c_range_str
+
+                    answer_description += (
+                        u"当$c_{%(c_index)s}\in%(c_range_str)s$时，原最优解维持最优."
+                        % {"c_index": c_index + 1, "c_range_str": c_range_str}
+                    )
+                    print answer_description
+                    #print c_range_str
 
                 else:
                     # 当指定变量的目标函数系数取固定值时求最优解
