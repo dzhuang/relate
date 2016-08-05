@@ -8,6 +8,7 @@ import sys
 from sympy import symbols, Matrix, Poly, latex
 from sympy.solvers.inequalities import reduce_rational_inequalities as ineq_solver, solve_rational_inequalities
 from sympy.simplify import nsimplify
+from sympy.core.numbers import Float as sympy_float
 
 tol = 1.0E-12
 EQ = [">", "<", "=", ">=", "<=", "=<", "=>"]
@@ -20,7 +21,8 @@ OPT_CRITERIA_LITERAL_DICT = {"max": u"非正", "min": u"非负"}
 def latexify(s):
     try:
         return latex(nsimplify(s))
-    except:
+    except Exception as e:
+        #print(e.__str__())
         return latex(s)
 
 
@@ -57,6 +59,7 @@ class SA_base(object):
         self.b = Matrix(b_np.tolist())
         self.B = Matrix(A_np[:, self.opt_basis].tolist())
         self.B_1 = self.B.inv()
+        self.B_1_str = latex(self.B_1.applyfunc(lambda x: nsimplify(x)))
         self.C_j_BAR = self.C - self.CB * self.B_1 * self.A
         self.z = self.CB * self.B_1 * self.b
         self.non_basis_variable = list(set(range(self.n_variable)) - set(opt_basis))
@@ -106,7 +109,10 @@ class SA_base(object):
             self.b_copy = Matrix(b_np.tolist())
         if "B" not in exclude:
             self.B_copy = Matrix(A_np[:, self.opt_basis_copy].tolist())
-            self.B_1_copy = self.B_copy.inv()
+            try:
+                self.B_1_copy = self.B_copy.inv()
+            except:
+                raise ValueError("Problem infeasible!")
         if "C_j_BAR" not in exclude:
             self.C_j_BAR_copy = self.C_copy - self.CB_copy * self.B_1_copy * self.A_copy
         if "z" not in exclude:
@@ -244,11 +250,13 @@ class sa_c(SA_base):
                         ineq_list = [ineq]
                         answer_description += u"可知"
                     else:
-                        ineq_list = [self.C_j_BAR_copy[idx] for idx in self.non_basis_variable]
+                        ineq_list = [self.C_j_BAR_copy[idx] for idx in self.non_basis_variable
+                                     if not isinstance(self.C_j_BAR_copy[idx], sympy_float)
+                                     ]
                         #print ineq_list
                         ineq_list_str = [
                             r"\bar c_{%(idx)s} = %(cjbar)s & %(c_ineq_latex)s 0"
-                            % {"idx": idx,
+                            % {"idx": idx+1,
                                "cjbar": latexify(self.C_j_BAR_copy[idx]),
                                "c_ineq_latex": c_ineq_latex
                                }
@@ -265,7 +273,7 @@ class sa_c(SA_base):
                     c_range_str = self.solve_inequality(c_j, ineq_list, c_ineq)
 
                     answer_description += (
-                        u"当$c_{%(c_index)s}\in%(c_range_str)s$时，原最优解维持最优.<br/><br/>"
+                        u"当$c_{%(c_index)s}\in%(c_range_str)s$时，原最优解维持最优."
                         % {"c_index": c_index + 1, "c_range_str": c_range_str}
                     )
 
@@ -362,7 +370,7 @@ class sa_c(SA_base):
 
                 result_i = sa_single_result(answer_description=answer_description, change=change, new_lp=new_lp)
                 result.append (result_i)
-        full_result = sa_result (description=desc, answer=result)
+        full_result = sa_result(description=desc, answer=result, B_1=self.B_1_str)
         return full_result
 
 
@@ -403,43 +411,81 @@ class sa_p(SA_base):
         p_index = self.p_index
         result = []
         desc = self.get_problem_description()
-        print desc
-        if self.LP.qtype == "max":
-            c_ineq = "<="
-        else:
-            c_ineq = ">="
         for i, v in enumerate(self.param[1:]):
-            result_i = sa_result()
-            result.append(result_i)
-
             self.problem_copy()
             p_j = symbols("p_%s" % str(p_index+1), real=True)
             self.init_tableau_copy[:-1, p_index] = np.array(v)
-            self.update_tableau()
+            try:
+                self.update_tableau()
+            except ValueError:
+                # 如果修改了基变量的系数列向量，则求解B^{-1}会出现问题，但没关系，对于这种情况
+                # 问题是重新求解.
+                pass
+
+
+            answer_description = ""
+
+            if i == 0:
+                if self.p_in_opt_basis:
+                    answer_description += (
+                        u"由于$x_{%(p_index)s}$为基变量，"
+                        u"$\\mathbf{p}_{%(p_index)s}$的变化将通过$\mathbf{B}$影响整个问题，原则上应作为一个全新的问题重新求解.<br/>"
+                        % {"p_index": p_index + 1}
+                    )
+
+                else:
+                    answer_description += (
+                        u"由于$x_{%(p_index)s}$为非基变量，"
+                        u"$\\mathbf{p}_{%(p_index)s}$的变化只直接影响$x_{%(p_index)s}$的检验数.<br/>"
+                        % {"p_index": p_index + 1}
+                    )
+
+            answer_description += (
+                u"当$\\mathbf{p}_{%(p_index)s}=(%(new_p)s)^T$时，"
+                % {"p_index": p_index + 1,
+                   "new_p": ", ".join(trans_latex_fraction(s, wrap=False) for s in v)}
+            )
+
+            new_lp = None
 
             if not self.p_in_opt_basis:
 
+                change = False
                 # this should be reported
                 c_j_bar = self.C_j_BAR_copy[p_index]
                 if self.LP.qtype == "max":
                     if c_j_bar > tol:
                         change = True
-                    else:
-                        change = False
                 else:
                     if c_j_bar < -tol:
                         change = True
-                    else:
-                        change = False
 
-                print change
+                answer_description += (
+                    u"由$$\\bar c_{%(p_index)s}= c_{%(p_index)s} - \\mathbf{C_BB^{-1}p}_{%(p_index)s} = %(c_j_bar)s$$"
+                    % {"p_index": p_index + 1,
+                       "c_j_bar": trans_latex_fraction(self.C_j_BAR_copy[p_index], wrap=False)}
+                )
+
+                if not change:
+                    answer_description += (
+                        u"检验数仍满足最优化条件，原最优解维持最优."
+                    )
 
                 if change:
                     start_tableau = self.opt_tableau_copy
                     A_bar = self.B_1 * self.A_copy
-                    new_p = A_bar.col(p_index).T.tolist()
-                    start_tableau[:-1, p_index] = np.array(new_p)
+                    new_bar_p = A_bar.col(p_index).T.tolist()
+                    start_tableau[:-1, p_index] = np.array(new_bar_p)
                     start_tableau[-1, p_index] = c_j_bar
+
+                    answer_description += (
+                        u"可知原最优解不再最优，将"
+                        u"$\\mathbf{\\bar p}_{%(p_index)s}=\\mathbf{B^{-1}p_{%(p_index)s}}=(%(new_bar_p)s)^T$"
+                        u"代入原最优表继续求解："
+                        % {"p_index": p_index + 1,
+                           "new_bar_p": ", ".join([trans_latex_fraction(p_i, wrap=False) for p_i in new_bar_p[0]])
+                        }
+                    )
 
                     if self.LP.qtype == "max":
                         start_tableau[-1, :-1] *= -1
@@ -450,18 +496,23 @@ class sa_p(SA_base):
 
             else:
                 change = True
-                print change
                 if change:
                     origin_lp = copy.deepcopy(self.LP)
                     constraints = origin_lp.constraints_origin
                     for i, cnstr in enumerate(constraints):
                         constraints[i][p_index] = v[i]
+
                     new_lp = LP(qtype=origin_lp.qtype, goal=origin_lp.goal,
                                 constraints=constraints, x=origin_lp.x,
                                 x_list=origin_lp.x_list,
                                 z=origin_lp.z
                                 )
                     new_lp.solve(method="simplex")
+
+            result_i = sa_single_result(answer_description=answer_description, change=change, new_lp=new_lp)
+            result.append(result_i)
+        full_result = sa_result (description=desc, answer=result, B_1=self.B_1_str)
+        return full_result
 
 
 class sa_b(SA_base):
@@ -503,8 +554,6 @@ class sa_b(SA_base):
                     desc += u"当$\\mathbf{b}=(%s)^T$时，最优解是什么？" % ", ".join(trans_latex_fraction(s, wrap=False) for s in v)
                     next_same_desc = True
 
-
-        print desc
         return desc
 
     def analysis(self):
@@ -512,70 +561,107 @@ class sa_b(SA_base):
         result = []
         desc = self.get_problem_description()
         b_ineq = ">="
-        if b_index is not None:
-            for i, v in enumerate(self.param[1:]):
-                result_i = sa_result()
-                result.append(result_i)
+        for i, v in enumerate(self.param[1:]):
+            new_lp = None
+            self.problem_copy()
+            answer_description = ""
+            change = False
+            if b_index is not None:
+                # 指定特定b_i的分析
 
-                self.problem_copy()
                 if v is None:
+                    assert not change
                     b_i = symbols("b_%s" % str(b_index+1), real=True)
                     self.b_copy[b_index] = b_i
                     self.update_tableau(exclude=["b"])
                     b_bar = self.B_1 * self.b_copy
-                    ineq_list = [b_bar[idx] for idx in range(len(self.b))]
+                    ineq_list = [b_bar[idx] for idx in range(len(self.b))
+                                 if not isinstance(b_bar[idx], sympy_float)
+                                 ]
+                    ineq_list_str = [
+                        r"\bar b_{%(idx)s} = %(b_bar_idx)s & \geqslant 0"
+                        % {"idx": idx + 1,
+                           "b_bar_idx": latexify(b_bar[idx]),
+                           }
+                        for idx in range(len(b_bar))
+                        ]
                     b_range_str = self.solve_inequality(b_i, ineq_list, b_ineq)
-                    #print b_range_str
+                    answer_description += (
+                        u"若$b_{%(b_index)s}$未知，要维持最优基不变，"
+                        u"则需满足$\\mathbf{\\bar b}=\\mathbf{B^{-1}b}\\geqslant \\mathbf{0}$，"
+                        u"亦即求解以下不等式组：" % {"b_index": b_index + 1}
+                    )
+
+                    answer_description += (
+                        u"$$\\left\\{\\begin{array}{ll}%s\\end{array}\\right.$$"
+                        % ("\\\\".join(ineq_list_str)))
+
+                    answer_description += (
+                        u"解得，当$b_{%(b_index)s} \\in %(b_range_str)s$时，最优基不变."
+                        % {"b_index": b_index + 1,
+                           "b_range_str": b_range_str}
+                    )
+
 
                 else:
+                    answer_description += (
+                        u"当$b_{%(b_index)s}=%(new_b)s$时，"
+                        % {"b_index": b_index + 1, "new_b": trans_latex_fraction(v, wrap=False)}
+                    )
                     self.b_copy[b_index] = v
                     self.update_tableau(exclude="b")
-                    b_bar_sympy = self.B_1 * self.b_copy
-                    b_bar_np = np.array(b_bar_sympy.T.tolist()[0])
-                    #print b_bar_np, self.z_copy
-                    ma = np.ma.masked_where(b_bar_np > tol, b_bar_np, copy=False)
-                    if ma.count() > 0:
-                        change = True
-                    else:
-                        change = False
-                    #print change
 
-                    if change:
-                        start_tableau = self.opt_tableau_copy
-                        # c_j_bar = np.array(self.C_j_BAR_copy.tolist())[0]
-                        # if self.LP.qtype == "max":
-                        #     c_j_bar *= -1
-                        start_tableau[:-1, -1] = b_bar_np
-                        if self.LP.qtype == "max":
-                            start_tableau[-1, -1] = -self.z_copy[0]
-                        else:
-                            start_tableau[-1, -1] = self.z_copy[0]
-
-                        new_lp = LP(qtype=self.LP.qtype, goal=self.goal_copy,
-                                    start_tableau=start_tableau, start_basis=self.opt_basis.tolist())
-                        new_lp.solve(method="dual_simplex")
-        #
-        else:
-            for i, v in enumerate(self.param[1:]):
-                self.problem_copy()
+            else:
+                # 指定整个b进行分析
                 self.b_copy = Matrix(v)
                 self.update_tableau(exclude="b")
+
+                answer_description += (
+                    u"当$\\mathbf{b}=(%s)^T$时，" % ", ".join(trans_latex_fraction(s, wrap=False) for s in v)
+                )
+
+            if v is not None:
+                # 当求b_i的范围时，不参与以下计算
+
                 b_bar_sympy = self.B_1 * self.b_copy
                 b_bar_np = np.array(b_bar_sympy.T.tolist()[0])
+                ma = np.ma.masked_where(b_bar_np > -tol, b_bar_np, copy=False)
+
                 start_tableau = self.opt_tableau_copy
-                # c_j_bar = np.array(self.C_j_BAR_copy.tolist())[0]
-                # if self.LP.qtype == "max":
-                #     c_j_bar *= -1
                 start_tableau[:-1, -1] = b_bar_np
                 if self.LP.qtype == "max":
-                    start_tableau[-1, -1] = -self.z_copy[0]
-                else:
+                    start_tableau[-1, :-1] *= -1
                     start_tableau[-1, -1] = self.z_copy[0]
-                goal = self.goal_copy
-                new_lp = LP(qtype=self.LP.qtype, goal=goal,
+                else:
+                    start_tableau[-1, -1] = -self.z_copy[0]
+
+                new_lp = LP(qtype=self.LP.qtype, goal=self.goal_copy,
                             start_tableau=start_tableau, start_basis=self.opt_basis.tolist())
                 new_lp.solve(method="dual_simplex")
-        # pass
+
+                answer_description += (
+                    u"$\\mathbf{\\bar b} = \\mathbf{B^{-1}b} = (%(b_bar)s)^T$，"
+                    % {"b_bar": ", ".join([trans_latex_fraction(b_i, wrap=False) for b_i in b_bar_np])}
+                )
+
+                if ma.count() > 0:
+                    change = True
+
+                if not change:
+                    answer_description += (
+                        u"最优基不变，新的最优解为%s." % (new_lp.solve_opt_res_str)
+                    )
+
+                else:
+                    answer_description += (
+                        u"原最优基不可行，代入原最优表继续求解："
+                    )
+
+            result_i = sa_single_result(answer_description=answer_description, change=change, new_lp=new_lp)
+            result.append(result_i)
+
+        full_result = sa_result(description=desc, answer=result, B_1 = self.B_1_str)
+        return full_result
 
 
 class sa_A(SA_base):
@@ -593,16 +679,16 @@ class sa_A(SA_base):
             else:
                 desc += u"若向原始问题中添加一个新的约束条件$%s$，求解出新的最优解。" % new_constraint.strip()
 
-        #print desc
         return desc
-
 
     def analysis(self):
         result = []
         desc = self.get_problem_description()
         for i, v in enumerate(self.param):
-            result_i = sa_result()
-            result.append(result_i)
+            self.problem_copy()
+            change = False
+            new_lp = None
+            answer_description = ""
 
             n_variable = self.n_variable
 
@@ -614,48 +700,104 @@ class sa_A(SA_base):
             # this need to be reported.
             new_cnstr_lhs_sympy = new_cnstr_eq * original_solution_sympy
             new_cnstr_lhs = new_cnstr_lhs_sympy[0]
+            new_variable_type = ""
 
             if new_cnstr_sign in [">", ">="]:
-                if new_cnstr_lhs >= new_cnstr_rhs:
-                    change = False
-                else:
+                if new_cnstr_lhs < new_cnstr_rhs:
                     change = True
+                    ineq_sign_latex = r"\nleqslant "
+                    new_variable_type = u"剩余变量"
+                elif new_cnstr_lhs == new_cnstr_rhs:
+                    ineq_sign_latex = "\equiv "
+                else:
+                    ineq_sign_latex = "> "
                 raise ValueError("New constraint with '>=' is currently not supported.")
             elif new_cnstr_sign in ["<", "<="]:
-                if new_cnstr_lhs <= new_cnstr_rhs:
-                    change = False
-                else:
+                if new_cnstr_lhs > new_cnstr_rhs:
                     change = True
-            else:
-                raise ValueError ("New constraint with '=' is currently not supported.")
-
-            #print change
-
-            if change:
-                self.problem_copy()
-                new_T = np.zeros([self.init_tableau.shape[0]+1, self.init_tableau.shape[1]+1])
-                new_T[:-2, :-2] = self.opt_tableau_copy[:-1, :-1]
-                new_T[-1, :-2] = self.opt_tableau_copy[-1, :-1]
-                new_T[:-2, -1] = self.opt_tableau_copy[:-1, -1]
-                new_T[-2, :self.n] = np.array(v[:self.n])
-                new_T[-2, -2] = 1
-                new_T[-2, -1] = v[-1]
-                if self.LP.qtype == "max":
-                    new_T[-1, -1] = -self.z[0]
+                    ineq_sign_latex = r"\nleqslant "
+                    new_variable_type = u"松弛变量"
+                elif new_cnstr_lhs == new_cnstr_rhs:
+                    ineq_sign_latex = r"\equiv "
                 else:
-                    new_T[-1, -1] = self.z[0]
+                    ineq_sign_latex = "< "
+            else:
+                if new_cnstr_lhs > new_cnstr_rhs:
+                    change = True
+                    ineq_sign_latex = r"\ngeqslant "
+                elif new_cnstr_lhs < new_cnstr_rhs:
+                    change = True
+                    ineq_sign_latex = r"\nleqslant "
+                else:
+                    ineq_sign_latex = "\equiv "
+
+            lhs, rhs = get_single_constraint(v, self.x_list, as_lhs_rhs_list=True)
+
+            if i == 0:
+                answer_description += u"先将原最优解代入新增的约束条件，有"
+            else:
+                answer_description += u"又有"
+
+            answer_description += (
+                u"$$ %(lhs)s = %(new_cnstr_lhs)s %(ineq_sign_latex)s %(new_cnstr_rhs)s$$"
+                % {"lhs": lhs,
+                   "new_cnstr_lhs": trans_latex_fraction(new_cnstr_lhs, wrap=False),
+                   "ineq_sign_latex": ineq_sign_latex,
+                   "new_cnstr_rhs": new_cnstr_rhs
+                }
+            )
+
+            if not change:
+                answer_description += u"新的约束条件已经满足，最优解维持不变."
+            else:
+                #self.problem_copy()
+                answer_description += u"原最优解不满足新的约束条件. "
+
+                start_tableau = np.zeros([self.init_tableau.shape[0]+1, self.init_tableau.shape[1]+1])
+                start_tableau[:-2, :-2] = self.opt_tableau_copy[:-1, :-1]
+                start_tableau[-1, :-2] = self.opt_tableau_copy[-1, :-1]
+                start_tableau[:-2, -1] = self.opt_tableau_copy[:-1, -1]
+                start_tableau[-2, :self.n] = np.array(v[:self.n])
+                start_tableau[-2, -2] = 1
+                start_tableau[-2, -1] = v[-1]
+                if self.LP.qtype == "max":
+                    start_tableau[-1, -1] = -self.z[0]
+                else:
+                    start_tableau[-1, -1] = self.z[0]
                 for i, basis in enumerate(self.opt_basis_copy):
-                    new_T[-2] -= new_T[-2, basis] * new_T[i]
+                    start_tableau[-2] -= start_tableau[-2, basis] * start_tableau[i]
 
                 opt_basis = np.copy(self.opt_basis)
                 from numpy import append
                 new_variable_index = self.init_tableau.shape[1]-1
                 opt_basis = append(opt_basis, new_variable_index)
 
+                if new_variable_type:
+                    answer_description += (
+                        u"引入%(new_variable_type)s$%(new_variable)s$"
+                        u"将约束条件标准化，添加到原最优表并将$%(new_variable)s$调整为基变量，"
+                        u"然后用对偶单纯形法继续求解:"
+                        % {"new_variable_type": new_variable_type,
+                           "new_variable": "%s_{%s}" % (self.LP.x, new_variable_index+1),
+                           }
+                    )
+
+                if self.LP.qtype == "max":
+                    start_tableau[-1, :-1] *= -1
+                    start_tableau[-1, -1] = self.z_copy[0]
+                else:
+                    start_tableau[-1, -1] = -self.z_copy[0]
+
                 new_lp = LP(qtype=self.LP.qtype, goal=self.goal_copy,
-                            start_tableau=new_T,
+                            start_tableau=start_tableau,
                             start_basis=opt_basis.tolist())
                 new_lp.solve(method="dual_simplex")
+
+            result_i = sa_single_result(answer_description=answer_description, change=change, new_lp=new_lp)
+            result.append(result_i)
+
+        full_result = sa_result(description=desc, answer=result, B_1 = self.B_1_str)
+        return full_result
 
 
 class sa_x(SA_base):
@@ -684,7 +826,7 @@ class sa_x(SA_base):
                 )
             else:
                 desc += (
-                    u"若向原始问题中添加一个新的变量$%s$, 且"
+                    u"若向原始问题中添加一个新的变量$%s$，且"
                     u"$c_{%s}=%s,\, \mathbf{p}_{%s}=(%s)^T$，"
                     u"最优解会有怎样的变化？"
                     % (new_variable_str, new_variable_index+1, new_c, new_variable_index+1, ", ".join(new_p_list)))
@@ -726,7 +868,7 @@ class sa_x(SA_base):
 
             answer_description += (
                 u"先将$x_{%(v_index)s}$视为最优解中的非基变量，计算其检验数:"
-                u"$$\\bar c_{%(v_index)s} =c_{%(v_index)s} - C_B B^{-1}\\mathbf{p}_{%(v_index)s} = %(new_c_j_bar)s$$"
+                u"$$\\bar c_{%(v_index)s} =c_{%(v_index)s} - \\mathbf{C_B B^{-1}p}_{%(v_index)s} = %(new_c_j_bar)s$$"
                 % {"v_index": new_variable_index + 1,
                    "new_c_j_bar": trans_latex_fraction(str(new_c_j_bar), wrap=False),
                    }
@@ -734,38 +876,52 @@ class sa_x(SA_base):
 
             if not change:
                 answer_description += (
-                    u"由于$\\bar c_{%(v_index)s}$%(opt_criteria)s，原最优解不受影响.<br/><br/>"
+                    u"由于$\\bar c_{%(v_index)s}$%(opt_criteria)s，原最优解不受影响."
                     % {"v_index": new_variable_index + 1,
                        "opt_criteria": self.get_opt_criteria_name()}
                 )
 
-
             else:
                 self.problem_copy()
-                new_T = np.zeros([self.init_tableau.shape[0], self.init_tableau.shape[1]+1])
-                new_T[:, :-2] = self.opt_tableau_copy[:, :-1]
-                new_T[:, -1] = self.opt_tableau_copy[:, -1]
-                new_T[:-1, -2] = new_p_bar_np
-                new_T[-1, -2] = new_c_j_bar
+                start_tableau = np.zeros([self.init_tableau.shape[0], self.init_tableau.shape[1]+1])
+                start_tableau[:, :-2] = self.opt_tableau_copy[:, :-1]
+                start_tableau[:, -1] = self.opt_tableau_copy[:, -1]
+                start_tableau[:-1, -2] = new_p_bar_np
+                start_tableau[-1, -2] = new_c_j_bar
 
                 if self.LP.qtype == "max":
-                    new_T[-1, :-1] *= -1
+                    start_tableau[-1, :-1] *= -1
 
-                goal_np = np.zeros([new_T.shape[1]-1])
+                goal_np = np.zeros([start_tableau.shape[1]-1])
                 goal_np[:len(self.goal_copy)] = np.array(self.goal_copy)
                 goal_np[-1] = new_c
                 goal = goal_np.tolist()
 
                 opt_basis = np.copy(self.opt_basis)
                 new_lp = LP(qtype=self.LP.qtype, goal=goal,
-                            start_tableau=new_T,
+                            start_tableau=start_tableau,
                             start_basis=opt_basis.tolist())
                 new_lp.solve(method="simplex")
+
+                #print new_variable_index
+                new_lp_x_idx = range(len(self.LP.x_list))
+                new_lp_x_idx.append(new_variable_index)
+
+                opt_x = [new_lp.opt_x[idx] for idx in new_lp_x_idx]
+                opt_value = [new_lp.opt_value[idx] for idx in new_lp_x_idx]
+                opt_x_str = r"(%s)^T" % ",\,".join(opt_x)
+                opt_value_str = r"(%s)^T" % ",\,".join(opt_value)
+                opt_solution = "%s = %s" % (opt_x_str, opt_value_str)
+                self.opt_x = opt_x
+                self.opt_value = opt_value
+                opt_fun_value = new_lp.fun
+                opt_fun = "%s^* = %s" % (new_lp.z, trans_latex_fraction(opt_fun_value, wrap=False))
+                new_lp.solve_opt_res_str = "$%s,\, %s$" % (opt_solution, opt_fun)
 
                 answer_description += (
                     u"由于$\\bar c_{%(v_index)s}$不满足%(opt_criteria)s，需进一步求解。将$x_{%(v_index)s}$作为非基变量添加到最优表前，"
                     u"需计算$\\mathbf{\\bar p}_{%(v_index)s}$: "
-                    u"$$\\mathbf{\\bar p}_{%(v_index)s} = B^{-1}\\mathbf{p}_{%(v_index)s} = (%(new_p_bar)s)^T$$"
+                    u"$$\\mathbf{\\bar p}_{%(v_index)s} = \\mathbf{B^{-1}p}_{%(v_index)s} = (%(new_p_bar)s)^T$$"
                     u"将$c_{%(v_index)s}$, $\\bar c_{%(v_index)s}$和$\\mathbf{\\bar p}_{%(v_index)s}$作为一列"
                     u"加入最优表中，用%(method)s继续求解:"
                     % {"opt_criteria": self.get_opt_criteria_name(),
@@ -777,7 +933,7 @@ class sa_x(SA_base):
 
             result_i = sa_single_result(answer_description=answer_description, change=change, new_lp=new_lp)
             result.append(result_i)
-        full_result = sa_result(description=desc, answer=result)
+        full_result = sa_result(description=desc, answer=result, B_1 = self.B_1_str)
         return full_result
 
 
@@ -1042,6 +1198,8 @@ class LP(object):
         #self.start_goal_list = start_goal_list
         self.start_tableau = start_tableau
         self.start_basis = start_basis
+        self.opt_x = []
+        self.opt_value = []
 
     def get_sign_str(self, dual):
         """
@@ -1408,7 +1566,10 @@ class LP(object):
                     opt_x_str = r"(%s)^T" % ",\,".join(opt_x)
                     opt_value_str = r"(%s)^T" % ",\,".join(opt_value)
                     opt_solution = "%s = %s" % (opt_x_str, opt_value_str)
+                    self.opt_x = opt_x
+                    self.opt_value = opt_value
                     opt_fun_value = res.fun if self.qtype == "min" else res.fun *(-1)
+                    self.fun = opt_fun_value
                     if self.solutionCommon.method != "modified_simplex":
                         opt_fun = "%s^* = %s" % (self.z, trans_latex_fraction(opt_fun_value, wrap=False))
                         self.solve_opt_res_str = "$%s,\, %s$" % (opt_solution, opt_fun)
@@ -1478,7 +1639,7 @@ class LP(object):
             return None
 
 
-def get_single_constraint(constraint, x_list, use_seperator=True):
+def get_single_constraint(constraint, x_list, use_seperator=True, as_lhs_rhs_list=False):
     constraint = [trans_latex_fraction(str(cnstr), wrap=False) for cnstr in constraint]
     x_list = [x for x in x_list]
     for i, cnstr in enumerate(constraint[:len(x_list)]):
@@ -1515,6 +1676,9 @@ def get_single_constraint(constraint, x_list, use_seperator=True):
     rhs = constraint[-1]
     if rhs.startswith("-"):
         rhs = "\\mbox{$-$}%s" % rhs[1:]
+
+    if as_lhs_rhs_list:
+        return [lhs.replace("&", ""), rhs.replace("&", "")]
 
     constraint_str = r"&&%s&{}%s{}&%s\\" % (lhs, eq, rhs)
     if not use_seperator:
