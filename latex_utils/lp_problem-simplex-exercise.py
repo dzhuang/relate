@@ -54,15 +54,15 @@ lp = LP (qtype="min",
          )
 
 
-
-lp = LP(qtype="max",
-        goal=[5, 3, 2],
-        constraints=[
-            [1, 1, 1, "<", 80],
-            [10, 2, 3, "<", 100],
-            #[1, -2, 1, "<", 18],
-        ],
-        )
+# # 只有两个约束
+# lp = LP(qtype="max",
+#         goal=[5, 3, 2],
+#         constraints=[
+#             [1, 1, 1, "<", 80],
+#             [10, 2, 3, "<", 100],
+#             #[1, -2, 1, "<", 18],
+#         ],
+#         )
 
 lp = LP(qtype="max",
         goal=[-1, 3, 2],
@@ -135,8 +135,6 @@ lp = LP(qtype="max",
         )
 
 
-
-
 # # 太复杂
 #lp = LP(qtype="min",
 #        goal=[1, -2, -1],
@@ -159,14 +157,14 @@ lp = LP(qtype="max",
 #          )
 
 
-
-lp = LP (qtype="max",
-         goal=[6, -2, 3],
-         constraints=[
-             [2, -1, 2, "<", 2],
-             [1, 0, 4, "<", 4],
-         ],
-         )
+# 只有两个约束
+# lp = LP (qtype="max",
+#          goal=[6, -2, 3],
+#          constraints=[
+#              [2, -1, 2, "<", 2],
+#              [1, 0, 4, "<", 4],
+#          ],
+#          )
 
 lp = LP (qtype="max",
          goal=[-6, 3, 5],

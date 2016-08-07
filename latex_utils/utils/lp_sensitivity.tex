@@ -106,7 +106,7 @@ $\mathbf{C_B}$&$\mathbf{X_B}$\BLOCK{ for x in ans.new_lp.solutionPhase2.all_vari
 {% endcall %}
 </p>
 
-\BLOCK{ if ans.new_lp.solve_opt_res_str -}新的最优解为\VAR{ans.new_lp.solve_opt_res_str}\BLOCK{ endif -}.
+\BLOCK{ if ans.new_lp.solve_opt_res_str -}新的最优解\BLOCK{ if ans.new_lp.solve_status==0.1}(有无穷多个，其中一个)\BLOCK{ endif }为\VAR{ans.new_lp.solve_opt_res_str}\BLOCK{ endif -}.
 
 \BLOCK{ endif }\#{ ans.change }
 \BLOCK{ if not loop.last }<br/><br/>\BLOCK{ endif }
