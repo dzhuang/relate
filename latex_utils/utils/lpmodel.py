@@ -851,10 +851,10 @@ class sa_x(SA_base):
             new_c_j_bar = new_c_j_bar_sympy[0]
             change = False
             if self.LP.qtype == "max":
-                if new_c_j_bar >= 0:
+                if new_c_j_bar > 0:
                     change = True
             else:
-                if new_c_j_bar <= 0:
+                if new_c_j_bar < 0:
                     change = True
 
             answer_description = ""
