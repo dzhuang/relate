@@ -173,6 +173,17 @@ class PdfLatex(LatexCompiler):
     output_format = "pdf"
 
 
+class LuaLatex(LatexCompiler):
+    name = "LuaLatex"
+    cmd = "lualatex"
+    output_format = "pdf"
+    def __init__(self):
+        super(LuaLatex, self).__init__()
+        self.latexmk_prog_repl = (
+            "-%s=%s" % ("luaflatex", self.bin_path)
+        )
+
+
 class XeLatex(LatexCompiler):
     name = "XeLatex"
     cmd = "xelatex"
@@ -586,6 +597,16 @@ class Latex2Svg(Tex2ImgBase):
     converter = Dvisvg()
 
 
+class Lualatex2Svg(Tex2ImgBase):
+    compiler = LuaLatex()
+    converter = Dvisvg()
+
+
+class Lualatex2Png(Tex2ImgBase):
+    compiler = LuaLatex()
+    converter = ImageMagick()
+
+
 class Latex2Png(Tex2ImgBase):
     compiler = Latex()
     converter = Dvipng()
@@ -605,11 +626,13 @@ class Xelatex2Png(Tex2ImgBase):
 
 # {{{ get tex2img class
 
-ALLOWED_COMPILER = ['latex', 'pdflatex', 'xelatex']
+ALLOWED_COMPILER = ['latex', 'pdflatex', 'xelatex', 'lualatex']
 ALLOWED_LATEX2IMG_FORMAT = ['png', 'svg']
 ALLOWED_COMPILER_FORMAT_COMBINATION = (
     ("latex", "png"),
     ("latex", "svg"),
+    ("lualatex", "svg"),
+    ("lualatex", "png"),
     ("pdflatex", "png"),
     ("xelatex", "png")
 )
