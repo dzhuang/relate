@@ -180,7 +180,7 @@ class LuaLatex(LatexCompiler):
     def __init__(self):
         super(LuaLatex, self).__init__()
         self.latexmk_prog_repl = (
-            "-%s=%s" % ("luaflatex", self.bin_path)
+            "-%s=%s" % ("pdflatex", self.bin_path)
         )
 
 
@@ -597,11 +597,6 @@ class Latex2Svg(Tex2ImgBase):
     converter = Dvisvg()
 
 
-class Lualatex2Svg(Tex2ImgBase):
-    compiler = LuaLatex()
-    converter = Dvisvg()
-
-
 class Lualatex2Png(Tex2ImgBase):
     compiler = LuaLatex()
     converter = ImageMagick()
@@ -631,7 +626,6 @@ ALLOWED_LATEX2IMG_FORMAT = ['png', 'svg']
 ALLOWED_COMPILER_FORMAT_COMBINATION = (
     ("latex", "png"),
     ("latex", "svg"),
-    ("lualatex", "svg"),
     ("lualatex", "png"),
     ("pdflatex", "png"),
     ("xelatex", "png")
