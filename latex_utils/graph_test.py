@@ -29,16 +29,37 @@ import matplotlib.pyplot as plt
 import networkx as nx
 from nx2tikz import nx2tikz
 
+
+def _preamble(layout='layered'):
+    """Return preamble and begin/end document."""
+    if layout == 'layered':
+        layout_lib = 'layered'
+    elif layout == 'spring':
+        layout_lib = 'force'
+    else:
+        raise ValueError(
+            'Unknown which library contains layout: {s}'.format(s=layout))
+    document = (
+        '\documentclass{{standalone}}\n'
+        '\usepackage{{amsmath}}\n'
+        '\n'
+        '\usepackage{{tikz}}\n'
+        '\usetikzlibrary{{graphs,graphs.standard,'
+        'graphdrawing,quotes,shapes}}\n'
+        '\usegdlibrary{{ {layout_lib} }}\n').format(
+            layout_lib=layout_lib)
+    return document
+
 def write_tikz():
     fname = 'mygraph.tex'
     g = graph()
     tikz = nx2tikz.dumps_tikz(g, layout="spring")
     print(tikz)
     #tex = nx2tikz.dump_tex()
-    with open(fname, 'w') as f:
-        f.write(tikz)
-        #f.write(tex)
-        f.close()
+    # with open(fname, 'w') as f:
+    #     f.write(tikz)
+    #     #f.write(tex)
+    #     f.close()
 
 
 def graph():

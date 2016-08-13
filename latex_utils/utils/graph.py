@@ -9,27 +9,24 @@ try:
 except:
     pass
 
-g_array = np.zeros(shape=(8,8))
-g_array[0,1] = 3
-g_array[0,2] = 5
-g_array[0,3] = 2
-g_array[1,2] = 4
-g_array[1,4] = 7
-g_array[1,5] = 5
-g_array[2,5] = 4
-g_array[2,6] = 9
-g_array[3,2] = 2
-g_array[3,6] = 8
-g_array[4,7] = 2
-g_array[5,4] = 2
-g_array[5,6] = 1
-g_array[5,7] = 6
-g_array[6,7] = 5
 
 ALLOWED_SHORTEST_PATH_METHOD = ['dijkstra', 'bellman_ford']
 
+class shortest_path_result(object):
+    def __init__(self):
+        pass
+
+
 class graph_shortest_path(object):
-    def __init__(self, graph):
+    def __init__(self, graph, node_label_dict=None, edge_label_style_dict=None, directed=True):
+        if node_label_dict:
+            if not isinstance(node_label_dict, dict):
+                raise ValueError ("node_label_dict must be a dict")
+        self.node_label_dict = node_label_dict
+        if edge_label_style_dict:
+            if not isinstance(edge_label_style_dict, dict):
+                raise ValueError ("edge_label_style_dict must be a dict")
+        self.edge_label_style_dict = edge_label_style_dict
         if isinstance(graph, np.ndarray):
             graph = np.matrix(graph)
         if isinstance(graph, np.matrix):
@@ -39,7 +36,12 @@ class graph_shortest_path(object):
                 if not graph[i, i] == 0:
                     raise ValueError(
                         "The diagonal of the matrix is not 0 at [%(idx)d, %(idx)d]" % {"idx": i+1})
-            graph = nx.from_numpy_matrix(graph, create_using=nx.DiGraph())
+
+            if directed:
+                graph = nx.from_numpy_matrix(graph, create_using=nx.DiGraph())
+            else:
+                graph = nx.from_numpy_matrix(graph)
+
         self.graph = graph
         self.n_node = graph.number_of_nodes()
         self.pred_list = []
@@ -48,6 +50,12 @@ class graph_shortest_path(object):
         self.p_node_list = []
         self.final_pred = []
         self.final_dist = []
+
+    def as_latex(self, layout="spring", use_label=True, no_bidirectional=True):
+        return dumps_tikz_doc(g=self.graph, layout=layout,
+                              node_label_dict=self.node_label_dict,
+                              edge_label_style_dict=self.edge_label_style_dict,
+                              use_label=use_label)
 
     def get_iterated_solution(self, source=0, method="dijkstra"):
         n_node = self.n_node
@@ -68,7 +76,7 @@ class graph_shortest_path(object):
                 if i in dist:
                     p_node.append(i)
                 if i not in seen:
-                    seen[i] = "$\infty$"
+                    seen[i] = float('inf')
             pred_list.append(pred)
             dist_list.append(dist)
             seen_list.append(seen)
@@ -77,14 +85,7 @@ class graph_shortest_path(object):
         def bellman_ford_callback(**kwargs):
             dist = copy.deepcopy(kwargs["dist"])
             nit = kwargs["nit"]
-            p_node = []
-            for i in range(n_node):
-                if i not in pred:
-                    pred[i] = [0]
-                if i in dist:
-                    p_node.append(i)
             dist_list.append(dist)
-            p_node_list.append(p_node)
 
         callback = None
         if method == "dijkstra":
@@ -92,7 +93,8 @@ class graph_shortest_path(object):
         elif method == "bellman_ford":
             callback = bellman_ford_callback
 
-        pred, dist = self.get_predecessor_and_distance(source=source, method=method, callback=callback)
+        pred, dist = self.get_predecessor_and_distance(
+            source=source, method=method, callback=callback)
         self.pred_list = pred_list
         self.dist_list = dist_list
         self.seen_list = seen_list
@@ -104,6 +106,7 @@ class graph_shortest_path(object):
             self.final_pred = pred
             assert not self.pred_list
             assert not self.seen_list
+            assert not self.p_node_list
         self.final_dist = dist
 
     def get_predecessor_and_distance(self, source=0, method="dijkstra", callback=None):
@@ -130,48 +133,96 @@ class graph_shortest_path(object):
         if target is None:
             target = self.n_node - 1
         if method == "dijkstra":
-            return shortest_path.dijkstra_path_length(self.graph, source=source, target=target)
-
-g_mat = np.matrix(g_array)
-g = nx.from_numpy_matrix(g_mat, create_using=nx.DiGraph())
-n_node = g.number_of_nodes()
-path = nx.dijkstra_path(g,0,7)
-length = nx.dijkstra_path_length(g,0,7)
-#print path, length
-
-graph = graph_shortest_path(g)
-graph.get_iterated_solution(method="dijkstra")
-# print graph.p_node_list
-# print graph.dist_list
-# print graph.pred_list
-# print graph.seen_list
-
-# g_mat = np.matrix([
-#     [0,2,5,4,0,0,0,0],
-#     [0,0,-4,2,0,9,0,0],
-#     [0,0,0,3,-2,0,3,0],
-#     [0,0,0,0,2,0,8,0],
-#     [0,0,0,0,0,0,0,3],
-#     [0,-8,0,2,3,0,0,4],
-#     [0,0,-2,0,4,0,0,6],
-#     [0,0,0,0,0,0,0,0]
-# ])
-
-g = nx.from_numpy_matrix(
-    g_mat,
-    create_using=nx.DiGraph()
-)
+            return shortest_path.dijkstra_path_length(
+                self.graph, source=source, target=target)
 
 
-#print len(g)
+def dumps_tikz_doc(g, layout='spring', node_label_dict=None,
+                   edge_label_style_dict=None, use_label=True, no_bidirectional=True):
+    """Return TikZ code as `str` for `networkx` graph `g`."""
 
+    if not node_label_dict:
+        node_label_dict={}
+        for node in g.node:
+            node_label_dict[node] = "$v_{%s}$" % str(node + 1)
 
-#pred, dist = shortest_path_tweaked.bellman_ford_predecessor_and_distance(g, source=0, weight="weight")
-#print pred, dist
+    if layout not in ('layered', 'spring'):
+        raise ValueError('Unknown layout: {s}'.format(s=layout))
+    layout_lib = ""
+    if layout == 'layered':
+        layout_lib = 'layered'
+    elif layout == 'spring':
+        layout_lib = 'force'
+    s = ''
+    for n, d in g.nodes_iter(data=True):
+        # label
+        label = node_label_dict.get(n, '')
+        label = 'as={' + label + '}' if label else ''
+        # geometry
+        color = d.get('color', '')
+        fill = d.get('fill', '')
+        shape = d.get('shape', '')
+        # style
+        style = ', '.join(filter(None, [label, color, fill, shape]))
+        style = '[' + style + ']' if style else ''
+        # pack them
+        s += '{n}{style};\n'.format(n=n, style=style)
+    s += '\n'
+    if nx.is_directed(g):
+        line = ' -> '
+    else:
+        line = ' -- '
+    for u, v, d in g.edges_iter(data=True):
+        if use_label:
+            label = str(int(g.get_edge_data(u, v).get("weight")))
+            #label = d.get('label', '')
+            color = d.get('color', '')
+        else:
+            label = str(d)
+            color = ''
+        if label:
+            label = '"' + label + '"\' above'
+        loop = 'loop' if u is v else ''
 
+        custom_style = None
+        if edge_label_style_dict:
+            if (u,v) in edge_label_style_dict:
+                custom_style = edge_label_style_dict[(u,v)]
 
-all_sp = graph.get_shortest_path()
+        # 方向互反的箭头
+        bend = ''
+        if no_bidirectional:
+            bend = 'bend left' if g.has_edge(v, u) else ''
+        style = ', '.join(filter(None, [label, color, loop, bend, custom_style]))
+        style = ' [' + style + '] ' if style else ''
+        s += str(u) + line + style + str(v) + ';\n'
+    tikzpicture = (
+        r'\begin{{tikzpicture}}[>={{Stealth[length=3mm]}}]' '\n'
+        '\graph[{layout} layout, node distance=2.0cm,'
+        # 'edge quotes mid,'
+        'edges={{nodes={{ sloped, inner sep=1pt }} }},'
+        'nodes={{circle, draw}} ]{{\n'
+        '{s}'
+        '}};\n'
+        '\end{{tikzpicture}}\n').format(
+            layout=layout,
+            s=s)
 
-# for sp in all_sp:
-#     print sp
+    preamble = (
+        '\documentclass{{standalone}}\n'
+        '\usepackage{{amsmath}}\n'
+        '\n'
+        '\usepackage{{tikz}}\n'
+        '\usetikzlibrary{{graphs,graphs.standard,'
+        'graphdrawing,quotes,shapes,arrows.meta}}\n'
+        '\usegdlibrary{{ {layout_lib} }}\n').format(
+            layout_lib=layout_lib)
 
+    return (
+        '{preamble}\n'
+        r'\begin{{document}}' '\n'
+        '\n'
+        '{tikz}'
+        '\end{{document}}\n').format(
+            preamble=preamble,
+            tikz=tikzpicture)

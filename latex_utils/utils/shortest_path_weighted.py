@@ -93,12 +93,6 @@ def _dijkstra(G, source, get_weight, pred=None, paths=None, cutoff=None,
 
         # callback
         if callback is not None:
-            # print"iterations", iterations
-            # print "pred", pred
-            # print "dist", dist
-            # print "seen", seen
-            # #solution[:] = 0
-
             kwargs ={
                 "nit": iterations,
                 "pred": pred,
@@ -181,63 +175,57 @@ def bellman_ford_predecessor_and_distance(G, source=None, weight='weight', callb
     g_mat[g_mat==0] = inf
     n = len(G)
 
-    dist_j = []
+    dist = []
     iterations = 0
     while True:
         iterations += 1
-        dist_j_i = np.full(n, inf)
-        dist_j_i[0] = 0
+        dist_i = np.full(n, inf)
+        dist_i[0] = 0
 
-        dist_last = dist_j[-1] if dist_j else None
+        dist_last = dist[-1] if dist else None
         if iterations == 1:
             for v, e in G_succ[0].items():
-                dist_j_i[v] = get_weight(e)
+                dist_i[v] = get_weight(e)
         else:
             for v in range(n):
-                dist_j_i_array = dist_last + np.array(g_mat.transpose()[v, :][0])
-                dist_j_i[v] = min(dist_last[v], np.min(dist_j_i_array))
+                dist_i_array = dist_last + np.array(g_mat.transpose()[v, :][0])
+                dist_i[v] = min(dist_last[v], np.min(dist_i_array))
 
-        dist_j.append(dist_j_i.tolist())
+        dist.append(dist_i.tolist())
+
+        if callback is not None:
+            kwargs ={
+                "nit": iterations,
+                "pred": None,
+                "dist": dist,
+                "seen": None
+            }
+
+            callback(**kwargs)
 
         if dist_last is not None:
-            if np.array_equal(dist_j_i, dist_last):
+            if np.array_equal(dist_i, dist_last):
                 break
 
         if iterations == n:
             raise nx.NetworkXUnbounded(
                 "Negative cost cycle detected.")
 
-        if callback is not None:
-            # print"iterations", iterations
-            # print "pred", pred
-            # print "dist", dist
-            # print "seen", seen
-            # #solution[:] = 0
-
-            kwargs ={
-                "nit": iterations,
-                "pred": None,
-                "dist": dist_j,
-                "seen": None
-            }
-
-            callback(**kwargs)
-
 
     for v in range(n):
         if not v in pred:
             pred[v] = []
 
-        dist_j_i_array = dist_j_i + np.array(g_mat.transpose()[v, :])
-        final_array = dist_j_i_array.tolist()
+        dist_i_array = dist_i + np.array(g_mat.transpose()[v, :])
+        final_array = dist_i_array.tolist()
         final_array = final_array[0]
 
         if pred[v] is not None:
             for u in range(n):
-                if dist_j_i[v] == final_array[u]:
+                if dist_i[v] == final_array[u]:
                     pred[v].append(u)
 
-    return pred, dist_j
+    return pred, dist
 
 
 def all_shortest_paths_from_0(G, target, weight="weight"):
