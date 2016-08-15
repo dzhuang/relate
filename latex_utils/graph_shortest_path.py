@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from latex_utils.utils.latex_utils import latex_jinja_env, _file_write
-from latex_utils.utils.graph import graph_shortest_path
+from latex_utils.utils.graph import network
 from copy import deepcopy
 import numpy as np
 
@@ -86,19 +86,26 @@ r.clipboard_clear()
 
 import pickle
 #import dill as pickle
-with open('graph_shortest_path.bin', 'wb') as f:
+with open('network.bin', 'wb') as f:
     pickle.dump(g_list, f)
 
-with open('graph_shortest_path.bin', 'rb') as f:
+with open('network.bin', 'rb') as f:
     g_list_loaded = pickle.load(f)
 
 
 for g_dict in g_list_loaded:
-    g = graph_shortest_path(**g_dict)
+    g = network(**g_dict)
 
     g.get_iterated_solution(method="dijkstra")
     g_graph = g.as_latex()
-    print g_graph
+
+    #x = g.get_iterated_solution(method="dijkstra")
+    #print type(x)
+
+    y = g.get_iterated_solution(method="bellman_ford")
+    #print type(y)
+
+    #print g_graph
 
     # print g.p_node_list
     # print g.dist_list
@@ -137,15 +144,16 @@ for g_dict in g_list_loaded:
 
 # preamble of the picture of the graph.
 """
-<p align="middle">
-{% call latex(compiler="lualatex", image_format="png", alt="question") %}
+{% from "latex.jinja" import mytabular_preamble as preamble %}
 
-\documentclass{standalone}
-\usepackage{amsmath}
-
+{% set preabmle_extra %}
 \usepackage{tikz}
 \usetikzlibrary{graphs,graphs.standard,graphdrawing,quotes,shapes,arrows.meta}
-\usegdlibrary{ force }
+\usegdlibrary{force}
+{% endset %}
+
+<p align="middle">
+{% call latex(compiler="lualatex", image_format="png", alt="question", tex_preamble=preamble, tex_preamble_extra=preamble_extra) %}
 
 
 {% endcall %}

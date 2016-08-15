@@ -12,17 +12,69 @@ except:
 
 ALLOWED_SHORTEST_PATH_METHOD = ['dijkstra', 'bellman_ford']
 
-class shortest_path_result(object):
-    def __init__(self):
-        pass
+class shortest_path_result(dict):
+    def __init__(self, **kwargs):
+        super(shortest_path_result, self).__init__(**kwargs)
+
+    def __getattr__(self, name):
+        try:
+            return self[name]
+        except KeyError:
+            raise AttributeError(name)
+
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
+
+    def __repr__(self):
+        if self.keys():
+            m = max(map(len, list(self.keys()))) + 1
+            return '\n'.join([k.rjust(m) + ': ' + repr(v)
+                              for k, v in sorted(self.items())])
+        else:
+            return self.__class__.__name__ + "()"
+
+class dijkstra_result(shortest_path_result):
+    def __init__(self, **kwargs):
+        super(dijkstra_result, self).__init__(**kwargs)
+        assert kwargs["pred_list"]
+        assert kwargs["dist_list"]
+        assert kwargs["seen_list"]
+        assert kwargs["final_pred"]
+        assert kwargs["p_node_list"]
+        self.pred_list = kwargs["pred_list"]
+        self.dist_list = kwargs["dist_list"]
+        self.seen_list = kwargs["seen_list"]
+        self.final_pred = kwargs["final_pred"]
+        self.p_node_list = kwargs["p_node_list"]
+        self.as_latex()
+
+    def as_latex(self):
+        print len(self.pred_list)
+
+class bellman_ford_result(shortest_path_result):
+    def __init__(self, **kwargs):
+        super(bellman_ford_result, self).__init__(**kwargs)
+        assert not kwargs.get("pred_list", None)
+        assert kwargs["dist_list"]
+        assert not kwargs.get("seen_list", None)
+        assert kwargs["final_pred"]
+        assert not kwargs.get("p_node_list")
+        #self.pred_list = kwargs["pred_list"]
+        self.dist_list = kwargs["dist_list"]
+        #self.seen_list = kwargs["seen_list"]
+        self.final_pred = kwargs["final_pred"]
+        #self.p_node_list = kwargs["p_node_list"]
 
 
-class graph_shortest_path(object):
-    def __init__(self, graph, node_label_dict=None, edge_label_style_dict=None, directed=True):
+class network(object):
+    def __init__(self, graph, directed=True, node_label_dict=None, edge_label_style_dict=None, node_tex_prefix="v"):
         if node_label_dict:
             if not isinstance(node_label_dict, dict):
                 raise ValueError ("node_label_dict must be a dict")
+        else:
+            node_label_dict = {}
         self.node_label_dict = node_label_dict
+        self.node_tex_prefix = node_tex_prefix
         if edge_label_style_dict:
             if not isinstance(edge_label_style_dict, dict):
                 raise ValueError ("edge_label_style_dict must be a dict")
@@ -50,6 +102,16 @@ class graph_shortest_path(object):
         self.p_node_list = []
         self.final_pred = []
         self.final_dist = []
+
+        for node in range(len(graph)):
+            if node not in self.node_label_dict:
+                self.node_label_dict[node] = (
+                    "%(prefix)s_%(subscript)s"
+                    % {"prefix": node_tex_prefix,
+                       "subscript": node + 1
+                       }
+                    if node_tex_prefix else node + 1
+                )
 
     def as_latex(self, layout="spring", use_label=True, no_bidirectional=True):
         return dumps_tikz_doc(g=self.graph, layout=layout,
@@ -100,14 +162,18 @@ class graph_shortest_path(object):
         self.seen_list = seen_list
         self.p_node_list = p_node_list
 
+        self.final_dist = dist
         if method == "dijkstra":
-            self.final_pred = pred_list[-1]
+            final_pred = pred_list[-1]
+            return dijkstra_result(
+                pred_list=pred_list, dist_list=dist_list, seen_list=seen_list,
+                p_node_list=p_node_list, final_pred=final_pred)
         elif method == "bellman_ford":
-            self.final_pred = pred
+            final_pred = pred
             assert not self.pred_list
             assert not self.seen_list
             assert not self.p_node_list
-        self.final_dist = dist
+            return bellman_ford_result(final_pred=final_pred, dist_list=dist_list)
 
     def get_predecessor_and_distance(self, source=0, method="dijkstra", callback=None):
         if method == "dijkstra":
@@ -157,7 +223,7 @@ def dumps_tikz_doc(g, layout='spring', node_label_dict=None,
     for n, d in g.nodes_iter(data=True):
         # label
         label = node_label_dict.get(n, '')
-        label = 'as={' + label + '}' if label else ''
+        label = 'as={$' + label + '$}' if label else ''
         # geometry
         color = d.get('color', '')
         fill = d.get('fill', '')

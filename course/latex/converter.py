@@ -465,6 +465,18 @@ class Tex2ImgBase(object):
             self._remove_working_dir()
             raise RuntimeError(error)
 
+        n_images = get_number_of_images(image_path, self.image_ext)
+        if n_images == 0:
+            raise ValueError(
+                _("No image was generated."))
+        elif n_images > 1:
+            raise ValueError(
+                string_concat(
+                    "%s images are generated while expecting 1, "
+                    "possibly due to long pdf file."
+                    % (n_images, )
+                ))
+
         try:
             shutil.copyfile(image_path, self.image_saving_path)
         except OSError:
@@ -657,6 +669,28 @@ def get_tex2img_class(compiler, image_format):
     class_name = "%s2%s" % (compiler.title(), image_format.title())
 
     return getattr(sys.modules[__name__], class_name)
+
+# }}}
+
+# {{{ check if multiple images are generated due to long pdf
+
+def get_number_of_images(image_path, image_ext):
+    if os.path.isfile(image_path):
+        return 1
+    count = 0
+    while True:
+        try_path = (
+            "%(image_path)s-%(number)d%(ext)s"
+            % {"image_path": image_path.replace(image_ext, ""),
+               "number": count,
+               "ext": image_ext
+               }
+        )
+        if not os.path.isfile(try_path):
+            break
+        count += 1
+
+    return count
 
 # }}}
 
