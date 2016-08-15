@@ -20,9 +20,19 @@ class shortest_path_result(OptimizeResult):
         assert kwargs["dist_list"]
         assert kwargs["final_pred"]
         assert kwargs["node_label_dict"]
+        assert kwargs["shortest_path_list"]
         self.dist_list = kwargs["dist_list"]
         self.final_pred = kwargs["final_pred"]
         self.node_label_dict = kwargs["node_label_dict"]
+        shortest_path_list = kwargs["shortest_path_list"]
+        self.shortest_path_tex_list=[]
+        for sp_list in shortest_path_list:
+            shortest_path_tex_list = []
+            for node in sp_list:
+                shortest_path_tex_list.append(self.node_label_dict[node])
+            self.shortest_path_tex_list.append(shortest_path_tex_list)
+        #print self.shortest_path_tex_list
+        self.tex_node_list = ["$%s$" % self.node_label_dict[node] for node in self.node_label_dict]
 
     def as_latex(self):
         raise NotImplementedError()
@@ -34,11 +44,12 @@ def trans_node_list_tex(node_list, node_label_dict, empty_list_alt="", sout=True
     if not node_list and empty_list_alt:
         return empty_list_alt
 
-    node_label_tex =  "&".join(["%s" % str(node_label_dict[node]) for node in node_list])
+    node_label_tex = "\&".join(
+        ["%s" % str(node_label_dict[node]) for node in node_list])
 
-    if sout:
-        node_label_tex = "\\st{%s}" % node_label_tex
-    if wrap:
+    if node_label_tex and sout:
+        return r"\st{$%s$}" % node_label_tex
+    if node_label_tex and wrap:
         node_label_tex = "$%s$" % node_label_tex
 
     return node_label_tex
@@ -56,11 +67,13 @@ class dijkstra_result(shortest_path_result):
         self.tex_pred_list = []
         self.tex_L_list = []
         self.tex_result = ""
+        self.n_pred_lines = 0
         self.as_latex()
 
     def as_latex(self):
-        pred_size_dict = {}
 
+        # {{{ get pred part tex in simplified dijkstra result
+        pred_size_dict = {}
 
         simplified_pred_dict = {node:[] for node in self.final_pred}
         for i, pred_dict_iter_i in enumerate(self.pred_list):
@@ -74,78 +87,80 @@ class dijkstra_result(shortest_path_result):
             if len(pred) > n_pred_lines:
                 n_pred_lines = len(pred)
 
-        print n_pred_lines
+        for node in self.final_pred:
+            simplified_pred_dict[node].extend(
+                [[],] * (n_pred_lines-len(simplified_pred_dict[node])))
 
-        simplified_pred_list = [{node:[] for node in self.final_pred},] * n_pred_lines
-        print simplified_pred_list
-        print simplified_pred_dict
+        simplified_pred_list = [
+            {node:[] for node in self.final_pred}
+            for i in range(n_pred_lines)]
 
         for i in reversed(range(n_pred_lines)):
-            print i
             for node in self.final_pred:
                 sout = True
-                if i != pred_size_dict[node]:
+                empty_list_alt = ""
+                if i == pred_size_dict[node] - 1:
                     sout = False
-                try:
-                    simplified_pred_list[i][node] = simplified_pred_dict[node][i]
-                    if i == 2:
-                        print node, simplified_pred_dict[node][i]
-                        print simplified_pred_list[i][node]
-                except:
-                    pass
-            print simplified_pred_list
-                #print "simplified_pred_list[i][node]", simplified_pred_list[i][node]
+                if i == 0:
+                    empty_list_alt = "-"
+                simplified_pred_list[i][node] = trans_node_list_tex(
+                    simplified_pred_dict[node][i],
+                    self.node_label_dict,
+                    empty_list_alt=empty_list_alt,
+                    sout=sout,
+                )
+        self.n_pred_lines = n_pred_lines
+        simplified_pred_list.reverse()
+        self.tex_pred_list = simplified_pred_list
+        #print self.tex_pred_list
+        # }}}
+
+        #self.tex_L_list
+
+        tex_L_list = copy.deepcopy(self.seen_list)
+        for i, L in enumerate(tex_L_list):
+            for node, dist in L.items():
+                is_p_node = False
+                if node in self.p_node_list[i]:
+                    is_p_node = True
+                if is_p_node:
+                    L[node] = r"$\dlab {%s}*$" % trans_latex_fraction(L[node], wrap=False)
+                else:
+                    L[node] = r"$%s$" % trans_latex_fraction(L[node], wrap=False)
+
+        self.tex_L_list = tex_L_list
 
 
-        print simplified_pred_list
+def trans_latex_fraction(f, wrap=True):
+    from fractions import Fraction
+    if not isinstance(f, str):
+        try:
+            f = str(f)
+        except:
+            pass
+    try:
+        frac = str(Fraction(f).limit_denominator())
+    except ValueError:
+        if f == "inf":
+            return r"\infty"
+        else:
+            return f
+    negative = False
+    if frac.startswith("-"):
+        negative = True
+        frac = frac[1:]
+    if "/" in frac:
+        frac_list = frac.split("/")
+        frac = r"\frac{%s}{%s}" % (frac_list[0], frac_list[1])
+    if not wrap:
+        if negative:
+            frac = r"-" + frac
+        return "%s" % frac
+    else:
+        if negative:
+            frac = r"\mbox{$-$}" + frac
+        return "$%s$" % frac
 
-
-
-
-
-
-
-        #print simplified_pred_dict
-
-
-
-        simplified_pred_list = copy.deepcopy(self.pred_list)
-        for i, pred_dict_iter_i in enumerate(simplified_pred_list):
-            for node in pred_dict_iter_i:
-                if i > pred_size_dict[node] - 1:
-                    pred_dict_iter_i[node] =[]
-
-        #print simplified_pred_list
-
-
-        # tex_pred_list = []
-        # #print self.node_label_dict
-        # for i, pred_dict_iter_i in enumerate(simplified_pred_list):
-        #     tex_pred_list_i = []
-        #     empty_list_alt = "-" if i==0 else ""
-        #     for node, pred_list in pred_dict_iter_i.items():
-        #         sout = False
-        #         if i < pred_size_dict[node] - 1:
-        #             sout = True
-        #         tex_pred_list_i.append(trans_node_list_tex(pred_list, self.node_label_dict, empty_list_alt=empty_list_alt, sout=sout))
-        #     try:
-        #         for j, pred in enumerate(pred_dict_iter_i):
-        #             if pred == self.pred_list[i-1][j]
-        #                 tex_pred_list_i = ""
-        #     tex_pred_list.append(tex_pred_list_i)
-        #
-        #     #if i == 0:
-        #     #    tex_pred_list.append([trans_node_list_tex(node_list, self.node_label_dict) for node_list in p])
-        #
-        # print tex_pred_list
-
-        # pred_list_size = 0
-        # for node, pred in self.final_pred.items():
-        #     if len(pred) > pred_list_size:
-        #         pred_list_size = len(pred)
-
-
-        #print pred_list_size
 
 class bellman_ford_result(shortest_path_result):
     def __init__(self, **kwargs):
@@ -198,11 +213,12 @@ class network(object):
         self.p_node_list = []
         self.final_pred = []
         self.final_dist = []
+        self.shortest_path_list = []
 
         for node in range(len(graph)):
             if node not in self.node_label_dict:
                 self.node_label_dict[node] = (
-                    "%(prefix)s_%(subscript)s"
+                    "%(prefix)s_{%(subscript)s}"
                     % {"prefix": node_tex_prefix,
                        "subscript": node + 1
                        }
@@ -264,6 +280,7 @@ class network(object):
             return dijkstra_result(
                 pred_list=pred_list, dist_list=dist_list, seen_list=seen_list,
                 p_node_list=p_node_list, final_pred=final_pred,
+                shortest_path_list=list(self.get_shortest_path()),
                 node_label_dict=self.node_label_dict)
         elif method == "bellman_ford":
             final_pred = pred
@@ -271,7 +288,9 @@ class network(object):
             assert not self.seen_list
             assert not self.p_node_list
             return bellman_ford_result(final_pred=final_pred, dist_list=dist_list,
-                                       node_label_dict=self.node_label_dict)
+                                       node_label_dict=self.node_label_dict,
+                                       shortest_path_list=list(self.get_shortest_path()),
+                                       )
 
     def get_predecessor_and_distance(self, source=0, method="dijkstra", callback=None):
         if method == "dijkstra":

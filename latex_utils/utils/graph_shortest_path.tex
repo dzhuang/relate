@@ -1,80 +1,68 @@
-\begin{alignat*}{20}
-\text{(1)\quad}\max\quad &\rlap{$Z=\mbox{$-$}6x_1+3x_2-3x_3$}\\
-\text{s.t.\quad}
-&&2x_1&{}+{}&x_2&&&&{}\leqslant{}&8\\
-&&\mbox{$-$}4x_1&{}-{}&2x_2&{}+{}&3x_3&&{}\leqslant{}&14\\
-&&x_1&{}-{}&2x_2&{}+{}&x_3&&{}\leqslant{}&18\\
-\rlap{$x_1,x_2,x_3\geqslant0$}
-\end{alignat*}
+\BLOCK{- if show_question -}
+求解下图中从$\VAR{source}$至$\VAR{target}$的最短路径及最短距离(若有多条最短路，请全部指出).
 
-\qd{答案：\todosv{\hei 不得使用表上作业法求解！}{1cm}}
-\begin{mdframed}
-\jie 将问题标准化为
+{% set preamble %}
+\usepackage{tikz}
+\usetikzlibrary{graphs,graphs.standard,graphdrawing,quotes,shapes,arrows.meta}
+\usegdlibrary{force}
+{% endset %}
 
-\begin{alignat*}{20}
-\max\quad &\rlap{$Z=\mbox{$-$}6x_1+3x_2-3x_3$}\\
-\text{s.t.\quad}
-&&2	x_1&	{}+{}&	x_2&	&	&	{}+{}&	x_4&	&	&	&	&	&{}={}&8\\
-&&\mbox{$-$}4	x_1&	{}-{}&2	x_2&	{}+{}&3	x_3&	&	&	{}+{}&	x_5&	&	&	&{}={}&14\\
-&&	x_1&	{}-{}&2	x_2&	{}+{}&	x_3&	&	&	&	&	{}+{}&	x_6&	&{}={}&18\\
-\rlap{$x_1,x_2,x_3,x_4,x_5,x_6\geqslant0$}
-\end{alignat*}
+<p align="middle">
+{% call latex(compiler="lualatex", image_format="png", alt="question", tex_preamble=preamble) %}
 
-\qd{(1)} {\hei 基变量向量为}$\mathbf{X_B}=( x_4,x_5,x_6 )^T$，有：
-\[\mathbf{B}=( \mathbf{p}_4,\mathbf{p}_5,\mathbf{p}_6 )=\begin{pmatrix}
-   1 & 0 & 0  \\
-   0 & 1 & 0  \\
-   0 & 0 & 1  \\
-\end{pmatrix}\quad \Rightarrow \quad \mathbf{B}^{-1}=\begin{pmatrix}
-   1 & 0 & 0  \\
-   0 & 1 & 0  \\
-   0 & 0 & 1  \\
-\end{pmatrix}\]
-计算非基变量的检验数$\bar c_j$：
-\begin{align*}
-\bar c_1&=c_1-\mathbf{C_B}{\mathbf{B}^{-1}}{\mathbf{p}_1}=\mbox{$-$}6-( 0,0,0 )\begin{pmatrix}
-   1 & 0 & 0  \\
-   0 & 1 & 0  \\
-   0 & 0 & 1  \\
-\end{pmatrix}\begin{pmatrix}
-   2  \\
-   \mbox{$-$}4  \\
-   1  \\
-\end{pmatrix}=\mbox{$-$}6 \\
-  \bar c_2&=c_2-\mathbf{C_B}{\mathbf{B}^{-1}}{\mathbf{p}_2}=3\\
-\bar c_3&=c_3-\mathbf{C_B}{\mathbf{B}^{-1}}{\mathbf{p}_3}=\mbox{$-$}3
-\end{align*}
-$x_2$为入基变量。计算${{\bar p}_2}$和$\bar b$以确定出基变量：
-\[\mathbf{\bar p}_2=\mathbf{B}^{-1}{\mathbf{p}_2}=\begin{pmatrix}
-   1  \\
-   \mbox{$-$}2  \\
-   \mbox{$-$}2  \\
-\end{pmatrix},\quad  \mathbf{\bar b}=\mathbf{B}^{-1}\mathbf{b}=\begin{pmatrix}
-   8  \\
-   14  \\
-   18  \\
-\end{pmatrix}\]
-选择$x_4$为出基变量，从而得到新的基变量向量。
+\VAR{g.as_latex()}
+
+{% endcall %}
+</p>
+
+\BLOCK{ endif } \#{ show_question }
+
+\BLOCK{- if show_answer -}
+
+{% from "latex.jinja" import mytabular_preamble as preamble %}
+
+\BLOCK{ if show_dijkstra }
+
+\BLOCK{ if not dijkstra_result }
+图中存在权重为负的弧，Dijkstra解法不适用.
+
+\BLOCK{ else }
+
+用简化的Dijkstra标号法求解如下：
+
+<p align="middle">
+{% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
+
+\begin{center}\xiaosi
+\begin{tabular}{r\BLOCK{ for i in range(g.graph|length -1) }C{1cm}\BLOCK{ endfor }C{1.2cm}l}
+\multirow{ \VAR{dijkstra_result.n_pred_lines} }*{$pred_j$}
+
+\BLOCK{ for pred_line in dijkstra_result.tex_pred_list }& \BLOCK{ for i in range(g.graph|length) }
+\VAR{pred_line[i]} & \BLOCK{ endfor } \\
+\BLOCK{ endfor }
+\cline{2-\VAR{g.graph|length+1}}
+&(\BLOCK{ for node in g.node_label_dict } $\VAR{g.node_label_dict[node]}$ \BLOCK{ if not loop.last}&\BLOCK{endif} \BLOCK{ endfor })~~&\\
+\BLOCK{ for line in dijkstra_result.tex_L_list }\BLOCK{ set outer_loop = loop }
+$L_{\VAR{ loop.index0 }}=$ &( \BLOCK{ for node in line } \VAR{line[node]} \BLOCK{ if not loop.last}&\BLOCK{endif} \BLOCK{ endfor })\BLOCK{if not outer_loop.last};&\BLOCK{else}.&\BLOCK{endif}\\
+\BLOCK{ endfor }
+\end{tabular}
+\end{center}
+
+{% endcall %}
+</p>
+
+最短路长为\VAR{(g.final_dist[g.graph|length -1])|int}, 有\VAR{dijkstra_result.shortest_path_list|length}条最短路径：
+$$\begin{align*}
+\BLOCK{ for path in dijkstra_result.shortest_path_tex_list }
+&\VAR{path|join("\\rightarrow ")} \BLOCK{ if not loop.last }; \\ \BLOCK{else}.
+\BLOCK{endif}
+\BLOCK{ endfor }
+\end{align*}$$
+
+\BLOCK{ endif } \#{ dijkstra_result }
 
 
+\BLOCK{ endif } \#{ show_dijkstra }
 
-所有$\bar c_j$非正，表明已取得最优解，由\[\mathbf{X_B}=\mathbf{\bar b}=\mathbf{B}^{-1}\mathbf{b}=\begin{pmatrix}
-   1 & 0 & 0  \\
-   2 & 1 & 0  \\
-   2 & 0 & 1  \\
-\end{pmatrix}\begin{pmatrix}
-   8  \\
-   14  \\
-   18  \\
-\end{pmatrix}=\begin{pmatrix}
-   8  \\
-   30  \\
-   34  \\
-\end{pmatrix}\]
-可知最优解为：
-\[\mathbf{X}^*=( 0,8,0,0,30,34 )^T,\]
-最优值为：
-\[{Z^*}=\mathbf{C_B}\mathbf{B}^{-1}\mathbf{b}=24.\]
-\end{mdframed}
+\BLOCK{ endif } \#{ show_answer }
 
-\edaan}

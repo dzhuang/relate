@@ -26,7 +26,7 @@ g_array[5,7] = 6
 g_array[6,7] = 5
 g_matrix = np.matrix(g_array)
 
-#g_list.append({"graph":g_matrix, "node_label_dict":None, "edge_label_style_dict":None})
+g_list.append({"graph":g_matrix, "node_label_dict":None, "edge_label_style_dict":None})
 
 ## ---------------------------------------------------
 
@@ -42,13 +42,13 @@ g_matrix = np.matrix([
 ])
 
 
-g_list.append({
-    "graph":g_matrix,
-    "node_label_dict":None,
-    "edge_label_style_dict":{(1,2):"pos=0.25",(6,2):"",(3,6):"pos=0.25", (2,4):"pos=0.75"}
-
-    # use bend left=0 to undo bending of edges.
-})
+# g_list.append({
+#     "graph":g_matrix,
+#     "node_label_dict":None,
+#     "edge_label_style_dict":{(1,2):"pos=0.25",(6,2):"",(3,6):"pos=0.25", (2,4):"pos=0.75"}
+#
+#     # use bend left=0 to undo bending of edges.
+# })
 
 
 #pred, dist = shortest_path_tweaked.bellman_ford_predecessor_and_distance(g, source=0, weight="weight")
@@ -59,14 +59,6 @@ g_list.append({
 
 # for sp in all_sp:
 #     print sp
-
-
-# template = latex_jinja_env.get_template('/utils/lp_model.tex')
-# tex = template.render(
-#     description = u"""
-#     """,
-#     lp = lp
-# )
 
 
 
@@ -96,50 +88,32 @@ with open('network.bin', 'rb') as f:
 for g_dict in g_list_loaded:
     g = network(**g_dict)
 
-    g.get_iterated_solution(method="dijkstra")
-    g_graph = g.as_latex()
+    dijkstra_result = g.get_iterated_solution (method="dijkstra")
 
-    #x = g.get_iterated_solution(method="dijkstra")
-    #print type(x)
+    try:
+        dijkstra_result = g.get_iterated_solution(method="dijkstra")
+    except:
+        dijkstra_result = None
 
-    y = g.get_iterated_solution(method="bellman_ford")
-    #print type(y)
+#    print dijkstra_result
 
-    #print g_graph
 
-    # print g.p_node_list
-    # print g.dist_list
-    # print g.pred_list
-    # print g.seen_list
-    # g.get_iterated_solution(method="bellman_ford")
-    # print g.p_node_list
-    # print g.dist_list
-    # print g.final_pred
-    # for path in g.get_shortest_path():
-    #     print path
+    template = latex_jinja_env.get_template('/utils/graph_shortest_path.tex')
+    tex = template.render(
+        question_iters = iter(range(0,5)),
+        iters=iter(range(0, 20)),
+        show_question = True,
+        show_answer = True,
+        g=g,
+        source = g.node_label_dict[0],
+        target = g.node_label_dict[len(g.graph) - 1],
+        show_dijkstra = True,
+        dijkstra_result = dijkstra_result,
+        # bellman_ford_result=g.get_iterated_solution (method="bellman_ford"),
 
-    # print g.pred_list
-    # print g.seen_list
+    )
 
-#     lp.solve(method="simplex")
-#     lp.sensitive_analysis()
-#
-#     template = latex_jinja_env.get_template('/utils/lp_sensitivity.tex')
-#     tex = template.render(
-#         question_iters = iter(range(0,5)),
-#         iters=iter(range(0, 20)),
-#         show_question = True,
-#         show_answer = True,
-# #        standardized_lp = lp.standardized_LP(),
-#         #pre_description=u"""有线性规划问题
-#         #""",
-#         #after_description=u"""
-#         #""",
-#         lp=lp,
-# #        show_only_opt_table = True,
-#     )
-
-    # r.clipboard_append(tex)
+    r.clipboard_append(tex)
 
 
 # preamble of the picture of the graph.
