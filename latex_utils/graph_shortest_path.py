@@ -26,7 +26,7 @@ g_array[5,7] = 6
 g_array[6,7] = 5
 g_matrix = np.matrix(g_array)
 
-g_list.append({"graph":g_matrix, "node_label_dict":None, "edge_label_style_dict":None})
+#g_list.append({"graph":g_matrix, "node_label_dict":None, "edge_label_style_dict":None})
 
 ## ---------------------------------------------------
 
@@ -144,17 +144,29 @@ for g_dict in g_list_loaded:
 
 # preamble of the picture of the graph.
 """
-{% from "latex.jinja" import mytabular_preamble as preamble %}
 
-{% set preabmle_extra %}
+{% set preabmle %}
 \usepackage{tikz}
 \usetikzlibrary{graphs,graphs.standard,graphdrawing,quotes,shapes,arrows.meta}
 \usegdlibrary{force}
 {% endset %}
 
 <p align="middle">
-{% call latex(compiler="lualatex", image_format="png", alt="question", tex_preamble=preamble, tex_preamble_extra=preamble_extra) %}
+{% call latex(compiler="lualatex", image_format="png", alt="question", tex_preamble=preamble) %}
 
+
+{% endcall %}
+</p>
+
+
+"""
+
+# 求解结果
+"""
+{% from "latex.jinja" import mytabular_preamble as preamble %}
+
+<p align="middle">
+{% call latex(compiler="pdflatex", image_format="png", alt="question", tex_preamble=preamble) %}
 
 {% endcall %}
 </p>

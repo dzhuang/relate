@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+from collections import OrderedDict
+from scipy.optimize._linprog import OptimizeResult
 import networkx as nx
 import copy
 import networkx.algorithms.shortest_paths.weighted as shortest_path
@@ -12,44 +14,138 @@ except:
 
 ALLOWED_SHORTEST_PATH_METHOD = ['dijkstra', 'bellman_ford']
 
-class shortest_path_result(dict):
+class shortest_path_result(OptimizeResult):
     def __init__(self, **kwargs):
         super(shortest_path_result, self).__init__(**kwargs)
+        assert kwargs["dist_list"]
+        assert kwargs["final_pred"]
+        assert kwargs["node_label_dict"]
+        self.dist_list = kwargs["dist_list"]
+        self.final_pred = kwargs["final_pred"]
+        self.node_label_dict = kwargs["node_label_dict"]
 
-    def __getattr__(self, name):
-        try:
-            return self[name]
-        except KeyError:
-            raise AttributeError(name)
+    def as_latex(self):
+        raise NotImplementedError()
 
-    __setattr__ = dict.__setitem__
-    __delattr__ = dict.__delitem__
+def trans_node_list_tex(node_list, node_label_dict, empty_list_alt="", sout=True, wrap=True):
+    # sout 是指使用删除线\st{}
+    assert isinstance(node_list, list)
+    assert isinstance(node_label_dict, dict)
+    if not node_list and empty_list_alt:
+        return empty_list_alt
 
-    def __repr__(self):
-        if self.keys():
-            m = max(map(len, list(self.keys()))) + 1
-            return '\n'.join([k.rjust(m) + ': ' + repr(v)
-                              for k, v in sorted(self.items())])
-        else:
-            return self.__class__.__name__ + "()"
+    node_label_tex =  "&".join(["%s" % str(node_label_dict[node]) for node in node_list])
+
+    if sout:
+        node_label_tex = "\\st{%s}" % node_label_tex
+    if wrap:
+        node_label_tex = "$%s$" % node_label_tex
+
+    return node_label_tex
+
 
 class dijkstra_result(shortest_path_result):
     def __init__(self, **kwargs):
         super(dijkstra_result, self).__init__(**kwargs)
         assert kwargs["pred_list"]
-        assert kwargs["dist_list"]
         assert kwargs["seen_list"]
-        assert kwargs["final_pred"]
         assert kwargs["p_node_list"]
         self.pred_list = kwargs["pred_list"]
-        self.dist_list = kwargs["dist_list"]
         self.seen_list = kwargs["seen_list"]
-        self.final_pred = kwargs["final_pred"]
         self.p_node_list = kwargs["p_node_list"]
+        self.tex_pred_list = []
+        self.tex_L_list = []
+        self.tex_result = ""
         self.as_latex()
 
     def as_latex(self):
-        print len(self.pred_list)
+        pred_size_dict = {}
+
+
+        simplified_pred_dict = {node:[] for node in self.final_pred}
+        for i, pred_dict_iter_i in enumerate(self.pred_list):
+            for node in self.final_pred:
+                if not pred_dict_iter_i[node] in simplified_pred_dict[node]:
+                    simplified_pred_dict[node].append(pred_dict_iter_i[node])
+
+        n_pred_lines = 0
+        for node, pred in simplified_pred_dict.items():
+            pred_size_dict[node] = len(pred)
+            if len(pred) > n_pred_lines:
+                n_pred_lines = len(pred)
+
+        print n_pred_lines
+
+        simplified_pred_list = [{node:[] for node in self.final_pred},] * n_pred_lines
+        print simplified_pred_list
+        print simplified_pred_dict
+
+        for i in reversed(range(n_pred_lines)):
+            print i
+            for node in self.final_pred:
+                sout = True
+                if i != pred_size_dict[node]:
+                    sout = False
+                try:
+                    simplified_pred_list[i][node] = simplified_pred_dict[node][i]
+                    if i == 2:
+                        print node, simplified_pred_dict[node][i]
+                        print simplified_pred_list[i][node]
+                except:
+                    pass
+            print simplified_pred_list
+                #print "simplified_pred_list[i][node]", simplified_pred_list[i][node]
+
+
+        print simplified_pred_list
+
+
+
+
+
+
+
+        #print simplified_pred_dict
+
+
+
+        simplified_pred_list = copy.deepcopy(self.pred_list)
+        for i, pred_dict_iter_i in enumerate(simplified_pred_list):
+            for node in pred_dict_iter_i:
+                if i > pred_size_dict[node] - 1:
+                    pred_dict_iter_i[node] =[]
+
+        #print simplified_pred_list
+
+
+        # tex_pred_list = []
+        # #print self.node_label_dict
+        # for i, pred_dict_iter_i in enumerate(simplified_pred_list):
+        #     tex_pred_list_i = []
+        #     empty_list_alt = "-" if i==0 else ""
+        #     for node, pred_list in pred_dict_iter_i.items():
+        #         sout = False
+        #         if i < pred_size_dict[node] - 1:
+        #             sout = True
+        #         tex_pred_list_i.append(trans_node_list_tex(pred_list, self.node_label_dict, empty_list_alt=empty_list_alt, sout=sout))
+        #     try:
+        #         for j, pred in enumerate(pred_dict_iter_i):
+        #             if pred == self.pred_list[i-1][j]
+        #                 tex_pred_list_i = ""
+        #     tex_pred_list.append(tex_pred_list_i)
+        #
+        #     #if i == 0:
+        #     #    tex_pred_list.append([trans_node_list_tex(node_list, self.node_label_dict) for node_list in p])
+        #
+        # print tex_pred_list
+
+        # pred_list_size = 0
+        # for node, pred in self.final_pred.items():
+        #     if len(pred) > pred_list_size:
+        #         pred_list_size = len(pred)
+
+
+        #print pred_list_size
 
 class bellman_ford_result(shortest_path_result):
     def __init__(self, **kwargs):
@@ -167,13 +263,15 @@ class network(object):
             final_pred = pred_list[-1]
             return dijkstra_result(
                 pred_list=pred_list, dist_list=dist_list, seen_list=seen_list,
-                p_node_list=p_node_list, final_pred=final_pred)
+                p_node_list=p_node_list, final_pred=final_pred,
+                node_label_dict=self.node_label_dict)
         elif method == "bellman_ford":
             final_pred = pred
             assert not self.pred_list
             assert not self.seen_list
             assert not self.p_node_list
-            return bellman_ford_result(final_pred=final_pred, dist_list=dist_list)
+            return bellman_ford_result(final_pred=final_pred, dist_list=dist_list,
+                                       node_label_dict=self.node_label_dict)
 
     def get_predecessor_and_distance(self, source=0, method="dijkstra", callback=None):
         if method == "dijkstra":
