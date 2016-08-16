@@ -1,5 +1,5 @@
 \BLOCK{- if show_question -}
-求解下图中从$\VAR{source}$至$\VAR{target}$的最短路径及最短距离(若有多条最短路，请全部指出).
+求解下图中从$\VAR{source}$至$\VAR{target}$的最短路径及最短距离.
 
 {% set preamble %}
 \usepackage{tikz}
@@ -15,6 +15,8 @@
 {% endcall %}
 </p>
 
+(注：若有多条最短路，应全部指出\BLOCK{if g.has_6_9_edge_weight}；无法区分数字6或9时，弧上数字与边的关系是数字在上，边在下\BLOCK{endif})
+
 \BLOCK{ endif } \#{ show_question }
 
 \BLOCK{- if show_answer -}
@@ -23,17 +25,20 @@
 
 \BLOCK{ if show_dijkstra }
 
-\BLOCK{ if not dijkstra_result }
-图中存在权重为负的弧，Dijkstra解法不适用.
-
+\BLOCK{ if not dijkstra_is_allowed }
+<strong>解：</strong>图中存在权重为负的弧，Dijkstra解法不适用.
 \BLOCK{ else }
 
-用简化的Dijkstra标号法求解如下：
+\BLOCK{ if dijkstra_result }
+
+<strong>解：</strong>用简化的Dijkstra标号法求解如下：
 
 <p align="middle">
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
-
-\begin{center}\xiaosi
+\setcounter{keytable}{\VAR{iters.next()}}
+\begin{keytable}[H]
+\centering \xiaosi
+ \topcaption{}
 \begin{tabular}{r\BLOCK{ for i in range(g.graph|length -1) }C{1cm}\BLOCK{ endfor }C{1.2cm}l}
 \multirow{ \VAR{dijkstra_result.n_pred_lines} }*{$pred_j$}
 
@@ -46,23 +51,64 @@
 $L_{\VAR{ loop.index0 }}=$ &( \BLOCK{ for node in line } \VAR{line[node]} \BLOCK{ if not loop.last}&\BLOCK{endif} \BLOCK{ endfor })\BLOCK{if not outer_loop.last};&\BLOCK{else}.&\BLOCK{endif}\\
 \BLOCK{ endfor }
 \end{tabular}
-\end{center}
-
+\end{keytable}
 {% endcall %}
 </p>
 
-最短路长为\VAR{(g.final_dist[g.graph|length -1])|int}, 有\VAR{dijkstra_result.shortest_path_list|length}条最短路径：
+最短路长为\VAR{(g.final_dist[-1][g.graph|length -1])|int},\BLOCK{ if dijkstra_result.shortest_path_list|length > 1}有\VAR{dijkstra_result.shortest_path_list|length}条最短路径：\BLOCK{ else } 最短路径为：\BLOCK{endif}
+
 $$\begin{align*}
 \BLOCK{ for path in dijkstra_result.shortest_path_tex_list }
-&\VAR{path|join("\\rightarrow ")} \BLOCK{ if not loop.last }; \\ \BLOCK{else}.
+&\VAR{path|join("\\rightarrow ")} \BLOCK{ if not loop.last }; \\
+\BLOCK{else}.
 \BLOCK{endif}
 \BLOCK{ endfor }
 \end{align*}$$
 
 \BLOCK{ endif } \#{ dijkstra_result }
-
-
+\BLOCK{ endif } \#{ dijkstra_is_allowed }
 \BLOCK{ endif } \#{ show_dijkstra }
+
+
+\BLOCK{ if show_bellman_ford }
+
+\BLOCK{ if bellman_ford_result }
+\BLOCK{ if dijkstra_result }<hr>\BLOCK{endif}
+
+\BLOCK{ if not show_dijkstra }<strong>解：</strong>\BLOCK{endif}用Bellman-Ford解法求解如下：
+
+<p align="middle">
+{% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
+\setcounter{keytable}{\VAR{iters.next()}}
+\begin{keytable}[H]
+ \centering
+ \topcaption{}
+ \begin{mytabular}{\BLOCK{for i in range(g.graph|length + 1)}c|\BLOCK{endfor}\BLOCK{for i in range(bellman_ford_result.nit + 1)}|c\BLOCK{endfor}}\hline
+ \hline
+ $w_{ij}$ & \BLOCK{ for node in g.node_label_dict } $\VAR{g.node_label_dict[node]}$ & \BLOCK{endfor} \BLOCK{for i in range(1, bellman_ford_result.nit + 1)}$d_j^{(\VAR{i})}$ & \BLOCK{endfor} $pred_j$ \\
+ \hline\hline
+ \BLOCK{for node in g.node_label_dict}
+ $\VAR{g.node_label_dict[node]}$ & \VAR{bellman_ford_result.matrix[node]|join("&")} & \VAR{bellman_ford_result.dist_list_by_node[node]|join("&")} & \VAR{bellman_ford_result.final_pred_tex_dict[node]} \\
+ \hline
+ \BLOCK{endfor}
+ \hline \end{mytabular}%
+ \end{keytable}
+
+{% endcall %}
+</p>
+
+最短路长为\VAR{(g.final_dist[-1][g.graph|length -1])|int},\BLOCK{ if bellman_ford_result.shortest_path_list|length > 1}有\VAR{bellman_ford_result.shortest_path_list|length}条最短路径：\BLOCK{ else } 最短路径为：\BLOCK{endif}
+
+$$\begin{align*}
+\BLOCK{ for path in bellman_ford_result.shortest_path_tex_list }
+&\VAR{path|join("\\rightarrow ")} \BLOCK{ if not loop.last }; \\
+\BLOCK{else}.
+\BLOCK{endif}
+\BLOCK{ endfor }
+\end{align*}$$
+
+\BLOCK{ endif } \#{ bellman_ford_result }
+\BLOCK{ endif } \#{ show_bellman_ford }
 
 \BLOCK{ endif } \#{ show_answer }
 

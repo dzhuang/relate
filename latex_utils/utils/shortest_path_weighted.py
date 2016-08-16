@@ -197,7 +197,7 @@ def bellman_ford_predecessor_and_distance(G, source=None, weight='weight', callb
             kwargs ={
                 "nit": iterations,
                 "pred": None,
-                "dist": dist,
+                "dist": dist[-1],
                 "seen": None
             }
 
