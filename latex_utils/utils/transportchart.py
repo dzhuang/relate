@@ -227,10 +227,3 @@ class TransportSolve(object):
 
     def get_result_vogel(self):
         return self.get_result(method="VOGEL")
-
-
-
-
-
-
-
