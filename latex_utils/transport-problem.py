@@ -173,3 +173,4 @@ result =solve.get_result(method="LCM")
 
 print result.routes
 print result.has_unique_solution, result.z
+print result.s_matrix_list

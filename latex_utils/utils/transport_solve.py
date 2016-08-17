@@ -194,14 +194,15 @@ def transport(supply, demand, costs, init_method="LCM"):
         while any(np.isnan(u)) or any(np.isnan(v)):
             for i, j in basis:
                 if np.isnan(u[i]) and not np.isnan(v[j]):
-                    u[i] = C[i, j] - v[j]
+                    if C[i, j] == np.inf:
+                        u[i] = np.inf
+                    else:
+                        u[i] = C[i, j] - v[j]
                 elif not np.isnan(u[i]) and np.isnan(v[j]):
-                    try:
-                        print C[i,j ], u[i]
+                    if C[i, j] == np.inf:
+                        v[j] = np.inf
+                    else:
                         v[j] = C[i, j] - u[i]
-                    except:
-                        print C[i,j ], u[i], v[j]
-                        raise
                 else:
                     continue
 
@@ -209,11 +210,12 @@ def transport(supply, demand, costs, init_method="LCM"):
         for i in range(n):
             for j in range(m):
                 if np.isnan(X[i,j]):
-                    try:
+                    if C[i, j] == np.inf:
+                        S[i, j] = np.inf
+                    elif u[i] == np.inf or v[j] == np.inf:
+                        S[i, j] = -np.inf
+                    else:
                         S[i, j] = C[i, j] - u[i] - v[j]
-                    except:
-                        print C[i,j ], u[i], v[j]
-                        raise
 
         s_matrix_list.append(S)
 

@@ -79,7 +79,7 @@ class transport_table_element(object):
             sup_name_list = [
                 "$%(prefix)s_{%(idx)s}$"
                 % {"prefix": DEFAULT_TRANSPORT_STRING_DICT["SUPPLY_PREFIX"],
-                   "idx": idx
+                   "idx": idx + 1
                    }
                 for idx in range(n_sup)]
         self.sup_name_list = get_split_idx_list(sup_name_list, sup_split_idx_list)
@@ -92,7 +92,7 @@ class transport_table_element(object):
             dem_name_list = [
                 "$%(prefix)s_{%(idx)s}$"
                 % {"prefix": DEFAULT_TRANSPORT_STRING_DICT["DEMAND_PREFIX"],
-                   "idx": idx
+                   "idx": idx + 1
                    }
                 for idx in range(n_dem)]
         self.dem_name_list = get_split_idx_list(dem_name_list, dem_split_idx_list)
@@ -149,25 +149,41 @@ class transportation(object):
         self.costs = costs
 
         self.is_standard = False
-        self.sup_has_lower_bound = False
-        self.dem_has_lower_bound = False
+        self.sup_lower_bound_idx = []
+        self.sup_infty_upper_bound_idx = []
+        self.dem_lower_bound_idx = []
+        self.dem_infty_upper_bound_idx = []
         try:
             if sum(sup) == sum(dem):
                 self.is_standard = True
         except TypeError:
-            for i in sup:
-                if isinstance(i, (list, tuple)):
-                    if len(i) != 2:
+            for idx, s in enumerate(sup):
+                if isinstance(s, (list, tuple)):
+                    if len(s) != 2:
                         raise ValueError("Supply may contain list/tuple with exactly 2 element")
                     else:
-                        self.sup_has_lower_bound = True
+                        self.sup_lower_bound_idx.append(idx)
+                    if np.infty in s:
+                        self.sup_infty_upper_bound_idx.append(idx)
 
-            for i in dem:
-                if isinstance(i, (list, tuple)):
-                    if len(i) != 2:
+            for idx, d in enumerate(dem):
+                if isinstance(d, (list, tuple)):
+                    if len(d) != 2:
                         raise ValueError("Demand may contain list/tuple with exactly 2 element")
                     else:
-                        self.dem_has_lower_bound = False
+                        self.dem_lower_bound_idx = True
+                    if np.infty in d:
+                        self.dem_infty_upper_bound_idx.append(idx)
+
+        infty_count = len(self.dem_infty_upper_bound_idx) + len(self.sup_infty_upper_bound_idx)
+
+        if infty_count > 1:
+            raise ValueError("Demand/supply with lower bound can only have 1 infinity upper bound")
+
+        if self.dem_lower_bound_idx and self.sup_lower_bound_idx:
+            raise ValueError("Problem with lower/upper bound for both demand and supply is not solvable currently")
+
+        self.has_infty_upper_bound = True if infty_count else False
 
         if sup_name:
             assert isinstance(sup_name, list)
@@ -189,13 +205,58 @@ class transportation(object):
         self.NCM_result = None
         self.VOGEL_result = None
 
+        self.sup_split_idx_list = []
+        self.dem_split_idx_list = []
+
         try:
             self.get_standardized()
         except NotStandardizableError:
-            pass
+            if self.has_infty_upper_bound:
+                self.adjust_infty_upper_bound()
+
+    def adjust_infty_upper_bound(self):
+        # this is for 最低需求必须满足/最低产量必需运出的问题
+        #def get_infty_upper_bound_value():
+        def sum_min_recursive(l, exclude_idx):
+            assert isinstance (l, (list, tuple))
+            result_list = []
+            for idx, i in enumerate(l):
+                if isinstance (i, (list, tuple)):
+                    try:
+                        if idx not in exclude_idx:
+                            result_list.append(min(i))
+                    except:
+                        result_list.append(sum_recursive(i))
+                else:
+                    result_list.append (i)
+            return sum(result_list)
+
+        if self.sup_infty_upper_bound_idx:
+            total_dem = sum(self.dem)
+            infty_theoretical_value = total_dem - sum_min_recursive(self.sup, exclude_idx=self.sup_infty_upper_bound_idx)
+            if infty_theoretical_value < 0:
+                raise ValueError(u"问题设置为最低产量大于总需求，无法求解")
+            print self.sup, self.sup_infty_upper_bound_idx
+            renewed_sup = sorted(self.sup[self.sup_infty_upper_bound_idx[0]])
+            renewed_sup[1] = infty_theoretical_value
+            self.sup[self.sup_infty_upper_bound_idx[0]] = renewed_sup
+            self.sup_infty_upper_bound_idx = []
+            self.has_infty_upper_bound = False
+        
+        if self.dem_infty_upper_bound_idx:
+            total_sup = sum(self.sup)
+            infty_theoretical_value = total_sup - sum_min_recursive(self.dem, exclude_idx=self.dem_infty_upper_bound_idx)
+            if infty_theoretical_value < 0:
+                raise ValueError(u"问题设置为最低需求大于总产量，无法求解")
+            renewed_dem = sorted(self.dem[self.dem_infty_upper_bound_idx[0]])
+            renewed_dem[1] = infty_theoretical_value
+            self.dem[self.dem_infty_upper_bound_idx[0]] = renewed_dem
+            self.dem_infty_upper_bound_idx = []
+            self.has_infty_upper_bound = False
 
     def get_standardized(self, sup_cost_extra=None, dem_cost_extra=None):
-        if self.dem_has_lower_bound or self.sup_has_lower_bound:
+        # this is for 产销不平衡问题
+        if self.dem_lower_bound_idx or self.sup_lower_bound_idx:
             raise NotStandardizableError("Demand/supply has lower bound, not standardizable.")
         if self.is_standard:
             self.standard_costs = self.costs
@@ -232,7 +293,7 @@ class transportation(object):
             self.standard_costs = np.vstack((self.costs, new_row))
 
 
-    def get_table_element(self, n_sup=None, n_dem=None, enable_split=False, table_type="table", use_given_name=True, **kwargs):
+    def get_table_element(self, n_sup=None, n_dem=None, enable_split=False, tex_table_type="table", use_given_name=True, **kwargs):
         if not n_sup:
             n_sup = self.n_sup
         if not n_dem:
@@ -253,14 +314,21 @@ class transportation(object):
             kwargs["sup_name_list"] = self.kwargs.get("sup_name_list", None)
             kwargs["dem_name_list"] = self.kwargs.get("dem_name_list", None)
 
-        return transport_table_element(self, n_sup, n_dem, enable_split=enable_split, table_type=table_type, **kwargs)
+        return transport_table_element(n_sup, n_dem, enable_split=enable_split, tex_table_type=tex_table_type, **kwargs)
 
     def solve(self, init_method="VOGEL"):
-        return transport_solve(supply=self.sup, demand=self.dem, costs=self.costs)
+        return transport_solve(
+            supply=self.standard_sup,
+            demand=self.standard_dem,
+            costs=self.standard_costs,
+            init_method=init_method)
 
 
 
 def transport_solve(supply, demand, costs, init_method="LCM"):
+
+    if not (supply and demand and costs):
+        return
 
     # Only solves balanced problem
     assert sum(supply) == sum(demand)
@@ -450,9 +518,15 @@ def transport_solve(supply, demand, costs, init_method="LCM"):
         while any(np.isnan(u)) or any(np.isnan(v)):
             for i, j in basis:
                 if np.isnan(u[i]) and not np.isnan(v[j]):
-                    u[i] = C[i, j] - v[j]
+                    if C[i, j] == np.inf:
+                        u[i] = np.inf
+                    else:
+                        u[i] = C[i, j] - v[j]
                 elif not np.isnan(u[i]) and np.isnan(v[j]):
-                    v[j] = C[i, j] - u[i]
+                    if C[i, j] == np.inf:
+                        v[j] = np.inf
+                    else:
+                        v[j] = C[i, j] - u[i]
                 else:
                     continue
 
@@ -460,7 +534,12 @@ def transport_solve(supply, demand, costs, init_method="LCM"):
         for i in range(n):
             for j in range(m):
                 if np.isnan(X[i,j]):
-                    S[i, j] = C[i, j] - u[i] - v[j]
+                    if C[i, j] == np.inf:
+                        S[i, j] = np.inf
+                    elif u[i] == np.inf or v[j] == np.inf:
+                        S[i, j] = -np.inf
+                    else:
+                        S[i, j] = C[i, j] - u[i] - v[j]
 
         s_matrix_list.append(S)
 
@@ -567,7 +646,7 @@ if __name__ == '__main__':
     # supply = np.array([105, 125, 70])
     # demand = np.array([80, 65, 70, 85])
 
-    supply = [105, 125, 71]
+    supply = [105, 125, 70]
     demand = [80, 65, 70, 85]
 
     costs = np.array([[9., 10., 13., 17.],
@@ -587,16 +666,21 @@ if __name__ == '__main__':
     # assert has_degenerated_init_solution, has_degenerated_mid_solution
     # assert not has_unique_solution
 
-#    t = transport_table_element(3, 4, sup_split_idx_list=[0,1], dem_split_idx_list=[0,1], enable_split=True, sup_name_list=[u"工厂1", u"工厂2", u"工厂3"])
-#    print t.sup_name_list, t.dem_name_list, t.cost_desc, t.sup_desc, t.cost_desc, t.sup_amount_desc
+    # t = transport_table_element(3, 4, sup_split_idx_list=[0,1], dem_split_idx_list=[0,1], enable_split=True, sup_name_list=[u"工厂1", u"工厂2", u"工厂3"])
+    # print t.sup_name_list, t.dem_name_list, t.cost_desc, t.sup_desc, t.cost_desc, t.sup_amount_desc
 #    print is_ascii(u"你好")
 #    print is_ascii("A_1")
     #print sum_recursive([1,[1,2],6])
 
     #print validate_numeric_recursive([1,2,(3,4), float("inf"), "a"])
     t = transportation(sup=supply, dem=demand, costs=costs)
-    t.get_standardized(sup_cost_extra=[1, 2, 3, 4])
+    #t.get_standardized(sup_cost_extra=[1, 2, 3, 4])
     print t.standard_costs, t.standard_dem, t.standard_sup
-
+    result = t.solve(init_method="VOGEL")
+    print result
+    t_table = t.get_table_element(t.standard_n_sup, t.standard_n_dem)
+    print t_table.sup_name_list, t_table.dem_name_list, t_table.cost_desc, t_table.sup_desc, t_table.cost_desc, t_table.sup_amount_desc
+    print t.has_infty_upper_bound, t.sup_infty_upper_bound_idx
+    print t.sup, t.dem
 
 
