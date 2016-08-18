@@ -1,0 +1,100 @@
+\BLOCK{- if show_question -}
+
+\BLOCK{ if description -}
+\VAR{description}
+\BLOCK{ endif }
+
+{% from "latex.jinja" import transportation_preamble as preamble %}
+
+<p align="middle">
+{% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
+\BLOCK{ if pricechart_list -}
+\BLOCK{ for chart in pricechart_list -}
+\begin{\VAR{chart.table_type}}[H]\centering \topcaption{}
+\begin{mytabular}{c|\BLOCK{ for x in range(0, chart.n_dem) }c\BLOCK{ endfor }|c}\hline\hline \diagbox{产地}{单位运费}{销地}
+&\BLOCK{ if chart.dem_name } \VAR{chart.dem_name_str} \BLOCK{ else } \BLOCK{ for x in range(0, chart.n_dem ) } B\VAR{x+1} & \BLOCK{ endfor } \BLOCK{ endif }供应量\\ \hline
+\BLOCK{ for x in range(0, chart.n_sup) } \BLOCK{ if chart.sup_name } \VAR{chart.sup_name[x]} \BLOCK{ else }  A\VAR{x+1} \BLOCK{ endif } & \VAR{chart.price_list[x]} \\
+\BLOCK{ endfor } \hline
+需求量&\VAR{chart.dem_quantity_str}\\
+\hline\hline
+\end{mytabular}\end{\VAR{chart.table_type}}
+\BLOCK{ if not loop.last}
+
+\BLOCK{ endif }
+\BLOCK{ endfor }
+\BLOCK{ endif }
+
+\BLOCK{ endif } \#{ show_question }
+
+\BLOCK{ if result_list }
+\def\ori{  {  \VAR{base.price_string}  }  }
+\def\sremainder{
+\BLOCK{ for x in range(0, base.n_sup)|reverse }
+\draw (sr\VAR{base.n_sup-1-x}) node{\footnotesize \VAR{base.sup[x]}};
+\BLOCK{ endfor }
+}
+\def\dremainder{
+\BLOCK{ for x in range(0, base.n_dem) }
+\draw (dr\VAR{x}) node{\footnotesize \VAR{base.dem[x]}};
+\BLOCK{ endfor }
+}
+\def\total\BLOCK{ if base.sup_name }x\BLOCK{ endif }{\footnotesize \VAR{base.total}}
+
+\BLOCK{ for result in result_list -}
+\noindent\begin{minipage}[c]{0.5\textwidth}
+\parindent 2em
+
+\begin{keytable}[H]
+\centering
+\topcaption{}
+\def\flows{  {  \VAR{result.transport_string}  }  }
+\begin{tikzpicture}[>=stealth]\draw[thick, draw=black] (0,0) grid (\VAR{base.n_dem},\VAR{base.n_sup});%%%无运输图
+\draworiginlabel\BLOCK{ if base.sup_name }x\BLOCK{ endif }{\ori}{\VAR{base.n_sup-1}}{\VAR{base.n_dem-1}}
+\drawflow{\flows}{\VAR{base.n_sup-1}}{\VAR{base.n_dem-1}}
+\sremainder
+\dremainder
+\BLOCK{ if base.sup_name }
+\BLOCK{- for x in range(0, base.n_dem) }
+\node at (B\VAR{x}) {\VAR{base.dem_name[x]}};
+\BLOCK{ endfor -}
+\BLOCK{- for x in range(0, base.n_sup) }
+\node at (A\VAR{base.n_sup-x-1}) {\VAR{base.sup_name[x]}};
+\BLOCK{ endfor -}
+\BLOCK{ endif -}
+\end{tikzpicture}
+\end{keytable}
+
+\end{minipage}%
+\hskip 2em
+\BLOCK{ if result.verify }
+\noindent\begin{minipage}[c]{0.5\textwidth}
+\parindent 2em
+检验数表为：
+
+\begin{keytable}[H]
+\centering \topcaption{检验数表}%\label{tab:jysb1}
+\begin{mytabular}{c|\BLOCK{ for x in range(0, base.n_dem) }|C{2.5em}\BLOCK{ endfor }  }
+\hline\hline
+\BLOCK{ for x in range(0, base.n_dem) }& \BLOCK{ if base.dem_name }\VAR{base.dem_name[x]}\BLOCK{ else }$B\VAR{x+1}$\BLOCK{ endif } \BLOCK{ endfor } \\ \hline\hline
+
+\BLOCK{ for x in range(0, base.n_sup) }
+\BLOCK{ if base.sup_name }\VAR{base.sup_name[x]}\BLOCK{ else }$A\VAR{x+1}$\BLOCK{ endif } & \VAR{result.verify_list[x]}\\ \hline
+\BLOCK{ endfor }
+\hline
+\end{mytabular}
+\end{keytable}
+
+\end{minipage}
+
+\BLOCK{ endif }
+
+\BLOCK{ if not loop.last }
+
+\vskip 1em
+
+\BLOCK{ endif }
+
+\BLOCK{ endfor }
+\BLOCK{ endif }
+
+{% endcall %}</p>

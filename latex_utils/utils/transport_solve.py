@@ -295,7 +295,9 @@ def transport(supply, demand, costs, init_method="LCM"):
             if np.isnan(X_final[i, j]):
                 X_final[i, j] = 0
             if C[i, j] == np.inf:
-                C[i, j] = 0
+                C[i, j] = 1.0E10
+
+    print(X_final * C)
 
     return X, np.sum(X_final*C), solution_list, vogel_list,\
            s_matrix_list, has_degenerated_init_solution,\
@@ -308,7 +310,9 @@ if __name__ == '__main__':
 
     costs = np.array([[9., 10., 13., 17.],
                       [7., 8., 14., 16.],
-                      [20., 14., 8., 14.]])
+                      [np.inf, 14., 8., 14.]])
+
+
 
     routes, z, solution_list, vogel_list, \
     s_matrix_list,\
@@ -319,7 +323,7 @@ if __name__ == '__main__':
     print vogel_list
     print solution_list
     print s_matrix_list
-    assert z == 3125
-    assert has_degenerated_init_solution, has_degenerated_mid_solution
-    assert not has_unique_solution
+#    assert z == 3125
+#    assert has_degenerated_init_solution, has_degenerated_mid_solution
+#    assert not has_unique_solution
 

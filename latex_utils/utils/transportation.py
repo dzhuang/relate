@@ -177,14 +177,14 @@ class transportation(object):
         self.dem = dem
         self.costs = costs
 
-        self.is_standard = False
+        self.is_standard_problem = self.is_standard = False
         self.sup_lower_bound_idx = []
         self.sup_infty_upper_bound_idx = []
         self.dem_lower_bound_idx = []
         self.dem_infty_upper_bound_idx = []
         try:
             if sum(sup) == sum(dem):
-                self.is_standard = True
+                self.is_standard_problem = self.is_standard = True
         except TypeError:
             for idx, s in enumerate(sup):
                 if isinstance(s, (list, tuple)):
@@ -206,6 +206,8 @@ class transportation(object):
                     if np.infty in d:
                         self.dem_infty_upper_bound_idx.append(idx)
 
+        self.is_bounded_problem = True if (self.sup_lower_bound_idx or self.dem_lower_bound_idx) else False
+
         infty_count = len(self.dem_infty_upper_bound_idx) + len(self.sup_infty_upper_bound_idx)
 
         if infty_count > 1:
@@ -214,7 +216,7 @@ class transportation(object):
         if self.dem_lower_bound_idx and self.sup_lower_bound_idx:
             raise ValueError("Problem with lower/upper bound for both demand and supply is not solvable currently")
 
-        self.has_infty_upper_bound = True if infty_count else False
+        self.is_infinity_bounded_problem = self.has_infty_upper_bound = True if infty_count else False
 
         self.sup_name_list = None
         if sup_name_list:
@@ -750,7 +752,7 @@ def transport_solve(supply, demand, costs, init_method="LCM"):
             if np.isnan(X_final[i, j]):
                 X_final[i, j] = 0
             if C[i, j] == np.inf:
-                C[i, j] = 0
+                C[i, j] = 1.0E10
 
 
     return OptimizeResult(routes=X, z=np.sum(X_final*C), solution_list=solution_list,
