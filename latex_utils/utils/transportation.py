@@ -163,6 +163,7 @@ class transportation(object):
                         raise ValueError("Supply may contain list/tuple with exactly 2 element")
                     else:
                         self.sup_lower_bound_idx.append(idx)
+                        self.sup[idx] = sorted(self.sup[idx])
                     if np.infty in s:
                         self.sup_infty_upper_bound_idx.append(idx)
 
@@ -172,6 +173,7 @@ class transportation(object):
                         raise ValueError("Demand may contain list/tuple with exactly 2 element")
                     else:
                         self.dem_lower_bound_idx = True
+                        self.dem[idx] = sorted(self.dem[idx])
                     if np.infty in d:
                         self.dem_infty_upper_bound_idx.append(idx)
 
@@ -215,7 +217,7 @@ class transportation(object):
                 self.adjust_infty_upper_bound()
 
     def adjust_infty_upper_bound(self):
-        # this is for 最低需求必须满足/最低产量必需运出的问题
+        # this is for 单个产地/销地上限为无穷大，且最低需求必须满足/最低产量必需运出的问题
         #def get_infty_upper_bound_value():
         def sum_min_recursive(l, exclude_idx):
             assert isinstance (l, (list, tuple))
@@ -236,7 +238,6 @@ class transportation(object):
             infty_theoretical_value = total_dem - sum_min_recursive(self.sup, exclude_idx=self.sup_infty_upper_bound_idx)
             if infty_theoretical_value < 0:
                 raise ValueError(u"问题设置为最低产量大于总需求，无法求解")
-            print self.sup, self.sup_infty_upper_bound_idx
             renewed_sup = sorted(self.sup[self.sup_infty_upper_bound_idx[0]])
             renewed_sup[1] = infty_theoretical_value
             self.sup[self.sup_infty_upper_bound_idx[0]] = renewed_sup
@@ -254,10 +255,90 @@ class transportation(object):
             self.dem_infty_upper_bound_idx = []
             self.has_infty_upper_bound = False
 
+    def get_bounded_standardized(self, sup_cost_extra=None, dem_cost_extra=None):
+        # this is for 有上下限的产销不平衡问题
+        if self.has_infty_upper_bound:
+            self.adjust_infty_upper_bound()
+        assert not self.has_infty_upper_bound
+        assert self.sup_lower_bound_idx or self.dem_lower_bound_idx
+        assert not (self.sup_lower_bound_idx and self.dem_lower_bound_idx)
+        costs = np.copy (self.costs)
+        if self.sup_lower_bound_idx:
+            lower_bound_idx = self.sup_lower_bound_idx
+            sup_or_dem = self.sup
+            sup_or_dem_other = self.dem
+            n_sup_or_dem = self.n_sup
+            split_idx_list = self.sup_split_idx_list
+            costs_insert_dim = 0
+            new_column = np.zeros(n_sup_or_dem)
+            new_column.reshape(n_sup_or_dem, 1)
+            costs = np.append(costs, new_column, axis=1)
+        else:
+            lower_bound_idx = self.dem_lower_bound_idx
+            sup_or_dem = self.dem
+            sup_or_dem_other = self.sup
+            n_sup_or_dem = self.n_dem
+            split_idx_list = self.dem_split_idx_list
+            costs_insert_dim = 1
+
+
+        for i in range(len(lower_bound_idx)):
+            idx = lower_bound_idx.pop()
+            l = sup_or_dem[idx]
+            if l[0] == l[1]:
+                sup_or_dem[idx] = l[0]
+            else:
+                assert l[1] > l[0]
+                sup_or_dem[idx] = l[0]
+                sup_or_dem.insert(idx, l[1]-l[0])
+                n_sup_or_dem += 1
+                split_idx_list.append(idx)
+
+
+
+
+
+        # if not self.is_standard:
+        #     raise NotStandardizableError ("Demand/supply has lower bound, not standardizable.")
+        # if self.is_standard:
+        #     self.standard_costs = self.costs
+        #     self.standard_n_dem = self.n_dem
+        #     self.standard_n_sup = self.n_sup
+        #     self.standard_dem = self.dem
+        #     self.standard_sup = self.sup
+        #     return
+        # self.standard_dem = copy.deepcopy(self.dem)
+        # self.standard_sup = copy.deepcopy(self.sup)
+        # if sum(self.sup) > sum(self.dem):
+        #     self.standard_n_dem = self.n_dem + 1
+        #     self.standard_dem.append(sum(self.sup) - sum(self.dem))
+        #     new_column = np.zeros((self.n_sup, 1), dtype=np.int64)
+        #     if dem_cost_extra:
+        #         if not isinstance(dem_cost_extra, list):
+        #             raise ValueError("dem_cost_extra must be a list")
+        #         if len(dem_cost_extra) != self.n_sup:
+        #             raise ValueError("The size of dem_cost_extra must be %d" % self.n_sup)
+        #         new_column = np.array(dem_cost_extra)
+        #         new_column.reshape(self.n_sup,1)
+        #     self.standard_costs = np.append(self.costs, new_column, axis=1)
+        #
+        # else:
+        #     self.standard_n_sup = self.n_sup + 1
+        #     self.standard_sup.append(sum(self.dem) - sum(self.sup))
+        #     new_row = np.zeros(self.n_dem)
+        #     if sup_cost_extra:
+        #         if not isinstance(sup_cost_extra, list):
+        #             raise ValueError("sup_cost_extra must be a list")
+        #         if len(sup_cost_extra) != self.n_dem:
+        #             raise ValueError("The size of sup_cost_extra must be %d" % self.n_dem)
+        #         new_row = np.array(sup_cost_extra)
+        #     self.standard_costs = np.vstack((self.costs, new_row))
+
     def get_standardized(self, sup_cost_extra=None, dem_cost_extra=None):
         # this is for 产销不平衡问题
         if self.dem_lower_bound_idx or self.sup_lower_bound_idx:
-            raise NotStandardizableError("Demand/supply has lower bound, not standardizable.")
+            #raise NotStandardizableError("Demand/supply has lower bound, not standardizable.")
+            self.get_bounded_standardized()
         if self.is_standard:
             self.standard_costs = self.costs
             self.standard_n_dem = self.n_dem
@@ -291,7 +372,6 @@ class transportation(object):
                     raise ValueError("The size of sup_cost_extra must be %d" % self.n_dem)
                 new_row = np.array(sup_cost_extra)
             self.standard_costs = np.vstack((self.costs, new_row))
-
 
     def get_table_element(self, n_sup=None, n_dem=None, enable_split=False, tex_table_type="table", use_given_name=True, **kwargs):
         if not n_sup:
@@ -327,7 +407,7 @@ class transportation(object):
 
 def transport_solve(supply, demand, costs, init_method="LCM"):
 
-    if not (supply and demand and costs):
+    if not (supply and demand and costs is not None):
         return
 
     # Only solves balanced problem
