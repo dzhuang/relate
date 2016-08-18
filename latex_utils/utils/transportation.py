@@ -12,7 +12,9 @@ DEFAULT_TRANSPORT_STRING_DICT={
     "DEMAND_DESC": u"销地",
     "SUPPLY_AMOUNT_DESC": u"产量",
     "DEMAND_AMOUNT_DESC": u"销量",
-    "COST_DESC": u"单位运费"
+    "COST_DESC": u"单位运费",
+    "VIRTUAL_SUPPLY": u"虚拟产地",
+    "VIRTUAL_DEMAND": u"虚拟销地"
 }
 
 class NotStandardizableError(Exception):
@@ -72,10 +74,24 @@ class transport_table_element(object):
 
         sup_name_list = kwargs.get("sup_name_list", None)
         dem_name_list = kwargs.get("dem_name_list", None)
+        sup_name_prefix = kwargs.get("sup_name_prefix", None)
+        dem_name_prefix = kwargs.get("dem_name_prefix", None)
         if sup_name_list:
             assert isinstance(sup_name_list, list)
-            assert len(sup_name_list) == n_sup
-        else:
+            try:
+                assert len(sup_name_list) == n_sup
+            except:
+                sup_name_list = None
+        if not sup_name_list:
+            if sup_name_prefix:
+                sup_name_list = [
+                    "%(prefix)s%(idx)s"
+                    % {"prefix": sup_name_prefix,
+                       "idx": idx + 1
+                       }
+                    for idx in range(n_sup)]
+                assert len(sup_name_list) == n_sup
+        if not sup_name_list:
             sup_name_list = [
                 "$%(prefix)s_{%(idx)s}$"
                 % {"prefix": DEFAULT_TRANSPORT_STRING_DICT["SUPPLY_PREFIX"],
@@ -87,8 +103,20 @@ class transport_table_element(object):
         if dem_name_list:
             assert isinstance(dem_name_list, list)
             self.dem_name_list = dem_name_list
-            assert len(dem_name_list) == n_dem
-        else:
+            try:
+                assert len(dem_name_list) == n_dem
+            except:
+                dem_name_list = None
+        if not dem_name_list:
+            if dem_name_prefix:
+                dem_name_list = [
+                    "%(prefix)s%(idx)s"
+                    % {"prefix": dem_name_prefix,
+                       "idx": idx + 1
+                       }
+                    for idx in range(n_dem)]
+                assert len(dem_name_list) == n_dem
+        if not dem_name_list:
             dem_name_list = [
                 "$%(prefix)s_{%(idx)s}$"
                 % {"prefix": DEFAULT_TRANSPORT_STRING_DICT["DEMAND_PREFIX"],
@@ -119,7 +147,8 @@ def validate_numeric_recursive(l):
 
 
 class transportation(object):
-    def __init__(self, sup, dem, costs, sup_name=None, dem_name=None,  **kwargs):
+    def __init__(self, sup, dem, costs, sup_name_list=None, dem_name_list=None, sup_name_prefix=None,
+                 dem_name_prefix=None, **kwargs):
         self.kwargs = kwargs
 
         assert isinstance(sup, list)
@@ -172,7 +201,7 @@ class transportation(object):
                     if len(d) != 2:
                         raise ValueError("Demand may contain list/tuple with exactly 2 element")
                     else:
-                        self.dem_lower_bound_idx = True
+                        self.dem_lower_bound_idx.append(idx)
                         self.dem[idx] = sorted(self.dem[idx])
                     if np.infty in d:
                         self.dem_infty_upper_bound_idx.append(idx)
@@ -187,15 +216,40 @@ class transportation(object):
 
         self.has_infty_upper_bound = True if infty_count else False
 
-        if sup_name:
-            assert isinstance(sup_name, list)
-            self.sup_name = sup_name
-            assert len(sup_name) == self.n_sup
+        self.sup_name_list = None
+        if sup_name_list:
+            assert isinstance(sup_name_list, list)
+            self.sup_name_list = sup_name_list
+            assert len(sup_name_list) == self.n_sup
 
-        if dem_name:
-            assert isinstance(dem_name, list)
-            assert len(dem_name) == self.n_dem
-            self.dem_name = dem_name
+        self.dem_name_list = None
+        if dem_name_list:
+            assert isinstance(dem_name_list, list)
+            assert len(dem_name_list) == self.n_dem
+            self.dem_name_list = dem_name_list
+
+        if sup_name_prefix:
+            assert isinstance(sup_name_prefix, (str, unicode))
+            self.sup_name_prefix = sup_name_prefix
+
+        if dem_name_prefix:
+            assert isinstance(dem_name_prefix, (str, unicode))
+            self.dem_name_prefix = dem_name_prefix
+
+        self.sup_desc = self.kwargs.get(
+            "sup_desc", DEFAULT_TRANSPORT_STRING_DICT["SUPPLY_DESC"])
+        self.dem_desc = self.kwargs.get(
+            "dem_desc", DEFAULT_TRANSPORT_STRING_DICT["DEMAND_DESC"])
+        self.dem_amount_desc = self.kwargs.get(
+            "dem_amount_desc", DEFAULT_TRANSPORT_STRING_DICT["DEMAND_AMOUNT_DESC"])
+        self.sup_amount_desc = self.kwargs.get(
+            "sup_amount_desc", DEFAULT_TRANSPORT_STRING_DICT["SUPPLY_AMOUNT_DESC"])
+        self.cost_desc = self.kwargs.get(
+            "cost_desc", DEFAULT_TRANSPORT_STRING_DICT["COST_DESC"])
+
+        for kw in [self.sup_desc, self.dem_desc, self.dem_amount_desc, self.sup_amount_desc, self.cost_desc]:
+            if kw:
+                assert isinstance(kw, (str, unicode))
 
         self.standard_costs = None
         self.standard_sup = None
@@ -255,90 +309,75 @@ class transportation(object):
             self.dem_infty_upper_bound_idx = []
             self.has_infty_upper_bound = False
 
-    def get_bounded_standardized(self, sup_cost_extra=None, dem_cost_extra=None):
+    def get_bounded_standardized(self):
         # this is for 有上下限的产销不平衡问题
         if self.has_infty_upper_bound:
             self.adjust_infty_upper_bound()
         assert not self.has_infty_upper_bound
         assert self.sup_lower_bound_idx or self.dem_lower_bound_idx
         assert not (self.sup_lower_bound_idx and self.dem_lower_bound_idx)
+        self.standard_dem = copy.deepcopy(self.dem)
+        self.standard_sup = copy.deepcopy(self.sup)
+        self.standard_n_sup = self.n_sup
+        self.standard_n_dem = self.n_dem
+
         costs = np.copy (self.costs)
+        costs_trasposed = False if self.sup_lower_bound_idx else True
+
+        if costs_trasposed:
+            costs = costs.transpose()
+
         if self.sup_lower_bound_idx:
             lower_bound_idx = self.sup_lower_bound_idx
-            sup_or_dem = self.sup
-            sup_or_dem_other = self.dem
+            sup_or_dem = self.standard_sup
+            sup_or_dem_other = self.standard_dem
             n_sup_or_dem = self.n_sup
             split_idx_list = self.sup_split_idx_list
-            costs_insert_dim = 0
-            new_column = np.zeros(n_sup_or_dem)
-            new_column.reshape(n_sup_or_dem, 1)
-            costs = np.append(costs, new_column, axis=1)
+            costs = np.append(costs, np.zeros([self.n_sup, 1]), axis=1)
+            self.standard_n_dem +=1
+
         else:
             lower_bound_idx = self.dem_lower_bound_idx
-            sup_or_dem = self.dem
-            sup_or_dem_other = self.sup
+            sup_or_dem = self.standard_dem
+            sup_or_dem_other = self.standard_sup
             n_sup_or_dem = self.n_dem
             split_idx_list = self.dem_split_idx_list
-            costs_insert_dim = 1
+            costs = np.append(costs, np.zeros([self.n_dem, 1]), axis=1)
+            self.standard_n_sup += 1
 
-
-        for i in range(len(lower_bound_idx)):
-            idx = lower_bound_idx.pop()
-            l = sup_or_dem[idx]
-            if l[0] == l[1]:
-                sup_or_dem[idx] = l[0]
+        for i in reversed(range(n_sup_or_dem)):
+            if i not in lower_bound_idx:
+                costs[i, -1] = np.inf
             else:
-                assert l[1] > l[0]
-                sup_or_dem[idx] = l[0]
-                sup_or_dem.insert(idx, l[1]-l[0])
-                n_sup_or_dem += 1
-                split_idx_list.append(idx)
+                idx = lower_bound_idx.pop()
+                l = sup_or_dem[idx]
+                if l[0] == l[1]:
+                    sup_or_dem[idx] = l[0]
+                    costs[idx, -1] = np.inf
+                else:
+                    assert l[1] > l[0]
+                    sup_or_dem[idx] = l[1]-l[0]
+                    sup_or_dem.insert(idx, l[0])
+                    split_idx_list.append(idx)
+                    costs = np.insert(costs, idx, 0, axis=0)
+                    costs[idx,:] = costs[idx+1, :]
+                    costs[idx, -1] = np.inf
+                    costs[idx+1, -1] = 0
 
-
-
-
-
-        # if not self.is_standard:
-        #     raise NotStandardizableError ("Demand/supply has lower bound, not standardizable.")
-        # if self.is_standard:
-        #     self.standard_costs = self.costs
-        #     self.standard_n_dem = self.n_dem
-        #     self.standard_n_sup = self.n_sup
-        #     self.standard_dem = self.dem
-        #     self.standard_sup = self.sup
-        #     return
-        # self.standard_dem = copy.deepcopy(self.dem)
-        # self.standard_sup = copy.deepcopy(self.sup)
-        # if sum(self.sup) > sum(self.dem):
-        #     self.standard_n_dem = self.n_dem + 1
-        #     self.standard_dem.append(sum(self.sup) - sum(self.dem))
-        #     new_column = np.zeros((self.n_sup, 1), dtype=np.int64)
-        #     if dem_cost_extra:
-        #         if not isinstance(dem_cost_extra, list):
-        #             raise ValueError("dem_cost_extra must be a list")
-        #         if len(dem_cost_extra) != self.n_sup:
-        #             raise ValueError("The size of dem_cost_extra must be %d" % self.n_sup)
-        #         new_column = np.array(dem_cost_extra)
-        #         new_column.reshape(self.n_sup,1)
-        #     self.standard_costs = np.append(self.costs, new_column, axis=1)
-        #
-        # else:
-        #     self.standard_n_sup = self.n_sup + 1
-        #     self.standard_sup.append(sum(self.dem) - sum(self.sup))
-        #     new_row = np.zeros(self.n_dem)
-        #     if sup_cost_extra:
-        #         if not isinstance(sup_cost_extra, list):
-        #             raise ValueError("sup_cost_extra must be a list")
-        #         if len(sup_cost_extra) != self.n_dem:
-        #             raise ValueError("The size of sup_cost_extra must be %d" % self.n_dem)
-        #         new_row = np.array(sup_cost_extra)
-        #     self.standard_costs = np.vstack((self.costs, new_row))
+        if costs_trasposed:
+            costs = costs.transpose()
+        self.standard_costs = costs
+        sup_or_dem_other.append(sum(sup_or_dem) - sum(sup_or_dem_other))
 
     def get_standardized(self, sup_cost_extra=None, dem_cost_extra=None):
         # this is for 产销不平衡问题
         if self.dem_lower_bound_idx or self.sup_lower_bound_idx:
             #raise NotStandardizableError("Demand/supply has lower bound, not standardizable.")
             self.get_bounded_standardized()
+
+        if self.standard_dem and self.standard_sup:
+            return
+
         if self.is_standard:
             self.standard_costs = self.costs
             self.standard_n_dem = self.n_dem
@@ -346,6 +385,7 @@ class transportation(object):
             self.standard_dem = self.dem
             self.standard_sup = self.sup
             return
+
         self.standard_dem = copy.deepcopy(self.dem)
         self.standard_sup = copy.deepcopy(self.sup)
         if sum(self.sup) > sum(self.dem):
@@ -373,26 +413,38 @@ class transportation(object):
                 new_row = np.array(sup_cost_extra)
             self.standard_costs = np.vstack((self.costs, new_row))
 
-    def get_table_element(self, n_sup=None, n_dem=None, enable_split=False, tex_table_type="table", use_given_name=True, **kwargs):
+    def get_question_table_element(self, tex_table_type="table", use_given_name=True, **kwargs):
+        return self.get_table_element(n_sup=self.n_sup, n_dem=self.n_dem, enable_split=False,
+                          tex_table_type=tex_table_type, use_given_name=use_given_name, **kwargs)
+
+    def get_standard_question_table_element(self, tex_table_type="keytable", use_given_name=True, **kwargs):
+        return self.get_table_element(n_sup=self.standard_n_sup, n_dem=self.standard_n_dem, enable_split=True,
+                          tex_table_type=tex_table_type, use_given_name=use_given_name, **kwargs)
+
+    def get_tranport_solve_table_element(self, tex_table_type="keytable", use_given_name=False, **kwargs):
+        return self.get_table_element(n_sup=self.standard_n_sup, n_dem=self.standard_n_dem, enable_split=True,
+                          tex_table_type=tex_table_type, use_given_name=use_given_name, **kwargs)
+
+    def get_table_element(self, n_sup=None, n_dem=None, enable_split=False,
+                          tex_table_type="table", use_given_name=True, **kwargs):
         if not n_sup:
             n_sup = self.n_sup
         if not n_dem:
             n_dem = self.n_dem
+        if enable_split:
+            kwargs["dem_split_idx_list"] = self.dem_split_idx_list
+            kwargs["sup_split_idx_list"] = self.sup_split_idx_list
 
         if use_given_name:
-            kwargs["sup_desc"] = self.kwargs.get(
-                "sup_desc", DEFAULT_TRANSPORT_STRING_DICT["SUPPLY_DESC"])
-            kwargs["dem_desc"] = self.kwargs.get(
-                "dem_desc", DEFAULT_TRANSPORT_STRING_DICT["DEMAND_DESC"])
-            kwargs["dem_amount_desc"] = self.kwargs.get(
-                "dem_amount_desc", DEFAULT_TRANSPORT_STRING_DICT["DEMAND_AMOUNT_DESC"])
-            kwargs["sup_amount_desc"] = self.kwargs.get(
-                "sup_amount_desc", DEFAULT_TRANSPORT_STRING_DICT["SUPPLY_AMOUNT_DESC"])
-            kwargs["cost_desc"] = self.kwargs.get(
-                "cost_desc", DEFAULT_TRANSPORT_STRING_DICT["COST_DESC"]
-            )
-            kwargs["sup_name_list"] = self.kwargs.get("sup_name_list", None)
-            kwargs["dem_name_list"] = self.kwargs.get("dem_name_list", None)
+            kwargs["sup_desc"] = self.sup_desc
+            kwargs["dem_desc"] = self.dem_desc
+            kwargs["dem_amount_desc"] = self.dem_amount_desc
+            kwargs["sup_amount_desc"] = self.sup_amount_desc
+            kwargs["cost_desc"] = self.cost_desc
+            kwargs["sup_name_list"] = self.sup_name_list
+            kwargs["dem_name_list"] = self.dem_name_list
+            kwargs["sup_name_prefix"] = self.sup_name_prefix
+            kwargs["dem_name_prefix"] = self.dem_name_prefix
 
         return transport_table_element(n_sup, n_dem, enable_split=enable_split, tex_table_type=tex_table_type, **kwargs)
 
@@ -402,7 +454,6 @@ class transportation(object):
             demand=self.standard_dem,
             costs=self.standard_costs,
             init_method=init_method)
-
 
 
 def transport_solve(supply, demand, costs, init_method="LCM"):
@@ -723,15 +774,15 @@ def is_ascii(text):
     return True
 
 if __name__ == '__main__':
-    # supply = np.array([105, 125, 70])
-    # demand = np.array([80, 65, 70, 85])
+    # supply = [105, 125, 70]
+    # demand = [80, [30,80], 70, 85]
 
-    supply = [105, 125, 70]
+    supply = [[72,78], [115,135], 100]
     demand = [80, 65, 70, 85]
 
     costs = np.array([[9., 10., 13., 17.],
                       [7., 8., 14., 16.],
-                      [20., 14., 8., 14.]])
+                      [np.inf, 14., 8., 14.]])
 
     # routes, z, solution_list, vogel_list, \
     # s_matrix_list,\
@@ -753,14 +804,30 @@ if __name__ == '__main__':
     #print sum_recursive([1,[1,2],6])
 
     #print validate_numeric_recursive([1,2,(3,4), float("inf"), "a"])
-    t = transportation(sup=supply, dem=demand, costs=costs)
+    t = transportation(sup=supply, dem=demand, costs=costs, dem_name_prefix=u"市场", sup_name_prefix=u"工厂", dem_desc=u"城市")
     #t.get_standardized(sup_cost_extra=[1, 2, 3, 4])
-    print t.standard_costs, t.standard_dem, t.standard_sup
-    result = t.solve(init_method="VOGEL")
-    print result
-    t_table = t.get_table_element(t.standard_n_sup, t.standard_n_dem)
-    print t_table.sup_name_list, t_table.dem_name_list, t_table.cost_desc, t_table.sup_desc, t_table.cost_desc, t_table.sup_amount_desc
-    print t.has_infty_upper_bound, t.sup_infty_upper_bound_idx
-    print t.sup, t.dem
+#    print t.standard_costs, t.standard_dem, t.standard_sup
+#    result = t.solve(init_method="VOGEL")
+#    print result
+    t_table = t.get_table_element(t.standard_n_sup, t.standard_n_dem, enable_split=True, use_given_name=True)
+    #t_table = t.get_table_element(t.n_sup, t.n_dem, enable_split=False, use_given_name=True)
+    print t.costs
+    print t_table.sup_name_list, t_table.dem_name_list, t_table.cost_desc, t_table.sup_desc, t_table.sup_amount_desc, t_table.dem_desc
+    for i in t_table.sup_name_list:
+        print i
+    for i in t_table.dem_name_list:
+        print i
+
+#    print t.has_infty_upper_bound, t.sup_infty_upper_bound_idx
+#    print t.sup, t.dem
+
+    # costs = np.array([[9., 10., 13., 17.],
+    #                   [7., 8., 14., 16.],
+    #                   [20., 14., 8., 14.]])
+    #
+    # costs2 = np.insert(costs, 1, 0, axis=0)
+    # print costs2
+
+
 
 
