@@ -14,11 +14,38 @@ DEFAULT_TRANSPORT_STRING_DICT={
     "DEMAND_AMOUNT_DESC": u"销量",
     "COST_DESC": u"单位运费",
     "VIRTUAL_SUPPLY": u"虚拟产地",
-    "VIRTUAL_DEMAND": u"虚拟销地"
+    "VIRTUAL_DEMAND": u"虚拟销地",
+    "MIN_SUPPLY": u"最低供应量",
+    "MAX_SUPPLY": u"最高供应量",
+    "MIN_DEMAND": u"最低需求量",
+    "MAX_DEMAND": u"最高需求量",
 }
 
 class NotStandardizableError(Exception):
     """for problem with lowerbound"""
+
+def get_array_to_str_list_recursive(array_list, nan_as="", inf_as="M", tex_eq_wrap=False):
+    assert isinstance(array_list, (list, np.ndarray))
+    if isinstance(array_list, np.ndarray):
+        array_list = array_list.tolist()
+    if isinstance(array_list, list):
+        for i, l in enumerate(array_list):
+            if isinstance(l, (np.ndarray, list)):
+                array_list[i] = get_array_to_str_list_recursive(l, nan_as=nan_as, inf_as=inf_as, tex_eq_wrap=tex_eq_wrap)
+            else:
+                try:
+                    if l == int(l):
+                        s = str(int(l))
+                    else:
+                        s = str(l)
+                except:
+                    s = str(l).replace("nan", nan_as).replace("inf", inf_as)
+                if tex_eq_wrap and s != nan_as:
+                    s = "$%s$" % s
+                array_list[i] = s
+
+    return array_list
+
 
 def get_split_idx_list(list_to_split, idx_to_be_split_list):
     def append_tex(s, append_string):
@@ -60,6 +87,14 @@ class transport_table_element(object):
         self.cost_desc = kwargs.get(
             "cost_desc", DEFAULT_TRANSPORT_STRING_DICT["COST_DESC"]
         )
+        self.sup_min_desc=kwargs.get(
+            "sup_min_desc", DEFAULT_TRANSPORT_STRING_DICT["MIN_SUPPLY"])
+        self.sup_max_desc=kwargs.get(
+            "sup_max_desc", DEFAULT_TRANSPORT_STRING_DICT["MAX_SUPPLY"])
+        self.dem_min_desc=kwargs.get(
+            "dem_min_desc", DEFAULT_TRANSPORT_STRING_DICT["MIN_DEMAND"])
+        self.dem_max_desc=kwargs.get(
+            "dem_max_desc", DEFAULT_TRANSPORT_STRING_DICT["MAX_DEMAND"])
         dem_split_idx_list = []
         sup_split_idx_list = []
         if enable_split:
@@ -137,6 +172,34 @@ def sum_recursive(l):
     return sum(result_list)
 
 
+def sum_min_max_recursive(l, exclude_idx=(), criteria_func=min):
+    assert criteria_func in [min, max]
+    assert isinstance(l, (list, tuple))
+    assert isinstance(exclude_idx, (list, tuple))
+    result_list = []
+    for idx, i in enumerate(l):
+        if isinstance(i, (list, tuple)):
+            try:
+                if idx not in exclude_idx:
+                    result_list.append(criteria_func(i))
+            except:
+                result_list.append(sum_recursive(i))
+        else:
+            result_list.append(i)
+    return sum(result_list)
+
+
+# def sum_recursive(l):
+#     assert isinstance(l, (list,tuple))
+#     result_list = []
+#     for i in l:
+#         if isinstance(i, (list,tuple)):
+#             result_list.append(sum_recursive(i))
+#         else:
+#             result_list.append(i)
+#     return sum(result_list)
+
+
 def validate_numeric_recursive(l):
     assert isinstance(l, (list,tuple))
     try:
@@ -191,6 +254,8 @@ class transportation(object):
                     if len(s) != 2:
                         raise ValueError("Supply may contain list/tuple with exactly 2 element")
                     else:
+                        if s[0] == s[1]:
+                            raise ValueError("Supply lower bound and upper bound must not be same")
                         self.sup_lower_bound_idx.append(idx)
                         self.sup[idx] = sorted(self.sup[idx])
                     if np.infty in s:
@@ -201,12 +266,15 @@ class transportation(object):
                     if len(d) != 2:
                         raise ValueError("Demand may contain list/tuple with exactly 2 element")
                     else:
+                        if d[0] == d[1]:
+                            raise ValueError("Demand lower bound and upper bound must not be same")
                         self.dem_lower_bound_idx.append(idx)
                         self.dem[idx] = sorted(self.dem[idx])
                     if np.infty in d:
                         self.dem_infty_upper_bound_idx.append(idx)
 
-        self.is_bounded_problem = True if (self.sup_lower_bound_idx or self.dem_lower_bound_idx) else False
+        self.is_sup_bounded_problem = True if self.sup_lower_bound_idx else False
+        self.is_dem_bounded_problem = True if self.dem_lower_bound_idx else False
 
         infty_count = len(self.dem_infty_upper_bound_idx) + len(self.sup_infty_upper_bound_idx)
 
@@ -216,6 +284,7 @@ class transportation(object):
         if self.dem_lower_bound_idx and self.sup_lower_bound_idx:
             raise ValueError("Problem with lower/upper bound for both demand and supply is not solvable currently")
 
+        self.infty_theoretical_value = 0
         self.is_infinity_bounded_problem = self.has_infty_upper_bound = True if infty_count else False
 
         self.sup_name_list = None
@@ -248,6 +317,14 @@ class transportation(object):
             "sup_amount_desc", DEFAULT_TRANSPORT_STRING_DICT["SUPPLY_AMOUNT_DESC"])
         self.cost_desc = self.kwargs.get(
             "cost_desc", DEFAULT_TRANSPORT_STRING_DICT["COST_DESC"])
+        self.sup_min_desc=kwargs.get(
+            "sup_min_desc", DEFAULT_TRANSPORT_STRING_DICT["MIN_SUPPLY"])
+        self.sup_max_desc=kwargs.get(
+            "sup_max_desc", DEFAULT_TRANSPORT_STRING_DICT["MAX_SUPPLY"])
+        self.dem_min_desc=kwargs.get(
+            "dem_min_desc", DEFAULT_TRANSPORT_STRING_DICT["MIN_DEMAND"])
+        self.dem_max_desc=kwargs.get(
+            "dem_max_desc", DEFAULT_TRANSPORT_STRING_DICT["MAX_DEMAND"])
 
         for kw in [self.sup_desc, self.dem_desc, self.dem_amount_desc, self.sup_amount_desc, self.cost_desc]:
             if kw:
@@ -266,32 +343,55 @@ class transportation(object):
         self.sup_split_idx_list = []
         self.dem_split_idx_list = []
 
-        try:
-            self.get_standardized()
-        except NotStandardizableError:
-            if self.has_infty_upper_bound:
-                self.adjust_infty_upper_bound()
+        self.sup_lower_bound_list_str = None
+        self.sup_upper_bound_list_str = None
+        self.dem_lower_bound_list_str = None
+        self.dem_upper_bound_list_str = None
+        if self.sup_lower_bound_idx:
+            s_lb_list = []
+            s_ub_list = []
+            for i in range(self.n_sup):
+                if not isinstance(self.sup[i], list):
+                    s_lb_list.append(self.sup[i])
+                    s_ub_list.append(self.sup[i])
+                else:
+                    s_lb_list.append(self.sup[i][0])
+                    s_ub_list.append(self.sup[i][1])
+            self.sup_lower_bound_list_str = get_array_to_str_list_recursive(s_lb_list)
+            self.sup_upper_bound_list_str = get_array_to_str_list_recursive(s_ub_list, inf_as=u"无上限")
+        if self.dem_lower_bound_idx:
+            d_lb_list = []
+            d_ub_list = []
+            for i in range(self.n_dem):
+                if not isinstance(self.dem[i], list):
+                    d_lb_list.append(self.dem[i])
+                    d_ub_list.append(self.dem[i])
+                else:
+                    d_lb_list.append(self.dem[i][0])
+                    d_ub_list.append(self.dem[i][1])
+            self.dem_lower_bound_list_str = get_array_to_str_list_recursive(d_lb_list)
+            self.dem_upper_bound_list_str = get_array_to_str_list_recursive(d_ub_list, inf_as=u"无上限")
+
+        self.question_no_need_consider_bound = True
+        self.get_standardized()
+        self.question_table_element = self.get_question_table_element()
+        self.standard_table_element = self.get_standard_question_table_element()
+        self.solve_table_element = self.get_standard_question_table_element(use_given_name=False)
+        self.costs_str = get_array_to_str_list_recursive(self.costs)
+        self.standard_costs_str = get_array_to_str_list_recursive(self.standard_costs)
+        self.standard_costs_str_tikz = get_array_to_str_list_recursive(self.standard_costs, inf_as=r'"M"')
+        assert sum(self.standard_sup) == sum(self.standard_dem)
+        self.standard_total_amount = sum(self.standard_sup)
+
 
     def adjust_infty_upper_bound(self):
         # this is for 单个产地/销地上限为无穷大，且最低需求必须满足/最低产量必需运出的问题
         #def get_infty_upper_bound_value():
-        def sum_min_recursive(l, exclude_idx):
-            assert isinstance (l, (list, tuple))
-            result_list = []
-            for idx, i in enumerate(l):
-                if isinstance (i, (list, tuple)):
-                    try:
-                        if idx not in exclude_idx:
-                            result_list.append(min(i))
-                    except:
-                        result_list.append(sum_recursive(i))
-                else:
-                    result_list.append (i)
-            return sum(result_list)
 
         if self.sup_infty_upper_bound_idx:
             total_dem = sum(self.dem)
-            infty_theoretical_value = total_dem - sum_min_recursive(self.sup, exclude_idx=self.sup_infty_upper_bound_idx)
+            infty_theoretical_value = total_dem - sum_min_max_recursive(self.sup,
+                                                                        exclude_idx=self.sup_infty_upper_bound_idx)
             if infty_theoretical_value < 0:
                 raise ValueError(u"问题设置为最低产量大于总需求，无法求解")
             renewed_sup = sorted(self.sup[self.sup_infty_upper_bound_idx[0]])
@@ -302,7 +402,8 @@ class transportation(object):
         
         if self.dem_infty_upper_bound_idx:
             total_sup = sum(self.sup)
-            infty_theoretical_value = total_sup - sum_min_recursive(self.dem, exclude_idx=self.dem_infty_upper_bound_idx)
+            infty_theoretical_value = total_sup - sum_min_max_recursive(self.dem,
+                                                                        exclude_idx=self.dem_infty_upper_bound_idx)
             if infty_theoretical_value < 0:
                 raise ValueError(u"问题设置为最低需求大于总产量，无法求解")
             renewed_dem = sorted(self.dem[self.dem_infty_upper_bound_idx[0]])
@@ -310,6 +411,7 @@ class transportation(object):
             self.dem[self.dem_infty_upper_bound_idx[0]] = renewed_dem
             self.dem_infty_upper_bound_idx = []
             self.has_infty_upper_bound = False
+        self.infty_theoretical_value = infty_theoretical_value
 
     def get_bounded_standardized(self):
         # this is for 有上下限的产销不平衡问题
@@ -318,10 +420,38 @@ class transportation(object):
         assert not self.has_infty_upper_bound
         assert self.sup_lower_bound_idx or self.dem_lower_bound_idx
         assert not (self.sup_lower_bound_idx and self.dem_lower_bound_idx)
-        self.standard_dem = copy.deepcopy(self.dem)
-        self.standard_sup = copy.deepcopy(self.sup)
+
+        self.question_no_need_consider_bound = False
         self.standard_n_sup = self.n_sup
         self.standard_n_dem = self.n_dem
+
+        # 以下为所有需求都能满足/所有产量都能运出的情况
+        maximum_sup_amount = sum_min_max_recursive(self.sup, criteria_func=max)
+        maximum_dem_amount = sum_min_max_recursive(self.dem, criteria_func=max)
+        if maximum_dem_amount == maximum_sup_amount:
+            self.is_standard = True
+
+        if self.sup_lower_bound_idx:
+            if maximum_dem_amount >= maximum_sup_amount:
+                self.question_no_need_consider_bound = True
+                for idx in self.sup_lower_bound_idx:
+                    self.sup[idx] = max(self.sup[idx])
+                validate_numeric_recursive(self.sup)
+                self.sup_lower_bound_idx = []
+        elif self.dem_lower_bound_idx:
+            if maximum_dem_amount <= maximum_sup_amount:
+                self.question_no_need_consider_bound = True
+                for idx in self.dem_lower_bound_idx:
+                    self.dem[idx] = max(self.dem[idx])
+                validate_numeric_recursive(self.dem)
+                self.dem_lower_bound_idx = []
+
+        if self.question_no_need_consider_bound:
+            self.get_standardized()
+            return
+
+        self.standard_dem = copy.deepcopy(self.dem)
+        self.standard_sup = copy.deepcopy(self.sup)
 
         costs = np.copy (self.costs)
         costs_trasposed = False if self.sup_lower_bound_idx else True
@@ -371,7 +501,7 @@ class transportation(object):
         self.standard_costs = costs
         sup_or_dem_other.append(sum(sup_or_dem) - sum(sup_or_dem_other))
 
-    def get_standardized(self, sup_cost_extra=None, dem_cost_extra=None):
+    def get_standardized(self, dem=None, sup=None, sup_cost_extra=None, dem_cost_extra=None):
         # this is for 产销不平衡问题
         if self.dem_lower_bound_idx or self.sup_lower_bound_idx:
             #raise NotStandardizableError("Demand/supply has lower bound, not standardizable.")
@@ -388,8 +518,17 @@ class transportation(object):
             self.standard_sup = self.sup
             return
 
-        self.standard_dem = copy.deepcopy(self.dem)
-        self.standard_sup = copy.deepcopy(self.sup)
+        if not dem:
+            self.standard_dem = copy.deepcopy(self.dem)
+        else:
+            assert isinstance(dem, list)
+            self.standard_dem = dem
+        if not sup:
+            self.standard_sup = copy.deepcopy(self.sup)
+        else:
+            assert isinstance(sup, list)
+            self.standard_sup = sup
+
         if sum(self.sup) > sum(self.dem):
             self.standard_n_dem = self.n_dem + 1
             self.standard_dem.append(sum(self.sup) - sum(self.dem))
@@ -403,7 +542,7 @@ class transportation(object):
                 new_column.reshape(self.n_sup,1)
             self.standard_costs = np.append(self.costs, new_column, axis=1)
 
-        else:
+        elif sum(self.sup) < sum(self.dem):
             self.standard_n_sup = self.n_sup + 1
             self.standard_sup.append(sum(self.dem) - sum(self.sup))
             new_row = np.zeros(self.n_dem)
@@ -447,18 +586,24 @@ class transportation(object):
             kwargs["dem_name_list"] = self.dem_name_list
             kwargs["sup_name_prefix"] = self.sup_name_prefix
             kwargs["dem_name_prefix"] = self.dem_name_prefix
+            kwargs["sup_min_desc"] = self.sup_min_desc
+            kwargs["sup_max_desc"] = self.sup_max_desc
+            kwargs["dem_min_desc"] = self.dem_min_desc
+            kwargs["dem_max_desc"] = self.dem_max_desc
 
         return transport_table_element(n_sup, n_dem, enable_split=enable_split, tex_table_type=tex_table_type, **kwargs)
 
-    def solve(self, init_method="VOGEL"):
+    def solve(self, init_method="VOGEL", stringfy=True):
         return transport_solve(
             supply=self.standard_sup,
             demand=self.standard_dem,
             costs=self.standard_costs,
-            init_method=init_method)
+            init_method=init_method,
+            stringfy=stringfy,
+        )
 
 
-def transport_solve(supply, demand, costs, init_method="LCM"):
+def transport_solve(supply, demand, costs, init_method="LCM", stringfy=True):
 
     if not (supply and demand and costs is not None):
         return
@@ -754,12 +899,18 @@ def transport_solve(supply, demand, costs, init_method="LCM"):
             if C[i, j] == np.inf:
                 C[i, j] = 1.0E10
 
+    result_kwargs = {
+        "routes": get_array_to_str_list_recursive(X, inf_as=r'"M"') if stringfy else X,
+        "z": np.sum(X_final * C),
+        "solution_list": get_array_to_str_list_recursive(solution_list, inf_as=r'"M"') if stringfy else solution_list,
+        "vogel_list": get_array_to_str_list_recursive(vogel_list, inf_as=r'"M"') if stringfy else vogel_list,
+        "s_matrix_list": get_array_to_str_list_recursive(s_matrix_list, tex_eq_wrap=True) if stringfy else s_matrix_list,
+        "has_degenerated_init_solution": has_degenerated_init_solution,
+        "has_degenerated_mid_solution": has_degenerated_mid_solution,
+        "has_unique_solution": has_unique_solution
+    }
 
-    return OptimizeResult(routes=X, z=np.sum(X_final*C), solution_list=solution_list,
-                          vogel_list=vogel_list, s_matrix_list=s_matrix_list,
-                          has_degenerated_init_solution=has_degenerated_init_solution,
-                          has_degenerated_mid_solution=has_degenerated_mid_solution,
-                          has_unique_solution=has_unique_solution)
+    return OptimizeResult(**result_kwargs)
 
 
 def is_ascii(text):
@@ -779,7 +930,7 @@ if __name__ == '__main__':
     # supply = [105, 125, 70]
     # demand = [80, [30,80], 70, 85]
 
-    supply = [[72,78], [115,135], 100]
+    supply = [[72,78], [115, np.infty], 100]
     demand = [80, 65, 70, 85]
 
     costs = np.array([[9., 10., 13., 17.],
@@ -819,6 +970,27 @@ if __name__ == '__main__':
         print i
     for i in t_table.dem_name_list:
         print i
+
+    result = t.solve(stringfy=False)
+    solution_list = result.solution_list
+    solution_list_str = get_array_to_str_list_recursive(solution_list)
+    #print solution_list_str
+    #print get_array_to_str_list_recursive(t.costs)
+    #print get_array_to_str_list_recursive(t.standard_costs)
+#    print result.routes
+    print t.standard_costs_str, t.sup
+    qtable = t.question_table_element
+    print qtable.sup_desc,qtable.dem_desc, qtable.cost_desc, qtable.dem_amount_desc
+    print qtable.sup_name_list, qtable.dem_min_desc, qtable.dem_name_list
+    print t.sup_lower_bound_list_str, t.sup_upper_bound_list_str,
+    #qtable.sup_name_list
+    print "t.standard_costs_str_tikz", t.standard_costs_str_tikz
+
+
+
+
+
+
 
 #    print t.has_infty_upper_bound, t.sup_infty_upper_bound_idx
 #    print t.sup, t.dem
