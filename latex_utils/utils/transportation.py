@@ -619,6 +619,7 @@ def transport_solve(supply, demand, costs, init_method="LCM", stringfy=True):
     has_degenerated_mid_solution = True
     has_unique_solution = True
     vogel_list = []
+    vogel_iter_loc_idx_list = []
     solution_list = []
     s_matrix_list = []
 
@@ -703,9 +704,11 @@ def transport_solve(supply, demand, costs, init_method="LCM", stringfy=True):
                 if located_type == "row":
                     row_indices = [(located_index, j) for j in range(m) if allow_fill_X[located_index, j]]
                     xs = sorted(zip(row_indices, C[located_index,:].flatten()), key=lambda (a, b): b)
+                    vogel_iter_loc_idx_list.append({"iter": n_iter, "location": "row", "idx":located_index})
                 else:
                     col_indices = [(i, located_index) for i in range(n) if allow_fill_X[i, located_index]]
                     xs = sorted(zip(col_indices, C[:, located_index].flatten()), key=lambda (a, b): b)
+                    vogel_iter_loc_idx_list.append({"iter": n_iter, "location": "col", "idx":located_index})
 
                 (i, j), _ = xs[0]
 
@@ -903,7 +906,8 @@ def transport_solve(supply, demand, costs, init_method="LCM", stringfy=True):
         "routes": get_array_to_str_list_recursive(X, inf_as=r'"M"') if stringfy else X,
         "z": np.sum(X_final * C),
         "solution_list": get_array_to_str_list_recursive(solution_list, inf_as=r'"M"') if stringfy else solution_list,
-        "vogel_list": get_array_to_str_list_recursive(vogel_list, inf_as=r'"M"') if stringfy else vogel_list,
+        "vogel_list": None if init_method !="VOGEL" else (get_array_to_str_list_recursive(vogel_list, inf_as=r'"M"') if stringfy else vogel_list),
+        "vogel_location": None if init_method !="VOGEL" else vogel_iter_loc_idx_list,
         "s_matrix_list": get_array_to_str_list_recursive(s_matrix_list, tex_eq_wrap=True) if stringfy else s_matrix_list,
         "has_degenerated_init_solution": has_degenerated_init_solution,
         "has_degenerated_mid_solution": has_degenerated_mid_solution,

@@ -126,7 +126,9 @@ for tr in transport_dict_list_loaded:
     print u"VOGEL法：迭代次数", len(VOGEL_result.solution_list),\
         u"初始化时有退化解：",VOGEL_result.has_degenerated_init_solution,\
         u"计算中有退化解：", VOGEL_result.has_degenerated_mid_solution,\
-        u"最优解唯一：", VOGEL_result.has_unique_solution, u"伏格尔表:", VOGEL_result.vogel_list
+        u"最优解唯一：", VOGEL_result.has_unique_solution, \
+        u"伏格尔表:", VOGEL_result.vogel_list
+    print u"伏格尔位置:", VOGEL_result.vogel_location
 
     #print VOGEL_result.solution_list
     #print t.costs.tolist()

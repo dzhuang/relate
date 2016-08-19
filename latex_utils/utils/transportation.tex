@@ -113,6 +113,7 @@
 \BLOCK{ set solution_list=method_result_list[method_idx].solution_list}
 \BLOCK{ set verify_list=method_result_list[method_idx].s_matrix_list}
 \BLOCK{ set vogel_list=method_result_list[method_idx].vogel_list}
+\BLOCK{ set vogel_location=method_result_list[method_idx].vogel_location}
 \BLOCK{ set n_iter=solution_list|length}
 
 
@@ -138,6 +139,20 @@
 \BLOCK{- for x in range(0, t.standard_n_sup) }
 \node at (A\VAR{t.standard_n_sup-x-1}) {\VAR{qtable.sup_name_list[x]}};
 \BLOCK{ endfor -}
+\BLOCK{ if loop.first} \#{iter loop}
+\BLOCK{if vogel_list}
+\BLOCK{for vogel_iter in range(vogel_list|length)}
+\drawvogel{\VAR{vogel_iter+1}}{ {\VAR{vogel_list[vogel_iter][1]|join(",")} } }{ {\VAR{vogel_list[vogel_iter][0]|reverse|join(",")} } }{\VAR{t.standard_n_sup-1}}{\VAR{t.standard_n_dem-1}}
+\BLOCK{set vl = vogel_location[vogel_iter]}
+\BLOCK{if vl}
+\BLOCK{if vl["location"] == "row"}\drawvogelcircle{\VAR{vogel_iter+1}}{\VAR{t.standard_n_sup - 1 - vl["idx"]}}{}{\VAR{t.standard_n_sup-1}}{\VAR{t.standard_n_dem-1}}
+\BLOCK{else}\drawvogelcircle{\VAR{vogel_iter+1}}{}{\VAR{vl["idx"]}}{\VAR{t.standard_n_sup-1}}{\VAR{t.standard_n_dem-1}}
+\BLOCK{endif}
+\BLOCK{endif}\#{vl}
+\BLOCK{endfor}
+\vogellabel{\VAR{vogel_list|length}}{\VAR{t.standard_n_sup-1}}{\VAR{t.standard_n_dem-1}}
+\BLOCK{ endif }
+\BLOCK{ endif }\#{loop.first}
 \end{tikzpicture}
 \end{keytable}
 
