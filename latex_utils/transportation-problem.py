@@ -56,6 +56,23 @@ tr_dict = {
 
 transport_dict_list.append(tr_dict)
 
+tr_dict = {
+    "sup": [14, 10, 15, 12], #[[72, 78], [115, 135], 100],
+    # "sup": [[72, 78], [115, 135], 100],
+    "dem": [10, 15, 12, 15],
+    "costs": np.matrix ([
+        10, 30, 25, 15,
+        20, 15, 20, 10,
+        10, 30, 20, 20,
+        30, 40, 35, 45
+    ]).reshape(4,4),
+    # "dem_name_prefix": u"市场",
+    # "sup_name_prefix": u"工厂",
+    # "dem_desc": u"城市"
+}
+
+transport_dict_list.append(tr_dict)
+
 from Tkinter import Tk
 r = Tk()
 r.withdraw()
@@ -170,4 +187,8 @@ for tr in transport_dict_list_loaded:
     # print t.is_standard_problem
     # print t.standard_table_element
     # print t.standard_n_sup, t.n_sup, "t.standard_costs_str_tikz", t.standard_costs_str_tikz
+
+    print t.standard_dem, t.standard_sup
+    print t.standard_n_dem, t.standard_n_sup
+    print t.n_sup, t.n_dem
 

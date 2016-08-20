@@ -133,10 +133,10 @@
 \drawflow{\flows}{\VAR{t.standard_n_sup-1}}{\VAR{t.standard_n_dem-1}}
 \sremainder
 \dremainder
-\BLOCK{- for x in range(0, t.standard_n_dem) }
+\BLOCK{ for x in range(0, t.standard_n_dem) }
 \node at (B\VAR{x}) {\VAR{qtable.dem_name_list[x]}};
 \BLOCK{ endfor -}
-\BLOCK{- for x in range(0, t.standard_n_sup) }
+\BLOCK{ for x in range(0, t.standard_n_sup) }
 \node at (A\VAR{t.standard_n_sup-x-1}) {\VAR{qtable.sup_name_list[x]}};
 \BLOCK{ endfor -}
 \BLOCK{ if loop.first} \#{iter loop}
@@ -170,7 +170,7 @@
 \hline\hline
 & \VAR{qtable.dem_name_list|join("&")} \\ \hline\hline
 \BLOCK{ for x in range(0, t.standard_n_sup) }
-\VAR{qtable.dem_name_list[x]} & \VAR{verify[x]|join("&")}\\ \hline
+\VAR{qtable.sup_name_list[x]} & \VAR{verify[x]|join("&")}\\ \hline
 \BLOCK{ endfor }
 \hline
 \end{mytabular}

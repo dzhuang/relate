@@ -429,6 +429,7 @@ class transportation(object):
         self.question_no_need_consider_bound = False
         self.standard_n_sup = self.n_sup
         self.standard_n_dem = self.n_dem
+        print "self.standard_n_dem", self.standard_n_dem
 
         # 以下为所有需求都能满足/所有产量都能运出的情况
         maximum_sup_amount = sum_min_max_recursive(self.sup, criteria_func=max)
@@ -536,6 +537,7 @@ class transportation(object):
 
         if sum(self.sup) > sum(self.dem):
             self.standard_n_dem = self.n_dem + 1
+            self.standard_n_sup = self.n_sup
             self.standard_dem.append(sum(self.sup) - sum(self.dem))
             new_column = np.zeros((self.n_sup, 1), dtype=np.int64)
             if dem_cost_extra:
@@ -549,6 +551,7 @@ class transportation(object):
 
         elif sum(self.sup) < sum(self.dem):
             self.standard_n_sup = self.n_sup + 1
+            self.standard_n_dem = self.n_dem
             self.standard_sup.append(sum(self.dem) - sum(self.sup))
             new_row = np.zeros(self.n_dem)
             if sup_cost_extra:
@@ -689,6 +692,7 @@ def transport_solve(supply, demand, costs, init_method="LCM", stringfy=True):
 
             if max_diff:
                 located = False
+                located_index = None
                 while not located:
                     for i in range(n):
                         if row_diff[i] == max_diff:
@@ -708,11 +712,13 @@ def transport_solve(supply, demand, costs, init_method="LCM", stringfy=True):
 
                 if located_type == "row":
                     row_indices = [(located_index, j) for j in range(m) if allow_fill_X[located_index, j]]
-                    xs = sorted(zip(row_indices, C[located_index,:].flatten()), key=lambda (a, b): b)
+                    row_values = [C[located_index,j] for j in range(m) if allow_fill_X[located_index, j]]
+                    xs = sorted(zip(row_indices, row_values), key=lambda (a, b): b)
                     vogel_iter_loc_idx_list.append({"iter": n_iter, "location": "row", "idx":located_index})
                 else:
                     col_indices = [(i, located_index) for i in range(n) if allow_fill_X[i, located_index]]
-                    xs = sorted(zip(col_indices, C[:, located_index].flatten()), key=lambda (a, b): b)
+                    col_values = [C[i, located_index] for i in range(n) if allow_fill_X[i, located_index]]
+                    xs = sorted(zip(col_indices, col_values), key=lambda (a, b): b)
                     vogel_iter_loc_idx_list.append({"iter": n_iter, "location": "col", "idx":located_index})
 
                 (i, j), _ = xs[0]
