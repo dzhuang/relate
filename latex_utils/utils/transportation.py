@@ -279,10 +279,13 @@ class transportation(object):
         infty_count = len(self.dem_infty_upper_bound_idx) + len(self.sup_infty_upper_bound_idx)
 
         if infty_count > 1:
-            raise ValueError("Demand/supply with lower bound can only have 1 infinity upper bound")
+            raise ValueError(
+                "Demand/supply with lower bound can only have 1 infinity upper bound")
 
         if self.dem_lower_bound_idx and self.sup_lower_bound_idx:
-            raise ValueError("Problem with lower/upper bound for both demand and supply is not solvable currently")
+            raise ValueError(
+                "Problem with lower/upper bound for both demand "
+                "and supply is not solvable currently")
 
         self.infty_theoretical_value = 0
         self.is_infinity_bounded_problem = self.has_infty_upper_bound = True if infty_count else False
@@ -299,10 +302,12 @@ class transportation(object):
             assert len(dem_name_list) == self.n_dem
             self.dem_name_list = dem_name_list
 
+        self.sup_name_prefix = None
         if sup_name_prefix:
             assert isinstance(sup_name_prefix, (str, unicode))
             self.sup_name_prefix = sup_name_prefix
 
+        self.dem_name_prefix = None
         if dem_name_prefix:
             assert isinstance(dem_name_prefix, (str, unicode))
             self.dem_name_prefix = dem_name_prefix

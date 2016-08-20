@@ -24,6 +24,38 @@ tr_dict = {
 
 transport_dict_list.append(tr_dict)
 
+tr_dict = {
+    "sup": [6, 10, 7], #[[72, 78], [115, 135], 100],
+    # "sup": [[72, 78], [115, 135], 100],
+    "dem": [3, 5, 9, 6],
+    "costs": np.matrix ([
+        3, 9, 8, 6,
+        12, 25, 7, 10,
+        6, 11, 13, 14
+    ]).reshape(3,4),
+    # "dem_name_prefix": u"市场",
+    # "sup_name_prefix": u"工厂",
+    # "dem_desc": u"城市"
+}
+
+transport_dict_list.append(tr_dict)
+
+tr_dict = {
+    "sup": [40, 20, 15], #[[72, 78], [115, 135], 100],
+    # "sup": [[72, 78], [115, 135], 100],
+    "dem": [10, 20, 15, 16, 14],
+    "costs": np.matrix ([
+        8, 15, 20, 14, 4,
+        5, 7, 6, 9, 8,
+        3, 9, 10, 16, 13,
+    ]).reshape(3,5),
+    # "dem_name_prefix": u"市场",
+    # "sup_name_prefix": u"工厂",
+    # "dem_desc": u"城市"
+}
+
+transport_dict_list.append(tr_dict)
+
 from Tkinter import Tk
 r = Tk()
 r.withdraw()
@@ -127,8 +159,8 @@ for tr in transport_dict_list_loaded:
         u"初始化时有退化解：",VOGEL_result.has_degenerated_init_solution,\
         u"计算中有退化解：", VOGEL_result.has_degenerated_mid_solution,\
         u"最优解唯一：", VOGEL_result.has_unique_solution, \
-        u"伏格尔表:", VOGEL_result.vogel_list
-    print u"伏格尔位置:", VOGEL_result.vogel_location
+        #u"伏格尔表:", VOGEL_result.vogel_list
+    #print u"伏格尔位置:", VOGEL_result.vogel_location
 
     #print VOGEL_result.solution_list
     #print t.costs.tolist()

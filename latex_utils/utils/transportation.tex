@@ -104,7 +104,7 @@
 \BLOCK{ endfor }
 }
 \def\dremainder{
-\BLOCK{for idx in (range(t.standard_dem|length))|reverse}
+\BLOCK{for idx in range(t.standard_dem|length)}
 \draw (dr\VAR{loop.index0}) node{\footnotesize \VAR{t.standard_dem[idx]}};
 \BLOCK{ endfor }
 }
