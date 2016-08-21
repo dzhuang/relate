@@ -130,8 +130,8 @@ for tr in transport_dict_list_loaded:
 
 
     tex = template.render(
-        question_iters=iter(range(0, 5)),
-        iters=iter(range(0, 100)),
+        question_iters=iter(range(1, 5)),
+        iters=iter(range(1, 100)),
         show_question = True,
         show_answer = True,
         # problem_description_pre = u"""

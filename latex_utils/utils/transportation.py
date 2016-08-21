@@ -796,6 +796,7 @@ def transport_solve(supply, demand, costs, init_method="LCM", stringfy=True):
     solution_list.append(np.copy(X))
 
     # Finding optimal solution
+    enter_element_list = []
     while True:
         u = np.array([np.nan]*n)
         v = np.array([np.nan]*m)
@@ -846,6 +847,7 @@ def transport_solve(supply, demand, costs, init_method="LCM", stringfy=True):
 
         i, j = np.argwhere(S == s)[0]
         start = (i, j)
+        enter_element_list.append(start)
 
         # Finding cycle elements
         T = np.zeros((n, m))
@@ -913,13 +915,18 @@ def transport_solve(supply, demand, costs, init_method="LCM", stringfy=True):
             if C[i, j] == np.inf:
                 C[i, j] = 1.0E10
 
+    z = np.sum(X_final * C)
+    if z == int(z):
+        z = int(z)
+
     result_kwargs = {
         "routes": get_array_to_str_list_recursive(X, inf_as=r'"M"') if stringfy else X,
-        "z": np.sum(X_final * C),
+        "z": z,
         "solution_list": get_array_to_str_list_recursive(solution_list, inf_as=r'"M"') if stringfy else solution_list,
         "vogel_list": None if init_method !="VOGEL" else (get_array_to_str_list_recursive(vogel_list, inf_as=r'"M"') if stringfy else vogel_list),
         "vogel_location": None if init_method !="VOGEL" else vogel_iter_loc_idx_list,
         "s_matrix_list": get_array_to_str_list_recursive(s_matrix_list, tex_eq_wrap=True) if stringfy else s_matrix_list,
+        "enter_element_list": enter_element_list,
         "has_degenerated_init_solution": has_degenerated_init_solution,
         "has_degenerated_mid_solution": has_degenerated_mid_solution,
         "has_unique_solution": has_unique_solution

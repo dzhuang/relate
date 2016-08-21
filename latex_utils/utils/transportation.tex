@@ -20,12 +20,12 @@
 
 {% from "latex.jinja" import transportation_preamble as preamble %}
 
-<p align="middle">
+<p align="middle"><strong>表\VAR{question_iters.next()}</strong></br>
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
 \BLOCK{ if t.question_table_element and t.costs_str -}
 \BLOCK{ set qtable=t.question_table_element } \BLOCK{ set costs=t.costs_str }
-\setcounter{table}{\VAR{question_iters.next()}}
-\begin{\VAR{qtable.tex_table_type}}[H]\centering \topcaption{}
+\begin{\VAR{qtable.tex_table_type}}[H]\centering
+%\topcaption{}
 \begin{mytabular}{c|\BLOCK{ for x in range(0, t.n_dem) }c\BLOCK{ endfor }|c\BLOCK{if t.is_sup_bounded_problem}|c\BLOCK{endif}}\hline\hline \diagbox{\VAR{qtable.sup_desc}}{\VAR{qtable.cost_desc}}{\VAR{qtable.dem_desc}}
 &\VAR{qtable.dem_name_list|join("&")}&\BLOCK{if t.is_sup_bounded_problem}\VAR{qtable.sup_min_desc}&\VAR{qtable.sup_max_desc}\BLOCK{else}\VAR{qtable.sup_amount_desc}\BLOCK{endif}\\ \hline
 \BLOCK{ for idx in range(0, t.n_sup) } \VAR{ qtable.sup_name_list[idx] } & \VAR{costs[idx]|join("&")} & \BLOCK{if t.is_sup_bounded_problem}\VAR{t.sup_lower_bound_list_str[idx]}&\VAR{t.sup_upper_bound_list_str[idx]}\BLOCK{else}\VAR{t.sup[idx]}\BLOCK{endif} \\
@@ -67,12 +67,12 @@
 \BLOCK{ if not t.is_standard_problem }
 标准化后的运输问题的运价表为：
 
-<p align="middle">
+<p align="middle"><strong>答案表\VAR{iters.next()}</strong></br>
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
 \BLOCK{ if t.standard_table_element and t.standard_costs_str -}
 \BLOCK{ set qtable=t.standard_table_element } \BLOCK{ set costs=t.standard_costs_str }
-\setcounter{keytable}{\VAR{iters.next()}}
-\begin{\VAR{qtable.tex_table_type}}[H]\centering \topcaption{}
+\begin{\VAR{qtable.tex_table_type}}[H]\centering
+%\topcaption{}
 \begin{mytabular}{c|\BLOCK{ for x in range(qtable.dem_name_list|length) }c\BLOCK{ endfor }|c}\hline\hline \diagbox{\VAR{qtable.sup_desc}}{\VAR{qtable.cost_desc}}{\VAR{qtable.dem_desc}}
 &\VAR{qtable.dem_name_list|join("&")}&\VAR{qtable.sup_amount_desc}\\ \hline
 \BLOCK{ for idx in range(qtable.sup_name_list|length) } \VAR{ qtable.sup_name_list[idx] } & \VAR{costs[idx]|join("&")} & \VAR{t.standard_sup[idx]} \\
@@ -88,14 +88,7 @@
 \BLOCK{ endif}  \#{not t.is_standard_problem }
 
 \BLOCK{ if not standardize_only }
-
-\BLOCK{ for method_idx in range(used_method_list|length)}
-\BLOCK{ if not loop.first}<hr>\BLOCK{endif}
-
-用\VAR{used_method_list[method_idx]}得到的初始基本可行方案及后续求解如下：
-
-<p align="middle">
-{% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
+{% set transport_preamble_extra %}
 \BLOCK{ set qtable=t.solve_table_element } \BLOCK{ set costs=t.standard_costs_str_tikz }
 \def\ori{  {  \BLOCK{for idx in (range(costs|length))|reverse}{\VAR{costs[idx]|join(",")}},\BLOCK{endfor}  }  }
 \def\sremainder{
@@ -109,24 +102,36 @@
 \BLOCK{ endfor }
 }
 \def\total{\footnotesize \VAR{t.standard_total_amount}}
+{% endset %}
+
+\BLOCK{ for method_idx in range(used_method_list|length)}
+\BLOCK{ if not loop.first}<hr>\BLOCK{endif}
+
+\BLOCK{ if (used_method_list|length) > 1 }<strong>(\VAR{loop.index}).</strong>\BLOCK{ endif } 用<strong>\VAR{used_method_list[method_idx]}</strong>得到的初始基本可行方案及后续求解如下：
 
 \BLOCK{ set solution_list=method_result_list[method_idx].solution_list}
 \BLOCK{ set verify_list=method_result_list[method_idx].s_matrix_list}
 \BLOCK{ set vogel_list=method_result_list[method_idx].vogel_list}
 \BLOCK{ set vogel_location=method_result_list[method_idx].vogel_location}
+\BLOCK{ set enter_element_list=method_result_list[method_idx].enter_element_list}
 \BLOCK{ set n_iter=solution_list|length}
+\BLOCK{ set z=method_result_list[method_idx].z}
 
 
 \BLOCK{ for it in range(n_iter) -}
 \BLOCK{ set result=solution_list[it]}
 \BLOCK{ set verify=verify_list[it]}
-\noindent\begin{minipage}[c]{0.5\textwidth}
-\parindent 2em
+\BLOCK{ set enter_element=enter_element_list[it]}
+
+<table>
+<tr><td>
+<p align="middle"><strong>答案表\VAR{iters.next()}</strong></br>
+{% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble, tex_preamble_extra=transport_preamble_extra)  %}
 
 \setcounter{keytable}{\VAR{iters.next()}}
 \begin{keytable}[H]
 \centering
-\topcaption{}
+%\topcaption{}
 \def\flows{  {  \BLOCK{for idx in (range(result|length))|reverse}{\VAR{result[idx]|join(",")}},\BLOCK{endfor}  }  }
 \begin{tikzpicture}[>=stealth]\draw[thick, draw=black] (0,0) grid (\VAR{t.standard_n_dem},\VAR{t.standard_n_sup});%%%无运输图
 \draworiginlabelwithoutnodelabel{\ori}{\VAR{t.standard_n_sup-1}}{\VAR{t.standard_n_dem-1}}
@@ -155,17 +160,15 @@
 \BLOCK{ endif }\#{loop.first}
 \end{tikzpicture}
 \end{keytable}
+{% endcall %}</p></td>
 
-\end{minipage}%
-\hskip 2em
 \BLOCK{ if verify }
-\noindent\begin{minipage}[c]{0.5\textwidth}
-\parindent 2em
-检验数表为：
+<td> <p>检验数表为：</p>
+<p align="middle"><strong>答案表\VAR{iters.next()} </strong> 检验数表</br>
+{% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble, tex_preamble_extra=transport_preamble_extra)  %}
 
-\setcounter{keytable}{\VAR{iters.next()}}
 \begin{keytable}[H]
-\centering \topcaption{检验数表}%\label{tab:jysb1}
+\centering %\topcaption{检验数表}%\label{tab:jysb1}
 \begin{mytabular}{c|\BLOCK{ for x in range(0, t.standard_n_dem) }|C{2.5em}\BLOCK{ endfor }  }
 \hline\hline
 & \VAR{qtable.dem_name_list|join("&")} \\ \hline\hline
@@ -176,19 +179,26 @@
 \end{mytabular}
 \end{keytable}
 
-\end{minipage}
-
-\BLOCK{ endif }
+{% endcall %}</p>
 
 \BLOCK{ if not loop.last }
 
-\vskip 1em
+<p> 当前方案非最优，调整$\VAR{(qtable.sup_name_list[enter_element[0]])|replace("$", "")}\VAR{(qtable.dem_name_list[enter_element[1]])|replace("$", "")}$.</p>
+\BLOCK{ endif }
+
+</td></tr></table>
+
+\BLOCK{ if loop.last }
+可知，问题已经取得最优解，且\BLOCK{if has_unique_solution}当前方案为<strong>唯一的最优方案</strong>\BLOCK{else}<strong>此最优方案不唯一</strong>\BLOCK{endif}，最低运费为\VAR{z}.</p>
+\BLOCK{ endif }
+
 
 \BLOCK{ endif }
 
+\BLOCK{ if not loop.last }\BLOCK{ endif }
+
 \BLOCK{ endfor }
 
-{% endcall %}</p>
 \BLOCK{ endfor }\#{ method in used_method_list}
 \BLOCK{ endif } \#{not standardize_only }
 
