@@ -12,15 +12,15 @@
 \BLOCK{- if t.is_sup_bounded_problem }，使得在最低供应量必须运出的前提下，尽可能多地满足各地的需求\BLOCK{ endif -}
 \BLOCK{- if t.is_dem_bounded_problem }，使得在最低需求量必须满足的前提下，尽可能多地满足各地的需求\BLOCK{ endif -}.
 \BLOCK{else}
-求解以下运输问题的最优运输方案，
-\BLOCK{- if t.is_sup_bounded_problem }使得在最低供应量必须运出的前提下，尽可能多地满足各地的需求\BLOCK{ endif -}
-\BLOCK{- if t.is_dem_bounded_problem }使得在最低需求量必须满足的前提下，尽可能多地满足各地的需求\BLOCK{ endif -}
+求解以下运输问题的最优运输方案
+\BLOCK{- if t.is_sup_bounded_problem }，使得在最低供应量必须运出的前提下，尽可能多地满足各地的需求\BLOCK{ endif -}
+\BLOCK{- if t.is_dem_bounded_problem }，使得在最低需求量必须满足的前提下，尽可能多地满足各地的需求\BLOCK{ endif -}
 \BLOCK{if init_method}，要求初始基本可行方案用<strong>\VAR{init_method}<\strong>得出\BLOCK{endif}.
 \BLOCK{endif}
 
 {% from "latex.jinja" import transportation_preamble as preamble %}
 
-<p align="middle"><strong>表\VAR{question_iters.next()}</strong></br>
+<p align="middle"><strong>表\VAR{question_table_iters.next()}</strong></br>
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
 \BLOCK{ if t.question_table_element and t.costs_str -}
 \BLOCK{ set qtable=t.question_table_element } \BLOCK{ set costs=t.costs_str }
@@ -67,7 +67,7 @@
 \BLOCK{ if not t.is_standard_problem }
 标准化后的运输问题的运价表为：
 
-<p align="middle"><strong>答案表\VAR{iters.next()}</strong></br>
+<p align="middle"><strong>答案表\VAR{answer_table_iters.next()}</strong></br>
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
 \BLOCK{ if t.standard_table_element and t.standard_costs_str -}
 \BLOCK{ set qtable=t.standard_table_element } \BLOCK{ set costs=t.standard_costs_str }
@@ -116,6 +116,8 @@
 \BLOCK{ set enter_element_list=method_result_list[method_idx].enter_element_list}
 \BLOCK{ set n_iter=solution_list|length}
 \BLOCK{ set z=method_result_list[method_idx].z}
+\BLOCK{ set has_unique_verify_table=method_result_list[method_idx].has_unique_verify_table}
+\BLOCK{ set has_unique_solution=method_result_list[method_idx].has_unique_solution}
 
 
 \BLOCK{ for it in range(n_iter) -}
@@ -125,10 +127,9 @@
 
 <table>
 <tr><td>
-<p align="middle"><strong>答案表\VAR{iters.next()}</strong></br>
+<p align="middle"><strong>答案表\VAR{answer_table_iters.next()}</strong></br>
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble, tex_preamble_extra=transport_preamble_extra)  %}
 
-\setcounter{keytable}{\VAR{iters.next()}}
 \begin{keytable}[H]
 \centering
 %\topcaption{}
@@ -164,7 +165,7 @@
 
 \BLOCK{ if verify }
 <td> <p>检验数表为：</p>
-<p align="middle"><strong>答案表\VAR{iters.next()} </strong> 检验数表</br>
+<p align="middle"><strong>答案表\VAR{answer_table_iters.next()} </strong> 检验数表</br>
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble, tex_preamble_extra=transport_preamble_extra)  %}
 
 \begin{keytable}[H]
@@ -189,7 +190,7 @@
 </td></tr></table>
 
 \BLOCK{ if loop.last }
-可知，问题已经取得最优解，且\BLOCK{if has_unique_solution}当前方案为<strong>唯一的最优方案</strong>\BLOCK{else}<strong>此最优方案不唯一</strong>\BLOCK{endif}，最低运费为\VAR{z}.</p>
+可知，问题已经取得最优解，且\BLOCK{if has_unique_solution}当前方案\BLOCK{if not has_unique_verify_table}(在剔除0运输量后)\BLOCK{endif}为<strong>唯一的最优方案</strong>\BLOCK{if not has_unique_verify_table}(由于方案中有0运输量，最优检验数表不唯一)\BLOCK{endif}\BLOCK{else}<strong>此最优方案不唯一</strong>\BLOCK{endif}，最低运费为\VAR{z}.</p>
 \BLOCK{ endif }
 
 

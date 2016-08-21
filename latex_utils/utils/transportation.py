@@ -429,7 +429,6 @@ class transportation(object):
         self.question_no_need_consider_bound = False
         self.standard_n_sup = self.n_sup
         self.standard_n_dem = self.n_dem
-        print "self.standard_n_dem", self.standard_n_dem
 
         # 以下为所有需求都能满足/所有产量都能运出的情况
         maximum_sup_amount = sum_min_max_recursive(self.sup, criteria_func=max)
@@ -626,6 +625,7 @@ def transport_solve(supply, demand, costs, init_method="LCM", stringfy=True):
     has_degenerated_init_solution = False
     has_degenerated_mid_solution = True
     has_unique_solution = True
+    has_unique_verify_table = True
     vogel_list = []
     vogel_iter_loc_idx_list = []
     solution_list = []
@@ -838,7 +838,6 @@ def transport_solve(supply, demand, costs, init_method="LCM", stringfy=True):
 
         # Stop condition
         s = np.nanmin(S)
-        #print S
         if s > 0:
             break
         elif s == 0:
@@ -875,7 +874,8 @@ def transport_solve(supply, demand, costs, init_method="LCM", stringfy=True):
                 break
 
         # Finding cycle chain order
-        dist = lambda (x1, y1), (x2, y2): abs(x1-x2) + abs(y1-y2)
+        dist = lambda (x1, y1), (x2, y2): (abs(x1-x2) + abs(y1-y2)) \
+            if ((x1==x2 or y1==y2) and not (x1==x2 and y1==y2)) else np.inf
         fringe = set(tuple(p) for p in np.argwhere(T > 0))
 
         size = len(fringe)
@@ -908,6 +908,9 @@ def transport_solve(supply, demand, costs, init_method="LCM", stringfy=True):
 
     # for calculation of total cost
     X_final = np.copy(X)
+    if np.nanmin(X_final) == 0:
+        has_unique_verify_table = False
+
     for i in range(0, n):
         for j in range(0,m):
             if np.isnan(X_final[i, j]):
@@ -929,7 +932,8 @@ def transport_solve(supply, demand, costs, init_method="LCM", stringfy=True):
         "enter_element_list": enter_element_list,
         "has_degenerated_init_solution": has_degenerated_init_solution,
         "has_degenerated_mid_solution": has_degenerated_mid_solution,
-        "has_unique_solution": has_unique_solution
+        "has_unique_solution": has_unique_solution,
+        "has_unique_verify_table": has_unique_verify_table
     }
 
     return OptimizeResult(**result_kwargs)
@@ -948,82 +952,82 @@ def is_ascii(text):
             return False
     return True
 
-if __name__ == '__main__':
-    # supply = [105, 125, 70]
-    # demand = [80, [30,80], 70, 85]
-
-    supply = [[72,78], [115, np.infty], 100]
-    demand = [80, 65, 70, 85]
-
-    costs = np.array([[9., 10., 13., 17.],
-                      [7., 8., 14., 16.],
-                      [np.inf, 14., 8., 14.]])
-
-    # routes, z, solution_list, vogel_list, \
-    # s_matrix_list,\
-    # has_degenerated_init_solution, \
-    # has_degenerated_mid_solution, \
-    # has_unique_solution = transport(supply, demand, costs, init_method="VOGEL")
-    # print routes, z, has_degenerated_init_solution, has_degenerated_mid_solution, has_unique_solution
-    # print vogel_list
-    # print solution_list
-    # print s_matrix_list
-    # assert z == 3125
-    # assert has_degenerated_init_solution, has_degenerated_mid_solution
-    # assert not has_unique_solution
-
-    # t = transport_table_element(3, 4, sup_split_idx_list=[0,1], dem_split_idx_list=[0,1], enable_split=True, sup_name_list=[u"工厂1", u"工厂2", u"工厂3"])
-    # print t.sup_name_list, t.dem_name_list, t.cost_desc, t.sup_desc, t.cost_desc, t.sup_amount_desc
-#    print is_ascii(u"你好")
-#    print is_ascii("A_1")
-    #print sum_recursive([1,[1,2],6])
-
-    #print validate_numeric_recursive([1,2,(3,4), float("inf"), "a"])
-    t = transportation(sup=supply, dem=demand, costs=costs, dem_name_prefix=u"市场", sup_name_prefix=u"工厂", dem_desc=u"城市")
-    #t.get_standardized(sup_cost_extra=[1, 2, 3, 4])
-#    print t.standard_costs, t.standard_dem, t.standard_sup
-#    result = t.solve(init_method="VOGEL")
-#    print result
-    t_table = t.get_table_element(t.standard_n_sup, t.standard_n_dem, enable_split=True, use_given_name=True)
-    #t_table = t.get_table_element(t.n_sup, t.n_dem, enable_split=False, use_given_name=True)
-    print t.costs
-    print t_table.sup_name_list, t_table.dem_name_list, t_table.cost_desc, t_table.sup_desc, t_table.sup_amount_desc, t_table.dem_desc
-    for i in t_table.sup_name_list:
-        print i
-    for i in t_table.dem_name_list:
-        print i
-
-    result = t.solve(stringfy=False)
-    solution_list = result.solution_list
-    solution_list_str = get_array_to_str_list_recursive(solution_list)
-    #print solution_list_str
-    #print get_array_to_str_list_recursive(t.costs)
-    #print get_array_to_str_list_recursive(t.standard_costs)
-#    print result.routes
-    print t.standard_costs_str, t.sup
-    qtable = t.question_table_element
-    print qtable.sup_desc,qtable.dem_desc, qtable.cost_desc, qtable.dem_amount_desc
-    print qtable.sup_name_list, qtable.dem_min_desc, qtable.dem_name_list
-    print t.sup_lower_bound_list_str, t.sup_upper_bound_list_str,
-    #qtable.sup_name_list
-    print "t.standard_costs_str_tikz", t.standard_costs_str_tikz
-
-
-
-
-
-
-
-#    print t.has_infty_upper_bound, t.sup_infty_upper_bound_idx
-#    print t.sup, t.dem
-
-    # costs = np.array([[9., 10., 13., 17.],
-    #                   [7., 8., 14., 16.],
-    #                   [20., 14., 8., 14.]])
-    #
-    # costs2 = np.insert(costs, 1, 0, axis=0)
-    # print costs2
-
-
-
-
+# if __name__ == '__main__':
+#     # supply = [105, 125, 70]
+#     # demand = [80, [30,80], 70, 85]
+#
+#     supply = [[72,78], [115, np.infty], 100]
+#     demand = [80, 65, 70, 85]
+#
+#     costs = np.array([[9., 10., 13., 17.],
+#                       [7., 8., 14., 16.],
+#                       [np.inf, 14., 8., 14.]])
+#
+#     # routes, z, solution_list, vogel_list, \
+#     # s_matrix_list,\
+#     # has_degenerated_init_solution, \
+#     # has_degenerated_mid_solution, \
+#     # has_unique_solution = transport(supply, demand, costs, init_method="VOGEL")
+#     # print routes, z, has_degenerated_init_solution, has_degenerated_mid_solution, has_unique_solution
+#     # print vogel_list
+#     # print solution_list
+#     # print s_matrix_list
+#     # assert z == 3125
+#     # assert has_degenerated_init_solution, has_degenerated_mid_solution
+#     # assert not has_unique_solution
+#
+#     # t = transport_table_element(3, 4, sup_split_idx_list=[0,1], dem_split_idx_list=[0,1], enable_split=True, sup_name_list=[u"工厂1", u"工厂2", u"工厂3"])
+#     # print t.sup_name_list, t.dem_name_list, t.cost_desc, t.sup_desc, t.cost_desc, t.sup_amount_desc
+# #    print is_ascii(u"你好")
+# #    print is_ascii("A_1")
+#     #print sum_recursive([1,[1,2],6])
+#
+#     #print validate_numeric_recursive([1,2,(3,4), float("inf"), "a"])
+#     t = transportation(sup=supply, dem=demand, costs=costs, dem_name_prefix=u"市场", sup_name_prefix=u"工厂", dem_desc=u"城市")
+#     #t.get_standardized(sup_cost_extra=[1, 2, 3, 4])
+# #    print t.standard_costs, t.standard_dem, t.standard_sup
+# #    result = t.solve(init_method="VOGEL")
+# #    print result
+#     t_table = t.get_table_element(t.standard_n_sup, t.standard_n_dem, enable_split=True, use_given_name=True)
+#     #t_table = t.get_table_element(t.n_sup, t.n_dem, enable_split=False, use_given_name=True)
+#     print t.costs
+#     print t_table.sup_name_list, t_table.dem_name_list, t_table.cost_desc, t_table.sup_desc, t_table.sup_amount_desc, t_table.dem_desc
+#     for i in t_table.sup_name_list:
+#         print i
+#     for i in t_table.dem_name_list:
+#         print i
+#
+#     result = t.solve(stringfy=False)
+#     solution_list = result.solution_list
+#     solution_list_str = get_array_to_str_list_recursive(solution_list)
+#     #print solution_list_str
+#     #print get_array_to_str_list_recursive(t.costs)
+#     #print get_array_to_str_list_recursive(t.standard_costs)
+# #    print result.routes
+#     print t.standard_costs_str, t.sup
+#     qtable = t.question_table_element
+#     print qtable.sup_desc,qtable.dem_desc, qtable.cost_desc, qtable.dem_amount_desc
+#     print qtable.sup_name_list, qtable.dem_min_desc, qtable.dem_name_list
+#     print t.sup_lower_bound_list_str, t.sup_upper_bound_list_str,
+#     #qtable.sup_name_list
+#     print "t.standard_costs_str_tikz", t.standard_costs_str_tikz
+#
+#
+#
+#
+#
+#
+#
+# #    print t.has_infty_upper_bound, t.sup_infty_upper_bound_idx
+# #    print t.sup, t.dem
+#
+#     # costs = np.array([[9., 10., 13., 17.],
+#     #                   [7., 8., 14., 16.],
+#     #                   [20., 14., 8., 14.]])
+#     #
+#     # costs2 = np.insert(costs, 1, 0, axis=0)
+#     # print costs2
+#
+#
+#
+#
