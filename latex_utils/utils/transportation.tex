@@ -190,7 +190,7 @@
 </td></tr></table>
 
 \BLOCK{ if loop.last }
-可知，问题已经取得最优解，且\BLOCK{if has_unique_solution}当前方案\BLOCK{if not has_unique_verify_table}(在剔除0运输量后)\BLOCK{endif}为<strong>唯一的最优方案</strong>\BLOCK{if not has_unique_verify_table}(由于方案中有0运输量，最优检验数表不唯一)\BLOCK{endif}\BLOCK{else}<strong>此最优方案不唯一</strong>\BLOCK{endif}，最低运费为\VAR{z}.</p>
+可知，问题已经取得最优解，且\BLOCK{if has_unique_solution}当前方案为<strong>唯一的最优方案</strong>\BLOCK{else}<strong>此最优方案不唯一</strong>\BLOCK{endif}，最低运费为\VAR{z}.</p>
 \BLOCK{ endif }
 
 

@@ -378,6 +378,8 @@ class transportation(object):
             self.dem_upper_bound_list_str = get_array_to_str_list_recursive(d_ub_list, inf_as=u"无上限")
 
         self.question_no_need_consider_bound = True
+        self.surplus_sup = 0
+        self.surplus_dem = 0
         self.get_standardized()
         self.question_table_element = self.get_question_table_element()
         self.standard_table_element = self.get_standard_question_table_element()
@@ -538,6 +540,7 @@ class transportation(object):
             self.standard_n_dem = self.n_dem + 1
             self.standard_n_sup = self.n_sup
             self.standard_dem.append(sum(self.sup) - sum(self.dem))
+            self.surplus_dem = sum(self.sup) - sum(self.dem)
             new_column = np.zeros((self.n_sup, 1), dtype=np.int64)
             if dem_cost_extra:
                 if not isinstance(dem_cost_extra, list):
@@ -551,6 +554,7 @@ class transportation(object):
         elif sum(self.sup) < sum(self.dem):
             self.standard_n_sup = self.n_sup + 1
             self.standard_n_dem = self.n_dem
+            self.surplus_sup = -sum (self.sup) + sum (self.dem)
             self.standard_sup.append(sum(self.dem) - sum(self.sup))
             new_row = np.zeros(self.n_dem)
             if sup_cost_extra:
@@ -623,9 +627,9 @@ def transport_solve(supply, demand, costs, init_method="LCM", stringfy=True):
     d = np.copy(demand)
     C = np.copy(costs)
     has_degenerated_init_solution = False
-    has_degenerated_mid_solution = True
+    has_degenerated_mid_solution = False
     has_unique_solution = True
-    has_unique_verify_table = True
+    final_is_degenerated_solution = False
     vogel_list = []
     vogel_iter_loc_idx_list = []
     solution_list = []
@@ -909,7 +913,7 @@ def transport_solve(supply, demand, costs, init_method="LCM", stringfy=True):
     # for calculation of total cost
     X_final = np.copy(X)
     if np.nanmin(X_final) == 0:
-        has_unique_verify_table = False
+        final_is_degenerated_solution = True
 
     for i in range(0, n):
         for j in range(0,m):
@@ -933,7 +937,7 @@ def transport_solve(supply, demand, costs, init_method="LCM", stringfy=True):
         "has_degenerated_init_solution": has_degenerated_init_solution,
         "has_degenerated_mid_solution": has_degenerated_mid_solution,
         "has_unique_solution": has_unique_solution,
-        "has_unique_verify_table": has_unique_verify_table
+        "final_is_degenerated_solution": final_is_degenerated_solution
     }
 
     return OptimizeResult(**result_kwargs)
