@@ -82,6 +82,36 @@ tr_dict = {
 }
 transport_dict_list.append(tr_dict)
 
+tr_dict = {
+    "sup": [
+        100, 60, 50
+    ],
+    "dem": [
+        40, 60, 65, 45
+    ],
+    "costs": np.matrix ([
+        4, 3, 5, 4,
+        6, 7, 8, 3,
+        3, 2, 4, 5,
+    ]).reshape(3,4),
+    "required_init_method": ["NCM"]
+}
+transport_dict_list.append(tr_dict)
+
+tr_dict = {
+    "sup": [
+        90, 70, 50
+    ],
+    "dem": [
+        50, 80, 70, 10
+    ],
+    "costs": np.matrix ([
+        4, 3, 5, 4,
+        6, 7, 8, 3,
+        3, 2, 4, 5,
+    ]).reshape(3,4),
+}
+transport_dict_list.append(tr_dict)
 
 tr_dict = {
     "sup": [70, 80, 90],
@@ -241,20 +271,7 @@ tr_dict = {
 }
 transport_dict_list.append(tr_dict)
 
-tr_dict = {
-    "sup": [
-        90, 70, 50
-    ],
-    "dem": [
-        50, 80, 70, 10
-    ],
-    "costs": np.matrix ([
-        4, 3, 5, 4,
-        6, 7, 8, 3,
-        5, 2, 9, 5,
-    ]).reshape(3,4),
-}
-transport_dict_list.append(tr_dict)
+
 
 tr_dict = {
     "sup": [
@@ -956,52 +973,254 @@ tr_dict = {
 }
 transport_dict_list.append(tr_dict)
 
-# tr_dict = {
-#     "sup": [
-#         75, 65, 60
-#     ],
-#     "dem": [
-#         40, 75, 70
-#     ],
-#     "costs": np.matrix ([
-#         4, 2, 3,
-#         3, 8, 6,
-#         4, 5, 5
-#     ]).reshape(3,3),
-# }
-# transport_dict_list.append(tr_dict)
+tr_dict = {
+    "sup": [
+        75, 65, 60
+    ],
+    "dem": [
+        40, 75, 70
+    ],
+    "costs": np.matrix ([
+        4, 2, 3,
+        3, 8, 6,
+        4, 5, 5
+    ]).reshape(3,3),
+}
+transport_dict_list.append(tr_dict)
 
 
+tr_dict = {
+    "sup": [
+        75, 65, 60
+    ],
+    "dem": [
+        40, 75, 60
+    ],
+    "costs": np.matrix ([
+        4, 2, 3,
+        3, 8, 6,
+        4, 5, 5
+    ]).reshape(3,3),
+}
+transport_dict_list.append(tr_dict)
+
+
+tr_dict = {
+    "sup": [
+        75, 65, 60
+    ],
+    "dem": [
+        40, 75, 55
+    ],
+    "costs": np.matrix ([
+        4, 2, 3,
+        3, 8, 6,
+        4, 5, 5
+    ]).reshape(3,3),
+}
+transport_dict_list.append(tr_dict)
+
+
+tr_dict = {
+    "sup": [
+        50, 35, 45
+    ],
+    "dem": [
+        30, 40, 50
+    ],
+    "costs": np.matrix ([
+        3, 2, 4,
+        2, 3, 5,
+        1, 4, 2
+    ]).reshape(3,3),
+}
+transport_dict_list.append(tr_dict)
+
+
+tr_dict = {
+    "sup": [
+        50, 35, 45
+    ],
+    "dem": [
+        30, 40, 50, 10
+    ],
+    "costs": np.matrix ([
+        3, 2, 4, 3,
+        2, 3, 5, 6,
+        1, 4, 2, 3
+    ]).reshape(3,4),
+}
+transport_dict_list.append(tr_dict)
+
+tr_dict = {
+    "sup": [
+        50, 35, 45
+    ],
+    "dem": [
+        30, 40, 40, 20
+    ],
+    "costs": np.matrix ([
+        3, 2, 4, 3,
+        2, 3, 5, 6,
+        1, 4, 2, 3
+    ]).reshape(3,4),
+}
+transport_dict_list.append(tr_dict)
+
+tr_dict = {
+    "sup": [
+        50, 35, 45
+    ],
+    "dem": [
+        25, 40, 35, 30
+    ],
+    "costs": np.matrix ([
+        3, 2, 4, 3,
+        2, 3, 5, 6,
+        1, 4, 2, 3
+    ]).reshape(3,4),
+}
+transport_dict_list.append(tr_dict)
+
+
+tr_dict = {
+    "sup": [
+        45, 55, 30
+    ],
+    "dem": [
+        30, 40, 35, 25
+    ],
+    "costs": np.matrix ([
+        3, 2, 4, 3,
+        2, 3, 5, 6,
+        1, 4, 2, 3
+    ]).reshape(3,4),
+}
+transport_dict_list.append(tr_dict)
+
+
+#
 # tr_dict = {
 #     "sup": [
-#         75, 65, 60
+#         70, 60, 55
 #     ],
 #     "dem": [
-#         40, 75, 60
+#         60, 80, 20
 #     ],
 #     "costs": np.matrix ([
-#         4, 2, 3,
-#         3, 8, 6,
-#         4, 5, 5
+#         3, 2, 2,
+#         6, 4, 4,
+#         5, 4, 5,
 #     ]).reshape(3,3),
 # }
 # transport_dict_list.append(tr_dict)
 #
-#
 # tr_dict = {
 #     "sup": [
-#         75, 65, 60
+#         60, 70, 55
 #     ],
 #     "dem": [
-#         40, 75, 55
+#         60, 80, 20
 #     ],
 #     "costs": np.matrix ([
-#         4, 2, 3,
-#         3, 8, 6,
-#         4, 5, 5
+#         3, 2, 2,
+#         6, 7, 4,
+#         5, 4, 5,
 #     ]).reshape(3,3),
 # }
 # transport_dict_list.append(tr_dict)
+
+tr_dict = {
+    "sup": [
+        70, 70, 50
+    ],
+    "dem": [
+        60, 90, 20
+    ],
+    "costs": np.matrix ([
+        3, 2, 2,
+        6, 3, 4,
+        5, 4, 3,
+    ]).reshape(3,3),
+}
+transport_dict_list.append(tr_dict)
+
+tr_dict = {
+    "sup": [
+        50, 80, 60
+    ],
+    "dem": [
+        60, 90, 30, 10
+    ],
+    "costs": np.matrix ([
+        5, 2, 4, 1,
+        3, 6, 5, 7,
+        2, 4, 3, 3,
+    ]).reshape(3,4),
+}
+transport_dict_list.append(tr_dict)
+
+
+tr_dict = {
+    "sup": [
+        70, 60, 50
+    ],
+    "dem": [
+        60, 90, 20
+    ],
+    "costs": np.matrix ([
+        3, 2, 2,
+        6, 3, 4,
+        5, 4, 3,
+    ]).reshape(3,3),
+}
+transport_dict_list.append(tr_dict)
+
+tr_dict = {
+    "sup": [
+        65, 55, 60
+    ],
+    "dem": [
+        70, 45, 35, 30
+    ],
+    "costs": np.matrix ([
+        5, 4, 6, 8,
+        6, 3, 4, 5,
+        4, 7, 6, 7,
+    ]).reshape(3,4),
+}
+transport_dict_list.append(tr_dict)
+
+
+tr_dict = {
+    "sup": [
+        70, 60, 55
+    ],
+    "dem": [
+        60, 90, 20
+    ],
+    "costs": np.matrix ([
+        3, 2, 2,
+        6, 3, 4,
+        5, 4, 3,
+    ]).reshape(3,3),
+}
+transport_dict_list.append(tr_dict)
+
+tr_dict = {
+    "sup": [
+        90, 70, 50
+    ],
+    "dem": [
+        50, 80, 70, 10
+    ],
+    "costs": np.matrix ([
+        4, 3, 5, 4,
+        6, 7, 8, 3,
+        5, 2, 9, 5,
+    ]).reshape(3,4),
+}
+transport_dict_list.append(tr_dict)
 
 print len(transport_dict_list)
 
@@ -1020,8 +1239,14 @@ with open('transport.bin', 'rb') as f:
 
 INIT_METHOD_DICT = {"LCM": u"最小元素法", "NCM": u"西北角法", "VOGEL": u"伏格尔法"}
 
+# 产销平衡，(西北角>2 <=3 or 最小元素>2 <=3) 求解有退化，最后无退化
+count1 = 0
+count1_list = []
+
+
 for i, tr in enumerate(transport_dict_list_loaded):
 #    r.clipboard_clear ()
+    required_init_method = tr.pop("required_init_method", None)
     t = transportation(**tr)
     template = latex_jinja_env.get_template('/utils/transportation.tex')
     required_init_method = None
@@ -1085,6 +1310,8 @@ for i, tr in enumerate(transport_dict_list_loaded):
 
     r.clipboard_append(tex)
 
+
+
     if True: #i < len(transport_dict_list_loaded) - 1:
         print "dem:", t.surplus_dem, ", sup:", t.surplus_sup
         if t.is_standard_problem:
@@ -1122,3 +1349,21 @@ for i, tr in enumerate(transport_dict_list_loaded):
                 u"最优解唯一：", VOGEL_result.has_unique_solution,\
                 u"最优解退化：", VOGEL_result.final_is_degenerated_solution, \
                 u"z", VOGEL_result.z
+
+
+        # count1 产销平衡，(西北角>2 <=3 or 最小元素>2 <=3) 求解有退化，最后无退化
+
+        if (t.is_standard_problem
+            and
+                (len(NCM_result.solution_list) in range(2,4) or len(LCM_result.solution_list) in range(2,4))
+            and not (NCM_result.final_is_degenerated_solution or LCM_result.final_is_degenerated_solution or VOGEL_result.final_is_degenerated_solution)
+            and (NCM_result.has_degenerated_mid_solution or LCM_result.has_degenerated_mid_solution or NCM_result.has_degenerated_init_solution or NCM_result.has_degenerated_init_solution)
+            ):
+            count1 += 1
+            count1_list.append(t)
+
+
+print "count1:", count1
+for i in count1_list:
+    print i.dem, i.sup
+

@@ -15,7 +15,7 @@
 求解以下运输问题的最优运输方案
 \BLOCK{- if t.is_sup_bounded_problem }，使得在最低供应量必须运出的前提下，尽可能多地满足各地的需求\BLOCK{ endif -}
 \BLOCK{- if t.is_dem_bounded_problem }，使得在最低需求量必须满足的前提下，尽可能多地满足各地的需求\BLOCK{ endif -}
-\BLOCK{if init_method}，要求初始基本可行方案用<strong>\VAR{init_method}<\strong>得出\BLOCK{endif}.
+\BLOCK{if init_method_list}，要求初始基本可行方案用<strong>\VAR{init_method_list|join("</strong>或<strong>")}</strong>得出\BLOCK{endif}.
 \BLOCK{endif}
 
 {% from "latex.jinja" import transportation_preamble as preamble %}
