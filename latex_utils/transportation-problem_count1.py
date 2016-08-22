@@ -57,12 +57,18 @@ def is_qualified_question(tr, saved_question=SAVED_QUESTION):
             ):
             qualified = True
             suggested_method.append("NCM")
+
+        lcm_ratio_qualified = False
         if (len(LCM_result.solution_list) in range(3, 5)
             and
                 (LCM_result.has_degenerated_mid_solution or LCM_result.has_degenerated_init_solution)
             ):
-            qualified = True
             suggested_method.append("LCM")
+            a = random.uniform (0, 1)
+            qualified = True
+            if a < 0.05:
+                lcm_ratio_qualified = True
+
 
         # if (len(VOGEL_result.solution_list) in range(3, 4)
         #     and
@@ -71,7 +77,7 @@ def is_qualified_question(tr, saved_question=SAVED_QUESTION):
         #     qualified = True
         #     suggested_method.append("VOGEL")
 
-    print qualified
+    #print qualified
 
     if not qualified:
         # 问题不合格
@@ -86,6 +92,7 @@ def is_qualified_question(tr, saved_question=SAVED_QUESTION):
         if np.all(tr["costs"] == d["costs"]):
             if tr["dem"] == d["dem"] and tr["sup"] == d["sup"]:
                 if not tr["required_init_method"] == d["required_init_method"]:
+                    print tr
                     print suggested_method
                     transport_dict_list_loaded.pop(i)
                     with open(SAVED_QUESTION, 'wb') as f:
@@ -95,17 +102,23 @@ def is_qualified_question(tr, saved_question=SAVED_QUESTION):
                 question_exist = True
 
     if not question_exist:
-        suggestion = "tr_dict=%s" % str(tr)
-        suggestion = suggestion.replace("matrix", "np.matrix")
-        print suggestion
-        r = Tk()
-        r.withdraw()
-        r.clipboard_clear()
-        r.clipboard_append(suggestion)
-        r.clipboard_append("\n")
-        r.clipboard_append("transport_dict_list.append(tr_dict)")
+        if lcm_ratio_qualified:
+            suggestion = "tr_dict=%s" % str(tr)
+            suggestion = suggestion.replace("matrix", "np.matrix")
+            print suggestion
+            r = Tk()
+            r.withdraw()
+            r.clipboard_clear()
+            r.clipboard_append(suggestion)
+            r.clipboard_append("\n")
+            r.clipboard_append("transport_dict_list.append(tr_dict)")
 
-        raise ValueError("Please add above problem")
+            raise ValueError("Please add above problem")
+        else:
+            r = Tk ()
+            r.withdraw ()
+            r.clipboard_clear ()
+            return False
 
 
     print tr
@@ -314,20 +327,19 @@ tr_dict={'costs': np.matrix([[2, 3, 2, 2],
         [3, 1, 5, 3],
         [4, 4, 8, 6]]), 'required_init_method': ['NCM'], 'dem': [4, 7, 6, 2], 'sup': [5, 6, 8]}
 transport_dict_list.append(tr_dict)
-#
-# tr_dict = {
-#     "sup": [90, 70, 60, 20],
-#     "dem": [80, 100, 60],
-#     "costs": np.matrix ([
-#         6, 3, 5,
-#         4, 8, 9,
-#         6, 5, 7,
-#         5, 4, 8,
-#     ]).reshape(4,3),
-# }
-# transport_dict_list.append(tr_dict)
-#
-#
+
+tr_dict={'costs': np.matrix([[3, 4, 5],
+        [9, 5, 8],
+        [8, 5, 7],
+        [6, 4, 6]]), 'required_init_method': ['LCM'], 'dem': [80, 100, 60], 'sup': [90, 70, 60, 20]}
+transport_dict_list.append(tr_dict)
+
+tr_dict={'costs': np.matrix([[5, 5, 5],
+        [8, 8, 6],
+        [6, 4, 3],
+        [7, 9, 4]]), 'required_init_method': ['LCM'], 'dem': [80, 100, 60], 'sup': [90, 70, 60, 20]}
+transport_dict_list.append(tr_dict)
+
 tr_dict={'costs': np.matrix([[5, 4, 8, 9],
         [5, 6, 6, 8],
         [7, 2, 7, 3]]), 'required_init_method': ['LCM'], 'dem': [60, 100, 50, 30], 'sup': [70, 80, 90]}
@@ -784,12 +796,12 @@ transport_dict_list.append(tr_dict)
 
 tr_dict={'costs': np.matrix([[5, 8, 4, 7],
         [3, 5, 3, 7],
-        [6, 6, 4, 3]]), 'required_init_method': ['NCM', 'LCM'], 'dem': [40, 60, 80, 30], 'sup': [90, 60, 60]}
+        [6, 6, 4, 3]]), 'required_init_method': ['NCM'], 'dem': [40, 60, 80, 30], 'sup': [90, 60, 60]}
 transport_dict_list.append(tr_dict)
 
 tr_dict={'costs': np.matrix([[6, 3, 5, 3],
         [6, 4, 7, 4],
-        [8, 7, 5, 3]]), 'required_init_method': ['NCM'], 'dem': [40, 60, 80, 30], 'sup': [90, 60, 60]}
+        [8, 7, 5, 3]]), 'required_init_method': ['NCM', 'LCM'], 'dem': [40, 60, 80, 30], 'sup': [90, 60, 60]}
 transport_dict_list.append(tr_dict)
 
 tr_dict={'costs': np.matrix([[8, 5, 6, 7],
@@ -817,7 +829,7 @@ transport_dict_list.append(tr_dict)
 #
 tr_dict={'costs': np.matrix([[3, 6, 3, 7],
         [5, 3, 6, 5],
-        [8, 4, 7, 4]]), 'required_init_method': ['NCM'], 'dem': [40, 60, 80, 30], 'sup': [90, 60, 60]}
+        [8, 4, 7, 4]]), 'required_init_method': ['NCM', 'LCM'], 'dem': [40, 60, 80, 30], 'sup': [90, 60, 60]}
 transport_dict_list.append(tr_dict)
 
 tr_dict={'costs': np.matrix([[6, 5, 3, 4],
@@ -870,36 +882,40 @@ tr_dict={'costs': np.matrix([[3, 5, 2, 4],
         [3, 1, 5, 2]]), 'required_init_method': ['LCM'], 'dem': [50, 45, 56, 34], 'sup': [60, 80, 45]}
 transport_dict_list.append(tr_dict)
 
-#
-# tr_dict = {
-#     "sup": [
-#         60, 65, 85
-#     ],
-#     "dem": [
-#         70, 60, 70, 10
-#     ],
-#     "costs": np.matrix ([
-#         2, 3, 2, 5,
-#         4, 1, 3, 2,
-#         6, 2, 6, 3,
-#     ]).reshape(3,4),
-# }
-# transport_dict_list.append(tr_dict)
-#
-# tr_dict = {
-#     "sup": [
-#         60, 65, 85
-#     ],
-#     "dem": [
-#         60, 55, 85, 10
-#     ],
-#     "costs": np.matrix ([
-#         2, 3, 2, 5,
-#         4, 1, 3, 2,
-#         6, 2, 6, 3,
-#     ]).reshape(3,4),
-# }
-# transport_dict_list.append(tr_dict)
+tr_dict={'costs': np.matrix([[3, 2, 2, 5],
+        [4, 6, 3, 2],
+        [3, 2, 6, 1]]), 'required_init_method': ['LCM'], 'dem': [70, 60, 70, 10], 'sup': [60, 65, 85]}
+transport_dict_list.append(tr_dict)
+
+tr_dict={'costs': np.matrix([[7, 5, 3, 7],
+        [4, 3, 6, 5],
+        [8, 6, 3, 4]]), 'required_init_method': ['NCM'], 'dem': [40, 60, 80, 30], 'sup': [90, 60, 60]}
+
+tr_dict={'costs': np.matrix([[3, 7, 4, 1],
+        [6, 6, 5, 4],
+        [3, 2, 5, 6]]), 'required_init_method': ['NCM'], 'dem': [30, 30, 40, 20], 'sup': [25, 45, 50]}
+
+
+tr_dict={'costs': np.matrix([[3, 1, 3, 5],
+        [2, 4, 3, 4],
+        [3, 6, 2, 2]]), 'required_init_method': ['LCM'], 'dem': [30, 40, 35, 25], 'sup': [45, 55, 30]}
+transport_dict_list.append(tr_dict)
+
+tr_dict={'costs': np.matrix([[7, 6, 4, 4],
+        [6, 3, 2, 5],
+        [5, 1, 6, 3]]), 'required_init_method': ['NCM'], 'dem': [30, 30, 40, 20], 'sup': [25, 45, 50]}
+transport_dict_list.append(tr_dict)
+
+tr_dict={'costs': np.matrix([[5, 3, 6, 7],
+        [3, 3, 8, 7],
+        [5, 4, 6, 4]]), 'required_init_method': ['NCM'], 'dem': [40, 60, 80, 30], 'sup': [90, 60, 60]}
+transport_dict_list.append(tr_dict)
+
+tr_dict={'costs': np.matrix([[6, 3, 4, 7],
+        [5, 3, 2, 4],
+        [5, 4, 5, 8]]), 'required_init_method': ['NCM', 'LCM'], 'dem': [40, 60, 60, 80], 'sup': [100, 60, 80]}
+transport_dict_list.append(tr_dict)
+
 #
 # tr_dict = {
 #     "sup": [
@@ -931,20 +947,32 @@ transport_dict_list.append(tr_dict)
 # }
 # transport_dict_list.append(tr_dict)
 #
-# tr_dict = {
-#     "sup": [
-#         45, 30, 55
-#     ],
-#     "dem": [
-#         20, 40, 60, 10
-#     ],
-#     "costs": np.matrix ([
-#         5, 1, 7, 2,
-#         4, 6, 2, 5,
-#         7, 4, 5, 2
-#     ]).reshape(3,4),
-# }
-# transport_dict_list.append(tr_dict)
+
+tr_dict={'costs': np.matrix([[2, 1, 6, 3],
+        [5, 5, 3, 4],
+        [6, 4, 6, 7]]), 'required_init_method': ['NCM'], 'dem': [30, 30, 40, 20], 'sup': [25, 45, 50]}
+transport_dict_list.append(tr_dict)
+
+tr_dict={'costs': np.matrix([[7, 3, 4, 5],
+        [6, 5, 4, 2],
+        [3, 4, 5, 8]]), 'required_init_method': ['NCM'], 'dem': [40, 60, 60, 80], 'sup': [100, 60, 80]}
+transport_dict_list.append(tr_dict)
+
+tr_dict={'costs': np.matrix([[6, 5, 4, 1],
+        [6, 5, 3, 3],
+        [4, 2, 7, 6]]), 'required_init_method': ['NCM'], 'dem': [30, 30, 40, 20], 'sup': [25, 45, 50]}
+transport_dict_list.append(tr_dict)
+
+tr_dict={'costs': np.matrix([[6, 7, 7, 4],
+        [2, 5, 2, 1],
+        [5, 2, 5, 4]]), 'required_init_method': ['LCM'], 'dem': [20, 40, 60, 10], 'sup': [45, 30, 55]}
+transport_dict_list.append(tr_dict)
+
+tr_dict={'costs': np.matrix([[4, 6, 1, 5],
+        [7, 5, 4, 5],
+        [7, 2, 2, 2]]), 'required_init_method': ['LCM'], 'dem': [20, 40, 60, 10], 'sup': [45, 30, 55]}
+transport_dict_list.append(tr_dict)
+
 #
 # tr_dict = {
 #     "sup": [
@@ -962,20 +990,28 @@ transport_dict_list.append(tr_dict)
 # transport_dict_list.append(tr_dict)
 #
 #
-# tr_dict = {
-#     "sup": [
-#         80, 60, 70
-#     ],
-#     "dem": [
-#         50, 80, 70, 10
-#     ],
-#     "costs": np.matrix ([
-#         4, 2, 3, 2,
-#         3, 8, 6, 5,
-#         4, 5, 5, 7,
-#     ]).reshape(3,4),
-# }
-# transport_dict_list.append(tr_dict)
+
+tr_dict={'costs': np.matrix([[5, 4, 2, 3],
+        [5, 2, 4, 3],
+        [5, 8, 7, 6]]), 'required_init_method': ['LCM'], 'dem': [50, 80, 70, 10], 'sup': [80, 60, 70]}
+transport_dict_list.append(tr_dict)
+
+
+tr_dict={'costs': np.matrix([[3, 2, 5, 5],
+        [7, 5, 4, 6],
+        [4, 3, 8, 2]]), 'required_init_method': ['NCM', 'LCM'], 'dem': [50, 80, 70, 10], 'sup': [80, 60, 70]}
+transport_dict_list.append(tr_dict)
+
+tr_dict={'costs': np.matrix([[5, 7, 4, 5],
+        [3, 2, 6, 8],
+        [4, 3, 2, 5]]), 'required_init_method': ['NCM', 'LCM'], 'dem': [50, 80, 70, 10], 'sup': [80, 60, 70]}
+transport_dict_list.append(tr_dict)
+
+
+tr_dict={'costs': np.matrix([[4, 5, 4, 7],
+        [2, 2, 5, 3],
+        [6, 3, 8, 5]]), 'required_init_method': ['LCM'], 'dem': [50, 80, 70, 10], 'sup': [80, 60, 70]}
+transport_dict_list.append(tr_dict)
 #
 # tr_dict = {
 #     "sup": [
@@ -992,20 +1028,26 @@ transport_dict_list.append(tr_dict)
 # }
 # transport_dict_list.append(tr_dict)
 #
-# tr_dict = {
-#     "sup": [
-#         80, 65, 70
-#     ],
-#     "dem": [
-#         50, 80, 70, 15
-#     ],
-#     "costs": np.matrix ([
-#         4, 2, 3, 4,
-#         3, 8, 6, 2,
-#         4, 5, 5, 7,
-#     ]).reshape(3,4),
-# }
-# transport_dict_list.append(tr_dict)
+
+tr_dict={'costs': np.matrix([[6, 3, 5, 3],
+        [2, 4, 2, 7],
+        [4, 4, 5, 8]]), 'required_init_method': ['NCM', 'LCM'], 'dem': [50, 80, 70, 15], 'sup': [80, 65, 70]}
+transport_dict_list.append(tr_dict)
+
+
+tr_dict={'costs': np.matrix([[6, 3, 4, 8],
+        [5, 2, 4, 7],
+        [4, 3, 2, 5]]), 'required_init_method': ['LCM'], 'dem': [50, 80, 70, 15], 'sup': [80, 65, 70]}
+transport_dict_list.append(tr_dict)
+
+
+tr_dict={'costs': np.matrix([[2, 5, 4, 7],
+        [2, 4, 5, 4],
+        [8, 6, 3, 3]]), 'required_init_method': ['LCM'], 'dem': [50, 80, 70, 15], 'sup': [80, 65, 70]}
+transport_dict_list.append(tr_dict)
+
+
+
 #
 # tr_dict = {
 #     "sup": [
@@ -1102,50 +1144,39 @@ transport_dict_list.append(tr_dict)
 # transport_dict_list.append(tr_dict)
 #
 #
-# tr_dict = {
-#     "sup": [
-#         50, 35, 45
-#     ],
-#     "dem": [
-#         30, 40, 50, 10
-#     ],
-#     "costs": np.matrix ([
-#         3, 2, 4, 3,
-#         2, 3, 5, 6,
-#         1, 4, 2, 3
-#     ]).reshape(3,4),
-# }
-# transport_dict_list.append(tr_dict)
-#
-# tr_dict = {
-#     "sup": [
-#         50, 35, 45
-#     ],
-#     "dem": [
-#         30, 40, 40, 20
-#     ],
-#     "costs": np.matrix ([
-#         3, 2, 4, 3,
-#         2, 3, 5, 6,
-#         1, 4, 2, 3
-#     ]).reshape(3,4),
-# }
-# transport_dict_list.append(tr_dict)
-#
-# tr_dict = {
-#     "sup": [
-#         50, 35, 45
-#     ],
-#     "dem": [
-#         25, 40, 35, 30
-#     ],
-#     "costs": np.matrix ([
-#         3, 2, 4, 3,
-#         2, 3, 5, 6,
-#         1, 4, 2, 3
-#     ]).reshape(3,4),
-# }
-# transport_dict_list.append(tr_dict)
+
+tr_dict={'costs': np.matrix([[4, 3, 2, 2],
+        [3, 3, 2, 3],
+        [5, 6, 4, 1]]), 'required_init_method': ['LCM'], 'dem': [30, 40, 50, 10], 'sup': [50, 35, 45]}
+transport_dict_list.append(tr_dict)
+
+tr_dict={'costs': np.matrix([[3, 4, 2, 2],
+        [1, 6, 2, 3],
+        [4, 3, 3, 5]]), 'required_init_method': ['LCM'], 'dem': [30, 40, 50, 10], 'sup': [50, 35, 45]}
+transport_dict_list.append(tr_dict)
+
+
+tr_dict={'costs': np.matrix([[2, 4, 3, 2],
+        [2, 3, 6, 4],
+        [5, 1, 3, 3]]), 'required_init_method': ['LCM'], 'dem': [30, 40, 40, 20], 'sup': [50, 35, 45]}
+transport_dict_list.append(tr_dict)
+
+
+tr_dict={'costs': np.matrix([[3, 2, 3, 2],
+        [4, 2, 3, 6],
+        [1, 4, 3, 5]]), 'required_init_method': ['LCM'], 'dem': [25, 40, 35, 30], 'sup': [50, 35, 45]}
+transport_dict_list.append(tr_dict)
+
+tr_dict={'costs': np.matrix([[3, 4, 5, 2],
+        [3, 3, 4, 6],
+        [2, 1, 2, 3]]), 'required_init_method': ['LCM'], 'dem': [25, 40, 35, 30], 'sup': [50, 35, 45]}
+transport_dict_list.append(tr_dict)
+
+tr_dict={'costs': np.matrix([[5, 1, 3, 4],
+        [3, 6, 2, 2],
+        [3, 2, 4, 3]]), 'required_init_method': ['NCM', 'LCM'], 'dem': [25, 40, 35, 30], 'sup': [50, 35, 45]}
+transport_dict_list.append(tr_dict)
+
 #
 #
 #
@@ -1197,20 +1228,18 @@ transport_dict_list.append(tr_dict)
 # }
 # transport_dict_list.append(tr_dict)
 #
-# tr_dict = {
-#     "sup": [
-#         50, 80, 60
-#     ],
-#     "dem": [
-#         60, 90, 30, 10
-#     ],
-#     "costs": np.matrix ([
-#         5, 2, 4, 1,
-#         3, 6, 5, 7,
-#         2, 4, 3, 3,
-#     ]).reshape(3,4),
-# }
-# transport_dict_list.append(tr_dict)
+
+tr_dict={'costs': np.matrix([[5, 1, 4, 6],
+        [4, 3, 3, 7],
+        [2, 3, 5, 2]]), 'required_init_method': ['LCM'], 'dem': [60, 90, 30, 10], 'sup': [50, 80, 60]}
+transport_dict_list.append(tr_dict)
+
+
+tr_dict={'costs': np.matrix([[4, 5, 3, 6],
+        [3, 2, 7, 4],
+        [1, 3, 5, 2]]), 'required_init_method': ['LCM'], 'dem': [60, 90, 30, 10], 'sup': [50, 80, 60]}
+transport_dict_list.append(tr_dict)
+
 #
 #
 # tr_dict = {
@@ -1228,20 +1257,13 @@ transport_dict_list.append(tr_dict)
 # }
 # transport_dict_list.append(tr_dict)
 #
-# tr_dict = {
-#     "sup": [
-#         65, 55, 60
-#     ],
-#     "dem": [
-#         70, 45, 35, 30
-#     ],
-#     "costs": np.matrix ([
-#         5, 4, 6, 8,
-#         6, 3, 4, 5,
-#         4, 7, 6, 7,
-#     ]).reshape(3,4),
-# }
-# transport_dict_list.append(tr_dict)
+tr_dict={'costs': np.matrix([[8, 5, 7, 4],
+        [4, 3, 4, 6],
+        [5, 7, 6, 6]]), 'required_init_method': ['LCM'], 'dem': [70, 45, 35, 30], 'sup': [65, 55, 60]}
+transport_dict_list.append(tr_dict)
+
+
+
 #
 #
 # tr_dict = {
