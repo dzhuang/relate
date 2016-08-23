@@ -53,11 +53,10 @@ $$\begin{alignat*}{20}
 \BLOCK{ endif }
 用单纯形法求解：
 
-<p align="middle">
+<p align="middle"><strong>答案表\VAR{answer_table_iters.next()}</strong></br>
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
 \setcounter{keytable}{\VAR{iters.next()}}
 \begin{keytable}[H]\centering
-\topcaption{}
 \begin{tabular}{c|c|\BLOCK{ for x in range(0, lp.solutionPhase2.all_variable_str_list|length) }
 \BLOCK{ if lp.need_artificial_variable }C{1.5cm}\BLOCK{ else }C{1cm}\BLOCK{ endif }
 \BLOCK{ endfor }|c}\hline\hline

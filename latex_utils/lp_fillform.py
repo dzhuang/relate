@@ -56,7 +56,7 @@ for l in lp_json_list_loaded:
         qtype_str = u"小"
 
     tex = template.render(
-        iters = iter(range(0,5)),
+        answer_table_iters=iter(range(1, 5)),
         show_question = True,
         show_answer = True,
         #show_lp = True,

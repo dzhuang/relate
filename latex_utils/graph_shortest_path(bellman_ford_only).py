@@ -808,7 +808,6 @@ g = {"graph":
      }
 g_list.append(g)
 
-#_file_write("lp_test.tex", tex.encode('UTF-8'))
 
 from Tkinter import Tk
 r = Tk()
@@ -816,22 +815,16 @@ r.withdraw()
 r.clipboard_clear()
 
 
-#lp_json_list = []
-#lp_json_list.append(lp.json)
-#lp_json_list.append(lp2.json)
-
-
-
 import pickle
-with open('network.bin', 'wb') as f:
+with open('bf_sp.bin', 'wb') as f:
     pickle.dump(g_list, f)
 
-with open('network.bin', 'rb') as f:
+with open('bf_sp.bin', 'rb') as f:
     g_list_loaded = pickle.load(f)
 
 
 for g_dict in g_list_loaded:
-    r.clipboard_clear()
+    #r.clipboard_clear()
     g = network(**g_dict)
 
     dijkstra_is_allowed = True
@@ -845,7 +838,7 @@ for g_dict in g_list_loaded:
     template = latex_jinja_env.get_template('/utils/graph_shortest_path.tex')
     tex = template.render(
         question_iters = iter(range(0,5)),
-        iters=iter(range(0, 20)),
+        answer_table_iters=iter(range(1, 20)),
         show_question = True,
         show_answer = True,
         g=g,
@@ -856,40 +849,8 @@ for g_dict in g_list_loaded:
         dijkstra_result = dijkstra_result,
         show_bellman_ford = True,
         bellman_ford_result = g.get_iterated_solution(method="bellman_ford"),
-
     )
 
     r.clipboard_append(tex)
     print "最短路条数",len(list(g.get_shortest_path()))
     print list(g.get_shortest_path())
-
-
-# preamble of the picture of the graph.
-"""
-
-{% set preabmle %}
-\usepackage{tikz}
-\usetikzlibrary{graphs,graphs.standard,graphdrawing,quotes,shapes,arrows.meta}
-\usegdlibrary{force}
-{% endset %}
-
-<p align="middle">
-{% call latex(compiler="lualatex", image_format="png", alt="question", tex_preamble=preamble) %}
-
-
-{% endcall %}
-</p>
-
-
-"""
-
-# 求解结果
-"""
-{% from "latex.jinja" import mytabular_preamble as preamble %}
-
-<p align="middle">
-{% call latex(compiler="pdflatex", image_format="png", alt="question", tex_preamble=preamble) %}
-
-{% endcall %}
-</p>
-"""

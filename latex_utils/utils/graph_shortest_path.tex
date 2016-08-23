@@ -33,12 +33,10 @@
 
 <strong>解：</strong>用简化的Dijkstra标号法求解如下：
 
-<p align="middle">
+<p align="middle">答案表\VAR{answer_table_iters.next()}</strong></br>
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
-\setcounter{keytable}{\VAR{iters.next()}}
 \begin{keytable}[H]
 \centering \xiaosi
- \topcaption{}
 \begin{tabular}{r\BLOCK{ for i in range(g.graph|length -1) }C{1cm}\BLOCK{ endfor }C{1.2cm}l}
 \multirow{ \VAR{dijkstra_result.n_pred_lines} }*{$pred_j$}
 
@@ -77,12 +75,10 @@ $$\begin{align*}
 
 \BLOCK{ if not show_dijkstra }<strong>解：</strong>\BLOCK{endif}用Bellman-Ford解法求解如下：
 
-<p align="middle">
+<p align="middle"><strong>答案表\VAR{answer_table_iters.next()}</strong></br>
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
-\setcounter{keytable}{\VAR{iters.next()}}
 \begin{keytable}[H]
  \centering
- \topcaption{}
  \begin{mytabular}{\BLOCK{for i in range(g.graph|length + 1)}c|\BLOCK{endfor}\BLOCK{for i in range(bellman_ford_result.nit + 1)}|c\BLOCK{endfor}}\hline
  \hline
  $w_{ij}$ & \BLOCK{ for node in g.node_label_dict } $\VAR{g.node_label_dict[node]}$ & \BLOCK{endfor} \BLOCK{for i in range(1, bellman_ford_result.nit + 1)}$d_j^{(\VAR{i})}$ & \BLOCK{endfor} $pred_j$ \\

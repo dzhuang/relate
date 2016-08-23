@@ -39,11 +39,9 @@ $$\begin{alignat*}{20}
 \BLOCK{ endif }
 用单纯形法求解得到最优表如下：
 
-<p align="middle">
+<p align="middle"><strong>表\VAR{question_table_iters.next()}</strong></br>
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
-\setcounter{table}{\VAR{question_iters.next()}}
 \begin{table}[H]\centering
-\topcaption{}
 \begin{tabular}{c|c|\BLOCK{ for x in range(0, lp.solutionPhase2.all_variable_str_list|length) }C{1cm}\BLOCK{ endfor }|c}\hline\hline
 \multicolumn{2}{c|}{$c_j$}\BLOCK{ for c in lp.solutionPhase2.goal_str_list }&\VAR{c}\BLOCK{ endfor }&\multirow{2}*{$\mathbf{b}$} \\ \cline{1-\VAR{lp.solutionPhase2.all_variable_str_list|length + 2 }}
 $\mathbf{C_B}$&$\mathbf{X_B}$\BLOCK{ for x in lp.solutionPhase2.all_variable_str_list }&\VAR{x}\BLOCK{ endfor }&\\ \hline
@@ -84,11 +82,9 @@ $\mathbf{C_B}$&$\mathbf{X_B}$\BLOCK{ for x in lp.solutionPhase2.all_variable_str
 \BLOCK{- if ans.answer_description } \VAR{ans.answer_description} \BLOCK{ endif }
 \BLOCK{ if ans.change }
 
-<p align="middle">
+<p align="middle"><strong>答案表\VAR{answer_table_iters.next()}</strong></br>
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
-\setcounter{keytable}{\VAR{iters.next()}}
 \begin{keytable}[H]\centering
-\topcaption{}
 \begin{tabular}{c|c|\BLOCK{ for x in range(0, ans.new_lp.solutionPhase2.all_variable_str_list|length) }
 \BLOCK{ if ans.new_lp.need_artificial_variable }C{1.5cm}\BLOCK{ else }C{1cm}\BLOCK{ endif }
 \BLOCK{ endfor }|c}\hline\hline

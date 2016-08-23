@@ -6,7 +6,7 @@ from copy import deepcopy
 
 
 # 作业题(需要使用大M法）
-
+lp_list = []
 
 lp = LP (qtype="min",
          goal=[3, 4, 5],
@@ -15,6 +15,8 @@ lp = LP (qtype="min",
              [2, 2, 3, ">", 6],
          ],
          )
+lp_list.append(lp)
+
 
 lp = LP (qtype="max",
          goal=[1, 2, 1],
@@ -23,6 +25,8 @@ lp = LP (qtype="max",
              [1, 1, 1, "=", 60],
          ],
          )
+lp_list.append(lp)
+
 
 lp = LP (qtype="max",
          goal=[2, 1],
@@ -32,6 +36,8 @@ lp = LP (qtype="max",
              [1, 2, "<", 3],
          ],
          )
+lp_list.append(lp)
+
 
 lp = LP (qtype="max",
          goal=[1, 2, 1],
@@ -41,6 +47,8 @@ lp = LP (qtype="max",
 #             [1, 2, "<", 3],
          ],
          )
+lp_list.append(lp)
+
 
 lp = LP (qtype="max",
          goal=[3, -2, -1],
@@ -50,6 +58,7 @@ lp = LP (qtype="max",
              [-2, 0, 1, "=", 1],
          ],
          )
+lp_list.append(lp)
 
 
 template = latex_jinja_env.get_template('/utils/lp_model.tex')
@@ -131,7 +140,7 @@ for l in lp_json_list_loaded:
 
     template = latex_jinja_env.get_template('/utils/lp_simplex.tex')
     tex = template.render(
-        iters = iter(range(0,5)),
+        answer_table_iters=iter(range(1, 5)),
         show_question = True,
         show_answer = True,
         #show_2_stage = True, # 显示两阶段法

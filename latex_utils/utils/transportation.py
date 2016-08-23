@@ -957,29 +957,28 @@ def is_ascii(text):
     return True
 
 # if __name__ == '__main__':
-#     # supply = [105, 125, 70]
-#     # demand = [80, [30,80], 70, 85]
-#
-#     supply = [[72,78], [115, np.infty], 100]
-#     demand = [80, 65, 70, 85]
-#
-#     costs = np.array([[9., 10., 13., 17.],
-#                       [7., 8., 14., 16.],
-#                       [np.inf, 14., 8., 14.]])
-#
-#     # routes, z, solution_list, vogel_list, \
-#     # s_matrix_list,\
-#     # has_degenerated_init_solution, \
-#     # has_degenerated_mid_solution, \
-#     # has_unique_solution = transport(supply, demand, costs, init_method="VOGEL")
-#     # print routes, z, has_degenerated_init_solution, has_degenerated_mid_solution, has_unique_solution
-#     # print vogel_list
-#     # print solution_list
-#     # print s_matrix_list
-#     # assert z == 3125
-#     # assert has_degenerated_init_solution, has_degenerated_mid_solution
-#     # assert not has_unique_solution
-#
+#     tr_dict = {
+#         "sup": [70, 120, 100],
+#         "dem": [75, 60, 70],
+#         "costs": np.matrix([
+#             8, 9, 12,
+#             6, 7, 13,
+#             18, 12, np.inf
+#         ]).reshape(3, 3),
+#     }
+#     tr = transportation(**tr_dict)
+#     tr.solve()
+
+    # supply = [105, 125, 70]
+    # demand = [80, [30,80], 70, 85]
+    #
+    # supply = [[72,78], [115, np.infty], 100]
+    # demand = [80, 65, 70, 85]
+    #
+    # costs = np.array([[9., 10., 13., 17.],
+    #                   [7., 8., 14., 16.],
+    #                   [np.inf, 14., 8., 14.]])
+
 #     # t = transport_table_element(3, 4, sup_split_idx_list=[0,1], dem_split_idx_list=[0,1], enable_split=True, sup_name_list=[u"工厂1", u"工厂2", u"工厂3"])
 #     # print t.sup_name_list, t.dem_name_list, t.cost_desc, t.sup_desc, t.cost_desc, t.sup_amount_desc
 # #    print is_ascii(u"你好")
@@ -987,7 +986,7 @@ def is_ascii(text):
 #     #print sum_recursive([1,[1,2],6])
 #
 #     #print validate_numeric_recursive([1,2,(3,4), float("inf"), "a"])
-#     t = transportation(sup=supply, dem=demand, costs=costs, dem_name_prefix=u"市场", sup_name_prefix=u"工厂", dem_desc=u"城市")
+
 #     #t.get_standardized(sup_cost_extra=[1, 2, 3, 4])
 # #    print t.standard_costs, t.standard_dem, t.standard_sup
 # #    result = t.solve(init_method="VOGEL")
@@ -1001,8 +1000,9 @@ def is_ascii(text):
 #     for i in t_table.dem_name_list:
 #         print i
 #
-#     result = t.solve(stringfy=False)
-#     solution_list = result.solution_list
+    # t = transportation(sup=supply, dem=demand, costs=costs, dem_name_prefix=u"市场", sup_name_prefix=u"工厂", dem_desc=u"城市")
+    # result = t.solve(stringfy=False)
+    # solution_list = result.solution_list
 #     solution_list_str = get_array_to_str_list_recursive(solution_list)
 #     #print solution_list_str
 #     #print get_array_to_str_list_recursive(t.costs)

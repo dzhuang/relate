@@ -6,10 +6,15 @@ from utils.latex_utils import latex_jinja_env, _file_write
 from utils.transportation import transportation
 import numpy as np
 import random
-from Tkinter import Tk
+try:
+    # Python 3.x
+    from tkinter import Tk
+except ImportError:
+    # Python 2.x
+    from Tkinter import Tk
 
 
-SAVED_QUESTION = "transport_count1.bin"
+SAVED_QUESTION = "transport_balanced_lcm_ncm.bin"
 
 
 def is_qualified_question(tr, saved_question=SAVED_QUESTION):
@@ -91,7 +96,8 @@ def is_qualified_question(tr, saved_question=SAVED_QUESTION):
     for i, d in enumerate(transport_dict_list_loaded):
         if np.all(tr["costs"] == d["costs"]):
             if tr["dem"] == d["dem"] and tr["sup"] == d["sup"]:
-                if not tr["required_init_method"] == d["required_init_method"]:
+                d_method = d.get("required_init_method", None)
+                if not tr["required_init_method"] == d_method:
                     print tr
                     print suggested_method
                     transport_dict_list_loaded.pop(i)
@@ -1286,7 +1292,6 @@ transport_dict_list.append(tr_dict)
 
 print len(transport_dict_list)
 
-#from Tkinter import Tk
 r = Tk()
 r.withdraw()
 r.clipboard_clear()

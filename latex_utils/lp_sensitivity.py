@@ -5,6 +5,8 @@ from latex_utils.utils.lpmodel import LP
 from copy import deepcopy
 import numpy as np
 
+lp_list = []
+
 # lp = LP(qtype="max",
 #         goal=[5, 4, 2],
 #         constraints=[
@@ -47,6 +49,8 @@ lp = LP(qtype="max",
             # "x": [[{"c": 3, "p": [3, 2]}, {"c": 4, "p": [3, 2]}]]
         }
         )
+lp_list.append(lp)
+
 
 lp = LP(qtype="max",
         goal=[2, 3, 1],
@@ -68,6 +72,8 @@ lp = LP(qtype="max",
             # "x": [[{"c": 3, "p": [3, 2]}, {"c": 4, "p": [3, 2]}]]
         }
         )
+lp_list.append(lp)
+
 
 lp = LP(qtype="max",
         goal=[4, 5, 6],
@@ -89,6 +95,7 @@ lp = LP(qtype="max",
             # "x": [[{"c": 3, "p": [3, 2]}, {"c": 4, "p": [3, 2]}]]
         }
         )
+lp_list.append(lp)
 
 
 lp = LP(qtype="max",
@@ -109,6 +116,8 @@ lp = LP(qtype="max",
             # "x": [[{"c": 3, "p": [3, 2]}, {"c": 4, "p": [3, 2]}]]
         }
         )
+lp_list.append(lp)
+
 
 lp = LP(qtype="max",
         goal=[6, 2, 5],
@@ -128,6 +137,8 @@ lp = LP(qtype="max",
             # "x": [[{"c": 3, "p": [3, 2]}, {"c": 4, "p": [3, 2]}]]
         }
         )
+lp_list.append(lp)
+
 
 lp = LP(qtype="max",
         goal=[2, -1, 3, 1],
@@ -147,6 +158,8 @@ lp = LP(qtype="max",
             # "x": [[{"c": 3, "p": [3, 2]}, {"c": 4, "p": [3, 2]}]]
         }
         )
+lp_list.append(lp)
+
 
 lp = LP(qtype="max",
         goal=[5, 2, 3],
@@ -174,6 +187,8 @@ lp = LP(qtype="max",
             ]
         }
         )
+lp_list.append(lp)
+
 
 lp = LP(qtype="max",
         goal=[2, 5, 1],
@@ -202,6 +217,8 @@ lp = LP(qtype="max",
             ]
         }
         )
+lp_list.append(lp)
+
 
 lp = LP(qtype="max",
         goal=[1, 2, 6],
@@ -232,6 +249,8 @@ lp = LP(qtype="max",
             # ]
         }
         )
+lp_list.append(lp)
+
 
 lp = LP(qtype="max",
         goal=[1, 2, 6],
@@ -262,6 +281,7 @@ lp = LP(qtype="max",
             # ]
         }
         )
+lp_list.append(lp)
 
 
 lp = LP(qtype="max",
@@ -295,6 +315,8 @@ lp = LP(qtype="max",
             "p": [([0], [2, 1]), ],
         }
         )
+lp_list.append(lp)
+
 
 lp = LP(qtype="max",
         goal=[5, 6, 8],
@@ -325,6 +347,7 @@ lp = LP(qtype="max",
             "p": [([0], [2, 3], [1, 1]), ],
         }
         )
+lp_list.append(lp)
 
 
 lp = LP(qtype="max",
@@ -355,6 +378,8 @@ lp = LP(qtype="max",
             "p": [([2], [1, 2], [1/3., 1/2.]), ],
         }
         )
+lp_list.append(lp)
+
 
 lp = LP(qtype="max",
         goal=[6, 3, 2],
@@ -384,6 +409,8 @@ lp = LP(qtype="max",
             "p": [([2], [2, 1], [1 / 3., 1 / 2.]), ],
         }
         )
+lp_list.append(lp)
+
 
 lp = LP(qtype="max",
         goal=[2, 4, 3],
@@ -414,6 +441,8 @@ lp = LP(qtype="max",
             "p": [([1], [1, 2]), ],
         }
         )
+lp_list.append(lp)
+
 
 lp = LP(qtype="max",
         goal=[3, 5, 4],
@@ -444,6 +473,8 @@ lp = LP(qtype="max",
             "p": [([1], [3, 10], [1, 10]), ],
         }
         )
+lp_list.append(lp)
+
 
 lp = LP(qtype="max",
         goal=[5, 3, 4],
@@ -468,6 +499,8 @@ lp = LP(qtype="max",
             # "x": [[{"c": 3, "p": [3, 2]}, {"c": 4, "p": [3, 2]}]]
         }
         )
+lp_list.append(lp)
+
 
 lp = LP(qtype="max",
         goal=[3, 2, 1],
@@ -498,6 +531,7 @@ lp = LP(qtype="max",
             "p": [([2], [2, 1], [-1, 2]), ],
         }
         )
+lp_list.append(lp)
 
 
 lp = LP(qtype="max",
@@ -529,6 +563,7 @@ lp = LP(qtype="max",
             "p": [([0], [1, 2], [-2, 1]), ],
         }
         )
+lp_list.append(lp)
 
 
 lp = LP(qtype="max",
@@ -561,6 +596,8 @@ lp = LP(qtype="max",
             # "p": [([0], [1, 2]), ],
         }
         )
+lp_list.append(lp)
+
 
 lp = LP(qtype="max",
         goal=[4, 5, 4],
@@ -591,6 +628,8 @@ lp = LP(qtype="max",
             "p": [([0], [1, 2], [-1, 1]), ],
         }
         )
+lp_list.append(lp)
+
 
 lp = LP(qtype="max",
         goal=[2, 5, 2, 4],
@@ -614,6 +653,8 @@ lp = LP(qtype="max",
             "x": [[{"c": 6, "p": [1, 4, 6]}, {"c": 6, "p": [1, 3, 3]}]]
         }
         )
+lp_list.append(lp)
+
 
 lp = LP(qtype="max",
         goal=[7, 3, 2],
@@ -644,6 +685,8 @@ lp = LP(qtype="max",
             "p": [([2], [1, 2], [-1, 2]), ],
         }
         )
+lp_list.append(lp)
+
 
 lp = LP(qtype="max",
         goal=[3, 1, 2],
@@ -674,6 +717,7 @@ lp = LP(qtype="max",
             # "p": [([0], [1, 2]), ],
         }
         )
+lp_list.append(lp)
 
 
 lp = LP(qtype="max",
@@ -708,6 +752,8 @@ lp = LP(qtype="max",
             # "p": [([0], [3, 11, 8]), ],
         }
         )
+lp_list.append(lp)
+
 
 lp = LP(qtype="max",
         goal=[12, 8, 5],
@@ -740,6 +786,8 @@ lp = LP(qtype="max",
             # "p": [([0], [3, 11, 8]), ],
         }
         )
+lp_list.append(lp)
+
 
 lp = LP(qtype="max",
         goal=[2, 3, 7],
@@ -771,6 +819,8 @@ lp = LP(qtype="max",
             # "p": [([0], [1, 2]), ],
         }
         )
+lp_list.append(lp)
+
 
 lp = LP(qtype="max",
         goal=[5, 3, 2],
@@ -803,6 +853,7 @@ lp = LP(qtype="max",
             # "p": [([0], [1, 2]), ],
         }
         )
+lp_list.append(lp)
 
 
 lp = LP(qtype="max",
@@ -834,6 +885,8 @@ lp = LP(qtype="max",
             "p": [([1], [3, 4], [2, 3]), ],
         }
         )
+lp_list.append(lp)
+
 
 lp = LP(qtype="max",
         goal=[6, 4, 3],
@@ -864,6 +917,8 @@ lp = LP(qtype="max",
             "p": [([2], [1, 2], [-1, 2]), ],
         }
         )
+lp_list.append(lp)
+
 
 lp = LP(qtype="max",
         goal=[3, 2, 4],
@@ -883,17 +938,7 @@ lp = LP(qtype="max",
             # "x": [[{"c": 3, "p": [3, 2]}, {"c": 4, "p": [3, 2]}]]
         }
         )
-
-# template = latex_jinja_env.get_template('/utils/lp_model.tex')
-# tex = template.render(
-#     description = u"""
-#     """,
-#     lp = lp
-# )
-
-
-
-#_file_write("lp_test.tex", tex.encode('UTF-8'))
+lp_list.append(lp)
 
 from Tkinter import Tk
 r = Tk()
@@ -902,11 +947,10 @@ r.clipboard_clear()
 
 
 lp_json_list = []
-lp_json_list.append(lp.json)
-#lp_json_list.append(lp2.json)
+for lp in lp_list:
+    lp_json_list.append(lp.json)
 
 import pickle
-#import dill as pickle
 with open('lp.bin', 'wb') as f:
     pickle.dump(lp_json_list, f)
 
@@ -918,7 +962,6 @@ for l in lp_json_list_loaded:
     lp_dict = json.loads(l)
 
     lp = LP(**lp_dict)
-    #lp = lp
     lp2phase = deepcopy(lp)
 
     lp.solve(method="simplex")
@@ -926,8 +969,8 @@ for l in lp_json_list_loaded:
 
     template = latex_jinja_env.get_template('/utils/lp_sensitivity.tex')
     tex = template.render(
-        question_iters = iter(range(0,5)),
-        iters=iter(range(0, 20)),
+        question_table_iters=iter(range(1, 5)),
+        answer_table_iters=iter(range(1, 20)),
         show_question = True,
         show_answer = True,
 #        standardized_lp = lp.standardized_LP(),

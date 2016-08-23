@@ -7,6 +7,8 @@ from copy import deepcopy
 
 # 作业题
 
+lp_list = []
+
 lp = LP(qtype="max",
         goal=[2, -3, 4],
         constraints=[
@@ -16,6 +18,8 @@ lp = LP(qtype="max",
         ],
         )
 
+lp_list.append(lp)
+
 lp = LP (qtype="max",
          goal=[1, 2, 1],
          constraints=[
@@ -24,6 +28,7 @@ lp = LP (qtype="max",
              [2, 1, 0, "<", 5],
          ],
          )
+lp_list.append(lp)
 
 
 lp = LP (qtype="max",
@@ -34,6 +39,7 @@ lp = LP (qtype="max",
              [1, -1, "<", 2],
          ],
          )
+lp_list.append(lp)
 
 lp = LP (qtype="max",
          goal=[2, 1, 2],
@@ -43,6 +49,7 @@ lp = LP (qtype="max",
              [4, -1, 3, "<", 8],
          ],
          )
+lp_list.append(lp)
 
 lp = LP (qtype="min",
          goal=[-1, -4, -5],
@@ -52,6 +59,7 @@ lp = LP (qtype="min",
              [3, 1, 1, "<", 10],
          ],
          )
+lp_list.append(lp)
 
 
 # # 只有两个约束
@@ -72,6 +80,7 @@ lp = LP(qtype="max",
             [1, -3, 4, "<", 40],
         ],
         )
+lp_list.append(lp)
 
 # # 求解太复杂
 #lp = LP(qtype="max",
@@ -82,7 +91,6 @@ lp = LP(qtype="max",
 #            [2, 1, -3, "<", 10],
 #        ],
 #        )
-
 
 
 # # 求解太复杂
@@ -103,6 +111,7 @@ lp = LP(qtype="max",
             [0, 0, 1, "<", 2],
         ],
         )
+lp_list.append(lp)
 
 lp = LP(qtype="max",
         goal=[4, -2, 2],
@@ -112,6 +121,7 @@ lp = LP(qtype="max",
             [2, 2, -2, "<", 40],
         ],
         )
+lp_list.append(lp)
 
 # # 初始表检验数相同，且有无穷多最优解
 # lp = LP(qtype="max",
@@ -133,6 +143,7 @@ lp = LP(qtype="max",
             [2, 2, -2, "<", 40],
         ],
         )
+lp_list.append(lp)
 
 
 # # 太复杂
@@ -174,6 +185,7 @@ lp = LP (qtype="max",
              [1, -1, 1, "<", 16],
          ],
          )
+lp_list.append(lp)
 
 lp = LP (qtype="min",
          goal=[1, -2, 3],
@@ -183,6 +195,7 @@ lp = LP (qtype="min",
              [-3, 2, 2, "<", 16],
          ],
          )
+lp_list.append(lp)
 
 lp = LP (qtype="max",
          goal=[4, 8, 3],
@@ -192,6 +205,7 @@ lp = LP (qtype="max",
              [2, 3, 1, "<", 21],
          ],
          )
+lp_list.append(lp)
 
 
 
@@ -205,6 +219,8 @@ lp = LP (qtype="max",
              [1, 1, 2, "<", 10],
          ],
          )
+lp_list.append(lp)
+
 
 lp = LP (qtype="max",
          goal=[2, 5, 5],
@@ -214,6 +230,7 @@ lp = LP (qtype="max",
              [3, 2, 1, "<", 15],
          ],
          )
+lp_list.append(lp)
 
 lp = LP(qtype="max",
         goal=[8, 4, 5],
@@ -223,6 +240,7 @@ lp = LP(qtype="max",
             [5, 4, 1, "<", 40],
         ],
         )
+lp_list.append(lp)
 
 lp = LP(qtype="max",
         goal=[1, 2, 1],
@@ -232,6 +250,8 @@ lp = LP(qtype="max",
             [-1, 2, 2, "<", 25],
         ],
         )
+lp_list.append(lp)
+
 
 lp = LP (qtype="max",
          goal=[4, 3, 2],
@@ -241,6 +261,7 @@ lp = LP (qtype="max",
              [2, 3, 1, "<", 30],
          ],
          )
+lp_list.append(lp)
 
 # -------------------------------------------------------------
 
@@ -252,6 +273,7 @@ lp = LP (qtype="max",
              [2, 2, 1, "<", 6],
          ],
          )
+lp_list.append(lp)
 
 
 lp = LP (qtype="max",
@@ -262,6 +284,8 @@ lp = LP (qtype="max",
              [-1, 4, 1, "<", 8],
          ],
          )
+lp_list.append(lp)
+
 
 lp = LP (qtype="max",
          goal=[1, 2, 3],
@@ -271,6 +295,7 @@ lp = LP (qtype="max",
              [0, 0, 1, "<", 50],
          ],
          )
+lp_list.append(lp)
 
 lp = LP (qtype="max",
          goal=[2, -1, 3, 1],
@@ -280,6 +305,7 @@ lp = LP (qtype="max",
              [0, 0, 1, 1, "<", 8]
          ],
          )
+lp_list.append(lp)
 
 lp = LP (qtype="max",
          goal=[12, 8, 5],
@@ -289,6 +315,7 @@ lp = LP (qtype="max",
              [12, 4, 1, "<", 48],
          ],
          )
+lp_list.append(lp)
 
 lp = LP (qtype="max",
          goal=[2, -3, 4],
@@ -298,6 +325,7 @@ lp = LP (qtype="max",
              [2, 1, 1, "<", 16],
          ],
          )
+lp_list.append(lp)
 
 lp = LP (qtype="max",
          goal=[2, 5, 1],
@@ -307,6 +335,7 @@ lp = LP (qtype="max",
              [3, 2, 1, "<", 18],
          ],
          )
+lp_list.append(lp)
 
 lp = LP (qtype="max",
          goal=[-1, 2, 3],
@@ -316,6 +345,7 @@ lp = LP (qtype="max",
              [4, 3, 1, "<", 63],
          ],
          )
+lp_list.append(lp)
 
 lp = LP (qtype="min",
          goal=[1, -2, 3],
@@ -325,6 +355,7 @@ lp = LP (qtype="min",
              [-3, 2, 2, "<", 16],
          ],
          )
+lp_list.append(lp)
 
 lp = LP (qtype="max",
          goal=[2, 5, 6],
@@ -334,6 +365,7 @@ lp = LP (qtype="max",
              [3, 2, 1, "<", 16],
          ],
          )
+lp_list.append(lp)
 
 lp = LP (qtype="max",
          goal=[-2, 3, 4],
@@ -343,6 +375,7 @@ lp = LP (qtype="max",
              [0, 0, 1, "<", 4],
          ],
          )
+lp_list.append(lp)
 
 lp = LP (qtype="max",
          goal=[5, 3, 1],
@@ -352,6 +385,7 @@ lp = LP (qtype="max",
              [3, 1, 1, "<", 15],
          ],
          )
+lp_list.append(lp)
 
 lp = LP (qtype="max",
          goal=[12, 8, 5],
@@ -361,6 +395,7 @@ lp = LP (qtype="max",
              [9, 4, 1, "<", 36],
          ],
          )
+lp_list.append(lp)
 
 lp = LP (qtype="max",
          goal=[1, 2, 1],
@@ -370,6 +405,7 @@ lp = LP (qtype="max",
              [-1, 2, -4, "<", 4],
          ],
          )
+lp_list.append(lp)
 
 
 lp = LP (qtype="max",
@@ -380,6 +416,7 @@ lp = LP (qtype="max",
              [6, 5, 4, "<", 40],
          ],
          )
+lp_list.append(lp)
 
 lp = LP (qtype="max",
          goal=[3, 2, 1],
@@ -389,6 +426,7 @@ lp = LP (qtype="max",
              [3, 4, 2, "<", 8],
          ],
          )
+lp_list.append(lp)
 
 lp = LP (qtype="min",
          goal=[1, -2, 1],
@@ -398,6 +436,7 @@ lp = LP (qtype="min",
              [-1, 2, -4, "<", 4],
          ],
          )
+lp_list.append(lp)
 
 lp = LP (qtype="max",
          goal=[1, 3, 4],
@@ -407,6 +446,7 @@ lp = LP (qtype="max",
              [2, 1, 1, "<", 13],
          ],
          )
+lp_list.append(lp)
 
 lp = LP (qtype="max",
          goal=[1, 3, 2],
@@ -416,6 +456,7 @@ lp = LP (qtype="max",
              [2, 3, 2, "<", 60],
          ],
          )
+lp_list.append(lp)
 
 lp = LP (qtype="max",
          goal=[6, -3, 3],
@@ -425,6 +466,7 @@ lp = LP (qtype="max",
              [1, -2, 1, "<", 18],
          ],
          )
+lp_list.append(lp)
 
 lp = LP (qtype="max",
          goal=[10, 15, 12],
@@ -434,6 +476,7 @@ lp = LP (qtype="max",
              [2, 1, 1, "<", 6],
          ],
          )
+lp_list.append(lp)
 
 lp = LP (qtype="max",
          goal=[3, 4, 5, 2],
@@ -443,6 +486,7 @@ lp = LP (qtype="max",
              [3, 2, 1, 3, "<", 7],
          ],
          )
+lp_list.append(lp)
 
 lp = LP (qtype="max",
          goal=[3, 2, 5],
@@ -452,6 +496,7 @@ lp = LP (qtype="max",
              [1, 4, 0, "<", 30],
          ],
          )
+lp_list.append(lp)
 
 lp = LP(qtype="max",
        goal=[2, 4, 1, 1],
@@ -461,6 +506,7 @@ lp = LP(qtype="max",
            [0, 1, 4, 1, "<", 12],
        ],
        )
+lp_list.append(lp)
 
 lp = LP (qtype="max",
          goal=[2, 3, 4],
@@ -470,6 +516,7 @@ lp = LP (qtype="max",
              [3, 1, 2, "<", 10],
          ],
          )
+lp_list.append(lp)
 
 lp = LP (qtype="max",
          goal=[4, 5, 3],
@@ -479,6 +526,7 @@ lp = LP (qtype="max",
              [3, 2, -1, "<", 16],
          ],
          )
+lp_list.append(lp)
 
 lp = LP (qtype="max",
          goal=[1, 4, 5],
@@ -488,6 +536,7 @@ lp = LP (qtype="max",
              [3, 1, 1, "<", 10],
          ],
          )
+lp_list.append(lp)
 
 lp = LP(qtype="max",
         goal=[3, 5, 4],
@@ -497,6 +546,7 @@ lp = LP(qtype="max",
             [3, 2, 1, "<", 18],
         ],
         )
+lp_list.append(lp)
 
 lp = LP (qtype="max",
          goal=[1, 6, 5],
@@ -506,6 +556,7 @@ lp = LP (qtype="max",
              [2, 1, 3, "<", 30],
          ],
          )
+lp_list.append(lp)
 
 lp = LP (qtype="max",
          goal=[2, 1, 1],
@@ -515,6 +566,7 @@ lp = LP (qtype="max",
              [0, 1, 2, "<", 8],
          ],
          )
+lp_list.append(lp)
 
 lp = LP (qtype="max",
          goal=[4, 0, 3],
@@ -524,6 +576,7 @@ lp = LP (qtype="max",
              [1, 1, 1, "<", 4],
          ],
          )
+lp_list.append(lp)
 
 lp = LP (qtype="max",
          goal=[5, 0, 3],
@@ -533,6 +586,7 @@ lp = LP (qtype="max",
              [1, 1, 1, "<", 4],
          ],
          )
+lp_list.append(lp)
 
 lp = LP (qtype="max",
          goal=[2, 3, 4],
@@ -542,6 +596,8 @@ lp = LP (qtype="max",
              [-1, 3, 2, "<", 60],
          ],
          )
+lp_list.append(lp)
+
 
 lp = LP (qtype="max",
          goal=[5, 3, 2],
@@ -551,6 +607,7 @@ lp = LP (qtype="max",
              [1, -1, 3, "<", 15],
          ],
          )
+lp_list.append(lp)
 
 lp = LP (qtype="max",
          goal=[2, -1, 1],
@@ -560,6 +617,7 @@ lp = LP (qtype="max",
              [1, 1, -1, "<", 20],
          ],
          )
+lp_list.append(lp)
 
 # 4 次迭代
 lp = LP (qtype="max",
@@ -570,6 +628,8 @@ lp = LP (qtype="max",
              [1, 1, 0, "<", 2],
          ],
          )
+lp_list.append(lp)
+
 
 lp = LP (qtype="max",
          goal=[1, 2, 1],
@@ -579,6 +639,8 @@ lp = LP (qtype="max",
              [0, 3, 2, "<", 20],
          ],
          )
+lp_list.append(lp)
+
 
 # 4 次迭代
 lp = LP (qtype="max",
@@ -589,6 +651,7 @@ lp = LP (qtype="max",
              [1, 3, 2, "<", 20],
          ],
          )
+lp_list.append(lp)
 
 lp = LP (qtype="max",
          goal=[1, 1, 2],
@@ -598,6 +661,8 @@ lp = LP (qtype="max",
              [1, -1, 1, "<", 6],
          ],
          )
+lp_list.append(lp)
+
 
 lp = LP (qtype="max",
          goal=[3, 5, 1],
@@ -607,6 +672,7 @@ lp = LP (qtype="max",
              [-1, 2, 3, "<", 22],
          ],
          )
+lp_list.append(lp)
 
 # 4 次迭代
 lp = LP (qtype="max",
@@ -617,6 +683,7 @@ lp = LP (qtype="max",
              [0, 3, 1, "<", 15],
          ],
          )
+lp_list.append(lp)
 
 lp = LP (qtype="max",
          goal=[5, 2, 3],
@@ -626,38 +693,7 @@ lp = LP (qtype="max",
              [2, 3, 2, "<", 60],
          ],
          )
-
-
-# import numpy as np
-# lp = LP(qtype="max",
-#         goal=[4.0, 3.0],
-#         start_basis=[2, 3, 4],
-#         start_tableau=np.array([
-#             [3, 4, 1, 0, 0, 12],
-#             [3, 3, 0, 1, 0, 10.],
-#             [4, 2, 0, 0, 1, 8.],
-#             [-4, -3, 0, 0, 0, 0.]])
-#         )
-
-# import numpy as np
-# lp = LP(qtype="max",
-#         goal=[5.0, 4.0, 2.0, 0.0, 0.0, 4.0],
-#         start_basis=[0, 1],
-#         start_tableau=np.array([
-#             [1, 0, 0.75, 0.25, -0.5, -0.25, 30],
-#              [0, 1, -0.25, -0.25, 1, 1.25, 20],
-#              [0, 0, 0.75, 0.25, 1.5, -0.25, 230]
-#         ])
-#         )
-
-# lp = LP(qtype="min",
-#        goal=[1, -2, -1],
-#        constraints=[
-#            [1, 1, -2, "<", 15],
-#            [2, -1, 3, "<", 18],
-#            [-3, 2, 2, "<", 16],
-#        ],
-#        )
+lp_list.append(lp)
 
 
 template = latex_jinja_env.get_template('/utils/lp_model.tex')
@@ -676,9 +712,12 @@ r.withdraw()
 r.clipboard_clear()
 
 lp_json_list = []
-lp_json_list.append(lp.json)
+for lp in lp_list:
+    lp_json_list.append(lp.json)
 #lp_json_list.append(lp2.json)
 #print lp_json_list
+
+print lp_json_list
 
 
 import pickle
@@ -694,7 +733,7 @@ for l in lp_json_list_loaded:
     import json
     lp_dict = json.loads(l)
 
-    #lp = LP(**lp_dict)
+    lp = LP(**lp_dict)
     lp = lp
     lp2phase = deepcopy(lp)
 
@@ -710,7 +749,7 @@ for l in lp_json_list_loaded:
 
     template = latex_jinja_env.get_template('/utils/lp_simplex.tex')
     tex = template.render(
-        iters = iter(range(0,5)),
+        answer_table_iters=iter(range(1, 5)),
         show_question = True,
         show_answer = True,
         #show_2_stage = True, # 显示两阶段法
@@ -728,5 +767,5 @@ for l in lp_json_list_loaded:
     )
 
     r.clipboard_append(tex)
-    print lp.solve_opt_res_str
+    #print lp.solve_opt_res_str
     print "iterations:", lp.solutionCommon.nit

@@ -754,30 +754,22 @@ g = {"graph":
      }
 g_list.append(g)
 
-#_file_write("lp_test.tex", tex.encode('UTF-8'))
-
 from Tkinter import Tk
 r = Tk()
 r.withdraw()
 r.clipboard_clear()
 
 
-#lp_json_list = []
-#lp_json_list.append(lp.json)
-#lp_json_list.append(lp2.json)
-
-
-
 import pickle
-with open('network.bin', 'wb') as f:
+with open('dijk_sp.bin', 'wb') as f:
     pickle.dump(g_list, f)
 
-with open('network.bin', 'rb') as f:
+with open('dijk_sp.bin', 'rb') as f:
     g_list_loaded = pickle.load(f)
 
 
 for g_dict in g_list_loaded:
-    r.clipboard_clear()
+    # r.clipboard_clear()
     g = network(**g_dict)
 
     dijkstra_is_allowed = True
@@ -791,13 +783,13 @@ for g_dict in g_list_loaded:
     template = latex_jinja_env.get_template('/utils/graph_shortest_path.tex')
     tex = template.render(
         question_iters = iter(range(0,5)),
-        iters=iter(range(0, 20)),
+        answer_table_iters=iter(range(1, 20)),
         show_question = True,
         show_answer = True,
         g=g,
         source = g.node_label_dict[0],
         target = g.node_label_dict[len(g.graph) - 1],
-        show_dijkstra = True,
+        #show_dijkstra = True,
         dijkstra_is_allowed=dijkstra_is_allowed,
         dijkstra_result = dijkstra_result,
         show_bellman_ford = True,

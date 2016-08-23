@@ -6,6 +6,7 @@ from copy import deepcopy
 
 
 # 作业题
+lp_list = []
 
 lp = LP(qtype="max",
         goal=[1, 2, 1],
@@ -15,6 +16,8 @@ lp = LP(qtype="max",
             [-1, 2, -4,  "<", 4],
         ],
         )
+lp_list.append(lp)
+
 
 lp = LP(qtype="max",
         goal=[1, 2, 1],
@@ -24,6 +27,8 @@ lp = LP(qtype="max",
             [2, 3, 2, "<", 20],
         ],
         )
+lp_list.append(lp)
+
 
 lp = LP(qtype="max",
         goal=[2, -3, 4],
@@ -33,6 +38,8 @@ lp = LP(qtype="max",
             [2, 1, 1, "<", 16],
         ],
         )
+lp_list.append(lp)
+
 
 lp = LP (qtype="max",
          goal=[1, 2, 1],
@@ -42,6 +49,8 @@ lp = LP (qtype="max",
              [2, 1, 0, "<", 5],
          ],
          )
+lp_list.append(lp)
+
 
 lp = LP (qtype="max",
          goal=[3, 5, 4],
@@ -51,6 +60,8 @@ lp = LP (qtype="max",
              [3, 2, 1, "<", 18],
          ],
          )
+lp_list.append(lp)
+
 
 lp = LP (qtype="max",
          goal=[2, -1, 1],
@@ -60,6 +71,8 @@ lp = LP (qtype="max",
              [1, 1, -1, "<", 20],
          ],
          )
+lp_list.append(lp)
+
 
 lp = LP (qtype="max",
          goal=[2, -1, 1],
@@ -69,6 +82,8 @@ lp = LP (qtype="max",
              [3, 1, 1, "<", 60],
          ],
          )
+lp_list.append(lp)
+
 
 lp = LP (qtype="max",
          goal=[2, 4],
@@ -78,6 +93,8 @@ lp = LP (qtype="max",
              [1, -1, "<", 2],
          ],
          )
+lp_list.append(lp)
+
 
 lp = LP (qtype="max",
          goal=[2, 1, 2],
@@ -87,6 +104,8 @@ lp = LP (qtype="max",
              [4, -1, 3, "<", 8],
          ],
          )
+lp_list.append(lp)
+
 
 lp = LP (qtype="min",
          goal=[-1, -4, -5],
@@ -96,6 +115,8 @@ lp = LP (qtype="min",
              [3, 1, 1, "<", 10],
          ],
          )
+lp_list.append(lp)
+
 
 lp = LP (qtype="max",
          goal=[3, 5, 1],
@@ -105,6 +126,8 @@ lp = LP (qtype="max",
              [-1, 2, 3, "<", 22],
          ],
          )
+lp_list.append(lp)
+
 
 lp = LP (qtype="max",
          goal=[6, -3, 3],
@@ -114,6 +137,8 @@ lp = LP (qtype="max",
              [1, -2, 1, "<", 18],
          ],
          )
+lp_list.append(lp)
+
 
 lp = LP(qtype="max",
         goal=[5, 3, 2],
@@ -123,6 +148,8 @@ lp = LP(qtype="max",
             #[1, -2, 1, "<", 18],
         ],
         )
+lp_list.append(lp)
+
 
 lp = LP(qtype="max",
         goal=[-1, 3, 2],
@@ -132,6 +159,8 @@ lp = LP(qtype="max",
             [1, -3, 4, "<", 40],
         ],
         )
+lp_list.append(lp)
+
 
 # # 求解太复杂
 #lp = LP(qtype="max",
@@ -151,6 +180,8 @@ lp = LP(qtype="max",
             [1, 1, 0, "<", 2],
         ],
         )
+lp_list.append(lp)
+
 
 # # 求解太复杂
 #lp = LP(qtype="max",
@@ -170,6 +201,8 @@ lp = LP(qtype="max",
             [0, 0, 1, "<", 2],
         ],
         )
+lp_list.append(lp)
+
 
 lp = LP(qtype="max",
         goal=[4, -2, 2],
@@ -179,6 +212,8 @@ lp = LP(qtype="max",
             [2, 2, -2, "<", 40],
         ],
         )
+lp_list.append(lp)
+
 
 # # 初始表检验数相同，且有无穷多最优解
 # lp = LP(qtype="max",
@@ -208,6 +243,8 @@ lp = LP(qtype="max",
             [2, 2, -2, "<", 40],
         ],
         )
+lp_list.append(lp)
+
 
 lp = LP(qtype="max",
         goal=[3, 2, 5],
@@ -217,6 +254,8 @@ lp = LP(qtype="max",
             [1, 4, 0, "<", 30],
         ],
         )
+lp_list.append(lp)
+
 
 lp = LP(qtype="max",
         goal=[-2, 3, 4],
@@ -226,6 +265,8 @@ lp = LP(qtype="max",
             [0, 0, 1, "<", 4],
         ],
         )
+lp_list.append(lp)
+
 
 # # 太复杂
 #lp = LP(qtype="min",
@@ -245,6 +286,8 @@ lp = LP (qtype="max",
 #             [-3, 2, 2, "<", 16],
          ],
          )
+lp_list.append(lp)
+
 
 # # 中间计算太复杂
 # lp = LP (qtype="max",
@@ -264,6 +307,8 @@ lp = LP (qtype="max",
              [2, 2, 1, "<", 6],
          ],
          )
+lp_list.append(lp)
+
 
 lp = LP (qtype="max",
          goal=[6, -2, 3],
@@ -272,6 +317,8 @@ lp = LP (qtype="max",
              [1, 0, 4, "<", 4],
          ],
          )
+lp_list.append(lp)
+
 
 lp = LP (qtype="max",
          goal=[-6, 3, 5],
@@ -281,6 +328,8 @@ lp = LP (qtype="max",
              [1, -1, 1, "<", 16],
          ],
          )
+lp_list.append(lp)
+
 
 lp = LP (qtype="min",
          goal=[1, -2, 3],
@@ -290,6 +339,8 @@ lp = LP (qtype="min",
              [-3, 2, 2, "<", 16],
          ],
          )
+lp_list.append(lp)
+
 
 lp = LP (qtype="max",
          goal=[4, 8, 3],
@@ -299,6 +350,8 @@ lp = LP (qtype="max",
              [2, 3, 1, "<", 21],
          ],
          )
+lp_list.append(lp)
+
 
 lp = LP (qtype="min",
          goal=[1, -2, 1],
@@ -308,6 +361,8 @@ lp = LP (qtype="min",
              [-1, 2, -4, "<", 4],
          ],
          )
+lp_list.append(lp)
+
 
 lp = LP (qtype="max",
          goal=[1, 3, 2],
@@ -317,6 +372,8 @@ lp = LP (qtype="max",
              [2, 3, 2, "<", 60],
          ],
          )
+lp_list.append(lp)
+
 
 lp = LP (qtype="max",
          goal=[3, 2, 4],
@@ -326,6 +383,8 @@ lp = LP (qtype="max",
              [1, 1, 2, "<", 10],
          ],
          )
+lp_list.append(lp)
+
 
 lp = LP (qtype="max",
          goal=[2, 5, 5],
@@ -335,6 +394,8 @@ lp = LP (qtype="max",
              [3, 2, 1, "<", 15],
          ],
          )
+lp_list.append(lp)
+
 
 lp = LP(qtype="max",
         goal=[8, 4, 5],
@@ -344,6 +405,8 @@ lp = LP(qtype="max",
             [5, 4, 1, "<", 40],
         ],
         )
+lp_list.append(lp)
+
 
 lp = LP(qtype="max",
         goal=[1, 2, 1],
@@ -353,6 +416,8 @@ lp = LP(qtype="max",
             [-1, 2, 2, "<", 25],
         ],
         )
+lp_list.append(lp)
+
 
 lp = LP (qtype="max",
          goal=[4, 3, 2],
@@ -362,60 +427,18 @@ lp = LP (qtype="max",
              [2, 3, 1, "<", 30],
          ],
          )
+lp_list.append(lp)
 
-template = latex_jinja_env.get_template('/utils/lp_model.tex')
-tex = template.render(
-    description = u"""
-    """,
-    lp = lp
-)
-
-
-_file_write("lp_test.tex", tex.encode('UTF-8'))
 
 from Tkinter import Tk
 r = Tk()
 r.withdraw()
 r.clipboard_clear()
-# r.clipboard_append(tex)
-#
-# res=lp.solve()
-#
-# print res.x
-#
-# template = latex_jinja_env.get_template('/utils/lp_simplex.tex')
-# tex = template.render(
-#     pre_description = u"""
-#     """,
-#     lp = lp,
-#     simplex_pre_description=u"""解：引入松弛变量$x_4, x_5, x_6$，用单纯形法求解如下：
-#     """,
-#     simplex_after_description=u"""最优解唯一。
-#     """
-# )
-#
-# r.clipboard_append(tex)
-
-# lp = LP(qtype="max",
-#         goal=[3, 6, 3, 4],
-#         # x="y",
-#         # x_list=["y_1", "y_2", "w_3"],
-#         constraints=[
-#             [1, 1, 3, 4, "<", 8],
-#             [1, 3, 1, 1, ">", 21],
-#             [3, 2, 1, 2, ">", 15]
-#         ],
-#         #        sign=[">", "<", ">", "="],
-#         )
-
 lp_json_list = []
-lp_json_list.append(lp.json)
-#lp_json_list.append(lp2.json)
-#print lp_json_list
-
+for lp in lp_list:
+    lp_json_list.append(lp.json)
 
 import pickle
-#import dill as pickle
 with open('lp.bin', 'wb') as f:
     pickle.dump(lp_json_list, f)
 
@@ -442,7 +465,7 @@ for l in lp_json_list_loaded:
 
     template = latex_jinja_env.get_template('/utils/lp_simplex.tex')
     tex = template.render(
-        iters = iter(range(0,5)),
+        answer_table_iters=iter(range(1, 5)),
         show_question = True,
         show_answer = True,
         #show_2_stage = True, # 显示两阶段法
