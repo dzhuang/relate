@@ -3,7 +3,7 @@
 from utils.latex_utils import latex_jinja_env, _file_write
 from utils.lpmodel import LP
 
-lp = LP(type="max",
+lp = LP(qtype="max",
         goal=[1, 1, -1, 1],
         constraints=[
             [1, 2, 1, -1, "<", 2],
@@ -45,6 +45,21 @@ lp = LP(type="max",
 #         dual=True
 #         )
 
+
+lp = LP(qtype="max",
+        goal=[2, 3, 6, 7, 1],
+        constraints=[
+            [2, 3, 1, 4, 0, "<", 1],
+            [1, 3, 1, 0, 3,  ">", 2],
+            [3, 4, 5, 1, 1, "<",3],
+            #[-1, 3, -2, -2, "<", 3]
+        ],
+        sign=[">", ">", ">", "<", "="],
+        #x="y",
+        #z="W",
+        #x_list=["y_1", "y_2", "w_3"],
+        dual=True
+        )
 
 template = latex_jinja_env.get_template('/utils/lp_model.tex')
 tex = template.render(
