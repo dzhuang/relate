@@ -162,12 +162,40 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     count_ungraded = 0
 
     if fpctx.page.expects_answer():
-        q = FlowPageVisitGrade.objects.filter(
-            visit__flow_session__flow_id=flow_session.flow_id,
-            visit__flow_session__in_progress=False,
-            visit__page_data__ordinal = page_ordinal)\
-            .order_by ("visit__flow_session__participation__user__username", "-grade_time")\
-            .distinct("visit__flow_session__participation__user__username")
+        q = (
+            FlowPageVisitGrade.objects.filter(
+                visit__flow_session__flow_id=flow_session.flow_id,
+                visit__flow_session__in_progress=False,
+                visit__page_data__ordinal = page_ordinal,
+                grader__isnull=False
+            ).order_by("visit__flow_session__participation__user__username", "-grade_time")
+                .distinct("visit__flow_session__participation__user__username")
+                .select_related("visit")
+                .select_related ("visit__page_data"))
+
+        q_1 = (
+            FlowPageVisitGrade.objects.filter(
+                visit__flow_session__flow_id=flow_session.flow_id,
+                visit__flow_session__in_progress=False,
+                visit__page_data__ordinal = page_ordinal,
+                grader__isnull=False,
+                feedback__isnull=False,
+            ).order_by("visit__flow_session__participation__user__username", "-grade_time")
+                .distinct("visit__flow_session__participation__user__username")
+                .select_related("visit")
+                .select_related ("visit__page_data"))
+
+
+#        print (q[0].visit.flow_session.participation.user.username)
+
+        end_1 = time()
+        print "end_1", end_1-start
+        #q_graded = q.filter(feedback__isnull=False)
+        # for x in q_graded:
+        #     print q_graded
+        #q_ungraded = q.exclude(id__in=q_graded)
+
+        print "Len_q", len(q), len(q_1)#, len(q_ungraded)
 
 
         for idx, flowsession in enumerate(all_flow_sessions):
@@ -181,45 +209,45 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 grade_time = None
             else:
                 #page_data = all_flow_session_page_data_qs[idx]
-                # page_data = FlowPageData.objects.get(
-                #     flow_session=flowsession, ordinal=page_ordinal)
-                # try:
-                #     prev_flow_page_visit_grade = get_prev_answer_visit(page_data)\
-                #         .get_most_recent_grade()
-                #     if prev_flow_page_visit_grade.feedback:
-                #         grade_time = prev_flow_page_visit_grade.grade_time
-                #         count_graded += 1
-                #     else:
+                page_data = FlowPageData.objects.get(
+                    flow_session=flowsession, ordinal=page_ordinal)
+                try:
+                    prev_flow_page_visit_grade = get_prev_answer_visit(page_data)\
+                        .get_most_recent_grade()
+                    if prev_flow_page_visit_grade.feedback:
+                        grade_time = prev_flow_page_visit_grade.grade_time
+                        count_graded += 1
+                    else:
                         grade_time = None
-                #         count_ungraded += 1
-                # except:
-                #     grade_time = None
-                #     count_ungraded += 1
+                        count_ungraded += 1
+                except:
+                    grade_time = None
+                    count_ungraded += 1
 
-            text = "abcd"
+            # text = "abcd"
 
-            # text = string_concat(
-            #         "%(user_fullname)s",
-            #         " ", _("started at %(start_time)s"),
-            #         ) %  {
-            #                 "user_fullname": flowsession.participation\
-            #                         .user.get_full_name(),
-            #                 "start_time": compact_local_datetime_str(
-            #                     as_local_time(flowsession.start_time),
-            #                     get_now_or_fake_time(pctx.request),
-            #                     in_python=True)
-            #                 }
+            text = string_concat(
+                    "%(user_fullname)s",
+                    " ", _("started at %(start_time)s"),
+                    ) %  {
+                            "user_fullname": flowsession.participation\
+                                    .user.get_full_name(),
+                            "start_time": compact_local_datetime_str(
+                                as_local_time(flowsession.start_time),
+                                get_now_or_fake_time(pctx.request),
+                                in_python=True)
+                            }
 
             if grade_time:
-                pass
-                # text += (
-                #         string_concat(", ",
-                #             _("graded at %(grade_time)s"), ".") %
-                #         {"grade_time": compact_local_datetime_str(
-                #             as_local_time(grade_time),
-                #             get_now_or_fake_time(pctx.request),
-                #             in_python=True)}
-                #         )
+                # pass
+                text += (
+                        string_concat(", ",
+                            _("graded at %(grade_time)s"), ".") %
+                        {"grade_time": compact_local_datetime_str(
+                            as_local_time(grade_time),
+                            get_now_or_fake_time(pctx.request),
+                            in_python=True)}
+                        )
             else:
                 text +="."
 
