@@ -100,23 +100,29 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
         flow_id=flow_session.flow_id,
         participation__isnull=False,
         in_progress=flow_session.in_progress)
+
     flow_order_by_list = ['participation__user__username']
     if (grading_rule.grade_aggregation_strategy
             == grade_aggregation_strategy.use_earliest):
         flow_order_by_list.append('-start_time')
     all_flow_qs = all_flow_qs.order_by(*flow_order_by_list)
+
     if connection.features.can_distinct_on_fields:
         all_flow_qs = all_flow_qs \
             .distinct('participation__user__username')
+
     all_flow_sessions = list(all_flow_qs)
+
     # {{{ order flow_session by data in flow_page_data
     this_flow_page_data = FlowPageData.objects.get(
         flow_session=flow_session, ordinal=page_ordinal)
+
     flow_page_data_order_list = ["flow_session__participation__user__username"]
     all_flow_sessions_pks = all_flow_qs.values_list('pk', flat=True)
     all_flow_session_page_data_qs = FlowPageData.objects.filter(
         flow_session__pk__in=all_flow_sessions_pks,
         ordinal=page_ordinal)
+
     if (grading_rule.grade_aggregation_strategy
             == grade_aggregation_strategy.use_earliest):
         flow_page_data_order_list.append("-flow_session__start_time")
@@ -124,6 +130,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
               == grade_aggregation_strategy.use_latest):
         flow_page_data_order_list.append("flow_session__start_time")
     all_flow_session_page_data_qs = all_flow_session_page_data_qs.order_by(*flow_page_data_order_list)
+
     if this_flow_page_data.data:
         # for random generated question, put pages with same page_data.data
         # closer for grading
@@ -136,11 +143,10 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
             all_flow_session_page_data[idx] += str(idx)
 
         # sorting the flowsessions according to the page_data.data
-
         all_flow_session_page_data, all_flow_sessions = (
             list(t) for t in (
-            zip(*sorted(zip(all_flow_session_page_data, all_flow_sessions)))
-        )
+                zip(*sorted(zip(all_flow_session_page_data, all_flow_sessions)))
+            )
         )
 
     # {{{ session select2
@@ -150,8 +156,20 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     from django.core.urlresolvers import reverse
     from relate.utils import as_local_time, compact_local_datetime_str
     from course.flow import get_prev_answer_visit
+    my_time = time ()
+
+    count_graded = 0
+    count_ungraded = 0
 
     if fpctx.page.expects_answer():
+        q = FlowPageVisitGrade.objects.filter(
+            visit__flow_session__flow_id=flow_session.flow_id,
+            visit__flow_session__in_progress=False,
+            visit__page_data__ordinal = page_ordinal)\
+            .order_by ("visit__flow_session__participation__user__username", "-grade_time")\
+            .distinct("visit__flow_session__participation__user__username")
+
+
         for idx, flowsession in enumerate(all_flow_sessions):
             uri = reverse("relate-grade_flow_page",
                 args=(
@@ -163,17 +181,20 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 grade_time = None
             else:
                 #page_data = all_flow_session_page_data_qs[idx]
-                page_data = FlowPageData.objects.get(
-                    flow_session=flowsession, ordinal=page_ordinal)
-                try:
-                    prev_flow_page_visit_grade = get_prev_answer_visit(page_data)\
-                        .get_most_recent_grade()
-                    if prev_flow_page_visit_grade.feedback:
-                        grade_time = prev_flow_page_visit_grade.grade_time
-                    else:
+                # page_data = FlowPageData.objects.get(
+                #     flow_session=flowsession, ordinal=page_ordinal)
+                # try:
+                #     prev_flow_page_visit_grade = get_prev_answer_visit(page_data)\
+                #         .get_most_recent_grade()
+                #     if prev_flow_page_visit_grade.feedback:
+                #         grade_time = prev_flow_page_visit_grade.grade_time
+                #         count_graded += 1
+                #     else:
                         grade_time = None
-                except:
-                    grade_time = None
+                #         count_ungraded += 1
+                # except:
+                #     grade_time = None
+                #     count_ungraded += 1
 
             text = "abcd"
 
@@ -231,6 +252,10 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
         else:
             all_flow_sessions_json = [{"id":'', "text":''}] + ungraded_flow_sessions_json
 
+    end_time = time()
+    print "total time:", end_time - start
+    print "my time:", end_time - my_time
+    print "count:", count_graded, count_ungraded
     # }}}
 
     # neet post/get definition and form_to_html
