@@ -674,9 +674,11 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
 
         # visits that are not submitted and not im progress has been filtered
         if self.attempt_included == "first":
-            visits = visits.order_by('flow_session__participation__user__username', 'visit_time').distinct('flow_session__participation__user__username')
+            visits = visits.order_by('flow_session__participation__user__username', 'visit_time')\
+                .distinct('flow_session__participation__user__username')
         elif self.attempt_included == "last":
-            visits = visits.order_by('flow_session__participation__user__username', '-visit_time').distinct('flow_session__participation__user__username')
+            visits = visits.order_by('flow_session__participation__user__username', '-visit_time')\
+                .distinct('flow_session__participation__user__username')
 
         if visits.exists():
             import random
@@ -690,7 +692,6 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                 visit = visits_list[0]
                 if self.only_graded_pages or self.exclude_grade_percentage_lower_than:
                     most_recent_grade = visit.get_most_recent_grade()
-                    #print most_recent_grade
                     if (self.only_graded_pages and not most_recent_grade.correctness)\
                             or\
                             (self.exclude_grade_percentage_lower_than
