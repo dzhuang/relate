@@ -113,7 +113,11 @@ class ImageUploadForm(StyledForm):
         ).filter(flow_session=flow_session_id
                  ).filter(image_page_id=fpd.page_id)
 
-        if len(qs) == 0:
+        qs_iter = qs.iterator()
+
+        try:
+            next(qs_iter)
+        except StopIteration:
             raise forms.ValidationError(_("You have not upload image(s)!"))
 
 
@@ -373,31 +377,31 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         ).filter(flow_session=flow_session_id
                  ).filter(image_page_id=fpd.page_id)
 
-        if len(qs) == 0:
-            return None
+        if qs.exists():
+            file = None
+            for q in qs:
+                if q.order == 0:
+                    file= q.file
+                    break
+            if not file:
+                return None
 
-        file = None
-        for q in qs:
-            if q.order == 0:
-                file= q.file
-                break
-        if not file:
-            return None
+            if not os.path.isfile(file.path):
+                return None
 
-        if not os.path.isfile(file.path):
-            return None
+            file_name, ext = os.path.splitext(file.path)
 
-        file_name, ext = os.path.splitext(file.path)
+            thefile = open(file.path, 'rb')
+            thefile.seek(0)
+            buf = file.read()
+            thefile.close()
 
-        thefile = open(file.path, 'rb')
-        thefile.seek(0)
-        buf = file.read()
-        thefile.close()
+            if ext is None:
+                ext = ".dat"
 
-        if ext is None:
-            ext = ".dat"
+            return (ext, buf)
 
-        return (ext, buf)
+        return None
 
     # def correct_answer(self, page_context, page_data, answer_data, grade_data):
     #     if answer_data is None:
@@ -499,10 +503,14 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                                                    participation_role.auditor]
         )\
             .select_related("flow_session")\
+            .select_related("flow_session__course")\
             .select_related("flow_session__participation__user")\
             .select_related("page_data")
 
-        if len(fpv_qs) == 0:
+        fpv_qs_iter = fpv_qs.iterator()
+        try:
+            next(fpv_qs_iter)
+        except StopIteration:
             raise ValidationError(
                     _("no existing flow page visit found named \"%(refered_page_id)s\" "
                       "in flow \"%(refered_flow_id)s\" "
@@ -516,62 +524,78 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
         if self.exclude_parti_tag:
             for tag in self.exclude_parti_tag:
                 parti_tag_qs = fpv_qs.filter(flow_session__participation__tags__name__in=self.exclude_parti_tag)
-                if len(parti_tag_qs) == 0 and vctx is not None:
-                    vctx.add_warning(location,
-                        _("no participation tag named \"%(tag)s\" "
-                          "in course \"%(refered_course_id)s\""
-                          )
-                        % {
-                            'refered_course_id': self.refered_course_id,
-                            'tag': tag,
-                                     })
+                if vctx is not None:
+                    parti_tag_qs_iter = parti_tag_qs.iterator()
+                    try:
+                        next(parti_tag_qs_iter)
+                    except StopIteration:
+                        vctx.add_warning(location,
+                            _("no participation tag named \"%(tag)s\" "
+                              "in course \"%(refered_course_id)s\""
+                              )
+                            % {
+                                'refered_course_id': self.refered_course_id,
+                                'tag': tag,
+                                         })
         if self.exclude_username:
             for name in self.exclude_username:
                 username_qs = fpv_qs.filter(
                     flow_session__participation__user__username__exact=name)
-                if len(username_qs) == 0 and vctx is not None:
-                    vctx.add_warning(location,
-                                     _("no user with username \"%(name)s\" submitted sessions "
-                                       "in flow \"%(refered_flow_id)s\" "
-                                       "in course \"%(refered_course_id)s\""
-                                       )
-                                     % {
-                                         'refered_course_id': self.refered_course_id,
-                                         'refered_flow_id': self.refered_flow_id,
-                                         'name': name,
-                                     })
+                if vctx is not None:
+                    username_qs_iter = username_qs.iterator()
+                    try:
+                        next(username_qs_iter)
+                    except StopIteration:
+                        vctx.add_warning(location,
+                                         _("no user with username \"%(name)s\" submitted sessions "
+                                           "in flow \"%(refered_flow_id)s\" "
+                                           "in course \"%(refered_course_id)s\""
+                                           )
+                                         % {
+                                             'refered_course_id': self.refered_course_id,
+                                             'refered_flow_id': self.refered_flow_id,
+                                             'name': name,
+                                         })
 
         if self.exclude_session_tag:
             for session_tag in self.exclude_session_tag:
                 stag_qs = fpv_qs.filter(
                     flow_session__access_rules_tag__exact=session_tag)
-                if len(stag_qs) == 0 and vctx is not None:
-                    vctx.add_warning(location,
-                                     _("no flow session is taged \"%(session_tag)s\" is submitted "
-                                       "in flow \"%(refered_flow_id)s\" "
-                                       "in course \"%(refered_course_id)s\""
-                                       )
-                                     % {
-                                         'refered_course_id': self.refered_course_id,
-                                         'refered_flow_id': self.refered_flow_id,
-                                         'session_tag': session_tag,
-                                     })
+                if vctx is not None:
+                    stag_qs_iter = stag_qs.iterator()
+                    try:
+                        next(stag_qs_iter)
+                    except StopIteration:
+                        vctx.add_warning(location,
+                                         _("no flow session is taged \"%(session_tag)s\" is submitted "
+                                           "in flow \"%(refered_flow_id)s\" "
+                                           "in course \"%(refered_course_id)s\""
+                                           )
+                                         % {
+                                             'refered_course_id': self.refered_course_id,
+                                             'refered_flow_id': self.refered_flow_id,
+                                             'session_tag': session_tag,
+                                         })
 
         if self.include_session_tag:
             for session_tag in self.include_session_tag:
                 stag_qs = fpv_qs.filter(
                     flow_session__access_rules_tag__exact=session_tag)
-                if len(stag_qs) == 0 and vctx is not None:
-                    vctx.add_warning(location,
-                                     _("no flow session is taged \"%(session_tag)s\" is submitted "
-                                       "in flow \"%(refered_flow_id)s\" "
-                                       "in course \"%(refered_course_id)s\""
-                                       )
-                                     % {
-                                         'refered_course_id': self.refered_course_id,
-                                         'refered_flow_id': self.refered_flow_id,
-                                         'session_tag': session_tag,
-                                     })
+                if vctx is not None:
+                    stag_qs_iter = stag_qs.iterator()
+                    try:
+                        next(stag_qs_iter)
+                    except StopIteration:
+                        vctx.add_warning(location,
+                                         _("no flow session is taged \"%(session_tag)s\" is submitted "
+                                           "in flow \"%(refered_flow_id)s\" "
+                                           "in course \"%(refered_course_id)s\""
+                                           )
+                                         % {
+                                             'refered_course_id': self.refered_course_id,
+                                             'refered_flow_id': self.refered_flow_id,
+                                             'session_tag': session_tag,
+                                         })
 
         if self.exclude_grade_percentage_lower_than:
             try:
@@ -620,11 +644,11 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
             is_submitted_answer=True,
             flow_session__in_progress=False,)
                   .exclude(
-            flow_session__participation__role__in=[participation_role.instructor,
-                                                   participation_role.teaching_assistant,
-                                                   participation_role.auditor]
-        )
-                  .select_related("flow_session")
+                        flow_session__participation__role__in=[participation_role.instructor,
+                                                               participation_role.teaching_assistant,
+                                                               participation_role.auditor]
+            ).select_related("flow_session")
+                  .select_related("flow_session__course")
                   .select_related("flow_session__participation__user")
                   .select_related("page_data")
 
@@ -654,9 +678,7 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
         elif self.attempt_included == "last":
             visits = visits.order_by('flow_session__participation__user__username', '-visit_time').distinct('flow_session__participation__user__username')
 
-        if len(visits) == 0:
-            return {}
-        else:
+        if visits.exists():
             import random
             import json
 
@@ -705,6 +727,8 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
             else:
                 return {}
 
+        return {}
+
     def get_flowpageimage_qs(self, page_context, page_data):
         if page_context.in_sandbox or page_data is None:
             page_data = self.make_page_data(page_context)
@@ -716,7 +740,7 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                 qs = FlowPageImage.objects.filter(
                     flow_session__id=flow_pk, image_page_id=page_id)\
                     .order_by("order")
-                if len(qs) > 0:
+                if qs.exists():
                     return qs
             except:
                 return None
@@ -730,6 +754,7 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
             question_img_url = None
             question_thumbnail_url = None
             found_img = False
+            img = None
             for img in qs:
                 if img.order == 0:
                     found_img = True
@@ -828,11 +853,10 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
     def get_correct_answer_qs(self,page_context, page_data):
         qs = self.get_flowpageimage_qs(page_context, page_data)
         answer_qs = None
-        if qs:
-            answer_qs = None
-
+        qs_iter = qs.iterator()
+        try:
             # 如果题目图片使用了image_data，则用image_data
-            img_0 = qs[0]
+            img_0 = next(qs_iter)
             if img_0.use_image_data and img_0.image_data:
                 try:
                     flow_pk = img_0.image_data["flow_pk"]
@@ -848,14 +872,20 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
             # 作为答案.
             if not answer_qs:
                 answer_qs = list(qs)[1:]
+        except StopIteration:
+            pass
+
         return answer_qs
 
     def correct_answer(self, page_context, page_data, answer_data, grade_data):
         answer_qs = self.get_correct_answer_qs(page_context, page_data)
         ca = "\n"
 
-        if answer_qs:
-            if answer_qs[0].is_image_textify and answer_qs[0].image_text:
+        answer_qs_iter = answer_qs.iterator()
+
+        try:
+            first_image = next(answer_qs_iter)
+            if first_image.is_image_textify and first_image.image_text:
                 try:
                     ca += markup_to_html(page_context, answer_qs[0].image_text)
                 except:
@@ -879,6 +909,8 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                             };
                     </script>"""
                 ca += js
+        except StopIteration:
+            pass
 
         student_feedback = ""
         if self.allow_report_correct_answer_false:
