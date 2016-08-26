@@ -117,7 +117,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
     all_flow_sessions = list(all_flow_qs)
 
-    # {{{ order flow_session by data in flow_page_data
+    # {{{ display graded and ungraded page in grade flow page
     this_flow_page_data = FlowPageData.objects.get(
         flow_session=flow_session, ordinal=page_ordinal)
 
@@ -157,9 +157,8 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     graded_flow_sessions_json = []
     ungraded_flow_sessions_json = []
 
-    my_time = time ()
-
     graded_flow_session_id_list = []
+    graded_flow_session_time_list = []
     if fpctx.page.expects_answer():
         graded_flow_sessions_qs = (
             FlowPageVisitGrade.objects.filter(
@@ -183,20 +182,16 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
         graded_flow_session_id_list = [v[0] for v in graded_flow_session_id_time_list]
         graded_flow_session_time_list = [v[1] for v in graded_flow_session_id_time_list]
 
-        new_list = sorted(all_flow_sessions,
-                          key=lambda x: (
-                              x.pk in graded_flow_session_id_list,
-                              graded_flow_session_id_list.index(x.pk) if x.pk in graded_flow_session_id_list else None
-                          ),
-                          reverse= True)
-
-        end_1 = time()
-        print "end_1", end_1-start
-
-    itertime = time()
+    select_list = sorted(all_flow_sessions,
+                      key=lambda x: (
+                          x.pk in graded_flow_session_id_list,
+                          graded_flow_session_id_list.index(x.pk) if x.pk in graded_flow_session_id_list else None
+                      ),
+                      reverse= True)
 
     all_flow_sessions_json = []
-    for idx, flowsession in enumerate(new_list):
+
+    for idx, flowsession in enumerate(select_list):
         text = string_concat(
             "%(user_fullname)s",
             " ", _("started at %(start_time)s"),
@@ -216,14 +211,11 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
         grade_time = None
 
-
         if graded_flow_session_id_list:
             try:
                 g_idx = graded_flow_session_id_list.index(flowsession.pk)
                 grade_time = graded_flow_session_time_list[g_idx]
-                print grade_time, g_idx, len(graded_flow_session_id_list)
             except ValueError:
-                print "faild"
                 pass
 
         if grade_time:
@@ -242,8 +234,6 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 "id": flowsession.pk,
                 "text": text,
                 "url": uri,
-                "grade_time": json.dumps(
-                    grade_time.isoformat() if grade_time else None)
                 }
 
         if grade_time:
@@ -267,10 +257,6 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
         else:
             all_flow_sessions_json = [{"id":'', "text":''}] + ungraded_flow_sessions_json
 
-    end_time = time()
-    print "total time:", end_time - start
-    print "my time:", end_time - my_time
-    print "iter_time", end_time - itertime
     # }}}
 
     # neet post/get definition and form_to_html
