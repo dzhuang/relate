@@ -872,7 +872,7 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
             # 图片未关联到外部的图片（即答案，则使用order在1之后的所有图片
             # 作为答案.
             if not answer_qs:
-                answer_qs = list(qs)[1:]
+                answer_qs = qs
         except StopIteration:
             pass
 
