@@ -730,7 +730,12 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
 
         return {}
 
-    def get_flowpageimage_qs(self, page_context, page_data):
+    def get_flowpageimage_qs(self, page_context, page_data, included_order_list=None, excluded_order_list=None):
+        if included_order_list:
+            assert isinstance(included_order_list, list)
+        if excluded_order_list:
+            assert isinstance(excluded_order_list, list)
+
         if page_context.in_sandbox or page_data is None:
             page_data = self.make_page_data(page_context)
 
@@ -741,30 +746,24 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                 qs = FlowPageImage.objects.filter(
                     flow_session__id=flow_pk, image_page_id=page_id)\
                     .order_by("order")
-                if qs.exists():
-                    return qs
+                if included_order_list:
+                    qs.filter(order__in=included_order_list)
+                if excluded_order_list:
+                    qs.exlude(order__in=excluded_order_list)
+
+                return qs
             except:
                 return None
 
         return None
 
     def get_question_img(self, page_context, page_data):
-        qs = self.get_flowpageimage_qs(page_context, page_data)
+        qs = self.get_flowpageimage_qs(page_context, page_data, included_order_list=[0])
 
-        if qs:
-            question_img_url = None
-            question_thumbnail_url = None
-            found_img = False
-            img = None
-            for img in qs:
-                if img.order == 0:
-                    found_img = True
-                    break
-            if found_img:
-                return img
+        if qs.exists():
+            return qs[0]
         else:
             return None
-
 
     def body(self, page_context, page_data):
         body_html =  markup_to_html(page_context, self.page_desc.prompt)
@@ -888,7 +887,7 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
             first_image = next(answer_qs_iter)
             if first_image.is_image_textify and first_image.image_text:
                 try:
-                    ca += markup_to_html(page_context, answer_qs[0].image_text)
+                    ca += markup_to_html(page_context, first_image.image_text)
                 except:
                     pass
             else:
