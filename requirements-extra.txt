@@ -26,3 +26,6 @@ django-jsonview
 
 # For markdown in admin
 django-markdownx
+
+# For string parse
+ply
