@@ -29,6 +29,7 @@ from io import BytesIO
 import pickle
 from hashlib import md5
 
+from django.utils.translation import ugettext as _, string_concat
 from django.core.exceptions import ObjectDoesNotExist, ImproperlyConfigured
 from django.conf import settings
 
@@ -53,8 +54,10 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
         if vctx is not None and hasattr(page_desc, "data_files"):
             if hasattr(page_desc, "random_question_data_file"):
                 if not page_desc.random_question_data_file in page_desc.data_files:
-                    raise ValidationError("%s: '%s' should be listed in 'data_files'"
-                                          % (location, page_desc.random_question_data_file))
+                    raise ValidationError(
+                        "%s: " % location,
+                        string_concat(_("'%s' should be listed in 'data_files'"))
+                        % page_desc.random_question_data_file)
             if hasattr(page_desc, "cache_key_files"):
                 for cf in page_desc.cache_key_files:
                     if not cf in page_desc.data_files:
