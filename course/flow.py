@@ -573,6 +573,29 @@ def count_answered(fctx, flow_session, answer_visits):
     return (answered_count, unanswered_count)
 
 
+def get_session_answer_status(fctx, flow_session, answer_visits):
+    all_page_data = get_all_page_data(flow_session)
+
+    answered_pages = []
+    unanswered_pages = []
+    for i, page_data in enumerate(all_page_data):
+        assert i == page_data.ordinal
+
+        if answer_visits[i] is not None:
+            answer_data = answer_visits[i].answer
+        else:
+            answer_data = None
+
+        page = instantiate_flow_page_with_ctx(fctx, page_data)
+        if page.expects_answer():
+            if answer_data is None:
+                unanswered_pages.append(i)
+            else:
+                answered_pages.append(i)
+
+    return (answered_pages, unanswered_pages)
+
+
 class GradeInfo(object):
     """An object to hold a tally of points and page counts of various types in a flow.
 
@@ -2116,6 +2139,9 @@ def finish_flow_session_view(pctx, flow_session_id):
 
     answer_visits = assemble_answer_visits(flow_session)
 
+    (answered_pages, unanswered_pages) = get_session_answer_status(
+            fctx, flow_session, answer_visits)
+
     (answered_count, unanswered_count) = count_answered(
             fctx, flow_session, answer_visits)
     is_interactive_flow = bool(answered_count + unanswered_count)
@@ -2254,9 +2280,10 @@ def finish_flow_session_view(pctx, flow_session_id):
                 "course/flow-confirm-completion.html",
                 last_page_nr=flow_session.page_count-1,
                 flow_session=flow_session,
-                answered_count=answered_count,
-                unanswered_count=unanswered_count,
-                total_count=answered_count+unanswered_count)
+                answered_count=len(answered_pages),
+                unanswered_count=len(unanswered_pages),
+                unanswered_pages=answered_pages,
+                total_count=len(answered_pages) + len(unanswered_pages))
 
 # }}}
 
