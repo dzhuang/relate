@@ -767,7 +767,7 @@ def markup_to_html(course, repo, commit_sha, text, reverse_func=None,
             def_cache = cache.caches["default"]
             result = def_cache.get(cache_key)
             if result is not None:
-                assert isinstance(result, six.text_type)
+                assert isinstance(result, six.string_types)
                 return result
 
         if text.lstrip().startswith(JINJA_PREFIX):
