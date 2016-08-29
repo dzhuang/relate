@@ -283,7 +283,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
             error_msg_parts.append("-------------------------------------")
 
             error_msg = "\n".join(error_msg_parts)
-            print getattr(settings, "DEBUG")
+            #print(getattr(settings, "DEBUG"))
             if getattr(settings, "DEBUG"):
                 response_dict["stdout"] = error_msg
             else:
