@@ -33,7 +33,7 @@
           <div class="col-md-4">
             <h3>{{course.name}}</h3>
             <p>{{course.number}} {{course.time_period}}</p>
-            <p><a class="btn btn-default" href="{% url 'course.views.course_page' course.identifier %}" role="button">{% trans "View" %} &raquo;</a></p>
+            <p><a class="btn btn-default" href="{% url 'relate-course_page' course.identifier %}" role="button">{% trans "View" %} &raquo;</a></p>
           </div>
         {% endfor %}
       </div>
