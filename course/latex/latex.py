@@ -143,34 +143,34 @@ class TexDoc():
         \documentclass{standalone}.
         """
         if text:
-            text = strip_comments(text)
-            try:
-                self.parse(text)
-            except TexDocMissingElementError:
-                self.parse(text, test=True)
-                if self.has_preamble:
-                    # begin_document or end_document is missing
-                    raise
-                elif not preamble and not preamble_extra:
-                    raise
-
-                # in this case, preamble code and document body code
-                # are seperated, try to assemble them up.
-                else:
-                    if not self.has_begindoc:
-                        text = "%s\n%s" % ("\\begin{document}", text)
-                    if not self.has_enddoc:
-                        text = "%s\n%s" % (text, "\\end{document}")
-
-                    text = "%s\n%s\n%s" % (
-                        strip_comments(preamble),
-                        strip_comments(preamble_extra),
-                        text)
-                    self.parse(text)
-
-            except:
-                raise
-        else:
             raise ValueError(_("No LaTeX source code is provided."))
+
+        text = strip_comments(text)
+        try:
+            self.parse(text)
+        except TexDocMissingElementError:
+            self.parse(text, test=True)
+            if self.has_preamble:
+                # begin_document or end_document is missing
+                raise
+            elif not preamble and not preamble_extra:
+                raise
+
+            # in this case, preamble code and document body code
+            # are seperated, try to assemble them up.
+            else:
+                if not self.has_begindoc:
+                    text = "%s\n%s" % ("\\begin{document}", text)
+                if not self.has_enddoc:
+                    text = "%s\n%s" % (text, "\\end{document}")
+
+                text = "%s\n%s\n%s" % (
+                    strip_comments(preamble),
+                    strip_comments(preamble_extra),
+                    text)
+                self.parse(text)
+
+        except:
+            raise
 
         self.empty_pagestyle = empty_pagestyle

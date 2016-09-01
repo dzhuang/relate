@@ -105,7 +105,8 @@ pygments_style = 'sphinx'
 # -- Options for HTML output ----------------------------------------------
 
 
-html_theme = "alabaster"
+#html_theme = "alabaster"
+html_theme = "default"
 
 html_theme_options = {
         "extra_nav_links": {

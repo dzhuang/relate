@@ -251,15 +251,6 @@ class ImageMagick(Imageconverter):
     cmd = "convert"
     output_format = "png"
 
-
-    # def __init__(self):
-    #     self.name = self.__class__.__name__
-    #     bin_path_dir = getattr(
-    #         settings, "RELATE_%s_BIN_DIR" % self.name.upper(),
-    #         ""
-    #     )
-    #     super(ImageMagick,self).__init__()
-
     def get_converter_cmdline(
             self, input_filepath, output_filepath):
         return [self.bin_path,
