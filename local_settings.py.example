@@ -171,10 +171,12 @@ RELATE_EDITABLE_INST_ID_BEFORE_VERIFICATION = True
 #else:
 #    RELATE_LATEX_BIN_DIR = \
 #        "/usr/local/texlive/2015/bin/x86_64-linux"
+#
 
-# The name of the subfolder if you want to save converted images
-# in MEDIA_ROOT. default value is "latex_image".
-#RELATE_LATEX_IMAGE_FOLDER_NAME = "latex_image"
+# The folder of the full path where images converted
+# (from latex source) are saved. If not set, the default
+# path is a subfolder named "latex_image" in MEDIA_ROOT.
+# RELATE_LATEX_IMAGE_SAVING_FOLDER_PATH = ""
 
 # image, especially svg have large file size, files with size
 # exceed the following won't be cached.

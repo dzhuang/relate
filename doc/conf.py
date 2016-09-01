@@ -105,13 +105,12 @@ pygments_style = 'sphinx'
 # -- Options for HTML output ----------------------------------------------
 
 
-#html_theme = "alabaster"
-html_theme = "default"
+html_theme = "alabaster"
 
 html_theme_options = {
         "extra_nav_links": {
-            "🚀 Github": "https://github.com/inducer/relate",
-            #"💾 Download Releases": "https://pypi.python.org/pypi/modepy",
+            "Github": "https://github.com/inducer/relate",
+
             }
         }
 
