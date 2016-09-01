@@ -142,7 +142,7 @@ class TexDoc():
         be set as "empty". We are not using
         \documentclass{standalone}.
         """
-        if text:
+        if not text:
             raise ValueError(_("No LaTeX source code is provided."))
 
         text = strip_comments(text)
