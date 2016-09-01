@@ -1,4 +1,4 @@
-常见问题FAQ
+Frequently Asked Questions
 ==========================
 
 What does the 'view' permission do?
