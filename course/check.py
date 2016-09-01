@@ -33,7 +33,6 @@ from course.latex.converter import CommandBase
 class Tags(DjangoTags):
     relate_course_tag = 'relate_course_tag'
 
-@register(Tags.relate_course_tag)
 @register(Tags.relate_course_tag, deploy=True)
 def latex2image_bin_check(app_configs, **kwargs):
     """
