@@ -88,8 +88,10 @@ In your :file:`local_settings.py`:
 * Configure "RELATE_LATEX_BIN_PATH" option to
   the bin path of the TexLive installation. For example,
   "/usr/local/texlive/2015/bin/x86_64-linux". That is also
-  where ``latexmk``, ``dvisvgm`` and ``dvipng`` should be
-  found.
+  where ``latexmk``, ``dvisvgm`` and ``dvipng`` are supposed be
+  found. If ``dvisvgm`` or ``dvipng`` were installed elsewhere,
+  "RELATE_DVISVGM_BIN_DIR" or "RELATE_DVIPNG_BIN_DIR" should
+  be configured accordingly.
 * Configure ImageMagick bin path "RELATE_IMAGEMAGICK_BIN_DIR" to
   the absolute path of the location of the bin ``convert``
   (``convert.exe`` for Windows) of your ImageMagick installation.
