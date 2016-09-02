@@ -47,6 +47,7 @@ from course.utils import (
         course_view, render_course_page,
         get_session_grading_rule,
         FlowPageContext)
+from course.flow import get_all_page_data
 from course.views import get_now_or_fake_time
 from django.conf import settings
 from django.utils import translation
@@ -105,6 +106,10 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
         participation__isnull=False,
         in_progress=flow_session.in_progress).select_related("user")
 
+    if pctx.role != participation_role.instructor:
+        all_flow_qs = all_flow_qs.exclude(
+            participation__role=participation_role.instructor)
+
     flow_order_by_list = ['participation__user__username']
     if (grading_rule.grade_aggregation_strategy
             == grade_aggregation_strategy.use_earliest):
@@ -127,11 +132,13 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
         flow_session=flow_session, ordinal=page_ordinal)
 
     page_id = this_flow_page_data.page_id
+    group_id = this_flow_page_data.group_id
 
     flow_page_data_order_list = ["flow_session__participation__user__username"]
     all_flow_sessions_pks = all_flow_qs.values_list('pk', flat=True)
     all_flow_session_page_data_qs = FlowPageData.objects.filter(
         flow_session__pk__in=all_flow_sessions_pks,
+        group_id=group_id,
         page_id = page_id,
     #    ordinal=page_ordinal
     )
@@ -175,6 +182,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 visit__flow_session__flow_id=flow_session.flow_id,
                 visit__flow_session__in_progress=False,
                 #visit__page_data__ordinal = page_ordinal,
+                visit__page_data__group_id=group_id,
                 visit__page_data__page_id=page_id,
                 feedback__isnull=False,
 
@@ -222,7 +230,9 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                }
 
         flow_page_data_idx = FlowPageData.objects.get(
-            flow_session=flow_session_idx, page_id=page_id)
+            flow_session=flow_session_idx,
+            group_id=group_id,
+            page_id=page_id)
 
         uri = reverse("relate-grade_flow_page",
             args=(
@@ -291,12 +301,16 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
             if i > 0:
                 prev_flow_session_id = all_flow_sessions[i-1].id
                 flow_page_data_i = FlowPageData.objects.get(
-                    flow_session__id=prev_flow_session_id, page_id=page_id)
+                    flow_session__id=prev_flow_session_id,
+                    group_id=group_id,
+                    page_id=page_id)
                 prev_flow_session_ordinal = flow_page_data_i.ordinal
             if i + 1 < len(all_flow_sessions):
                 next_flow_session_id = all_flow_sessions[i+1].id
                 flow_page_data_i = FlowPageData.objects.get(
-                    flow_session__id=next_flow_session_id, page_id=page_id)
+                    flow_session__id=next_flow_session_id,
+                    group_id=group_id,
+                    page_id=page_id)
                 next_flow_session_ordinal = flow_page_data_i.ordinal
 
     # }}}
@@ -429,6 +443,21 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     else:
         grading_opportunity = None
 
+    all_page_data = get_all_page_data(flow_session)
+
+    all_page_grade_status = []
+    all_expect_grade_page_data = []
+    for i, pd in enumerate(all_page_data):
+        fpctx_i = FlowPageContext(pctx.repo, pctx.course, flow_session.flow_id,
+                                  pd.ordinal, participation=flow_session.participation,
+                                flow_session=flow_session, request=pctx.request)
+        if fpctx_i.page.expects_answer():
+            all_expect_grade_page_data.append(pd)
+            most_recent_grade_i = fpctx_i.prev_answer_visit.get_most_recent_grade()
+            all_page_grade_status.append(most_recent_grade_i is not None)
+
+    grade_status_zip = zip(all_expect_grade_page_data, all_page_grade_status)
+
     from json import dumps
     return render_course_page(
             pctx,
@@ -439,6 +468,8 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 "flow_desc": fpctx.flow_desc,
                 "ordinal": fpctx.ordinal,
                 "page_data": fpctx.page_data,
+                "all_page_data": all_page_data,
+                "grade_status_zip": grade_status_zip,
 
                 "body": fpctx.page.body(
                     fpctx.page_context, fpctx.page_data.data),

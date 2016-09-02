@@ -68,7 +68,8 @@
                 $("#select_session").on('select2:select', function(e){
                     {# http://stackoverflow.com/a/33248730/3437454 #}
                     {# console.log(e.params.data.grade_time) #}
-                    window.location = e.params.data.url;
+                    if (e.params.data.url){
+                    window.location = e.params.data.url;}
                 });
             </script>
         {% endif %}
@@ -170,6 +171,33 @@
                   class="btn btn-default"><i class="fa fa-chevron-left"></i></a>
             {% else %}
               <a href="#" class="btn btn-default disabled"><i class="fa fa-chevron-left"></i></a>
+            {% endif %}
+            {% if flow_session.page_count >= 2 %}
+              <span class="dropdown">
+                <span class="btn btn-default btn-xs dropdown-toggle relate-flow-page-toc-item " id="toc-dropdown" data-toggle="dropdown"
+                  aria-haspopup="true" aria-expanded="true">
+                  <span class="caret"></span>
+                </span>
+                <ul class="dropdown-menu" aria-labelledby="toc-dropdown">
+                  {% for other_page_data, other_grade_status in grade_status_zip %}
+                  <li class="
+                      {% if other_grade_status %}
+                          alert-info
+                      {% else %}
+                          alert-danger
+                      {% endif %}
+                ">
+                  {% if other_page_data == page_data %}
+                      <i class="fa fa-long-arrow-right" aria-hidden="true"></i>{{ other_page_data.human_readable_ordinal }}: {{ other_page_data.title }}
+                  {% else %}
+                    <a href="{% url "relate-grade_flow_page" course.identifier flow_session.id other_page_data.ordinal %}">
+                      {{ other_page_data.human_readable_ordinal }}: {{ other_page_data.title }}
+                    </a>
+                  {% endif %}
+                  </li>
+                  {% endfor %}
+                </ul>
+              </span>
             {% endif %}
             {% if page_data.next_ordinal < flow_session.page_count %}
               <a href="{% url "relate-grade_flow_page" course.identifier flow_session.id page_data.next_ordinal %}"
@@ -419,8 +447,10 @@
     $(document).ready(function() {
         add_submit_next();
         scroll_to_answer();
+        var percent_box = document.getElementById("id_grade_percent")
+        if (percent_box){
         document.getElementById("id_grade_percent").tabIndex = "1";
-        document.getElementById("id_grade_points").tabIndex = "2";
+        document.getElementById("id_grade_points").tabIndex = "2";}
         });
   </script>
 
