@@ -192,7 +192,7 @@ div.progress:hover  span.stats-percentage{
   padding-right:50px;
 }
 
-@media (min-width: 992px) {
+@media (min-width: 767px) {
 
     .grading-page-student-work {
         position: absolute;
@@ -217,6 +217,33 @@ div.progress:hover  span.stats-percentage{
     }
 
 }
+
+@media (max-width: 767px) {
+
+    .grading-page-student-work.container > div {
+        margin-left: 5px;
+        margin-right: 5px;
+    }
+
+    .grading-page-grade-entry.container > div {
+        margin-left: 5px;
+        margin-right: 5px;
+    }
+
+    /*.grading-page-grade-entry {*/
+        /*margin-left: 5px;*/
+        /*margin-right: 5px;*/
+    /*}*/
+    h1, .h1 {
+        font-size: 30px;
+    }
+
+    h2, .h2 {
+        font-size: 24px;
+    }
+
+}
+
 /* {{{ codemirror */
 
 .sandbox-page-editor .CodeMirror {
