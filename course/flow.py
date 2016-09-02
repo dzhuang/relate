@@ -1563,8 +1563,6 @@ def view_flow_page(pctx, flow_session_id, ordinal):
             return redirect("relate-finish_flow_session_view",
                     pctx.course.identifier, flow_session_id)
         else:
-            if not fpctx.page.expects_answer():
-                return
             post_result = post_flow_page(
                     flow_session, fpctx, request, permissions, generates_grade)
 
