@@ -739,6 +739,8 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
         if page_context.in_sandbox or page_data is None:
             page_data = self.make_page_data(page_context)
 
+        qs = FlowPageImage.objects.none()
+
         if page_data:
             try:
                 flow_pk = page_data["flow_pk"]
@@ -753,9 +755,9 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
 
                 return qs
             except:
-                return None
+                pass
 
-        return None
+        return qs
 
     def get_question_img(self, page_context, page_data):
         qs = self.get_flowpageimage_qs(page_context, page_data, included_order_list=[0])
@@ -852,7 +854,7 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
 
     def get_correct_answer_qs(self,page_context, page_data):
         qs = self.get_flowpageimage_qs(page_context, page_data)
-        answer_qs = None
+        answer_qs = FlowPageImage.objects.none()
         qs_iter = qs.iterator()
         try:
             # 如果题目图片使用了image_data，则用image_data
@@ -866,7 +868,7 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                         flow_session__id=flow_pk, image_page_id=page_id,
                         order__in=order_set)
                 except:
-                    answer_qs=None
+                    pass
 
             # 图片未关联到外部的图片（即答案，则使用order在1之后的所有图片
             # 作为答案.
