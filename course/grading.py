@@ -51,12 +51,10 @@ from course.flow import get_all_page_data
 from course.views import get_now_or_fake_time
 from django.conf import settings
 from django.utils import translation
-import json
 
 from django.core.urlresolvers import reverse
 from relate.utils import as_local_time, compact_local_datetime_str
 
-from relate.utils import StyledForm
 
 # {{{ grading driver
 
@@ -453,20 +451,21 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                                 flow_session=flow_session, request=pctx.request)
         if fpctx_i.page.expects_answer() and fpctx_i.page.is_answer_gradable():
             all_expect_grade_page_data.append(pd)
-
-            max_points_i = fpctx_i.page.max_points(fpctx_i.page_data)
+            feedback_i = None
             if fpctx_i.prev_answer_visit is not None:
                 most_recent_grade_i = fpctx_i.prev_answer_visit.get_most_recent_grade()
                 if most_recent_grade_i is not None:
                     feedback_i = get_feedback_for_grade(most_recent_grade_i)
-                    grade_data_i = most_recent_grade_i.grade_data
                 else:
                     feedback_i = None
-                    grade_data_i = None
                 if feedback_i is not None and feedback_i.correctness is not None:
                     all_page_grade_points.append(feedback_i.correctness * 100)
+                else:
+                    all_page_grade_points.append(None)
             else:
                 all_page_grade_points.append(None)
+
+    assert len(all_expect_grade_page_data) == len(all_page_grade_points)
 
     grade_status_zip = zip(all_expect_grade_page_data, all_page_grade_points)
 
@@ -486,7 +485,6 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                     fpctx.page_context, fpctx.page_data.data),
                 "form": form,
                 "form_html": form_html,
-                #"select_flow_session_form": select_flow_session_form,
                 "feedback": feedback,
                 "max_points": max_points,
                 "points_awarded": points_awarded,
