@@ -445,18 +445,30 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
     all_page_data = get_all_page_data(flow_session)
 
-    all_page_grade_status = []
+    all_page_grade_points= []
     all_expect_grade_page_data = []
     for i, pd in enumerate(all_page_data):
         fpctx_i = FlowPageContext(pctx.repo, pctx.course, flow_session.flow_id,
                                   pd.ordinal, participation=flow_session.participation,
                                 flow_session=flow_session, request=pctx.request)
-        if fpctx_i.page.expects_answer():
+        if fpctx_i.page.expects_answer() and fpctx_i.page.is_answer_gradable():
             all_expect_grade_page_data.append(pd)
-            most_recent_grade_i = fpctx_i.prev_answer_visit.get_most_recent_grade()
-            all_page_grade_status.append(most_recent_grade_i is not None)
 
-    grade_status_zip = zip(all_expect_grade_page_data, all_page_grade_status)
+            max_points_i = fpctx_i.page.max_points(fpctx_i.page_data)
+            if fpctx_i.prev_answer_visit is not None:
+                most_recent_grade_i = fpctx_i.prev_answer_visit.get_most_recent_grade()
+                if most_recent_grade_i is not None:
+                    feedback_i = get_feedback_for_grade(most_recent_grade_i)
+                    grade_data_i = most_recent_grade_i.grade_data
+                else:
+                    feedback_i = None
+                    grade_data_i = None
+                if feedback_i is not None and feedback_i.correctness is not None:
+                    all_page_grade_points.append(feedback_i.correctness * 100)
+            else:
+                all_page_grade_points.append(None)
+
+    grade_status_zip = zip(all_expect_grade_page_data, all_page_grade_points)
 
     from json import dumps
     return render_course_page(
@@ -468,7 +480,6 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 "flow_desc": fpctx.flow_desc,
                 "ordinal": fpctx.ordinal,
                 "page_data": fpctx.page_data,
-                "all_page_data": all_page_data,
                 "grade_status_zip": grade_status_zip,
 
                 "body": fpctx.page.body(

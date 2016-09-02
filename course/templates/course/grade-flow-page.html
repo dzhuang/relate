@@ -179,19 +179,24 @@
                   <span class="caret"></span>
                 </span>
                 <ul class="dropdown-menu" aria-labelledby="toc-dropdown">
-                  {% for other_page_data, other_grade_status in grade_status_zip %}
+                  {% for other_page_data, other_grade_points in grade_status_zip %}
                   <li class="
-                      {% if other_grade_status %}
+                      {% if other_grade_points != None %}
                           alert-info
                       {% else %}
                           alert-danger
                       {% endif %}
                 ">
                   {% if other_page_data == page_data %}
-                      <i class="fa fa-long-arrow-right" aria-hidden="true"></i>{{ other_page_data.human_readable_ordinal }}: {{ other_page_data.title }}
+                      <i class="fa fa-long-arrow-right" aria-hidden="true"></i>
                   {% else %}
                     <a href="{% url "relate-grade_flow_page" course.identifier flow_session.id other_page_data.ordinal %}">
+                  {% endif %}
                       {{ other_page_data.human_readable_ordinal }}: {{ other_page_data.title }}
+                        {% if other_grade_points != None %}
+                          {{ other_grade_points|floatformat:1 }}%
+                        {% endif %}
+                  {% if other_page_data == page_data %}
                     </a>
                   {% endif %}
                   </li>
