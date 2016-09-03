@@ -47,15 +47,14 @@ from course.utils import (
         course_view, render_course_page,
         get_session_grading_rule,
         FlowPageContext)
+from course.flow import get_all_page_data
 from course.views import get_now_or_fake_time
 from django.conf import settings
 from django.utils import translation
-import json
 
 from django.core.urlresolvers import reverse
 from relate.utils import as_local_time, compact_local_datetime_str
 
-from relate.utils import StyledForm
 
 # {{{ grading driver
 
@@ -105,13 +104,22 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
         participation__isnull=False,
         in_progress=flow_session.in_progress).select_related("user")
 
+    if pctx.role != participation_role.instructor:
+        all_flow_qs = all_flow_qs.exclude(
+            participation__role=participation_role.instructor)
+
     flow_order_by_list = ['participation__user__username']
     if (grading_rule.grade_aggregation_strategy
             == grade_aggregation_strategy.use_earliest):
         flow_order_by_list.append('-start_time')
     all_flow_qs = all_flow_qs.order_by(*flow_order_by_list)
 
-    if connection.features.can_distinct_on_fields:
+    if (connection.features.can_distinct_on_fields
+        and
+        grading_rule.grade_aggregation_strategy in [
+                grade_aggregation_strategy.use_earliest,
+                grade_aggregation_strategy.use_latest]
+        ):
         all_flow_qs = all_flow_qs \
             .distinct('participation__user__username')
 
@@ -121,11 +129,17 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     this_flow_page_data = FlowPageData.objects.get(
         flow_session=flow_session, ordinal=page_ordinal)
 
+    page_id = this_flow_page_data.page_id
+    group_id = this_flow_page_data.group_id
+
     flow_page_data_order_list = ["flow_session__participation__user__username"]
     all_flow_sessions_pks = all_flow_qs.values_list('pk', flat=True)
     all_flow_session_page_data_qs = FlowPageData.objects.filter(
         flow_session__pk__in=all_flow_sessions_pks,
-        ordinal=page_ordinal)
+        group_id=group_id,
+        page_id = page_id,
+    #    ordinal=page_ordinal
+    )
 
     if (grading_rule.grade_aggregation_strategy
             == grade_aggregation_strategy.use_earliest):
@@ -165,7 +179,9 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 visit__flow_session__course=pctx.course,
                 visit__flow_session__flow_id=flow_session.flow_id,
                 visit__flow_session__in_progress=False,
-                visit__page_data__ordinal = page_ordinal,
+                #visit__page_data__ordinal = page_ordinal,
+                visit__page_data__group_id=group_id,
+                visit__page_data__page_id=page_id,
                 feedback__isnull=False,
 
                 ## auto grader for non submitting problems
@@ -174,9 +190,16 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 "visit__flow_session__participation__user",
                 "-grade_time"
             )
-                .distinct("visit__flow_session__participation__user")
-                .values_list("visit__flow_session__id", "grade_time")
         )
+
+        if (grading_rule.grade_aggregation_strategy in [
+            grade_aggregation_strategy.use_earliest,
+            grade_aggregation_strategy.use_latest]):
+            graded_flow_sessions_qs = graded_flow_sessions_qs.distinct(
+                "visit__flow_session__participation__user")
+
+        graded_flow_sessions_qs = graded_flow_sessions_qs.values_list("visit__flow_session__id", "grade_time")
+
         graded_flow_session_id_time_list = list(graded_flow_sessions_qs)
         graded_flow_session_id_time_list.sort(key=lambda (x,y): y)
         graded_flow_session_id_list = [v[0] for v in graded_flow_session_id_time_list]
@@ -191,29 +214,35 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
     all_flow_sessions_json = []
 
-    for idx, flowsession in enumerate(select_list):
+    for idx, flow_session_idx in enumerate(select_list):
         text = string_concat(
             "%(user_fullname)s",
             " ", _("started at %(start_time)s"),
         ) % {
-                   "user_fullname": flowsession.participation \
+                   "user_fullname": flow_session_idx.participation \
                        .user.get_full_name(),
                    "start_time": compact_local_datetime_str(
-                       as_local_time(flowsession.start_time),
+                       as_local_time(flow_session_idx.start_time),
                        get_now_or_fake_time(pctx.request),
                        in_python=True)
                }
+
+        flow_page_data_idx = FlowPageData.objects.get(
+            flow_session=flow_session_idx,
+            group_id=group_id,
+            page_id=page_id)
+
         uri = reverse("relate-grade_flow_page",
             args=(
                 pctx.course.identifier,
-                flowsession.id,
-                page_ordinal))
+                flow_session_idx.id,
+                flow_page_data_idx.ordinal))
 
         grade_time = None
 
         if graded_flow_session_id_list:
             try:
-                g_idx = graded_flow_session_id_list.index(flowsession.pk)
+                g_idx = graded_flow_session_id_list.index(flow_session_idx.pk)
                 grade_time = graded_flow_session_time_list[g_idx]
             except ValueError:
                 pass
@@ -230,16 +259,16 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
         else:
             text +="."
 
-        flowsession_json = {
-                "id": flowsession.pk,
+        flow_session_json = {
+                "id": flow_session_idx.pk,
                 "text": text,
                 "url": uri,
                 }
 
         if grade_time:
-            graded_flow_sessions_json.append(flowsession_json)
+            graded_flow_sessions_json.append(flow_session_json)
         else:
-            ungraded_flow_sessions_json.append(flowsession_json)
+            ungraded_flow_sessions_json.append(flow_session_json)
 
         if fpctx.page.expects_answer():
             all_flow_sessions_json = [
@@ -262,13 +291,25 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     # neet post/get definition and form_to_html
 
     next_flow_session_id = None
+    next_flow_session_ordinal = None
     prev_flow_session_id = None
+    prev_flow_session_ordinal = None
     for i, other_flow_session in enumerate(all_flow_sessions):
         if other_flow_session.pk == flow_session.pk:
             if i > 0:
                 prev_flow_session_id = all_flow_sessions[i-1].id
+                flow_page_data_i = FlowPageData.objects.get(
+                    flow_session__id=prev_flow_session_id,
+                    group_id=group_id,
+                    page_id=page_id)
+                prev_flow_session_ordinal = flow_page_data_i.ordinal
             if i + 1 < len(all_flow_sessions):
                 next_flow_session_id = all_flow_sessions[i+1].id
+                flow_page_data_i = FlowPageData.objects.get(
+                    flow_session__id=next_flow_session_id,
+                    group_id=group_id,
+                    page_id=page_id)
+                next_flow_session_ordinal = flow_page_data_i.ordinal
 
     # }}}
 
@@ -400,6 +441,34 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     else:
         grading_opportunity = None
 
+    all_page_data = get_all_page_data(flow_session)
+
+    all_page_grade_points= []
+    all_expect_grade_page_data = []
+    for i, pd in enumerate(all_page_data):
+        fpctx_i = FlowPageContext(pctx.repo, pctx.course, flow_session.flow_id,
+                                  pd.ordinal, participation=flow_session.participation,
+                                flow_session=flow_session, request=pctx.request)
+        if fpctx_i.page.expects_answer() and fpctx_i.page.is_answer_gradable():
+            all_expect_grade_page_data.append(pd)
+            feedback_i = None
+            if fpctx_i.prev_answer_visit is not None:
+                most_recent_grade_i = fpctx_i.prev_answer_visit.get_most_recent_grade()
+                if most_recent_grade_i is not None:
+                    feedback_i = get_feedback_for_grade(most_recent_grade_i)
+                else:
+                    feedback_i = None
+                if feedback_i is not None and feedback_i.correctness is not None:
+                    all_page_grade_points.append(feedback_i.correctness * 100)
+                else:
+                    all_page_grade_points.append(None)
+            else:
+                all_page_grade_points.append(None)
+
+    assert len(all_expect_grade_page_data) == len(all_page_grade_points)
+
+    grade_status_zip = zip(all_expect_grade_page_data, all_page_grade_points)
+
     from json import dumps
     return render_course_page(
             pctx,
@@ -410,12 +479,12 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 "flow_desc": fpctx.flow_desc,
                 "ordinal": fpctx.ordinal,
                 "page_data": fpctx.page_data,
+                "grade_status_zip": grade_status_zip,
 
                 "body": fpctx.page.body(
                     fpctx.page_context, fpctx.page_data.data),
                 "form": form,
                 "form_html": form_html,
-                #"select_flow_session_form": select_flow_session_form,
                 "feedback": feedback,
                 "max_points": max_points,
                 "points_awarded": points_awarded,
@@ -424,7 +493,9 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 "grading_opportunity": grading_opportunity,
 
                 "prev_flow_session_id": prev_flow_session_id,
+                'prev_flow_session_ordinal':prev_flow_session_ordinal,
                 "next_flow_session_id": next_flow_session_id,
+                'next_flow_session_ordinal': next_flow_session_ordinal,
                 "all_flow_sessions_json": dumps(all_flow_sessions_json),
 
                 "grading_form": grading_form,
