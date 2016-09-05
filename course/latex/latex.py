@@ -124,10 +124,10 @@ class TexDoc():
         return latex
 
     def __str__(self):
-        return self.document()
+        return self.document
 
     def __unicode__(self):
-        return self.document()
+        return self.document
 
     def __init__(self, text=None, preamble="", preamble_extra="",
                  empty_pagestyle=False):
