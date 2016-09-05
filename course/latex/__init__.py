@@ -38,36 +38,16 @@ TIKZ_PGF_RE = re.compile(r"\\begin\{(?:tikzpicture|pgfpicture)\}")
 DEFAULT_IMG_HTML_CLASS = "img-responsive"
 
 
-def tex_to_img_tag(tex_source, compiler, image_format, **kwargs):
-    """
-    :param tex_source:
-    :param compiler:
-    :param image_format:
-    :param kwargs:
-    :return:
-    """
-    """
-    :param tex_source : (str) the latex source code wrapped in the latex caller block.
-    :param \*args :
-        * 'compiler' (str): the command line used to compile the tex file, currently available: ``xelatex``, ``pdflatex``, ``latex`` and ``lualatex``.
-        ( 'image_format' (str): the output format of the image, only ``png`` and ``svg`` are available for now.
+def tex_to_img_tag(tex_source, *args, **kwargs):
+    '''Convert LaTex to IMG tag'''
 
-    :param kwargs:
+    compiler = kwargs.get("compiler", None)
+    if not compiler:
+        raise ValueError(_("'compiler' must be specified."))
 
-    :return:
-
-    :param tex_source:
-    :param args:
-    :param kwargs:
-    :return:
-    """
-    # compiler = kwargs.get("compiler", None)
-    # if not compiler:
-    #     raise ValueError(_("'compiler' must be specified."))
-
-    # image_format = kwargs.get("image_format", "")
-    # if not image_format:
-    #     raise ValueError(_("'image_format' must be specified."))
+    image_format = kwargs.get("image_format", "")
+    if not image_format:
+        raise ValueError(_("'image_format' must be specified."))
 
     output_dir = kwargs.get("output_dir")
 
