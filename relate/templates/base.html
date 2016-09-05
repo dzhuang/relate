@@ -10,9 +10,10 @@
     <link rel="shortcut icon" href="/static/assets/ico/favicon.ico">
 
     <title>{% block title %}{% trans "RELATE" %}{% endblock %}</title>
-
-    <link href="{% static "bootstrap/dist/css/bootstrap.css" %}" rel="stylesheet">
-    <link href="{% static "jqueryui/themes/smoothness/jquery-ui.css" %}" rel="stylesheet">
+    <link href="http://static.learningwhat.com/bootstrap/dist/css/bootstrap.css"  rel="stylesheet">
+{#    <link href="{% static "bootstrap/dist/css/bootstrap.css" %}" rel="stylesheet">#}
+    <link href="http://static.learningwhat.com/jqueryui/themes/smoothness/jquery-ui.css"  rel="stylesheet">
+{#  <link href="{% static "jqueryui/themes/smoothness/jquery-ui.css" %}" rel="stylesheet">#}
 
     <link rel="stylesheet" href="{% static "fontawesome/css/font-awesome.css" %}">
     <link rel="stylesheet" href="{% static "jstree/dist/themes/default/style.min.css" %}" />
@@ -22,7 +23,7 @@
 
     {# Don't be tempted to move all this JS stuff down to the end. #}
     {# The datepicker generates inline JS that relies on this being loaded. #}
-    <script src="//cdn.bootcss.com/jquery/2.1.4/jquery.min.js"></script>
+    <script src="http://static.learningwhat.com/jquery/dist/jquery.min.js"></script>
     <!-- Cdn fail refers to local library -->
     <script type="text/javascript">
         if (typeof jQuery == 'undefined') {
@@ -30,7 +31,7 @@
         }
     </script>
 
-    <script src="//cdn.bootcss.com/jqueryui/1.11.4/jquery-ui.min.js"></script>
+    <script src="http://static.learningwhat.com/jqueryui/jquery-ui.min.js"></script>
 
     <script type="text/javascript">
         if (typeof jQuery.ui == 'undefined') {
@@ -38,8 +39,10 @@
         }
     </script>
 {#    <script src="{% static "jqueryui/jquery-ui.js" %}"></script>#}
-    <script src="{% static "bootstrap/dist/js/bootstrap.min.js" %}"></script>
-    <script src="{% static "jstree/dist/jstree.min.js" %}"></script>
+    <script src="http://static.learningwhat.com/bootstrap/dist/js/bootstrap.min.js"></script>
+{#    <script src="{% static "bootstrap/dist/js/bootstrap.min.js" %}"></script>#}
+    <script src="http://static.learningwhat.com/jstree/dist/jstree.min.js"></script>
+{#    <script src="{% static "jstree/dist/jstree.min.js" %}"></script>#}
 
     {{ form.media }}
 
@@ -197,7 +200,7 @@
                         <a href="/#">Privacy Policy</a> &middot;
                         <a href="https://github.com/inducer/relate">Relate Project</a>  &middot;
                         <a href="http://www.miibeian.gov.cn/" target="_blank">粤ICP备16022797号</a> &middot;
-                        <a href="http://www.beian.gov.cn/portal/recordIssue" target="_blank" ><img src="/static/images/gongan-beian.png"/>粤公安网备 44010602000797号</a>
+                        <a href="http://www.beian.gov.cn/portal/recordIssue" target="_blank" ><img src="http://static.learningwhat.com/images/gongan-beian.png"/>粤公安网备 44010602000797号</a>
 
                         </div>
                     </div>
@@ -215,7 +218,8 @@
     <!-- Placed at the end of the document so the pages load faster -->
     <script src="{% static "js/customized.js" %}"></script>
 
-    <script src="//cdn.bootcss.com/mathjax/2.7.0-beta.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script src="http://static.learningwhat.com/MathJax/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+{#    <script src="//cdn.bootcss.com/mathjax/2.7.0-beta.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>#}
     <script type="text/javascript">
         if (typeof MathJax == 'undefined') {
             document.write(unescape("%3Cscript src='{% static "MathJax/MathJax.js" %}?config=TeX-AMS-MML_HTMLorMML' type='text/javascript'%3E%3C/script%3E"));
