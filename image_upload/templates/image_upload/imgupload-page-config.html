@@ -1,5 +1,6 @@
 {% extends 'jfu/upload_form.html' %}
 {% load i18n %}
+{% load static %}
 
 {% block CSS_BOOTSTRAP %}{# BOOTSTRAP css (Override to keep it empty) #}{% endblock %}
 {% block JS_JQUERY %}{#jQuery (Override to keep it empty) {% endcomment #}{% endblock %}
@@ -21,11 +22,11 @@
 }
 </style>
 {% endif %}
-<link rel="stylesheet" href="{{ STATIC_URL }}css/imgupload-page.css">
-<link rel="stylesheet" href="{{ STATIC_URL }}cropperjs/dist/cropper.css">
-<noscript><link rel="stylesheet" href="{{ STATIC_URL }}css/imgupload-noscript.css"></noscript>
+<link rel="stylesheet" href="{% static "css/imgupload-page.css"  %} ">
+<link rel="stylesheet" href="{% static "cropperjs/dist/cropper.css" %} ">
+<noscript><link rel="stylesheet" href="{% static "css/imgupload-noscript.css" %} "></noscript>
     <!--[if lt IE 9]>
-        <link rel="stylesheet" href="{{ STATIC_URL }}css/imgupload-noscript.css">
+        <link rel="stylesheet" href="{% static "css/imgupload-noscript.css" %} ">
     <![endif]-->
 {% endblock %}
 
@@ -69,12 +70,12 @@ minFileSize: {{minFileSize}},
 
 {% block JS_EXTRA %}
 {{ block.super }}
-<script src="{{ STATIC_URL }}clipboard/dist/clipboard.min.js"></script>
-<script src="{% url 'javascript-catalog-image-upload' %}"></script>
-<script src="{{ STATIC_URL }}cropperjs/dist/cropper.js"></script>
-<script src="{{ STATIC_URL }}js/imgupload-page-min.js"></script>
+<script src="{% static "clipboard/dist/clipboard.min.js" %} "></script>
+<script src="{% url 'javascript-catalog-image-upload' %}" %} "></script>
+<script src="{% static "cropperjs/dist/cropper.js" %} "></script>
+<script src="{% static "js/imgupload-page-min.js" %} "></script>
 {# % if IN_GRADE_PAGE % #}
-<script src="{{ STATIC_URL }}ez-plus/src/jquery.ez-plus.js"></script>
+<script src="{% static "ez-plus/src/jquery.ez-plus.js" %} "></script>
 <script>
 function magnify(x) {
     $(x).ezPlus({
