@@ -29,3 +29,9 @@ django-markdownx
 
 # For string parse
 ply
+
+# For serving static files using qiniu cdn
+django-qiniu-storage
+
+# For redis, requiring redis-server
+django-redis
