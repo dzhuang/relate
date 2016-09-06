@@ -4874,14 +4874,13 @@ msgstr ""
 "理人员确认. 如果是这样, 请使用指定的 <em>官方</em> 电子邮箱. "
 
 #: .\course\templates\course\login.html:12
-#, fuzzy, python-format
+#, python-format
 msgid ""
 "If you cannot or would not like to sign in using a RELATE-specific user name "
 "or password, <a href='%(relate-sign_in_choice)s%(next_uri)s'>please choose a "
 "different method to sign in</a>."
 msgstr ""
-"如果你不能或者不喜欢使用LearningWhat用户名密码方式登入，请<a href=\"%(relate-"
-"sign_in_choice)s%(next_uri)s\">使用别的方式登录</a>."
+"如果你不能或者不喜欢使用LearningWhat用户名密码方式登入，请<a href='%(relate-sign_in_choice)s%(next_uri)s'>尝试使用别的方式登录</a>."
 
 #: .\course\templates\course\login.html:21
 msgid ""
