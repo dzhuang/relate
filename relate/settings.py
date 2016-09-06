@@ -35,7 +35,6 @@ INSTALLED_APPS = (
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
-    "django.contrib.staticfiles",
     "crispy_forms",
     "jsonfield",
     "bootstrap3_datetime",
@@ -46,11 +45,15 @@ INSTALLED_APPS = (
     "djcelery",
     "kombu.transport.django",
 
+    "relate",
     "accounts",
     "course",
     ) + local_settings.get("RELATE_CUSTOM_INSTALLED_APPS", ())
 
-if local_settings["RELATE_SIGN_IN_BY_SAML2_ENABLED"]:
+if not local_settings.get("RELATE_STATIC_CDN_ENABLED", False):
+    INSTALLED_APPS = INSTALLED_APPS + ("django.contrib.staticfiles",)
+
+if local_settings.get("RELATE_SIGN_IN_BY_SAML2_ENABLED", False):
     INSTALLED_APPS = INSTALLED_APPS + ("djangosaml2",)
 
 # }}}
@@ -200,12 +203,12 @@ LOGIN_REDIRECT_URL = "/"
 # {{{ static
 
 STATICFILES_DIRS = (
-        join(BASE_DIR, "relate", "static"),
+        #join(BASE_DIR, "relate", "static"),
         )
 
-STATIC_URL = '/static/'
+STATIC_URL = local_settings.get("STATIC_URL", '/static/')
 
-STATIC_ROOT = join(BASE_DIR, "static")
+STATIC_ROOT = local_settings.get("STATIC_ROOT", join(BASE_DIR, "static"))
 
 # local select2 'static' resources instead of from CDN
 # https://goo.gl/dY6xf7
