@@ -728,9 +728,6 @@ with open('lp.bin', 'wb') as f:
 with open('lp.bin', 'rb') as f:
     lp_json_list_loaded = pickle.load(f)
 
-final_lp_list = []
-
-count = 0
 
 for l in lp_json_list_loaded:
     import json
@@ -750,8 +747,7 @@ for l in lp_json_list_loaded:
         standardized_lp_2_phase = None
 
 
-    #template = latex_jinja_env.get_template('/utils/lp_simplex.tex')
-    template = latex_jinja_env.get_template('/utils/lp_simplex_result_only.tex')
+    template = latex_jinja_env.get_template('/utils/lp_simplex.tex')
     tex = template.render(
         answer_table_iters=iter(range(1, 5)),
         show_question = True,
@@ -773,11 +769,3 @@ for l in lp_json_list_loaded:
     r.clipboard_append(tex)
     #print lp.solve_opt_res_str
     print "iterations:", lp.solutionCommon.nit
-    if lp.solutionCommon.nit == 2 and lp.qtype=="max":
-        final_lp_list.append(lp.json)
-        count += 1
-
-print count
-
-with open('lp_simplex_theory.bin', 'wb') as f:
-        pickle.dump(final_lp_list, f)
