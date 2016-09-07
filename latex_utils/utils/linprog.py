@@ -679,7 +679,7 @@ class lpSolver(object):
             # Add the slack variables to the tableau
             np.fill_diagonal(T[meq:m, n:n + n_slack], 1)
             self.slack_list = [i for i in range(n, n + n_slack)]
-            self.slack_idx = [0] * meq + range(n, n + n_slack)
+            self.slack_idx = [0] * meq + list(range(n, n + n_slack))
 
         self.b = b
         self.T = T

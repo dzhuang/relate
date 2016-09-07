@@ -1454,7 +1454,7 @@ class LP(object):
         self.solutionPhase1.variable_list \
             = self.solutionPhase2.variable_list \
             = self.solutionCommon.variable_list \
-            = range(n_original_variable)
+            = list(range(n_original_variable))
 
         existing_basic_variable_list = sorted([idx for idx in res.existing_basic_variable_list if idx is not None])
         self.solutionPhase1.existing_basic_variable_str_list \
