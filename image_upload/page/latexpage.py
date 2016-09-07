@@ -28,6 +28,7 @@ import six
 from io import BytesIO
 import pickle
 from hashlib import md5
+import os
 
 from django.utils.translation import ugettext as _, string_concat
 from django.core.exceptions import ObjectDoesNotExist, ImproperlyConfigured
@@ -40,16 +41,23 @@ from course.page.base import (
 from course.page.choice import ChoiceQuestion, MultipleChoiceQuestion
 from course.validation import ValidationError
 from course.content import get_repo_blob, get_repo_blob_data_cached
+from course.latex.utils import _file_read, _file_write
 
 from image_upload.page.imgupload import ImageUploadQuestion
 from course.page.code import (
     PythonCodeQuestion, PythonCodeQuestionWithHumanTextFeedback,
     request_python_run_with_retries)
 
+CACHE_VERSION = "V0"
+
 class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                           PageBaseWithHumanTextFeedback, PageBaseWithCorrectAnswer):
     def __init__(self, vctx, location, page_desc):
         super(LatexRandomQuestion, self).__init__(vctx, location, page_desc)
+
+        self.page_saving_folder = getattr(
+            settings, "RELATE_LATEX_PAGE_SAVING_FOLDER_PATH",
+            os.path.join(settings.MEDIA_ROOT, "latex_page"))
 
         if vctx is not None and hasattr(page_desc, "data_files"):
             if hasattr(page_desc, "random_question_data_file"):
@@ -77,6 +85,9 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                     if not hasattr(page_desc, attr):
                         raise ValidationError("%s: attribute '%s' not found"
                                               % (location, attr))
+
+            if not os.path.isdir(self.page_saving_folder):
+                os.makedirs(self.page_saving_folder)
 
         self.docker_run_timeout = getattr(page_desc, "docker_timeout", 0.5)
 
@@ -125,6 +136,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
             page_context.commit_sha)
         bio = BytesIO(repo_bytes_data)
         repo_data_loaded = pickle.load(bio)
+        print type(repo_data_loaded)
         if not isinstance(repo_data_loaded, (list, tuple)):
             return {}
         n_data = len(repo_data_loaded)
@@ -142,11 +154,11 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
 
         return {"question_data": question_data}
 
-    def get_cached_computing_result(self, page_context, page_data, part=""):
+    def get_cached_result(self, page_context, page_data, part="", page_question_data=None):
         assert part in ["question", "answer"]
 
         key_making_string = ""
-
+        saved_file_path = None
         try:
             import django.core.cache as cache
         except ImproperlyConfigured:
@@ -167,18 +179,50 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                 for cattr in self.cache_key_attrs:
                     key_making_string += str(getattr(self.page_desc, cattr)).encode("utf-8")
 
-            cache_key = ("latexpage:%s:%s:%s"
-                         % (str(page_context.commit_sha),
-                            md5(key_making_string).hexdigest(),
+            if not page_question_data:
+                page_question_data = page_data.get("question_data", None)
+            if page_question_data:
+                key_making_string += page_question_data
+
+            key_making_string_md5 = md5(key_making_string).hexdigest()
+
+            # To be used as saving name of the latex page
+            saved_file_name = ("%s_%s" % (md5("%s:%s"
+                                      % (str(page_context.commit_sha),
+                                         key_making_string_md5, )
+                                      ).hexdigest(), CACHE_VERSION))
+
+            if saved_file_name:
+                saved_file_path = os.path.join(self.page_saving_folder,
+                                               "%s_%s" % (saved_file_name, part))
+
+            cache_key = ("latexpage:%s:%s:%s:%s"
+                         % (CACHE_VERSION,
+                            str(page_context.commit_sha),
+                            key_making_string_md5,
                             part))
 
-        if cache_key is None or not key_making_string:
+            def_cache = cache.caches["default"]
+            result = def_cache.get(cache_key)
+            if result is not None:
+                assert isinstance(result, six.string_types)
+                if saved_file_path:
+                    if not os.path.isfile(saved_file_path):
+                        _file_write(saved_file_path, result.encode('UTF-8'))
+                return result
+
+        # cache_key is None means cache is not enabled
+        if cache_key is None:
+            "if cache_key is None:"
             success, result = self.jinja_runpy(
                 page_context,
                 page_data["question_data"],
                 "%s_process_code" % part,
                 common_code_name="background_code")
             assert isinstance(result, six.string_types)
+            if saved_file_path:
+                if not os.path.isfile(saved_file_path):
+                    _file_write(saved_file_path, result.encode('UTF-8'))
             return result
 
         def_cache = cache.caches["default"]
@@ -187,8 +231,11 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
         # Memcache is apparently limited to 250 characters.
         if len(cache_key) < 240:
             result = def_cache.get(cache_key)
+        if result is None:
+            if saved_file_path:
+                if os.path.isfile(saved_file_path):
+                    result = _file_read(saved_file_path)
         if result is not None:
-            (result,) = result
             assert isinstance(result, six.string_types), cache_key
             return result
 
@@ -199,9 +246,11 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
             common_code_name="background_code")
 
         if success and len(result) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
-            def_cache.add(cache_key, (result,), None)
+            def_cache.add(cache_key, result, None)
 
-        assert isinstance(result, six.string_types)
+        if saved_file_path:
+            assert not os.path.isfile(saved_file_path)
+            _file_write(saved_file_path, result.encode('UTF-8'))
 
         return result
 
@@ -209,8 +258,13 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
         if page_context.in_sandbox or page_data is None:
             page_data = self.make_page_data(page_context)
 
-        question_str = self.get_cached_computing_result(
+        question_str = self.get_cached_result(
                 page_context, page_data, part="question")
+
+        # generate correct answer at the same time
+        if hasattr(self.page_desc, "answer_process_code"):
+            self.get_cached_result(
+                page_context, page_data, part="answer")
 
         return super(LatexRandomQuestion, self).body(page_context, page_data)\
                + markup_to_html(page_context, question_str)
@@ -303,17 +357,18 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
         # }}}
 
     def correct_answer(self, page_context, page_data, answer_data, grade_data):
+        CA_PATTERN = string_concat(_("A correct answer is"), ": %s.")  # noqa
         answer_str = ""
         if hasattr(self.page_desc, "answer_process_code"):
-            answer_str = self.get_cached_computing_result(
+            answer_str = self.get_cached_result(
                 page_context, page_data, part="answer")
 
         super_correct_answer = super(LatexRandomQuestion, self)\
                 .correct_answer(page_context, page_data, answer_data, grade_data)
         if super_correct_answer:
-            return super_correct_answer + markup_to_html(page_context, answer_str)
+            return CA_PATTERN % super_correct_answer + markup_to_html(page_context, answer_str)
         else:
-            return markup_to_html(page_context, answer_str)
+            return CA_PATTERN % markup_to_html(page_context, answer_str)
 
 
 class LatexRandomImageUploadQuestion(LatexRandomQuestion, ImageUploadQuestion):

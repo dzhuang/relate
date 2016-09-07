@@ -763,7 +763,7 @@ for l in lp_json_list_loaded:
         pre_description=u"""
         """,
         lp=lp,
-        #lp2phase = lp2phase,
+        lp2phase = lp2phase,
         # simplex_pre_description=u"""解：引入松弛变量$x_4, x_5, x_6$，用单纯形法求解如下：
         # """,
         # simplex_after_description=u"""最优解唯一。

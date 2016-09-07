@@ -1,0 +1,64 @@
+\BLOCK{- if show_question -}
+\BLOCK{- if pre_description -}
+\VAR{pre_description}
+\BLOCK{- endif -} \#{ pre_description }
+
+\BLOCK{ if lp }
+$$\begin{alignat*}{20}
+\VAR{lp.get_goal_str()}\\
+\text{s.t.}\quad
+\BLOCK{ for c in lp.constraints_str_list }
+\VAR{c}
+\BLOCK{ endfor }
+\VAR{lp.sign_str}
+\end{alignat*}$$
+\BLOCK{ endif }
+
+\BLOCK{ if after_description -}
+\VAR{after_description}
+\BLOCK{ endif -} \#{ after_description }
+
+\BLOCK{- endif -} \#{ show_question }
+
+\BLOCK{- if show_answer}
+
+\BLOCK{ if simplex_pre_description -}
+\VAR{simplex_pre_description}
+\BLOCK{ endif } \#{ simplex_pre_description }
+
+\BLOCK{ if lp }
+<strong>解:</strong> \BLOCK{ if lp.solutionCommon.existing_basic_variable_str_list }
+现有变量$\VAR{lp.solutionCommon.existing_basic_variable_str_list|join(", ")}$
+可直接作为基变量使用，\BLOCK{ endif -}
+\BLOCK{ if lp.solutionCommon.slack_str_list_intro or lp.solutionCommon.neg_slack_str_list_intro }引入\BLOCK{ endif -}
+\BLOCK{- if lp.solutionCommon.slack_str_list_intro }松弛变量$\VAR{lp.solutionCommon.slack_str_list_intro|join(",\,") }$\BLOCK{ endif -}
+\BLOCK{- if lp.solutionCommon.slack_str_list_intro and lp.solutionCommon.neg_slack_str_list_intro}，\BLOCK{ endif -}
+\BLOCK{- if lp.solutionCommon.neg_slack_str_list_intro }剩余变量$\VAR{lp.solutionCommon.neg_slack_str_list_intro|join(",\,") }$\BLOCK{ endif -}
+\BLOCK{ if lp.solutionCommon.slack_str_list_intro or lp.solutionCommon.neg_slack_str_list_intro }，将问题标准化. \BLOCK{ endif }
+\BLOCK{ if lp.solutionCommon.artificial_str_list_intro and lp.solutionCommon.method == "modified_simplex" }
+引入人工变量$\VAR{lp.solutionCommon.artificial_str_list_intro|join(",\,") }$，构造人工问题：
+\BLOCK{ endif }
+\BLOCK{if lp.solutionPhase2.method=="dual_simplex" }由于对偶可行，本问题可以用对偶单纯形法求解，将其转化为适当的形式：\BLOCK{ endif }
+\BLOCK{ endif }
+
+\BLOCK{ if lp.solutionCommon.method != "modified_simplex" }
+
+
+\BLOCK{ if standardized_lp }
+$$\begin{alignat*}{20}
+\VAR{standardized_lp.get_goal_str()}\\
+\text{s.t.}\quad
+\BLOCK{ for c in standardized_lp.constraints_str_list }
+\VAR{c}
+\BLOCK{ endfor }
+\VAR{standardized_lp.sign_str}
+\end{alignat*}$$
+\BLOCK{ endif }
+用单纯形法求解，过程略。
+
+该问题\VAR{lp2phase.solve_status_message}
+\BLOCK{- if lp2phase.solve_opt_res_str -}，\VAR{lp2phase.solve_opt_res_str}\BLOCK{ endif -}.
+
+\BLOCK{ endif } \#{ if show_2_stage }
+
+\BLOCK{ endif -} \#{ show_answer }

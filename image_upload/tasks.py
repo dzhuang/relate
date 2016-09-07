@@ -30,6 +30,48 @@ from django.utils.translation import ugettext as _
 
 from course.models import (Course, FlowSession)
 from course.content import get_course_repo
+from course.content import get_repo_blob_data_cached
+from io import BytesIO
+import pickle
+
+@shared_task(bind=True)
+def add(self, x, y):
+    import time
+    for i in range(100):
+        print x + y + i
+        time.sleep(10)
+
+    return {}
+
+
+@shared_task(bind=True)
+def random_session_warm_up(self, page, vctx):
+    if not hasattr(page.page_desc, "random_question_data_file"):
+        return {}
+    repo_bytes_data = get_repo_blob_data_cached(
+        vctx.repo,
+        page.page_desc.random_question_data_file,
+        vctx.commit_sha)
+    bio = BytesIO(repo_bytes_data)
+    repo_data_loaded = pickle.load(bio)
+    if not isinstance(repo_data_loaded, (list, tuple)):
+        return {}
+    n_data = len(repo_data_loaded)
+    if n_data < 1:
+        return {}
+    import random
+
+    all_data = list(repo_data_loaded)
+    random.shuffle(all_data)
+    random_data = all_data[0]
+    selected_data_bytes = BytesIO()
+    pickle.dump(random_data, selected_data_bytes)
+
+    from base64 import b64encode
+
+    question_data = b64encode(selected_data_bytes.getvalue()).decode()
+    print type(question_data)
+    return {}
 
 
 @shared_task(bind=True)
