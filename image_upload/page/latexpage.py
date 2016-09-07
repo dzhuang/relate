@@ -187,18 +187,16 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
             key_making_string_md5 = md5(key_making_string).hexdigest()
 
             # To be used as saving name of the latex page
-            saved_file_name = ("%s_%s" % (md5("%s:%s"
-                                      % (str(page_context.commit_sha),
-                                         key_making_string_md5, )
+            saved_file_name = ("%s_%s" % (md5("%s"
+                                      % (key_making_string_md5, )
                                       ).hexdigest(), CACHE_VERSION))
 
             if saved_file_name:
                 saved_file_path = os.path.join(self.page_saving_folder,
                                                "%s_%s" % (saved_file_name, part))
 
-            cache_key = ("latexpage:%s:%s:%s:%s"
+            cache_key = ("latexpage:%s:%s:%s"
                          % (CACHE_VERSION,
-                            str(page_context.commit_sha),
                             key_making_string_md5,
                             part))
 
