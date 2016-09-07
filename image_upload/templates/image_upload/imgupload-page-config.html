@@ -11,10 +11,16 @@
 {{ block.super }}
 {% else %}
 <style>
+
+@media (min-width: 767px) {
     .preview img {
-    max-width:40vw;
+        max-width: 40vw;
+    }
 }
 @media (max-width: 767px) {
+  .preview img {
+      max-width: 100%;
+  }
   .fileupload-buttonbar .delete
   {
     display: none;
