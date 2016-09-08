@@ -208,24 +208,32 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                     if not os.path.isfile(saved_file_path):
                         _file_write(saved_file_path, result.encode('UTF-8'))
                 return result
+            else:
+                def_cache.delete(cache_key)
+                if os.path.isfile(saved_file_path):
+                    try:
+                        os.remove(saved_file_path)
+                    except:
+                        pass
 
         # cache_key is None means cache is not enabled
         if cache_key is None:
-            "if cache_key is None:"
             success, result = self.jinja_runpy(
                 page_context,
                 page_data["question_data"],
                 "%s_process_code" % part,
                 common_code_name="background_code")
             assert isinstance(result, six.string_types)
-            if saved_file_path:
-                if not os.path.isfile(saved_file_path):
-                    _file_write(saved_file_path, result.encode('UTF-8'))
+            if result is not None:
+                if saved_file_path:
+                    if not os.path.isfile(saved_file_path):
+                        _file_write(saved_file_path, result.encode('UTF-8'))
             return result
 
         def_cache = cache.caches["default"]
 
         result = None
+
         # Memcache is apparently limited to 250 characters.
         if len(cache_key) < 240:
             result = def_cache.get(cache_key)
@@ -233,22 +241,32 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
             if saved_file_path:
                 if os.path.isfile(saved_file_path):
                     result = _file_read(saved_file_path)
+                    if result is None:
+                        try:
+                            os.remove(saved_file_path)
+                        except:
+                            pass
         if result is not None:
             assert isinstance(result, six.string_types), cache_key
             return result
 
-        success, result = self.jinja_runpy(
-            page_context,
-            page_data["question_data"],
-            "%s_process_code" % part,
-            common_code_name="background_code")
+        i = 0
+        while i < 5:
+            i += 1
+            success, result = self.jinja_runpy(
+                page_context,
+                page_data["question_data"],
+                "%s_process_code" % part,
+                common_code_name="background_code")
 
-        if success and len(result) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
-            def_cache.add(cache_key, result, None)
+            if success and len(result) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
+                def_cache.add(cache_key, result, None)
 
-        if saved_file_path:
-            assert not os.path.isfile(saved_file_path)
-            _file_write(saved_file_path, result.encode('UTF-8'))
+            if result is not None:
+                if saved_file_path:
+                    assert not os.path.isfile(saved_file_path)
+                    _file_write(saved_file_path, result.encode('UTF-8'))
+                break
 
         return result
 
