@@ -233,7 +233,6 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
         def_cache = cache.caches["default"]
 
         result = None
-
         # Memcache is apparently limited to 250 characters.
         if len(cache_key) < 240:
             result = def_cache.get(cache_key)
