@@ -1,18 +1,30 @@
+/*global $, Cropper, Clipboard, gettext, console */
+
+// don't show past submission as those currently won't be saved in page-visit.
 $(document).ready(function () {
+    //"save", "save_and_next", "save_and_finish", "submit"
     'use strict';
     $(".relate-save-button").each(function () {
         $(this).attr("formaction", window.location.pathname);
     });
     $('#past-submission_dropdown').addClass('hidden');
+
+    // for copy image_data
     new Clipboard('.btn-data-copy');
+
 });
 
 function watch(targetElement, triggerFunction) {
+  /// store the original html to compare with later
     'use strict';
     var html = targetElement.innerHTML;
+  /// start our constant checking function
     setInterval(function () {
+    /// compare the previous html with the current
         if (html !== targetElement.innerHTML) {
+      /// trigger our function when a change occurs
             triggerFunction();
+      /// update html so that this doesn't keep triggering
             html = targetElement.innerHTML;
         }
     }, 500);
@@ -32,6 +44,19 @@ function table_changed() {
 
 watch(document.getElementById('img-presentation-table'), table_changed);
 
+
+//$('#fileupload > table > tbody').addEventListener('DOMContentLoaded', function () {
+//    console.log("loaded");
+//});
+
+//window.addEventListener('DOMContentLoaded', function () {
+//    var elements = window.document.querySelector('#fileupload > table > tbody');
+//    if (document.querySelector("#fileupload > table").rows.length >= 2) {
+//        console.log("abcdefg");
+//        $('.btn-srt-tbl').removeClass('hidden');
+//    }
+//});
+
 function assignOrder() {
     'use strict';
     var idx = 0;
@@ -47,6 +72,14 @@ function assignOrder() {
     $('tr:nth-child(2) > td.td-srt > .top').addClass("hidden");
     $('tr:nth-last-child(1) > td.td-srt > .down').addClass("hidden");
 }
+
+//$("#fileupload > table").on('loaded', function () {
+//    'use strict';
+//    if (document.querySelector("#fileupload > table").rows.length >= 2) {
+//        $('.btn-srt-tbl').removeClass('hidden');
+//    }
+//});
+
 
 $('.btn-srt-tbl').on('click', function () {
     'use strict';
@@ -99,6 +132,7 @@ $('.btn-srt-tbl').on('click', function () {
                     window.setTimeout(function () {
                         $('#srt_prgrs').fadeOut();
                     }, 3000);
+                //window.location.reload();
                 });
             return false;
         } else {
@@ -112,6 +146,8 @@ $('.btn-srt-tbl').on('click', function () {
 
     }
 
+    //上移 
+    
     $up = $(".up");
     $up.click(function () {
         $('[class*=btn-srt]').addClass('disabled');
@@ -126,23 +162,27 @@ $('.btn-srt-tbl').on('click', function () {
 
         }
     });
+    //下移 
     $down = $(".down");
     len = $down.length;
     $down.click(function () {
         $('[class*=btn-srt]').addClass('disabled');
         var $tr = $(this).parents("tr");
         if ($tr.index() !== len - 1) {
+            //$tr.fadeOut("slow").fadeIn("slow");
             $tr.next().after($tr);
             $down = $(".down");
             assignOrder();
             send_data();
         }
     });
+    //置顶 
     $top = $(".top");
     $top.click(function () {
         $('[class*=btn-srt]').addClass('disabled');
         var $tr = $(this).parents("tr");
         if ($tr.index() !== 0 && $tr.index() !== 1) {
+            //$tr.fadeOut().fadeIn();
             $(".table").prepend($tr);
             $tr.css("color", "#f60");
             $top = $(".top");

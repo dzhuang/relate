@@ -12,9 +12,14 @@
 {% else %}
 <style>
 
+.grading-hidden {
+    display: none;
+    padding: 0;
+}
+
 @media (min-width: 767px) {
     .preview img {
-        max-width: 40vw;
+        max-width: 100%;
     }
 }
 @media (max-width: 767px) {
@@ -77,9 +82,9 @@ minFileSize: {{minFileSize}},
 {% block JS_EXTRA %}
 {{ block.super }}
 <script src="{% static "clipboard/dist/clipboard.min.js" %} "></script>
-<script src="{% url 'javascript-catalog-image-upload' %}" %} "></script>
+<script src="{% url 'javascript-catalog-image-upload'  %}"></script>
 <script src="{% static "cropperjs/dist/cropper.js" %} "></script>
-<script src="{% static "js/imgupload-page-min.js" %} "></script>
+<script src="{% static "js/imgupload-page.js" %} "></script>
 {# % if IN_GRADE_PAGE % #}
 <script src="{% static "ez-plus/src/jquery.ez-plus.js" %} "></script>
 <script>

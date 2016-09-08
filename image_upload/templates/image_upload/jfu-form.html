@@ -59,7 +59,7 @@
             {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR_CONTROL #}
             {% if IS_COURSE_STAFF or MAY_CHANGE_ANSWER  %}
             {% block UPLOAD_FORM_BUTTON_BAR_EXTRA %}
-                <button type="button" class="btn btn-success btn-srt-tbl" style="float:right;">
+                <button type="button" class="btn btn-success btn-srt-tbl hidden" style="float:right;">
                     <i class="fa fa-sort"></i>
                     <span>{% trans "Sort" %}</span>
                 </button>
@@ -101,7 +101,7 @@
 
 {% block UPLOAD_FORM_LISTING %}
     {# The table listing the files available for upload/download #}
-    <table role="presentation" class="table table-striped">
+    <table role="presentation" class="table table-striped" id="img-presentation-table">
         <tbody class="files"></tbody>
     </table>
 {% endblock %}{# //UPLOAD_FORM_LISTING #}
@@ -206,8 +206,8 @@
                 {% endblock %}{# //JS_DOWNLOAD_TEMPLATE_PREVIEW #}
 
                 {% block JS_DOWNLOAD_TEMPLATE_DOWNLOAD %}
-                    {% if not IN_GRADE_PAGE %}
-                    <td>
+{#                    {% if not IN_GRADE_PAGE %}#}
+                    <td class="grading-hidden">
                         <p class="name">
                             {{ JQ_OPEN }} if (file.url) { {{ JQ_CLOSE }}
                                 <a 
@@ -239,13 +239,13 @@
                             {{ JQ_OPEN }} } {{ JQ_CLOSE }}
                         {% endblock %}{# //block JS_DOWNLOAD_TEMPLATE_ERROR #}
                     </td>
-                    {% endif %}
+{#                    {% endif %}#}
                 {% endblock %}{# block JS_DOWNLOAD_TEMPLATE_DOWNLOAD #}
 
                 {% if SHOW_CREATION_TIME %}
-                    {% if not IN_GRADE_PAGE %}
+{#                    {% if not IN_GRADE_PAGE %}#}
                     {% block JS_DOWNLOAD_TEMPLATE_TIME %}
-                        <td class="td-dl">
+                        <td class="td-dl grading-hidden">
                             <span
                                 class="timestr"
                                 id="filetime{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
@@ -255,7 +255,7 @@
                             </span>
                         </td>
                     {% endblock %}{# block JS_DOWNLOAD_TEMPLATE_TIME #}
-                    {% endif %}
+{#                    {% endif %}#}
                 {% endif %}
                     {% if IS_COURSE_STAFF or MAY_CHANGE_ANSWER %}
                     {% block JS_DOWNLOAD_SORT %}
@@ -283,22 +283,23 @@
                     {% endif %}
 
                 {% block JS_DOWNLOAD_TEMPLATE_FSIZE %}
-                    {% if not IN_GRADE_PAGE %}
-                    <td class="td-dl">
+{#                    {% if not IN_GRADE_PAGE %}#}
+                    <td class="td-dl grading-hidden">
                         <span
                             class="size"
                             id="filesize{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
                         >{{ JQ_OPEN }}=o.formatFileSize(file.size){{ JQ_CLOSE }}</span>
                     </td>
-                    {% endif %}
+{#                    {% endif %}#}
                 {% endblock %}{# //JS_DOWNLOAD_TEMPLATE_FSIZE #}
 
                 <td class="td-dl">
                         {{ JQ_OPEN }} if (file.deleteUrl) { {{ JQ_CLOSE }}
                         {% if IS_COURSE_STAFF %}
                         {% block JS_DOWNLOAD_TEMPLATE_EDIT %}
-                            {% if IS_COURSE_STAFF %}
+                            {% if IS_COURSE_STAFF and SHOW_COPY_IMAGE_DATA %}
                                 {% block COPY_IMAGE_DATA %}
+                                {# 只有在设计问题时才有用 #}
                                 {{ JQ_OPEN }} if (file.image_data_dict) { {{ JQ_CLOSE }}
                                         <a
                                             class="btn-data-copy"
@@ -353,5 +354,4 @@
         {{ JQ_OPEN }} } {{ JQ_CLOSE }}
     </script>
 
-    </script>
 {% endblock %}
