@@ -22,6 +22,7 @@
     .modal-footer > button >span {
         display: none;
     }
+    h1, h2, h3, p {overflow-wrap: break-word;}
     #fileupload > table > tbody > * > td:nth-child(2){
         display: none;
     }
