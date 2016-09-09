@@ -165,6 +165,9 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
     def get_cached_result(self, page_context, page_data, part="", page_question_data=None):
         assert part in ["question", "answer"]
 
+        if not getattr(page_data, "question_data", None):
+            page_data = self.make_page_data(page_context)
+
         key_making_string = ""
         saved_file_path = None
         try:
@@ -386,7 +389,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                     try:
                         from django.core.mail import send_mail
                         send_mail("".join(["[%s] ",
-                                           _("code question execution failed")])
+                                           _("LaTex page question generation failed")])
                                   % page_context.course.identifier,
                                   message,
                                   settings.ROBOT_EMAIL_FROM,
@@ -398,7 +401,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                             six.text_type(string_concat(
                                 "<p>",
                                 _(
-                                    "Both the grading code and the attempt to "
+                                    "Both the code and the attempt to "
                                     "notify course staff about the issue failed. "
                                     "Please contact the course or site staff and "
                                     "inform them of this issue, mentioning this "
@@ -453,7 +456,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
             feedback_bits.append("".join([
                 "<p>",
                 _(
-                    "The page failed to be rendered due to timeout, please"
+                    "The page failed to be rendered due to timeout, please "
                     "try to reload the page in a while."
                     ),
                 "</p>"])
