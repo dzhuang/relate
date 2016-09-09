@@ -47,7 +47,7 @@ from crispy_forms.layout import Layout, HTML, Submit
 import os
 
 
-def is_course_staff(request, page_context):
+def is_course_staff_request(request, page_context):
     user = request.user
     course = page_context.course
     from course.constants import participation_role
@@ -298,15 +298,25 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
     def form_to_html(self, request, page_context, form, answer_data):
 
         request_path = request.get_full_path()
+
+        in_grading_page = False
+
+        from django.core.urlresolvers import NoReverseMatch
         from django.core.urlresolvers import reverse
-        grading_path = reverse(
-            "relate-grade_flow_page",
-            kwargs={'course_identifier': page_context.course.identifier,
-                    'flow_session_id': page_context.flow_session.id,
-                    'page_ordinal': page_context.ordinal
-                    }
-        )
-        in_grading_page = grading_path == request_path
+        try:
+            grading_path = reverse(
+                "relate-grade_flow_page",
+                kwargs={'course_identifier': page_context.course.identifier,
+                        'flow_session_id': page_context.flow_session.id,
+                        'page_ordinal': page_context.ordinal
+                        }
+            )
+            in_grading_page = grading_path == request_path
+        except NoReverseMatch:
+            if page_context.in_sandbox:
+                pass
+            else:
+                raise
 
         ctx = {"form": form,
                "JQ_OPEN": '{%',
@@ -315,7 +325,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                'course_identifier': page_context.course,
                "flow_session_id": page_context.flow_session.id,
                "ordinal": page_context.ordinal,
-               "IS_COURSE_STAFF": is_course_staff(request, page_context),
+               "IS_COURSE_STAFF": is_course_staff_request(request, page_context),
                "MAY_CHANGE_ANSWER": form.page_behavior.may_change_answer,
                "SHOW_CREATION_TIME": True,
                "ALLOW_ROTATE_TUNE": True,
@@ -807,7 +817,7 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
     def form_to_html(self, request, page_context, form, answer_data):
         html = super(ImageUploadQuestionWithAnswer,self).form_to_html(request, page_context, form, answer_data)
 
-        if is_course_staff(request,page_context):
+        if is_course_staff_request(request, page_context):
 
             from image_upload.serialize import get_image_page_data_str, get_image_admin_url
 

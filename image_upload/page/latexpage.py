@@ -33,6 +33,7 @@ import os
 from django.utils.translation import ugettext as _, string_concat
 from django.core.exceptions import ObjectDoesNotExist, ImproperlyConfigured
 from django.conf import settings
+from django.utils.html import escape
 
 from course.page import markup_to_html
 from course.page.base import (
@@ -49,6 +50,14 @@ from course.page.code import (
     request_python_run_with_retries)
 
 CACHE_VERSION = "V0"
+
+def is_course_staff(page_context):
+    from course.constants import participation_role
+    if page_context.flow_session.participation.role in [participation_role.instructor,
+                                                        participation_role.teaching_assistant]:
+        return True
+    else:
+        return False
 
 class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                           PageBaseWithHumanTextFeedback, PageBaseWithCorrectAnswer):
@@ -136,7 +145,6 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
             page_context.commit_sha)
         bio = BytesIO(repo_bytes_data)
         repo_data_loaded = pickle.load(bio)
-        print type(repo_data_loaded)
         if not isinstance(repo_data_loaded, (list, tuple)):
             return {}
         n_data = len(repo_data_loaded)
@@ -281,8 +289,12 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
             self.get_cached_result(
                 page_context, page_data, part="answer")
 
-        return super(LatexRandomQuestion, self).body(page_context, page_data)\
-               + markup_to_html(page_context, question_str)
+        body_html = ('<div class="latexpage">%s</div>'
+                     % super(LatexRandomQuestion, self).body(page_context, page_data)
+                     + markup_to_html(page_context, question_str)
+                     )
+
+        return body_html
 
     def jinja_runpy(
             self, page_context, question_data, code_name, common_code_name=""):
@@ -331,6 +343,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                     }
 
         success = True
+        feedback_bits = []
 
         if response_dict["result"] in [
                 "uncaught_error",
@@ -349,25 +362,135 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                     error_msg_parts.append("-------------------------------------")
                     error_msg_parts.append(val)
             error_msg_parts.append("-------------------------------------")
-            error_msg_parts.append("user code")
+            error_msg_parts.append("code")
             error_msg_parts.append("-------------------------------------")
-            error_msg_parts.append(self.page_desc.question_process_code)
+            error_msg_parts.append(run_jinja_req["setup_code"])
             error_msg_parts.append("-------------------------------------")
 
             error_msg = "\n".join(error_msg_parts)
             #print(getattr(settings, "DEBUG"))
             if getattr(settings, "DEBUG"):
-                response_dict["stdout"] = error_msg
-            else:
-                raise RuntimeError(error_msg)
+                pass
+                #response_dict["stdout"] = error_msg
+            #else:
+            from course.page.code import is_nuisance_failure
+            from django.utils import translation
+            with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
+                from django.template.loader import render_to_string
+                message = render_to_string("course/broken-code-question-email.txt", {
+                    "page_id": self.page_desc.id,
+                    "course": page_context.course,
+                    "error_message": error_msg,
+                })
+
+                if (
+                            not page_context.in_sandbox
+                        and
+                            not is_nuisance_failure(response_dict)):
+                    try:
+                        from django.core.mail import send_mail
+                        send_mail("".join(["[%s] ",
+                                           _("code question execution failed")])
+                                  % page_context.course.identifier,
+                                  message,
+                                  settings.ROBOT_EMAIL_FROM,
+                                  recipient_list=[page_context.course.notify_email])
+
+                    except Exception:
+                        from traceback import format_exc
+                        feedback_bits.append(
+                            six.text_type(string_concat(
+                                "<p>",
+                                _(
+                                    "Both the grading code and the attempt to "
+                                    "notify course staff about the issue failed. "
+                                    "Please contact the course or site staff and "
+                                    "inform them of this issue, mentioning this "
+                                    "entire error message:"),
+                                "</p>",
+                                "<p>",
+                                _(
+                                    "Sending an email to the course staff about the "
+                                    "following failure failed with "
+                                    "the following error message:"),
+                                "<pre>",
+                                "".join(format_exc()),
+                                "</pre>",
+                                _("The original failure message follows:"),
+                                "</p>")))
+
+                        # }}}
 
         from relate.utils import dict_to_struct
         response = dict_to_struct(response_dict)
+        print response_dict
+        #print response
+        print response.result
 
-        if hasattr(response, "stdout") and response.stdout:
-            return success, response.stdout.encode("utf8")
+        if response.result == "success":
+            pass
+        elif response.result in [
+                "uncaught_error",
+                "setup_compile_error",
+                "setup_error",
+                "test_compile_error",
+                "test_error"]:
+            feedback_bits.append("".join([
+                "<p>",
+                _(
+                    "The page failed to be rendered. Sorry about that. "
+                    "The staff has been informed, and"
+                    "it will be fixed as soon as possible."
+                ),
+                "</p>"]))
+            if is_course_staff(page_context):
+                feedback_bits.append("".join([
+                    "<p>",
+                    _("This is the problematic code"),
+                    ":"
+                    "<pre>%s</pre></p>"]) % escape(run_jinja_req["setup_code"]))
+                if hasattr(response, "traceback") and response.traceback:
+                    feedback_bits.append("".join([
+                        "<p>",
+                        _("This is the exception traceback"),
+                        ":"
+                        "<pre>%s</pre></p>"]) % escape(response.traceback))
+
+        elif response.result == "timeout":
+            feedback_bits.append("".join([
+                "<p>",
+                _(
+                    "The page failed to be rendered due to timeout, please"
+                    "try to reload the page in a while."
+                    ),
+                "</p>"])
+            )
         else:
-            return False, ""
+            raise RuntimeError("invalid runpy result: %s" % response.result)
+
+        if hasattr(response, "figures") and response.figures:
+            fig_lines = ["".join([
+                "<p>",
+                _("Your code produced the following plots"),
+                ":</p>"]),
+                '<dl class="result-figure-list">',
+                ]
+
+            for nr, mime_type, b64data in response.figures:
+                fig_lines.extend([
+                    "".join([
+                        "<dt>",
+                        _("Figure"), "%d<dt>"]) % nr,
+                    '<dd><img alt="Figure %d" src="data:%s;base64,%s"></dd>'
+                    % (nr, mime_type, b64data)])
+
+            fig_lines.append("</dl>")
+
+        if success:
+            if hasattr(response, "stdout") and response.stdout:
+                return success, response.stdout.encode("utf8")
+        else:
+            return success, "\n".join(feedback_bits)
 
         # }}}
 
