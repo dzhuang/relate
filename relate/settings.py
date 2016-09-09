@@ -38,7 +38,7 @@ INSTALLED_APPS = (
     "crispy_forms",
     "jsonfield",
     "bootstrap3_datetime",
-    "djangobower",
+    #"djangobower",
     "django_select2",
 
     # message queue
@@ -50,8 +50,7 @@ INSTALLED_APPS = (
     "course",
     ) + local_settings.get("RELATE_CUSTOM_INSTALLED_APPS", ())
 
-if not local_settings.get("RELATE_STATIC_CDN_ENABLED", False):
-    INSTALLED_APPS = INSTALLED_APPS + ("django.contrib.staticfiles",)
+INSTALLED_APPS = INSTALLED_APPS + ("django.contrib.staticfiles",)
 
 if local_settings.get("RELATE_SIGN_IN_BY_SAML2_ENABLED", False):
     INSTALLED_APPS = INSTALLED_APPS + ("djangosaml2",)
@@ -100,7 +99,7 @@ AUTH_USER_MODEL = 'accounts.User'
 BOWER_COMPONENTS_ROOT = os.path.join(BASE_DIR, "components")
 
 STATICFILES_FINDERS = tuple(STATICFILES_FINDERS) + (
-    "djangobower.finders.BowerFinder",
+    #"djangobower.finders.BowerFinder",
     )
 
 BOWER_INSTALLED_APPS = (
