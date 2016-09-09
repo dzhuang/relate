@@ -504,9 +504,9 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
         super_correct_answer = super(LatexRandomQuestion, self)\
                 .correct_answer(page_context, page_data, answer_data, grade_data)
         if super_correct_answer:
-            return CA_PATTERN % super_correct_answer + markup_to_html(page_context, answer_str)
+            return '<div class="latexpage">%s</div>' % (CA_PATTERN % super_correct_answer + markup_to_html(page_context, answer_str),)
         else:
-            return CA_PATTERN % markup_to_html(page_context, answer_str)
+            return '<div class="latexpage">%s</div>' % (CA_PATTERN % markup_to_html(page_context, answer_str),)
 
 
 class LatexRandomImageUploadQuestion(LatexRandomQuestion, ImageUploadQuestion):

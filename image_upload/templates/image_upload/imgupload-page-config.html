@@ -92,9 +92,9 @@ minFileSize: {{minFileSize}},
 {# % if IN_GRADE_PAGE % #}
 <script src="{% static "ez-plus/src/jquery.ez-plus.js" %} "></script>
 <script>
-
+{#//https://jsfiddle.net/tovic/AbpRD/#}
 $(document).ready(function () {
-    var pre = document.getElementsByTagName('pre'),
+    var pre = $('.latexpage pre'),
             pl = pre.length;
     for (var i = 0; i < pl; i++) {
         pre[i].innerHTML = '<span class="line-number"></span>' + pre[i].innerHTML + '<span class="cl"></span>';
