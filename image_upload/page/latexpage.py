@@ -232,7 +232,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                 "%s_process_code" % part,
                 common_code_name="background_code")
             assert isinstance(result, six.string_types)
-            if result is not None:
+            if success and result is not None:
                 if saved_file_path:
                     if not os.path.isfile(saved_file_path):
                         _file_write(saved_file_path, result.encode('UTF-8'))
@@ -269,7 +269,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
             if success and len(result) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
                 def_cache.add(cache_key, result, None)
 
-            if result is not None:
+            if success and result is not None:
                 if saved_file_path:
                     assert not os.path.isfile(saved_file_path)
                     _file_write(saved_file_path, result.encode('UTF-8'))
