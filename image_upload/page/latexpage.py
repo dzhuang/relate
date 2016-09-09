@@ -289,12 +289,8 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
             self.get_cached_result(
                 page_context, page_data, part="answer")
 
-        body_html = ('<div class="latexpage">%s</div>'
-                     % super(LatexRandomQuestion, self).body(page_context, page_data)
-                     + markup_to_html(page_context, question_str)
-                     )
-
-        return body_html
+        return super(LatexRandomQuestion, self).body(page_context, page_data)\
+               + markup_to_html(page_context, question_str)
 
     def jinja_runpy(
             self, page_context, question_data, code_name, common_code_name=""):
@@ -423,9 +419,6 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
 
         from relate.utils import dict_to_struct
         response = dict_to_struct(response_dict)
-        print response_dict
-        #print response
-        print response.result
 
         if response.result == "success":
             pass
@@ -439,7 +432,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                 "<p>",
                 _(
                     "The page failed to be rendered. Sorry about that. "
-                    "The staff has been informed, and"
+                    "The staff has been informed, and "
                     "it will be fixed as soon as possible."
                 ),
                 "</p>"]))
@@ -490,7 +483,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
             if hasattr(response, "stdout") and response.stdout:
                 return success, response.stdout.encode("utf8")
         else:
-            return success, "\n".join(feedback_bits)
+            return success, '<div class="latexpage-error alert alert-danger">%s</div>' % "\n".join(feedback_bits)
 
         # }}}
 
@@ -504,9 +497,9 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
         super_correct_answer = super(LatexRandomQuestion, self)\
                 .correct_answer(page_context, page_data, answer_data, grade_data)
         if super_correct_answer:
-            return '<div class="latexpage">%s</div>' % (CA_PATTERN % super_correct_answer + markup_to_html(page_context, answer_str),)
+            return CA_PATTERN % super_correct_answer + markup_to_html(page_context, answer_str)
         else:
-            return '<div class="latexpage">%s</div>' % (CA_PATTERN % markup_to_html(page_context, answer_str),)
+            return CA_PATTERN % markup_to_html(page_context, answer_str)
 
 
 class LatexRandomImageUploadQuestion(LatexRandomQuestion, ImageUploadQuestion):
