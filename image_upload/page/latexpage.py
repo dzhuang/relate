@@ -165,8 +165,8 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
     def get_cached_result(self, page_context, page_data, part="", page_question_data=None):
         assert part in ["question", "answer"]
 
-        if not getattr(page_data, "question_data", None):
-            page_data = self.make_page_data(page_context)
+        # if not getattr(page_data, "question_data", None):
+        #     page_data = self.make_page_data(page_context)
 
         key_making_string = ""
         saved_file_path = None
