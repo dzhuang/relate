@@ -263,11 +263,18 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
         i = 0
         while i < 5:
             i += 1
-            success, result = self.jinja_runpy(
-                page_context,
-                page_data["question_data"],
-                "%s_process_code" % part,
-                common_code_name="background_code")
+            try:
+                success, result = self.jinja_runpy(
+                    page_context,
+                    page_data["question_data"],
+                    "%s_process_code" % part,
+                    common_code_name="background_code")
+            except ValueError:
+                # May raise an "'NoneType' object is not iterable" error
+                # jinja_runpy error may write a broken saved file??
+                if saved_file_path:
+                    if os.path.isfile(saved_file_path):
+                        os.remove(saved_file_path)
 
             if success and len(result) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
                 def_cache.add(cache_key, result, None)
