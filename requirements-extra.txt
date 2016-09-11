@@ -35,3 +35,6 @@ django-qiniu-storage
 
 # For redis, requiring redis-server
 django-redis
+
+# atomic copy and write
+atomicwrites

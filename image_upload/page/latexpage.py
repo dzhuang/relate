@@ -164,6 +164,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
 
     def get_cached_result(self, page_context, page_data, part="", page_question_data=None):
         assert part in ["question", "answer"]
+        will_save_file_local = False
 
         # if not getattr(page_data, "question_data", None):
         #     page_data = self.make_page_data(page_context)
@@ -198,9 +199,11 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
             key_making_string_md5 = md5(key_making_string).hexdigest()
 
             # To be used as saving name of the latex page
-            saved_file_name = ("%s_%s" % (md5("%s"
-                                      % (key_making_string_md5, )
-                                      ).hexdigest(), CACHE_VERSION))
+            saved_file_name = ""
+            if will_save_file_local:
+                saved_file_name = ("%s_%s" % (md5("%s"
+                                          % (key_making_string_md5, )
+                                          ).hexdigest(), CACHE_VERSION))
 
             if saved_file_name:
                 saved_file_path = os.path.join(self.page_saving_folder,
@@ -221,13 +224,16 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                 return result
             else:
                 def_cache.delete(cache_key)
-                if os.path.isfile(saved_file_path):
-                    try:
-                        os.remove(saved_file_path)
-                    except:
-                        pass
+                if saved_file_path:
+                    if os.path.isfile(saved_file_path):
+                        try:
+                            os.remove(saved_file_path)
+                        except:
+                            pass
 
         # cache_key is None means cache is not enabled
+        success = False
+
         if cache_key is None:
             success, result = self.jinja_runpy(
                 page_context,
@@ -260,30 +266,26 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
             assert isinstance(result, six.string_types), cache_key
             return result
 
-        i = 0
-        while i < 5:
-            i += 1
-            try:
-                success, result = self.jinja_runpy(
-                    page_context,
-                    page_data["question_data"],
-                    "%s_process_code" % part,
-                    common_code_name="background_code")
-            except ValueError:
-                # May raise an "'NoneType' object is not iterable" error
-                # jinja_runpy error may write a broken saved file??
-                if saved_file_path:
-                    if os.path.isfile(saved_file_path):
-                        os.remove(saved_file_path)
+        try:
+            success, result = self.jinja_runpy(
+                page_context,
+                page_data["question_data"],
+                "%s_process_code" % part,
+                common_code_name="background_code")
+        except ValueError:
+            # May raise an "'NoneType' object is not iterable" error
+            # jinja_runpy error may write a broken saved file??
+            if saved_file_path:
+                if os.path.isfile(saved_file_path):
+                    os.remove(saved_file_path)
 
-            if success and len(result) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
-                def_cache.add(cache_key, result, None)
+        if success and len(result) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
+            def_cache.add(cache_key, result, None)
 
-            if success and result is not None:
-                if saved_file_path:
-                    assert not os.path.isfile(saved_file_path)
-                    _file_write(saved_file_path, result.encode('UTF-8'))
-                break
+        if success and result is not None:
+            if saved_file_path:
+                assert not os.path.isfile(saved_file_path)
+                _file_write(saved_file_path, result.encode('UTF-8'))
 
         return result
 
