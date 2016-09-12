@@ -27,6 +27,7 @@ THE SOFTWARE.
 
 from django.utils.translation import ugettext as _, string_concat
 from django.db import connection
+from django.db.models import Q
 from django.shortcuts import (  # noqa
         get_object_or_404, redirect)
 from relate.utils import retry_transaction_decorator
@@ -183,11 +184,14 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 visit__page_data__group_id=group_id,
                 visit__page_data__page_id=page_id,
                 #feedback__isnull=False,
-                correctness__isnull=False,
+                #correctness__isnull=False,
 
                 ## auto grader for non submitting problems
                 #grader__isnull=False
-            ).order_by(
+            ).filter(
+                Q (correctness__isnull=True) | Q (correctness__exact='')
+            )
+            .order_by(
                 "visit__flow_session__participation__user",
                 "-grade_time"
             )
