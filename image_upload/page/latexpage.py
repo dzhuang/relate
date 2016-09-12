@@ -272,7 +272,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                 page_data["question_data"],
                 "%s_process_code" % part,
                 common_code_name="background_code")
-        except ValueError:
+        except TypeError:
             # May raise an "'NoneType' object is not iterable" error
             # jinja_runpy error may write a broken saved file??
             if saved_file_path:
