@@ -188,7 +188,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
                 ## auto grader for non submitting problems
                 #grader__isnull=False
-            ).filter(
+            ).exclude(
                 Q (correctness__isnull=True) | Q (correctness__exact='')
             )
             .order_by(
