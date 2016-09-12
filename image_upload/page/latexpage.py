@@ -442,6 +442,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                 "setup_error",
                 "test_compile_error",
                 "test_error"]:
+            success = False
             feedback_bits.append("".join([
                 "<p>",
                 _(
@@ -464,6 +465,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                         "<pre>%s</pre></p>"]) % escape(response.traceback))
 
         elif response.result == "timeout":
+            success = False
             feedback_bits.append("".join([
                 "<p>",
                 _(
@@ -473,6 +475,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                 "</p>"])
             )
         else:
+            success = False
             raise RuntimeError("invalid runpy result: %s" % response.result)
 
         if hasattr(response, "figures") and response.figures:
