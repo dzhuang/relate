@@ -182,7 +182,8 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 #visit__page_data__ordinal = page_ordinal,
                 visit__page_data__group_id=group_id,
                 visit__page_data__page_id=page_id,
-                feedback__isnull=False,
+                #feedback__isnull=False,
+                correctness__isnull=False,
 
                 ## auto grader for non submitting problems
                 #grader__isnull=False
