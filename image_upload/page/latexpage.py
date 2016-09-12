@@ -353,6 +353,8 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
         success = True
         feedback_bits = []
 
+        print response_dict
+
         if response_dict["result"] in [
                 "uncaught_error",
                 "setup_compile_error",
