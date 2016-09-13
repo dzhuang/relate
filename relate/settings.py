@@ -74,7 +74,7 @@ MIDDLEWARE_CLASSES = (
     "course.exam.ExamFacilityMiddleware",
     "course.exam.ExamLockdownMiddleware",
     "relate.utils.MaintenanceMiddleware",
-)
+) + local_settings.get("RELATE_CUSTOM_MIDDLEWARE_CLASS", ())
 
 # }}}
 
@@ -240,7 +240,8 @@ for name, val in local_settings.items():
 
 # {{{ celery config
 
-BROKER_URL = 'django://'
+if not "BROKER_URL" in local_settings:
+    BROKER_URL = 'django://'
 
 CELERY_ACCEPT_CONTENT = ['pickle']
 CELERY_TASK_SERIALIZER = 'pickle'
@@ -286,6 +287,5 @@ assert local_settings["RELATE_BASE_URL"]
 if "RELATE_EMAIL_APPELATION_PRIORITY_LIST" in local_settings:
     assert isinstance(
         local_settings["RELATE_EMAIL_APPELATION_PRIORITY_LIST"], list)
-
 
 # vim: foldmethod=marker
