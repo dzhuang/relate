@@ -166,6 +166,12 @@ def _adjust_flow_session_page_data_inner(repo, flow_session,
                 fpd.title = title
                 fpd.save()
 
+            # Allow to update data if data changed
+            updated_data = page.update_page_data(pctx, fpd.data)
+            if updated_data != fpd.data:
+                fpd.data = updated_data
+                fpd.save()
+
             ordinal[0] += 1
             available_page_ids.remove(fpd.page_id)
 

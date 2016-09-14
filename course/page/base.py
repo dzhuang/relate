@@ -348,6 +348,13 @@ class PageBase(object):
         """
         return {}
 
+    def update_page_data(self, page_context, page_data):
+        """
+        This happens when course repo is updated. It is useful when page_data is
+        generated using materials in repo.
+        """
+        return page_data
+
     def title(self, page_context, page_data):
         """Return the (non-HTML) title of this page."""
 

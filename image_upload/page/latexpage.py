@@ -134,6 +134,34 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
             ("use_question_data_file_as_cache", bool)
         )
 
+    def update_page_data(self, page_context, page_data):
+        question_data = page_data.get("question_data", None)
+        key_making_string = ""
+        if self.cache_key_files:
+            for cfile in self.cache_key_files:
+                try:
+                    cfile_data = get_repo_blob_data_cached(
+                        page_context.repo,
+                        cfile,
+                        page_context.commit_sha)
+                    key_making_string += cfile_data.encode("utf-8")
+                except UnicodeDecodeError:
+                    pass
+
+        if self.cache_key_attrs:
+            for cattr in self.cache_key_attrs:
+                key_making_string += str(getattr(self.page_desc, cattr)).encode("utf-8")
+
+        if question_data:
+            key_making_string += question_data
+
+        key_making_string_md5 = md5(key_making_string).hexdigest()
+
+        return {"question_data": question_data,
+                "key_making_string": key_making_string,
+                "key_making_string_md5": key_making_string_md5
+                }
+
     def make_page_data(self, page_context):
         if not hasattr(self.page_desc, "random_question_data_file"):
             return {}
@@ -150,19 +178,42 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
         n_data = len(repo_data_loaded)
         if n_data < 1:
             return {}
-        import random
+        from random import choice
         all_data = list(repo_data_loaded)
-        random.shuffle(all_data)
-        random_data = all_data[0]
+        random_data = choice(all_data)
         selected_data_bytes = BytesIO()
         pickle.dump(random_data, selected_data_bytes)
 
         from base64 import b64encode
         question_data = b64encode(selected_data_bytes.getvalue()).decode()
 
-        return {"question_data": question_data}
+        key_making_string = ""
+        if self.cache_key_files:
+            for cfile in self.cache_key_files:
+                try:
+                    cfile_data = get_repo_blob_data_cached(
+                        page_context.repo,
+                        cfile,
+                        page_context.commit_sha)
+                    key_making_string += cfile_data.encode("utf-8")
+                except UnicodeDecodeError:
+                    pass
 
-    def get_cached_result(self, page_context, page_data, part="", page_question_data=None):
+        if self.cache_key_attrs:
+            for cattr in self.cache_key_attrs:
+                key_making_string += str(getattr(self.page_desc, cattr)).encode("utf-8")
+
+        if question_data:
+            key_making_string += question_data
+
+        key_making_string_md5 = md5(key_making_string).hexdigest()
+
+        return {"question_data": question_data,
+                "key_making_string": key_making_string,
+                "key_making_string_md5": key_making_string_md5
+                }
+
+    def get_cached_result(self, page_context, page_data, part=""):
         assert part in ["question", "answer"]
         will_save_file_local = False
 
@@ -191,8 +242,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                 for cattr in self.cache_key_attrs:
                     key_making_string += str(getattr(self.page_desc, cattr)).encode("utf-8")
 
-            if not page_question_data:
-                page_question_data = page_data.get("question_data", None)
+            page_question_data = page_data.get("question_data", None)
             if page_question_data:
                 key_making_string += page_question_data
 
