@@ -167,8 +167,9 @@ def _adjust_flow_session_page_data_inner(repo, flow_session,
                 fpd.save()
 
             # Allow to update data if data changed
+            old_data = dict((k ,fpd.data[k]) for k in fpd.data)
             updated_data = page.update_page_data(pctx, fpd.data)
-            if updated_data != fpd.data:
+            if updated_data != old_data:
                 fpd.data = updated_data
                 fpd.save()
 

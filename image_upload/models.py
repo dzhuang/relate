@@ -61,7 +61,7 @@ def user_directory_path(instance, filename):
 
 class UserImage(models.Model):
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
-            verbose_name=_('Creator'), on_delete=models.CASCADE)
+            verbose_name=_('Creator'), on_delete=models.SET_NULL)
     file = models.ImageField(upload_to=user_directory_path, 
             storage=sendfile_storage)
     slug = models.SlugField(max_length=256, blank=True)
@@ -122,7 +122,7 @@ from jsonfield import JSONField
 
 class FlowPageImage(models.Model):
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
-            verbose_name=_('Creator'), on_delete=models.CASCADE)
+            verbose_name=_('Creator'), on_delete=models.SET_NULL)
     file = models.ImageField(upload_to=user_flowsession_img_path, 
             storage=sendfile_storage)
     slug = models.SlugField(max_length=256, blank=True)
@@ -136,10 +136,10 @@ class FlowPageImage(models.Model):
             )
     course = models.ForeignKey(
             Course, null=True,
-            verbose_name=_('Course'), on_delete=models.CASCADE)
+            verbose_name=_('Course'), on_delete=models.SET_NULL)
     flow_session = models.ForeignKey(
             FlowSession, null=True, related_name="page_image_data",
-            verbose_name=_('Flow session'), on_delete=models.CASCADE)
+            verbose_name=_('Flow session'), on_delete=models.SET_NULL)
     image_page_id = models.CharField(max_length=200, null=True)
 
     is_image_textify = models.BooleanField(default=False, verbose_name=_("Load textified Image?"))

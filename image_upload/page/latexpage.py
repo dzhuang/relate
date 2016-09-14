@@ -110,7 +110,6 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
         self.cache_key_attrs = getattr(page_desc, "cache_key_attrs", [])
         if not self.cache_key_attrs:
             for attr in [
-                    "question_process_code",
                     "background_code",
                     "question_process_code",
                     "answer_process_code"]:
@@ -155,12 +154,9 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
         if question_data:
             key_making_string += question_data
 
-        key_making_string_md5 = md5(key_making_string).hexdigest()
+        page_data["key_making_string_md5"] = md5(key_making_string).hexdigest()
 
-        return {"question_data": question_data,
-                "key_making_string": key_making_string,
-                "key_making_string_md5": key_making_string_md5
-                }
+        return page_data
 
     def make_page_data(self, page_context):
         if not hasattr(self.page_desc, "random_question_data_file"):
@@ -206,47 +202,26 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
         if question_data:
             key_making_string += question_data
 
-        key_making_string_md5 = md5(key_making_string).hexdigest()
-
         return {"question_data": question_data,
-                "key_making_string": key_making_string,
-                "key_making_string_md5": key_making_string_md5
+                "key_making_string_md5": md5(key_making_string).hexdigest()
                 }
 
     def get_cached_result(self, page_context, page_data, part=""):
         assert part in ["question", "answer"]
         will_save_file_local = False
 
+
         # if not getattr(page_data, "question_data", None):
         #     page_data = self.make_page_data(page_context)
 
-        key_making_string = ""
+        #key_making_string = ""
         saved_file_path = None
         try:
             import django.core.cache as cache
         except ImproperlyConfigured:
             cache_key = None
         else:
-            if self.cache_key_files:
-                for cfile in self.cache_key_files:
-                    try:
-                        cfile_data = get_repo_blob_data_cached(
-                            page_context.repo,
-                            cfile,
-                            page_context.commit_sha)
-                        key_making_string += cfile_data.encode("utf-8")
-                    except UnicodeDecodeError:
-                        pass
-
-            if self.cache_key_attrs:
-                for cattr in self.cache_key_attrs:
-                    key_making_string += str(getattr(self.page_desc, cattr)).encode("utf-8")
-
-            page_question_data = page_data.get("question_data", None)
-            if page_question_data:
-                key_making_string += page_question_data
-
-            key_making_string_md5 = md5(key_making_string).hexdigest()
+            key_making_string_md5 = page_data["key_making_string_md5"]
 
             # To be used as saving name of the latex page
             saved_file_name = ""
@@ -348,8 +323,9 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
 
         # generate correct answer at the same time
         if hasattr(self.page_desc, "answer_process_code"):
-            self.get_cached_result(
-                page_context, page_data, part="answer")
+            markup_to_html(page_context,
+                           self.get_cached_result(
+                               page_context, page_data, part="answer"))
 
         return super(LatexRandomQuestion, self).body(page_context, page_data)\
                + markup_to_html(page_context, question_str)
@@ -402,8 +378,6 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
 
         success = True
         feedback_bits = []
-
-        print response_dict
 
         if response_dict["result"] in [
                 "uncaught_error",
