@@ -411,6 +411,7 @@ class Tex2ImgBase(object):
 
             try:
                 log = get_abstract_latex_log(log)
+                # race condition
                 _file_write(self.errlog_saving_path, log)
             except:
                 raise
@@ -469,6 +470,7 @@ class Tex2ImgBase(object):
                 ))
 
         try:
+            # race condition
             shutil.copyfile(image_path, self.image_saving_path)
         except OSError:
             raise RuntimeError(error)
@@ -477,7 +479,7 @@ class Tex2ImgBase(object):
 
         return self.image_saving_path
 
-    def get_compile_err_cached(self):
+    def get_compile_err_cached(self, force_regenerate=False):
         """
         If the problematic latex source is not modified, check
         wheter there is error log both in cache and output_dir.
@@ -496,7 +498,10 @@ class Tex2ImgBase(object):
                              % (self.compiler.cmd, self.basename))
             # Memcache is apparently limited to 250 characters.
             if len(err_cache_key) < 240:
-                err_result = def_cache.get(err_cache_key)
+                if not force_regenerate:
+                    err_result = def_cache.get(err_cache_key)
+                else:
+                    def_cache.delete(err_cache_key)
             if err_result is not None:
                 assert isinstance(err_result, six.string_types),\
                     err_cache_key
@@ -504,8 +509,14 @@ class Tex2ImgBase(object):
         if err_result is None:
             # read the saved err_log if it exists
             if os.path.isfile(self.errlog_saving_path):
-                err_result = _file_read(self.errlog_saving_path)
-                assert isinstance(err_result, six.string_types)
+                if not force_regenerate:
+                    err_result = _file_read(self.errlog_saving_path)
+                    assert isinstance(err_result, six.string_types)
+                else:
+                    try:
+                        os.remove(self.errlog_saving_path)
+                    except:
+                        pass
 
         if err_result:
             if err_cache_key:
@@ -528,12 +539,15 @@ class Tex2ImgBase(object):
         """
         uri_result = None
         if force_regenerate:
+            # first remove cached error results and files
+            self.get_compile_err_cached(force_regenerate)
+
             image_path = self.get_converted_image()
             uri_result = get_file_data_uri(image_path)
             assert isinstance(uri_result, six.string_types)
 
         if not uri_result:
-            err_result = self.get_compile_err_cached()
+            err_result = self.get_compile_err_cached(force_regenerate)
             if err_result:
                 return None
 
