@@ -221,7 +221,11 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
         except ImproperlyConfigured:
             cache_key = None
         else:
-            key_making_string_md5 = page_data["key_making_string_md5"]
+            try:
+                key_making_string_md5 = page_data["key_making_string_md5"]
+            except KeyError:
+                updated_page_data = self.update_page_data(page_context, page_data)
+                key_making_string_md5 = updated_page_data["key_making_string_md5"]
 
             # To be used as saving name of the latex page
             saved_file_name = ""
