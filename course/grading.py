@@ -184,7 +184,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 visit__page_data__group_id=group_id,
                 visit__page_data__page_id=page_id,
                 #feedback__isnull=False,
-                correctness__isnull=False,
+                #correctness__isnull=False,
 
                 ## auto grader for non submitting problems
                 #grader__isnull=False
@@ -200,10 +200,11 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
             graded_flow_sessions_qs = graded_flow_sessions_qs.distinct(
                 "visit__flow_session__participation__user")
 
-        graded_flow_sessions_qs = graded_flow_sessions_qs.values_list("visit__flow_session__id", "grade_time")
-
-        graded_flow_session_id_time_list = list(graded_flow_sessions_qs)
-        graded_flow_session_id_time_list.sort(key=lambda (x,y): y)
+        graded_flow_session_id_time_list = []
+        for gfs in graded_flow_sessions_qs:
+            if gfs.correctness is not None:
+                graded_flow_session_id_time_list.append((gfs.visit.flow_session.id, gfs.grade_time))
+        graded_flow_session_id_time_list.sort(key=lambda (x, y): y)
         graded_flow_session_id_list = [v[0] for v in graded_flow_session_id_time_list]
         graded_flow_session_time_list = [v[1] for v in graded_flow_session_id_time_list]
 
