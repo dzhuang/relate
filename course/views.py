@@ -173,11 +173,15 @@ def check_course_state(course, participation):
 def enroll_expire_or_ended_message(course, participation, now_date):
     message = None
     if course.enroll_deadline:
-        if not participation.has_permission(pperm.view_hidden_course_page):
-            if now_date > course.enroll_deadline:
-                message = _("Enrollment has expired. ")
-            elif course.end_date is not None and now_date > course.end_date:
-                message = _("This course has ended. ")
+        if participation is None:
+            return None
+            message = _("If you are a participant of this course, please sign in")
+        else:
+            if not participation.has_permission(pperm.view_hidden_course_page):
+                if now_date > course.enroll_deadline:
+                    message = _("Enrollment has expired. ")
+                elif course.end_date is not None and now_date > course.end_date:
+                    message = _("This course has ended. ")
     
     if message:
         return string_concat(message,

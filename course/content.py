@@ -1275,6 +1275,7 @@ def compute_chunk_weight_and_shown(
 def get_course_desc(repo, course, commit_sha):
     return get_yaml_from_repo(repo, course.course_file, commit_sha)
 
+
 def get_collapsible_chunk_content(id, title, content, subtitle, sub_color):
     def pre_string(id, title):
         pre_string = (
@@ -1309,6 +1310,7 @@ def get_collapsible_chunk_content(id, title, content, subtitle, sub_color):
         return end_string
 
     return pre_string(id, title) + content + end_string(id, title)
+
 
 def get_processed_page_chunks(
         course,  # type: Course

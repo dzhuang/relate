@@ -195,6 +195,9 @@ def view_participant_list(pctx):
         "unregistered": unregistered,
         })
 
+# }}}
+
+
 # {{{ grading opportunity list
 
 @course_view

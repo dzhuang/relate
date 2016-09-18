@@ -33,11 +33,15 @@ from django.db import connection
 from django.db.models import Q
 from django.shortcuts import (  # noqa
         get_object_or_404, redirect)
-from relate.utils import retry_transaction_decorator
 from django.core.exceptions import (  # noqa
         PermissionDenied, SuspiciousOperation,
         ObjectDoesNotExist)
 from django import http
+from django.urls import reverse
+
+from relate.utils import as_local_time, compact_local_datetime_str
+from relate.utils import retry_transaction_decorator
+
 
 from course.models import (
         FlowSession, FlowPageVisitGrade, FlowPageData,
@@ -68,10 +72,6 @@ from course.utils import (  # noqa
 import datetime  # noqa
 
 # }}}
-
-
-from django.core.urlresolvers import reverse
-from relate.utils import as_local_time, compact_local_datetime_str
 
 
 # {{{ grading driver

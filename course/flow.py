@@ -651,29 +651,6 @@ def get_session_answered_page_data(
     return (answered_page_data_list, unanswered_page_data_list)
 
 
-def get_session_answered_page_data(fctx, flow_session, answer_visits):
-    all_page_data = get_all_page_data(flow_session)
-
-    answered_page_data_list= []
-    unanswered_page_data_list = []
-    for i, page_data in enumerate(all_page_data):
-        assert i == page_data.ordinal
-
-        if answer_visits[i] is not None:
-            answer_data = answer_visits[i].answer
-        else:
-            answer_data = None
-
-        page = instantiate_flow_page_with_ctx(fctx, page_data)
-        if page.expects_answer():
-            if answer_data is None:
-                unanswered_page_data_list.append(page_data)
-            else:
-                answered_page_data_list.append(page_data)
-
-    return (answered_page_data_list, unanswered_page_data_list)
-
-
 class GradeInfo(object):
     """An object to hold a tally of points and page counts of various types in a flow.
 
