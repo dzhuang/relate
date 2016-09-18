@@ -35,9 +35,7 @@ from course.page.base import (
     PageBaseWithTitle, PageBaseWithValue, PageBaseWithHumanTextFeedback,
     PageBaseWithCorrectAnswer, HumanTextFeedbackForm,
     markup_to_html)
-from course.models import FlowPageData, FlowSession, FlowPageVisit
 from course.validation import ValidationError
-from course.constants import participation_role
 from course.utils import course_view, render_course_page
 
 from relate.utils import StyledForm
@@ -48,14 +46,19 @@ import os
 
 
 def is_course_staff_request(request, page_context):
-    user = request.user
     course = page_context.course
-    from course.constants import participation_role
-    from course.auth import get_role_and_participation
-    role, participation = get_role_and_participation(request, course)
-    if role in [participation_role.teaching_assistant,
-                participation_role.instructor]:
+    from course.constants import participation_permission as pperm
+    from course.enrollment import (
+        get_participation_for_request,
+        get_participation_permissions)
+
+    participation = get_participation_for_request(request, course)
+
+    perms = get_participation_permissions(course, participation)
+
+    if (pperm.assign_grade, None) in perms:
         return True
+
     return False
 
 # {{{ image upload question
@@ -105,6 +108,7 @@ class ImageUploadForm(StyledForm):
         flow_session_id = self.page_context.flow_session.id
         ordinal = self.page_context.ordinal
         flow_owner = self.page_context.flow_session.participation.user
+        from course.models import FlowPageData
         fpd = FlowPageData.objects.get(
             flow_session=flow_session_id, ordinal=ordinal)
 
@@ -361,6 +365,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         flow_session_id = page_context.flow_session.id
         ordinal = page_context.ordinal
         flow_owner = page_context.flow_session.participation.user
+        from course.models import FlowPageData
         fpd = FlowPageData.objects.get(
             flow_session=flow_session_id, ordinal=ordinal)
 
@@ -382,6 +387,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         flow_session_id = page_context.flow_session.id
         ordinal = page_context.ordinal
         flow_owner = page_context.flow_session.participation.user
+        from course.models import FlowPageData
         fpd = FlowPageData.objects.get(
             flow_session=flow_session_id, ordinal=ordinal)
 
@@ -504,6 +510,8 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                 % {
                     'location': location})
 
+        from course.models import FlowPageVisit
+        from course.constants import participation_permission as pperm
         fpv_qs = FlowPageVisit.objects.filter(
             flow_session__course__identifier=self.refered_course_id,
             flow_session__flow_id=self.refered_flow_id,
@@ -511,9 +519,7 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
             is_submitted_answer=True,
             flow_session__in_progress=False, )\
             .exclude(
-            flow_session__participation__role__in=[participation_role.instructor,
-                                                   participation_role.teaching_assistant,
-                                                   participation_role.auditor]
+            flow_session__participations__roles__permissions__permission=pperm.assign_grade
         )\
             .select_related("flow_session")\
             .select_related("flow_session__course")\
@@ -649,6 +655,8 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
 
     def make_page_data(self, page_context):
 
+        from course.models import FlowPageVisit
+        from course.constants import participation_permission as pperm
         visits = (FlowPageVisit.objects
                   .filter(
             flow_session__course__identifier=self.refered_course_id,
@@ -657,9 +665,7 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
             is_submitted_answer=True,
             flow_session__in_progress=False,)
                   .exclude(
-                        flow_session__participation__role__in=[participation_role.instructor,
-                                                               participation_role.teaching_assistant,
-                                                               participation_role.auditor]
+                    flow_session__participations__roles__permissions__permission=pperm.assign_grade
             ).select_related("flow_session")
                   .select_related("flow_session__course")
                   .select_related("flow_session__participation__user")
@@ -971,10 +977,16 @@ def feedBackEmail(pctx, flow_session_id, ordinal):
             from django.utils import translation
             from django.conf import settings
             from course.models import Participation
+            from course.models import FlowSession
 
             flow_session = get_object_or_404(FlowSession, id=int(flow_session_id))
+            from course.models import FlowPageData
             page_id = FlowPageData.objects.get(flow_session=flow_session_id, ordinal=ordinal).page_id
-            tutor_qs = Participation.objects.filter(course=pctx.course, role=participation_role.instructor)
+            from course.constants import participation_permission as pperm
+            tutor_qs = Participation.objects.filter(
+                    course=pctx.course,
+                    participations__roles__permissions__permission=pperm.assign_grade
+            )
             tutor_email_list = [tutor.user.email for tutor in tutor_qs]
 
             from django.core.urlresolvers import reverse

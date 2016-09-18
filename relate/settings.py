@@ -49,7 +49,6 @@ INSTALLED_APPS = (
     "djcelery",
     "kombu.transport.django",
 
-    "relate",
     "accounts",
     "course",
     ) + local_settings.get("RELATE_CUSTOM_INSTALLED_APPS", ())
@@ -64,7 +63,7 @@ if local_settings.get("RELATE_SIGN_IN_BY_SAML2_ENABLED", False):
 
 # {{{ django: middleware
 
-MIDDLEWARE_CLASS = (
+MIDDLEWARE = (
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -207,7 +206,7 @@ LOGIN_REDIRECT_URL = "/"
 # {{{ static
 
 STATICFILES_DIRS = (
-        #join(BASE_DIR, "relate", "static"),
+        join(BASE_DIR, "relate", "static"),
         )
 
 STATIC_URL = local_settings.get("STATIC_URL", '/static/')

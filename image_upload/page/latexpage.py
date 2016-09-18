@@ -51,14 +51,6 @@ from course.page.code import (
 
 CACHE_VERSION = "V0"
 
-def is_course_staff(page_context):
-    from course.constants import participation_role
-    if page_context.flow_session.participation.role in [participation_role.instructor,
-                                                        participation_role.teaching_assistant]:
-        return True
-    else:
-        return False
-
 class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                           PageBaseWithHumanTextFeedback, PageBaseWithCorrectAnswer):
     def __init__(self, vctx, location, page_desc):
@@ -479,6 +471,8 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                     "it will be fixed as soon as possible."
                 ),
                 "</p>"]))
+
+            from image_upload.views import is_course_staff
             if is_course_staff(page_context):
                 feedback_bits.append("".join([
                     "<p>",

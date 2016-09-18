@@ -25,6 +25,9 @@ THE SOFTWARE.
 """
 
 
+from typing import Any, Optional  # noqa
+
+from django.utils.translation import ugettext as _
 from django.utils.translation import ugettext as _, string_concat
 from django.db import connection
 from django.db.models import Q
@@ -42,7 +45,7 @@ from course.models import (
         get_feedback_for_grade,
         update_bulk_feedback)
 from course.constants import (
-        participation_role,
+        #participation_role,
         grade_aggregation_strategy)
 from course.utils import (
         course_view, render_course_page,
@@ -52,6 +55,20 @@ from course.flow import get_all_page_data
 from course.views import get_now_or_fake_time
 from django.conf import settings
 from django.utils import translation
+from course.constants import (
+        participation_permission as pperm,
+        )
+
+# {{{ for mypy
+
+from course.models import (  # noqa
+        GradingOpportunity)
+from course.utils import (  # noqa
+        CoursePageContext)
+import datetime  # noqa
+
+# }}}
+
 
 from django.core.urlresolvers import reverse
 from relate.utils import as_local_time, compact_local_datetime_str
@@ -61,15 +78,13 @@ from relate.utils import as_local_time, compact_local_datetime_str
 
 @course_view
 def grade_flow_page(pctx, flow_session_id, page_ordinal):
+    # type: (CoursePageContext, int, int) -> http.HttpResponse
     now_datetime = get_now_or_fake_time(pctx.request)
 
     page_ordinal = int(page_ordinal)
 
-    if pctx.role not in [
-            participation_role.instructor,
-            participation_role.teaching_assistant]:
-        raise PermissionDenied(
-                _("must be instructor or TA to view grades"))
+    if not pctx.has_permission(pperm.view_gradebook):
+        raise PermissionDenied(_("may not view grade book"))
 
     flow_session = get_object_or_404(FlowSession, id=int(flow_session_id))
 
@@ -87,9 +102,13 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     if fpctx.page_desc is None:
         raise http.Http404()
 
+    assert fpctx.page is not None
+    assert fpctx.page_context is not None
+
     from course.flow import adjust_flow_session_page_data
     adjust_flow_session_page_data(pctx.repo, flow_session,
-            pctx.course.identifier, fpctx.flow_desc)
+            pctx.course.identifier, fpctx.flow_desc,
+            respect_preview=True)
 
     grading_rule = get_session_grading_rule(
         flow_session, flow_session.participation.role,
@@ -105,9 +124,9 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
         participation__isnull=False,
         in_progress=flow_session.in_progress).select_related("user")
 
-    if pctx.role != participation_role.instructor:
-        all_flow_qs = all_flow_qs.exclude(
-            participation__role=participation_role.instructor)
+    # if pctx.role != participation_role.instructor:
+    #     all_flow_qs = all_flow_qs.exclude(
+    #         participation__role=participation_role.instructor)
 
     flow_order_by_list = ['participation__user__username']
     if (grading_rule.grade_aggregation_strategy
@@ -365,6 +384,9 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
             and not flow_session.in_progress):
         request = pctx.request
         if pctx.request.method == "POST":
+            if not pctx.has_permission(pperm.assign_grade):
+                raise PermissionDenied(_("may not assign grades"))
+
             grading_form = fpctx.page.post_grading_form(
                     fpctx.page_context, fpctx.page_data, grade_data,
                     request.POST, request.FILES)
@@ -437,10 +459,15 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
     # }}}
 
+    grading_rule = get_session_grading_rule(
+            flow_session, fpctx.flow_desc, get_now_or_fake_time(pctx.request))
+
     if grading_rule.grade_identifier is not None:
         grading_opportunity = get_flow_grading_opportunity(
                 pctx.course, flow_session.flow_id, fpctx.flow_desc,
-                grading_rule)
+                grading_rule.grade_identifier,
+                grading_rule.grade_aggregation_strategy
+                )  # type: Optional[GradingOpportunity]
     else:
         grading_opportunity = None
 
@@ -510,8 +537,14 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
 
 @retry_transaction_decorator()
-def _save_grade(fpctx, flow_session, most_recent_grade, bulk_feedback_json,
-        now_datetime):
+def _save_grade(
+        fpctx,  # type: FlowPageContext
+        flow_session,  # type: FlowSession
+        most_recent_grade,  # type: FlowPageVisitGrade
+        bulk_feedback_json,  # type: Any
+        now_datetime,  # type: datetime.datetime
+        ):
+    # type: (...) -> None
     most_recent_grade.save()
 
     update_bulk_feedback(
@@ -520,8 +553,7 @@ def _save_grade(fpctx, flow_session, most_recent_grade, bulk_feedback_json,
             bulk_feedback_json)
 
     grading_rule = get_session_grading_rule(
-            flow_session, flow_session.participation.role,
-            fpctx.flow_desc, now_datetime)
+            flow_session, fpctx.flow_desc, now_datetime)
 
     from course.flow import grade_flow_session
     grade_flow_session(fpctx, flow_session, grading_rule)
@@ -533,11 +565,8 @@ def _save_grade(fpctx, flow_session, most_recent_grade, bulk_feedback_json,
 
 @course_view
 def show_grader_statistics(pctx, flow_id):
-    if pctx.role not in [
-            participation_role.instructor,
-            participation_role.teaching_assistant]:
-        raise PermissionDenied(
-                _("must be instructor or TA to view grading stats"))
+    if not pctx.has_permission(pperm.view_grader_stats):
+        raise PermissionDenied(_("may not view grader stats"))
 
     grades = (FlowPageVisitGrade.objects
             .filter(
