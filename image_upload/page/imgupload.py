@@ -519,11 +519,12 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
             is_submitted_answer=True,
             flow_session__in_progress=False, )\
             .exclude(
-            flow_session__participations__roles__permissions__permission=pperm.assign_grade
+            # FIXME!!
+            flow_session__participation__roles__permissions__permission=pperm.assign_grade
         )\
             .select_related("flow_session")\
             .select_related("flow_session__course")\
-            .select_related("flow_session__participation__user")\
+            .prefetch_related("flow_session__participation__roles__permissions")\
             .select_related("page_data")
 
         fpv_qs_iter = fpv_qs.iterator()
@@ -665,10 +666,11 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
             is_submitted_answer=True,
             flow_session__in_progress=False,)
                   .exclude(
-                    flow_session__participations__roles__permissions__permission=pperm.assign_grade
+                    # FIXME!!
+                    flow_session__participation__roles__permissions__permission=pperm.assign_grade
             ).select_related("flow_session")
                   .select_related("flow_session__course")
-                  .select_related("flow_session__participation__user")
+                  .prefetch_related("flow_session__participation__roles__permissions")
                   .select_related("page_data")
 
                   # We overwrite earlier submissions with later ones

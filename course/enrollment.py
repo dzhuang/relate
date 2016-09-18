@@ -629,7 +629,7 @@ def create_preapprovals_csv(pctx):
 
     is_preview = "preview" in request.POST
     if request.method == "POST":
-        form = BulkPreapprovalsFormCsv(request.POST, request.FILES)
+        form = BulkPreapprovalsFormCsv(pctx.course, request.POST, request.FILES)
         if form.is_valid():
 
             created_count = 0
@@ -637,7 +637,7 @@ def create_preapprovals_csv(pctx):
             pending_approved_count = 0
             name_updated_count = 0
 
-            role = form.cleaned_data["role"]
+            roles = form.cleaned_data["roles"]
             file_contents = request.FILES["file"]
             inst_id_column = form.cleaned_data["inst_id_column"]
             header_count = form.cleaned_data["csv_header_count"]
@@ -708,9 +708,9 @@ def create_preapprovals_csv(pctx):
                         preapproval.institutional_id = inst_id
                         preapproval.provided_name = full_name
                         preapproval.course = pctx.course
-                        preapproval.role = role
                         preapproval.creator = request.user
                         preapproval.save()
+                        preapproval.roles.set(roles)
 
                         created_count += 1
                     
@@ -733,7 +733,7 @@ def create_preapprovals_csv(pctx):
             return redirect("relate-course_page", pctx.course.identifier)
 
     else:
-        form = BulkPreapprovalsFormCsv()
+        form = BulkPreapprovalsFormCsv(pctx.course)
 
     return render_course_page(pctx, "course/generic-course-form.html", {
         "form": form,

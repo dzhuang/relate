@@ -47,6 +47,7 @@ from braces.views import JSONResponseMixin
 import json
 from PIL import Image
 
+@course_view
 def is_course_staff(pctx):
     request = pctx.request
     course = pctx.course

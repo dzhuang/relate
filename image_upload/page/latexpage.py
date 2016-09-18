@@ -51,6 +51,16 @@ from course.page.code import (
 
 CACHE_VERSION = "V0"
 
+def is_course_staff(page_context):
+    from course.constants import (
+        participation_permission as pperm,
+    )
+    participation = page_context.flow_session.participation
+    if participation.has_permission(pperm.assign_grade):
+        return True
+    else:
+        return False
+
 class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                           PageBaseWithHumanTextFeedback, PageBaseWithCorrectAnswer):
     def __init__(self, vctx, location, page_desc):
@@ -472,7 +482,6 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                 ),
                 "</p>"]))
 
-            from image_upload.views import is_course_staff
             if is_course_staff(page_context):
                 feedback_bits.append("".join([
                     "<p>",
