@@ -30,7 +30,7 @@ from django.shortcuts import (  # noqa
         render, get_object_or_404, redirect)
 from django.contrib import messages
 import django.forms as forms
-from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
 from django.utils.translation import (
         ugettext_lazy as _,
@@ -49,17 +49,11 @@ from crispy_forms.layout import Submit
 
 from course.models import (
         Course,
-        Participation,
-        ParticipationRole)
+        Participation, participation_role, participation_status)
 
 from course.utils import course_view, render_course_page
 import paramiko
 import paramiko.client
-
-from course.constants import (
-        participation_status,
-        participation_permission as pperm,
-        )
 
 
 class AutoAcceptPolicy(paramiko.client.MissingHostKeyPolicy):
@@ -207,8 +201,11 @@ class CourseCreationForm(StyledModelForm):
         return self.cleaned_data["git_source"]
 
 
-@permission_required("course.add_course")
+@login_required
 def set_up_new_course(request):
+    if not request.user.is_staff:
+        raise PermissionDenied(_("only staff may create courses"))
+
     if request.method == "POST":
         form = CourseCreationForm(request.POST)
 
@@ -266,10 +263,7 @@ def set_up_new_course(request):
                         part = Participation()
                         part.user = request.user
                         part.course = new_course
-                        part.roles.set([
-                            # created by signal handler for course creation
-                            ParticipationRole.objects.get(identifier="instructor")
-                            ])
+                        part.role = participation_role.instructor
                         part.status = participation_status.active
                         part.save()
 
@@ -529,11 +523,12 @@ def _get_commit_message_as_html(repo, commit_sha):
 @login_required
 @course_view
 def update_course(pctx):
-    if not (
-            pctx.has_permission(pperm.update_content)
-            or
-            pctx.has_permission(pperm.preview_content)):
-        raise PermissionDenied()
+    if pctx.role not in [
+            participation_role.instructor,
+            participation_role.teaching_assistant
+            ]:
+        raise PermissionDenied(
+                _("must be instructor or TA to update course"))
 
     course = pctx.course
     request = pctx.request
@@ -550,7 +545,7 @@ def update_course(pctx):
     previewing = bool(participation is not None
             and participation.preview_git_commit_sha)
 
-    may_update = pctx.has_permission(pperm.update_content)
+    may_update = pctx.role == participation_role.instructor
 
     response_form = None
     if request.method == "POST":

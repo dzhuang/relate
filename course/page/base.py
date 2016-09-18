@@ -42,21 +42,6 @@ from django.utils.translation import (
 from django.utils import translation
 from django.conf import settings
 
-# {{{ mypy
-
-from typing import Text, Optional, Any, Tuple  # noqa
-from django import http  # noqa
-
-if False:
-    from course.models import (  # noqa
-            Course,
-            FlowSession
-            )
-    from course.content import Repo_ish  # noqa
-
-# }}}
-
-
 mark_safe_lazy = lazy(mark_safe, six.text_type)
 
 
@@ -75,18 +60,8 @@ class PageContext(object):
     which is used internally by the flow views.
     """
 
-    def __init__(
-            self,
-            course,  # type: Course
-            repo,  # type: Repo_ish
-            commit_sha,  # type: bytes
-            flow_session,  # type: FlowSession
-            ordinal=None,  # type: int or None # added by zd
-            in_sandbox=False,  # type: bool
-            page_uri=None,  # type: Optional[str]
-            ):
-        # type: (...) -> None
-
+    def __init__(self, course, repo, commit_sha, flow_session,
+            ordinal=None, in_sandbox=False, page_uri=None):
         self.course = course
         self.repo = repo
         self.commit_sha = commit_sha
@@ -103,14 +78,7 @@ class PageBehavior(object):
     .. attribute:: may_change_answer
     """
 
-    def __init__(
-            self,
-            show_correctness,  # type: bool
-            show_answer,  # type: bool
-            may_change_answer,  # type:bool
-            ):
-        # type: (...) -> None
-
+    def __init__(self, show_correctness, show_answer, may_change_answer):
         self.show_correctness = show_correctness
         self.show_answer = show_answer
         self.may_change_answer = may_change_answer
@@ -136,7 +104,6 @@ def markup_to_html(page_context, text):
 # {{{ answer feedback type
 
 def get_auto_feedback(correctness):
-    # type: (Optional[float]) -> Text
     if correctness is None:
         return six.text_type(_("No information on correctness of answer."))
     elif correctness == 0:
@@ -184,8 +151,6 @@ class AnswerFeedback(object):
     """
 
     def __init__(self, correctness, feedback=None, bulk_feedback=None):
-        # type: (Optional[float], Optional[Text], Optional[Text]) -> None
-
         if correctness is not None:
             # allow for extra credit
             if correctness < 0 or correctness > MAX_EXTRA_CREDIT_FACTOR:
@@ -199,7 +164,6 @@ class AnswerFeedback(object):
         self.bulk_feedback = bulk_feedback
 
     def as_json(self):
-        # type: () -> Tuple[Dict[Text, Any], Dict[Text, Any]]
         result = {
                 "correctness": self.correctness,
                 "feedback": self.feedback,
@@ -212,8 +176,6 @@ class AnswerFeedback(object):
 
     @staticmethod
     def from_json(json, bulk_json):
-        # type: (Any, Any) -> AnswerFeedback
-
         if json is None:
             return json
 
@@ -229,8 +191,6 @@ class AnswerFeedback(object):
                 )
 
     def percentage(self):
-        # type: () -> Optional[float]
-
         if self.correctness is not None:
             return 100*self.correctness
         else:
@@ -365,20 +325,19 @@ class PageBase(object):
             )
 
     def get_modified_permissions_for_page(self, permissions):
-        # type: (frozenset[Text]) -> frozenset[Text]
-        rw_permissions = set(permissions)
+        permissions = set(permissions)
 
         if hasattr(self.page_desc, "access_rules"):
             if hasattr(self.page_desc.access_rules, "add_permissions"):
                 for perm in self.page_desc.access_rules.add_permissions:
-                    rw_permissions.add(perm)
+                    permissions.add(perm)
 
             if hasattr(self.page_desc.access_rules, "remove_permissions"):
                 for perm in self.page_desc.access_rules.remove_permissions:
-                    if perm in rw_permissions:
-                        rw_permissions.remove(perm)
+                    if perm in permissions:
+                        permissions.remove(perm)
 
-        return frozenset(rw_permissions)
+        return permissions
 
     def make_page_data(self, page_context):
         """Return (possibly randomly generated) data that is used to generate
@@ -397,22 +356,16 @@ class PageBase(object):
         return page_data
 
     def title(self, page_context, page_data):
-        # type: (PageContext, Dict) -> str
-
         """Return the (non-HTML) title of this page."""
 
         raise NotImplementedError()
 
     def body(self, page_context, page_data):
-        # type: (PageContext, Dict) -> str
-
         """Return the (HTML) body of the page."""
 
         raise NotImplementedError()
 
     def expects_answer(self):
-        # type: () -> bool
-
         """
         :return: a :class:`bool` indicating whether this page lets the
             user provide an answer of some type.
@@ -420,7 +373,6 @@ class PageBase(object):
         raise NotImplementedError()
 
     def is_answer_gradable(self):
-        # type: () -> bool
         """
         :return: a :class:`bool` indicating whether answers on this can
             have :meth:`grade` called on them.
@@ -430,7 +382,6 @@ class PageBase(object):
         return True
 
     def max_points(self, page_data):
-        # type: (Any) -> float
         """
         :return: a :class:`int` or :class:`float` indicating how many points
             are achievable on this page.
@@ -439,26 +390,14 @@ class PageBase(object):
 
     # {{{ student input
 
-    def answer_data(
-            self,
-            page_context,  # type:  PageContext
-            page_data,  # type: Any
-            form,  # type: forms.Form
-            files_data,  # type: Any
-            ):
-        # type: (...) -> Any
+    def answer_data(self, page_context, page_data, form, files_data):
         """Return a JSON-persistable object reflecting the user's answer on the
         form. This will be passed to methods below as *answer_data*.
         """
         raise NotImplementedError()
 
-    def make_form(
-            self,
-            page_context,  # type: PageContext
-            page_data,  # type: Any
-            answer_data,  # type: Any
-            page_behavior,  # type: Any
-            ):
+    def make_form(self, page_context, page_data,
+            answer_data, page_behavior):
         """
         :arg answer_data: value returned by :meth:`answer_data`.
              May be *None*.
@@ -471,25 +410,11 @@ class PageBase(object):
 
         raise NotImplementedError()
 
-    def post_form(
-            self,
-            page_context,  # type: PageContext
-            page_data,  # type: Any
-            post_data,  # type: Any
-            files_data  # type: Any
-            ):
-        # type: (...) -> forms.Form
+    def post_form(self, page_context, page_data, post_data, files_data):
         raise NotImplementedError()
 
-    def process_form_post(
-            self,
-            page_context,  # type: PageContext
-            page_data,  # type: Any
-            post_data,  # type: Any
-            files_data,  # type: Any
-            page_behavior,  # type: PageBehavior
-            ):
-        # type: (...) -> forms.Form
+    def process_form_post(self, page_context, page_data, post_data, files_data,
+            page_behavior):
         """Return a form with the POST response from *post_data* and *files_data*
         filled in.
 
@@ -507,13 +432,7 @@ class PageBase(object):
 
         return self.post_form(page_context, page_data, post_data, files_data)
 
-    def form_to_html(
-            self,
-            request,  # type: http.HttpRequest
-            page_context,  # type: PageContext
-            form,  # type: StyledForm
-            answer_data,  # type: Any
-            ):
+    def form_to_html(self, request, page_context, form, answer_data):
         """Returns an HTML rendering of *form*."""
 
         from django.template import loader, RequestContext
@@ -535,13 +454,7 @@ class PageBase(object):
 
     # {{{ grader input
 
-    def make_grading_form(
-            self,
-            page_context,  # type: PageContext
-            page_data,  # type: Any
-            grade_data  # type: Any
-            ):
-        # type: (...) -> forms.Form
+    def make_grading_form(self, page_context, page_data, grade_data):
         """
         :arg grade_data: value returned by
             :meth:`update_grade_data_from_grading_form`.  May be *None*.
@@ -550,15 +463,8 @@ class PageBase(object):
         """
         return None
 
-    def post_grading_form(
-            self,
-            page_context,  # type: PageContext
-            page_data,  # type: Any
-            grade_data,  # type: Any
-            post_data,  # type: Any
-            files_data  # type: Any
-            ):
-        # type: (...) -> forms.Form
+    def post_grading_form(self, page_context, page_data, grade_data,
+            post_data, files_data):
         """Return a form with the POST response from *post_data* and *files_data*
         filled in.
 
@@ -567,14 +473,8 @@ class PageBase(object):
         """
         raise NotImplementedError()
 
-    def update_grade_data_from_grading_form(
-            self,
-            page_context,  # type: PageContext
-            page_data,  # type: Any
-            grade_data,  # type: Any
-            grading_form,  # type: Any
-            files_data  # type: Any
-            ):
+    def update_grade_data_from_grading_form(self, page_context, page_data,
+            grade_data, grading_form, files_data):
         """Return an updated version of *grade_data*, which is a
         JSON-persistable object reflecting data on grading of this response.
         This will be passed to other methods as *grade_data*.
@@ -582,14 +482,7 @@ class PageBase(object):
 
         return grade_data
 
-    def grading_form_to_html(
-            self,
-            request,  # type: http.HttpRequest
-            page_context,  # type: PageContext
-            grading_form,  # type: Any
-            grade_data  # type: Any
-            ):
-        # type: (...) -> Text
+    def grading_form_to_html(self, request, page_context, grading_form, grade_data):
         """Returns an HTML rendering of *grading_form*."""
 
         from crispy_forms.utils import render_crispy_form
@@ -601,14 +494,7 @@ class PageBase(object):
 
     # {{{ grading/feedback
 
-    def grade(
-            self,
-            page_context,  # type: PageContext
-            page_data,  # type: Any
-            answer_data,  # type: Any
-            grade_data,  # type: Any
-            ):
-        # type: (...) -> AnswerFeedback
+    def grade(self, page_context, page_data, answer_data, grade_data):
         """Grade the answer contained in *answer_data*.
 
         :arg answer_data: value returned by :meth:`answer_data`,
@@ -621,14 +507,7 @@ class PageBase(object):
 
         raise NotImplementedError()
 
-    def correct_answer(
-            self,
-            page_context,  # type: PageContext
-            page_data,  # type: Any
-            answer_data,  # type: Any
-            grade_data,  # type: Any
-            ):
-        # type: (...) -> Optional[Text]
+    def correct_answer(self, page_context, page_data, answer_data, grade_data):
         """The correct answer to this page's interaction, formatted as HTML,
         or *None*.
         """

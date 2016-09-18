@@ -33,22 +33,9 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.utils.html import escape
 from django.utils.translation import (
         ugettext_lazy as _, ugettext, string_concat)
-from course.constants import (
-        FLOW_SESSION_EXPIRATION_MODE_CHOICES,
-        ATTRIBUTES_FILENAME,
-        participation_permission as pperm)
 
 from course.content import get_repo_blob
 from relate.utils import Struct
-
-# {{{ mypy
-
-from typing import Any, Tuple, Optional, Text  # noqa
-if False:
-    from relate.utils import Repo_ish  # noqa
-    from course.models import Course  # noqa
-
-# }}}
 
 
 # {{{ validation tools
@@ -61,8 +48,6 @@ ID_RE = re.compile(r"^[\w]+$")
 
 
 def validate_identifier(vctx, location, s, warning_only=False):
-    # type: (ValidationContext, Text, Text, bool) -> None
-
     if not ID_RE.match(s):
 
         if warning_only:
@@ -82,24 +67,22 @@ def validate_identifier(vctx, location, s, warning_only=False):
             raise ValidationError(msg)
 
 
-def validate_role(vctx, location, role):
-    # type: (ValidationContext, Text, Text) -> None
+def validate_role(location, role):
+    from course.constants import participation_role
 
-    if vctx.course is not None:
-        from course.models import ParticipationRole
-        roles = ParticipationRole.objects.filter(course=vctx.course).values_list(
-                "identifier", flat=True)
-
-        if role not in roles:
-            raise ValidationError(
-                    string_concat("%(location)s: ",
-                        _("invalid role '%(role)s'"))
-                    % {'location': location, 'role': role})
+    if role not in [
+            participation_role.instructor,
+            participation_role.teaching_assistant,
+            participation_role.student,
+            participation_role.unenrolled,
+            ]:
+        raise ValidationError(
+                string_concat("%(location)s: ",
+                    _("invalid role '%(role)s'"))
+                % {'location': location, 'role': role})
 
 
 def validate_facility(vctx, location, facility):
-    # type: (ValidationContext, Text, Text) -> None
-
     from course.utils import get_facilities_config
     facilities = get_facilities_config()
     if facilities is None:
@@ -115,15 +98,7 @@ def validate_facility(vctx, location, facility):
                 })
 
 
-def validate_struct(
-        vctx,  # type: ValidationContext
-        location,  # type: Text
-        obj,  # type: Any
-        required_attrs,  # type: List[Tuple[Text, Any]]
-        allowed_attrs,  # type: List[Tuple[Text, Any]]
-        ):
-    # type: (...) -> None
-
+def validate_struct(vctx, location, obj, required_attrs, allowed_attrs):
     """
     :arg required_attrs: an attribute validation list (see below)
     :arg allowed_attrs: an attribute validation list (see below)
@@ -199,7 +174,6 @@ datespec_types = (datetime.date, six.string_types, datetime.datetime)
 
 class ValidationWarning(object):
     def __init__(self, location, text):
-        # type: (Optional[Text], Text) -> None
         self.location = location
         self.text = text
 
@@ -214,33 +188,24 @@ class ValidationContext(object):
         is currently available.
     """
 
-    course = None  # type: Optional[Course]
-
     def __init__(self, repo, commit_sha, course=None):
-        # type: (Repo_ish, bytes, Optional[Course]) -> None
-
         self.repo = repo
         self.commit_sha = commit_sha
         self.course = course
 
-        self.warnings = []  # type: List[ValidationWarning]
+        self.warnings = []
 
     def encounter_datespec(self, location, datespec):
-        # type: (Text, Text) -> None
-
         from course.content import parse_date_spec
         parse_date_spec(self.course, datespec, vctx=self, location=location)
 
-    def add_warning(self, location, text):
-        # type: (Optional[Text], Text) -> None
-        self.warnings.append(ValidationWarning(location, text))
+    def add_warning(self, *args, **kwargs):
+        self.warnings.append(ValidationWarning(*args, **kwargs))
 
 
 # {{{ markup validation
 
 def validate_markup(vctx, location, markup_str):
-    # type: (ValidationContext, Text, Text) -> None
-
     def reverse_func(*args, **kwargs):
         pass
 
@@ -258,8 +223,6 @@ def validate_markup(vctx, location, markup_str):
         print_exc()
 
         tp, e, _ = sys.exc_info()
-
-        assert tp is not None
 
         raise ValidationError(
                 "%(location)s: %(err_type)s: %(err_str)s" % {
@@ -301,7 +264,7 @@ def validate_chunk_rule(vctx, location, chunk_rule):
 
     if hasattr(chunk_rule, "if_has_role"):
         for role in chunk_rule.if_has_role:
-            validate_role(vctx, location, role)
+            validate_role(location, role)
 
     if hasattr(chunk_rule, "if_in_facility"):
         validate_facility(vctx, location, chunk_rule.if_in_facility)
@@ -325,7 +288,7 @@ def validate_chunk_rule(vctx, location, chunk_rule):
                 "use 'if_has_role' instead"))
 
         for role in chunk_rule.roles:
-            validate_role(vctx, location, role)
+            validate_role(location, role)
 
     # }}}
 
@@ -517,7 +480,7 @@ def validate_flow_group(vctx, location, grp):
     validate_identifier(vctx, location, grp.id)
 
 
-# {{{ flow rules
+# {{{ flow access rules
 
 def validate_session_start_rule(vctx, location, nrule, tags):
     validate_struct(
@@ -537,7 +500,6 @@ def validate_session_start_rule(vctx, location, nrule, tags):
                 ("may_start_new_session", bool),
                 ("may_list_existing_sessions", bool),
                 ("lock_down_as_exam_session", bool),
-                ("default_expiration_mode", str),
                 ]
             )
 
@@ -548,7 +510,6 @@ def validate_session_start_rule(vctx, location, nrule, tags):
     if hasattr(nrule, "if_has_role"):
         for j, role in enumerate(nrule.if_has_role):
             validate_role(
-                    vctx,
                     "%s, role %d" % (location, j+1),
                     role)
 
@@ -588,20 +549,8 @@ def validate_session_start_rule(vctx, location, nrule, tags):
                         _("invalid tag '%(tag)s'"))
                     % {'location': location, 'tag': nrule.tag_session})
 
-    if hasattr(nrule, "default_expiration_mode"):
-        from course.constants import FLOW_SESSION_EXPIRATION_MODE_CHOICES
-        if nrule.default_expiration_mode not in dict(
-                FLOW_SESSION_EXPIRATION_MODE_CHOICES):
-            raise ValidationError(
-                    string_concat("%(location)s: ",
-                        _("invalid default expiration mode '%(expiremode)s'"))
-                    % {
-                        'location': location,
-                        'expiremode': nrule.default_expiration_mode})
-
 
 def validate_session_access_rule(vctx, location, arule, tags):
-    # type: (ValidationContext, Text, Any, List[Text]) -> None
     validate_struct(
             vctx, location, arule,
             required_attrs=[
@@ -619,7 +568,7 @@ def validate_session_access_rule(vctx, location, arule, tags):
                 ("if_expiration_mode", str),
                 ("if_session_duration_shorter_than_minutes", (int, float)),
                 ("if_signed_in_with_matching_exam_ticket", bool),
-                ("message", str),
+                ("message", datespec_types),
                 ]
             )
 
@@ -633,7 +582,6 @@ def validate_session_access_rule(vctx, location, arule, tags):
     if hasattr(arule, "if_has_role"):
         for j, role in enumerate(arule.if_has_role):
             validate_role(
-                    vctx,
                     "%s, role %d" % (location, j+1),
                     role)
 
@@ -649,6 +597,7 @@ def validate_session_access_rule(vctx, location, arule, tags):
                     % {'location': location, 'tag': arule.if_has_tag})
 
     if hasattr(arule, "if_expiration_mode"):
+        from course.constants import FLOW_SESSION_EXPIRATION_MODE_CHOICES
         if arule.if_expiration_mode not in dict(
                 FLOW_SESSION_EXPIRATION_MODE_CHOICES):
             raise ValidationError(
@@ -665,15 +614,7 @@ def validate_session_access_rule(vctx, location, arule, tags):
                 perm)
 
 
-def validate_session_grading_rule(
-        vctx,  # type: ValidationContext
-        location,  # type: Text
-        grule,  # type: Any
-        tags,  # type: List[Text]
-        grade_identifier,  # type: Optional[Text]
-        ):
-    # type: (...) -> bool
-
+def validate_session_grading_rule(vctx, location, grule, tags, grade_identifier):
     """
     :returns: whether the rule only applies conditionally
     """
@@ -731,7 +672,6 @@ def validate_session_grading_rule(
     if hasattr(grule, "if_has_role"):
         for j, role in enumerate(grule.if_has_role):
             validate_role(
-                    vctx,
                     "%s, role %d" % (location, j+1),
                     role)
         has_conditionals = True
@@ -881,8 +821,6 @@ def validate_flow_rules(vctx, location, rules):
 
 
 def validate_flow_permission(vctx, location, permission):
-    # type: (ValidationContext, Text, Text) -> None
-
     from course.constants import FLOW_PERMISSION_CHOICES
     if permission == "modify":
         vctx.add_warning(location, _("Uses deprecated 'modify' permission--"
@@ -1074,17 +1012,8 @@ def validate_calendar_desc_struct(vctx, location, events_desc):
                         ("color", str),
                         ("title", str),
                         ("description", "markup"),
-                        ("show_description_from", datespec_types),
-                        ("show_description_until", datespec_types),
                         ]
                     )
-
-            if hasattr(event_desc, "show_description_from"):
-                vctx.encounter_datespec(location, event_desc.show_description_from)
-
-            if hasattr(event_desc, "show_description_until"):
-                vctx.encounter_datespec(location, event_desc.show_description_until)
-
 # }}}
 
 
@@ -1107,11 +1036,13 @@ def get_yaml_from_repo_safely(repo, full_name, commit_sha):
                     "err_str": six.text_type(e)})
 
 
-def check_attributes_yml(vctx, repo, path, tree, access_kinds):
-    # type: (ValidationContext, Repo_ish, Text, Any, List[Text]) -> None
+def check_attributes_yml(vctx, repo, path, tree):
     """
     This function reads the .attributes.yml file and checks
     that each item for each header is a string
+
+    att_roles : list
+         list of acceptable access types
 
     Example::
 
@@ -1129,12 +1060,10 @@ def check_attributes_yml(vctx, repo, path, tree, access_kinds):
             - 42
     """
     from course.content import get_true_repo_and_path
-    true_repo, path = get_true_repo_and_path(repo, path)
-
-    # {{{ analyze attributes file
+    repo, path = get_true_repo_and_path(repo, path)
 
     try:
-        dummy, attr_blob_sha = tree[ATTRIBUTES_FILENAME.encode()]
+        dummy, attr_blob_sha = tree[b".attributes.yml"]
     except KeyError:
         # no .attributes.yml here
         pass
@@ -1142,16 +1071,15 @@ def check_attributes_yml(vctx, repo, path, tree, access_kinds):
         from relate.utils import dict_to_struct
         from yaml import load as load_yaml
 
-        att_yml = dict_to_struct(load_yaml(true_repo[attr_blob_sha].data))
+        att_yml = dict_to_struct(load_yaml(repo[attr_blob_sha].data))
 
-        if path:
-            loc = path + "/" + ATTRIBUTES_FILENAME
-        else:
-            loc = ATTRIBUTES_FILENAME
+        loc = path + "/" + ".attributes.yml"
 
+        att_roles = ["public", "in_exam", "student", "ta",
+                     "unenrolled", "instructor"]
         validate_struct(vctx, loc, att_yml,
                         required_attrs=[],
-                        allowed_attrs=[(role, list) for role in access_kinds])
+                        allowed_attrs=[(role, list) for role in att_roles])
 
         if hasattr(att_yml, "public"):
             vctx.add_warning(loc,
@@ -1164,7 +1092,7 @@ def check_attributes_yml(vctx, repo, path, tree, access_kinds):
                     "exist simultaneously.")
                 % (loc))
 
-        for access_kind in access_kinds:
+        for access_kind in att_roles:
             if hasattr(att_yml, access_kind):
                 for i, l in enumerate(getattr(att_yml, access_kind)):
                     if not isinstance(l, six.string_types):
@@ -1172,39 +1100,13 @@ def check_attributes_yml(vctx, repo, path, tree, access_kinds):
                             "%s: entry %d in '%s' is not a string"
                             % (loc, i+1, access_kind))
 
-    # }}}
-
-    # {{{ analyze gitignore
-
-    gitignore_lines = []  # type: List[Text]
-
-    try:
-        dummy, gitignore_sha = tree[b".gitignore"]
-    except KeyError:
-        # no .attributes.yml here
-        pass
-    else:
-        gitignore_lines = true_repo[gitignore_sha].data.decode("utf-8").split("\n")
-
-    # }}}
-
     import stat
-    from fnmatch import fnmatchcase
-
     for entry in tree.items():
-        entry_name = entry.path.decode("utf-8")
-        if any(fnmatchcase(entry_name, line) for line in gitignore_lines):
-            continue
-
-        if path:
-            subpath = path+"/"+entry_name
-        else:
-            subpath = entry_name
-
         if stat.S_ISDIR(entry.mode):
             dummy, blob_sha = tree[entry.path]
-            subtree = true_repo[blob_sha]
-            check_attributes_yml(vctx, true_repo, subpath, subtree, access_kinds)
+            subtree = repo[blob_sha]
+            check_attributes_yml(vctx, repo,
+                                 path+"/"+entry.path.decode("utf-8"), subtree)
 
 
 # {{{ check whether flow grade identifiers were changed in sketchy ways
@@ -1302,31 +1204,8 @@ def validate_course_content(repo, course_file, events_file,
     else:
         validate_calendar_desc_struct(vctx, events_file, events_desc)
 
-    if vctx.course is not None:
-        from course.models import (
-                ParticipationPermission,
-                ParticipationRolePermission)
-        access_kinds = frozenset(
-                ParticipationPermission.objects
-                .filter(
-                    participation__course=vctx.course,
-                    permission=pperm.access_files_for,
-                    )
-                .values_list("argument", flat=True)) | frozenset(
-                        ParticipationRolePermission.objects
-                        .filter(
-                            role__course=vctx.course,
-                            permission=pperm.access_files_for,
-                            )
-                        .values_list("argument", flat=True))
-    else:
-        access_kinds = ["public", "in_exam", "student", "ta",
-                     "unenrolled", "instructor"]
-
     check_attributes_yml(
-            vctx, repo, "",
-            get_repo_blob(repo, "", validate_sha),
-            access_kinds)
+            vctx, repo, "", get_repo_blob(repo, "", validate_sha))
 
     try:
         flows_tree = get_repo_blob(repo, "media", validate_sha)
@@ -1525,8 +1404,6 @@ def validate_course_on_filesystem(
         print(_("WARNINGS: "))
         for w in warnings:
             print("***", w.location, w.text)
-
-    return bool(warnings)
 
 # }}}
 

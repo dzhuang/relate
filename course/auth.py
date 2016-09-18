@@ -24,7 +24,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-from typing import cast, Any, Optional  # noqa
 from django.utils.translation import ugettext_lazy as _, string_concat
 from django.shortcuts import (  # noqa
         render, get_object_or_404, redirect, resolve_url)
@@ -34,13 +33,15 @@ from django.core.exceptions import (PermissionDenied, SuspiciousOperation,
         ObjectDoesNotExist)
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Submit, Layout, Div
+from django.db.models import Q
 from django.conf import settings
 from django.contrib.auth import (get_user_model, REDIRECT_FIELD_NAME,
         login as auth_login, logout as auth_logout)
 from django.contrib.auth.forms import \
         AuthenticationForm as AuthenticationFormBase
 from django.contrib.sites.shortcuts import get_current_site
-from django.urls import reverse
+from django.contrib.auth.decorators import user_passes_test
+from django.core.urlresolvers import reverse
 from django.core import validators
 from django.utils.http import is_safe_url
 from django.http import HttpResponseRedirect
@@ -48,154 +49,129 @@ from django.template.response import TemplateResponse
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
-from django import http  # noqa
 
 from djangosaml2.backends import Saml2Backend as Saml2BackendBase
 
-from course.constants import (
+from course.models import (
         user_status,
-        participation_status,
-        participation_permission as pperm,
+        Participation, participation_role, participation_status,
         )
-from course.models import Participation, Course  # noqa
-from accounts.models import User
-
 
 from relate.utils import StyledForm, StyledModelForm
-from django_select2.forms import ModelSelect2Widget
+from django_select2.forms import Select2Widget
 
 
 # {{{ impersonation
 
-def may_impersonate(impersonator, impersonee):
-    # type: (User, User) -> bool
+def may_impersonate(user):
+    return user.is_staff
+
+
+def whom_may_impersonate(impersonator):
     if impersonator.is_superuser:
-        return True
+        return set(get_user_model().objects.filter(
+                participations__status=participation_status.active))
 
-    my_participations = Participation.objects.filter(
+    my_privileged_participations = Participation.objects.filter(
             user=impersonator,
-            status=participation_status.active)
+            status=participation_status.active,
+            role__in=(
+                participation_role.instructor,
+                participation_role.teaching_assistant))
 
-    for part in my_participations:
-        impersonable_roles = (
-                argument
-                for perm, argument in part.permissions()
-                if perm == pperm.impersonate_role)
+    q_object = None
 
-        if Participation.objects.filter(
-                course=part.course,
-                status=participation_status.active,
-                role__in=impersonable_roles,
-                user=impersonee).count():
-            return True
+    for part in my_privileged_participations:
+        if part.role == participation_role.instructor:
+            impersonable_roles = (
+                participation_role.teaching_assistant,
+                participation_role.observer,
+                participation_role.auditor,
+                participation_role.student)
+        elif part.role == participation_role.teaching_assistant:
+            impersonable_roles = (
+                participation_role.student,
+                participation_role.auditor,
+                )
+        else:
+            assert False
 
-    return False
+        part_q_object = Q(
+                participations__course=part.course,
+                participations__status=participation_status.active,
+                participations__role__in=impersonable_roles)
+
+        if q_object is None:
+            q_object = part_q_object
+        else:
+            q_object = q_object | part_q_object
+
+    return set(get_user_model().objects.filter(q_object).order_by("last_name"))
 
 
 class ImpersonateMiddleware(object):
-    def __init__(self, get_response):
-        self.get_response = get_response
-
-    def __call__(self, request):
-        if 'impersonate_id' in request.session:
+    def process_request(self, request):
+        if request.user.is_staff and 'impersonate_id' in request.session:
             imp_id = request.session['impersonate_id']
-            impersonee = None
 
-            try:
-                if imp_id is not None:
-                    impersonee = cast(User, get_user_model().objects.get(id=imp_id))
-            except ObjectDoesNotExist:
-                pass
-
-            if impersonee is not None:
-                if may_impersonate(cast(User, request.user), impersonee):
-                    request.relate_impersonate_original_user = request.user
-                    request.user = impersonee
+            request.relate_impersonate_original_user = request.user
+            if imp_id is not None:
+                impersonees = whom_may_impersonate(request.user)
+                if any(u.id == imp_id for u in impersonees):
+                    request.user = get_user_model().objects.get(id=imp_id)
                 else:
                     messages.add_message(request, messages.ERROR,
                             _("Error while impersonating."))
 
-            else:
-                messages.add_message(request, messages.ERROR,
-                        _("Error while impersonating."))
-
-        return self.get_response(request)
-
-
-class UserSearchWidget(ModelSelect2Widget):
-    model = User
-    search_fields = [
-            'username__icontains',
-            'email__icontains',
-            'first_name__icontains',
-            'last_name__icontains',
-            ]
-
-    def label_from_instance(self, u):
-        return (
-            (
-                # Translators: information displayed when selecting
-                # userfor impersonating. Customize how the name is
-                # shown, but leave email first to retain usability
-                # of form sorted by last name.
-                "%(full_name)s (%(username)s - %(email)s)"
-                % {
-                    "full_name": u.get_full_name(),
-                    "email": u.email,
-                    "username": u.username
-                    }))
-
 
 class ImpersonateForm(StyledForm):
-    def __init__(self, *args, **kwargs):
-        # type:(*Any, **Any) -> None
-
+    def __init__(self, impersonator, *args, **kwargs):
         super(ImpersonateForm, self).__init__(*args, **kwargs)
 
-        self.fields["user"] = forms.ModelChoiceField(
-                queryset=User.objects.order_by("last_name"),
+        impersonees = whom_may_impersonate(impersonator)
+
+        self.fields["user"] = forms.ChoiceField(
+                choices=[
+                    (
+                        # Translators: information displayed when selecting
+                        # userfor impersonating. Customize how the name is
+                        # shown, but leave email first to retain usability
+                        # of form sorted by last name.
+                        u.id, "%(full_name)s (%(username)s - %(email)s)"
+                        % {
+                            "full_name": u.get_full_name(),
+                            "email": u.email,
+                            "username": u.username
+                            })
+                    for u in sorted(impersonees,
+                        key=lambda user: user.last_name.lower())
+                    ],
                 required=True,
                 help_text=_("Select user to impersonate."),
-                widget=UserSearchWidget(),
+                widget=Select2Widget(),
                 label=_("User"))
-
-        self.fields["add_impersonation_header"] = forms.BooleanField(
-                required=False,
-                initial=True,
-                label=_("Add impersonation header"),
-                help_text=_("Add impersonation header to every page rendered "
-                    "while impersonating, as a reminder that impersonation "
-                    "is in progress."))
 
         self.helper.add_input(Submit("submit", _("Impersonate")))
 
 
+@user_passes_test(may_impersonate)
 def impersonate(request):
-    # type: (http.HttpRquest) -> http.HttpResponse
-
     if hasattr(request, "relate_impersonate_original_user"):
         messages.add_message(request, messages.ERROR,
                 _("Already impersonating someone."))
         return redirect("relate-stop_impersonating")
 
     if request.method == 'POST':
-        form = ImpersonateForm(request.POST)
+        form = ImpersonateForm(request.user, request.POST)
         if form.is_valid():
-            impersonee = form.cleaned_data["user"]
+            user = get_user_model().objects.get(id=form.cleaned_data["user"])
 
-            if may_impersonate(cast(User, request.user), cast(User, impersonee)):
-                request.session['impersonate_id'] = impersonee.id
-                request.session['relate_impersonation_header'] = form.cleaned_data[
-                        "add_impersonation_header"]
+            request.session['impersonate_id'] = user.id
 
-                # Because we'll likely no longer have access to this page.
-                return redirect("relate-home")
-            else:
-                messages.add_message(request, messages.ERROR,
-                        _("Impersonating that user is not allowed."))
-
+            # Because we'll likely no longer have access to this page.
+            return redirect("relate-home")
     else:
-        form = ImpersonateForm()
+        form = ImpersonateForm(request.user)
 
     return render(request, "generic-form.html", {
         "form_description": _("Impersonate user"),
@@ -239,8 +215,6 @@ def impersonation_context_processor(request):
     return {
             "currently_impersonating":
             hasattr(request, "relate_impersonate_original_user"),
-            "add_impersonation_header":
-            request.session.get("relate_impersonation_header", True),
             }
 
 # }}}
@@ -781,7 +755,7 @@ class UserForm(StyledModelForm):
         self.helper.layout = Layout(
                 Div("last_name", "first_name", css_class="well"),
                 Div("institutional_id", css_class="well"),
-                Div("editor_mode", css_class="well")
+                Div("editor_mode", css_class="well hidden-xs hidden-sm")
                 )
 
         self.fields["institutional_id"].help_text = (
@@ -857,7 +831,7 @@ class UserForm(StyledModelForm):
 
 
 def user_profile(request):
-    if not request.user.is_authenticated:
+    if not request.user.is_authenticated():
         raise PermissionDenied()
 
     user_form = None
@@ -908,6 +882,35 @@ def user_profile(request):
         })
 
 # }}}
+
+
+def get_role_and_participation(request, course):
+    # "wake up" lazy object
+    # http://stackoverflow.com/questions/20534577/int-argument-must-be-a-string-or-a-number-not-simplelazyobject  # noqa
+    user = (request.user._wrapped
+            if hasattr(request.user, '_wrapped')
+            else request.user)
+
+    if not user.is_authenticated():
+        return participation_role.unenrolled, None
+
+    participations = list(Participation.objects.filter(
+            user=user,
+            course=course,
+            status=participation_status.active
+            ))
+
+    # The uniqueness constraint should have ensured that.
+    assert len(participations) <= 1
+
+    if len(participations) == 0:
+        return participation_role.unenrolled, None
+
+    participation = participations[0]
+    if participation.status != participation_status.active:
+        return participation_role.unenrolled, participation
+    else:
+        return participation.role, participation
 
 
 # {{{ SAML auth backend

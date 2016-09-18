@@ -25,8 +25,6 @@ THE SOFTWARE.
 """
 
 import six
-from typing import cast, Tuple, List, Text, Iterable, Any, Optional  # noqa
-import datetime  # noqa
 
 from django.shortcuts import (  # noqa
         render, get_object_or_404)
@@ -39,35 +37,11 @@ from course.content import (
         get_course_repo, get_flow_desc,
         parse_date_spec, get_course_commit_sha)
 from course.constants import (
+        participation_role,
         flow_permission, flow_rule_kind)
-import dulwich.repo
-from course.content import (  # noqa
-        FlowDesc,
-        FlowPageDesc,
-        FlowSessionAccessRuleDesc
-        )
-from course.page.base import (  # noqa
-        PageBase,
-        PageContext,
-        )
-
-# {{{ mypy
-
-if False:
-    from relate.utils import Repo_ish  # noqa
-    from course.models import (  # noqa
-            Course,
-            Participation,
-            ExamTicket,
-            FlowSession,
-            FlowPageData,
-            )
-
-# }}}
 
 
 def getattr_with_fallback(aggregates, attr_name, default=None):
-    # type: (Iterable[Any], Text, Any) -> Any
     for agg in aggregates:
         result = getattr(agg, attr_name, None)
         if result is not None:
@@ -79,39 +53,28 @@ def getattr_with_fallback(aggregates, attr_name, default=None):
 # {{{ flow permissions
 
 class FlowSessionRuleBase(object):
-    pass
+    def __init__(self, **attrs):
+        for name in self.__slots__:
+            setattr(self, name, attrs.get(name))
 
 
 class FlowSessionStartRule(FlowSessionRuleBase):
-    def __init__(
-            self,
-            tag_session=None,  # type: Optional[Text]
-            may_start_new_session=None,  # type: Optional[bool]
-            may_list_existing_sessions=None,  # type: Optional[bool]
+    __slots__ = [
+            "tag_session",
+            "may_start_new_session",
+            "may_list_existing_sessions",
             # {{{ added by zd
-            latest_start_datetime=None,
-            session_available_count=None,
+            "latest_start_datetime",
+            "session_available_count",
             # }}}
-            default_expiration_mode=None,  # type: Optional[Text]
-            ):
-        # type: (...) -> None
-        self.tag_session = tag_session
-        self.may_start_new_session = may_start_new_session
-        self.may_list_existing_sessions = may_list_existing_sessions
-        self.default_expiration_mode = default_expiration_mode
-        self.latest_start_datetime = latest_start_datetime
-        self.session_available_count = session_available_count
+            ]
 
 
 class FlowSessionAccessRule(FlowSessionRuleBase):
-    def __init__(
-            self,
-            permissions,  # type: frozenset[Text]
-            message=None,  # type: Optional[Text]
-            ):
-        # type: (...) -> None
-        self.permissions = permissions
-        self.message = message
+    __slots__ = [
+            "permissions",
+            "message",
+            ]
 
     def human_readable_permissions(self):
         from course.models import FLOW_PERMISSION_CHOICES
@@ -120,50 +83,26 @@ class FlowSessionAccessRule(FlowSessionRuleBase):
 
 
 class FlowSessionGradingRule(FlowSessionRuleBase):
-    def __init__(
-            self,
-            grade_identifier,  # type: Optional[Text]
-            grade_aggregation_strategy,  # type: Text
-            completed_before,  # type: Text  # added by zd
-            due,  # type: Optional[datetime.datetime]
-            generates_grade,  # type: bool
-            description=None,  # type: Optional[Text]
-            credit_percent=None,  # type: Optional[float]
-            use_last_activity_as_completion_time=None,  # type: Optional[bool]
-            max_points=None,  # type: Optional[float]
-            max_points_enforced_cap=None,  # type: Optional[float]
-            bonus_points=None,  # type: Optional[float]
-            credit_next,  # type: bool # credit precent of next rule # added by zd
-            is_next_final,  # type: bool # next rule is deadline # added by zd
-            ):
-        # type: (...) -> None
+    __slots__ = [
+            "grade_identifier",
+            "grade_aggregation_strategy",
+            "completed_before", # added by zd
+            "due",
+            "generates_grade",
+            "description",
+            "credit_percent",
+            "use_last_activity_as_completion_time",
 
-        self.grade_identifier = grade_identifier
-        self.grade_aggregation_strategy = grade_aggregation_strategy
-        self.due = due
-        self.generates_grade = generates_grade
-        self.description = description
-        self.credit_percent = credit_percent
-        self.use_last_activity_as_completion_time = \
-                use_last_activity_as_completion_time
-        self.max_points = max_points
-        self.max_points_enforced_cap = max_points_enforced_cap
-        self.bonus_points = bonus_points
-        self.completed_before = completed_before
-        self.credit_next = credit_next
-        self.is_next_final = is_next_final
+            "max_points",
+            "max_points_enforced_cap",
+            "bonus_points",
+            "credit_next", # credit precent of next rule
+            "is_next_final", # next rule is deadline
+            ]
 
 
-def _eval_generic_conditions(
-        rule,  # type: Any
-        course,  # type: Course
-        participation,  # type: Optional[Participation]
-        now_datetime,  # type: datetime.datetime
-        flow_id,  # type: Text
-        login_exam_ticket,  # type: Optional[ExamTicket]
-        ):
-    # type: (...) -> bool
-
+def _eval_generic_conditions(rule, course, role, now_datetime,
+        flow_id, login_exam_ticket):
     if hasattr(rule, "if_before"):
         ds = parse_date_spec(course, rule.if_before)
         if not (now_datetime <= ds):
@@ -175,9 +114,7 @@ def _eval_generic_conditions(
             return False
 
     if hasattr(rule, "if_has_role"):
-        from course.enrollment import get_participation_role_identifiers
-        roles = get_participation_role_identifiers(course, participation)
-        if all(role not in rule.if_has_role for role in roles):
+        if role not in rule.if_has_role:
             return False
 
     if (hasattr(rule, "if_signed_in_with_matching_exam_ticket")
@@ -192,13 +129,7 @@ def _eval_generic_conditions(
     return True
 
 
-def _eval_generic_session_conditions(
-        rule,  # type: Any
-        session,  # type: FlowSession
-        now_datetime,  # type: datetime.datetime
-        ):
-    # type: (...) -> bool
-
+def _eval_generic_session_conditions(rule, session, role, now_datetime):
     if hasattr(rule, "if_has_tag"):
         if session.access_rules_tag != rule.if_has_tag:
             return False
@@ -211,17 +142,8 @@ def _eval_generic_session_conditions(
     return True
 
 
-def get_flow_rules(
-        flow_desc,  # type: FlowDesc
-        kind,  # type: Text
-        participation,  # type: Optional[Participation]
-        flow_id,  # type: Text
-        now_datetime,  # type: datetime.datetime
-        consider_exceptions=True,  # type: bool
-        default_rules_desc=[]  # type: List[Any]
-        ):
-    # type: (...) -> List[Any]
-
+def get_flow_rules(flow_desc, kind, participation, flow_id, now_datetime,
+        consider_exceptions=True, default_rules_desc=[]):
     if (not hasattr(flow_desc, "rules")
             or not hasattr(flow_desc.rules, kind)):
         rules = default_rules_desc[:]
@@ -347,18 +269,11 @@ def get_flow_rules_str(course, participation, flow_id, flow_desc,
     return flow_rule_str
 
 # }}}
-def get_session_start_rule(
-        course,  # type: Course
-        participation,  # type: Optional[Participation]
-        flow_id,  # type: Text
-        flow_desc,  # type: FlowDesc
-        now_datetime,  # type: datetime.datetime
-        facilities=None,  # type: Optional[frozenset[Text]]
-        for_rollover=False,  # type: bool
-        login_exam_ticket=None,  # type: Optional[ExamTicket]
-        ):
-    # type: (...) -> FlowSessionStartRule
 
+
+def get_session_start_rule(course, participation, role, flow_id, flow_desc,
+        now_datetime, facilities=None, for_rollover=False,
+        login_exam_ticket=None):
     """Return a :class:`FlowSessionStartRule` if a new session is
     permitted or *None* if no new session is allowed.
     """
@@ -378,7 +293,7 @@ def get_session_start_rule(
     session_available_count = 0
     # }}}
 
-    from course.models import FlowSession  # noqa
+    from course.models import FlowSession
     for rule in rules:
 
         # {{{ added by zd
@@ -388,8 +303,8 @@ def get_session_start_rule(
             if getattr(rule, "may_start_new_session"):
                 latest_start_datetime = parse_date_spec(course, rule.if_before)
         # }}}
-        if not _eval_generic_conditions(rule, course, participation,
-                now_datetime, flow_id=flow_id,
+        if not _eval_generic_conditions(rule, course, role, now_datetime,
+                flow_id=flow_id,
                 login_exam_ticket=login_exam_ticket):
             continue
 
@@ -451,8 +366,6 @@ def get_session_start_rule(
                 latest_start_datetime=latest_start_datetime,
                 session_available_count=session_available_count,
                 # }}}
-                default_expiration_mode=getattr(
-                    rule, "default_expiration_mode", None),
                 )
 
     return FlowSessionStartRule(
@@ -461,14 +374,8 @@ def get_session_start_rule(
             latest_start_datetime=latest_start_datetime)     # added by zd
 
 
-def get_session_access_rule(
-        session,  # type: FlowSession
-        flow_desc,  # type: FlowDesc
-        now_datetime,  # type: datetime.datetime
-        facilities=None,  # type: Optional[frozenset[Text]]
-        login_exam_ticket=None,  # type: Optional[ExamTicket]
-        ):
-    # type: (...) -> FlowSessionAccessRule
+def get_session_access_rule(session, role, flow_desc, now_datetime,
+        facilities=None, login_exam_ticket=None):
     """Return a :class:`ExistingFlowSessionRule`` to describe
     how a flow may be accessed.
     """
@@ -482,16 +389,15 @@ def get_session_access_rule(
             default_rules_desc=[
                 dict_to_struct(dict(
                     permissions=[flow_permission.view],
-                    ))])  # type: List[FlowSessionAccessRuleDesc]
+                    ))])
 
     for rule in rules:
-        if not _eval_generic_conditions(
-                rule, session.course, session.participation,
-                now_datetime, flow_id=session.flow_id,
+        if not _eval_generic_conditions(rule, session.course, role, now_datetime,
+                flow_id=session.flow_id,
                 login_exam_ticket=login_exam_ticket):
             continue
 
-        if not _eval_generic_session_conditions(rule, session, now_datetime):
+        if not _eval_generic_session_conditions(rule, session, role, now_datetime):
             continue
 
         if hasattr(rule, "if_in_facility"):
@@ -549,13 +455,7 @@ def get_session_access_rule(
     return FlowSessionAccessRule(permissions=frozenset())
 
 
-def get_session_grading_rule(
-        session,  # type: FlowSession
-        flow_desc,  # type: FlowDesc
-        now_datetime  # type: datetime.datetime
-        ):
-    # type: (...) -> FlowSessionGradingRule
-
+def get_session_grading_rule(session, role, flow_desc, now_datetime):
     flow_desc_rules = getattr(flow_desc, "rules", None)
 
     from relate.utils import dict_to_struct
@@ -566,8 +466,6 @@ def get_session_grading_rule(
                     generates_grade=False,
                     ))])
 
-    from course.enrollment import get_participation_role_identifiers
-    roles = get_participation_role_identifiers(session.course, session.participation)
     session_grading_rule = None
     ds = None
 
@@ -581,11 +479,12 @@ def get_session_grading_rule(
             credit_next = 0
             is_next_final = True
 
+
         if hasattr(rule, "if_has_role"):
-            if all(role not in rule.if_has_role for role in roles):
+            if role not in rule.if_has_role:
                 continue
 
-        if not _eval_generic_session_conditions(rule, session, now_datetime):
+        if not _eval_generic_session_conditions(rule, session, role, now_datetime):
             continue
 
         if hasattr(rule, "if_completed_before"):
@@ -646,22 +545,18 @@ def get_session_grading_rule(
 
 class CoursePageContext(object):
     def __init__(self, request, course_identifier):
-        # type: (http.HttpRequest, Text) -> None
-
         self.request = request
         self.course_identifier = course_identifier
-        self._permissions_cache = None  # type: Optional[frozenset[Tuple[Text, Optional[Text]]]]  # noqa
-        self._role_identifiers_cache = None  # type: Optional[List[Text]]
 
-        from course.models import Course  # noqa
+        from course.models import Course
         self.course = get_object_or_404(Course, identifier=course_identifier)
 
-        from course.enrollment import get_participation_for_request
-        self.participation = get_participation_for_request(
+        from course.views import get_role_and_participation
+        self.role, self.participation = get_role_and_participation(
                 request, self.course)
 
         from course.views import check_course_state
-        check_course_state(self.course, self.participation)
+        check_course_state(self.course, self.role)
 
         self.course_commit_sha = get_course_commit_sha(
                 self.course, self.participation)
@@ -671,68 +566,35 @@ class CoursePageContext(object):
         # logic duplicated in course.content.get_course_commit_sha
         sha = self.course.active_git_commit_sha.encode()
 
-        if self.participation is not None:
-            if self.participation.preview_git_commit_sha:
-                preview_sha = self.participation.preview_git_commit_sha.encode()
+        if (self.participation is not None
+                and self.participation.preview_git_commit_sha):
+            preview_sha = self.participation.preview_git_commit_sha.encode()
 
-                repo = get_course_repo(self.course)
+            repo = get_course_repo(self.course)
 
-                from relate.utils import SubdirRepoWrapper
-                if isinstance(repo, SubdirRepoWrapper):
-                    true_repo = repo.repo
-                else:
-                    true_repo = cast(dulwich.repo.Repo, repo)
+            from course.content import SubdirRepoWrapper
+            if isinstance(repo, SubdirRepoWrapper):
+                repo = repo.repo
 
-                try:
-                    true_repo[preview_sha]
-                except KeyError:
-                    from django.contrib import messages
-                    messages.add_message(request, messages.ERROR,
-                            _("Preview revision '%s' does not exist--"
-                            "showing active course content instead.")
-                            % preview_sha.decode())
+            try:
+                repo[preview_sha]
+            except KeyError:
+                from django.contrib import messages
+                messages.add_message(request, messages.ERROR,
+                        _("Preview revision '%s' does not exist--"
+                        "showing active course content instead.")
+                        % preview_sha.decode())
 
-                    preview_sha = None
+                preview_sha = None
 
-                if preview_sha is not None:
-                    sha = preview_sha
+            if preview_sha is not None:
+                sha = preview_sha
 
         self.course_commit_sha = sha
-
-    def role_identifiers(self):
-        # type: () -> List[Text]
-        if self._role_identifiers_cache is not None:
-            return self._role_identifiers_cache
-
-        from course.enrollment import get_participation_role_identifiers
-        self._role_identifiers_cache = get_participation_role_identifiers(
-                self.course, self.participation)
-        return self._role_identifiers_cache
-
-    def permissions(self):
-        # type: () -> frozenset[Tuple[Text, Optional[Text]]]
-        if self.participation is None:
-            if self._permissions_cache is not None:
-                return self._permissions_cache
-
-            from course.enrollment import get_participation_permissions
-            perm = get_participation_permissions(self.course, self.participation)
-
-            self._permissions_cache = perm
-
-            return perm
-        else:
-            return self.participation.permissions()
-
-    def has_permission(self, perm, argument=None):
-        # type: (Text, Optional[Text]) -> bool
-        return (perm, argument) in self.permissions()
 
 
 class FlowContext(object):
     def __init__(self, repo, course, flow_id, participation=None):
-        # type: (Repo_ish, Course, Text, Optional[Participation]) -> None
-
         """*participation* and *flow_session* are not stored and only used
         to figure out versioning of the flow content.
         """
@@ -765,23 +627,14 @@ class FlowPageContext(FlowContext):
     which is used for in the page API.
     """
 
-    def __init__(
-            self,
-            repo,  # type: Repo_ish
-            course,  # type: Course
-            flow_id,  # type: Text
-            ordinal,  # type: int
-            participation,  # type: Optional[Participation]
-            flow_session,  # type: FlowSession
-            request=None,  # type: Optional[http.HttpRequest]
-            ):
-        # type: (...) -> None
+    def __init__(self, repo, course, flow_id, ordinal,
+             participation, flow_session, request=None):
         super(FlowPageContext, self).__init__(repo, course, flow_id, participation)
 
         if ordinal >= flow_session.page_count:
             raise PageOrdinalOutOfRange()
 
-        from course.models import FlowPageData  # noqa
+        from course.models import FlowPageData
         page_data = self.page_data = get_object_or_404(
                 FlowPageData, flow_session=flow_session, ordinal=ordinal)
 
@@ -789,21 +642,22 @@ class FlowPageContext(FlowContext):
         try:
             self.page_desc = get_flow_page_desc(
                     flow_session, self.flow_desc, page_data.group_id,
-                    page_data.page_id)  # type: Optional[FlowPageDesc]
+                    page_data.page_id)
         except ObjectDoesNotExist:
             self.page_desc = None
-            self.page = None  # type: Optional[PageBase]
-            self.page_context = None  # type: Optional[PageContext]
+            self.page = None
+            self.page_context = None
         else:
             self.page = instantiate_flow_page_with_ctx(self, page_data)
 
             page_uri = None
             if request is not None:
-                from django.urls import reverse
+                from django.core.urlresolvers import reverse
                 page_uri = request.build_absolute_uri(
                         reverse("relate-view_flow_page",
                             args=(course.identifier, flow_session.id, ordinal)))
 
+            from course.page import PageContext
             self.page_context = PageContext(
                     course=self.course, repo=self.repo,
                     commit_sha=self.course_commit_sha,
@@ -827,8 +681,6 @@ class FlowPageContext(FlowContext):
 
 
 def instantiate_flow_page_with_ctx(fctx, page_data):
-    # type: (FlowContext, FlowPageData) -> PageBase
-
     from course.content import get_flow_page_desc
     page_desc = get_flow_page_desc(
             fctx.flow_id, fctx.flow_desc,
@@ -844,7 +696,6 @@ def instantiate_flow_page_with_ctx(fctx, page_data):
 # }}}
 
 
-# {{{ utilties for course-based views
 def course_view(f):
     def wrapper(request, course_identifier, *args, **kwargs):
         pctx = CoursePageContext(request, course_identifier)
@@ -858,30 +709,8 @@ def course_view(f):
     return wrapper
 
 
-class ParticipationPermissionWrapper(object):
-    def __init__(self, pctx):
-        # type: (CoursePageContext) -> None
-        self.pctx = pctx
-
-    def __getitem__(self, perm):
-        # type: (Text) -> bool
-
-        from course.constants import participation_permission
-        try:
-            getattr(participation_permission, perm)
-        except AttributeError:
-            raise ValueError("permission name '%s' not valid" % perm)
-
-        return self.pctx.has_permission(perm)
-
-    def __iter__(self):
-        raise TypeError("ParticipationPermissionWrapper is not iterable.")
-
-
 def render_course_page(pctx, template_name, args,
         allow_instant_flow_requests=True):
-    # type: (CoursePageContext, Text, Dict[Text, Any], bool) -> http.HttpResponse
-
     args = args.copy()
 
     from course.views import get_now_or_fake_time
@@ -901,16 +730,15 @@ def render_course_page(pctx, template_name, args,
 
     args.update({
         "course": pctx.course,
-        "pperm": ParticipationPermissionWrapper(pctx),
         "participation": pctx.participation,
+        "role": pctx.role,
+        "participation_role": participation_role,
         "num_instant_flow_requests": len(instant_flow_requests),
         "instant_flow_requests":
         [(i+1, r) for i, r in enumerate(instant_flow_requests)],
         })
 
     return render(pctx.request, template_name, args)
-
-# }}}
 
 
 # {{{ page cache
@@ -969,7 +797,7 @@ def get_codemirror_widget(language_mode, interaction_mode,
 
     from codemirror import CodeMirrorTextarea, CodeMirrorJavascript
 
-    from django.urls import reverse
+    from django.core.urlresolvers import reverse
     help_text = (_("Press F9 to toggle full-screen mode. ")
             + _("Set editor mode in <a href='%s'>user profile</a>.")
             % reverse("relate-user_profile"))
@@ -1047,7 +875,6 @@ def get_codemirror_widget(language_mode, interaction_mode,
 # {{{ facility processing
 
 def get_facilities_config(request=None):
-    # type: (Optional[http.HttpRequest]) -> Dict[Text, Dict[Text, Any]]
     from django.conf import settings
 
     # This is called during offline validation, where Django isn't really set up.
@@ -1070,10 +897,7 @@ def get_facilities_config(request=None):
 
 
 class FacilityFindingMiddleware(object):
-    def __init__(self, get_response):
-        self.get_response = get_response
-
-    def __call__(self, request):
+    def process_request(self, request):
         pretend_facilities = request.session.get("relate_pretend_facilities")
 
         if pretend_facilities is not None:
@@ -1092,8 +916,6 @@ class FacilityFindingMiddleware(object):
                         facilities.add(name)
 
         request.relate_facilities = frozenset(facilities)
-
-        return self.get_response(request)
 
 # }}}
 

@@ -34,8 +34,6 @@ from course.models import (
         ParticipationPreapproval,
         )
 
-from typing import List, Union, Text, Optional, Tuple, Any  # noqa
-
 
 # {{{ Update enrollment status when a User/Course instance is saved
 
@@ -44,7 +42,6 @@ from typing import List, Union, Text, Optional, Tuple, Any  # noqa
 @transaction.atomic
 def update_requested_participation_status(sender, created, instance,
         **kwargs):
-    # type: (Any, bool, Union[Course, User], **Any) -> None
 
     if created:
         return
@@ -70,18 +67,16 @@ def update_requested_participation_status(sender, created, instance,
             else:
                 continue
 
-            may_preapprove, roles = may_preapprove_role(course, user)
+            may_preapprove, role = may_preapprove_role(course, user)
 
             if may_preapprove:
                 from course.enrollment import handle_enrollment_request
 
                 handle_enrollment_request(
-                    course, user, participation_status.active, roles)
+                    course, user, participation_status.active, role)
 
 
 def may_preapprove_role(course, user):
-    # type: (Course, User) -> Tuple[bool, Optional[List[Text]]]
-
     if not user.is_active:
         return False, None
 
@@ -102,7 +97,7 @@ def may_preapprove_role(course, user):
                         pass
 
     if preapproval:
-        return True, list(preapproval.roles.all())
+        return True, preapproval.role
     else:
         return False, None
 

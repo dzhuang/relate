@@ -244,27 +244,6 @@ div.progress:hover  span.stats-percentage{
 
 }
 
-.relate-participation-active {
-}
-.relate-participation-requested {
-  color: blue;
-}
-.relate-participation-dropped {
-  text-decoration: line-through;
-  color: #bbb;
-}
-.relate-participation-denied {
-  text-decoration: line-through;
-  color: red;
-}
-
-.relate-invisible-grading-opportunity {
-  color: #bbb;
-}
-.relate-invisible-grading-opportunity a {
-  color: #7cf;
-}
-
 /* {{{ codemirror */
 
 .sandbox-page-editor .CodeMirror {

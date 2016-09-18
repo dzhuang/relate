@@ -24,7 +24,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-
 from django.conf import settings
 from django.utils.translation import ugettext as _
 
@@ -35,7 +34,7 @@ import sys
 
 from django.utils.timezone import now
 from django.core.exceptions import ObjectDoesNotExist, ImproperlyConfigured
-from django.urls import NoReverseMatch
+from django.core.urlresolvers import NoReverseMatch
 
 from markdown.extensions import Extension
 from markdown.treeprocessors import Treeprocessor
@@ -45,8 +44,7 @@ from six.moves import html_parser
 from jinja2 import (
         BaseLoader as BaseTemplateLoader, TemplateNotFound, FileSystemLoader)
 
-from relate.utils import dict_to_struct, Struct, SubdirRepoWrapper
-from course.constants import ATTRIBUTES_FILENAME
+from relate.utils import dict_to_struct
 
 from yaml import load as load_yaml
 
@@ -56,126 +54,24 @@ else:
     CACHE_KEY_ROOT = "py2"
 
 
-# {{{ mypy
-
-from typing import (  # noqa
-        cast, Union, Any, List, Tuple, Optional, Callable, Text)
-
-if False:
-    # for mypy
-    from course.models import Course, Participation  # noqa
-    import dulwich  # noqa
-    from course.validation import ValidationContext  # noqa
-    from course.page.base import PageBase  # noqa
-    from relate.utils import Repo_ish  # noqa
-
-    Date_ish = Union[datetime.datetime, datetime.date]
-    Datespec = Union[datetime.datetime, datetime.date, Text]
-
-
-class ChunkRulesDesc(Struct):
-    if_has_role = None  # type: List[Text]
-    if_before = None  # type: Datespec
-    if_after = None  # type: Datespec
-    if_in_facility = None  # type: Text
-    roles = None  # type: List[Text]
-    start = None  # type: Datespec
-    end = None  # type: Datespec
-    shown = None  # type: bool
-    weight = None  # type: float
-
-
-class ChunkDesc(Struct):
-    weight = None  # type: float
-    shown = None  # type: bool
-    title = None  # type: Optional[Text]
-    content = None  # type: Text
-    rules = None  # type: List[ChunkRulesDesc]
-
-    html_content = None  # type: Text
-
-
-class StaticPageDesc(Struct):
-    chunks = None  # type: List[ChunkDesc]
-    content = None  # type: Text
-
-
-class CourseDesc(StaticPageDesc):
-    pass
-
-
-class FlowSessionStartRuleDesc(Struct):
-    if_after = None  # type: Date_ish
-    if_before = None  # type: Date_ish
-    if_has_role = None  # type: list
-    if_in_facility = None  # type: Text
-    if_has_in_progress_session = None  # type: bool
-    if_has_session_tagged = None  # type: Optional[Text]
-    if_has_fewer_sessions_than = None  # type: int
-    if_has_fewer_tagged_sessions_than = None  # type: int
-    if_signed_in_with_matching_exam_ticket = None  # type: bool
-    tag_session = None  # type: Optional[Text]
-    may_start_new_session = None  # type: bool
-    may_list_existing_sessions = None  # type: bool
-    lock_down_as_exam_session = None  # type: bool
-    default_expiration_mode = None  # type: Text
-
-
-class FlowSessionAccessRuleDesc(Struct):
-    permissions = None  # type: list
-    if_after = None  # type: Date_ish
-    if_before = None  # type: Date_ish
-    if_started_before = None  # type: Date_ish
-    if_has_role = None  # type: List[Text]
-    if_in_facility = None  # type: Text
-    if_has_tag = None  # type: Optional[Text]
-    if_in_progress = None  # type: bool
-    if_completed_before = None  # type: Date_ish
-    if_expiration_mode = None  # type: Text
-    if_session_duration_shorter_than_minutes = None  # type: float
-    if_signed_in_with_matching_exam_ticket = None  # type: bool
-    message = None  # type: Text
-
-
-class FlowSessionGradingRuleDesc(Struct):
-    grade_identifier = None  # type: Optional[Text]
-    grade_aggregation_strategy = None  # type: Optional[Text]
-
-
-class FlowRulesDesc(Struct):
-    start = None  # type: List[FlowSessionStartRuleDesc]
-    access = None  # type: List[FlowSessionAccessRuleDesc]
-    grading = None  # type: List[FlowSessionGradingRuleDesc]
-    grade_identifier = None  # type: Optional[Text]
-    grade_aggregation_strategy = None  # type: Optional[Text]
-
-
-class FlowPageDesc(Struct):
-    id = None  # type: Text
-    type = None  # type: Text
-
-
-class FlowPageGroupDesc(Struct):
-    id = None  # type: Text
-    pages = None  # type: List[FlowPageDesc]
-
-
-class FlowDesc(Struct):
-    title = None  # type: Text
-    rules = None  # type: FlowRulesDesc
-    pages = None  # type: List[FlowPageDesc]
-    groups = None  # type: List[FlowPageGroupDesc]
-    notify_on_submit = None  # type: Optional[List[Text]]
-
-
-# }}}
-
-
 # {{{ repo blob getting
 
-def get_true_repo_and_path(repo, path):
-    # type: (Repo_ish, Text) -> Tuple[dulwich.Repo, Text]
+class SubdirRepoWrapper(object):
+    def __init__(self, repo, subdir):
+        self.repo = repo
 
+        # This wrapper should only get used if there is a subdir to be had.
+        assert subdir
+        self.subdir = subdir
+
+    def controldir(self):
+        return self.repo.controldir()
+
+    def close(self):
+        self.repo.close()
+
+
+def get_true_repo_and_path(repo, path):
     if isinstance(repo, SubdirRepoWrapper):
         if path:
             path = repo.subdir + "/" + path
@@ -189,15 +85,11 @@ def get_true_repo_and_path(repo, path):
 
 
 def get_course_repo_path(course):
-    # type: (Course) -> Text
-
     from os.path import join
     return join(settings.GIT_ROOT, course.identifier)
 
 
 def get_course_repo(course):
-    # type: (Course) -> Repo_ish
-
     from dulwich.repo import Repo
     repo = Repo(get_course_repo_path(course))
 
@@ -208,36 +100,34 @@ def get_course_repo(course):
 
 
 def get_repo_blob(repo, full_name, commit_sha, allow_tree=True):
-    # type: (Repo_ish, Text, bytes, bool) -> dulwich.Blob
-
     """
     :arg full_name: A Unicode string indicating the file name.
     :arg commit_sha: A byte string containing the commit hash
     :arg allow_tree: Allow the resulting object to be a directory
     """
 
-    dul_repo, full_name = get_true_repo_and_path(repo, full_name)
+    repo, full_name = get_true_repo_and_path(repo, full_name)
 
     names = full_name.split("/")
 
     # Allow non-ASCII file name
-    full_name_bytes = full_name.encode('utf-8')
+    full_name = full_name.encode('utf-8')
 
-    tree_sha = dul_repo[commit_sha].tree
-    tree = dul_repo[tree_sha]
+    tree_sha = repo[commit_sha].tree
+    tree = repo[tree_sha]
 
     def access_directory_content(maybe_tree, name):
-        # type: (Any, Text) -> Any
         try:
             mode_and_blob_sha = tree[name.encode()]
         except TypeError:
             raise ObjectDoesNotExist(_("resource '%s' is a file, "
-                "not a directory") % full_name)
+                "not a directory")
+                % full_name.decode("utf-8"))
 
         mode, blob_sha = mode_and_blob_sha
         return mode_and_blob_sha
 
-    if not full_name_bytes:
+    if not full_name:
         if allow_tree:
             return tree
         else:
@@ -251,23 +141,24 @@ def get_repo_blob(repo, full_name, commit_sha, allow_tree=True):
                 continue
 
             mode, blob_sha = access_directory_content(tree, name)
-            tree = dul_repo[blob_sha]
+            tree = repo[blob_sha]
 
         mode, blob_sha = access_directory_content(tree, names[-1])
 
-        result = dul_repo[blob_sha]
+        result = repo[blob_sha]
         if not allow_tree and not hasattr(result, "data"):
             raise ObjectDoesNotExist(
-                    _("resource '%s' is a directory, not a file") % full_name)
+                    _("resource '%s' is a directory, not a file")
+                    % full_name)
 
         return result
 
     except KeyError:
-        raise ObjectDoesNotExist(_("resource '%s' not found") % full_name)
+        raise ObjectDoesNotExist(_("resource '%s' not found")
+                % full_name.decode("utf-8"))
 
 
 def get_repo_blob_data_cached(repo, full_name, commit_sha):
-    # type: (Repo_ish, Text, bytes) -> bytes
     """
     :arg commit_sha: A byte string containing the commit hash
     """
@@ -283,7 +174,7 @@ def get_repo_blob_data_cached(repo, full_name, commit_sha):
             quote_plus(full_name),
             commit_sha.decode(),
             ".".join(str(s) for s in sys.version_info[:2]),
-            ))  # type: Optional[Text]
+            ))
     else:
         cache_key = None
 
@@ -324,8 +215,7 @@ def get_repo_blob_data_cached(repo, full_name, commit_sha):
     return result
 
 
-def is_repo_file_accessible_as(access_kinds, repo, commit_sha, path):
-    # type: (List[Text], Repo_ish, bytes, Text) -> bool
+def is_repo_file_accessible_as(access_kind, repo, commit_sha, path):
     """
     Check of a file in a repo directory is accessible.  For example,
     'instructor' can access anything listed in the attributes.
@@ -337,9 +227,10 @@ def is_repo_file_accessible_as(access_kinds, repo, commit_sha, path):
 
     # set the path to .attributes.yml
     from os.path import dirname, basename, join
-    attributes_path = join(dirname(path), ATTRIBUTES_FILENAME)
+    attributes_path = join(dirname(path), ".attributes.yml")
 
     # retrieve the .attributes.yml structure
+    from course.content import get_raw_yaml_from_repo
     try:
         attributes = get_raw_yaml_from_repo(repo, attributes_path,
                                             commit_sha)
@@ -349,10 +240,29 @@ def is_repo_file_accessible_as(access_kinds, repo, commit_sha, path):
 
     path_basename = basename(path)
 
+    # [unenrolled, student, ta, instructor]
+    # access_kind hierarchy and who should be allowed in sets:
+    # in_exam             : in_exam
+    # instructor          : [public, unenrolled, student, ta, instructor]
+    # ta                  : [public, unenrolled, student, ta]
+    # student             : [public, unenrolled, student]
+    # unenrolled          : [public, unenrolled]
+
     # "public" is a deprecated alias for "unenrolled".
 
-    access_patterns = []  # type: List[Text]
-    for kind in access_kinds:
+    if access_kind == 'in_exam':
+        kind_list = ['in_exam']
+    elif access_kind == ('unenrolled' or 'public'):
+        kind_list = ['public', 'unenrolled']
+    elif access_kind == 'student':
+        kind_list = ['public', 'unenrolled', 'student']
+    elif access_kind == 'ta':
+        kind_list = ['public', 'unenrolled', 'student', 'ta']
+    elif access_kind == 'instructor':
+        kind_list = ['public', 'unenrolled', 'student', 'ta', 'instructor']
+
+    access_patterns = []
+    for kind in kind_list:
         access_patterns += attributes.get(kind, [])
 
     from fnmatch import fnmatch
@@ -384,8 +294,6 @@ LEADING_SPACES_RE = re.compile(r"^( *)")
 
 
 def process_yaml_for_expansion(yaml_str):
-    # type: (Text) -> Text
-
     lines = yaml_str.split("\n")
     jinja_lines = []
 
@@ -444,7 +352,6 @@ def process_yaml_for_expansion(yaml_str):
 
 class GitTemplateLoader(BaseTemplateLoader):
     def __init__(self, repo, commit_sha):
-        # type: (Repo_ish, bytes) -> None
         self.repo = repo
         self.commit_sha = commit_sha
 
@@ -501,8 +408,6 @@ class YamlBlockEscapingFileSystemLoader(FileSystemLoader):
 
 
 def expand_yaml_macros(repo, commit_sha, yaml_str):
-    # type: (Repo_ish, bytes, Text) -> Text
-
     if isinstance(yaml_str, six.binary_type):
         yaml_str = yaml_str.decode("utf-8")
 
@@ -538,7 +443,6 @@ def expand_yaml_macros(repo, commit_sha, yaml_str):
 # {{{ repo yaml getting
 
 def get_raw_yaml_from_repo(repo, full_name, commit_sha):
-    # type: (Repo_ish, Text, bytes) -> Any
     """Return decoded YAML data structure from
     the given file in *repo* at *commit_sha*.
 
@@ -572,8 +476,6 @@ def get_raw_yaml_from_repo(repo, full_name, commit_sha):
 
 
 def get_yaml_from_repo(repo, full_name, commit_sha, cached=True):
-    # type: (Repo_ish, Text, bytes, bool) -> Any
-
     """Return decoded, struct-ified YAML data structure from
     the given file in *repo* at *commit_sha*.
 
@@ -824,8 +726,6 @@ class LinkFixerTreeprocessor(Treeprocessor):
 
 class LinkFixerExtension(Extension):
     def __init__(self, course, commit_sha, reverse_func):
-        # type: (Optional[Course], bytes, Optional[Callable]) -> None
-
         Extension.__init__(self)
         self.course = course
         self.commit_sha = commit_sha
@@ -838,7 +738,6 @@ class LinkFixerExtension(Extension):
 
 
 def remove_prefix(prefix, s):
-    # type: (Text, Text) -> Text
     if s.startswith(prefix):
         return s[len(prefix):]
     else:
@@ -848,19 +747,10 @@ def remove_prefix(prefix, s):
 JINJA_PREFIX = "[JINJA]"
 
 
-def markup_to_html(
-        course,  # type: Optional[Course]
-        repo,  # type: Repo_ish
-        commit_sha,  # type: bytes
-        text,  # type: Text
-        reverse_func=None,  # type: Callable
-        validate_only=False,  # type: bool
-        jinja_env={},  # type: Dict
-        ):
-    # type: (...) -> Text
-
+def markup_to_html(course, repo, commit_sha, text, reverse_func=None,
+        validate_only=False, jinja_env={}):
     if reverse_func is None:
-        from django.urls import reverse
+        from django.core.urlresolvers import reverse
         reverse_func = reverse
 
     if course is not None and not jinja_env:
@@ -943,7 +833,7 @@ def markup_to_html(
     # }}}
 
     if validate_only:
-        return ""
+        return
 
     from course.mdx_mathjax import MathJaxExtension
     import markdown
@@ -967,7 +857,6 @@ TITLE_RE = re.compile(r"^\#+\s*(\w.*)", re.UNICODE)
 
 
 def extract_title_from_markup(markup_text):
-    # type: (Text) -> Optional[Text]
     lines = markup_text.split("\n")
 
     for l in lines[:10]:
@@ -994,23 +883,11 @@ class InvalidDatespec(ValueError):
         self.datespec = datespec
 
 
-class DatespecPostprocessor(object):
-    @classmethod
-    def parse(cls, s):
-        # type: (Text) -> Tuple[Text, Optional[DatespecPostprocessor]]
-        raise NotImplementedError()
-
-    def apply(self, dtm):
-        # type: (datetime.datetime) -> datetime.datetime
-        raise NotImplementedError()
-
-
 AT_TIME_RE = re.compile(r"^(.*)\s*@\s*([0-2]?[0-9])\:([0-9][0-9])\s*$")
 
 
-class AtTimePostprocessor(DatespecPostprocessor):
+class AtTimePostprocessor(object):
     def __init__(self, hour, minute, second=0):
-        # type: (int, int, int) -> None
         self.hour = hour
         self.minute = minute
         self.second = second
@@ -1046,10 +923,8 @@ PLUS_DELTA_RE = re.compile(r"^(.*)\s*([+-])\s*([0-9]+)\s+"
     "(weeks?|days?|hours?|minutes?)$")
 
 
-class PlusDeltaPostprocessor(DatespecPostprocessor):
+class PlusDeltaPostprocessor(object):
     def __init__(self, count, period):
-        # type: (int, Text) -> None
-
         self.count = count
         self.period = period
 
@@ -1084,24 +959,16 @@ class PlusDeltaPostprocessor(DatespecPostprocessor):
 DATESPEC_POSTPROCESSORS = [
         AtTimePostprocessor,
         PlusDeltaPostprocessor,
-        ]  # type: List[Any]
+        ]
 
 
-def parse_date_spec(
-        course,  # type: Optional[Course]
-        datespec,  # type: Union[Text, datetime.date, datetime.datetime]
-        vctx=None,  # type: Optional[ValidationContext]
-        location=None,  # type: Optional[Text]
-        ):
-    # type: (...)  -> datetime.datetime
-
+def parse_date_spec(course, datespec, vctx=None, location=None):
     if datespec is None:
         return None
 
     orig_datespec = datespec
 
     def localize_if_needed(d):
-        # type: (datetime.datetime) -> datetime.datetime
         if d.tzinfo is None:
             from relate.utils import localize_datetime
             return localize_datetime(d)
@@ -1114,21 +981,21 @@ def parse_date_spec(
         return localize_if_needed(
                 datetime.datetime.combine(datespec, datetime.time.min))
 
-    datespec_str = cast(Text, datespec).strip()
+    datespec = datespec.strip()
 
     # {{{ parse postprocessors
 
-    postprocs = []  # type: List[DatespecPostprocessor]
+    postprocs = []
     while True:
         parsed_one = False
         for pp_class in DATESPEC_POSTPROCESSORS:
-            datespec_str, postproc = pp_class.parse(datespec_str)
+            datespec, postproc = pp_class.parse(datespec)
             if postproc is not None:
                 parsed_one = True
-                postprocs.insert(0, cast(DatespecPostprocessor, postproc))
+                postprocs.insert(0, postproc)
                 break
 
-        datespec_str = datespec_str.strip()
+        datespec = datespec.strip()
 
         if not parsed_one:
             break
@@ -1136,37 +1003,36 @@ def parse_date_spec(
     # }}}
 
     def apply_postprocs(dtime):
-        # type: (datetime.datetime) -> datetime.datetime
         for postproc in postprocs:
             dtime = postproc.apply(dtime)
 
         return dtime
 
-    match = DATE_RE.match(datespec_str)
+    match = DATE_RE.match(datespec)
     if match:
-        res_date = datetime.date(
+        result = datetime.date(
                 int(match.group(1)),
                 int(match.group(2)),
                 int(match.group(3)))
         result = localize_if_needed(
-                datetime.datetime.combine(res_date, datetime.time.min))
+                datetime.datetime.combine(result, datetime.time.min))
         return apply_postprocs(result)
 
-    is_end = datespec_str.startswith(END_PREFIX)
+    is_end = datespec.startswith(END_PREFIX)
     if is_end:
-        datespec_str = datespec_str[len(END_PREFIX):]
+        datespec = datespec[len(END_PREFIX):]
 
-    match = TRAILING_NUMERAL_RE.match(datespec_str)
+    match = TRAILING_NUMERAL_RE.match(datespec)
     if match:
         # event with numeral
 
         event_kind = match.group(1)
-        ordinal = int(match.group(2))  # type: Optional[int]
+        ordinal = int(match.group(2))
 
     else:
         # event without numeral
 
-        event_kind = datespec_str
+        event_kind = datespec
         ordinal = None
 
     if vctx is not None:
@@ -1215,20 +1081,14 @@ def parse_date_spec(
 
 # {{{ page chunks
 
-def compute_chunk_weight_and_shown(
-        course,  # type:  Course
-        chunk,  # type: ChunkDesc
-        roles,  # type: List[Text]
-        now_datetime,  # type: datetime.datetime
-        facilities,  # type: frozenset[Text]
-        ):
-    # type: (...) -> Tuple[float, bool]
+def compute_chunk_weight_and_shown(course, chunk, role, now_datetime,
+        facilities):
     if not hasattr(chunk, "rules"):
         return 0, True
 
     for rule in chunk.rules:
         if hasattr(rule, "if_has_role"):
-            if all(role not in rule.if_has_role for role in roles):
+            if role not in rule.if_has_role:
                 continue
 
         if hasattr(rule, "if_after"):
@@ -1248,7 +1108,7 @@ def compute_chunk_weight_and_shown(
         # {{{ deprecated
 
         if hasattr(rule, "roles"):
-            if all(role not in rule.roles for role in roles):
+            if role not in rule.roles:
                 continue
 
         if hasattr(rule, "start"):
@@ -1310,24 +1170,16 @@ def get_collapsible_chunk_content(id, title, content, subtitle, sub_color):
 
     return pre_string(id, title) + content + end_string(id, title)
 
-def get_processed_page_chunks(
-        course,  # type: Course
-        repo,  # type: Repo_ish
-        commit_sha,  # type: bytes
-        page_desc,  # type: StaticPageDesc
-        roles,  # type: List[Text]
-        now_datetime,  # type: datetime.datetime
-        facilities,  # type: frozenset[Text]
-        jinja_env,  # type: Text
-        ):
-    # type: (...) -> List[ChunkDesc]
+def get_processed_page_chunks(course, repo, commit_sha,
+        page_desc, role, now_datetime, facilities, jinja_env):
     for chunk in page_desc.chunks:
         chunk.weight, chunk.shown = \
                 compute_chunk_weight_and_shown(
-                        course, chunk, roles, now_datetime,
+                        course, chunk, role, now_datetime,
                         facilities)
         chunk.html_content = markup_to_html(course, repo, commit_sha, chunk.content, jinja_env=jinja_env)
         if not hasattr(chunk, "title"):
+            from course.content import extract_title_from_markup
             chunk.title = extract_title_from_markup(chunk.content)
 
         collapsible = getattr(chunk, "collapsible", False)
@@ -1349,44 +1201,35 @@ def get_processed_page_chunks(
 # {{{ repo desc getting
 
 def normalize_page_desc(page_desc):
-    # type: (StaticPageDesc) -> StaticPageDesc
     if hasattr(page_desc, "content"):
         content = page_desc.content
         from relate.utils import struct_to_dict, Struct
         d = struct_to_dict(page_desc)
         del d["content"]
         d["chunks"] = [Struct({"id": "main", "content": content})]
-        return cast(StaticPageDesc, Struct(d))
+        return Struct(d)
 
     return page_desc
 
 
 def get_staticpage_desc(repo, course, commit_sha, filename):
-    # type: (Repo_ish, Course, bytes, Text) -> StaticPageDesc
-
     page_desc = get_yaml_from_repo(repo, filename, commit_sha)
     page_desc = normalize_page_desc(page_desc)
     return page_desc
 
 
 def get_course_desc(repo, course, commit_sha):
-    # type: (Repo_ish, Course, bytes) -> CourseDesc
-
-    return cast(
-            CourseDesc,
-            get_staticpage_desc(repo, course, commit_sha, course.course_file))
+    return get_staticpage_desc(repo, course, commit_sha, course.course_file)
 
 
 def normalize_flow_desc(flow_desc):
-    # type: (FlowDesc) -> FlowDesc
-
     if hasattr(flow_desc, "pages"):
         pages = flow_desc.pages
         from relate.utils import struct_to_dict, Struct
         d = struct_to_dict(flow_desc)
         del d["pages"]
         d["groups"] = [Struct({"id": "main", "pages": pages})]
-        return cast(FlowDesc, Struct(d))
+        return Struct(d)
 
     if hasattr(flow_desc, "rules"):
         rules = flow_desc.rules
@@ -1408,8 +1251,6 @@ def normalize_flow_desc(flow_desc):
 
 
 def get_flow_desc(repo, course, flow_id, commit_sha):
-    # type: (Repo_ish, Course, Text, bytes) -> FlowDesc
-
     flow_desc = get_yaml_from_repo(repo, "flows/%s.yml" % flow_id, commit_sha)
 
     flow_desc = normalize_flow_desc(flow_desc)
@@ -1420,8 +1261,6 @@ def get_flow_desc(repo, course, flow_id, commit_sha):
 
 
 def get_flow_page_desc(flow_id, flow_desc, group_id, page_id):
-    # type: (Text, FlowDesc, Text, Text) -> FlowPageDesc
-
     for grp in flow_desc.groups:
         if grp.id == group_id:
             for page in grp.pages:
@@ -1445,7 +1284,6 @@ class ClassNotFoundError(RuntimeError):
 
 
 def import_class(name):
-    # type: (Text) -> type
     components = name.split('.')
 
     if len(components) < 2:
@@ -1468,8 +1306,6 @@ def import_class(name):
 
 
 def get_flow_page_class(repo, typename, commit_sha):
-    # type: (Repo_ish, Text, bytes) -> type
-
     # look among default page types
     import course.page
     try:
@@ -1498,7 +1334,7 @@ def get_flow_page_class(repo, typename, commit_sha):
         module_code = get_repo_blob(repo, module_name, commit_sha,
                 allow_tree=False).data
 
-        module_dict = {}  # type: Dict
+        module_dict = {}
 
         exec(compile(module_code, module_name, 'exec'), module_dict)
 
@@ -1511,7 +1347,6 @@ def get_flow_page_class(repo, typename, commit_sha):
 
 
 def instantiate_flow_page(location, repo, page_desc, commit_sha):
-    # type: (Text, Repo_ish, FlowPageDesc, bytes) -> PageBase
     class_ = get_flow_page_class(repo, page_desc.type, commit_sha)
 
     return class_(None, location, page_desc)
@@ -1520,33 +1355,29 @@ def instantiate_flow_page(location, repo, page_desc, commit_sha):
 
 
 def get_course_commit_sha(course, participation):
-    # type: (Course, Optional[Participation]) -> bytes
-
     # logic duplicated in course.utils.CoursePageContext
 
     sha = course.active_git_commit_sha
 
-    if participation is not None:
-        if participation.preview_git_commit_sha:
-            preview_sha = participation.preview_git_commit_sha
+    if participation is not None and participation.preview_git_commit_sha:
+        preview_sha = participation.preview_git_commit_sha
 
-            repo = get_course_repo(course)
-            if isinstance(repo, SubdirRepoWrapper):
-                repo = repo.repo
+        repo = get_course_repo(course)
+        if isinstance(repo, SubdirRepoWrapper):
+            repo = repo.repo
 
-            try:
-                repo[preview_sha.encode()]
-            except KeyError:
-                preview_sha = None
+        try:
+            repo[preview_sha.encode()]
+        except KeyError:
+            preview_sha = None
 
-            if preview_sha is not None:
-                sha = preview_sha
+        if preview_sha is not None:
+            sha = preview_sha
 
     return sha.encode()
 
 
 def list_flow_ids(repo, commit_sha):
-    # type: (Repo_ish, bytes) -> List[Text]
     flow_ids = []
     try:
         flows_tree = get_repo_blob(repo, "flows", commit_sha)

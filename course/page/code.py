@@ -41,7 +41,6 @@ from course.page.base import (
         AnswerFeedback, get_auto_feedback,
 
         get_editor_interaction_mode)
-from course.constants import flow_permission
 
 
 # {{{ python code question
@@ -416,12 +415,6 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
         available to :attr:`setup_code` and :attr:`test_code` through the
         ``data_files`` dictionary. (see below)
 
-    .. attribute:: single_submission
-
-        Optional, a Boolean. If the question does not allow multiple submissions
-        based on its :attr:`access_rules` (not the ones of the flow), a warning
-        is shown. Setting this attribute to True will silence the warning.
-
     The following symbols are available in :attr:`setup_code` and :attr:`test_code`:
 
     * ``GradingComplete``: An exception class that can be raised to indicated
@@ -477,24 +470,6 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                     raise ValidationError("%s: data file '%s' not found"
                             % (location, data_file))
 
-        if not getattr(page_desc, "single_submission", False) and vctx is not None:
-            is_multi_submit = False
-
-            if hasattr(page_desc, "access_rules"):
-                if hasattr(page_desc.access_rules, "add_permissions"):
-                    if (flow_permission.change_answer
-                            in page_desc.access_rules.add_permissions):
-                        is_multi_submit = True
-
-            if not is_multi_submit:
-                vctx.add_warning(location, _("code question does not explicitly "
-                    "allow multiple submission. Either add "
-                    "access_rules/add_permssions/change_answer "
-                    "or add 'single_submission: True' to confirm that you intend "
-                    "for only a single submission to be allowed. "
-                    "While you're at it, consider adding "
-                    "access_rules/add_permssions/see_correctness."))
-
     def required_attrs(self):
         return super(PythonCodeQuestion, self).required_attrs() + (
                 ("prompt", "markup"),
@@ -513,7 +488,6 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                 ("correct_code", str),
                 ("initial_code", str),
                 ("data_files", list),
-                ("single_submission", bool),
                 )
 
     def _initial_code(self):
@@ -820,71 +794,15 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                 ]
 
             for nr, mime_type, b64data in response.figures:
-                if mime_type in ["image/jpeg", "image/png"]:
-                    fig_lines.extend([
-                        "".join([
-                            "<dt>",
-                            _("Figure"), "%d<dt>"]) % nr,
-                        '<dd><img alt="Figure %d" src="data:%s;base64,%s"></dd>'
-                        % (nr, mime_type, b64data)])
+                fig_lines.extend([
+                    "".join([
+                        "<dt>",
+                        _("Figure"), "%d<dt>"]) % nr,
+                    '<dd><img alt="Figure %d" src="data:%s;base64,%s"></dd>'
+                    % (nr, mime_type, b64data)])
 
             fig_lines.append("</dl>")
             bulk_feedback_bits.extend(fig_lines)
-
-        # {{{ html output / santization
-
-        if hasattr(response, "html") and response.html:
-            def is_allowed_data_uri(allowed_mimetypes, uri):
-                import re
-                m = re.match(r"^data:([-a-z0-9]+/[-a-z0-9]+);base64,", uri)
-                if not m:
-                    return False
-
-                mimetype = m.group(1)
-                return mimetype in allowed_mimetypes
-
-            def sanitize(s):
-                import bleach
-
-                def filter_audio_attributes(name, value):
-                    if name in ["controls"]:
-                        return True
-                    else:
-                        return False
-
-                def filter_source_attributes(name, value):
-                    if name in ["type"]:
-                        return True
-                    elif name == "src":
-                        return is_allowed_data_uri([
-                            "audio/wav",
-                            ], value)
-                    else:
-                        return False
-
-                def filter_img_attributes(name, value):
-                    if name in ["alt", "title"]:
-                        return True
-                    elif name == "src":
-                        return is_allowed_data_uri([
-                            "image/png",
-                            "image/jpeg",
-                            ], value)
-                    else:
-                        return False
-
-                return bleach.clean(s,
-                        tags=bleach.ALLOWED_TAGS + ["audio", "video", "source"],
-                        attributes={
-                            "audio": filter_audio_attributes,
-                            "source": filter_source_attributes,
-                            "img": filter_img_attributes,
-                            })
-
-            bulk_feedback_bits.extend(
-                    sanitize(snippet) for snippet in response.html)
-
-        # }}}
 
         return AnswerFeedback(
                 correctness=correctness,

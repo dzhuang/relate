@@ -30,11 +30,11 @@ from django.contrib import messages  # noqa
 from django.core.exceptions import PermissionDenied
 from django.utils.translation import ugettext, ugettext_lazy as _
 
-from crispy_forms.layout import Submit
+from crispy_forms.layout import Submit, Button
 
 from course.utils import course_view, render_course_page
 
-from course.constants import participation_permission as pperm
+from course.constants import participation_role
 
 
 # {{{ sandbox form
@@ -77,7 +77,7 @@ class SandboxForm(forms.Form):
                 Submit("preview", _("Preview"), accesskey="p"),
                 )
         self.helper.add_input(
-                Submit("clear", _("Clear"), css_class="btn-default"),
+                Button("clear", _("Clear"), css_class="btn-default"),
                 )
 
 # }}}
@@ -87,8 +87,11 @@ class SandboxForm(forms.Form):
 
 @course_view
 def view_markup_sandbox(pctx):
-    if not pctx.has_permission(pperm.use_markup_sandbox):
-        raise PermissionDenied()
+    if pctx.role not in [
+            participation_role.instructor,
+            participation_role.teaching_assistant]:
+        raise PermissionDenied(
+                ugettext("must be instructor or TA to access sandbox"))
 
     request = pctx.request
     preview_text = ""
@@ -102,7 +105,7 @@ def view_markup_sandbox(pctx):
                 help_text,
                 data)
 
-    if request.method == "POST" and "preview" in request.POST:
+    if request.method == "POST":
         form = make_form(request.POST)
 
         if form.is_valid():
@@ -156,29 +159,15 @@ def get_sandbox_data_for_page(pctx, page_desc, key):
 # }}}
 
 
-# {{{ page sandbox form
-
-class PageSandboxForm(SandboxForm):
-    def __init__(self, initial_text,
-            language_mode, interaction_mode, help_text, *args, **kwargs):
-        super(PageSandboxForm, self).__init__(
-                initial_text, language_mode, interaction_mode, help_text,
-                *args, **kwargs)
-
-        self.helper.add_input(
-                Submit("clear_response", _("Clear Response Data"),
-                    css_class="btn-default"),
-                )
-
-# }}}
-
-
 # {{{ page sandbox
 
 @course_view
 def view_page_sandbox(pctx):
-    if not pctx.has_permission(pperm.use_page_sandbox):
-        raise PermissionDenied()
+    if pctx.role not in [
+            participation_role.instructor,
+            participation_role.teaching_assistant]:
+        raise PermissionDenied(
+                ugettext("must be instructor or TA to access sandbox"))
 
     from course.validation import ValidationError
     from relate.utils import dict_to_struct, Struct
@@ -197,13 +186,10 @@ def view_page_sandbox(pctx):
     page_errors = None
     page_warnings = None
 
-    is_clear_post = (request.method == "POST" and "clear" in request.POST)
-    is_clear_response_post = (request.method == "POST"
-            and "clear_response" in request.POST)
     is_preview_post = (request.method == "POST" and "preview" in request.POST)
 
     def make_form(data=None):
-        return PageSandboxForm(
+        return SandboxForm(
                 page_source, "yaml", request.user.editor_mode,
                 ugettext("Enter YAML markup for a flow page."),
                 data)
@@ -250,22 +236,6 @@ def view_page_sandbox(pctx):
 
             del new_page_source
 
-        edit_form = make_form(pctx.request.POST)
-
-    elif is_clear_post:
-        page_source = None
-        pctx.request.session[PAGE_DATA_SESSION_KEY] = None
-        pctx.request.session[ANSWER_DATA_SESSION_KEY] = None
-        del pctx.request.session[PAGE_DATA_SESSION_KEY]
-        del pctx.request.session[ANSWER_DATA_SESSION_KEY]
-        edit_form = make_form()
-
-    elif is_clear_response_post:
-        page_source = None
-        pctx.request.session[PAGE_DATA_SESSION_KEY] = None
-        pctx.request.session[ANSWER_DATA_SESSION_KEY] = None
-        del pctx.request.session[PAGE_DATA_SESSION_KEY]
-        del pctx.request.session[ANSWER_DATA_SESSION_KEY]
         edit_form = make_form(pctx.request.POST)
 
     else:
@@ -357,8 +327,7 @@ def view_page_sandbox(pctx):
                     tp, e, _ = sys.exc_info()
 
                     page_errors = (
-                            ugettext("Page failed to load/validate "
-                                "(change page ID to clear faults)")
+                            ugettext("Page failed to load/validate")
                             + ": "
                             + "%(err_type)s: %(err_str)s" % {
                                 "err_type": tp.__name__, "err_str": e})
