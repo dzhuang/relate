@@ -4,6 +4,10 @@ from __future__ import absolute_import
 Django settings for RELATE.
 """
 
+if False:
+    # for mypy
+    from typing import Callable, Any, Union  # noqa
+
 # Do not change this file. All these settings can be overridden in
 # local_settings.py.
 
@@ -60,7 +64,7 @@ if local_settings.get("RELATE_SIGN_IN_BY_SAML2_ENABLED", False):
 
 # {{{ django: middleware
 
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE_CLASS = (
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -222,7 +226,7 @@ SESSION_COOKIE_AGE = 12096000  # 20 weeks
 
 # {{{ app defaults
 
-RELATE_FACILITIES = {}
+RELATE_FACILITIES = {}  # type: Union[None,Dict[str, Dict[str, Any]], Callable[..., Dict[str, Dict[str, Any]]], ]  # noqa
 
 RELATE_TICKET_MINUTES_VALID_AFTER_USE = 0
 
