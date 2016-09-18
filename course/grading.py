@@ -111,8 +111,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
             respect_preview=True)
 
     grading_rule = get_session_grading_rule(
-        flow_session, flow_session.participation.role,
-        fpctx.flow_desc, get_now_or_fake_time(pctx.request))
+            flow_session, fpctx.flow_desc, get_now_or_fake_time(pctx.request))
 
     # {{{ enable flow session zapping
 

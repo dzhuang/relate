@@ -170,10 +170,10 @@ def check_course_state(course, participation):
         if not participation.has_permission(pperm.view_hidden_course_page):
             raise PermissionDenied(_("course page is currently hidden"))
 
-def enroll_expire_or_ended_message(course, role, now_date):
+def enroll_expire_or_ended_message(course, participation, now_date):
     message = None
     if course.enroll_deadline:
-        if role == participation_role.unenrolled:
+        if not participation.has_permission(pperm.view_hidden_course_page):
             if now_date > course.enroll_deadline:
                 message = _("Enrollment has expired. ")
             elif course.end_date is not None and now_date > course.end_date:
@@ -190,12 +190,10 @@ def enroll_expire_or_ended_message(course, role, now_date):
 def course_page(pctx):
     # type: (CoursePageContext) -> http.HttpResponse
 
-    role, participation = get_role_and_participation(
-        pctx.request, pctx.course)
     now_datetime = get_now_or_fake_time(pctx.request)
     error_message = (
             enroll_expire_or_ended_message(
-                pctx.course, role, now_datetime.date()))
+                pctx.course, pctx.participation, now_datetime.date()))
     jinja_env = {"now": now_datetime}
     from course.content import get_processed_page_chunks, get_course_desc
     page_desc = get_course_desc(pctx.repo, pctx.course, pctx.course_commit_sha)

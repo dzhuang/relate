@@ -203,23 +203,8 @@ def flow_page_image_download(pctx, flow_session_id, creator_id,
     # whether the user is allowed to view the private image
     from course.constants import participation_permission as pperm, participation_status
 
-    my_participations = Participation.objects.get(
-            course=pctx.course,
-            user=request.user,
-            status=participation_status.active)
-
-    for part in my_participations:
-        assign_grade_roles = (
-                argument
-                for perm, argument in part.permissions()
-                if perm == pperm.assign_grade)
-
-        if Participation.objects.filter(
-                course=part.course,
-                status=participation_status.active,
-                role__in=assign_grade_roles,
-                user=request.user).count():
-            privilege = True
+    if pctx.has_permission(pperm.assign_grade):
+        privilege = True
 
     return _auth_download(request, download_object, privilege)
 
