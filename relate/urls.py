@@ -118,6 +118,11 @@ urlpatterns = [
         name="relate-course_page"),
     url(r"^course"
         "/" + COURSE_ID_REGEX +
+        "/edit/$",
+        course.views.edit_course,
+        name="relate-edit_course"),
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
         "/page"
         "/" + STATICPAGE_PATH_REGEX +
         "/$",
@@ -235,6 +240,14 @@ urlpatterns = [
         course.grades.download_all_submissions,
         name="relate-download_all_submissions"),
 
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/edit-grading-opportunity"
+         "/(?P<opportunity_id>[-0-9]+)"
+        "/$",
+        course.grades.edit_grading_opportunity,
+        name="relate-edit_grading_opportunity"),
+
     # }}}
 
     # {{{ enrollment
@@ -262,6 +275,13 @@ urlpatterns = [
         "/$",
         course.enrollment.query_participations,
         name="relate-query_participations"),
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/edit-participation"
+         "/(?P<participation_id>[-0-9]+)"
+        "/$",
+        course.enrollment.edit_participation,
+        name="relate-edit_participation"),
 
     # }}}
 
@@ -476,7 +496,7 @@ urlpatterns = [
 
     #}}}
 
-    url(r'^admin/', include(admin.site.urls)),
+    url(r'^admin/', admin.site.urls),
     
     # {{{ image_upload
     url(r'^image_upload/', include('image_upload.urls')),
