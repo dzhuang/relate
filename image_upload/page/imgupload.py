@@ -987,6 +987,7 @@ def feedBackEmail(pctx, flow_session_id, ordinal):
             from course.constants import participation_permission as pperm
             tutor_qs = Participation.objects.filter(
                     course=pctx.course,
+                    # FIXME!!
                     participations__roles__permissions__permission=pperm.assign_grade
             )
             tutor_email_list = [tutor.user.email for tutor in tutor_qs]
