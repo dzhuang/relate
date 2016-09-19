@@ -468,10 +468,25 @@ with open('lp.bin', 'wb') as f:
 with open('lp.bin', 'rb') as f:
     lp_json_list_loaded = pickle.load(f)
 
+final_lp_list = []
+
+count = 0
+
+import json
+
+json_list = []
 
 for l in lp_json_list_loaded:
-    import json
-    lp_dict = json.loads(l)
+    lp_dict = json.loads (l)
+    # json_list.append(lp_dict)
+    if lp_dict["qtype"] == "max":
+        lp_dict["qtype"] = "min"
+    else:
+        lp_dict["qtype"] = "max"
+    json_list.append (lp_dict)
+
+for lp_dict in json_list:
+#    lp_dict = json.loads(l)
 
     lp = LP(**lp_dict)
     lp2phase = deepcopy(lp)
@@ -506,5 +521,13 @@ for l in lp_json_list_loaded:
     )
 
     r.clipboard_append(tex)
-    #print lp.solve_opt_res_str
+    print "iterations:", lp.solutionCommon.nit
+    if lp.solutionCommon.nit in [3, 4]:
+#    if lp.solutionCommon.nit in [3, 4, 5] and lp.qtype=="max":
+        final_lp_list.append(lp.json)
+        count += 1
 
+print count
+
+with open('lp_simplex_3_iter_artificial.bin', 'wb') as f:
+        pickle.dump(final_lp_list, f)
