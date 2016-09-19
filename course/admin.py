@@ -621,6 +621,104 @@ admin.site.register(FlowPageVisit, FlowPageVisitAdmin)
 # }}}
 
 
+class FlowPageVisitGradeAdmin(admin.ModelAdmin):
+    def get_course(self, obj):
+        return obj.visit.flow_session.course
+    get_course.short_description = _("Course")  # type: ignore
+    get_course.admin_order_field = "visit__flow_session__course"  # type: ignore
+
+    def get_flow_id(self, obj):
+        return obj.visit.flow_session.flow_id
+    get_flow_id.short_description = _("Flow ID")  # type: ignore
+    get_flow_id.admin_order_field = "visit__flow_session__flow_id"  # type: ignore
+
+    def get_page_id(self, obj):
+        if obj.visit.page_data.ordinal is None:
+            return string_concat("%s/%s (", _("not in use"), ")") % (
+                    obj.visit.page_data.group_id,
+                    obj.visit.page_data.page_id)
+        else:
+            return "%s/%s (%s)" % (
+                    obj.visit.page_data.group_id,
+                    obj.visit.page_data.page_id,
+                    obj.visit.page_data.ordinal)
+
+    get_page_id.short_description = _("Page ID")  # type: ignore
+    get_page_id.admin_order_field = "page_data__page_id"  # type: ignore
+
+    def get_participant(self, obj):
+        if obj.visit.flow_session.participation:
+            return obj.visit.flow_session.participation.user
+        else:
+            return string_concat("(", _("anonymous"), ")")
+
+    get_participant.short_description = _("Owner")  # type: ignore
+    get_participant.admin_order_field = "flow_session__participation"  # type: ignore
+
+    def get_answer_is_null(self, obj):
+        return obj.visit.answer is not None
+    get_answer_is_null.short_description = _("Has answer")  # type: ignore
+    get_answer_is_null.boolean = True  # type: ignore
+
+    def get_flow_session_id(self, obj):
+        return obj.visit.flow_session.id
+    get_flow_session_id.short_description = _("Flow Session ID")  # type: ignore
+    get_flow_session_id.admin_order_field = "flow_session__id"  # type: ignore
+
+    list_filter = (
+            "grader",
+            )
+    date_hierarchy = "grade_time"
+    list_display = (
+            "id",
+            "get_course",
+            "get_flow_id",
+            "get_page_id",
+            "get_participant",
+            "get_flow_session_id",
+            "grade_time",
+            "correctness"
+            )
+    list_display_links = (
+            "id",
+            )
+
+    search_fields = (
+            "=id",
+            "=visit__flow_session__id",
+            "visit__flow_session__flow_id",
+            "visit__page_data__group_id",
+            "visit__page_data__page_id",
+            "visit__flow_session__participation__user__username",
+            "visit__flow_session__participation__user__first_name",
+            "visit__flow_session__participation__user__last_name",
+            )
+
+
+    save_on_top = True
+
+    # {{{ permissions
+
+    def has_add_permission(self, request):
+        # These are created only automatically.
+        return False
+
+    def get_queryset(self, request):
+        qs = super(FlowPageVisitGradeAdmin, self).get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        return qs.filter(
+            flow_session__course__participations__user=request.user,
+            flow_session__course__participations__roles__permissions__identifier  # noqa
+            =pperm.use_admin_interface)
+
+    # }}}
+
+admin.site.register(FlowPageVisitGrade, FlowPageVisitGradeAdmin)
+
+# }}}
+
+
 # {{{ flow access
 
 class FlowRuleExceptionAdmin(admin.ModelAdmin):

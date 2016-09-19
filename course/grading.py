@@ -194,10 +194,10 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     graded_flow_sessions_json = []
     ungraded_flow_sessions_json = []
 
-    page_graded_flowsession_id_list = []
-    page_graded_flowsession_time_list = []
+    fpvg_flowsession_id_list = []
+    fpvg_flowsession_time_list = []
     if fpctx.page.expects_answer():
-        page_visit_grade_qs = (
+        fpvg_qs = (
             FlowPageVisitGrade.objects.filter(
                 visit__flow_session__course=pctx.course,
                 visit__flow_session__flow_id=flow_session.flow_id,
@@ -219,30 +219,31 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
         if (grading_rule.grade_aggregation_strategy in [
             grade_aggregation_strategy.use_earliest,
             grade_aggregation_strategy.use_latest]):
-            page_visit_grade_qs = page_visit_grade_qs.distinct(
+            fpvg_qs = fpvg_qs.distinct(
                 "visit__flow_session__participation__user")
 
-        page_graded_flowsession_id_list = page_visit_grade_qs.values("visit__flow_session__pk")
-        page_visit_grade_qs.filter(
-            visit__flow_session__pk__in=page_graded_flowsession_id_list, correctness__isnull=False)
+        visit_pk_list = list(fpvg_qs.values_list("pk", flat=True))
 
-        page_graded_flowsession_id_time_list = (
-                list(page_visit_grade_qs
+        fpvg_qs = fpvg_qs.filter(
+            pk__in=visit_pk_list, correctness__isnull=False)
+
+        fpvg_flowsession_id_time_list = (
+                list(fpvg_qs
                      .values_list(
                         "visit__flow_session__pk",
                         "grade_time")
                      ))
 
-        page_graded_flowsession_id_time_list.sort(key=lambda (x,y): y)
+        fpvg_flowsession_id_time_list.sort(key=lambda (x,y): y)
 
-        page_graded_flowsession_id_time_list.sort(key=lambda (x, y): y)
-        page_graded_flowsession_id_list = [v[0] for v in page_graded_flowsession_id_time_list]
-        page_graded_flowsession_time_list = [v[1] for v in page_graded_flowsession_id_time_list]
+        fpvg_flowsession_id_time_list.sort(key=lambda (x, y): y)
+        fpvg_flowsession_id_list = [v[0] for v in fpvg_flowsession_id_time_list]
+        fpvg_flowsession_time_list = [v[1] for v in fpvg_flowsession_id_time_list]
 
     graded_list = sorted(all_flow_sessions,
                       key=lambda x: (
-                          x.pk in page_graded_flowsession_id_list,
-                          page_graded_flowsession_id_list.index(x.pk) if x.pk in page_graded_flowsession_id_list else None
+                          x.pk in fpvg_flowsession_id_list,
+                          fpvg_flowsession_id_list.index(x.pk) if x.pk in fpvg_flowsession_id_list else None
                       ),
                       reverse= True)
 
@@ -274,10 +275,10 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
         grade_time = None
 
-        if page_graded_flowsession_id_list:
+        if fpvg_flowsession_id_list:
             try:
-                g_idx = page_graded_flowsession_id_list.index(flow_session_idx.pk)
-                grade_time = page_graded_flowsession_time_list[g_idx]
+                g_idx = fpvg_flowsession_id_list.index(flow_session_idx.pk)
+                grade_time = fpvg_flowsession_time_list[g_idx]
             except ValueError:
                 pass
 
