@@ -224,7 +224,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
         page_graded_flowsession_id_list = page_visit_grade_qs.values("visit__flow_session__pk")
         page_visit_grade_qs.filter(
-            visit__flow_session__pk__in=page_graded_flowsession_id_list, correctness__isnull=True)
+            visit__flow_session__pk__in=page_graded_flowsession_id_list, correctness__isnull=False)
 
         page_graded_flowsession_id_time_list = (
                 list(page_visit_grade_qs
