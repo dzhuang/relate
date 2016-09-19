@@ -196,6 +196,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
     fpvg_flowsession_id_list = []
     fpvg_flowsession_time_list = []
+    page_graded_flow_session_list = []
     if fpctx.page.expects_answer():
         fpvg_qs = (
             FlowPageVisitGrade.objects.filter(
@@ -234,22 +235,36 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                         "grade_time")
                      ))
 
-        fpvg_flowsession_id_time_list.sort(key=lambda (x,y): y)
+
 
         fpvg_flowsession_id_time_list.sort(key=lambda (x, y): y)
         fpvg_flowsession_id_list = [v[0] for v in fpvg_flowsession_id_time_list]
+        page_graded_flow_session_list = [fs for fs in all_flow_sessions if fs.pk in fpvg_flowsession_id_list]
+
+
         fpvg_flowsession_time_list = [v[1] for v in fpvg_flowsession_id_time_list]
 
-    graded_list = sorted(all_flow_sessions,
-                      key=lambda x: (
-                          x.pk in fpvg_flowsession_id_list,
-                          fpvg_flowsession_id_list.index(x.pk) if x.pk in fpvg_flowsession_id_list else None
-                      ),
-                      reverse= True)
+    graded_fs_list = []
+    if page_graded_flow_session_list is not None:
+        graded_fs_list = sorted(page_graded_flow_session_list,
+                          key=lambda x: (
+                              x.pk in fpvg_flowsession_id_list,
+                              fpvg_flowsession_id_list.index(x.pk) if x.pk in fpvg_flowsession_id_list else None
+                          ),
+                          reverse= True)
+
+    page_ungraded_flow_session_list = list(set(all_flow_sessions) - set(page_graded_flow_session_list))
+    if page_ungraded_flow_session_list:
+        ungraded_fs_list = sorted(page_ungraded_flow_session_list,
+                          key=lambda x: (
+                              x.participation.user.get_full_name()
+                          ))
+
+    all_flow_sessions = graded_fs_list + ungraded_fs_list
 
     all_flow_sessions_json = []
 
-    for idx, flow_session_idx in enumerate(graded_list):
+    for idx, flow_session_idx in enumerate(all_flow_sessions):
         text = string_concat(
             "%(user_fullname)s",
             " ", _("started at %(start_time)s"),
