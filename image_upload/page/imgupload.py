@@ -344,19 +344,6 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                "maxNumberOfFiles": self.maxNumberOfFiles
                }
 
-        # from django.template import RequestContext, loader
-        # from django import VERSION as DJANGO_VERSION
-        # if DJANGO_VERSION >= (1, 9):
-        #     return loader.render_to_string(
-        #         "image_upload/imgupload-page-tmpl.html",
-        #         context=ctx,
-        #         request=request)
-        # else:
-        #     context = RequestContext(request)
-        #     context.update({"form": form})
-        #     return loader.render_to_string(
-        #         "image_upload/imgupload-page-tmpl.html",
-        #         RequestContext(request, ctx))
         from django.template.loader import render_to_string
         return render_to_string(
                 "image_upload/imgupload-page-tmpl.html", ctx, request)
@@ -483,6 +470,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
 #{{{
 
 class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
+    grading_sort_by_page_data = True
 
     def __init__(self, vctx, location, page_desc):
         super(ImageUploadQuestionWithAnswer, self).__init__(vctx, location, page_desc)
