@@ -254,17 +254,16 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                           reverse= True)
 
     page_ungraded_flow_session_list = list(set(all_flow_sessions) - set(page_graded_flow_session_list))
-    if page_ungraded_flow_session_list:
-        ungraded_fs_list = sorted(page_ungraded_flow_session_list,
-                          key=lambda x: (
-                              x.participation.user.get_full_name()
-                          ))
+    ungraded_fs_list = sorted(page_ungraded_flow_session_list,
+                      key=lambda x: (
+                          x.participation.user.get_full_name()
+                      ))
 
-    all_flow_sessions = graded_fs_list + ungraded_fs_list
+    adjusted_list = graded_fs_list + ungraded_fs_list
 
     all_flow_sessions_json = []
 
-    for idx, flow_session_idx in enumerate(all_flow_sessions):
+    for idx, flow_session_idx in enumerate(adjusted_list):
         text = string_concat(
             "%(user_fullname)s",
             " ", _("started at %(start_time)s"),
