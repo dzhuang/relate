@@ -736,11 +736,11 @@ for l in lp_json_list_loaded:
         show_answer = True,
         #show_2_stage = True, # 显示两阶段法
         #show_big_m=True,  # 显示大M法
-        standardized_lp = lp.standardized_LP(),
+        #standardized_lp = lp.standardized_LP(),
         standardized_lp_2_phase=standardized_lp_2_phase,
         pre_description=u"""
         """,
-        lp=lp,
+        #lp=lp,
         lp2phase = lp2phase,
         # simplex_pre_description=u"""解：引入松弛变量$x_4, x_5, x_6$，用单纯形法求解如下：
         # """,
@@ -751,11 +751,12 @@ for l in lp_json_list_loaded:
     r.clipboard_append(tex)
     #print lp.solve_opt_res_str
     print "iterations:", lp.solutionCommon.nit
-    if lp.solutionCommon.nit in [3, 4, 5] and lp.qtype=="max":
+    if lp.solutionCommon.nit in [2]:
+#    if lp.solutionCommon.nit in [3, 4, 5] and lp.qtype=="max":
         final_lp_list.append(lp.json)
         count += 1
 
 print count
 
-with open('lp_simplex_3_iter.bin', 'wb') as f:
+with open('lp_simplex_2_iter_max_min.bin', 'wb') as f:
         pickle.dump(final_lp_list, f)
