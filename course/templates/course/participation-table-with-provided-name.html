@@ -3,6 +3,10 @@
 <table class="table table-striped gradebook-participants">
   <thead>
     <th class="datacol">{% trans "User ID" %}</th>
+    {% if pperm.edit_participation %}
+      <th class="datacol">{% trans "Actions" %}</th>
+    {% endif %}
+    <th class="datacol">{% trans "Status" %}</th>
     <th class="datacol" title="{% trans 'Real fullname is provided by prapproval if exist. Also displays a fullname (with red font) provided by the user if both are provided while different.' %}">
         {% trans "Name" context "real name of a user" %}</th>
     <th class="datacol">{% trans "Role" %}</th>
@@ -12,8 +16,17 @@
   </thead>
   <tbody>
     {% for participation, provided_name in participations %}
-    <tr>
-      <td class="headcol"><a href="{% url "relate-view_participant_grades" course.identifier participation.id %}"><span class="sensitive">{{ participation.user.username }}</span></a></td>
+    <tr class="relate-participation-{{ participation.status }}">
+      <td class="headcol"><a href="{% url "relate-view_participant_grades" course.identifier participation.id %}">
+          <span class="sensitive">{{ participation.user.username }}</span>
+        </a>
+      </td>
+      {% if pperm.edit_participation %}
+        <td class="datacol">
+          <a href="{% url "relate-edit_participation" course.identifier participation.id %}" class="btn btn-default btn-xs">{% trans "Edit" %}</a>
+        </td>
+      {% endif %}
+      <td class="datacol">{% trans participation.status %}</td>
       <td class="datacol"><span class="sensitive">
           {% if participation.user.get_full_name.lower == provided_name.lower %}
             {{ participation.user.get_full_name }}
