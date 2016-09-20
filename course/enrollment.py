@@ -555,6 +555,10 @@ class BulkPreapprovalsFormCsv(StyledForm):
 
         self.fields["file"] = forms.FileField(required=True,
                     label=_("File"))
+        self.fields["remove_nonexist"] = forms.BooleanField(
+                label=_("Remove users that do not included in the csv file"),
+                required=False,
+                initial=True)
         self.fields["preapproval_type"] = forms.ChoiceField(
                 choices=(
                     ("institutional_id_with_name", _("Institutional ID + fullname")),
@@ -642,6 +646,7 @@ def create_preapprovals_csv(pctx):
             inst_id_column = form.cleaned_data["inst_id_column"]
             header_count = form.cleaned_data["csv_header_count"]
             provided_name_column = form.cleaned_data["provided_name_column"]
+            remove_nonexist = form.cleaned_data["remove_nonexist"]
             
             total_count, csv_valid_data, error_lines = csv_to_preapproval(
                 file_contents, inst_id_column, provided_name_column, header_count)
@@ -716,7 +721,38 @@ def create_preapprovals_csv(pctx):
                     
             if error_lines:
                 messages.add_message(request, messages.ERROR,
-                        "\n".join(error_lines))        
+                        "\n".join(error_lines))
+
+
+            if remove_nonexist:
+                inst_id_list = []
+                n_remove = 0
+                if csv_valid_data:
+                    for l in csv_valid_data:
+                        l = l.strip()
+                        preapp_type = form.cleaned_data["preapproval_type"]
+                        if not l:
+                            continue
+                        if preapp_type == "email":
+                            pass
+                        elif preapp_type == "institutional_id_with_name":
+                            [inst_id, full_name] = l.split(",")
+                            inst_id_list.append(inst_id)
+
+                if inst_id_list:
+                    preapproval_tobe_removed = ParticipationPreapproval.objects.filter(
+                        course=pctx.course, institutional_id__in=inst_id_list)
+                    n_remove = preapproval_tobe_removed.count()
+                    preapproval_tobe_removed.delete()
+
+                if n_remove:
+                    messages.add_message(request, messages.INFO,
+                                         _(
+                                             "%(n_remove)d nonexisting preapprovals deleted, "
+                                         )
+                                         % {
+                                             'n_remove': n_remove,
+                                         })
 
             messages.add_message(request, messages.INFO,
                     _(
