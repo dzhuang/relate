@@ -558,7 +558,7 @@ class BulkPreapprovalsFormCsv(StyledForm):
         self.fields["remove_nonexist"] = forms.BooleanField(
                 label=_("Remove users that do not included in the csv file"),
                 required=False,
-                initial=True)
+                initial=False)
         self.fields["preapproval_type"] = forms.ChoiceField(
                 choices=(
                     ("institutional_id_with_name", _("Institutional ID + fullname")),
@@ -741,7 +741,7 @@ def create_preapprovals_csv(pctx):
 
                 if inst_id_list:
                     preapproval_tobe_removed = ParticipationPreapproval.objects.filter(
-                        course=pctx.course, institutional_id__in=inst_id_list)
+                        course=pctx.course).exclude(institutional_id__in=inst_id_list)
                     n_remove = preapproval_tobe_removed.count()
                     preapproval_tobe_removed.delete()
 
