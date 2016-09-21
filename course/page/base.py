@@ -260,7 +260,7 @@ class PageBase(object):
     .. automethod:: allowed_attrs
 
     .. automethod:: get_modified_permissions_for_page
-    .. automethod:: make_page_data
+    .. automethod:: initialize_page_data
     .. automethod:: title
     .. automethod:: body
 
@@ -336,7 +336,7 @@ class PageBase(object):
 
         else:
             from warnings import warn
-            warn("Not passing page_desc to PageBase.__init__ is deprecated",
+            warn(_("Not passing page_desc to PageBase.__init__ is deprecated"),
                     DeprecationWarning)
             id = page_desc
             del page_desc
@@ -380,14 +380,24 @@ class PageBase(object):
 
         return frozenset(rw_permissions)
 
-    def make_page_data(self, page_context):
+    def make_page_data(self):
+        return {}
+
+    def initialize_page_data(self, page_context):
         """Return (possibly randomly generated) data that is used to generate
         the content on this page. This is passed to methods below as the *page_data*
         argument. One possible use for this argument would be a random permutation
         of choices that is generated once (at flow setup) and then used whenever
         this page is shown.
         """
-        return {}
+        data = self.make_page_data()
+        if data:
+            from warnings import warn
+            warn(_("%s is using the make_page_data compatiblity hook, which "
+                 "is deprecated.") % type(self).__name__,
+                 DeprecationWarning)
+
+        return data
 
     def update_page_data(self, page_context, page_data):
         """
@@ -501,8 +511,8 @@ class PageBase(object):
         """
 
         from warnings import warn
-        warn("%s is using the post_form compatiblity hook, which "
-                "is deprecated." % type(self).__name__,
+        warn(_("%s is using the post_form compatiblity hook, which "
+                "is deprecated.") % type(self).__name__,
                 DeprecationWarning)
 
         return self.post_form(page_context, page_data, post_data, files_data)

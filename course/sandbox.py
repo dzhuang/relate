@@ -313,7 +313,7 @@ def view_page_sandbox(pctx):
                 in_sandbox=True)
 
         if page_data is None:
-            page_data = page.make_page_data(page_context)
+            page_data = page.initialize_page_data(page_context)
             pctx.request.session[PAGE_DATA_SESSION_KEY] = (
                     page_desc.type, page_desc.id, page_data)
 

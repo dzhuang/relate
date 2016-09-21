@@ -642,7 +642,7 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
             ("only_graded_pages", bool),
         )
 
-    def make_page_data(self, page_context):
+    def initialize_page_data(self, page_context):
 
         from course.models import FlowPageVisit
         from course.constants import participation_permission as pperm
@@ -746,7 +746,7 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
             assert isinstance(excluded_order_list, list)
 
         if page_context.in_sandbox or page_data is None:
-            page_data = self.make_page_data(page_context)
+            page_data = self.initialize_page_data(page_context)
 
         qs = FlowPageImage.objects.none()
 

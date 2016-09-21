@@ -161,7 +161,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
 
         return page_data
 
-    def make_page_data(self, page_context):
+    def initialize_page_data(self, page_context):
         if not hasattr(self.page_desc, "random_question_data_file"):
             return {}
 
@@ -215,7 +215,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
 
 
         # if not getattr(page_data, "question_data", None):
-        #     page_data = self.make_page_data(page_context)
+        #     page_data = self.initialize_page_data(page_context)
 
         #key_making_string = ""
         saved_file_path = None
@@ -323,7 +323,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
 
     def body(self, page_context, page_data):
         if page_context.in_sandbox or page_data is None:
-            page_data = self.make_page_data(page_context)
+            page_data = self.initialize_page_data(page_context)
 
         question_str = self.get_cached_result(
                 page_context, page_data, part="question")
@@ -566,17 +566,17 @@ class LatexRandomCodeQuestionWithHumanTextFeedback(
 class LatexRandomMultipleChoiceQuestion(
     LatexRandomQuestion, MultipleChoiceQuestion):
 
-    def make_page_data(self, page_context):
-        m_page_data = MultipleChoiceQuestion.make_page_data(self, page_context)
-        l_page_data = LatexRandomQuestion.make_page_data(self, page_context)
+    def initialize_page_data(self, page_context):
+        m_page_data = MultipleChoiceQuestion.initialize_page_data(self, page_context)
+        l_page_data = LatexRandomQuestion.initialize_page_data(self, page_context)
         page_data = dict(m_page_data, **l_page_data)
         return page_data
 
 class LatexRandomChoiceQuestion(
     LatexRandomQuestion, ChoiceQuestion):
 
-    def make_page_data(self, page_context):
-        m_page_data = ChoiceQuestion.make_page_data(self, page_context)
-        l_page_data = LatexRandomQuestion.make_page_data(self, page_context)
+    def initialize_page_data(self, page_context):
+        m_page_data = ChoiceQuestion.initialize_page_data(self, page_context)
+        l_page_data = LatexRandomQuestion.initialize_page_data(self, page_context)
         page_data = dict(m_page_data, **l_page_data)
         return page_data
