@@ -472,6 +472,7 @@ class Tex2ImgBase(object):
         try:
             # race condition
             #_atomic_file_write() failed to write a valid image
+            # so save file using b64 data instead?
             shutil.copyfile(image_path, self.image_saving_path)
         except OSError:
             raise RuntimeError(error)

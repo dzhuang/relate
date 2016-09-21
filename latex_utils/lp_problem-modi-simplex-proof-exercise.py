@@ -696,7 +696,7 @@ for lp in lp_list:
 #lp_json_list.append(lp2.json)
 #print lp_json_list
 
-print lp_json_list
+#print lp_json_list
 
 
 import pickle
@@ -716,10 +716,9 @@ for l in lp_json_list_loaded:
     lp_dict = json.loads(l)
 
     lp = LP(**lp_dict)
-    lp = lp
     lp2phase = deepcopy(lp)
 
-    lp.solve(method="simplex")
+    lp.solve(method="modified_simplex")
     #lp.solve(method="simplex")
     try:
         lp2phase.solve(method="simplex")
@@ -728,36 +727,44 @@ for l in lp_json_list_loaded:
         lp2phase = None
         standardized_lp_2_phase = None
 
+    opt_basis = lp.solutionPhase2.basis_list[-1]
 
-    template = latex_jinja_env.get_template('/utils/lp_simplex.tex')
+    template = latex_jinja_env.get_template('/utils/lp_simplex_modify_proof.tex')
     tex = template.render(
         answer_table_iters=iter(range(1, 5)),
         show_question = True,
         show_answer = True,
-        show_2_stage = True, # 显示两阶段法
-        show_big_m=True,  # 显示大M法
-        #standardized_lp = lp.standardized_LP(),
+        opt_basis = opt_basis,
+        #show_2_stage = True, # 显示两阶段法
+        #show_big_m=True,  # 显示大M法
+        standardized_lp = lp.standardized_LP(),
         standardized_lp_2_phase=standardized_lp_2_phase,
         pre_description=u"""
         """,
         lp=lp,
-        lp2phase = lp2phase,
+        #lp2phase = lp2phase,
         # simplex_pre_description=u"""解：引入松弛变量$x_4, x_5, x_6$，用单纯形法求解如下：
         # """,
         # simplex_after_description=u"""最优解唯一。
         # """
     )
 
-    #r.clipboard_append(tex)
-    #print lp.solve_opt_res_str
     print "iterations:", lp.solutionCommon.nit
-    #if lp.solutionCommon.nit in [2]:
-    if lp.solutionCommon.nit in [3, 4]: # and lp.qtype=="max":
+    # if lp.solutionCommon.nit in [2]:
+    if lp.solutionCommon.nit >= 3 and lp.solve_status < 1:  # and lp.qtype=="max":
+        #print "opt_x", lp.opt_x
+        #print lp.res.x, lp.res.slack
+        if 0 in lp.res.x or max(lp.res.slack) > 0:
+            continue
+
+        print lp.solutionPhase2.basis_list[-1]
+
         final_lp_list.append(lp.json)
         count += 1
         r.clipboard_append(tex)
 
+
 print count
 
-with open('lp_simplex_3_iter_max_min.bin', 'wb') as f:
-        pickle.dump(final_lp_list, f)
+with open('lp_simplex_3_iter_max_min_proof.bin', 'wb') as f:
+     pickle.dump(final_lp_list, f)

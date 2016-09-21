@@ -1384,8 +1384,10 @@ class LP(object):
         else:
             cnstr_orig_order = range(len(self.start_basis))
 
-        # from scipy.optimize import linprog
-        from linprog import linprog
+        try:
+            from linprog import linprog
+        except:
+            pass
 
         def lin_callback(xk, **kwargs):
             t = np.copy(kwargs['tableau'])
@@ -1928,7 +1930,7 @@ class LpSolution(object):
         self.modi_b_list = []
         for i in range(len(self.basis_list)):
             self.modi_basis_list[i] = [get_variable_symbol("x", j+1) for j in self.modi_basis_list[i]]
-            self.modi_bp_list[i] = [get_variable_symbol("p", j+1) for j in self.modi_bp_list[i]]
+            self.modi_bp_list[i] = [get_variable_symbol(r"\mathbf{p}", j+1) for j in self.modi_bp_list[i]]
             self.modi_B_list[i] = [list_to_matrix(self.modi_B_list[i])]
             self.modi_B_1_list[i] = [list_to_matrix(self.modi_B_1_list[i].tolist())]
 
@@ -2040,9 +2042,9 @@ class LpSolutionPhase1(LpSolution):
 class LpSolutionPhase2(LpSolution):
     def get_all_variable(self):
         if self.need_two_phase:
-            return self.variable_list + [abs(v) for v in self.slack_variable_list]
+            return list(self.variable_list) + [abs(v) for v in self.slack_variable_list]
         else:
-            return self.variable_list + [abs(v) for v in self.slack_variable_list] + self.artificial_variable_list
+            return list(self.variable_list) + [abs(v) for v in self.slack_variable_list] + self.artificial_variable_list
 
     def get_goal_list(self):
         n_variable = len(self.get_all_variable())
