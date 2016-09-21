@@ -734,13 +734,13 @@ for l in lp_json_list_loaded:
         answer_table_iters=iter(range(1, 5)),
         show_question = True,
         show_answer = True,
-        #show_2_stage = True, # 显示两阶段法
-        #show_big_m=True,  # 显示大M法
+        show_2_stage = True, # 显示两阶段法
+        show_big_m=True,  # 显示大M法
         #standardized_lp = lp.standardized_LP(),
         standardized_lp_2_phase=standardized_lp_2_phase,
         pre_description=u"""
         """,
-        #lp=lp,
+        lp=lp,
         lp2phase = lp2phase,
         # simplex_pre_description=u"""解：引入松弛变量$x_4, x_5, x_6$，用单纯形法求解如下：
         # """,

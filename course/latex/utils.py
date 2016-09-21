@@ -121,6 +121,12 @@ def _file_write(filename, content):
     f.write(content)
     f.close()
 
+def _atomic_file_write(filename, content, overwrite=False):
+    '''atomic write a file content without race condition.'''
+    from atomicwrites import atomic_write
+    with atomic_write(filename, overwrite=overwrite) as f:
+        f.write(content)
+
 # }}}
 
 

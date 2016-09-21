@@ -40,7 +40,7 @@ from django.conf import settings
 
 from .utils import (
     popen_wrapper, get_basename_or_md5,
-    _file_read, _file_write, get_abstract_latex_log)
+    _file_read, _file_write, _atomic_file_write, get_abstract_latex_log)
 
 
 # {{{ latex compiler classes and image converter classes
@@ -411,8 +411,8 @@ class Tex2ImgBase(object):
 
             try:
                 log = get_abstract_latex_log(log)
-                # race condition
-                _file_write(self.errlog_saving_path, log)
+                # avoide race condition
+                _atomic_file_write(self.errlog_saving_path, log)
             except:
                 raise
             finally:
@@ -471,6 +471,7 @@ class Tex2ImgBase(object):
 
         try:
             # race condition
+            #_atomic_file_write() failed to write a valid image
             shutil.copyfile(image_path, self.image_saving_path)
         except OSError:
             raise RuntimeError(error)

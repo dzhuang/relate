@@ -45,3 +45,6 @@ django-debug-toolbar
 
 # email
 django-celery-email
+
+# atomic write files avoiding race condition
+atomicwrites
