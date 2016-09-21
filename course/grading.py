@@ -320,17 +320,18 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
         if fpctx.page.expects_answer():
             all_flow_sessions_json = [
-                    {"id":'', "text":''},
-                    {
-                        "id": '',
-                        "text": _('Graded (by grade time)'),
-                        "children": graded_flow_sessions_json
-                    },
-                    {
-                        "id": '',
-                        "text": _('Ungraded (by username)'),
-                        "children": ungraded_flow_sessions_json
-                    }]
+                {"id":'', "text":''},
+                {
+                    "id": '',
+                    "text": _('Ungraded (by username)'),
+                    "children": ungraded_flow_sessions_json
+                },
+                {
+                    "id": '',
+                    "text": _('Graded (by grade time)'),
+                    "children": graded_flow_sessions_json
+                }
+            ]
         else:
             all_flow_sessions_json = [{"id":'', "text":''}] + ungraded_flow_sessions_json
 
