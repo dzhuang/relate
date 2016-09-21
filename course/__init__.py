@@ -15,7 +15,6 @@ def new_render(cls, context):
     if lang in LANG_MAP_EXTRA:
         lang = LANG_MAP_EXTRA[lang].lower()
     context[cls.variable] = lang
-    print lang
     return ''
 
 GetCurrentLanguageNode.render = new_render

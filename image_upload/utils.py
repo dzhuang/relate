@@ -133,7 +133,6 @@ class ImageOperationMixin(UserPassesTestMixin):
     raise_exception = True
 
     def test_func(self):
-        print self.request
         request = self.request
         flow_session_id = self.kwargs['flow_session_id']
         ordinal = self.kwargs['ordinal']

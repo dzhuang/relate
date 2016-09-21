@@ -153,7 +153,6 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     # {{{ order pages by page_data
 
     if getattr(fpctx.page, "grading_sort_by_page_data", False):
-        print "sorted"
         flow_page_data_order_list = ["flow_session__participation__user__username"]
         all_flow_sessions_pks = all_flow_qs.values_list('pk', flat=True)
         all_flow_session_page_data_qs = FlowPageData.objects.filter(

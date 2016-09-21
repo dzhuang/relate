@@ -571,7 +571,6 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                 post_data, files_data)
 
     def answer_data(self, page_context, page_data, form, files_data):
-        print (form.cleaned_data["answer"].strip())
         return {"answer": form.cleaned_data["answer"].strip()}
 
     def get_test_code(self):
