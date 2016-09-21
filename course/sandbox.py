@@ -317,7 +317,6 @@ def view_page_sandbox(pctx):
             pctx.request.session[PAGE_DATA_SESSION_KEY] = (
                     page_desc.type, page_desc.id, page_data)
 
-
         title = page.title(page_context, page_data)
         body = page.body(page_context, page_data)
 
