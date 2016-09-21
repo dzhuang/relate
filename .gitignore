@@ -21,3 +21,4 @@ saml_config.py
 git-roots
 /media/CACHE
 /protected
+/.idea
