@@ -109,7 +109,7 @@ def view_participant_grades(pctx, participation_id=None):
 
     idx = 0
 
-    grade_table = []
+    grade_info_list = []
     for opp in grading_opps:
         if not is_privileged_view:
             if not (opp.shown_in_grade_book
@@ -135,10 +135,15 @@ def view_participant_grades(pctx, participation_id=None):
         state_machine = GradeStateMachine()
         state_machine.consume(my_grade_changes)
 
-        grade_table.append(
+        grade_info_list.append(
                 GradeInfo(
                     opportunity=opp,
                     grade_state_machine=state_machine))
+
+    idx = list(range(len(grade_info_list)))
+    grade_table = zip(grade_info_list, idx)
+
+    grade_table = sorted(grade_table, key=lambda x:x[0].opportunity.creation_time)
 
     return render_course_page(pctx, "course/gradebook-participant.html", {
         "grade_table": grade_table,

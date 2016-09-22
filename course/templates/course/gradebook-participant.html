@@ -50,14 +50,16 @@
   <table class="table table-striped gradebook-single">
     <thead>
       <th>{% trans "Name of grading opportunity" %}</th>
+      <th class="hidden">{% trans "Creation Time" %}</th>
       <th>{% trans "Grade" %}</th>
-      <th>{% trans "Date" %}</th>
+      <th>{% trans "Graded Time" %}</th>
     </thead>
     <tbody>
-      {% for grade_info in grade_table %}
+      {% for grade_info, idx in grade_table %}
       {% with grade_info.grade_state_machine as gsm %}
       <tr>
         <td data-order="{{ grade_info.opportunity.identifier }}">{{ grade_info.opportunity.name }}</td>
+        <td class="hidden" data-order="{{ grade_info.opportunity.creation_time.isoformat }}">{{ grade_info.opportunity.creation_time|date:'Y/M' }}</td>
         {% if grade_info.opportunity.result_shown_in_participant_grade_book %}
           <td data-order="{{ gsm.stringify_percentage }}">
             <a href="{% url "relate-view_single_grade" course.identifier grade_participation.id grade_info.opportunity.id %}"
@@ -70,7 +72,7 @@
                data-order=""
             {% endif %}
             >
-            {{ grade_info.grade_state_machine.last_graded_time|compact_datetime }}</a>
+            {{ grade_info.grade_state_machine.last_graded_time|compact_datetime }}
           </td>
         {% else %}
           <td>{% trans "(not released)" %}</td>
@@ -88,6 +90,7 @@
     var tbl = $("table.gradebook-single").dataTable({
         "scrollCollapse": true,
         "paging": false,
+        "order": [[ 1, 'asc' ]],
         "columnDefs": [{ type: 'name', targets: 1 }],
         "language": {url: '{% static "datatables-i18n/i18n/" %}{{LANG}}.json'},
     } );
