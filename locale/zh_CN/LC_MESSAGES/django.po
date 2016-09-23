@@ -3196,11 +3196,11 @@ msgstr "在成绩册中显示"
 
 #: .\course\models.py:1359
 msgid "Shown in student grade book"
-msgstr "在在学生的成绩册中显示"
+msgstr "在学生的成绩册中显示"
 
 #: .\course\models.py:1361
 msgid "Result shown in student grade book"
-msgstr "在学生的成绩册中显示"
+msgstr "在学生的成绩册中显示评分结果"
 
 #: .\course\models.py:1364
 msgid "Scores for individual pages are shown in the participants' grade book"
