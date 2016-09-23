@@ -2409,15 +2409,6 @@ def finish_flow_session_view(pctx, flow_session_id):
 
             with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
                 from django.template.loader import render_to_string
-                allow_nonauthorized_sender = getattr(settings, "RELATE_EMAIL_SMTP_ALLOW_NONAUTHORIZED_SENDER", False)
-
-                if allow_nonauthorized_sender:
-                    reply_email = fctx.course.from_email
-                    from_email = fctx.course.from_email
-                else:
-                    reply_email = fctx.course.notify_email
-                    from_email = settings.DEFAULT_FROM_EMAIL
-
                 message = render_to_string("course/submit-notify.txt", {
                     "course": fctx.course,
                     "flow_session": flow_session,
@@ -2432,10 +2423,9 @@ def finish_flow_session_view(pctx, flow_session_id):
                             'identifier': fctx.course.identifier,
                             'flow_id': flow_session.flow_id},
                         message,
-                        from_email,
+                        fctx.course.get_from_email(),
                         fctx.flow_desc.notify_on_submit)
                 msg.bcc = [fctx.course.notify_email]
-                msg.reply_to = [reply_email]
                 msg.send()
 
         # }}}
