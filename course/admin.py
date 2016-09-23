@@ -793,7 +793,6 @@ class GradingOpportunityAdmin(admin.ModelAdmin):
             "name",
             "course",
             "identifier",
-            "creation_time",
             "due_time",
             "shown_in_grade_book",
             "shown_in_participant_grade_book",
