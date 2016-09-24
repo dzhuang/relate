@@ -429,13 +429,18 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                         and
                             not is_nuisance_failure(response_dict)):
                     try:
-                        from django.core.mail import send_mail
-                        send_mail("".join(["[%s] ",
-                                           _("LaTex page question generation failed")])
-                                  % page_context.course.identifier,
-                                  message,
-                                  settings.ROBOT_EMAIL_FROM,
-                                  recipient_list=[page_context.course.notify_email])
+                        from django.core.mail import EmailMessage
+                        msg = EmailMessage(
+                                "".join(["[%s] ",
+                                         _("LaTex page question generation failed")])
+                                % page_context.course.identifier,
+                                message,
+                                settings.ROBOT_EMAIL_FROM,
+                                [page_context.course.notify_email])
+
+                        from relate.utils import get_connection
+                        msg.connection = get_connection("robot")
+                        msg.send()
 
                     except Exception:
                         from traceback import format_exc

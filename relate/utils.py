@@ -358,10 +358,6 @@ def to_js_lang_name(dj_lang_name):
 #{{{ Allow multiple email connections
 # https://gist.github.com/niran/840999
 
-class MissingConnectionException(Exception):
-    pass
-
-
 def get_connection(label=None, **kwargs):
     from django.conf import settings
     if label is None:
@@ -371,8 +367,9 @@ def get_connection(label=None, **kwargs):
         connections = getattr(settings, 'EMAIL_CONNECTIONS')
         options = connections[label]
     except (KeyError, AttributeError):
-        raise MissingConnectionException(
-            "Settings for connection '%s' were not found" % label)
+        # Neither EMAIL_CONNECTIONS nor EMAIL_CONNECTION_DEFAULT in settings
+        # fail silently and fall back to django's built-in get_connection
+        options = {}
 
     options.update(kwargs)
 
