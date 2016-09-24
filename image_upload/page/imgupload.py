@@ -989,7 +989,11 @@ def feedBackEmail(pctx, flow_session_id, ordinal):
                         }
             )
 
-            from urlparse import urljoin
+            try:
+                from urlparse import urljoin
+            except:
+                from urllib.parse import urljoin
+
             review_uri = urljoin(getattr(settings, "RELATE_BASE_URL"),
                                  review_url)
 
@@ -1019,12 +1023,12 @@ def feedBackEmail(pctx, flow_session_id, ordinal):
                     body=message,
                     from_email=from_email,
                     to=tutor_email_list,
-                    headers={
-                        "SUBMAIL_APP_ID": settings.STUDENT_FEEDBACK_APP_ID,
-                        "SUBMAIL_APP_KEY": settings.STUDENT_FEEDBACK_APP_KEY}
                 )
                 msg.bcc = [student_email]
                 msg.reply_to = [student_email]
+
+                from relate.utils import get_connection
+                msg.connection = get_connection("student_feedback")
                 msg.send()
 
                 messages.add_message(

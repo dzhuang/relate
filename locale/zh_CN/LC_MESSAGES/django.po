@@ -1531,7 +1531,7 @@ msgid ""
 "This is not your password, but a code that was given to you by a staff "
 "member. If you do not have one, please follow the link above to log in."
 msgstr ""
-"它不是你的密码，而是课程管理人员发给你的一个代码. 如果你没有这个代码，请跟随"
+"它不是你的密码，而是课务人员发给你的一个代码. 如果你没有这个代码，请跟随"
 "以上的链接来完成登录."
 
 #: .\course\exam.py:465
@@ -2393,11 +2393,11 @@ msgstr ""
 
 #: .\course\models.py:127
 msgid "Is the course only accessible to course staff?"
-msgstr "本课程是否只有管理人员才能访问？"
+msgstr "本课程是否只有课务人员才能访问？"
 
 #: .\course\models.py:128
 msgid "Only visible to course staff"
-msgstr "本课程是否只对课程管理人员显示？"
+msgstr "本课程是否只对课务人员显示？"
 
 #: .\course\models.py:131
 msgid "Should the course be listed on the main page?"
@@ -3568,14 +3568,14 @@ msgid ""
 "failed. Please contact the course or site staff and inform them of this "
 "issue, mentioning this entire error message:"
 msgstr ""
-"您的代码错误和通知调程管理人员的邮件尝试都未成功. 请与课程或网站人员联系, 并"
+"您的代码错误和通知课务人员的邮件尝试都未成功. 请与课程或网站人员联系, 并"
 "告知全部的错误信息。"
 
 #: .\course\page\code.py:699
 msgid ""
 "Sending an email to the course staff about the following failure failed with "
 "the following error message:"
-msgstr "向课程管理人员发送电子邮件，在邮件中包含以下的代码失败信息."
+msgstr "向课管人员发送电子邮件，在邮件中包含以下的代码失败信息."
 
 #: .\course\page\code.py:705
 msgid "The original failure message follows:"
@@ -3588,7 +3588,7 @@ msgid ""
 "as soon as possible. In the meantime, you'll see a traceback below that may "
 "help you figure out what went wrong."
 msgstr ""
-"用于自动评分的代码出错，抱歉。通知已经送达课程管理人员，如果这个问题是由于自"
+"用于自动评分的代码出错，抱歉。通知已经送达课管人员，如果这个问题是由于自"
 "动评分的代码引起的，我们将尽快地修复它。同时，你也可以在下面查看traceback信"
 "息，它将帮助你了解是哪里出了问题。"
 
@@ -4169,7 +4169,7 @@ msgstr "您还未登录. "
 
 #: .\course\templates\course\course-page.html:25
 msgid "This course is only visible to course staff at the moment."
-msgstr "本课程目前只对课程管理人员显示. "
+msgstr "本课程目前只对课务人员显示. "
 
 #: .\course\templates\course\course-page.html:27
 msgctxt "change the visibility of a course"
@@ -4212,7 +4212,7 @@ msgid ""
 "account to sign in. If that is the case, please use the official account and "
 "try again."
 msgstr ""
-"很抱歉地告知您, 您参加课程%(course_identifier)s的申请被拒绝. 请与课程管理人员"
+"很抱歉地告知您, 您参加课程%(course_identifier)s的申请被拒绝. 请与课务人员"
 "联系, 例如回复此邮件来说明您的情况. "
 
 #: .\course\templates\course\enrollment-decision-email.txt:12
@@ -4221,7 +4221,7 @@ msgstr ""
 #: .\course\templates\course\sign-in-email.txt:11
 #: .\course\templates\course\submit-notify.txt:8
 msgid "- RELATE staff "
-msgstr "- LearningWhat课程管理人员"
+msgstr "- LearningWhat站务"
 
 #: .\course\templates\course\enrollment-request-email.txt:1
 #, python-format
@@ -4235,7 +4235,7 @@ msgid ""
 "in question and use the \"Approve enrollment\" or \"Deny enrollment\" admin\n"
 "actions.\n"
 msgstr ""
-"尊敬的课程%(course_identifier)s的管理人员：\n"
+"尊敬的课程%(course_identifier)s的课务：\n"
 "\n"
 "    用户\"%(user)s\"向您提出了加入课程的申请, 请到\n"
 "%(admin_uri)s\n"
@@ -4702,7 +4702,7 @@ msgid ""
 "the <a href=\"%(relate-home)s\">home page</a> and contact your course staff."
 msgstr ""
 "如果上面的步骤都无法完成，请从 <b><a href=\"%(relate-home)s\">主页</a></b> 浏"
-"览回您的课程页面，并联系课程管理人员。"
+"览回您的课程页面，并联系课务人员。"
 
 #: .\course\templates\course\grade-flow-page.html:15
 #: .\course\templates\course\grade-flow-page.html:54
@@ -5370,7 +5370,7 @@ msgstr ""
 #: .\course\templates\course\submit-notify.txt:1
 #, python-format
 msgid "Dear course staff of %(course_identifier)s,"
-msgstr "尊敬的%(course_identifier)s课程管理人员,"
+msgstr "尊敬的%(course_identifier)s课务人员,"
 
 #: .\course\templates\course\submit-notify.txt:3
 #, python-format
@@ -5894,7 +5894,7 @@ msgstr ""
 msgid ""
 "Your institutional ID is not verified or preapproved. Please contact your "
 "course staff."
-msgstr "您的学号没有得到预批准或者未获得认定，请联系您的课程管理人员."
+msgstr "您的学号没有得到预批准或者未获得认定，请联系您的课务人员."
 
 #. Translators: "set" fake time.
 #. Translators: "set" fake facility.
@@ -5910,7 +5910,7 @@ msgstr "恢复正常"
 
 #: .\course\views.py:456
 msgid "only staff may set fake time"
-msgstr "只有课程管理人员(staff)及以上可以设置虚拟时间"
+msgstr "只有课务人员可以设置虚拟时间"
 
 #: .\course\views.py:480 .\relate\templates\base-page-top.html:41
 #: .\relate\templates\base.html:80
@@ -5947,7 +5947,7 @@ msgstr "为所有虚拟教学设备的页面添加header，以提示目前正在
 
 #: .\course\views.py:532
 msgid "only staff may set fake facility"
-msgstr "只有课程管理人员(staff)及以上可以设置虚拟教学设施"
+msgstr "只有课务人员可以设置虚拟教学设施"
 
 #: .\course\views.py:566
 msgid "Pretend to be in Facilities"
@@ -6146,7 +6146,7 @@ msgstr "对%(participation)s的%(flow_id)s(%(session)s的session)给予破例."
 
 #: .\course\views.py:1280
 msgid "only staff may use this tool"
-msgstr "只有课程管理人员可以使用这个工具"
+msgstr "只有课务人员可以使用这个工具"
 
 #: .\course\views.py:1322
 #, python-format
@@ -6406,13 +6406,13 @@ msgstr "退出登录"
 #~ "一旦您离开这个页面，您输入的内容将不会保存, 请保证您保留了一个副本. "
 
 #~ msgid "only staff may create courses"
-#~ msgstr "只有课程管理人员(staff)及以上才能创建课程"
+#~ msgstr "只有课务人员(staff)及以上才能创建课程"
 
 #~ msgid "must be instructor or TA to update course"
 #~ msgstr "只有任课老师(instructor)和助理(TA)可以更新课程"
 
 #~ msgid "only course staff have access"
-#~ msgstr "只有课程管理人员(staff)可以访问"
+#~ msgstr "只有课务人员(staff)可以访问"
 
 #~ msgid "must be instructor to manage instant flow requests"
 #~ msgstr "只有任课老师(instructor)才能管理即时flow"

@@ -662,7 +662,6 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
 
             with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
                 from django.template.loader import render_to_string
-                from relate.utils import get_connection
                 message = render_to_string("course/broken-code-question-email.txt", {
                     "page_id": self.page_desc.id,
                     "course": page_context.course,
@@ -674,8 +673,8 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                         and
                         not is_nuisance_failure(response_dict)):
                     try:
-                        from django.core.mail import send_mail
-                        send_mail("".join(["[%s:%s] ",
+                        from django.core.mail import EmailMessage
+                        msg = EmailMessage("".join(["[%s:%s] ",
                             _("code question execution failed")])
                             % (
                                 page_context.course.identifier,
@@ -684,9 +683,11 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                                 else _("<unknown flow>")),
                             message,
                             settings.ROBOT_EMAIL_FROM,
-                            recipient_list=[page_context.course.notify_email],
-                            connection=get_connection("robot_email_from")
-                            )
+                            [page_context.course.notify_email])
+
+                        from relate.utils import get_connection
+                        msg.connection = get_connection("robot")
+                        msg.send()
 
                     except Exception:
                         from traceback import format_exc

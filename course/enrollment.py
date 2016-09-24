@@ -250,16 +250,17 @@ def enroll_view(request, course_identifier):
                                 args=(course.identifier, participation.id))))
                     })
 
-                from django.core.mail import send_mail
-                from relate.utils import get_connection
-                send_mail(
+                from django.core.mail import EmailMessage
+                msg = EmailMessage(
                         string_concat("[%s] ", _("New enrollment request"))
                         % course_identifier,
                         message,
                         settings.ROBOT_EMAIL_FROM,
-                        recipient_list=[course.notify_email],
-                        connection=get_connection("robot_email_from")
-                )
+                        [course.notify_email])
+
+                from relate.utils import get_connection
+                msg.connection = get_connection("robot")
+                msg.send()
 
             messages.add_message(request, messages.INFO,
                     _("Enrollment request sent. You will receive notifcation "
@@ -344,7 +345,10 @@ def send_enrollment_decision(participation, approved, request=None):
         else:
             # This will happen when this method is triggered by
             # a model signal which doesn't contain a request object.
-            from urlparse import urljoin
+            try:
+                from urlparse import urljoin
+            except:
+                from urllib.parse import urljoin
             course_uri = urljoin(getattr(settings, "RELATE_BASE_URL"),
                                  course.get_absolute_url())
 
@@ -357,15 +361,18 @@ def send_enrollment_decision(participation, approved, request=None):
             })
 
         from django.core.mail import EmailMessage
-        from relate.utils import get_connection
         msg = EmailMessage(
                 string_concat("[%s] ", _("Your enrollment request"))
                 % course.identifier,
                 message,
                 course.get_from_email(),
-                [participation.user.email],
-                connection=get_connection("robot_email_from"))
-        msg.bcc = [course.notify_email]
+                [participation.user.email])
+
+        if not getattr(
+                settings, "RELATE_EMAIL_SMTP_ALLOW_NONAUTHORIZED_SENDER",
+                False):
+            from relate.utils import get_connection
+            msg.connection = get_connection("robot")
         msg.send()
 
 
