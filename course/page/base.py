@@ -963,6 +963,8 @@ class PageBaseWithHumanTextFeedback(PageBase):
 
                 # This will allow user to reply to email to sender, currently,
                 # emails sent by TAs will be reply to instructors.
+                from relate.utils import get_connection
+                msg.connection = get_connection("grading_feedback")
                 msg.reply_to = [page_context.course.get_reply_to_email()]
                 msg.send()
 

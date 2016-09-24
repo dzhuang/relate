@@ -2416,6 +2416,7 @@ def finish_flow_session_view(pctx, flow_session_id):
                     })
 
                 from django.core.mail import EmailMessage
+                from relate.utils import get_connection
                 msg = EmailMessage(
                         string_concat("[%(identifier)s:%(flow_id)s] ",
                             _("Submission by %(participation)s"))
@@ -2425,6 +2426,7 @@ def finish_flow_session_view(pctx, flow_session_id):
                         message,
                         fctx.course.get_from_email(),
                         fctx.flow_desc.notify_on_submit)
+                msg.connection = get_connection("no_reply")
                 msg.bcc = [fctx.course.notify_email]
                 msg.send()
 

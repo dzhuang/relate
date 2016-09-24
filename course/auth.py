@@ -436,12 +436,15 @@ def sign_up(request):
                     })
 
                 from django.core.mail import send_mail
+                from relate.utils import get_connection
                 send_mail(
                         string_concat("[", _("RELATE"), "] ",
                                      _("Verify your email")),
                         message,
                         settings.ROBOT_EMAIL_FROM,
-                        recipient_list=[email])
+                        recipient_list=[email],
+                        connection=get_connection("robot_email_from")
+                )
 
                 messages.add_message(request, messages.INFO,
                         _("Email sent. Please check your email and click "
@@ -543,12 +546,15 @@ def reset_password(request, field="email"):
                             reverse("relate-home"))
                         })
                     from django.core.mail import send_mail
+                    from relate.utils import get_connection
                     send_mail(
                             string_concat("[", _("RELATE"), "] ",
                                          _("Password reset")),
                             message,
                             settings.ROBOT_EMAIL_FROM,
-                            recipient_list=[email])
+                            recipient_list=[email],
+                            connection=get_connection("robot_email_from")
+                    )
 
                     if field == "instid":
                         messages.add_message(request, messages.INFO,
@@ -694,11 +700,14 @@ def sign_in_by_email(request):
                 "home_uri": request.build_absolute_uri(reverse("relate-home"))
                 })
             from django.core.mail import send_mail
+            from relate.utils import get_connection
             send_mail(
                     _("Your %(RELATE)s sign-in link") % {"RELATE": _("RELATE")},
                     message,
                     settings.ROBOT_EMAIL_FROM,
-                    recipient_list=[email])
+                    recipient_list=[email],
+                    connection=get_connection("robot_email_from")
+            )
 
             messages.add_message(request, messages.INFO,
                     _("Email sent. Please check your email and click the link."))
