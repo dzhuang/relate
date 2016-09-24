@@ -1912,7 +1912,7 @@ class LpSolution(object):
 
             # 用于改进单纯形法
             self.tableau_list[i] = Matrix(t)
-            self.modi_B_list.append(B_list_i)
+            self.modi_B_list.append(B)
             self.modi_B_1_list.append(B_1)
             self.modi_b_list.append(self.tableau_list[i][:-1, -1])
             self.modi_CJBAR_list.append(C_j_BAR.tolist())
@@ -1931,7 +1931,7 @@ class LpSolution(object):
         for i in range(len(self.basis_list)):
             self.modi_basis_list[i] = [get_variable_symbol("x", j+1) for j in self.modi_basis_list[i]]
             self.modi_bp_list[i] = [get_variable_symbol(r"\mathbf{p}", j+1) for j in self.modi_bp_list[i]]
-            self.modi_B_list[i] = [list_to_matrix(self.modi_B_list[i])]
+            self.modi_B_list[i] = [list_to_matrix(self.modi_B_list[i].tolist())]
             self.modi_B_1_list[i] = [list_to_matrix(self.modi_B_1_list[i].tolist())]
 
             all_variable = self.get_all_variable()
