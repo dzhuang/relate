@@ -2423,7 +2423,7 @@ def finish_flow_session_view(pctx, flow_session_id):
                             'identifier': fctx.course.identifier,
                             'flow_id': flow_session.flow_id},
                         message,
-                        getattr(settings, "NOTIFY_EMAIL_FROM",
+                        getattr(settings, "NOTIFICATION_EMAIL_FROM",
                             "ROBOT_EMAIL_FROM"),
                         fctx.flow_desc.notify_on_submit)
                 msg.bcc = [fctx.course.notify_email]
@@ -2431,7 +2431,7 @@ def finish_flow_session_view(pctx, flow_session_id):
                 from relate.utils import get_connection
                 msg.connection = (
                     get_connection("notification")
-                    if hasattr(settings, "NOTIFY_EMAIL_FROM")
+                    if hasattr(settings, "NOTIFICATION_EMAIL_FROM")
                     else get_connection("robot"))
                 msg.send()
 

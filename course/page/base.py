@@ -957,17 +957,17 @@ class PageBaseWithHumanTextFeedback(PageBase):
                         % {'identifier': page_context.course.identifier,
                             'flow_id': page_context.flow_session.flow_id},
                         message,
-                        page_context.course.get_from_email(),
+                        getattr(settings, "GRADER_FEEDBACK_EMAIL_FROM",
+                                page_context.course.get_from_email()),
                         [page_context.flow_session.participation.user.email])
                 msg.bcc = [page_context.course.notify_email]
 
                 # This will allow user to reply to email to sender, currently,
-                # emails sent by TAs will be reply to instructors.
+                # emails sent (even by TAs) will be reply to instructors.
+                # need more fields in course models
                 msg.reply_to = [page_context.course.get_reply_to_email()]
 
-                if not getattr(
-                        settings, "RELATE_EMAIL_SMTP_ALLOW_NONAUTHORIZED_SENDER",
-                        False):
+                if hasattr(settings, "GRADER_FEEDBACK_EMAIL_FROM"):
                     from relate.utils import get_connection
                     msg.connection = get_connection("grader_feedback")
                 msg.send()
