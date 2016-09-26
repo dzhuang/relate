@@ -298,6 +298,9 @@ class PageBase(object):
 
         self.location = location
 
+        print page_desc
+        print type(page_desc)
+
         if isinstance(page_desc, Struct):
             if vctx is not None:
                 validate_struct(

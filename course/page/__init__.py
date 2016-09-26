@@ -44,6 +44,7 @@ from image_upload.page.latexpage import (
         LatexRandomImageUploadQuestion, LatexRandomCodeQuestion,
         LatexRandomCodeQuestionWithHumanTextFeedback,
         LatexRandomChoiceQuestion, LatexRandomMultipleChoiceQuestion,
+        LatexRandomCodeTextQuestion, LatexRandomCodeInlineMultiQuestion
 )
 
 __all__ = (
@@ -66,6 +67,7 @@ __all__ = (
         "LatexRandomCodeQuestionWithHumanTextFeedback",
         'LatexRandomChoiceQuestion',
         'LatexRandomMultipleChoiceQuestion',
+        'LatexRandomCodeTextQuestion', "LatexRandomCodeInlineMultiQuestion"
         )
 
 __doc__ = """

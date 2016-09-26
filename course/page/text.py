@@ -416,6 +416,273 @@ def _is_valid_float(s):
         return True
 
 
+class FloatListWithWrapperMatcher(TextAnswerMatcher):
+    type = "float_list_with_wrapper"
+    is_case_sensitive = False
+    pattern_type = "struct"
+
+    def __init__(self, vctx, location, matcher_desc):
+        self.matcher_desc = matcher_desc
+
+        validate_struct(
+                vctx,
+                location,
+                matcher_desc,
+                required_attrs=(
+                    ("type", str),
+                    ("value", str),
+                    ),
+                allowed_attrs=(
+                    ("rtol", six.integer_types + (float, str)),
+                    ("atol", six.integer_types + (float, str)),
+                    ("allowed_left_wrapper_list", list),
+                    ("allowed_right_wrapper_list", list),
+                    ("forced_left_wrapper", list),
+                    ("forced_right_wrapper", list),
+                ),
+                )
+
+        self.validate_value(vctx, location)
+
+        if hasattr(matcher_desc, "rtol"):
+            try:
+                self.matcher_desc.rtol = \
+                        float_or_sympy_evalf(matcher_desc.rtol)
+            except:
+                raise ValidationError(
+                        string_concat(
+                            "%s: 'rtol' ",
+                            _("does not provide a valid float literal"))
+                        % location)
+
+            if matcher_desc.value == 0:
+                raise ValidationError(
+                        string_concat(
+                            "%s: 'rtol' ",
+                            _("not allowed when 'value' is zero"))
+                        % location)
+
+        if hasattr(matcher_desc, "atol"):
+            try:
+                self.matcher_desc.atol = \
+                        float_or_sympy_evalf(matcher_desc.atol)
+            except:
+                raise ValidationError(
+                        string_concat(
+                            "%s: 'atol' ",
+                            _("does not provide a valid float literal"))
+                        % location)
+
+        if (
+                not hasattr(matcher_desc, "atol")
+                and
+                not hasattr(matcher_desc, "rtol")
+                and
+                vctx is not None):
+            vctx.add_warning(location,
+                    _("Float match should have either rtol or atol--"
+                        "otherwise it will match any number"))
+
+    def validate_value(self, vctx, location):
+        value = self.matcher_desc.value.strip()
+        if hasattr(self.matcher_desc, "forced_left_wrapper"):
+            has_valid_lwrapper = False
+            for lwrapper in self.matcher_desc.forced_left_wrapper:
+                if not value.startswith(lwrapper):
+                    continue
+                else:
+                    has_valid_lwrapper = True
+                    value = value[len(lwrapper):]
+                    break
+            if not has_valid_lwrapper:
+                raise ValidationError(
+                    string_concat(
+                        "%s: 'value' ",
+                        _("does not provide a valid left wrapper"))
+                    % location)
+
+        if hasattr(self.matcher_desc, "forced_right_wrapper"):
+            has_valid_rwrapper = False
+            for rwrapper in self.matcher_desc.forced_right_wrapper:
+                if not value.endswith(rwrapper):
+                    continue
+                else:
+                    has_valid_rwrapper = True
+                    value = value[:-len(rwrapper)]
+                    break
+            if not has_valid_rwrapper:
+                raise ValidationError(
+                    string_concat(
+                        "%s: 'value' ",
+                        _("does not provide a valid right wrapper"))
+                    % location)
+
+        if hasattr(self.matcher_desc, "allowed_left_wrapper"):
+            for lwrapper in self.matcher_desc.allowed_left_wrapper:
+                if not value.startswith(lwrapper):
+                    continue
+                else:
+                    value = value[len(lwrapper):]
+                    break
+
+        if hasattr(self.matcher_desc, "allowed_right_wrapper"):
+            for rwrapper in self.matcher_desc.allowed_right_wrapper:
+                if not value.endswith(rwrapper):
+                    continue
+                else:
+                    value = value[:-len(rwrapper)]
+                    break
+
+        try:
+            value_list = value.split(",")
+        except:
+            raise ValidationError(
+                string_concat(
+                    "%s: 'value' ",
+                    _("cannot be converted into a list"))
+                % location)
+
+        for v in value_list:
+            try:
+                float_or_sympy_evalf(v)
+            except:
+                raise ValidationError(
+                    string_concat(
+                        "%s: 'value' ",
+                        "%s",
+                        _("is not a valid math number"))
+                    % (location,v))
+
+    def validate(self, s):
+        value = s
+        used_forced_left_wrapper = ""
+        used_forced_right_wrapper = ""
+        if hasattr(self.matcher_desc, "forced_left_wrapper"):
+            has_valid_lwrapper = False
+            for lwrapper in self.matcher_desc.forced_left_wrapper:
+                if not value.startswith(lwrapper):
+                    continue
+                else:
+                    used_forced_left_wrapper = lwrapper
+                    has_valid_lwrapper = True
+                    value = value[len(lwrapper):]
+                    break
+            if not has_valid_lwrapper:
+                raise forms.ValidationError(
+                    string_concat(
+                        ugettext("Error"), ": ",
+                        ugettext("answer provided does not have a "
+                          "required left wrapper, allowed "
+                          "left wrappers are '%s'")
+                    )
+                    % ",".join(self.matcher_desc.forced_left_wrapper)
+                )
+
+        if hasattr(self.matcher_desc, "forced_right_wrapper"):
+            has_valid_rwrapper = False
+            for rwrapper in self.matcher_desc.forced_right_wrapper:
+                if not value.endswith(rwrapper):
+                    continue
+                else:
+                    used_forced_right_wrapper = rwrapper
+                    has_valid_rwrapper = True
+                    value = value[:-len(rwrapper)]
+                    break
+            if not has_valid_rwrapper:
+                raise forms.ValidationError(
+                    string_concat(
+                        ugettext("Error"), ": ",
+                        ugettext("answer provided does not have a "
+                          "required right wrapper, allowed "
+                          "right wrappers are '%s'")
+                    )
+                    % ",".join(self.matcher_desc.forced_right_wrapper)
+                )
+
+        if hasattr(self.matcher_desc, "allowed_left_wrapper"):
+            for lwrapper in self.matcher_desc.allowed_left_wrapper:
+                if not value.startswith(lwrapper):
+                    continue
+                else:
+                    value = value[len(lwrapper):]
+                    break
+
+        if hasattr(self.matcher_desc, "allowed_right_wrapper"):
+            for rwrapper in self.matcher_desc.allowed_right_wrapper:
+                if not value.endswith(rwrapper):
+                    continue
+                else:
+                    value = value[:-len(rwrapper)]
+                    break
+
+        try:
+            value_list = value.split(",")
+        except:
+            raise forms.ValidationError(
+                string_concat(
+                    ugettext("Error:"),
+                    ugettext("'%s' cannot be converted into a list"))
+                % value
+                )
+
+        for v in value_list:
+            try:
+                float_or_sympy_evalf(v)
+            except:
+                tp, e, _ = sys.exc_info()
+                if tp.__name__ == "TypeError" and str(e) == u"can't convert expression to float":
+                    raise forms.ValidationError(
+                        string_concat(
+                            ugettext("Error"), ": ",
+                            ugettext("TypeError"), ": ",
+                            ugettext("can't convert '%s' to a valid math number")
+                            % str(v))
+                    )
+                else:
+                    raise forms.ValidationError("%(err_type)s: %(err_str)s"
+                                                % {"err_type": tp.__name__, "err_str": str(e)})
+
+        return value_list, used_forced_left_wrapper, used_forced_right_wrapper
+
+    def grade(self, s):
+        if s == "":
+            return 0
+
+        answer_list, answer_lwrapper, answer_rwrapper = self.validate(s)
+        corr_list, corr_lwrapper, corr_rwrapper = self.validate(self.matcher_desc.value)
+
+        if (answer_lwrapper != corr_lwrapper
+            or answer_rwrapper != corr_rwrapper):
+            return 0
+
+        if len(answer_list) != len(corr_list):
+            return 0
+
+        for i, number_str in enumerate(answer_list):
+            answer_float = float_or_sympy_evalf(number_str)
+            corr_float = float_or_sympy_evalf(corr_list[i])
+
+            if hasattr(self.matcher_desc, "atol"):
+                if (abs(answer_float - corr_float)
+                        > self.matcher_desc.atol):
+                    return 0
+            if hasattr(self.matcher_desc, "rtol"):
+                if corr_float != 0:
+                    if (abs(answer_float - corr_float)
+                            / abs(corr_float)
+                            > self.matcher_desc.rtol):
+                        return 0
+                else:
+                    if (abs(answer_float - corr_float)
+                            > self.matcher_desc.rtol):
+                        return 0
+
+        return 1
+
+    def correct_answer_text(self):
+        return str(self.matcher_desc.value)
+
+
 class FloatMatcher(TextAnswerMatcher):
     type = "float"
     is_case_sensitive = False
@@ -506,10 +773,15 @@ class FloatMatcher(TextAnswerMatcher):
                     > self.matcher_desc.atol):
                 return 0
         if hasattr(self.matcher_desc, "rtol"):
-            if (abs(answer_float - self.matcher_desc.value)
-                    / abs(self.matcher_desc.value)
-                    > self.matcher_desc.rtol):
-                return 0
+            if self.matcher_desc.value !=0:
+                if (abs(answer_float - self.matcher_desc.value)
+                        / abs(self.matcher_desc.value)
+                        > self.matcher_desc.rtol):
+                    return 0
+            else:
+                if (abs(answer_float - self.matcher_desc.value)
+                        > self.matcher_desc.rtol):
+                    return 0
 
         return 1
 
@@ -524,6 +796,7 @@ TEXT_ANSWER_MATCHER_CLASSES = [
         CaseSensitiveRegexMatcher,
         SymbolicExpressionMatcher,
         FloatMatcher,
+        FloatListWithWrapperMatcher,
         ]
 
 

@@ -26,6 +26,12 @@ def latexify(s):
         return latex(s)
 
 
+def oldMapNone(*ells):
+    '''replace for map(None, ....), invalid in 3.0 :-( '''
+    lgst = max([len(e) for e in ells])
+    return list(zip(* [list(e) + [None] * (lgst - len(e)) for e in ells]))
+
+
 class SA_base(object):
     def get_method_name(self):
         return METHOD_NAME_DICT[self.opt_method]
@@ -142,7 +148,7 @@ class sa_result(dict):
 
     def __repr__(self):
         if self.keys():
-            m = max(map(len, list(self.keys()))) + 1
+            m = max(list(map(len, list(self.keys())))) + 1
             return '\n'.join([k.rjust(m) + ': ' + repr(v)
                               for k, v in sorted(self.items())])
         else:
@@ -1190,6 +1196,7 @@ class LP(object):
 
         # 对偶问题的最优解（列表） 第1个为只看松弛变量的，第2个为所有变量
         self.dual_opt_solution_str_list = []
+        self.dual_opt_solution_list = []
 
         # 灵敏度分析
         self.sa_result = []
@@ -1276,7 +1283,7 @@ class LP(object):
         p_constraints = copy.deepcopy(self.constraints_origin)
         rhs = copy.deepcopy(self.goal)
         constraints_sign = copy.deepcopy(self.sign)
-        constraints = map(list, map(None, *p_constraints))
+        constraints = list(map(list, oldMapNone(*p_constraints)))
 
         goal = constraints.pop(-1)
         sign = constraints.pop(-1)
@@ -1515,6 +1522,11 @@ class LP(object):
 
         if not self.need_artificial_variable and res.status == 0:
             # 只有引入松弛变量的问题才计算对偶问题的最优解，否则不计算
+            dual_opt_solution_abstract_str_no_frac = [trans_latex_fraction(v, wrap=False, use_frac=False) for v in dual_opt_solution_abstract]
+            dual_opt_solution_str_no_frac = [trans_latex_fraction(v, wrap=False, use_frac=False) for v in dual_opt_solution]
+            self.dual_opt_solution_list = [
+                dual_opt_solution_abstract_str_no_frac,
+                dual_opt_solution_str_no_frac]
             dual_opt_solution_abstract_str = [trans_latex_fraction(v, wrap=False) for v in dual_opt_solution_abstract]
             dual_opt_solution_str = [trans_latex_fraction(v, wrap=False) for v in dual_opt_solution]
             self.dual_opt_solution_str_list = [dual_opt_solution_abstract_str] + [dual_opt_solution_str]
@@ -1689,7 +1701,7 @@ def get_single_constraint(constraint, x_list, use_seperator=True, as_lhs_rhs_lis
     return constraint_str
 
 
-def trans_latex_fraction(f, wrap=True):
+def trans_latex_fraction(f, wrap=True, use_frac=True):
     from fractions import Fraction
     if not isinstance(f, str):
         try:
@@ -1715,9 +1727,10 @@ def trans_latex_fraction(f, wrap=True):
     if frac.startswith("-"):
         negative = True
         frac = frac[1:]
-    if "/" in frac:
-        frac_list = frac.split("/")
-        frac = r"\frac{%s}{%s}" % (frac_list[0], frac_list[1])
+    if use_frac:
+        if "/" in frac:
+            frac_list = frac.split("/")
+            frac = r"\frac{%s}{%s}" % (frac_list[0], frac_list[1])
     if not wrap:
         if negative:
             frac = r"-" + frac

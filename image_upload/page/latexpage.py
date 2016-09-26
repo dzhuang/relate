@@ -39,7 +39,9 @@ from course.page import markup_to_html
 from course.page.base import (
     PageBaseWithTitle, PageBaseWithValue, PageBaseWithHumanTextFeedback,
     PageBaseWithCorrectAnswer)
-from course.page.choice import ChoiceQuestion, MultipleChoiceQuestion
+from course.page import (
+    ChoiceQuestion, MultipleChoiceQuestion, TextQuestion,
+    InlineMultiQuestion)
 from course.validation import ValidationError
 from course.content import get_repo_blob, get_repo_blob_data_cached
 from course.latex.utils import _file_read, _file_write
@@ -210,7 +212,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                 }
 
     def get_cached_result(self, page_context, page_data, part=""):
-        assert part in ["question", "answer"]
+        #assert part in ["question", "answer"]
         will_save_file_local = False
 
 
@@ -409,7 +411,6 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
             error_msg_parts.append("-------------------------------------")
 
             error_msg = "\n".join(error_msg_parts)
-            #print(getattr(settings, "DEBUG"))
             if getattr(settings, "DEBUG"):
                 pass
                 #response_dict["stdout"] = error_msg
@@ -551,7 +552,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
         super_correct_answer = super(LatexRandomQuestion, self)\
                 .correct_answer(page_context, page_data, answer_data, grade_data)
         if super_correct_answer:
-            return CA_PATTERN % super_correct_answer + markup_to_html(page_context, answer_str)
+            return super_correct_answer + markup_to_html(page_context, answer_str)
         else:
             return CA_PATTERN % markup_to_html(page_context, answer_str)
 
@@ -564,9 +565,75 @@ class LatexRandomCodeQuestion(LatexRandomQuestion, PythonCodeQuestion):
     pass
 
 
+class LatexRandomCodeTextQuestion(LatexRandomQuestion, TextQuestion):
+    pass
+
+
+class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestion):
+
+    def __init__(self, vctx, location, page_desc):
+        super(LatexRandomCodeInlineMultiQuestion, self).__init__(vctx, location, page_desc)
+        #self.update_page_desc(vctx, location)
+
+    def update_page_desc(self, page_context, page_data):
+        from course.page.inline import WRAPPED_NAME_RE, NAME_RE, NAME_VALIDATE_RE
+        question = markup_to_html(page_context,
+                                  self.get_cached_result(
+                                      page_context, page_data, part="blank"))
+        answers_str = self.get_cached_result(page_context, page_data, part="blank_answer")
+        from relate.utils import dict_to_struct
+        import yaml
+        answers = dict_to_struct(yaml.load(answers_str))
+        self.page_desc.question = question
+        self.page_desc.answers = answers
+        self.embedded_wrapped_name_list = WRAPPED_NAME_RE.findall(
+                self.page_desc.question)
+        self.embedded_name_list = NAME_RE.findall(self.page_desc.question)
+        answer_instance_list = []
+
+        for idx, name in enumerate(self.embedded_name_list):
+            answers_desc = getattr(self.page_desc.answers, name)
+
+            from course.page.inline import parse_question
+
+            parsed_answer = parse_question(
+                    None, None, name, answers_desc)
+            answer_instance_list.append(parsed_answer)
+
+        self.answer_instance_list = answer_instance_list
+
+    def get_question(self, page_context, page_data):
+        self.update_page_desc(page_context, page_data)
+        return super(LatexRandomCodeInlineMultiQuestion, self).get_question(page_context, page_data)
+
+    def body(self, page_context, page_data):
+
+        if hasattr(self.page_desc, "blank_process_code"):
+            markup_to_html(page_context,
+                           self.get_cached_result(
+                               page_context, page_data, part="blank"))
+
+        if hasattr(self.page_desc, "blank_answer_process_code"):
+            markup_to_html(page_context,
+                           self.get_cached_result(
+                               page_context, page_data, part="blank_answer"))
+
+        return super(LatexRandomCodeInlineMultiQuestion, self).body(page_context, page_data)
+
+    def required_attrs(self):
+        return super(LatexRandomCodeInlineMultiQuestion, self).required_attrs() + (
+            ("blank_process_code", str),
+            ("blank_answer_process_code", str)
+        )
+
+
+
+
+
 class LatexRandomCodeQuestionWithHumanTextFeedback(
     LatexRandomQuestion, PythonCodeQuestionWithHumanTextFeedback):
     pass
+
 
 class LatexRandomMultipleChoiceQuestion(
     LatexRandomQuestion, MultipleChoiceQuestion):
@@ -576,6 +643,7 @@ class LatexRandomMultipleChoiceQuestion(
         l_page_data = LatexRandomQuestion.initialize_page_data(self, page_context)
         page_data = dict(m_page_data, **l_page_data)
         return page_data
+
 
 class LatexRandomChoiceQuestion(
     LatexRandomQuestion, ChoiceQuestion):
