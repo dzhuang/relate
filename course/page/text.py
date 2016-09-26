@@ -620,7 +620,7 @@ class FloatListWithWrapperMatcher(TextAnswerMatcher):
         except:
             raise forms.ValidationError(
                 string_concat(
-                    ugettext("Error:"),
+                    ugettext("Error"), ": ",
                     ugettext("'%s' cannot be converted into a list"))
                 % value
                 )

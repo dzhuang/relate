@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-09-26 00:04+0800\n"
+"POT-Creation-Date: 2016-09-26 23:08+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -85,7 +85,7 @@ msgid "Designates whether the user can log into this admin site."
 msgstr "指定该用户是否可以登入管理界面."
 
 #: .\accounts\models.py:90 .\course\auth.py:492 .\course\enrollment.py:408
-#: .\course\grades.py:1044 .\course\models.py:535
+#: .\course\grades.py:1047 .\course\models.py:535
 #: .\course\templates\course\participation-table-with-provided-name.html:13
 #: .\course\templates\course\participation-table.html:12
 #: .\course\templates\course\unregistered-participation-table.html:6
@@ -240,14 +240,14 @@ msgstr "否"
 #: .\course\admin.py:518 .\course\admin.py:627 .\course\admin.py:727
 #: .\course\admin.py:833 .\course\admin.py:913 .\course\models.py:230
 #: .\course\models.py:276 .\course\models.py:321 .\course\models.py:356
-#: .\course\models.py:436 .\course\models.py:537 .\course\models.py:701
-#: .\course\models.py:736 .\course\models.py:1346 .\course\models.py:1743
+#: .\course\models.py:436 .\course\models.py:537 .\course\models.py:702
+#: .\course\models.py:737 .\course\models.py:1347 .\course\models.py:1744
 msgid "Course"
 msgstr "课程"
 
-#: .\course\admin.py:523 .\course\admin.py:632 .\course\flow.py:2505
-#: .\course\models.py:703 .\course\models.py:751 .\course\models.py:1172
-#: .\course\models.py:1244 .\course\models.py:1360 .\course\models.py:1747
+#: .\course\admin.py:523 .\course\admin.py:632 .\course\flow.py:2507
+#: .\course\models.py:704 .\course\models.py:752 .\course\models.py:1173
+#: .\course\models.py:1245 .\course\models.py:1361 .\course\models.py:1748
 #: .\course\templates\course\gradebook-opp-list.html:24
 #: .\course\templates\course\gradebook-single.html:138 .\course\views.py:592
 #: .\course\views.py:674 .\course\views.py:749
@@ -258,8 +258,8 @@ msgstr ""
 msgid "not in use"
 msgstr "未使用"
 
-#: .\course\admin.py:537 .\course\admin.py:646 .\course\grades.py:1354
-#: .\course\models.py:872
+#: .\course\admin.py:537 .\course\admin.py:646 .\course\grades.py:1357
+#: .\course\models.py:873
 msgid "Page ID"
 msgstr ""
 
@@ -287,8 +287,8 @@ msgstr "机会"
 msgid "Revoke Exam Tickets"
 msgstr "撤销测验Ticket"
 
-#: .\course\analytics.py:59 .\course\analytics.py:438
-#: .\course\analytics.py:480
+#: .\course\analytics.py:59 .\course\analytics.py:442
+#: .\course\analytics.py:484
 msgid "may not view analytics"
 msgstr "不允许查看分析统计"
 
@@ -307,17 +307,22 @@ msgctxt "Value of grade"
 msgid "value smaller than min"
 msgstr "分值低于允许的最低值"
 
-#: .\course\analytics.py:265 .\course\analytics.py:411
+#: .\course\analytics.py:169
+msgctxt "Value in histogram"
+msgid "<out of bounds>"
+msgstr "<溢出边界>"
+
+#: .\course\analytics.py:267 .\course\analytics.py:415
 msgctxt "Status of session"
 msgid "in progress"
 msgstr "进行中"
 
-#: .\course\analytics.py:405
+#: .\course\analytics.py:409
 msgctxt "Minute (time unit)"
 msgid "min"
 msgstr "分钟"
 
-#: .\course\analytics.py:448
+#: .\course\analytics.py:452
 #, python-format
 msgid ""
 "Flow '%s' was not found in the repository, but it exists in the database--"
@@ -337,8 +342,8 @@ msgstr "虚拟用户时出现错误. "
 msgid "Select user to impersonate."
 msgstr "选择您想模拟的用户. "
 
-#: .\course\auth.py:161 .\course\exam.py:195 .\course\models.py:746
-#: .\course\models.py:933
+#: .\course\auth.py:161 .\course\exam.py:195 .\course\models.py:747
+#: .\course\models.py:934
 #: .\course\templates\course\grade-import-preview.html:19
 msgid "User"
 msgstr "用户"
@@ -505,7 +510,7 @@ msgid "Password confirmation"
 msgstr ""
 
 #: .\course\auth.py:615 .\course\auth.py:860 .\course\enrollment.py:1149
-#: .\course\grades.py:1577 .\course\versioning.py:519 .\course\views.py:1355
+#: .\course\grades.py:1580 .\course\versioning.py:519 .\course\views.py:1355
 msgid "Update"
 msgstr "更新"
 
@@ -714,381 +719,381 @@ msgctxt "Participation status"
 msgid "Denied"
 msgstr "已拒绝"
 
-#: .\course\constants.py:135
+#: .\course\constants.py:134
 msgctxt "Participation permission"
 msgid "Edit course"
 msgstr "编辑课程"
 
-#: .\course\constants.py:137
+#: .\course\constants.py:136
 msgctxt "Participation permission"
 msgid "Use admin interface"
 msgstr "使用管理界面"
 
-#: .\course\constants.py:139
+#: .\course\constants.py:138
 msgctxt "Participation permission"
 msgid "Impersonate role"
 msgstr "用户模拟"
 
-#: .\course\constants.py:141
+#: .\course\constants.py:140
 msgctxt "Participation permission"
 msgid "Set fake time"
 msgstr "设置虚拟时间"
 
-#: .\course\constants.py:143
+#: .\course\constants.py:142
 msgctxt "Participation permission"
 msgid "Pretend to be in facility"
 msgstr "假装置身于教学设施中"
 
-#: .\course\constants.py:145
+#: .\course\constants.py:144
 msgctxt "Participation permission"
 msgid "Edit course permissions"
 msgstr "更新对课程内容的修订"
 
-#: .\course\constants.py:147
+#: .\course\constants.py:146
 msgctxt "Participation permission"
 msgid "View hidden course page"
 msgstr "查看隐藏的课程"
 
-#: .\course\constants.py:149
+#: .\course\constants.py:148
 msgctxt "Participation permission"
 msgid "View calendar"
 msgstr "查看日历"
 
-#: .\course\constants.py:151
+#: .\course\constants.py:150
 msgctxt "Participation permission"
 msgid "Send instant message"
 msgstr "发送即时信息"
 
-#: .\course\constants.py:153
+#: .\course\constants.py:152
 msgctxt "Participation permission"
 msgid "Access files for"
 msgstr "访问以下用户的文件:"
 
-#: .\course\constants.py:156
+#: .\course\constants.py:155
 msgctxt "Participation permission"
 msgid "Included in grade statistics"
 msgstr "包含在得分统计中"
 
-#: .\course\constants.py:159
+#: .\course\constants.py:158
 msgctxt "Participation permission"
 msgid "Edit exam"
 msgstr "编辑测验"
 
-#: .\course\constants.py:161
+#: .\course\constants.py:160
 msgctxt "Participation permission"
 msgid "Issue exam ticket"
 msgstr "发布测验ticket"
 
-#: .\course\constants.py:163
+#: .\course\constants.py:162
 msgctxt "Participation permission"
 msgid "Batch issue exam ticket"
 msgstr "批量发布测验ticket"
 
-#: .\course\constants.py:167
+#: .\course\constants.py:166
 msgctxt "Participation permission"
 msgid "View flow sessions from role "
 msgstr "查看flow session"
 
-#: .\course\constants.py:169
+#: .\course\constants.py:168
 msgctxt "Participation permission"
 msgid "View gradebook"
 msgstr "查看得分"
 
-#: .\course\constants.py:171
+#: .\course\constants.py:170
 msgctxt "Participation permission"
 msgid "Edit grading opportunity"
 msgstr "编辑得分机会"
 
-#: .\course\constants.py:173
+#: .\course\constants.py:172
 msgctxt "Participation permission"
 msgid "Assign grade"
 msgstr "评分 "
 
-#: .\course\constants.py:175
+#: .\course\constants.py:174
 msgctxt "Participation permission"
 msgid "View grader stats"
 msgstr "查看得分统计"
 
-#: .\course\constants.py:177
+#: .\course\constants.py:176
 msgctxt "Participation permission"
 msgid "Batch-import grades"
 msgstr "批量导入成绩"
 
-#: .\course\constants.py:179
+#: .\course\constants.py:178
 msgctxt "Participation permission"
 msgid "Batch-export grades"
 msgstr "批量导出成绩"
 
-#: .\course\constants.py:181
+#: .\course\constants.py:180
 msgctxt "Participation permission"
 msgid "Batch-download submissions"
 msgstr "批量下载提交的内容"
 
-#: .\course\constants.py:185
+#: .\course\constants.py:184
 msgctxt "Participation permission"
 msgid "Impose flow session deadline"
 msgstr "实施session的截止"
 
-#: .\course\constants.py:188
+#: .\course\constants.py:187
 msgctxt "Participation permission"
 msgid "Batch-impose flow session deadline"
 msgstr "批量实施session的截止"
 
-#: .\course\constants.py:190
+#: .\course\constants.py:189
 msgctxt "Participation permission"
 msgid "End flow session"
 msgstr "结束session"
 
-#: .\course\constants.py:192
+#: .\course\constants.py:191
 msgctxt "Participation permission"
 msgid "Batch-end flow sessions"
 msgstr "批量结束session"
 
-#: .\course\constants.py:194
+#: .\course\constants.py:193
 msgctxt "Participation permission"
 msgid "Regrade flow session"
 msgstr "重新评分"
 
-#: .\course\constants.py:197
+#: .\course\constants.py:196
 msgctxt "Participation permission"
 msgid "Batch-regrade flow sessions"
 msgstr "批量重新评分"
 
-#: .\course\constants.py:200
+#: .\course\constants.py:199
 msgctxt "Participation permission"
 msgid "Recalculate flow session grade"
 msgstr "重新计算评分"
 
-#: .\course\constants.py:203
+#: .\course\constants.py:202
 msgctxt "Participation permission"
 msgid "Batch-recalculate flow sesssion grades"
 msgstr "批量重新计算评分"
 
-#: .\course\constants.py:206
+#: .\course\constants.py:205
 msgctxt "Participation permission"
 msgid "Reopen flow session"
 msgstr "重新打开session"
 
-#: .\course\constants.py:208
+#: .\course\constants.py:207
 msgctxt "Participation permission"
 msgid "Grant exception"
 msgstr "给予破例"
 
-#: .\course\constants.py:210
+#: .\course\constants.py:209
 msgctxt "Participation permission"
 msgid "View analytics"
 msgstr "查看分析统计"
 
-#: .\course\constants.py:213
+#: .\course\constants.py:212
 msgctxt "Participation permission"
 msgid "Preview content"
 msgstr "预览内容. "
 
-#: .\course\constants.py:215
+#: .\course\constants.py:214
 msgctxt "Participation permission"
 msgid "Update content"
 msgstr "更新内容"
 
-#: .\course\constants.py:217
+#: .\course\constants.py:216
 msgctxt "Participation permission"
 msgid "Use markup sandbox"
 msgstr "使用Markup沙箱"
 
-#: .\course\constants.py:219
+#: .\course\constants.py:218
 msgctxt "Participation permission"
 msgid "Use page sandbox"
 msgstr "使用Page沙箱"
 
-#: .\course\constants.py:221
+#: .\course\constants.py:220
 msgctxt "Participation permission"
 msgid "Test flow"
 msgstr "测试flow"
 
-#: .\course\constants.py:224
+#: .\course\constants.py:223
 msgctxt "Participation permission"
 msgid "Edit events"
 msgstr "编辑event"
 
-#: .\course\constants.py:227
+#: .\course\constants.py:226
 msgctxt "Participation permission"
 msgid "Query participation"
 msgstr "查询课程参与"
 
-#: .\course\constants.py:229
+#: .\course\constants.py:228
 msgctxt "Participation permission"
 msgid "Edit participation"
 msgstr "编辑课程参与"
 
-#: .\course\constants.py:231
+#: .\course\constants.py:230
 msgctxt "Participation permission"
 msgid "Preapprove participation"
 msgstr "课程参与预批准"
 
-#: .\course\constants.py:235
+#: .\course\constants.py:234
 msgctxt "Participation permission"
 msgid "Manage instant flow requests"
 msgstr "管理即时flow"
 
-#: .\course\constants.py:273
+#: .\course\constants.py:272
 msgctxt "Flow expiration mode"
 msgid "Submit session for grading"
 msgstr "提交session用于评分"
 
-#: .\course\constants.py:276
+#: .\course\constants.py:275
 msgctxt "Flow expiration mode"
 msgid "Do not submit session for grading"
 msgstr "不要提交session并评分"
 
-#: .\course\constants.py:289
+#: .\course\constants.py:288
 msgid "unknown expiration mode"
 msgstr "未知的过期模式"
 
-#: .\course\constants.py:374
+#: .\course\constants.py:373
 msgctxt "Flow permission"
 msgid "View the flow"
 msgstr "查看flow"
 
-#: .\course\constants.py:376
+#: .\course\constants.py:375
 msgctxt "Flow permission"
 msgid "Submit answers"
 msgstr "提交回答"
 
-#: .\course\constants.py:378
+#: .\course\constants.py:377
 msgctxt "Flow permission"
 msgid "End session"
 msgstr "结束session"
 
-#: .\course\constants.py:380
+#: .\course\constants.py:379
 msgctxt "Flow permission"
 msgid "Change already-graded answer"
 msgstr "修改已经评分的回答"
 
-#: .\course\constants.py:383
+#: .\course\constants.py:382
 msgctxt "Flow permission"
 msgid "See whether an answer is correct"
 msgstr "查看答案是否正确"
 
-#: .\course\constants.py:386
+#: .\course\constants.py:385
 msgctxt "Flow permission"
 msgid "See the correct answer before answering"
 msgstr "在回答前查看正确的答案"
 
-#: .\course\constants.py:389
+#: .\course\constants.py:388
 msgctxt "Flow permission"
 msgid "See the correct answer after answering"
 msgstr "在回答后查看正确的答案"
 
-#: .\course\constants.py:392
+#: .\course\constants.py:391
 msgctxt "Flow permission"
 msgid "Cannot see flow result"
 msgstr "可以查看flow的结果"
 
-#: .\course\constants.py:395
+#: .\course\constants.py:394
 msgctxt "Flow permission"
 msgid "Set the session to 'roll over' expiration mode"
 msgstr "将这个session设为“展期”的过期模式"
 
-#: .\course\constants.py:397
+#: .\course\constants.py:396
 msgctxt "Flow permission"
 msgid "See session time"
 msgstr "查看session时间"
 
-#: .\course\constants.py:399
+#: .\course\constants.py:398
 msgctxt "Flow permission"
 msgid "Lock down as exam session"
 msgstr "锁定为测验session"
 
-#: .\course\constants.py:413
+#: .\course\constants.py:412
 msgctxt "Flow rule kind choices"
 msgid "Session Start"
 msgstr "session开始"
 
-#: .\course\constants.py:415
+#: .\course\constants.py:414
 msgctxt "Flow rule kind choices"
 msgid "Session Access"
 msgstr "session访问"
 
-#: .\course\constants.py:417
+#: .\course\constants.py:416
 msgctxt "Flow rule kind choices"
 msgid "Grading"
 msgstr "评分"
 
-#: .\course\constants.py:457
+#: .\course\constants.py:456
 msgctxt "Grade aggregation strategy"
 msgid "Use the max grade"
 msgstr "使用最高分"
 
-#: .\course\constants.py:459
+#: .\course\constants.py:458
 msgctxt "Grade aggregation strategy"
 msgid "Use the avg grade"
 msgstr "使用平均分"
 
-#: .\course\constants.py:461
+#: .\course\constants.py:460
 msgctxt "Grade aggregation strategy"
 msgid "Use the min grade"
 msgstr "使用最低分"
 
-#: .\course\constants.py:463
+#: .\course\constants.py:462
 msgctxt "Grade aggregation strategy"
 msgid "Use the earliest grade"
 msgstr "使用最早的得分"
 
-#: .\course\constants.py:465
+#: .\course\constants.py:464
 msgctxt "Grade aggregation strategy"
 msgid "Use the latest grade"
 msgstr "使用最迟的得分"
 
-#: .\course\constants.py:486
+#: .\course\constants.py:485
 msgctxt "Grade state change"
 msgid "Grading started"
 msgstr "评分已经开始"
 
-#: .\course\constants.py:488
+#: .\course\constants.py:487
 msgctxt "Grade state change"
 msgid "Graded"
 msgstr "已评分"
 
-#: .\course\constants.py:490
+#: .\course\constants.py:489
 msgctxt "Grade state change"
 msgid "Retrieved"
 msgstr "已获取"
 
-#: .\course\constants.py:492
+#: .\course\constants.py:491
 msgctxt "Grade state change"
 msgid "Unavailable"
 msgstr "无法获取"
 
-#: .\course\constants.py:494
+#: .\course\constants.py:493
 msgctxt "Grade state change"
 msgid "Extension"
 msgstr "延期"
 
-#: .\course\constants.py:496
+#: .\course\constants.py:495
 msgctxt "Grade state change"
 msgid "Report sent"
 msgstr "报告已发送"
 
-#: .\course\constants.py:498
+#: .\course\constants.py:497
 msgctxt "Grade state change"
 msgid "Do-over"
 msgstr "重新开始"
 
-#: .\course\constants.py:500
+#: .\course\constants.py:499
 msgctxt "Grade state change"
 msgid "Exempt"
 msgstr "剔除"
 
-#: .\course\constants.py:516
+#: .\course\constants.py:515
 msgctxt "Exam ticket state"
 msgid "Valid"
 msgstr "已通过有效性验证"
 
-#: .\course\constants.py:518
+#: .\course\constants.py:517
 msgctxt "Exam ticket state"
 msgid "Used"
 msgstr "已使用"
 
-#: .\course\constants.py:520
+#: .\course\constants.py:519
 msgctxt "Exam ticket state"
 msgid "Revoked"
 msgstr "已撤回"
@@ -1240,7 +1245,7 @@ msgstr ""
 msgid "Create Participation Preapprovals"
 msgstr "用户加入课程预批准"
 
-#: .\course\enrollment.py:560 .\course\grades.py:1032
+#: .\course\enrollment.py:560 .\course\grades.py:1035
 msgid "File"
 msgstr "文件"
 
@@ -1374,8 +1379,8 @@ msgstr "编辑课程参与"
 msgid "Select participant for whom ticket is to be issued."
 msgstr "选择发放ticket的的用户. "
 
-#: .\course\exam.py:113 .\course\exam.py:284 .\course\models.py:1759
-#: .\course\models.py:1775
+#: .\course\exam.py:113 .\course\exam.py:284 .\course\models.py:1760
+#: .\course\models.py:1776
 msgid "Exam"
 msgstr "测验"
 
@@ -1578,102 +1583,102 @@ msgstr ""
 msgid "cannot grade ungraded answer"
 msgstr "无法为未评分的回答进行评分"
 
-#: .\course\flow.py:909
+#: .\course\flow.py:911
 msgid "Can't end a session that's already ended"
 msgstr "无法结束已经结束的session"
 
-#: .\course\flow.py:957
+#: .\course\flow.py:959
 msgid "Can't expire a session that's not in progress"
 msgstr "无法将已经过期的session设为过期"
 
-#: .\course\flow.py:959
+#: .\course\flow.py:961
 msgid "Can't expire an anonymous flow session"
 msgstr "无法将匿名的session设为过期"
 
-#: .\course\flow.py:1010
+#: .\course\flow.py:1012
 #, python-format
 msgid "invalid expiration mode '%(mode)s' on flow session ID %(session_id)d"
 msgstr "flow session ID %(session_id)d的过期模式\"%(mode)s\"为无效"
 
 #. Translators: grade flow: calculating grade.
-#: .\course\flow.py:1042
+#: .\course\flow.py:1044
 #, python-format
 msgid "Counted at %(percent).1f%% of %(point).1f points"
 msgstr "计分为满分%(point).1f中的%(percent).1f%%"
 
-#: .\course\flow.py:1112
+#: .\course\flow.py:1114
 msgid "Cannot reopen a session that's already in progress"
 msgstr "无法重新打开为正在进行中的session"
 
-#: .\course\flow.py:1115
+#: .\course\flow.py:1117
 msgid "Cannot reopen anonymous sessions"
 msgstr "无法重新打开匿名的session"
 
-#: .\course\flow.py:1123
+#: .\course\flow.py:1125
 #, python-format
 msgid ""
 "Session reopened at %(now)s, previous completion time was '%(complete_time)"
 "s'."
 msgstr "在%(now)s重新打开Session, 上一次结束的时间为'%(complete_time)s. "
 
-#: .\course\flow.py:1218
+#: .\course\flow.py:1220
 #, python-format
 msgid "Session regraded at %(time)s."
 msgstr "Session在%(time)s已重新评分. "
 
-#: .\course\flow.py:1238
+#: .\course\flow.py:1240
 msgid "cannot recalculate grade on in-progress session"
 msgstr "无法为正在进行中的session重新计算得分"
 
-#: .\course\flow.py:1247
+#: .\course\flow.py:1249
 #, python-format
 msgid "Session grade recomputed at %(time)s."
 msgstr "本session的评分在%(time)s已重新计算. "
 
-#: .\course\flow.py:1429
+#: .\course\flow.py:1431
 msgid "new session not allowed"
 msgstr "不允许开始新的session"
 
-#: .\course\flow.py:1536
+#: .\course\flow.py:1538
 msgid "may not view other people's sessions"
 msgstr "不允许查看其他人的session"
 
-#: .\course\flow.py:1606
+#: .\course\flow.py:1608
 msgid "Save answer"
 msgstr "保存回答"
 
-#: .\course\flow.py:1613
+#: .\course\flow.py:1615
 msgid "Submit answer for feedback"
 msgstr "提交以取得反馈"
 
-#: .\course\flow.py:1618
+#: .\course\flow.py:1620
 msgid "Submit final answer"
 msgstr "提交最终回答"
 
-#: .\course\flow.py:1627
+#: .\course\flow.py:1629
 msgid "Save answer and move on"
 msgstr "保存回答并继续"
 
-#: .\course\flow.py:1635
+#: .\course\flow.py:1637
 msgid "Save answer and finish"
 msgstr "保存回答并结束"
 
-#: .\course\flow.py:1679
+#: .\course\flow.py:1681
 msgid ""
 "No in-progress session record found for this flow. Redirected to flow start "
 "page."
 msgstr "本flow没有找到正在进行中的session, 跳转到flow的起始页面. "
 
-#: .\course\flow.py:1741
+#: .\course\flow.py:1743
 msgid "not allowed to view flow"
 msgstr "不允许查看该flow"
 
-#: .\course\flow.py:1799
+#: .\course\flow.py:1801
 #, python-format
 msgid "Viewing prior submission dated %(date)s."
 msgstr "正在查看提交日期%(date)s之前的状态."
 
-#: .\course\flow.py:1853
+#: .\course\flow.py:1855
 msgid ""
 "The page data stored in the database was found to be invalid for the page as "
 "given in the course content. Likely the course content was changed in an "
@@ -1681,24 +1686,24 @@ msgid ""
 "changing the question ID. The precise error encountered was the following: "
 msgstr ""
 
-#: .\course\flow.py:1898
+#: .\course\flow.py:1900
 msgid ""
 "Changes to this session are being prevented because this session yields a "
 "permanent grade, but you have not completed your enrollment process in this "
 "course."
 msgstr ""
 
-#: .\course\flow.py:1948
+#: .\course\flow.py:1950
 msgid "Session ended afterward will not receive grade."
 msgstr "此后结束的session将没有分数."
 
-#: .\course\flow.py:1952
+#: .\course\flow.py:1954
 #, python-format
 msgid ""
 "Session ended afterward will receive no more than <b>%d%%</b> of your grade."
 msgstr "此后提交的session的得分不会超过总评成绩的<b>%d%%</b>."
 
-#: .\course\flow.py:1965
+#: .\course\flow.py:1967
 #, python-format
 msgid ""
 "Your have <b>%(time_remain)s</b> (before <b>%(completed_before)s</b>) to "
@@ -1707,7 +1712,7 @@ msgstr ""
 "您在<b>%(time_remain)s</b>内（即<b>%(completed_before)s</b>前）提交本"
 "session，将可以得到总评<b>%(credit_percent)d%%</b>的分数."
 
-#: .\course\flow.py:1981
+#: .\course\flow.py:1983
 #, python-format
 msgid ""
 "If you neither submitted this session nor applied 'Do not submit session for "
@@ -1717,64 +1722,64 @@ msgstr ""
 "如果您在<b>%(session_due)s</b>前既没有提交session也没有使用\"不要提交session"
 "及评分\"策略，这个session将在稍后被终止，这也将影响您的得分."
 
-#: .\course\flow.py:2072
+#: .\course\flow.py:2074
 msgid "could not find which button was pressed"
 msgstr "无法找到哪一个按钮被按下"
 
-#: .\course\flow.py:2099
+#: .\course\flow.py:2101
 msgid "Answer submission not allowed."
 msgstr "不允许提交回答. "
 
-#: .\course\flow.py:2108
+#: .\course\flow.py:2110
 msgid "Already have final answer."
 msgstr "已经有最终的回答. "
 
-#: .\course\flow.py:2130
+#: .\course\flow.py:2132
 msgid "Answer saved."
 msgstr "回答保存成功. "
 
-#: .\course\flow.py:2219
+#: .\course\flow.py:2221
 msgid "Failed to submit answer."
 msgstr "回答提交失败."
 
-#: .\course\flow.py:2237 .\course\flow.py:2270
+#: .\course\flow.py:2239 .\course\flow.py:2272
 msgid "only POST allowed"
 msgstr "只允许POST操作"
 
-#: .\course\flow.py:2243 .\course\flow.py:2278
+#: .\course\flow.py:2245 .\course\flow.py:2280
 msgid "may only change your own flow sessions"
 msgstr "只允许更改您自己的flow session"
 
-#: .\course\flow.py:2247
+#: .\course\flow.py:2249
 msgid "invalid bookmark state"
 msgstr "无效的收藏状态"
 
-#: .\course\flow.py:2281
+#: .\course\flow.py:2283
 msgid "may only change in-progress flow sessions"
 msgstr "只能更改正在进行中的session"
 
-#: .\course\flow.py:2286
+#: .\course\flow.py:2288
 msgid "invalid expiration mode"
 msgstr "无效的过期模式"
 
-#: .\course\flow.py:2374
+#: .\course\flow.py:2376
 msgid "odd POST parameters"
 msgstr "怪异的POST参数设置"
 
-#: .\course\flow.py:2378
+#: .\course\flow.py:2380
 msgid "Cannot end a session that's already ended"
 msgstr "无法结束已经结束的session"
 
-#: .\course\flow.py:2382
+#: .\course\flow.py:2384
 msgid "not permitted to end session"
 msgstr "不允许结束session"
 
-#: .\course\flow.py:2421
+#: .\course\flow.py:2423
 #, python-format
 msgid "Submission by %(participation)s"
 msgstr "提交，来自%(participation)s"
 
-#: .\course\flow.py:2509
+#: .\course\flow.py:2511
 msgid ""
 "If non-empty, limit the regrading to sessions started under this access "
 "rules tag."
@@ -1782,35 +1787,35 @@ msgstr ""
 "如果access rules的设置不为空, 则对该规则下开始的session进行重新评分受到该规则"
 "的限制. "
 
-#: .\course\flow.py:2511 .\course\models.py:774
+#: .\course\flow.py:2513 .\course\models.py:775
 msgid "Access rules tag"
 msgstr "访问规则tag"
 
-#: .\course\flow.py:2515
+#: .\course\flow.py:2517
 msgid "Regrade in-progress and not-in-progress sessions"
 msgstr "为进行中的和不在进行中的session重新评分"
 
-#: .\course\flow.py:2517
+#: .\course\flow.py:2519
 msgid "Regrade in-progress sessions only"
 msgstr "仅为进行中的session重新评分"
 
-#: .\course\flow.py:2519
+#: .\course\flow.py:2521
 msgid "Regrade not-in-progress sessions only"
 msgstr "仅为非进行中的session重新评分"
 
-#: .\course\flow.py:2521
+#: .\course\flow.py:2523
 msgid "Regraded session in progress"
 msgstr "为正在进行的session重新评分"
 
-#: .\course\flow.py:2524 .\course\templates\course\gradebook-single.html:275
+#: .\course\flow.py:2526 .\course\templates\course\gradebook-single.html:275
 msgid "Regrade"
 msgstr "重新评分"
 
-#: .\course\flow.py:2531 .\course\grades.py:467
+#: .\course\flow.py:2533 .\course\grades.py:467
 msgid "may not batch-regrade flows"
 msgstr "不允许为flow批量重新评分"
 
-#: .\course\flow.py:2561
+#: .\course\flow.py:2563
 msgid ""
 "This regrading process is only intended for flows that donot show up in the "
 "grade book. If you would like to regradefor-credit flows, use the "
@@ -1819,7 +1824,7 @@ msgstr ""
 "这个重新评分的过程旨在针对不在“成绩册”中显示的的flow. 如果您想对计入成绩的"
 "flow重新评分, 请使用“成绩册”中的对应功能. "
 
-#: .\course\flow.py:2566
+#: .\course\flow.py:2568
 msgid "Regrade not-for-credit Flow Sessions"
 msgstr "为不计入成绩的flow session重新评分"
 
@@ -1827,7 +1832,7 @@ msgstr "为不计入成绩的flow session重新评分"
 msgid "must be enrolled to view grades"
 msgstr "必须加入课程才能查看成绩"
 
-#: .\course\grades.py:86 .\course\grades.py:831
+#: .\course\grades.py:86 .\course\grades.py:834
 msgid "may not view other people's grades"
 msgstr "不允许查看其他人的成绩"
 
@@ -1892,8 +1897,8 @@ msgstr "无效操作"
 msgid "Set access rules tag"
 msgstr "设置访问规则tag"
 
-#: .\course\grades.py:678 .\course\models.py:1202 .\course\models.py:1256
-#: .\course\models.py:1452 .\course\views.py:1074
+#: .\course\grades.py:678 .\course\models.py:1203 .\course\models.py:1257
+#: .\course\models.py:1453 .\course\views.py:1074
 msgid "Comment"
 msgstr "评论"
 
@@ -1923,262 +1928,262 @@ msgstr ""
 msgid "Reopen session"
 msgstr "重新打开session"
 
-#: .\course\grades.py:812
+#: .\course\grades.py:815
 msgid "participation does not match course"
 msgstr "参与和课程不符"
 
-#: .\course\grades.py:822
+#: .\course\grades.py:825
 msgid "This grade is not shown in the grade book."
 msgstr "该评分不会显示在成绩册中. "
 
-#: .\course\grades.py:825
+#: .\course\grades.py:828
 msgid "This grade is not shown in the student grade book."
 msgstr "该评分不会显示在学生的成绩册中. "
 
-#: .\course\grades.py:837
+#: .\course\grades.py:840
 msgid "grade has not been released"
 msgstr "评分还未发布"
 
-#: .\course\grades.py:850
+#: .\course\grades.py:853
 msgid "unknown action"
 msgstr "未知的操作"
 
-#: .\course\grades.py:873
+#: .\course\grades.py:876
 msgid "Session deadline imposed."
 msgstr "该session已实施. "
 
-#: .\course\grades.py:883
+#: .\course\grades.py:886
 msgid "Session ended."
 msgstr "该session已结束. "
 
-#: .\course\grades.py:892
+#: .\course\grades.py:895
 msgid "Session regraded."
 msgstr "该session已重新评分. "
 
-#: .\course\grades.py:901
+#: .\course\grades.py:904
 msgid "Session grade recalculated."
 msgstr "该session评分已重新计算. "
 
-#: .\course\grades.py:904
+#: .\course\grades.py:907
 msgid "invalid session operation"
 msgstr "无效的session操作"
 
-#: .\course\grades.py:910 .\course\grades.py:1301 .\course\utils.py:1124
+#: .\course\grades.py:913 .\course\grades.py:1304 .\course\utils.py:1124
 #: .\course\versioning.py:605
 msgctxt "Starting of Error message"
 msgid "Error"
 msgstr "错误"
 
-#: .\course\grades.py:1021
+#: .\course\grades.py:1024
 #, python-format
 msgid ""
 "Click to <a href='%s' target='_blank'>create</a> a new grading opportunity. "
 "Reload this form when done."
 msgstr "点击 <a href='%s' target='_blank'>创建</a> 一个新的得分机会. "
 
-#: .\course\grades.py:1025
+#: .\course\grades.py:1028
 msgctxt "Field name in Import grades form"
 msgid "Grading opportunity"
 msgstr "得分机会"
 
-#: .\course\grades.py:1030 .\course\models.py:1443
+#: .\course\grades.py:1033 .\course\models.py:1444
 msgid "Attempt ID"
 msgstr ""
 
-#: .\course\grades.py:1036
+#: .\course\grades.py:1039
 msgid "CSV with Header"
 msgstr "带有表头的CSV文件"
 
-#: .\course\grades.py:1039
+#: .\course\grades.py:1042
 msgid "Format"
 msgstr "格式"
 
-#: .\course\grades.py:1043
+#: .\course\grades.py:1046
 msgid "Email or NetID"
 msgstr "Email或用户名"
 
-#: .\course\grades.py:1046
+#: .\course\grades.py:1049
 msgid "User attribute"
 msgstr "用户属性"
 
 #. Translators: the following strings are for the format
 #. informatioin for a CSV file to be imported.
-#: .\course\grades.py:1051
+#: .\course\grades.py:1054
 msgid ""
 "1-based column index for the user attribute selected above to locate student "
 "record"
 msgstr "上面所选用户属性的所在的列，从1起"
 
-#: .\course\grades.py:1054
+#: .\course\grades.py:1057
 msgid "User attribute column"
 msgstr "用户属性列"
 
-#: .\course\grades.py:1056
+#: .\course\grades.py:1059
 msgid "1-based column index for the (numerical) grade"
 msgstr "学生的(数值)得分所在列，从1起"
 
-#: .\course\grades.py:1058
+#: .\course\grades.py:1061
 msgid "Points column"
 msgstr "得分列"
 
-#: .\course\grades.py:1060
+#: .\course\grades.py:1063
 msgid "1-based column index for further (textual) feedback"
 msgstr "对学生作业的进一步（文字）反馈所在列，从1起"
 
-#: .\course\grades.py:1062
+#: .\course\grades.py:1065
 msgid "Feedback column"
 msgstr "反馈所在列"
 
 #. Translators: "Max point" refers to full credit in points.
-#: .\course\grades.py:1066 .\course\models.py:1046 .\course\models.py:1449
+#: .\course\grades.py:1069 .\course\models.py:1047 .\course\models.py:1450
 msgid "Max points"
 msgstr "满分分值"
 
-#: .\course\grades.py:1068 .\course\sandbox.py:77
+#: .\course\grades.py:1071 .\course\sandbox.py:77
 #: .\course\templates\course\grade-import-preview.html:15
 #: .\course\versioning.py:525
 msgid "Preview"
 msgstr "预览"
 
-#: .\course\grades.py:1069
+#: .\course\grades.py:1072
 msgid "Import"
 msgstr "导入"
 
 #. Translators: use institutional_id_string to find user
 #. (participant).
-#: .\course\grades.py:1112
+#: .\course\grades.py:1115
 #, python-format
 msgid "no participant found with institutional ID '%(inst_id_string)s'"
 msgstr "用学号\"%(inst_id_string)s\"找不到学员"
 
-#: .\course\grades.py:1117
+#: .\course\grades.py:1120
 #, python-format
 msgid ""
 "more than one participant found with institutional ID '%(inst_id_string)s'"
 msgstr "用学号\"%(inst_id_string)s\"找到超过1个学员"
 
 #. Translators: use id_string to find user (participant).
-#: .\course\grades.py:1152
+#: .\course\grades.py:1155
 #, python-format
 msgid "no participant found for '%(id_string)s'"
 msgstr "用\"%(id_string)s\"找不到参与者"
 
-#: .\course\grades.py:1156
+#: .\course\grades.py:1159
 #, python-format
 msgid "more than one participant found for '%(id_string)s'"
 msgstr "用\"%(id_string)s\"找到超过1个参与者"
 
-#: .\course\grades.py:1201
+#: .\course\grades.py:1204
 #, python-format
 msgid "Unknown user attribute '%(attr_type)s'"
 msgstr "未知的用户属性 '%(attr_type)s'"
 
-#: .\course\grades.py:1238
+#: .\course\grades.py:1241
 msgid "points"
 msgstr "得分"
 
-#: .\course\grades.py:1240
+#: .\course\grades.py:1243
 msgid "max_points"
 msgstr "满分分值"
 
-#: .\course\grades.py:1242
+#: .\course\grades.py:1245
 msgid "comment"
 msgstr "反馈"
 
-#: .\course\grades.py:1248
+#: .\course\grades.py:1251
 msgid "updated"
 msgstr "已更新"
 
-#: .\course\grades.py:1269
+#: .\course\grades.py:1272
 msgid "may not batch-import grades"
 msgstr "不允许批量导入成绩"
 
-#: .\course\grades.py:1309
+#: .\course\grades.py:1312
 #, python-format
 msgid "%(total)d grades found, %(unchaged)d unchanged."
 msgstr "找到%(total)d个评分, %(unchaged)d个未更改. "
 
-#: .\course\grades.py:1323
+#: .\course\grades.py:1326
 #, python-format
 msgid "%d grades imported."
 msgstr "%d个评分导入成功. "
 
-#: .\course\grades.py:1336
+#: .\course\grades.py:1339
 msgid "Import Grade Data"
 msgstr "导入成绩数据"
 
-#: .\course\grades.py:1357
+#: .\course\grades.py:1360
 msgid "Least recent attempt"
 msgstr "最早的一次尝试"
 
-#: .\course\grades.py:1358
+#: .\course\grades.py:1361
 msgid "Most recent attempt"
 msgstr "最近的一次尝试"
 
-#: .\course\grades.py:1359
+#: .\course\grades.py:1362
 msgid "All attempts"
 msgstr "所有尝试"
 
-#: .\course\grades.py:1361
+#: .\course\grades.py:1364
 msgid "Attempts to include."
 msgstr "将包含的尝试"
 
-#: .\course\grades.py:1363
+#: .\course\grades.py:1366
 msgid "Every submission to the page counts as an attempt."
 msgstr "将该page的所有提交视为一次尝试."
 
-#: .\course\grades.py:1367
+#: .\course\grades.py:1370
 msgid "Only download sessions tagged with this rules tag."
 msgstr "只下载使用该rules tag的session."
 
-#: .\course\grades.py:1368
+#: .\course\grades.py:1371
 msgid "Restrict to rules tag"
 msgstr "限制的rules tag"
 
-#: .\course\grades.py:1372
+#: .\course\grades.py:1375
 msgid "Only download submissions from non-in-progress sessions"
 msgstr "只下载非进行状态的session的提交"
 
-#: .\course\grades.py:1374
+#: .\course\grades.py:1377
 msgid "Non-in-progress only"
 msgstr "只选择非进行中的"
 
-#: .\course\grades.py:1378
+#: .\course\grades.py:1381
 msgid "Include provided feedback as text file in zip"
 msgstr "将反馈作为文本文件包含在zip文件中"
 
-#: .\course\grades.py:1379
+#: .\course\grades.py:1382
 msgid "Include feedback"
 msgstr "包含反馈"
 
-#: .\course\grades.py:1381
+#: .\course\grades.py:1384
 msgid "Additional File"
 msgstr "额外的文件"
 
-#: .\course\grades.py:1383
+#: .\course\grades.py:1386
 msgid ""
 "If given, the uploaded file will be included in the zip archive. If the "
 "produced archive is to be used for plagiarism detection, then this may be "
 "used to include the reference solution."
 msgstr ""
 
-#: .\course\grades.py:1391
+#: .\course\grades.py:1394
 msgid "Download"
 msgstr "下载"
 
-#: .\course\grades.py:1397 .\course\im.py:159
+#: .\course\grades.py:1400 .\course\im.py:159
 msgid "may not batch-download submissions"
 msgstr "下载批量下载提交的内容"
 
-#: .\course\grades.py:1410 .\course\grades.py:1414
+#: .\course\grades.py:1413 .\course\grades.py:1417
 msgid "ALL"
 msgstr "所有"
 
-#: .\course\grades.py:1559
+#: .\course\grades.py:1562
 msgid "Download All Submissions in Zip file"
 msgstr "以Zip文件下载所有提交"
 
-#: .\course\grades.py:1617
+#: .\course\grades.py:1620
 msgid "Edit Grading Opportunity"
 msgstr "编辑得分机会"
 
@@ -2569,7 +2574,7 @@ msgstr "接收即时信息的JID(仅在需要使用即时通信功能时才需�
 msgid "Recipient xmpp ID"
 msgstr "接收者的xmpp ID"
 
-#: .\course\models.py:224 .\course\models.py:749
+#: .\course\models.py:224 .\course\models.py:750
 msgid "Active git commit SHA"
 msgstr "已启用的git commit SHA"
 
@@ -2586,12 +2591,12 @@ msgstr "event的类型(kind)"
 msgid "Ordinal of event"
 msgstr "event的序号(ordinal)"
 
-#: .\course\models.py:286 .\course\models.py:705 .\course\models.py:753
+#: .\course\models.py:286 .\course\models.py:706 .\course\models.py:754
 #: .\course\templates\course\flow-start.html:28
 msgid "Start time"
 msgstr "开始时间"
 
-#: .\course\models.py:288 .\course\models.py:707
+#: .\course\models.py:288 .\course\models.py:708
 msgid "End time"
 msgstr "结束时间"
 
@@ -2686,7 +2691,7 @@ msgstr "参与该课程的角色"
 msgid "Participation roles"
 msgstr "参与该课程的角色"
 
-#: .\course\models.py:402 .\course\models.py:1227
+#: .\course\models.py:402 .\course\models.py:1228
 msgid "Permission"
 msgstr "权限"
 
@@ -2747,7 +2752,7 @@ msgstr "预览的git commit SHA"
 msgid "Tags"
 msgstr "标签"
 
-#: .\course\models.py:463 .\course\page\base.py:850
+#: .\course\models.py:463 .\course\page\base.py:853
 msgid "Notes"
 msgstr "注释"
 
@@ -2758,9 +2763,9 @@ msgstr "注释"
 msgid "%(user)s in %(course)s as %(role)s"
 msgstr "%(user)s在课程%(course)s中(作为%(role)s)"
 
-#: .\course\models.py:479 .\course\models.py:522 .\course\models.py:740
-#: .\course\models.py:1170 .\course\models.py:1246 .\course\models.py:1430
-#: .\course\models.py:1719 .\course\models.py:1778
+#: .\course\models.py:479 .\course\models.py:522 .\course\models.py:741
+#: .\course\models.py:1171 .\course\models.py:1247 .\course\models.py:1431
+#: .\course\models.py:1720 .\course\models.py:1779
 #: .\course\templates\course\course-base.html:138
 msgid "Participation"
 msgstr "课程参与"
@@ -2781,13 +2786,13 @@ msgstr "用户加入课程预批准"
 msgid "Provided name"
 msgstr "csv导入的全名"
 
-#: .\course\models.py:546 .\course\models.py:1188 .\course\models.py:1251
-#: .\course\models.py:1458 .\course\models.py:1781
+#: .\course\models.py:546 .\course\models.py:1189 .\course\models.py:1252
+#: .\course\models.py:1459 .\course\models.py:1782
 msgid "Creator"
 msgstr "创建者"
 
-#: .\course\models.py:548 .\course\models.py:1190 .\course\models.py:1253
-#: .\course\models.py:1371 .\course\models.py:1783
+#: .\course\models.py:548 .\course\models.py:1191 .\course\models.py:1254
+#: .\course\models.py:1372 .\course\models.py:1784
 msgid "Creation time"
 msgstr "创建时间"
 
@@ -2829,100 +2834,100 @@ msgstr "学员"
 msgid "Unenrolled"
 msgstr "未加入"
 
-#: .\course\models.py:709
+#: .\course\models.py:710
 msgid "Cancelled"
 msgstr "已取消的"
 
-#: .\course\models.py:712
+#: .\course\models.py:713
 msgid "Instant flow request"
 msgstr "即时flow"
 
-#: .\course\models.py:713 .\course\templates\course\course-base.html:149
+#: .\course\models.py:714 .\course\templates\course\course-base.html:149
 msgid "Instant flow requests"
 msgstr "即时flow"
 
-#: .\course\models.py:716
+#: .\course\models.py:717
 #, python-format
 msgid "Instant flow request for %(flow_id)s in %(course)s at %(start_time)s"
 msgstr "%(start_time)s时，对课程%(course)s中%(flow_id)s的即时flow请求"
 
-#: .\course\models.py:755
+#: .\course\models.py:756
 msgid "Completion time"
 msgstr "完成时间"
 
-#: .\course\models.py:757
+#: .\course\models.py:758
 msgid "Page count"
 msgstr "page数"
 
-#: .\course\models.py:765
+#: .\course\models.py:766
 msgid "Page data at course revision"
 msgstr "课程内容修订的页面数据(page data)"
 
-#: .\course\models.py:767
+#: .\course\models.py:768
 msgid "Page set-up data is up-to date for this revision of the course material"
 msgstr "对于当前课程材料的修订版本，页面的设置数据是最新的."
 
-#: .\course\models.py:771
+#: .\course\models.py:772
 msgid "In progress"
 msgstr "进行中的"
 
-#: .\course\models.py:778 .\course\templates\course\gradebook-single.html:166
+#: .\course\models.py:779 .\course\templates\course\gradebook-single.html:166
 msgid "Expiration mode"
 msgstr "过期模式"
 
-#: .\course\models.py:787 .\course\models.py:1447
+#: .\course\models.py:788 .\course\models.py:1448
 #: .\course\templates\course\gradebook-single.html:229
 msgid "Points"
 msgstr "分值"
 
-#: .\course\models.py:790
+#: .\course\models.py:791
 msgid "Max point"
 msgstr "满分"
 
-#: .\course\models.py:792
+#: .\course\models.py:793
 msgid "Result comment"
 msgstr "结果评论"
 
-#: .\course\models.py:795 .\course\models.py:859 .\course\models.py:922
-#: .\course\models.py:1464 .\course\templates\course\grade-flow-page.html:87
+#: .\course\models.py:796 .\course\models.py:860 .\course\models.py:923
+#: .\course\models.py:1465 .\course\templates\course\grade-flow-page.html:87
 msgid "Flow session"
 msgstr ""
 
-#: .\course\models.py:796 .\course\templates\course\gradebook-single.html:131
+#: .\course\models.py:797 .\course\templates\course\gradebook-single.html:131
 msgid "Flow sessions"
 msgstr ""
 
-#: .\course\models.py:801
+#: .\course\models.py:802
 #, python-format
 msgid "anonymous session %(session_id)d on '%(flow_id)s'"
 msgstr "flow \"%(flow_id)s\"中匿名的session %(session_id)d "
 
-#: .\course\models.py:805
+#: .\course\models.py:806
 #, python-format
 msgid "%(user)s's session %(session_id)d on '%(flow_id)s'"
 msgstr "%(user)s在flow \"%(flow_id)s\"的session %(session_id)d"
 
-#: .\course\models.py:861
+#: .\course\models.py:862
 msgid "Ordinal"
 msgstr "序号"
 
-#: .\course\models.py:866
+#: .\course\models.py:867
 msgid "Page type as indicated in course content"
 msgstr "课程内容中所确定的Page类型"
 
-#: .\course\models.py:870
+#: .\course\models.py:871
 msgid "Group ID"
 msgstr "分组ID"
 
-#: .\course\models.py:877
+#: .\course\models.py:878
 msgid "Data"
 msgstr "数据"
 
-#: .\course\models.py:879
+#: .\course\models.py:880
 msgid "Page Title"
 msgstr "Page标题"
 
-#: .\course\models.py:882
+#: .\course\models.py:883
 msgid ""
 "A user-facing 'marking' feature to allow participants to easily return to "
 "pages that still need their attention."
@@ -2930,15 +2935,15 @@ msgstr ""
 "一个用户可以看到的\"书签\"特性，让参与者可以很容易回到那些需要引起他们关注的"
 "page."
 
-#: .\course\models.py:884
+#: .\course\models.py:885
 msgid "Bookmarked"
 msgstr "已加书签"
 
-#: .\course\models.py:887 .\course\models.py:888
+#: .\course\models.py:888 .\course\models.py:889
 msgid "Flow page data"
 msgstr "flow page的数据"
 
-#: .\course\models.py:892
+#: .\course\models.py:893
 #, python-format
 msgid ""
 "Data for page '%(group_id)s/%(page_id)s' (ordinal %(ordinal)s) in %"
@@ -2946,23 +2951,23 @@ msgid ""
 msgstr ""
 "%(flow_session)s中page %(group_id)s/%(page_id)s(序号为%(ordinal)s)的数据"
 
-#: .\course\models.py:925 .\course\models.py:1099
+#: .\course\models.py:926 .\course\models.py:1100
 msgid "Page data"
 msgstr "page数据"
 
-#: .\course\models.py:927
+#: .\course\models.py:928
 msgid "Visit time"
 msgstr "访问时间"
 
-#: .\course\models.py:929
+#: .\course\models.py:930
 msgid "Remote address"
 msgstr "来访的ip地址"
 
-#: .\course\models.py:936
+#: .\course\models.py:937
 msgid "Impersonated by"
 msgstr "由谁模拟"
 
-#: .\course\models.py:939
+#: .\course\models.py:940
 msgid ""
 "Synthetic flow page visits are generated for unvisited pages once a flow is "
 "finished. This is needed since grade information is attached to a visit, and "
@@ -2971,264 +2976,264 @@ msgstr ""
 "如果一个flow结束，则对未访问的page生成\"合成\"的flow page访问。这是因为评分信"
 "息是附在访问中的，它需要有一个去处。"
 
-#: .\course\models.py:943
+#: .\course\models.py:944
 msgid "Is synthetic"
 msgstr "是否合成"
 
 #. Translators: "Answer" is a Noun.
-#: .\course\models.py:949 .\course\page\code.py:66 .\course\page\text.py:101
+#: .\course\models.py:950 .\course\page\code.py:66 .\course\page\text.py:101
 msgid "Answer"
 msgstr "回答"
 
 #. Translators: determine whether the answer is a final,
 #. submitted answer fit for grading.
-#: .\course\models.py:962
+#: .\course\models.py:963
 msgid "Is submitted answer"
 msgstr "是否为用于评分的回答"
 
 #. Translators: flow page visit
-#: .\course\models.py:967
+#: .\course\models.py:968
 #, python-format
 msgid "'%(group_id)s/%(page_id)s' in '%(session)s' on %(time)s"
 msgstr "在%(time)s时, \"%(session)s'中的'%(group_id)s/%(page_id)s\""
 
 #. Translators: flow page visit: if an answer is
 #. provided by user then append the string.
-#: .\course\models.py:977
+#: .\course\models.py:978
 msgid " (with answer)"
 msgstr "（和回答）"
 
-#: .\course\models.py:985
+#: .\course\models.py:986
 msgid "Flow page visit"
 msgstr "flow page访问"
 
-#: .\course\models.py:986
+#: .\course\models.py:987
 msgid "Flow page visits"
 msgstr "flow page访问"
 
-#: .\course\models.py:1021
+#: .\course\models.py:1022
 msgid "Visit"
 msgstr "访问"
 
-#: .\course\models.py:1025 .\course\templates\course\gradebook-single.html:231
+#: .\course\models.py:1026 .\course\templates\course\gradebook-single.html:231
 msgid "Grader"
 msgstr "评分者"
 
-#: .\course\models.py:1027 .\course\models.py:1460
+#: .\course\models.py:1028 .\course\models.py:1461
 msgid "Grade time"
 msgstr "评分时间"
 
-#: .\course\models.py:1031
+#: .\course\models.py:1032
 msgid "Graded at git commit SHA"
 msgstr "评分，于git commit SHA"
 
-#: .\course\models.py:1036
+#: .\course\models.py:1037
 msgid "Grade data"
 msgstr "评分数据"
 
 #. Translators: max point in grade
-#: .\course\models.py:1044
+#: .\course\models.py:1045
 msgid "Point value of this question when receiving full credit."
 msgstr "该问题取得满分时取得的分值. "
 
 #. Translators: correctness in grade
-#: .\course\models.py:1049
+#: .\course\models.py:1050
 msgid ""
 "Real number between zero and one (inclusively) indicating the degree of "
 "correctness of the answer."
 msgstr "属于范围[0,1]的数值, 用于表示回答的正确性. "
 
-#: .\course\models.py:1051
+#: .\course\models.py:1052
 msgid "Correctness"
 msgstr "正确性"
 
 #. Translators: "Feedback" stands for the feedback of answers.
-#: .\course\models.py:1062
+#: .\course\models.py:1063
 #: .\course\templates\course\grade-import-preview.html:21
 msgid "Feedback"
 msgstr "反馈"
 
-#: .\course\models.py:1077
+#: .\course\models.py:1078
 msgid "Flow page visit grade"
 msgstr "flow page 访问的得分"
 
-#: .\course\models.py:1078
+#: .\course\models.py:1079
 msgid "Flow page visit grades"
 msgstr "flow page 访问的得分"
 
 #. Translators: return the information of the grade of a user
 #. by percentage.
-#: .\course\models.py:1088
+#: .\course\models.py:1089
 #, python-format
 msgid "grade of %(visit)s: %(percentage)s"
 msgstr "%(visit)s的得分(百分比): %(percentage)s"
 
-#: .\course\models.py:1101
+#: .\course\models.py:1102
 #: .\course\templates\course\grade-import-preview.html:20
 #: .\course\templates\course\gradebook-participant.html:53
 #: .\course\templates\course\gradebook-single.html:72
 msgid "Grade"
 msgstr "得分"
 
-#: .\course\models.py:1106
+#: .\course\models.py:1107
 msgid "Bulk feedback"
 msgstr "批量反馈"
 
-#: .\course\models.py:1144
+#: .\course\models.py:1145
 msgid "stipulations must be a dictionary"
 msgstr "规定必须为一个字典型数据，即：(项目, 项目的值)"
 
-#: .\course\models.py:1149
+#: .\course\models.py:1150
 msgid "unrecognized keys in stipulations"
 msgstr "无法识别的规定"
 
-#: .\course\models.py:1155
+#: .\course\models.py:1156
 msgid "credit_percent must be a float"
 msgstr "credit_percent必须是一个浮点数"
 
-#: .\course\models.py:1161
+#: .\course\models.py:1162
 msgid "'allowed_session_count' must be a non-negative integer"
 msgstr "allowed_session_count必须是一个非负的整数"
 
-#: .\course\models.py:1174 .\course\models.py:1248
+#: .\course\models.py:1175 .\course\models.py:1249
 msgid "Expiration"
 msgstr "过期"
 
 #. Translators: help text for stipulations in FlowAccessException
 #. (deprecated)
-#: .\course\models.py:1179
+#: .\course\models.py:1180
 msgid ""
 "A dictionary of the same things that can be added to a flow access rule, "
 "such as allowed_session_count or credit_percent. If not specified here, "
 "values will default to the stipulations in the course content."
 msgstr ""
 
-#: .\course\models.py:1185
+#: .\course\models.py:1186
 msgid "Stipulations"
 msgstr "条款"
 
 #. Translators: deprecated
-#: .\course\models.py:1195
+#: .\course\models.py:1196
 msgid ""
 "Check if a flow started under this exception rule set should stay under this "
 "rule set until it is expired."
 msgstr ""
 
 #. Translators: deprecated
-#: .\course\models.py:1199
+#: .\course\models.py:1200
 msgid "Is sticky"
 msgstr ""
 
 #. Translators: flow access exception in admin (deprecated)
-#: .\course\models.py:1207
+#: .\course\models.py:1208
 #, python-format
 msgid "Access exception for '%(user)s' to '%(flow_id)s' in '%(course)s'"
 msgstr "对用户\"%(user)s'破例访问课程'%(course)s'中的'%(flow_id)s\". "
 
-#: .\course\models.py:1224
+#: .\course\models.py:1225
 msgid "Exception"
 msgstr "破例处理"
 
 #. Translators: FlowAccessExceptionEntry (deprecated)
-#: .\course\models.py:1231
+#: .\course\models.py:1232
 msgid "Flow access exception entries"
 msgstr "破例访问flow的条目"
 
-#: .\course\models.py:1260
+#: .\course\models.py:1261
 msgid "Kind"
 msgstr "类型"
 
-#: .\course\models.py:1262
+#: .\course\models.py:1263
 msgid "Rule"
 msgstr "规则"
 
-#: .\course\models.py:1265
+#: .\course\models.py:1266
 msgctxt "Is the flow rule exception activated?"
 msgid "Active"
 msgstr "生效"
 
 #. Translators: For FlowRuleException
-#: .\course\models.py:1270
+#: .\course\models.py:1271
 #, python-format
 msgid "%(kind)s exception for '%(user)s' to '%(flow_id)s'in '%(course)s'"
 msgstr "在课程%(course)s的%(flow_id)s中, 给予%(user)s破例的类型%(kind)s"
 
-#: .\course\models.py:1286
+#: .\course\models.py:1287
 msgid "grading rules may not expire"
 msgstr "评分规则不会过期"
 
-#: .\course\models.py:1329
+#: .\course\models.py:1330
 msgid "invalid rule kind: "
 msgstr "无效的规则类型："
 
-#: .\course\models.py:1333
+#: .\course\models.py:1334
 msgid "invalid existing_session_rules: "
 msgstr "无效的existing_session_rules:"
 
-#: .\course\models.py:1336
+#: .\course\models.py:1337
 msgid "Flow rule exception"
 msgstr "flow rule破例"
 
-#: .\course\models.py:1337
+#: .\course\models.py:1338
 msgid "Flow rule exceptions"
 msgstr "flow rule破例"
 
 #. Translators: format of identifier for GradingOpportunity
-#: .\course\models.py:1350
+#: .\course\models.py:1351
 msgid "A symbolic name for this grade. lower_case_with_underscores, no spaces."
 msgstr "这个评分的字符化名称, 只允许小写字母和下划线, 不允许有空格. "
 
-#: .\course\models.py:1352
+#: .\course\models.py:1353
 msgid "Grading opportunity ID"
 msgstr "得分机会ID"
 
 #. Translators: name for GradingOpportunity
-#: .\course\models.py:1355
+#: .\course\models.py:1356
 msgid "A human-readable identifier for the grade."
 msgstr "一个易于理解的标识, 用于评分. "
 
-#: .\course\models.py:1356
+#: .\course\models.py:1357
 msgid "Grading opportunity name"
 msgstr "得分机会的名称"
 
-#: .\course\models.py:1358
+#: .\course\models.py:1359
 msgid "Flow identifier that this grading opportunity is linked to, if any"
 msgstr "这个评分机会所属的Flow ID, 如果有评分机会的话"
 
 #. Translators: strategy on how the grading of mutiple sessioins
 #. are aggregated.
-#: .\course\models.py:1366 .\course\templates\course\gradebook-by-opp.html:31
+#: .\course\models.py:1367 .\course\templates\course\gradebook-by-opp.html:31
 #: .\course\templates\course\gradebook-opp-list.html:25
 #: .\course\templates\course\gradebook-single.html:119
 msgid "Aggregation strategy"
 msgstr "多session评分累积策略"
 
-#: .\course\models.py:1369 .\course\models.py:1455
+#: .\course\models.py:1370 .\course\models.py:1456
 #: .\course\templates\course\gradebook-opp-list.html:26 .\course\views.py:1050
 msgid "Due time"
 msgstr "截止时间"
 
-#: .\course\models.py:1374
+#: .\course\models.py:1375
 msgid "Shown in grade book"
 msgstr "在成绩册中显示"
 
-#: .\course\models.py:1376
+#: .\course\models.py:1377
 msgid "Shown in student grade book"
 msgstr "在学生的成绩册中显示"
 
-#: .\course\models.py:1378
+#: .\course\models.py:1379
 msgid "Result shown in student grade book"
 msgstr "在学生的成绩册中显示评分结果"
 
-#: .\course\models.py:1381
+#: .\course\models.py:1382
 msgid "Scores for individual pages are shown in the participants' grade book"
 msgstr "在学员的'成绩册'中将显示的每个独立page的得分"
 
-#: .\course\models.py:1384
+#: .\course\models.py:1385
 msgid "Hide superseded grade history before"
 msgstr "隐藏之前被覆盖的评分历史"
 
-#: .\course\models.py:1387
+#: .\course\models.py:1388
 msgid ""
 "Grade changes dated before this date that are superseded by later grade "
 "changes will not be shown to participants. This can help avoid discussions "
@@ -3239,29 +3244,29 @@ msgstr ""
 "助于避免因对预先发布的评分进行修改而引起异议. 可以设为空. 在这种情况下，所有"
 "的评分历史都将显示给学员."
 
-#: .\course\models.py:1396 .\course\models.py:1427
+#: .\course\models.py:1397 .\course\models.py:1428
 msgid "Grading opportunity"
 msgstr "得分机会"
 
-#: .\course\models.py:1397
+#: .\course\models.py:1398
 msgid "Grading opportunities"
 msgstr "得分机会"
 
 #. Translators: For GradingOpportunity
-#: .\course\models.py:1404
+#: .\course\models.py:1405
 #, python-format
 msgid "%(opportunity_name)s (%(opportunity_id)s) in %(course)s"
 msgstr "课程%(course)s中的评分机会%(opportunity_name)s (%(opportunity_id)s) "
 
 #. Translators: something like 'status'.
-#: .\course\models.py:1435 .\course\templates\course\flow-start.html:29
+#: .\course\models.py:1436 .\course\templates\course\flow-start.html:29
 #: .\course\templates\course\gradebook-single.html:139
 #: .\course\templates\course\task-monitor.html:17
 msgid "State"
 msgstr "状态"
 
 #. Translators: help text of "attempt_id" in GradeChange class
-#: .\course\models.py:1440
+#: .\course\models.py:1441
 msgid ""
 "Grade changes are grouped by their 'attempt ID' where later grades with the "
 "same attempt ID supersede earlier ones."
@@ -3269,117 +3274,117 @@ msgstr ""
 "评分的变化是根据它们的\"attempt ID'进行分组, 在相同的'attempt ID\"下, 后面的"
 "评分将覆盖前面的评分. "
 
-#: .\course\models.py:1467
+#: .\course\models.py:1468
 msgid "Grade change"
 msgstr "评分变更"
 
-#: .\course\models.py:1468
+#: .\course\models.py:1469
 msgid "Grade changes"
 msgstr "评分变更"
 
 #. Translators: information for GradeChange
-#: .\course\models.py:1473
+#: .\course\models.py:1474
 #, python-format
 msgid "%(participation)s %(state)s on %(opportunityname)s"
 msgstr "%(opportunityname)s中, %(participation)s %(state)s"
 
-#: .\course\models.py:1485
+#: .\course\models.py:1486
 msgid "Participation and opportunity must live in the same course"
 msgstr "参与(Participation)和评分机会(opportunity)必须属于同一门课程"
 
-#: .\course\models.py:1549
+#: .\course\models.py:1550
 msgid "cannot accept grade once opportunity has been marked 'unavailable'"
 msgstr "一旦评分机会被标记为\"无效(unavailable)\", 将无法进行评分"
 
-#: .\course\models.py:1553
+#: .\course\models.py:1554
 msgid "cannot accept grade once opportunity has been marked 'exempt'"
 msgstr "一旦评分机会被标记为\"剔除(exempt)\", 将无法进行评分"
 
-#: .\course\models.py:1596
+#: .\course\models.py:1597
 #, python-format
 msgid "invalid grade change state '%s'"
 msgstr "无效的评分改变状态 \"%s\""
 
-#: .\course\models.py:1642
+#: .\course\models.py:1643
 #, python-format
 msgid "invalid grade aggregation strategy '%s'"
 msgstr "无效的多session评分累积策略 \"%s\""
 
 #. Translators: display the name of a flow
-#: .\course\models.py:1692
+#: .\course\models.py:1693
 #, python-format
 msgid "Flow: %(flow_desc_title)s"
 msgstr ""
 
-#: .\course\models.py:1721
+#: .\course\models.py:1722
 msgid "Text"
 msgstr "文字"
 
-#: .\course\models.py:1723 .\course\templates\course\gradebook-single.html:69
+#: .\course\models.py:1724 .\course\templates\course\gradebook-single.html:69
 #: .\course\views.py:409
 msgid "Time"
 msgstr "时间"
 
-#: .\course\models.py:1726
+#: .\course\models.py:1727
 msgid "Instant message"
 msgstr "即时信息"
 
-#: .\course\models.py:1727
+#: .\course\models.py:1728
 msgid "Instant messages"
 msgstr "即时信息"
 
-#: .\course\models.py:1745
+#: .\course\models.py:1746
 msgid "Description"
 msgstr "描述"
 
-#: .\course\models.py:1750
+#: .\course\models.py:1751
 msgid "Currently active"
 msgstr "当前生效"
 
-#: .\course\models.py:1753
+#: .\course\models.py:1754
 msgid "No exams before"
 msgstr "之前未有测验"
 
-#: .\course\models.py:1756
+#: .\course\models.py:1757
 msgid "No exams after"
 msgstr "之后未有测验"
 
-#: .\course\models.py:1760 .\course\templates\course\course-base.html:81
+#: .\course\models.py:1761 .\course\templates\course\course-base.html:81
 #: .\relate\templates\base.html:87
 msgid "Exams"
 msgstr "测验"
 
-#: .\course\models.py:1764
+#: .\course\models.py:1765
 #, python-format
 msgid "Exam  %(description)s in %(course)s"
 msgstr "课程%(course)s中的测验: %(description)s"
 
-#: .\course\models.py:1785
+#: .\course\models.py:1786
 msgid "Date and time of first usage of ticket"
 msgstr "第一次使用ticket的日期时间"
 
-#: .\course\models.py:1790
+#: .\course\models.py:1791
 msgid "Exam ticket state"
 msgstr "测验ticket的状态"
 
-#: .\course\models.py:1795
+#: .\course\models.py:1796
 msgid "Exam ticket"
 msgstr "测验ticket"
 
-#: .\course\models.py:1796
+#: .\course\models.py:1797
 msgid "Exam tickets"
 msgstr "测验ticket"
 
-#: .\course\models.py:1799
+#: .\course\models.py:1800
 msgid "Can issue exam tickets to student"
 msgstr "可以向学生发布测验ticket"
 
-#: .\course\models.py:1803
+#: .\course\models.py:1804
 #, python-format
 msgid "Exam  ticket for %(participation)s in %(exam)s"
 msgstr "%(participation)s在%(exam)s中的测验ticket."
 
-#: .\course\models.py:1816
+#: .\course\models.py:1817
 msgid "Participation and exam must live in the same course"
 msgstr "参与者和测验必须属于同一门课程"
 
@@ -3411,50 +3416,50 @@ msgstr "您的回答在一定程度上正确. "
 msgid "Invalid correctness value"
 msgstr "无效的正确性数值"
 
-#: .\course\page\base.py:339
+#: .\course\page\base.py:342
 msgid "Not passing page_desc to PageBase.__init__ is deprecated"
 msgstr ""
 
-#: .\course\page\base.py:396
+#: .\course\page\base.py:399
 #, python-format
 msgid "%s is using the make_page_data compatiblity hook, which is deprecated."
 msgstr ""
 
-#: .\course\page\base.py:514
+#: .\course\page\base.py:517
 #, python-format
 msgid "%s is using the post_form compatiblity hook, which is deprecated."
 msgstr ""
 
-#: .\course\page\base.py:689
+#: .\course\page\base.py:692
 #, python-format
 msgid ""
 "PageBaseWithTitle subclass '%s' does not implement markdown_body_for_title()"
 msgstr "PageBaseWithTitle的子类\"%s\"未使用markdown_body_for_title()方法"
 
-#: .\course\page\base.py:700
+#: .\course\page\base.py:703
 msgid "no title found in body or title attribute"
 msgstr "没有在body中找到title，也没有title属性"
 
-#: .\course\page\base.py:801
+#: .\course\page\base.py:804
 msgid "Grade assigned, in percent"
 msgstr "给予的评分（百分比）"
 
-#: .\course\page\base.py:807
+#: .\course\page\base.py:810
 msgid "Grade percent"
 msgstr "得分的百分比"
 
-#: .\course\page\base.py:813
+#: .\course\page\base.py:816
 #, python-format
 msgid ""
 "Grade assigned, as points out of %.1f. Fill out either this or 'grade "
 "percent'."
 msgstr "给予的评分, %.1f分中取得的分值. 填入此项或者\"得分的百分比\". "
 
-#: .\course\page\base.py:821
+#: .\course\page\base.py:824
 msgid "Grade points"
 msgstr "得分的分值"
 
-#: .\course\page\base.py:827
+#: .\course\page\base.py:830
 msgid ""
 "Feedback to be shown to student, using <a href='http://documen.tician.de/"
 "relate/content.html#relate-markup'>RELATE-flavored Markdown</a>"
@@ -3462,21 +3467,21 @@ msgstr ""
 "将反馈给学生的信息, 建议使用<a href='http://documen.tician.de/relate/content."
 "html#relate-markup'>RELATE方式的Markdown模式</a>. "
 
-#: .\course\page\base.py:831
+#: .\course\page\base.py:834
 msgid "Feedback text"
 msgstr "反馈文字"
 
-#: .\course\page\base.py:834
+#: .\course\page\base.py:837
 msgid ""
 "Checking this box and submitting the form will notify the participant with a "
 "generic message containing the feedback text"
 msgstr "勾选此项并提交这个表单, 将会向参与者发送一个包含了反馈信息的消息. "
 
-#: .\course\page\base.py:837
+#: .\course\page\base.py:840
 msgid "Notify"
 msgstr "发送通知"
 
-#: .\course\page\base.py:840
+#: .\course\page\base.py:843
 msgid ""
 "Whether the grade and feedback are to be shown to student. (If you would "
 "like to release all grades at once, do not use this. Instead, use the 'shown "
@@ -3486,30 +3491,30 @@ msgstr ""
 "是否允许学生看到分数和反馈. (如果您希望把所有成绩一次性发布，请不要使用这一"
 "项, 而是在成绩册管理中的'得分机会'中勾选'展示给学生')."
 
-#: .\course\page\base.py:845
+#: .\course\page\base.py:848
 msgid "Released"
 msgstr "已发布"
 
-#: .\course\page\base.py:848
+#: .\course\page\base.py:851
 msgid "Internal notes, not shown to student"
 msgstr "内部注释, 学生不可见"
 
-#: .\course\page\base.py:863 .\course\page\base.py:877
+#: .\course\page\base.py:866 .\course\page\base.py:880
 msgid "Grade (percent) and Grade (points) disagree"
 msgstr "百分比评分与分值评分不一致"
 
-#: .\course\page\base.py:956
+#: .\course\page\base.py:959
 msgid "New notification"
 msgstr "一条新的通知"
 
-#: .\course\page\base.py:995 .\course\page\choice.py:271
+#: .\course\page\base.py:998 .\course\page\choice.py:271
 #: .\course\page\choice.py:458 .\course\page\code.py:591
 #: .\course\page\code.py:1003 .\course\page\inline.py:845
-#: .\course\page\text.py:914
+#: .\course\page\text.py:1187
 msgid "No answer provided."
 msgstr "未回答. "
 
-#: .\course\page\base.py:1017
+#: .\course\page\base.py:1020
 msgid "The following feedback was provided"
 msgstr "有以下的反馈信息"
 
@@ -3545,7 +3550,7 @@ msgid "ChoiceQuestion does not allow any choices marked 'disregard'"
 msgstr ""
 
 #: .\course\page\choice.py:285 .\course\page\inline.py:817
-#: .\course\page\text.py:936
+#: .\course\page\text.py:1209
 msgid "A correct answer is"
 msgstr "参考答案"
 
@@ -3705,7 +3710,7 @@ msgstr ""
 "不支持的长度单位'%(length_unit)s', 可使用的长度单位包括%(allowed_length_unit)"
 "s"
 
-#: .\course\page\inline.py:293 .\course\page\text.py:884
+#: .\course\page\inline.py:293 .\course\page\text.py:1157
 msgid "at least one answer must be provided"
 msgstr "至少要提供一个回答"
 
@@ -3716,7 +3721,7 @@ msgstr "至少要提供一个回答"
 msgid "answer"
 msgstr "回答"
 
-#: .\course\page\inline.py:326 .\course\page\text.py:899
+#: .\course\page\inline.py:326 .\course\page\text.py:1172
 msgid "no matcher is able to provide a plain-text correct answer"
 msgstr "现有的匹配类无法提供一个普通文本型的标准答案"
 
@@ -3776,7 +3781,7 @@ msgstr "page必须是\"%s\"类型"
 msgid "unknown validator type"
 msgstr "未知的验证器类型"
 
-#: .\course\page\text.py:189 .\course\page\text.py:598
+#: .\course\page\text.py:189 .\course\page\text.py:871
 msgid "must be struct or string"
 msgstr "必须是一个struct或string型的数据"
 
@@ -3789,48 +3794,98 @@ msgstr "正则表达式(regex)\"%(pattern)s\"无法编译"
 msgid "unable to check symbolic expression"
 msgstr "无法检查symbolic表达式"
 
-#: .\course\page\text.py:448 .\course\page\text.py:459
-#: .\course\page\text.py:477
+#: .\course\page\text.py:455 .\course\page\text.py:473
+#: .\course\page\text.py:715 .\course\page\text.py:726
+#: .\course\page\text.py:744
 msgid "does not provide a valid float literal"
 msgstr "提供了一个无效的float字符串"
 
-#: .\course\page\text.py:466
+#: .\course\page\text.py:462 .\course\page\text.py:733
 msgid "not allowed when 'value' is zero"
 msgstr "不允许'value'的值为0"
 
-#: .\course\page\text.py:487
+#: .\course\page\text.py:483 .\course\page\text.py:754
 msgid ""
 "Float match should have either rtol or atol--otherwise it will match any "
 "number"
 msgstr ""
 "float匹配器需至少包括'rtol'或'atol'中的一项，否则任何数字都将被视为正确答案. "
 
+#: .\course\page\text.py:501
+msgid "does not provide a valid left wrapper"
+msgstr "未提供有效的left wrapper"
+
+#: .\course\page\text.py:517
+msgid "does not provide a valid right wrapper"
+msgstr "未提供有效的right wrapper"
+
+#: .\course\page\text.py:542
+msgid "cannot be converted into a list"
+msgstr "无法转换为一个list"
+
+#: .\course\page\text.py:553
+msgid "is not a valid math number"
+msgstr "不是一个有效的数字"
+
+#: .\course\page\text.py:573 .\course\page\text.py:594
+#: .\course\page\text.py:623 .\course\page\text.py:636
+msgid "Error"
+msgstr "错误"
+
+#: .\course\page\text.py:574
+#, python-format
+msgid ""
+"answer provided does not have a required left wrapper, allowed left wrappers "
+"are '%s'"
+msgstr "回答未输入一个必需的左包含符，允许的左包含符包括%s"
+
+#: .\course\page\text.py:595
+#, python-format
+msgid ""
+"answer provided does not have a required right wrapper, allowed right "
+"wrappers are '%s'"
+msgstr "回答未输入一个必需的右包含符，允许的左包含符包括%s"
+
+#: .\course\page\text.py:624
+#, python-format
+msgid "'%s' cannot be converted into a list"
+msgstr "'%s'无法转换为一个列表"
+
+#: .\course\page\text.py:637
+msgid "TypeError"
+msgstr "类型错误"
+
+#: .\course\page\text.py:638
+#, python-format
+msgid "can't convert '%s' to a valid math number"
+msgstr "无法将'%s'转换为一个有效的数字"
+
 #. Translators: a "matcher" is used to determine
 #. if the answer to text question (blank filling
 #. question) is correct.
-#: .\course\page\text.py:545
+#: .\course\page\text.py:818
 #, python-format
 msgid "%(matcherclassname)s only accepts '%(matchertype)s' patterns"
 msgstr "%(matcherclassname)s 只接受 \"%(matchertype)s\" 模式"
 
-#: .\course\page\text.py:557
+#: .\course\page\text.py:830
 #, python-format
 msgid "unknown match type '%(matchertype)s'"
 msgstr "未知的匹配(match)类型\"%(matchertype)s\""
 
-#: .\course\page\text.py:576
+#: .\course\page\text.py:849
 msgid "does not specify match type"
 msgstr "无法确定匹配(match)类型"
 
-#: .\course\page\text.py:584
+#: .\course\page\text.py:857
 msgid "uses deprecated 'matcher:answer' style"
 msgstr "使用了已淘汰了的(deprecated) \"matcher:answer\" 类型"
 
-#: .\course\page\text.py:605
+#: .\course\page\text.py:878
 msgid "matcher must supply 'type'"
 msgstr "matcher必须提供\"type\""
 
-#: .\course\page\text.py:656
+#: .\course\page\text.py:929
 msgid "unrecognized widget type"
 msgstr "无法识别的构件(widget)类型"
 
@@ -6395,6 +6450,9 @@ msgstr "退出登录"
 #: .\relate\templates\user-profile-form.html:7
 msgid "User Profile"
 msgstr "用户信息"
+
+#~ msgid "Error:"
+#~ msgstr "错误"
 
 #~ msgid "must be at least TA to view analytics"
 #~ msgstr "至少是助教(TA)才能查看分析"
