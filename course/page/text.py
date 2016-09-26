@@ -573,9 +573,9 @@ class FloatListWithWrapperMatcher(TextAnswerMatcher):
                         ugettext("Error"), ": ",
                         ugettext("answer provided does not have a "
                           "required left wrapper, allowed "
-                          "left wrappers are '%s'")
+                          "left wrappers are %s")
                     )
-                    % ",".join(self.matcher_desc.forced_left_wrapper)
+                    % ", ".join("'%s'" % s for s in self.matcher_desc.forced_left_wrapper)
                 )
 
         if hasattr(self.matcher_desc, "forced_right_wrapper"):
@@ -594,9 +594,9 @@ class FloatListWithWrapperMatcher(TextAnswerMatcher):
                         ugettext("Error"), ": ",
                         ugettext("answer provided does not have a "
                           "required right wrapper, allowed "
-                          "right wrappers are '%s'")
+                          "right wrappers are %s")
                     )
-                    % ",".join(self.matcher_desc.forced_right_wrapper)
+                    % ", ".join("'%s'" % s for s in self.matcher_desc.forced_right_wrapper)
                 )
 
         if hasattr(self.matcher_desc, "allowed_left_wrapper"):
