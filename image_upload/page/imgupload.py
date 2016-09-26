@@ -1027,8 +1027,8 @@ def feedBackEmail(pctx, flow_session_id, ordinal):
                 msg.bcc = [student_email]
                 msg.reply_to = [student_email]
 
-                from relate.utils import get_connection
-                msg.connection = get_connection("student_feedback")
+                from relate.utils import get_outbound_mail_connection
+                msg.connection = get_outbound_mail_connection("student_feedback")
                 msg.send()
 
                 messages.add_message(

@@ -371,8 +371,8 @@ def send_enrollment_decision(participation, approved, request=None):
         if not getattr(
                 settings, "RELATE_EMAIL_SMTP_ALLOW_NONAUTHORIZED_SENDER",
                 False):
-            from relate.utils import get_connection
-            msg.connection = get_connection("robot")
+            from relate.utils import get_outbound_mail_connection
+            msg.connection = get_outbound_mail_connection("robot")
         msg.send()
 
 
