@@ -166,7 +166,7 @@ class Histogram(object):
 
         temp_string_weights = self.string_weights.copy()
 
-        oob = "<out of bounds>"
+        oob = pgettext("Value in histogram", "<out of bounds>")
 
         from bisect import bisect
         for value, weight in self.num_values:
@@ -253,7 +253,9 @@ def is_page_multiple_submit(flow_desc, page_desc):
 def make_grade_histogram(pctx, flow_id):
     qset = FlowSession.objects.filter(
             course=pctx.course,
-            flow_id=flow_id)
+            flow_id=flow_id,
+            participation__roles__permissions__permission=(
+                pperm.included_in_grade_statistics))
 
     hist = Histogram(
         num_min_value=0,
@@ -311,6 +313,8 @@ def make_page_answer_stats_list(pctx, flow_id, restrict_to_first_attempt):
                     .filter(
                         flow_session__course=pctx.course,
                         flow_session__flow_id=flow_id,
+                        flow_session__participation__roles__permissions__permission=(
+                            pperm.included_in_grade_statistics),
                         page_data__group_id=group_desc.id,
                         page_data__page_id=page_desc.id,
                         is_submitted_answer=True,
@@ -493,6 +497,8 @@ def page_analytics(pctx, flow_id, group_id, page_id):
             .filter(
                 flow_session__course=pctx.course,
                 flow_session__flow_id=flow_id,
+                flow_session__participation__roles__permissions__permission=(
+                    pperm.included_in_grade_statistics),
                 page_data__group_id=group_id,
                 page_data__page_id=page_id,
                 is_submitted_answer=True,
