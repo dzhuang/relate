@@ -31,16 +31,18 @@ r.clipboard_clear()
 lp_json_list = []
 lp_json_list.append(lp.json)
 
-print lp_json_list
+#print lp_json_list
 
 import pickle
 with open('lp.bin', 'wb') as f:
     pickle.dump(lp_json_list, f)
 
-
+#lp_simplex_2_iter_max_min.bin
 with open('lp.bin', 'rb') as f:
     lp_json_list_loaded = pickle.load(f)
 
+with open('lp_simplex_3_iter_max_min.bin', 'rb') as f:
+    lp_json_list_loaded = pickle.load(f)
 
 template = latex_jinja_env.get_template('/utils/lp_dual_solution.tex')
 
@@ -75,14 +77,14 @@ for l in lp_json_list_loaded:
     #     forced_right_wrapper='[")", ")^T"]',
     # )
     tex = template.render(
-        show_question=False,
+        show_question=True,
         show_answer=False,
         show_blank_answer=True,
         lp=lp,
         answer0=u"<strong>$(%s)$</strong>或<strong>$(%s)$</strong>." % (
         ",".join(lp.dual_opt_solution_str_list[0]), ",".join(lp.dual_opt_solution_str_list[1])),
-        answer1="(%s)" % ",".join(lp.dual_opt_solution_list[0]),
-        answer2="(%s)" % ",".join(lp.dual_opt_solution_list[1]),
+        answer1="(%s)" % ", ".join(lp.dual_opt_solution_list[0]),
+        answer2="(%s)" % ", ".join(lp.dual_opt_solution_list[1]),
         forced_left_wrapper='["("]',
         forced_right_wrapper='[")", ")^T"]',
     )
