@@ -570,6 +570,7 @@ class LatexRandomCodeTextQuestion(LatexRandomQuestion, TextQuestion):
 
 
 class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestion):
+    need_update_page_desc = True
 
     def __init__(self, vctx, location, page_desc):
         super(LatexRandomCodeInlineMultiQuestion, self).__init__(vctx, location, page_desc)
