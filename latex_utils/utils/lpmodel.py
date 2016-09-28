@@ -1574,14 +1574,17 @@ class LP(object):
 
                     opt_x = []
                     opt_value = []
+                    opt_value_without_frac = []
                     for idx in range(len(res.x)):
                         opt_x.append(get_variable_symbol(self.x, idx+1, superscript="*"))
                         opt_value.append(trans_latex_fraction(res.x[idx], wrap=False))
+                        opt_value_without_frac.append(trans_latex_fraction(res.x[idx], wrap=False, use_frac=False))
                     opt_x_str = r"(%s)^T" % ",\,".join(opt_x)
                     opt_value_str = r"(%s)^T" % ",\,".join(opt_value)
                     opt_solution = "%s = %s" % (opt_x_str, opt_value_str)
                     self.opt_x = opt_x
                     self.opt_value = opt_value
+                    self.opt_value_without_frac = opt_value_without_frac
                     opt_fun_value = res.fun if self.qtype == "min" else res.fun *(-1)
                     self.fun = opt_fun_value
                     if self.solutionCommon.method != "modified_simplex":

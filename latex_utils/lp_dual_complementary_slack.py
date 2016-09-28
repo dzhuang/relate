@@ -44,7 +44,7 @@ with open('lp.bin', 'rb') as f:
 with open('lp_simplex_3_iter_max_min.bin', 'rb') as f:
     lp_json_list_loaded = pickle.load(f)
 
-template = latex_jinja_env.get_template('/utils/lp_dual_solution.tex')
+template = latex_jinja_env.get_template('/utils/lp_dual_complementary_slack.tex')
 
 for l in lp_json_list_loaded:
     import json
@@ -52,42 +52,65 @@ for l in lp_json_list_loaded:
 
     lp = LP(**lp_dict)
     lp.solve(method="simplex")
-    if lp.qtype == "max":
-        qtype_str = u"大"
-    else:
-        qtype_str = u"小"
 
-    # tex = template.render(
-    #     answer_table_iters=iter(range(1, 5)),
-    #     show_question = True,
-    #     show_answer = True,
-    #     show_blank = True,
-    #     show_blank_answer = True,
-    #     #show_lp = True,
-    #     #standardized_lp = lp.standardized_LP(),
-    #     pre_description=u"""已知某最%s值线性规划问题在引入松弛变量$%s$标准化后，用单纯形法计算时得到的初始单纯形表及最终单纯形表如下表所示。
-    #     """ % (qtype_str, ",".join(lp.solutionCommon.slack_str_list_intro)),
-    #     lp=lp,
-    #     after_description=u"该问题的对偶问题的最优解是______________________________________________________________________________.",
-    #     answer0 = u"<strong>$(%s)$</strong>或<strong>$(%s)$</strong>." % (",".join(lp.dual_opt_solution_str_list[0]), ",".join(lp.dual_opt_solution_str_list[1])),
-    #     answer1= "(%s)" % ",".join(lp.dual_opt_solution_list[0]),
-    #     answer2 = "(%s)" % ",".join(lp.dual_opt_solution_list[1]),
-    #     answer_after_description = u"该问题的对偶问题的最优解是<strong>$(%s)$</strong>或<strong>$(%s)$</strong>." % (",".join(lp.dual_opt_solution_str_list[0]), ",".join(lp.dual_opt_solution_str_list[1])),
-    #     forced_left_wrapper='["("]',
-    #     forced_right_wrapper='[")", ")^T"]',
-    # )
+    use_prime_result=False
+
+    after_description=(
+        u"的最优解是$%s = (%s)^T$，" % (r"(%s)^T" % ",\,".join(lp.opt_x), ",\,". join(lp.opt_value),)
+        +
+        u"则该问题的<strong>对偶问题</strong>的<strong>最优解</strong>是:")
+
+    blank_description = (
+        "$(%s)=$"
+        % ",\,".join(["y_{%s}" % str(idx + 1) for idx in range(len(lp.dual_opt_solution_list[0]))])
+    )
+
+    answer1 = "(%s)" % ",".join(lp.dual_opt_solution_list[0])
+
+    if not use_prime_result:
+        after_description = (
+            u"的对偶问题最优解是$(%s) = (%s)$，" % (
+                ",\,".join(["y^*_{%s}" % str(idx + 1) for idx in range(len(lp.dual_opt_solution_list[0]))]),
+                ",\,".join(lp.dual_opt_solution_str_list[0]))
+            +
+            u"则该问题的<strong>最优解</strong>是：")
+        blank_description = (
+            "$%s=$"
+            % (r"(%s)^T" % ",\,".join(lp.opt_x),)
+        )
+
+        answer1 = "(%s)^T" % ",".join(lp.opt_value_without_frac)
+
     tex = template.render(
-        show_question=True,
-        show_answer=False,
-        show_blank_answer=True,
+        answer_table_iters=iter(range(1, 5)),
+        show_question = True,
+        show_answer = True,
+        show_blank = True,
+        show_blank_answer = True,
+        use_prime_result=use_prime_result,
+        blank_description=blank_description,
+        #show_lp = True,
+        #standardized_lp = lp.standardized_LP(),
+        pre_description=u"已知线性规划问题",
         lp=lp,
-        answer0=u"<strong>$(%s)$</strong>或<strong>$(%s)$</strong>." % (
-        ",".join(lp.dual_opt_solution_str_list[0]), ",".join(lp.dual_opt_solution_str_list[1])),
-        answer1="(%s)" % ", ".join(lp.dual_opt_solution_list[0]),
-        answer2="(%s)" % ", ".join(lp.dual_opt_solution_list[1]),
+        after_description=after_description,
+        #answer0 = u"<strong>$(%s)$</strong>或<strong>$(%s)$</strong>." % (",\,".join(lp.dual_opt_solution_str_list[0]), ",\,".join(lp.dual_opt_solution_str_list[1])),
+        answer1= answer1,
         forced_left_wrapper='["("]',
         forced_right_wrapper='[")", ")^T"]',
     )
+    # tex = template.render(
+    #     show_question=True,
+    #     show_answer=False,
+    #     show_blank_answer=True,
+    #     lp=lp,
+    #     answer0=u"<strong>$(%s)$</strong>或<strong>$(%s)$</strong>." % (
+    #     ",".join(lp.dual_opt_solution_str_list[0]), ",".join(lp.dual_opt_solution_str_list[1])),
+    #     answer1="(%s)" % ", ".join(lp.dual_opt_solution_list[0]),
+    #     answer2="(%s)" % ", ".join(lp.dual_opt_solution_list[1]),
+    #     forced_left_wrapper='["("]',
+    #     forced_right_wrapper='[")", ")^T"]',
+    # )
 
     r.clipboard_append(tex)
 
