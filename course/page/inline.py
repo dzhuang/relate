@@ -103,7 +103,7 @@ class InlineMultiQuestionForm(StyledInlineForm):
         answer_name_list = [answer_instance.name
                 for answer_instance in self.answer_instance_list]
 
-        for answer in cleaned_data.keys():
+        for answer in list(cleaned_data.keys()):
             idx = answer_name_list.index(answer)
             instance_idx = self.answer_instance_list[idx]
             field_name_idx = instance_idx.name
@@ -607,7 +607,7 @@ class InlineMultiQuestion(TextQuestionBase, PageBaseWithValue):
             answers_desc = getattr(self.page_desc.answers, name)
 
             parsed_answer = parse_question(
-                    None, None, name, answers_desc)
+                    vctx, location, name, answers_desc)
             answer_instance_list.append(parsed_answer)
 
         self.answer_instance_list = answer_instance_list

@@ -59,7 +59,7 @@ from course.constants import (
 
 # {{{ for mypy
 
-from typing import Tuple, Text, Optional, Any, Iterable  # noqa
+from typing import cast, Tuple, Text, Optional, Any, Iterable  # noqa
 from course.utils import CoursePageContext  # noqa
 from course.content import FlowDesc  # noqa
 from course.models import Course, FlowPageVisitGrade  # noqa
@@ -364,7 +364,7 @@ def export_gradebook_csv(pctx):
 
 class OpportunitySessionGradeInfo(object):
     def __init__(self, grade_state_machine, flow_session, grades=None):
-        # type: (GradeStateMachine, FlowSession, Optional[Any]) ->  None
+        # type: (GradeStateMachine, Optional[FlowSession], Optional[Any]) ->  None
 
         self.grade_state_machine = grade_state_machine
         self.flow_session = flow_session
@@ -580,9 +580,15 @@ def view_grades_by_opportunity(pctx, opp_id):
             my_grade_changes.append(grade_changes[gchng_idx])
             gchng_idx += 1
 
+        state_machine = GradeStateMachine()
+        state_machine.consume(my_grade_changes)
+
         # Advance in flow session list
         if flow_sessions is None:
-            my_flow_sessions = []  # type: List[FlowSession]
+            grade_table.append(
+                    (participation, OpportunitySessionGradeInfo(
+                        grade_state_machine=state_machine,
+                        flow_session=None)))
         else:
             while (
                     fsess_idx < len(flow_sessions) and (
@@ -598,26 +604,26 @@ def view_grades_by_opportunity(pctx, opp_id):
                 my_flow_sessions.append(flow_sessions[fsess_idx])
                 fsess_idx += 1
 
-        state_machine = GradeStateMachine()
-        state_machine.consume(my_grade_changes)
+            for fsession in my_flow_sessions:
+                total_sessions += 1
 
-        for fsession in my_flow_sessions:
-            total_sessions += 1
+                if fsession is None:
+                    continue
 
-            if fsession is None:
-                continue
+                if not fsession.in_progress:
+                    finished_sessions += 1
 
-            if not fsession.in_progress:
-                finished_sessions += 1
+                grade_table.append(
+                        (participation, OpportunitySessionGradeInfo(
+                            grade_state_machine=state_machine,
+                            flow_session=fsession)))
 
-            grade_table.append(
-                    (participation, OpportunitySessionGradeInfo(
-                        grade_state_machine=state_machine,
-                        flow_session=fsession)))
-
-    if view_page_grades and len(grade_table) > 0:
+    if view_page_grades and len(grade_table) > 0 and all(
+            info.flow_session is not None for _dummy1, info in grade_table):
         # Query grades for flow pages
-        all_flow_sessions = [info.flow_session for _dummy1, info in grade_table]
+        all_flow_sessions = [
+                cast(FlowSession, info.flow_session)
+                for _dummy1, info in grade_table]
         max_page_count = max(fsess.page_count for fsess in all_flow_sessions)
         page_numbers = list(range(1, 1 + max_page_count))
 
@@ -1086,7 +1092,8 @@ class ImportGradesForm(StyledForm):
             from course.utils import csv_data_importable
 
             importable, err_msg = csv_data_importable(
-                    file_contents,
+                    six.StringIO(
+                        file_contents.read().decode("utf-8", errors="replace")),
                     column_idx_list,
                     header_count)
 
@@ -1283,12 +1290,15 @@ def import_grades(pctx):
         is_import = "import" in request.POST
         if form.is_valid():
             try:
+                f = request.FILES["file"]
+                f.seek(0)
+                data = f.read().decode("utf-8", errors="replace")
                 total_count, grade_changes = csv_to_grade_changes(
                         log_lines=log_lines,
                         course=pctx.course,
                         grading_opportunity=form.cleaned_data["grading_opportunity"],
                         attempt_id=form.cleaned_data["attempt_id"],
-                        file_contents=request.FILES["file"],
+                        file_contents=six.StringIO(data),
                         attr_type=form.cleaned_data["attr_type"],
                         attr_column=form.cleaned_data["attr_column"],
                         points_column=form.cleaned_data["points_column"],
@@ -1568,11 +1578,13 @@ def download_all_submissions(pctx, flow_id):
 # {{{ edit_grading_opportunity
 
 class EditGradingOpportunityForm(StyledModelForm):
-    def __init__(self, *args, **kwargs):
-        # type: (*Any, **Any) -> None
+    def __init__(self, add_new, *args, **kwargs):
+        # type: (bool, *Any, **Any) -> None
         super(EditGradingOpportunityForm, self).__init__(*args, **kwargs)
 
-        self.fields["identifier"].disabled = True
+        if not add_new:
+            self.fields["identifier"].disabled = True
+
         self.fields["flow_id"].disabled = True
         self.fields["creation_time"].disabled = True
 
@@ -1601,20 +1613,28 @@ def edit_grading_opportunity(pctx, opportunity_id):
 
     request = pctx.request
 
-    gopp = get_object_or_404(GradingOpportunity, id=int(opportunity_id))
+    num_opportunity_id = int(opportunity_id)
+    if num_opportunity_id == -1:
+        gopp = GradingOpportunity(course=pctx.course)
+        add_new = True
+    else:
+        gopp = get_object_or_404(GradingOpportunity, id=num_opportunity_id)
+        add_new = False
 
     if gopp.course.id != pctx.course.id:
         raise SuspiciousOperation(
                 "may not edit grading opportunity in different course")
 
     if request.method == 'POST':
-        form = EditGradingOpportunityForm(request.POST, instance=gopp)
+        form = EditGradingOpportunityForm(add_new, request.POST, instance=gopp)
 
         if form.is_valid():
             form.save()
+            return redirect("relate-edit_grading_opportunity",
+                    pctx.course.identifier, form.instance.id)
 
     else:
-        form = EditGradingOpportunityForm(instance=gopp)
+        form = EditGradingOpportunityForm(add_new, instance=gopp)
 
     return render_course_page(pctx, "course/generic-course-form.html", {
         "form_description": _("Edit Grading Opportunity"),

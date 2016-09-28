@@ -855,6 +855,7 @@ def markup_to_html(
         text,  # type: Text
         reverse_func=None,  # type: Callable
         validate_only=False,  # type: bool
+        use_jinja=True,  # type: bool
         jinja_env={},  # type: Dict
         ):
     # type: (...) -> Text
@@ -890,55 +891,56 @@ def markup_to_html(
 
     # {{{ process through Jinja
 
-    from jinja2 import Environment, StrictUndefined
-    from relate.utils import as_local_time
-    env = Environment(
-            loader=GitTemplateLoader(repo, commit_sha),
-            undefined=StrictUndefined)
+    if use_jinja:
+        from jinja2 import Environment, StrictUndefined
+        from relate.utils import as_local_time
+        env = Environment(
+                loader=GitTemplateLoader(repo, commit_sha),
+                undefined=StrictUndefined)
 
-    def parse_date_spec_jinja(datespec):
-        return as_local_time(parse_date_spec(course, datespec))
+        def parse_date_spec_jinja(datespec):
+            return as_local_time(parse_date_spec(course, datespec))
 
-    env.globals["parse_date_spec"] = parse_date_spec_jinja
+        env.globals["parse_date_spec"] = parse_date_spec_jinja
 
-    # {{{ tex2img
+        # {{{ tex2img
 
-    from course.latex import tex_to_img_tag
+        from course.latex import tex_to_img_tag
 
-    def latex_not_enabled_warning(caller, *args, **kwargs):
-        return  "<div class='alert alert-danger'>%s</div>" % _(
-            "RELATE_LATEX_TO_IMAGE_ENABLED is set to False, "
-            "no image will be generated.")
+        def latex_not_enabled_warning(caller, *args, **kwargs):
+            return  "<div class='alert alert-danger'>%s</div>" % _(
+                "RELATE_LATEX_TO_IMAGE_ENABLED is set to False, "
+                "no image will be generated.")
 
-    def jinja_tex_to_img_tag(caller, *args, **kwargs):
-        from os.path import join
-        default_saving_folder = getattr(
-            settings, "RELATE_LATEX_IMAGE_SAVING_FOLDER_PATH",
-            join(settings.MEDIA_ROOT, "latex_image"))
-        kwargs["output_dir"] = default_saving_folder
-        return tex_to_img_tag(caller(), *args, **kwargs)
+        def jinja_tex_to_img_tag(caller, *args, **kwargs):
+            from os.path import join
+            default_saving_folder = getattr(
+                settings, "RELATE_LATEX_IMAGE_SAVING_FOLDER_PATH",
+                join(settings.MEDIA_ROOT, "latex_image"))
+            kwargs["output_dir"] = default_saving_folder
+            return tex_to_img_tag(caller(), *args, **kwargs)
 
-    template = env.from_string(text)
-    latex2image_enabled = getattr(
-        settings, "RELATE_LATEX_TO_IMAGE_ENABLED", False)
-    if latex2image_enabled:
-        try:
-            env.globals["latex"] = jinja_tex_to_img_tag
-            text = template.render(**jinja_env)
-        except:
-            if validate_only:
-                raise
-            else:
-                # fail silently
+        template = env.from_string(text)
+        latex2image_enabled = getattr(
+            settings, "RELATE_LATEX_TO_IMAGE_ENABLED", False)
+        if latex2image_enabled:
+            try:
+                env.globals["latex"] = jinja_tex_to_img_tag
                 text = template.render(**jinja_env)
-    else:
-        if not validate_only:
-            env.globals["latex"] = latex_not_enabled_warning
+            except:
+                if validate_only:
+                    raise
+                else:
+                    # fail silently
+                    text = template.render(**jinja_env)
         else:
-            raise ImproperlyConfigured(_(
-            "RELATE_LATEX_TO_IMAGE_ENABLED is set to False, "
-            "no image will be generated."))
-        text = template.render(**jinja_env)
+            if not validate_only:
+                env.globals["latex"] = latex_not_enabled_warning
+            else:
+                raise ImproperlyConfigured(_(
+                "RELATE_LATEX_TO_IMAGE_ENABLED is set to False, "
+                "no image will be generated."))
+            text = template.render(**jinja_env)
 
     # }}}
 
