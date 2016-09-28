@@ -61,11 +61,13 @@ blank1:
     - type: float_list_with_wrapper
       forced_left_wrapper: ["("]
       forced_right_wrapper: [")", ")^T"]
-      rtol: 0.00001
+      rtol: 0.0001
+      atol: 0.0001
       value: "\VAR{answer1}"
     - type: float_list_with_wrapper
       forced_left_wrapper: ["("]
       forced_right_wrapper: [")", ")^T"]
-      rtol: 0.00001
+      rtol: 0.0001
+      atol: 0.0001
       value: "\VAR{answer2}"
 \BLOCK{ endif -} \#{ after_description }

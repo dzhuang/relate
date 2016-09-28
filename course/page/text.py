@@ -431,10 +431,13 @@ class FloatListWithWrapperMatcher(TextAnswerMatcher):
                 required_attrs=(
                     ("type", str),
                     ("value", str),
+
+                    # atol is added to required_attrs because there maybe
+                    # elements in value which are zeros.
+                    ("atol", six.integer_types + (float, str)),
                     ),
                 allowed_attrs=(
                     ("rtol", six.integer_types + (float, str)),
-                    ("atol", six.integer_types + (float, str)),
                     ("allowed_left_wrapper_list", list),
                     ("allowed_right_wrapper_list", list),
                     ("forced_left_wrapper", list),
@@ -674,9 +677,8 @@ class FloatListWithWrapperMatcher(TextAnswerMatcher):
                         return 0
                 else:
                     if (abs(answer_float - corr_float)
-                            > self.matcher_desc.rtol):
+                            > self.matcher_desc.atol):
                         return 0
-
         return 1
 
     def correct_answer_text(self):
