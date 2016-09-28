@@ -5,8 +5,6 @@
 
 {% from "latex.jinja" import mytabular_preamble as preamble %}
 
-{% from "latex.jinja" import mytabular_preamble as preamble %}
-
 <p align="middle">
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
 \begin{keytable}[H]\centering
