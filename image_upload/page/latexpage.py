@@ -145,7 +145,8 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
             ("excluded_cache_key_files", list),
             ("cache_key_files", list),
             ("cache_key_attrs", list),
-            ("use_question_data_file_as_cache", bool)
+            ("use_question_data_file_as_cache", bool),
+            ("warm_up_by_sandbox", bool)
         )
 
     def update_page_data(self, page_context, page_data):
@@ -202,6 +203,8 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
         if not hasattr(self.page_desc, "random_question_data_file"):
             return {}
 
+        warm_up_by_sandbox = getattr(self.page_desc, "warm_up_by_sandbox", False)
+
         # get random question_data
         repo_bytes_data = get_repo_blob_data_cached(
             page_context.repo,
@@ -223,7 +226,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
         key_making_string = None
 
         for i in range(len(all_data)):
-            if not page_context.in_sandbox:
+            if not page_context.in_sandbox or not warm_up_by_sandbox:
                 random_data = choice(all_data)
             else:
                 random_data = all_data[i]
@@ -236,7 +239,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
 
             # this is used to let sandbox do the warm up job for
             # sequentially ordered data(not random)
-            if not page_context.in_sandbox:
+            if not page_context.in_sandbox or not warm_up_by_sandbox:
                 break
 
             page_data = {"question_data": question_data,
@@ -250,7 +253,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                 except KeyError:
                     continue
 
-        if page_context.in_sandbox:
+        if page_context.in_sandbox and warm_up_by_sandbox:
             random_data = choice(all_data)
             selected_data_bytes = BytesIO()
             pickle.dump(random_data, selected_data_bytes)
