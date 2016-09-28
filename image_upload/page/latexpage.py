@@ -173,28 +173,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
 
         return page_data
 
-    def initialize_page_data(self, page_context):
-        if not hasattr(self.page_desc, "random_question_data_file"):
-            return {}
-
-        # get random question_data
-        repo_bytes_data = get_repo_blob_data_cached(
-            page_context.repo,
-            self.page_desc.random_question_data_file,
-            page_context.commit_sha)
-        bio = BytesIO(repo_bytes_data)
-        repo_data_loaded = pickle.load(bio)
-        if not isinstance(repo_data_loaded, (list, tuple)):
-            return {}
-        n_data = len(repo_data_loaded)
-        if n_data < 1:
-            return {}
-        from random import choice
-        all_data = list(repo_data_loaded)
-        random_data = choice(all_data)
-        selected_data_bytes = BytesIO()
-        pickle.dump(random_data, selected_data_bytes)
-
+    def generate_question_data_key_making_string(self, page_context, selected_data_bytes):
         from base64 import b64encode
         question_data = b64encode(selected_data_bytes.getvalue()).decode()
 
@@ -217,11 +196,73 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
         if question_data:
             key_making_string += question_data
 
+        return question_data, key_making_string
+
+    def initialize_page_data(self, page_context):
+        if not hasattr(self.page_desc, "random_question_data_file"):
+            return {}
+
+        # get random question_data
+        repo_bytes_data = get_repo_blob_data_cached(
+            page_context.repo,
+            self.page_desc.random_question_data_file,
+            page_context.commit_sha)
+        bio = BytesIO(repo_bytes_data)
+        repo_data_loaded = pickle.load(bio)
+        if not isinstance(repo_data_loaded, (list, tuple)):
+            return {}
+        n_data = len(repo_data_loaded)
+        if n_data < 1:
+            return {}
+
+        all_data = list(repo_data_loaded)
+
+        from random import choice
+
+        question_data = None
+        key_making_string = None
+
+        for i in range(len(all_data)):
+            if not page_context.in_sandbox:
+                random_data = choice(all_data)
+            else:
+                random_data = all_data[i]
+            selected_data_bytes = BytesIO()
+            pickle.dump(random_data, selected_data_bytes)
+
+            question_data, key_making_string = (
+                self.generate_question_data_key_making_string(page_context, selected_data_bytes)
+            )
+
+            # this is used to let sandbox do the warm up job for
+            # sequentially ordered data(not random)
+            if not page_context.in_sandbox:
+                break
+
+            page_data = {"question_data": question_data,
+                         "key_making_string_md5": md5(key_making_string).hexdigest()
+                         }
+
+            for part in ["answer", "question", "blank", "blank_answer"]:
+                try:
+                    if self.get_cached_result(page_context, page_data, part=part, test_key_existance=True) == True:
+                        continue
+                except KeyError:
+                    continue
+
+        if page_context.in_sandbox:
+            random_data = choice(all_data)
+            selected_data_bytes = BytesIO()
+            pickle.dump(random_data, selected_data_bytes)
+            question_data, key_making_string = (
+                self.generate_question_data_key_making_string(page_context, selected_data_bytes)
+            )
+
         return {"question_data": question_data,
                 "key_making_string_md5": md5(key_making_string).hexdigest()
                 }
 
-    def get_cached_result(self, page_context, page_data, part=""):
+    def get_cached_result(self, page_context, page_data, part="", test_key_existance=False):
         #assert part in ["question", "answer"]
         will_save_file_local = False
 
@@ -262,6 +303,8 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
             result = def_cache.get(cache_key)
             if result is not None:
                 assert isinstance(result, six.string_types)
+                if test_key_existance:
+                    return True
                 if saved_file_path:
                     if not os.path.isfile(saved_file_path):
                         _file_write(saved_file_path, result.encode('UTF-8'))
