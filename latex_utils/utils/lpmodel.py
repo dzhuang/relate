@@ -9,6 +9,7 @@ from sympy import symbols, Matrix, Poly, latex
 from sympy.solvers.inequalities import reduce_rational_inequalities as ineq_solver, solve_rational_inequalities
 from sympy.simplify import nsimplify
 from sympy.core.numbers import Float as sympy_float
+import os
 
 tol = 1.0E-12
 EQ = [">", "<", "=", ">=", "<=", "=<", "=>"]
@@ -17,6 +18,11 @@ SA_TYPE = ["SA_c", "SA_p", "SA_b", "SA_A", "SA_x"]
 SA_klass_dict = {"c": "sa_c", "p": "sa_p", "b": "sa_b", "A": "sa_A", "x": "sa_x"}
 METHOD_NAME_DICT = {"simplex": u"单纯形法", "dual_simplex": u"对偶单纯形法"}
 OPT_CRITERIA_LITERAL_DICT = {"max": u"非正", "min": u"非负"}
+
+try:
+    from linprog import linprog
+except ImportError:
+    pass
 
 def latexify(s):
     try:
@@ -1391,11 +1397,6 @@ class LP(object):
         else:
             cnstr_orig_order = range(len(self.start_basis))
 
-        try:
-            from linprog import linprog
-        except:
-            pass
-
         def lin_callback(xk, **kwargs):
             t = np.copy(kwargs['tableau'])
             phase = np.copy(kwargs['phase'])
@@ -1560,7 +1561,11 @@ class LP(object):
                     non_basis_variable_set = set(range(n_variable)) - set(self.solutionPhase2.basis_list[-1])
                     non_basis_variable_0_cjbar_set = non_basis_variable_set - set(variable_non_0_cjbar.tolist())
 
-                    self.solve_status_reason = u"所有非基变量的检验数%s" % opt_judge_literal
+                    if self.solutionCommon.method != "dual_simplex":
+                        self.solve_status_reason = u"所有非基变量的检验数%s" % opt_judge_literal
+                    else:
+                        self.solve_status_reason = u"末表中的基本解可行"
+
                     if len(non_basis_variable_0_cjbar_set) > 0:
                         self.solve_status_reason += u"，且最优解中非基变量$%s$检验数为0" % ",".join(
                             [get_variable_symbol("x", idx + 1) for idx in list(non_basis_variable_0_cjbar_set)])

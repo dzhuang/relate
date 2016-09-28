@@ -53,7 +53,7 @@ for l in lp_json_list_loaded:
     lp = LP(**lp_dict)
     lp.solve(method="simplex")
 
-    use_prime_result=False
+    use_prime_result=True
 
     after_description=(
         u"的最优解是$%s = (%s)^T$，" % (r"(%s)^T" % ",\,".join(lp.opt_x), ",\,". join(lp.opt_value),)
@@ -62,7 +62,7 @@ for l in lp_json_list_loaded:
 
     blank_description = (
         "$(%s)=$"
-        % ",\,".join(["y_{%s}" % str(idx + 1) for idx in range(len(lp.dual_opt_solution_list[0]))])
+        % ",\,".join(["y^*_{%s}" % str(idx + 1) for idx in range(len(lp.dual_opt_solution_list[0]))])
     )
 
     answer1 = "(%s)" % ",".join(lp.dual_opt_solution_list[0])
