@@ -1003,7 +1003,7 @@ for l in lp_json_list_loaded:
         #r.clipboard_append(tex)
         final_lp_list1.append(lp.json)
         count1 += 1
-    if lp.solutionCommon.nit in [3, 4] and lp.res.status == 0:
+    if lp.solutionCommon.nit in [3] and lp.res.status == 0:
         final_lp_list2.append(lp.json)
         count2 += 1
 
