@@ -85,6 +85,12 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                     if not cf in page_desc.data_files:
                         raise ValidationError("%s: '%s' should be listed in 'data_files'"
                                               % (location, cf))
+            if hasattr(page_desc, "excluded_cache_key_files"):
+                for cf in page_desc.excluded_cache_key_files:
+                    if not cf in page_desc.data_files:
+                        vctx.add_warning("%s: '%s' is not in 'data_files'"
+                                              % (location, cf))
+
             for data_file in page_desc.data_files:
                 try:
                     if not isinstance(data_file, str):
@@ -110,6 +116,9 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
         # Whether use question data file as cache
         use_question_data_file_as_cache = getattr(page_desc, "use_question_data_file_as_cache", False)
         self.cache_key_files = getattr(page_desc, "cache_key_files", getattr(page_desc, "data_files"))
+        excluded_cache_key_files = getattr(page_desc, "excluded_cache_key_files", None)
+        if excluded_cache_key_files:
+            self.cache_key_files = [f for f in self.cache_key_files if f not in excluded_cache_key_files]
         if not use_question_data_file_as_cache:
             self.cache_key_files = [f for f in self.cache_key_files if f != page_desc.random_question_data_file]
         self.cache_key_attrs = getattr(page_desc, "cache_key_attrs", [])
@@ -133,6 +142,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
             ("background_code", str),
             ("answer_process_code", str),
             ("docker_timeout", (int, float)),
+            ("excluded_cache_key_files", list),
             ("cache_key_files", list),
             ("cache_key_attrs", list),
             ("use_question_data_file_as_cache", bool)
