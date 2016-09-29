@@ -345,7 +345,7 @@ def send_enrollment_decision(participation, approved, request=None):
         else:
             # This will happen when this method is triggered by
             # a model signal which doesn't contain a request object.
-            from django.utils.six.moves.urllib.parse import urljoin
+            from six.moves.urllib.parse import urljoin
             course_uri = urljoin(getattr(settings, "RELATE_BASE_URL"),
                                  course.get_absolute_url())
 
