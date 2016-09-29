@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
 
+# 只允许最大值问题，且必须满足对称对偶形式
+
+SAVED_QUESTION_2_iter = "lp_dual_complementary_basic_solution_2_iter.bin"
+SAVED_QUESTION_3_iter = "lp_dual_complementary_basic_solution_3_iter.bin"
+
 from latex_utils.utils.latex_utils import latex_jinja_env, _file_write
 from latex_utils.utils.lpmodel import LP
 from copy import deepcopy
@@ -38,13 +43,18 @@ with open('lp.bin', 'wb') as f:
     pickle.dump(lp_json_list, f)
 
 #lp_simplex_2_iter_max_min.bin
-with open('lp.bin', 'rb') as f:
+with open('lp_simplex_2_iter_max_min.bin', 'rb') as f:
     lp_json_list_loaded = pickle.load(f)
 
 with open('lp_simplex_3_iter_max_min.bin', 'rb') as f:
-    lp_json_list_loaded = pickle.load(f)
+    lp_json_list_loaded += pickle.load(f)
 
 template = latex_jinja_env.get_template('/utils/lp_dual_solution.tex')
+
+final_lp_list1 = []
+final_lp_list2 = []
+count1 = 0
+count2 = 0
 
 for l in lp_json_list_loaded:
     import json
@@ -89,5 +99,19 @@ for l in lp_json_list_loaded:
         forced_right_wrapper='[")", ")^T"]',
     )
 
-    r.clipboard_append(tex)
+    if lp.solutionCommon.nit in [2] and lp.res.status == 0 and lp.qtype=="max":
+        r.clipboard_append(tex)
+        final_lp_list1.append(lp.json)
+        count1 += 1
+    if lp.solutionCommon.nit in [3,4] and lp.res.status == 0 and lp.qtype=="max":
+        final_lp_list2.append(lp.json)
+        count2 += 1
+        r.clipboard_append(tex)
+
+print count1, count2
+
+with open(SAVED_QUESTION_2_iter, 'wb') as f:
+        pickle.dump(final_lp_list1, f)
+with open(SAVED_QUESTION_3_iter, 'wb') as f:
+    pickle.dump(final_lp_list2, f)
 
