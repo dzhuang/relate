@@ -295,7 +295,7 @@
 
                 <td class="td-dl">
                         {{ JQ_OPEN }} if (file.deleteUrl) { {{ JQ_CLOSE }}
-                        {% if IS_COURSE_STAFF %}
+                        {% if IS_COURSE_STAFF or MAY_CHANGE_ANSWER %}
                         {% block JS_DOWNLOAD_TEMPLATE_EDIT %}
                             {% if IS_COURSE_STAFF and SHOW_COPY_IMAGE_DATA %}
                                 {% block COPY_IMAGE_DATA %}
