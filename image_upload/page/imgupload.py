@@ -269,6 +269,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
             ("previewMaxHeight", (int, float)),
             ("maxNumberOfFiles", (int, float)),
             ("use_access_rules_tag", bool),
+            ("answer_explanation", "markup"),
         )
 
     def human_feedback_point_value(self, page_context, page_data):
@@ -922,6 +923,9 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                 ca += js
         except StopIteration:
             pass
+
+        if hasattr(self.page_desc, "answer_explanation"):
+            ca += markup_to_html(page_context, self.page_desc.answer_explanation)
 
         student_feedback = ""
         if self.allow_report_correct_answer_false:
