@@ -65,12 +65,13 @@ def is_course_staff(page_context):
     else:
         return False
 
-class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
-                          PageBaseWithHumanTextFeedback, PageBaseWithCorrectAnswer):
+
+class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
+                          PageBaseWithCorrectAnswer):
     grading_sort_by_page_data = True
 
     def __init__(self, vctx, location, page_desc):
-        super(LatexRandomQuestion, self).__init__(vctx, location, page_desc)
+        super(LatexRandomQuestionBase, self).__init__(vctx, location, page_desc)
 
         self.page_saving_folder = getattr(
             settings, "RELATE_LATEX_PAGE_SAVING_FOLDER_PATH",
@@ -134,14 +135,14 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                     self.cache_key_attrs.append(attr)
 
     def required_attrs(self):
-        return super(LatexRandomQuestion, self).required_attrs() + (
+        return super(LatexRandomQuestionBase, self).required_attrs() + (
             ("data_files", (list,str)),
             ("random_question_data_file", str),
             ("question_process_code", str),
         )
 
     def allowed_attrs(self):
-        return super(LatexRandomQuestion, self).allowed_attrs() + (
+        return super(LatexRandomQuestionBase, self).allowed_attrs() + (
             ("background_code", str),
             ("answer_process_code", str),
             ("docker_timeout", (int, float)),
@@ -406,7 +407,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
             markup_to_html(page_context,
                            answer_str)
 
-        return super(LatexRandomQuestion, self).body(page_context, page_data)\
+        return super(LatexRandomQuestionBase, self).body(page_context, page_data)\
                + markup_to_html(page_context, question_str)
 
     def jinja_runpy(
@@ -624,12 +625,16 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                     answer_str = answer_str_tmp
                     break
 
-        super_correct_answer = super(LatexRandomQuestion, self)\
+        super_correct_answer = super(LatexRandomQuestionBase, self)\
                 .correct_answer(page_context, page_data, answer_data, grade_data)
         if super_correct_answer:
             return super_correct_answer + markup_to_html(page_context, answer_str)
         else:
             return CA_PATTERN % markup_to_html(page_context, answer_str)
+
+
+class LatexRandomQuestion(LatexRandomQuestionBase):
+    pass
 
 
 class LatexRandomImageUploadQuestion(LatexRandomQuestion, ImageUploadQuestion):
