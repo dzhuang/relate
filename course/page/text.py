@@ -742,7 +742,8 @@ class FloatListWithWrapperMatcher(TextAnswerMatcher):
                         > self.matcher_desc.atol):
                     if each_percent:
                         scored_percentage -= each_percent
-                    return 0
+                    else:
+                        return 0
             if hasattr(self.matcher_desc, "rtol"):
                 if corr_float != 0:
                     if (abs(answer_float - corr_float)
@@ -750,13 +751,15 @@ class FloatListWithWrapperMatcher(TextAnswerMatcher):
                             > self.matcher_desc.rtol):
                         if each_percent:
                             scored_percentage -= each_percent
-                        return 0
+                        else:
+                            return 0
                 else:
                     if (abs(answer_float - corr_float)
                             > self.matcher_desc.atol):
                         if each_percent:
                             scored_percentage -= each_percent
-                        return 0
+                        else:
+                            return 0
 
         if scored_percentage > 0:
             return scored_percentage
