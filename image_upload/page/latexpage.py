@@ -68,6 +68,7 @@ def is_course_staff(page_context):
 class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
                           PageBaseWithHumanTextFeedback, PageBaseWithCorrectAnswer):
     grading_sort_by_page_data = True
+
     def __init__(self, vctx, location, page_desc):
         super(LatexRandomQuestion, self).__init__(vctx, location, page_desc)
 
@@ -111,7 +112,7 @@ class LatexRandomQuestion(PageBaseWithTitle, PageBaseWithValue,
             if not os.path.isdir(self.page_saving_folder):
                 os.makedirs(self.page_saving_folder)
 
-        self.docker_run_timeout = getattr(page_desc, "docker_timeout", 0.5)
+        self.docker_run_timeout = getattr(page_desc, "docker_timeout", 2)
 
         # These files/attrs are used to generate rendered body and correct answer
         
