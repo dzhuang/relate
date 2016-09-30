@@ -37,7 +37,9 @@ blank1:
     - type: float_list_with_wrapper
       forced_left_wrapper: ["("]
       forced_right_wrapper: [")", ")^T"]
-      rtol: 0.0001
-      atol: 0.0001
+      force_wrapper_percentage_list: [0, 0.3]
+      list_item_average_percentage: True
+      rtol: 0.01
+      atol: 0.01
       value: "\VAR{answer1}"
 \BLOCK{ endif -} \#{ after_description }

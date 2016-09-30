@@ -442,6 +442,10 @@ class FloatListWithWrapperMatcher(TextAnswerMatcher):
                     ("allowed_right_wrapper_list", list),
                     ("forced_left_wrapper", list),
                     ("forced_right_wrapper", list),
+                    ("force_wrapper_percentage_list", list),
+                    ("forced_left_wrapper_percentage", float),
+                    ("forced_right_wrapper_percentage", float),
+                    ("list_item_average_percentage", bool),
                 ),
                 )
 
@@ -519,6 +523,48 @@ class FloatListWithWrapperMatcher(TextAnswerMatcher):
                         "%s: 'value' ",
                         _("does not provide a valid right wrapper"))
                     % location)
+
+        if hasattr(self.matcher_desc, "force_wrapper_percentage_list"):
+            for w in self.matcher_desc.force_wrapper_percentage_list:
+                if not isinstance(w, (float,int)):
+                    raise ValidationError(
+                        string_concat(
+                            "%s: 'force_wrapper_percentage_list' ",
+                            _("must be an integar or float"),
+                            "%s"
+                        )
+                        % (location, w))
+            if len(self.matcher_desc.force_wrapper_percentage_list) != 2:
+                raise ValidationError(
+                    string_concat(
+                        "%s: 'force_wrapper_percentage_list' ",
+                        _("lenght of this list must be 2"),
+                    )
+                    % (location, ))
+            if sum(self.matcher_desc.force_wrapper_percentage_list) > 1:
+                vctx.add_warning(location,
+                                 _("sum of force_wrapper_percentage_list should not exceed 1."))
+
+        if hasattr(self.matcher_desc, "forced_left_wrapper_percentage"):
+            if self.matcher_desc.forced_left_wrapper_percentage > 1:
+                vctx.add_warning(location,
+                                 _("forced_left_wrapper_percentage should not exceed 1."))
+
+        if hasattr(self.matcher_desc, "forced_right_wrapper_percentage"):
+            if self.matcher_desc.forced_right_wrapper_percentage > 1:
+                vctx.add_warning(location,
+                                 _("forced_right_wrapper_percentage should not exceed 1."))
+
+        if (hasattr(self.matcher_desc, "forced_left_wrapper_percentage")
+            and
+            hasattr(self.matcher_desc, "forced_right_wrapper_percentage")):
+            if (self.matcher_desc.forced_left_wrapper_percentage
+                    +
+                    self.matcher_desc.forced_right_wrapper_percentage > 1):
+                vctx.add_warning(location,
+                                 _("sum of forced_left_wrapper_percentage "
+                                   "and forced_right_wrapper_percentage "
+                                   "should not exceed 1."))
 
         if hasattr(self.matcher_desc, "allowed_left_wrapper"):
             for lwrapper in self.matcher_desc.allowed_left_wrapper:
@@ -654,12 +700,38 @@ class FloatListWithWrapperMatcher(TextAnswerMatcher):
         answer_list, answer_lwrapper, answer_rwrapper = self.validate(s)
         corr_list, corr_lwrapper, corr_rwrapper = self.validate(self.matcher_desc.value)
 
-        if (answer_lwrapper != corr_lwrapper
-            or answer_rwrapper != corr_rwrapper):
-            return 0
+        total_percentage = 1
+        scored_percentage = 1
+        wrapper_percentage = 0
+
+        if hasattr(self.matcher_desc, "force_wrapper_percentage_list"):
+            if answer_lwrapper != corr_lwrapper:
+                scored_percentage -= self.matcher_desc.force_wrapper_percentage_list[0]
+            if answer_rwrapper != corr_rwrapper:
+                scored_percentage -= self.matcher_desc.force_wrapper_percentage_list[1]
+            wrapper_percentage += sum(self.matcher_desc.force_wrapper_percentage_list)
+        else:
+            if answer_lwrapper != corr_lwrapper:
+                if hasattr(self.matcher_desc, "forced_left_wrapper_percentage"):
+                    scored_percentage -= self.matcher_desc.forced_left_wrapper_percentage
+                    wrapper_percentage += self.matcher_desc.forced_left_wrapper_percentage
+                else:
+                    return 0
+
+            if answer_rwrapper != corr_rwrapper:
+                if hasattr(self.matcher_desc, "forced_right_wrapper_percentage"):
+                    scored_percentage -= self.matcher_desc.forced_right_wrapper_percentage
+                    wrapper_percentage += self.matcher_desc.forced_right_wrapper_percentage
+                else:
+                    return 0
 
         if len(answer_list) != len(corr_list):
             return 0
+
+        list_percentage = total_percentage - wrapper_percentage
+        each_percent = None
+        if hasattr(self.matcher_desc, "list_item_average_percentage"):
+            each_percent = list_percentage / len(corr_list)
 
         for i, number_str in enumerate(answer_list):
             answer_float = float_or_sympy_evalf(number_str)
@@ -668,18 +740,28 @@ class FloatListWithWrapperMatcher(TextAnswerMatcher):
             if hasattr(self.matcher_desc, "atol"):
                 if (abs(answer_float - corr_float)
                         > self.matcher_desc.atol):
+                    if each_percent:
+                        scored_percentage -= each_percent
                     return 0
             if hasattr(self.matcher_desc, "rtol"):
                 if corr_float != 0:
                     if (abs(answer_float - corr_float)
                             / abs(corr_float)
                             > self.matcher_desc.rtol):
+                        if each_percent:
+                            scored_percentage -= each_percent
                         return 0
                 else:
                     if (abs(answer_float - corr_float)
                             > self.matcher_desc.atol):
+                        if each_percent:
+                            scored_percentage -= each_percent
                         return 0
-        return 1
+
+        if scored_percentage > 0:
+            return scored_percentage
+        else:
+            return 0
 
     def correct_answer_text(self):
         return str(self.matcher_desc.value)
