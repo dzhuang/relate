@@ -683,8 +683,10 @@ class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestio
             ("blank_answer_process_code", str)
         )
 
-
-
+    def grade(self, page_context, page_data, answer_data, grade_data):
+        self.update_page_desc(page_context, page_data)
+        return super(LatexRandomCodeInlineMultiQuestion, self).grade(
+            page_context, page_data, answer_data, grade_data)
 
 
 class LatexRandomCodeQuestionWithHumanTextFeedback(
