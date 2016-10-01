@@ -37,7 +37,8 @@ ecdsa
 paramiko
 
 # A date picker widget
-git+https://github.com/inducer/django-bootstrap3-datetimepicker.git
+#git+https://github.com/inducer/django-bootstrap3-datetimepicker.git
+git+https://github.com/dzhuang/django-bootstrap3-datetimepicker.git
 
 # For in-class instant messaging
 #dnspython  # Py2
