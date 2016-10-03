@@ -402,7 +402,7 @@ urlpatterns = [
         "/flow-session"
         "/(?P<flow_session_id>[0-9]+)"
         "/(?P<ordinal>[0-9]+)"
-        "/page_interaction_email"
+        "/page-interaction-email"
         "/$",
         course.flow.send_flow_page_interaction_email,
         name="relate-flow_page_interaction_email"),

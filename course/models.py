@@ -628,7 +628,7 @@ def add_default_roles_and_permissions(course,
 
         add_student_permissions(role)
 
-    def add_instructor_permisisons(role):
+    def add_instructor_permissions(role):
         rpm(role=role, permission=pp.use_admin_interface)
         rpm(role=role, permission=pp.impersonate_role,
                 argument="ta").save()
@@ -684,7 +684,7 @@ def add_default_roles_and_permissions(course,
     add_unenrolled_permissions(unenrolled)
     add_student_permissions(student)
     add_teaching_assistant_permissions(teaching_assistant)
-    add_instructor_permisisons(instructor)
+    add_instructor_permissions(instructor)
 
 
 @receiver(post_save, sender=Course, dispatch_uid="add_default_permissions")

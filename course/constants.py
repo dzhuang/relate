@@ -356,6 +356,11 @@ class flow_permission:  # noqa
 
         (Optional) Once any page of the flow has been viewed, access to all content
         except for this session on this RELATE instance will be denied.
+
+    .. attribute:: send_interact_email_to_course_staff
+
+        (Optional) If present, the participant can send interaction emails to
+        course staffs for questions for each page with that permission.
     """
     view = "view"
     end_session = "end_session"
