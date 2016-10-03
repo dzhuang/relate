@@ -368,6 +368,8 @@ class flow_permission:  # noqa
     set_roll_over_expiration_mode = "set_roll_over_expiration_mode"
     see_session_time = "see_session_time"
     lock_down_as_exam_session = "lock_down_as_exam_session"
+    send_interact_email_to_course_staff =\
+        "send_interact_email_to_course_staff"
 
 FLOW_PERMISSION_CHOICES = (
         (flow_permission.view,
@@ -397,6 +399,9 @@ FLOW_PERMISSION_CHOICES = (
             pgettext_lazy("Flow permission", "See session time")),
         (flow_permission.lock_down_as_exam_session,
             pgettext_lazy("Flow permission", "Lock down as exam session")),
+        (flow_permission.send_interact_email_to_course_staff,
+         pgettext_lazy("Flow permission",
+                       "Send interaction email to course staff")),
         )
 
 # }}}
