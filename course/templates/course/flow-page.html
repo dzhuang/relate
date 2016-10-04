@@ -297,7 +297,7 @@
 
   {# {{{ flow page interaction email #}
 
-  {% if may_send_interaction_email %}
+  {% if may_send_email_about_flow_page %}
       <div class="row" align="right">
           <a href="{% url 'relate-flow_page_interaction_email' course.identifier flow_session.id ordinal %}"
              class="btn btn-primary btn-xs relate-btn-xs-vert-spaced"

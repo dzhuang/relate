@@ -1551,7 +1551,7 @@ def will_receive_feedback(permissions):
             or flow_permission.see_answer_after_submission in permissions)
 
 
-def may_send_interaction_email(permissions):
+def may_send_email_about_flow_page(permissions):
     # type: (frozenset[Text]) -> bool
 
     return flow_permission.send_email_about_flow_page in permissions
@@ -2036,8 +2036,8 @@ def view_flow_page(pctx, flow_session_id, ordinal):
             (flow_permission.change_answer in permissions)),
         "will_receive_feedback": will_receive_feedback(permissions),
         "show_answer": page_behavior.show_answer,
-        "may_send_interaction_email":
-            may_send_interaction_email(permissions),
+        "may_send_email_about_flow_page":
+            may_send_email_about_flow_page(permissions),
 
         "session_minutes": session_minutes,
         "time_factor": time_factor,
@@ -2245,7 +2245,7 @@ def post_flow_page(
 # {{{ view: send interaction email to course staffs in flow pages
 
 @course_view
-def send_flow_page_interaction_email(pctx, flow_session_id, ordinal):
+def send_email_about_flow_page(pctx, flow_session_id, ordinal):
 
     # {{{ check if interaction email is allowed for this page.
 
@@ -2273,7 +2273,7 @@ def send_flow_page_interaction_email(pctx, flow_session_id, ordinal):
     permissions = fpctx.page.get_modified_permissions_for_page(
             access_rule.permissions)
 
-    if not may_send_interaction_email(permissions):
+    if not may_send_email_about_flow_page(permissions):
         raise http.Http404()
 
     # }}}
