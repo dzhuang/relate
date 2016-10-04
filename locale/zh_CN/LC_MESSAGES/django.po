@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-10-04 04:49+0800\n"
+"POT-Creation-Date: 2016-10-04 10:33+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -949,157 +949,157 @@ msgstr "不要提交session并评分"
 msgid "unknown expiration mode"
 msgstr "未知的过期模式"
 
-#: .\course\constants.py:376
+#: .\course\constants.py:380
 msgctxt "Flow permission"
 msgid "View the flow"
 msgstr "查看flow"
 
-#: .\course\constants.py:378
+#: .\course\constants.py:382
 msgctxt "Flow permission"
 msgid "Submit answers"
 msgstr "提交回答"
 
-#: .\course\constants.py:380
+#: .\course\constants.py:384
 msgctxt "Flow permission"
 msgid "End session"
 msgstr "结束session"
 
-#: .\course\constants.py:382
+#: .\course\constants.py:386
 msgctxt "Flow permission"
 msgid "Change already-graded answer"
 msgstr "修改已经评分的回答"
 
-#: .\course\constants.py:385
+#: .\course\constants.py:389
 msgctxt "Flow permission"
 msgid "See whether an answer is correct"
 msgstr "查看答案是否正确"
 
-#: .\course\constants.py:388
+#: .\course\constants.py:392
 msgctxt "Flow permission"
 msgid "See the correct answer before answering"
 msgstr "在回答前查看正确的答案"
 
-#: .\course\constants.py:391
+#: .\course\constants.py:395
 msgctxt "Flow permission"
 msgid "See the correct answer after answering"
 msgstr "在回答后查看正确的答案"
 
-#: .\course\constants.py:394
+#: .\course\constants.py:398
 msgctxt "Flow permission"
 msgid "Cannot see flow result"
 msgstr "可以查看flow的结果"
 
-#: .\course\constants.py:397
+#: .\course\constants.py:401
 msgctxt "Flow permission"
 msgid "Set the session to 'roll over' expiration mode"
 msgstr "将这个session设为“展期”的过期模式"
 
-#: .\course\constants.py:399
+#: .\course\constants.py:403
 msgctxt "Flow permission"
 msgid "See session time"
 msgstr "查看session时间"
 
-#: .\course\constants.py:401
+#: .\course\constants.py:405
 msgctxt "Flow permission"
 msgid "Lock down as exam session"
 msgstr "锁定为测验session"
 
-#: .\course\constants.py:404
+#: .\course\constants.py:408
 msgctxt "Flow permission"
-msgid "Send interaction email to course staff"
-msgstr "向课务人员发送互动电子邮件"
+msgid "Send emails about the flow page to course staff"
+msgstr "向课务人员发送关于flow页面的问询电子邮件"
 
-#: .\course\constants.py:418
+#: .\course\constants.py:422
 msgctxt "Flow rule kind choices"
 msgid "Session Start"
 msgstr "session开始"
 
-#: .\course\constants.py:420
+#: .\course\constants.py:424
 msgctxt "Flow rule kind choices"
 msgid "Session Access"
 msgstr "session访问"
 
-#: .\course\constants.py:422
+#: .\course\constants.py:426
 msgctxt "Flow rule kind choices"
 msgid "Grading"
 msgstr "评分"
 
-#: .\course\constants.py:462
+#: .\course\constants.py:466
 msgctxt "Grade aggregation strategy"
 msgid "Use the max grade"
 msgstr "使用最高分"
 
-#: .\course\constants.py:464
+#: .\course\constants.py:468
 msgctxt "Grade aggregation strategy"
 msgid "Use the avg grade"
 msgstr "使用平均分"
 
-#: .\course\constants.py:466
+#: .\course\constants.py:470
 msgctxt "Grade aggregation strategy"
 msgid "Use the min grade"
 msgstr "使用最低分"
 
-#: .\course\constants.py:468
+#: .\course\constants.py:472
 msgctxt "Grade aggregation strategy"
 msgid "Use the earliest grade"
 msgstr "使用最早的得分"
 
-#: .\course\constants.py:470
+#: .\course\constants.py:474
 msgctxt "Grade aggregation strategy"
 msgid "Use the latest grade"
 msgstr "使用最迟的得分"
 
-#: .\course\constants.py:491
+#: .\course\constants.py:495
 msgctxt "Grade state change"
 msgid "Grading started"
 msgstr "评分已经开始"
 
-#: .\course\constants.py:493
+#: .\course\constants.py:497
 msgctxt "Grade state change"
 msgid "Graded"
 msgstr "已评分"
 
-#: .\course\constants.py:495
+#: .\course\constants.py:499
 msgctxt "Grade state change"
 msgid "Retrieved"
 msgstr "已获取"
 
-#: .\course\constants.py:497
+#: .\course\constants.py:501
 msgctxt "Grade state change"
 msgid "Unavailable"
 msgstr "无法获取"
 
-#: .\course\constants.py:499
+#: .\course\constants.py:503
 msgctxt "Grade state change"
 msgid "Extension"
 msgstr "延期"
 
-#: .\course\constants.py:501
+#: .\course\constants.py:505
 msgctxt "Grade state change"
 msgid "Report sent"
 msgstr "报告已发送"
 
-#: .\course\constants.py:503
+#: .\course\constants.py:507
 msgctxt "Grade state change"
 msgid "Do-over"
 msgstr "重新开始"
 
-#: .\course\constants.py:505
+#: .\course\constants.py:509
 msgctxt "Grade state change"
 msgid "Exempt"
 msgstr "剔除"
 
-#: .\course\constants.py:521
+#: .\course\constants.py:525
 msgctxt "Exam ticket state"
 msgid "Valid"
 msgstr "已通过有效性验证"
 
-#: .\course\constants.py:523
+#: .\course\constants.py:527
 msgctxt "Exam ticket state"
 msgid "Used"
 msgstr "已使用"
 
-#: .\course\constants.py:525
+#: .\course\constants.py:529
 msgctxt "Exam ticket state"
 msgid "Revoked"
 msgstr "已撤回"
@@ -4705,7 +4705,7 @@ msgid "Send an interaction email to course staff about this page"
 msgstr "向课务人员发送关于本页面的答疑邮件."
 
 #: .\course\templates\course\flow-page.html:339
-msgid "View in grade page"
+msgid "View in grading page"
 msgstr "在评分页中查看"
 
 #: .\course\templates\course\flow-page.html:388
