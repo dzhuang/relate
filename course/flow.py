@@ -1554,7 +1554,7 @@ def will_receive_feedback(permissions):
 def may_send_interaction_email(permissions):
     # type: (frozenset[Text]) -> bool
 
-    return flow_permission.send_interact_email_to_course_staff in permissions
+    return flow_permission.send_email_about_flow_page in permissions
 
 
 def get_page_behavior(
