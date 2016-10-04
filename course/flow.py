@@ -2056,6 +2056,7 @@ def view_flow_page(pctx, flow_session_id, ordinal):
 
     if fpctx.page.expects_answer() and fpctx.page.is_answer_gradable():
         args["max_points"] = fpctx.page.max_points(fpctx.page_data)
+        args["page_expect_answer_and_gradable"] = True
         if pctx.has_permission(pperm.assign_grade):
             from course.models import get_flow_grading_opportunity
             grading_rule = get_session_grading_rule (
@@ -2065,7 +2066,6 @@ def view_flow_page(pctx, flow_session_id, ordinal):
                 grading_rule.grade_identifier,
                 grading_rule.grade_aggregation_strategy)
             args["opportunity"] = opportunity
-            args["show_privileged_shortcut"] = True
 
     return render_course_page(
             pctx, "course/flow-page.html", args,
