@@ -364,10 +364,8 @@ def send_enrollment_decision(participation, approved, request=None):
                 message,
                 course.get_from_email(),
                 [participation.user.email])
-
-        if not getattr(
-                settings, "RELATE_EMAIL_SMTP_ALLOW_NONAUTHORIZED_SENDER",
-                False):
+        msg.bcc = [course.notify_email]
+        if not settings.RELATE_EMAIL_SMTP_ALLOW_NONAUTHORIZED_SENDER:
             from relate.utils import get_outbound_mail_connection
             msg.connection = get_outbound_mail_connection("robot")
         msg.send()
