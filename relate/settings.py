@@ -4,6 +4,10 @@ from __future__ import absolute_import
 Django settings for RELATE.
 """
 
+if False:
+    # for mypy
+    from typing import Callable, Any, Union  # noqa
+
 # Do not change this file. All these settings can be overridden in
 # local_settings.py.
 
@@ -13,6 +17,8 @@ from django.conf.global_settings import STATICFILES_FINDERS
 import os
 from os.path import join
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+
+RELATE_EMAIL_SMTP_ALLOW_NONAUTHORIZED_SENDER = True
 
 _local_settings_file = join(BASE_DIR, "local_settings.py")
 local_settings = {
@@ -45,7 +51,6 @@ INSTALLED_APPS = (
     "djcelery",
     "kombu.transport.django",
 
-    "relate",
     "accounts",
     "course",
     ) + local_settings.get("RELATE_CUSTOM_INSTALLED_APPS", ())
@@ -53,13 +58,13 @@ INSTALLED_APPS = (
 INSTALLED_APPS = INSTALLED_APPS + ("django.contrib.staticfiles",)
 
 if local_settings.get("RELATE_SIGN_IN_BY_SAML2_ENABLED", False):
-    INSTALLED_APPS = INSTALLED_APPS + ("djangosaml2",)
+    INSTALLED_APPS = INSTALLED_APPS + ("djangosaml2",)  # type: ignore
 
 # }}}
 
 # {{{ django: middleware
 
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE = (
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -73,7 +78,7 @@ MIDDLEWARE_CLASSES = (
     "course.exam.ExamFacilityMiddleware",
     "course.exam.ExamLockdownMiddleware",
     "relate.utils.MaintenanceMiddleware",
-)
+) + local_settings.get("RELATE_CUSTOM_MIDDLEWARE_CLASS", ())
 
 # }}}
 
@@ -86,7 +91,7 @@ AUTHENTICATION_BACKENDS = (
     )
 
 if local_settings["RELATE_SIGN_IN_BY_SAML2_ENABLED"]:
-    AUTHENTICATION_BACKENDS = AUTHENTICATION_BACKENDS + (
+    AUTHENTICATION_BACKENDS = AUTHENTICATION_BACKENDS + (  # type: ignore
             'course.auth.Saml2Backend',
             )
 
@@ -202,7 +207,7 @@ LOGIN_REDIRECT_URL = "/"
 # {{{ static
 
 STATICFILES_DIRS = (
-        #join(BASE_DIR, "relate", "static"),
+        join(BASE_DIR, "relate", "static"),
         )
 
 STATIC_URL = local_settings.get("STATIC_URL", '/static/')
@@ -221,7 +226,7 @@ SESSION_COOKIE_AGE = 12096000  # 20 weeks
 
 # {{{ app defaults
 
-RELATE_FACILITIES = {}
+RELATE_FACILITIES = {}  # type: Union[None,Dict[str, Dict[str, Any]], Callable[..., Dict[str, Dict[str, Any]]], ]  # noqa
 
 RELATE_TICKET_MINUTES_VALID_AFTER_USE = 0
 
@@ -239,7 +244,8 @@ for name, val in local_settings.items():
 
 # {{{ celery config
 
-BROKER_URL = 'django://'
+if not "BROKER_URL" in local_settings:
+    BROKER_URL = 'django://'
 
 CELERY_ACCEPT_CONTENT = ['pickle']
 CELERY_TASK_SERIALIZER = 'pickle'
@@ -248,8 +254,8 @@ CELERY_TRACK_STARTED = True
 
 if "CELERY_RESULT_BACKEND" not in globals():
     if ("CACHES" in globals()
-            and "LocMem" not in CACHES["default"]["BACKEND"]  # noqa
-            and "Dummy" not in CACHES["default"]["BACKEND"]  # noqa
+            and "LocMem" not in CACHES["default"]["BACKEND"]  # type:ignore # noqa
+            and "Dummy" not in CACHES["default"]["BACKEND"]  # type:ignore # noqa
             ):
         # If possible, we would like to use an external cache as a
         # result backend--because then the progress bars work, because
@@ -285,6 +291,5 @@ assert local_settings["RELATE_BASE_URL"]
 if "RELATE_EMAIL_APPELATION_PRIORITY_LIST" in local_settings:
     assert isinstance(
         local_settings["RELATE_EMAIL_APPELATION_PRIORITY_LIST"], list)
-
 
 # vim: foldmethod=marker

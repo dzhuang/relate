@@ -42,6 +42,21 @@ from django.utils.translation import (
 from django.utils import translation
 from django.conf import settings
 
+# {{{ mypy
+
+from typing import Text, Optional, Any, Tuple  # noqa
+from django import http  # noqa
+
+if False:
+    from course.models import (  # noqa
+            Course,
+            FlowSession
+            )
+    from course.content import Repo_ish  # noqa
+
+# }}}
+
+
 mark_safe_lazy = lazy(mark_safe, six.text_type)
 
 
@@ -60,8 +75,18 @@ class PageContext(object):
     which is used internally by the flow views.
     """
 
-    def __init__(self, course, repo, commit_sha, flow_session,
-            ordinal=None, in_sandbox=False, page_uri=None):
+    def __init__(
+            self,
+            course,  # type: Course
+            repo,  # type: Repo_ish
+            commit_sha,  # type: bytes
+            flow_session,  # type: FlowSession
+            ordinal=None,  # type: int or None # added by zd
+            in_sandbox=False,  # type: bool
+            page_uri=None,  # type: Optional[str]
+            ):
+        # type: (...) -> None
+
         self.course = course
         self.repo = repo
         self.commit_sha = commit_sha
@@ -78,7 +103,14 @@ class PageBehavior(object):
     .. attribute:: may_change_answer
     """
 
-    def __init__(self, show_correctness, show_answer, may_change_answer):
+    def __init__(
+            self,
+            show_correctness,  # type: bool
+            show_answer,  # type: bool
+            may_change_answer,  # type:bool
+            ):
+        # type: (...) -> None
+
         self.show_correctness = show_correctness
         self.show_answer = show_answer
         self.may_change_answer = may_change_answer
@@ -91,19 +123,26 @@ class PageBehavior(object):
     __nonzero__ = __bool__
 
 
-def markup_to_html(page_context, text):
-    from course.content import markup_to_html
+def markup_to_html(
+        page_context,  # type: PageContext
+        text,  # type: Text
+        use_jinja=True,  # type: bool
+        ):
+    # type: (...) -> Text
+    from course.content import markup_to_html as mth
 
-    return markup_to_html(
+    return mth(
             page_context.course,
             page_context.repo,
             page_context.commit_sha,
-            text)
+            text,
+            use_jinja=use_jinja)
 
 
 # {{{ answer feedback type
 
 def get_auto_feedback(correctness):
+    # type: (Optional[float]) -> Text
     if correctness is None:
         return six.text_type(_("No information on correctness of answer."))
     elif correctness == 0:
@@ -151,6 +190,8 @@ class AnswerFeedback(object):
     """
 
     def __init__(self, correctness, feedback=None, bulk_feedback=None):
+        # type: (Optional[float], Optional[Text], Optional[Text]) -> None
+
         if correctness is not None:
             # allow for extra credit
             if correctness < 0 or correctness > MAX_EXTRA_CREDIT_FACTOR:
@@ -164,6 +205,7 @@ class AnswerFeedback(object):
         self.bulk_feedback = bulk_feedback
 
     def as_json(self):
+        # type: () -> Tuple[Dict[Text, Any], Dict[Text, Any]]
         result = {
                 "correctness": self.correctness,
                 "feedback": self.feedback,
@@ -176,6 +218,8 @@ class AnswerFeedback(object):
 
     @staticmethod
     def from_json(json, bulk_json):
+        # type: (Any, Any) -> AnswerFeedback
+
         if json is None:
             return json
 
@@ -191,6 +235,8 @@ class AnswerFeedback(object):
                 )
 
     def percentage(self):
+        # type: () -> Optional[float]
+
         if self.correctness is not None:
             return 100*self.correctness
         else:
@@ -220,7 +266,7 @@ class PageBase(object):
     .. automethod:: allowed_attrs
 
     .. automethod:: get_modified_permissions_for_page
-    .. automethod:: make_page_data
+    .. automethod:: initialize_page_data
     .. automethod:: title
     .. automethod:: body
 
@@ -296,7 +342,7 @@ class PageBase(object):
 
         else:
             from warnings import warn
-            warn("Not passing page_desc to PageBase.__init__ is deprecated",
+            warn(_("Not passing page_desc to PageBase.__init__ is deprecated"),
                     DeprecationWarning)
             id = page_desc
             del page_desc
@@ -325,40 +371,64 @@ class PageBase(object):
             )
 
     def get_modified_permissions_for_page(self, permissions):
-        permissions = set(permissions)
+        # type: (frozenset[Text]) -> frozenset[Text]
+        rw_permissions = set(permissions)
 
         if hasattr(self.page_desc, "access_rules"):
             if hasattr(self.page_desc.access_rules, "add_permissions"):
                 for perm in self.page_desc.access_rules.add_permissions:
-                    permissions.add(perm)
+                    rw_permissions.add(perm)
 
             if hasattr(self.page_desc.access_rules, "remove_permissions"):
                 for perm in self.page_desc.access_rules.remove_permissions:
-                    if perm in permissions:
-                        permissions.remove(perm)
+                    if perm in rw_permissions:
+                        rw_permissions.remove(perm)
 
-        return permissions
+        return frozenset(rw_permissions)
 
-    def make_page_data(self, page_context):
+    def make_page_data(self):
+        return {}
+
+    def initialize_page_data(self, page_context):
         """Return (possibly randomly generated) data that is used to generate
         the content on this page. This is passed to methods below as the *page_data*
         argument. One possible use for this argument would be a random permutation
         of choices that is generated once (at flow setup) and then used whenever
         this page is shown.
         """
-        return {}
+        data = self.make_page_data()
+        if data:
+            from warnings import warn
+            warn(_("%s is using the make_page_data compatiblity hook, which "
+                 "is deprecated.") % type(self).__name__,
+                 DeprecationWarning)
+
+        return data
+
+    def update_page_data(self, page_context, page_data):
+        """
+        This happens when course repo is updated. It is useful when page_data is
+        generated using materials in repo.
+        """
+        return page_data
 
     def title(self, page_context, page_data):
+        # type: (PageContext, Dict) -> str
+
         """Return the (non-HTML) title of this page."""
 
         raise NotImplementedError()
 
     def body(self, page_context, page_data):
+        # type: (PageContext, Dict) -> str
+
         """Return the (HTML) body of the page."""
 
         raise NotImplementedError()
 
     def expects_answer(self):
+        # type: () -> bool
+
         """
         :return: a :class:`bool` indicating whether this page lets the
             user provide an answer of some type.
@@ -366,6 +436,7 @@ class PageBase(object):
         raise NotImplementedError()
 
     def is_answer_gradable(self):
+        # type: () -> bool
         """
         :return: a :class:`bool` indicating whether answers on this can
             have :meth:`grade` called on them.
@@ -375,6 +446,7 @@ class PageBase(object):
         return True
 
     def max_points(self, page_data):
+        # type: (Any) -> float
         """
         :return: a :class:`int` or :class:`float` indicating how many points
             are achievable on this page.
@@ -383,14 +455,26 @@ class PageBase(object):
 
     # {{{ student input
 
-    def answer_data(self, page_context, page_data, form, files_data):
+    def answer_data(
+            self,
+            page_context,  # type:  PageContext
+            page_data,  # type: Any
+            form,  # type: forms.Form
+            files_data,  # type: Any
+            ):
+        # type: (...) -> Any
         """Return a JSON-persistable object reflecting the user's answer on the
         form. This will be passed to methods below as *answer_data*.
         """
         raise NotImplementedError()
 
-    def make_form(self, page_context, page_data,
-            answer_data, page_behavior):
+    def make_form(
+            self,
+            page_context,  # type: PageContext
+            page_data,  # type: Any
+            answer_data,  # type: Any
+            page_behavior,  # type: Any
+            ):
         """
         :arg answer_data: value returned by :meth:`answer_data`.
              May be *None*.
@@ -403,11 +487,25 @@ class PageBase(object):
 
         raise NotImplementedError()
 
-    def post_form(self, page_context, page_data, post_data, files_data):
+    def post_form(
+            self,
+            page_context,  # type: PageContext
+            page_data,  # type: Any
+            post_data,  # type: Any
+            files_data  # type: Any
+            ):
+        # type: (...) -> forms.Form
         raise NotImplementedError()
 
-    def process_form_post(self, page_context, page_data, post_data, files_data,
-            page_behavior):
+    def process_form_post(
+            self,
+            page_context,  # type: PageContext
+            page_data,  # type: Any
+            post_data,  # type: Any
+            files_data,  # type: Any
+            page_behavior,  # type: PageBehavior
+            ):
+        # type: (...) -> forms.Form
         """Return a form with the POST response from *post_data* and *files_data*
         filled in.
 
@@ -419,13 +517,19 @@ class PageBase(object):
         """
 
         from warnings import warn
-        warn("%s is using the post_form compatiblity hook, which "
-                "is deprecated." % type(self).__name__,
+        warn(_("%s is using the post_form compatiblity hook, which "
+                "is deprecated.") % type(self).__name__,
                 DeprecationWarning)
 
         return self.post_form(page_context, page_data, post_data, files_data)
 
-    def form_to_html(self, request, page_context, form, answer_data):
+    def form_to_html(
+            self,
+            request,  # type: http.HttpRequest
+            page_context,  # type: PageContext
+            form,  # type: StyledForm
+            answer_data,  # type: Any
+            ):
         """Returns an HTML rendering of *form*."""
 
         from django.template import loader, RequestContext
@@ -447,7 +551,13 @@ class PageBase(object):
 
     # {{{ grader input
 
-    def make_grading_form(self, page_context, page_data, grade_data):
+    def make_grading_form(
+            self,
+            page_context,  # type: PageContext
+            page_data,  # type: Any
+            grade_data  # type: Any
+            ):
+        # type: (...) -> forms.Form
         """
         :arg grade_data: value returned by
             :meth:`update_grade_data_from_grading_form`.  May be *None*.
@@ -456,8 +566,15 @@ class PageBase(object):
         """
         return None
 
-    def post_grading_form(self, page_context, page_data, grade_data,
-            post_data, files_data):
+    def post_grading_form(
+            self,
+            page_context,  # type: PageContext
+            page_data,  # type: Any
+            grade_data,  # type: Any
+            post_data,  # type: Any
+            files_data  # type: Any
+            ):
+        # type: (...) -> forms.Form
         """Return a form with the POST response from *post_data* and *files_data*
         filled in.
 
@@ -466,8 +583,14 @@ class PageBase(object):
         """
         raise NotImplementedError()
 
-    def update_grade_data_from_grading_form(self, page_context, page_data,
-            grade_data, grading_form, files_data):
+    def update_grade_data_from_grading_form(
+            self,
+            page_context,  # type: PageContext
+            page_data,  # type: Any
+            grade_data,  # type: Any
+            grading_form,  # type: Any
+            files_data  # type: Any
+            ):
         """Return an updated version of *grade_data*, which is a
         JSON-persistable object reflecting data on grading of this response.
         This will be passed to other methods as *grade_data*.
@@ -475,7 +598,14 @@ class PageBase(object):
 
         return grade_data
 
-    def grading_form_to_html(self, request, page_context, grading_form, grade_data):
+    def grading_form_to_html(
+            self,
+            request,  # type: http.HttpRequest
+            page_context,  # type: PageContext
+            grading_form,  # type: Any
+            grade_data  # type: Any
+            ):
+        # type: (...) -> Text
         """Returns an HTML rendering of *grading_form*."""
 
         from crispy_forms.utils import render_crispy_form
@@ -487,7 +617,14 @@ class PageBase(object):
 
     # {{{ grading/feedback
 
-    def grade(self, page_context, page_data, answer_data, grade_data):
+    def grade(
+            self,
+            page_context,  # type: PageContext
+            page_data,  # type: Any
+            answer_data,  # type: Any
+            grade_data,  # type: Any
+            ):
+        # type: (...) -> Optional[AnswerFeedback]
         """Grade the answer contained in *answer_data*.
 
         :arg answer_data: value returned by :meth:`answer_data`,
@@ -500,7 +637,14 @@ class PageBase(object):
 
         raise NotImplementedError()
 
-    def correct_answer(self, page_context, page_data, answer_data, grade_data):
+    def correct_answer(
+            self,
+            page_context,  # type: PageContext
+            page_data,  # type: Any
+            answer_data,  # type: Any
+            grade_data,  # type: Any
+            ):
+        # type: (...) -> Optional[Text]
         """The correct answer to this page's interaction, formatted as HTML,
         or *None*.
         """
@@ -803,16 +947,6 @@ class PageBaseWithHumanTextFeedback(PageBase):
         if grading_form.cleaned_data["notify"] and page_context.flow_session:
             with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
                 from django.template.loader import render_to_string
-                
-                allow_nonauthorized_sender = getattr(settings, "RELATE_EMAIL_SMTP_ALLOW_NONAUTHORIZED_SENDER", False)
-                
-                if allow_nonauthorized_sender:
-                    reply_email = page_context.course.from_email
-                    from_email = page_context.course.from_email
-                else:
-                    reply_email = page_context.course.notify_email
-                    from_email = settings.DEFAULT_FROM_EMAIL
-             
                 message = render_to_string("course/grade-notify.txt", {
                     "page_title": self.title(page_context, page_data),
                     "course": page_context.course,
@@ -829,10 +963,19 @@ class PageBaseWithHumanTextFeedback(PageBase):
                         % {'identifier': page_context.course.identifier,
                             'flow_id': page_context.flow_session.flow_id},
                         message,
-                        from_email,
+                        getattr(settings, "GRADER_FEEDBACK_EMAIL_FROM",
+                                page_context.course.get_from_email()),
                         [page_context.flow_session.participation.user.email])
                 msg.bcc = [page_context.course.notify_email]
-                msg.reply_to = [reply_email]
+
+                # This will allow user to reply to email to sender, currently,
+                # emails sent (even by TAs) will be reply to instructors.
+                # need more fields in course models
+                msg.reply_to = [page_context.course.get_reply_to_email()]
+
+                if hasattr(settings, "GRADER_FEEDBACK_EMAIL_FROM"):
+                    from relate.utils import get_outbound_mail_connection
+                    msg.connection = get_outbound_mail_connection("grader_feedback")
                 msg.send()
 
         return grade_data
@@ -847,7 +990,14 @@ class PageBaseWithHumanTextFeedback(PageBase):
         return render_to_string(
                 "course/human-feedback-form.html", ctx, request)
 
-    def grade(self, page_context, page_data, answer_data, grade_data):
+    def grade(
+            self,
+            page_context,  # type: PageContext
+            page_data,  # type: Any
+            answer_data,  # type: Any
+            grade_data,  # type: Any
+            ):
+        # type: (...) -> Optional[AnswerFeedback]
         """This method is appropriate if the grade consists *only* of the
         feedback provided by humans. If more complicated/combined feedback
         is desired, a subclass would likely override this.
@@ -880,7 +1030,8 @@ class PageBaseWithHumanTextFeedback(PageBase):
                             _("The following feedback was provided"),
                             ":<p>")
                         + markup_to_html(
-                            page_context, grade_data["feedback_text"]))
+                            page_context, grade_data["feedback_text"],
+                            use_jinja=False))
 
             return AnswerFeedback(
                     correctness=correctness,

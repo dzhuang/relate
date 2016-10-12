@@ -30,7 +30,7 @@ import traceback
 try:
     from .code_feedback import Feedback, GradingComplete
 except SystemError:
-    from code_feedback import Feedback, GradingComplete
+    from code_feedback import Feedback, GradingComplete  # type: ignore
 
 
 __doc__ = """
@@ -103,6 +103,11 @@ PROTOCOL
         correspond to the matplotlib figure number.
 
         Optional.
+
+    .. attribute:: html
+
+        A list of HTML strings generated. These are aggressively sanitized
+        before being rendered.
 
     .. attribute:: points
 
@@ -208,11 +213,18 @@ def run_code(result, run_req):
         for name, contents in run_req.data_files.items():
             data_files[name] = b64decode(contents.encode())
 
+    generated_html = []
+    result["html"] = generated_html
+
+    def output_html(s):
+        generated_html.append(s)
+
     feedback = Feedback()
     maint_ctx = {
             "feedback": feedback,
             "user_code": user_code,
             "data_files": data_files,
+            "output_html": output_html,
             "GradingComplete": GradingComplete,
             }
 

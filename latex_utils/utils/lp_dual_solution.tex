@@ -1,0 +1,71 @@
+\BLOCK{- if show_question -}
+\BLOCK{- if pre_description -}
+\VAR{pre_description}
+\BLOCK{- endif -} \#{ pre_description }
+
+{% from "latex.jinja" import mytabular_preamble as preamble %}
+
+<p align="middle">
+{% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
+\begin{keytable}[H]\centering
+\begin{tabular}{c|c|c|\BLOCK{ for x in range(0, lp.solutionPhase2.all_variable_str_list|length) }
+C{1cm}\BLOCK{ endfor }|c}\hline\hline
+& \multicolumn{2}{c|}{$c_j$}\BLOCK{ for c in lp.solutionPhase2.goal_str_list }&\VAR{c}\BLOCK{ endfor }&\multirow{2}*{$\mathbf{b}$} \\ \cline{2-\VAR{lp.solutionPhase2.all_variable_str_list|length + 3 }}
+& $\mathbf{C_B}$&$\mathbf{X_B}$\BLOCK{ for x in lp.solutionPhase2.all_variable_str_list }&\VAR{x}\BLOCK{ endfor }&\\ \hline
+\BLOCK{ for i in range(0, lp.solutionPhase2.tableau_str_list|length) }
+\BLOCK{ if loop.first or loop.last }
+\multirow{\VAR{lp.solutionPhase2.tableau_str_list[0]|length}}{*}{\begin{sideways} \BLOCK{ if loop.first}初始表\BLOCK{ else }最优表\BLOCK{ endif } \end{sideways}}
+\BLOCK{ for j in range(0, lp.solutionPhase2.cb_str_list[i]|length + 1) }
+\BLOCK{ if not loop.last -} & \VAR{lp.solutionPhase2.cb_str_list[i][j]}&\VAR{lp.solutionPhase2.xb_str_list[i][j]}&
+\BLOCK{- else -}
+& \multicolumn{2}{c|}{$\bar c_j$}&
+\BLOCK{- endif } \VAR{(lp.solutionPhase2.tableau_str_list[i][j]|join("&"))|replace("[$\mathbf{", "$")|replace("}$]","$") } \\
+
+\BLOCK{- if loop.revindex0 == 1 } \cline{2-\VAR{lp.solutionPhase2.all_variable_str_list|length + 4 }} \BLOCK{ endif }
+\BLOCK{- if loop.revindex0 == 0 } \hline\hline \BLOCK{ endif }
+
+\BLOCK{ endfor }
+\BLOCK{ endif }
+\BLOCK{ endfor }
+\hline\end{tabular}
+\end{keytable}%
+{% endcall %}
+</p>
+
+
+\BLOCK{ if final_description -}
+\VAR{final_description}
+\BLOCK{ endif }
+
+
+
+\BLOCK{ if after_description -}
+\VAR{after_description}
+\BLOCK{ endif -} \#{ after_description }
+
+
+\BLOCK{- endif -} \#{ show_question }
+
+\BLOCK{ if show_blank -}
+该问题的对偶问题的<strong>最优解</strong>是[[blank1]]
+\BLOCK{ endif -} \#{ after_description }
+
+\BLOCK{ if show_blank_answer }
+blank1:
+    type: ShortAnswer
+    width: 10em
+    hint: <p><strong>输入格式示例:</strong></p><ul><li>(1,2,3,4)</li><li>(1,2,3,4,5)^T</li></ul><p><strong>说明：</strong><ol><li>必须使用英文输入法输入；<li>输入必须是解向量的形式，即用圆括号包围；</li><li>如果需要转置，需要在末尾加上<strong>^T</strong>表示转置.</li></ol>
+    correct_answer:
+    - type: float_list_with_wrapper
+      forced_left_wrapper: ["("]
+      forced_right_wrapper: [")", ")^T"]
+      rtol: 0.0001
+      atol: 0.0001
+      value: "\VAR{answer1}"
+    - type: float_list_with_wrapper
+      forced_left_wrapper: ["("]
+      forced_right_wrapper: [")", ")^T"]
+      rtol: 0.0001
+      atol: 0.0001
+      value: "\VAR{answer2}"
+\BLOCK{ endif -} \#{ after_description }

@@ -35,7 +35,6 @@ from django.utils.translation import ugettext_lazy as _, string_concat, ugettext
 from django.db import transaction
 
 from course.models import Course, FlowPageData, Participation
-from course.constants import participation_role
 from course.utils import course_view
 
 from image_upload.serialize import serialize
@@ -48,17 +47,24 @@ from braces.views import JSONResponseMixin
 import json
 from PIL import Image
 
+
 def is_course_staff(pctx):
     request = pctx.request
     course = pctx.course
-    from course.constants import participation_role
-    from course.auth import get_role_and_participation
-    role, participation = get_role_and_participation(request, course)
-    if role in [participation_role.teaching_assistant,
-            participation_role.instructor]:
+
+    from course.constants import participation_permission as pperm
+    from course.enrollment import (
+        get_participation_for_request,
+        get_participation_permissions)
+
+    participation = get_participation_for_request(request, course)
+
+    perms = get_participation_permissions(course, participation)
+
+    if (pperm.assign_grade, None) in perms:
         return True
-    else:
-        return False
+
+    return False
 
 class ImageCreateView(LoginRequiredMixin, ImageOperationMixin, JSONResponseMixin, CreateView):
     # Prevent download Json response in IE 7-10
@@ -196,16 +202,11 @@ def flow_page_image_download(pctx, flow_session_id, creator_id,
     
     privilege = False
     # whether the user is allowed to view the private image
-    participation = Participation.objects.get(
-        course=pctx.course, user=request.user)
-    if (
-        participation.role in (
-            [participation_role.instructor,
-             participation_role.teaching_assistant,
-             participation_role.auditor])
-        or request.user.is_staff):
+    from course.constants import participation_permission as pperm, participation_status
+
+    if pctx.has_permission(pperm.assign_grade):
         privilege = True
-    
+
     return _auth_download(request, download_object, privilege)
 
 @login_required

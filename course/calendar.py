@@ -38,10 +38,14 @@ import django.forms as forms
 
 from crispy_forms.layout import Submit
 
+import datetime
 from bootstrap3_datetime.widgets import DateTimePicker
 
-from relate.utils import StyledForm
-from course.models import (participation_role, Event)
+from relate.utils import StyledForm, as_local_time
+from course.constants import (
+        participation_permission as pperm,
+        )
+from course.models import Event
 
 
 # {{{ creation
@@ -129,10 +133,8 @@ def _create_recurring_events_backend(course, time, kind, starting_ordinal, inter
 @login_required
 @course_view
 def create_recurring_events(pctx):
-    if pctx.role not in [
-            participation_role.instructor,
-            participation_role.teaching_assistant]:
-        raise PermissionDenied(_("only instructors and TAs may do that"))
+    if not pctx.has_permission(pperm.edit_events):
+        raise PermissionDenied(_("may not edit events"))
 
     request = pctx.request
 
@@ -212,10 +214,8 @@ class RenumberEventsForm(StyledForm):
 @login_required
 @course_view
 def renumber_events(pctx):
-    if pctx.role not in [
-            participation_role.instructor,
-            participation_role.teaching_assistant]:
-        raise PermissionDenied(_("only instructors and TAs may do that"))
+    if not pctx.has_permission(pperm.edit_events):
+        raise PermissionDenied(_("may not edit events"))
 
     request = pctx.request
 
@@ -276,7 +276,13 @@ class EventInfo(object):
 
 @course_view
 def view_calendar(pctx):
-    from course.content import markup_to_html
+    from course.content import markup_to_html, parse_date_spec
+
+    from course.views import get_now_or_fake_time
+    now = get_now_or_fake_time(pctx.request)
+
+    if not pctx.has_permission(pperm.view_calendar):
+        raise PermissionDenied(_("may not view calendar"))
 
     events_json = []
 
@@ -319,6 +325,7 @@ def view_calendar(pctx):
                     human_title = kind_desc["title"]
 
         description = None
+        show_description = True
         event_desc = event_info_desc.get(six.text_type(event))
         if event_desc is not None:
             if "description" in event_desc:
@@ -332,9 +339,21 @@ def view_calendar(pctx):
             if "color" in event_desc:
                 event_json["color"] = event_desc["color"]
 
+            if "show_description_from" in event_desc:
+                ds = parse_date_spec(
+                        pctx.course, event_desc["show_description_from"])
+                if now < ds:
+                    show_description = False
+
+            if "show_description_until" in event_desc:
+                ds = parse_date_spec(
+                        pctx.course, event_desc["show_description_until"])
+                if now > ds:
+                    show_description = False
+
         event_json["title"] = human_title
 
-        if description:
+        if show_description and description:
             event_json["url"] = "#event-%d" % event.id
 
             start_time = event.time
@@ -342,7 +361,12 @@ def view_calendar(pctx):
 
             if event.all_day:
                 start_time = start_time.date()
-                end_time = end_time.date()
+                local_end_time = as_local_time(end_time)
+                end_midnight = datetime.time(tzinfo=local_end_time.tzinfo)
+                if local_end_time.time() == end_midnight:
+                    end_time = (end_time - datetime.timedelta(days=1)).date()
+                else:
+                    end_time = end_time.date()
 
             event_info_list.append(
                     EventInfo(
@@ -355,8 +379,7 @@ def view_calendar(pctx):
 
         events_json.append(event_json)
 
-    from course.views import get_now_or_fake_time
-    default_date = get_now_or_fake_time(pctx.request).date()
+    default_date = now.date()
     if pctx.course.end_date is not None and default_date > pctx.course.end_date:
         default_date = pctx.course.end_date
 

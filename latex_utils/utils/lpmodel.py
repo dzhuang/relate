@@ -9,6 +9,7 @@ from sympy import symbols, Matrix, Poly, latex
 from sympy.solvers.inequalities import reduce_rational_inequalities as ineq_solver, solve_rational_inequalities
 from sympy.simplify import nsimplify
 from sympy.core.numbers import Float as sympy_float
+import os
 
 tol = 1.0E-12
 EQ = [">", "<", "=", ">=", "<=", "=<", "=>"]
@@ -18,12 +19,23 @@ SA_klass_dict = {"c": "sa_c", "p": "sa_p", "b": "sa_b", "A": "sa_A", "x": "sa_x"
 METHOD_NAME_DICT = {"simplex": u"单纯形法", "dual_simplex": u"对偶单纯形法"}
 OPT_CRITERIA_LITERAL_DICT = {"max": u"非正", "min": u"非负"}
 
+try:
+    from linprog import linprog
+except ImportError:
+    pass
+
 def latexify(s):
     try:
         return latex(nsimplify(s))
     except Exception as e:
         #print(e.__str__())
         return latex(s)
+
+
+def oldMapNone(*ells):
+    '''replace for map(None, ....), invalid in 3.0 :-( '''
+    lgst = max([len(e) for e in ells])
+    return list(zip(* [list(e) + [None] * (lgst - len(e)) for e in ells]))
 
 
 class SA_base(object):
@@ -142,7 +154,7 @@ class sa_result(dict):
 
     def __repr__(self):
         if self.keys():
-            m = max(map(len, list(self.keys()))) + 1
+            m = max(list(map(len, list(self.keys())))) + 1
             return '\n'.join([k.rjust(m) + ': ' + repr(v)
                               for k, v in sorted(self.items())])
         else:
@@ -1190,6 +1202,7 @@ class LP(object):
 
         # 对偶问题的最优解（列表） 第1个为只看松弛变量的，第2个为所有变量
         self.dual_opt_solution_str_list = []
+        self.dual_opt_solution_list = []
 
         # 灵敏度分析
         self.sa_result = []
@@ -1276,7 +1289,7 @@ class LP(object):
         p_constraints = copy.deepcopy(self.constraints_origin)
         rhs = copy.deepcopy(self.goal)
         constraints_sign = copy.deepcopy(self.sign)
-        constraints = map(list, map(None, *p_constraints))
+        constraints = list(map(list, oldMapNone(*p_constraints)))
 
         goal = constraints.pop(-1)
         sign = constraints.pop(-1)
@@ -1383,9 +1396,6 @@ class LP(object):
             cnstr_orig_order = eq_cnstr_orig_order + ub_cnstr_orig_order
         else:
             cnstr_orig_order = range(len(self.start_basis))
-
-        # from scipy.optimize import linprog
-        from linprog import linprog
 
         def lin_callback(xk, **kwargs):
             t = np.copy(kwargs['tableau'])
@@ -1513,6 +1523,11 @@ class LP(object):
 
         if not self.need_artificial_variable and res.status == 0:
             # 只有引入松弛变量的问题才计算对偶问题的最优解，否则不计算
+            dual_opt_solution_abstract_str_no_frac = [trans_latex_fraction(v, wrap=False, use_frac=False) for v in dual_opt_solution_abstract]
+            dual_opt_solution_str_no_frac = [trans_latex_fraction(v, wrap=False, use_frac=False) for v in dual_opt_solution]
+            self.dual_opt_solution_list = [
+                dual_opt_solution_abstract_str_no_frac,
+                dual_opt_solution_str_no_frac]
             dual_opt_solution_abstract_str = [trans_latex_fraction(v, wrap=False) for v in dual_opt_solution_abstract]
             dual_opt_solution_str = [trans_latex_fraction(v, wrap=False) for v in dual_opt_solution]
             self.dual_opt_solution_str_list = [dual_opt_solution_abstract_str] + [dual_opt_solution_str]
@@ -1546,7 +1561,11 @@ class LP(object):
                     non_basis_variable_set = set(range(n_variable)) - set(self.solutionPhase2.basis_list[-1])
                     non_basis_variable_0_cjbar_set = non_basis_variable_set - set(variable_non_0_cjbar.tolist())
 
-                    self.solve_status_reason = u"所有非基变量的检验数%s" % opt_judge_literal
+                    if self.solutionCommon.method != "dual_simplex":
+                        self.solve_status_reason = u"所有非基变量的检验数%s" % opt_judge_literal
+                    else:
+                        self.solve_status_reason = u"末表中的基本解可行"
+
                     if len(non_basis_variable_0_cjbar_set) > 0:
                         self.solve_status_reason += u"，且最优解中非基变量$%s$检验数为0" % ",".join(
                             [get_variable_symbol("x", idx + 1) for idx in list(non_basis_variable_0_cjbar_set)])
@@ -1560,14 +1579,17 @@ class LP(object):
 
                     opt_x = []
                     opt_value = []
+                    opt_value_without_frac = []
                     for idx in range(len(res.x)):
                         opt_x.append(get_variable_symbol(self.x, idx+1, superscript="*"))
                         opt_value.append(trans_latex_fraction(res.x[idx], wrap=False))
+                        opt_value_without_frac.append(trans_latex_fraction(res.x[idx], wrap=False, use_frac=False))
                     opt_x_str = r"(%s)^T" % ",\,".join(opt_x)
                     opt_value_str = r"(%s)^T" % ",\,".join(opt_value)
                     opt_solution = "%s = %s" % (opt_x_str, opt_value_str)
                     self.opt_x = opt_x
                     self.opt_value = opt_value
+                    self.opt_value_without_frac = opt_value_without_frac
                     opt_fun_value = res.fun if self.qtype == "min" else res.fun *(-1)
                     self.fun = opt_fun_value
                     if self.solutionCommon.method != "modified_simplex":
@@ -1687,7 +1709,7 @@ def get_single_constraint(constraint, x_list, use_seperator=True, as_lhs_rhs_lis
     return constraint_str
 
 
-def trans_latex_fraction(f, wrap=True):
+def trans_latex_fraction(f, wrap=True, use_frac=True):
     from fractions import Fraction
     if not isinstance(f, str):
         try:
@@ -1713,9 +1735,10 @@ def trans_latex_fraction(f, wrap=True):
     if frac.startswith("-"):
         negative = True
         frac = frac[1:]
-    if "/" in frac:
-        frac_list = frac.split("/")
-        frac = r"\frac{%s}{%s}" % (frac_list[0], frac_list[1])
+    if use_frac:
+        if "/" in frac:
+            frac_list = frac.split("/")
+            frac = r"\frac{%s}{%s}" % (frac_list[0], frac_list[1])
     if not wrap:
         if negative:
             frac = r"-" + frac
@@ -1910,7 +1933,7 @@ class LpSolution(object):
 
             # 用于改进单纯形法
             self.tableau_list[i] = Matrix(t)
-            self.modi_B_list.append(B_list_i)
+            self.modi_B_list.append(B)
             self.modi_B_1_list.append(B_1)
             self.modi_b_list.append(self.tableau_list[i][:-1, -1])
             self.modi_CJBAR_list.append(C_j_BAR.tolist())
@@ -1928,8 +1951,8 @@ class LpSolution(object):
         self.modi_b_list = []
         for i in range(len(self.basis_list)):
             self.modi_basis_list[i] = [get_variable_symbol("x", j+1) for j in self.modi_basis_list[i]]
-            self.modi_bp_list[i] = [get_variable_symbol("p", j+1) for j in self.modi_bp_list[i]]
-            self.modi_B_list[i] = [list_to_matrix(self.modi_B_list[i])]
+            self.modi_bp_list[i] = [get_variable_symbol(r"\mathbf{p}", j+1) for j in self.modi_bp_list[i]]
+            self.modi_B_list[i] = [list_to_matrix(self.modi_B_list[i].tolist())]
             self.modi_B_1_list[i] = [list_to_matrix(self.modi_B_1_list[i].tolist())]
 
             all_variable = self.get_all_variable()
@@ -2040,9 +2063,9 @@ class LpSolutionPhase1(LpSolution):
 class LpSolutionPhase2(LpSolution):
     def get_all_variable(self):
         if self.need_two_phase:
-            return self.variable_list + [abs(v) for v in self.slack_variable_list]
+            return list(self.variable_list) + [abs(v) for v in self.slack_variable_list]
         else:
-            return self.variable_list + [abs(v) for v in self.slack_variable_list] + self.artificial_variable_list
+            return list(self.variable_list) + [abs(v) for v in self.slack_variable_list] + self.artificial_variable_list
 
     def get_goal_list(self):
         n_variable = len(self.get_all_variable())

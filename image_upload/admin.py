@@ -11,7 +11,6 @@ from django.contrib.admin.views.main import ChangeList
 from django.http import HttpResponseRedirect
 
 from course.admin import (
-    admin_roles,
     _filter_courses_for_user,
     _filter_course_linked_obj_for_user,
     _filter_participation_linked_obj_for_user)

@@ -1,0 +1,31 @@
+\BLOCK{- if show_question -}
+
+\BLOCK{ if pre_description -}
+\VAR{pre_description}
+\BLOCK{ endif }
+
+$$\begin{alignat*}{20}
+\VAR{lp.get_goal_str()}\\
+\text{s.t.}\quad
+\BLOCK{ for c in lp.constraints_str_list }
+\VAR{c}
+\BLOCK{ endfor }
+\VAR{lp.sign_str}
+\end{alignat*}$$
+
+
+\BLOCK{- endif -} \#{ show_question }
+
+
+\BLOCK{- if show_answer}
+<strong>解: </strong>根据对照关系直接写出对偶问题:
+$$\begin{alignat*}{20}
+\VAR{lp_dual.get_goal_str()}\\
+\text{s.t.}\quad
+\BLOCK{ for c in lp_dual.constraints_str_list }
+\VAR{c}
+\BLOCK{ endfor }
+\VAR{lp_dual.sign_str}
+\end{alignat*}$$
+
+\BLOCK{ endif -}\#{ show_answer }

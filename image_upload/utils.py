@@ -61,11 +61,11 @@ def get_page_image_behavior(pctx, flow_session_id, ordinal):
 
     now_datetime = get_now_or_fake_time(request)
     access_rule = get_session_access_rule(
-            flow_session, pctx.role, fpctx.flow_desc, now_datetime,
+            flow_session, fpctx.flow_desc, now_datetime,
             facilities=pctx.request.relate_facilities)
 
     grading_rule = get_session_grading_rule(
-            flow_session, pctx.role, fpctx.flow_desc, now_datetime)
+            flow_session, fpctx.flow_desc, now_datetime)
     generates_grade = (
             grading_rule.grade_identifier is not None
             and
@@ -133,7 +133,6 @@ class ImageOperationMixin(UserPassesTestMixin):
     raise_exception = True
 
     def test_func(self):
-        print self.request
         request = self.request
         flow_session_id = self.kwargs['flow_session_id']
         ordinal = self.kwargs['ordinal']

@@ -74,6 +74,9 @@ urlpatterns = [
     url(r"^logout/$",
         course.auth.sign_out,
         name="relate-logout"),
+    url(r"^logout-confirmation/$",
+        course.auth.sign_out_confirmation,
+        name="relate-logout-confirmation"),
     url(r"^profile/$",
         course.auth.user_profile,
         name="relate-user_profile"),
@@ -116,6 +119,11 @@ urlpatterns = [
         "/$",
         course.views.course_page,
         name="relate-course_page"),
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/edit/$",
+        course.views.edit_course,
+        name="relate-edit_course"),
     url(r"^course"
         "/" + COURSE_ID_REGEX +
         "/page"
@@ -235,6 +243,14 @@ urlpatterns = [
         course.grades.download_all_submissions,
         name="relate-download_all_submissions"),
 
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/edit-grading-opportunity"
+         "/(?P<opportunity_id>[-0-9]+)"
+        "/$",
+        course.grades.edit_grading_opportunity,
+        name="relate-edit_grading_opportunity"),
+
     # }}}
 
     # {{{ enrollment
@@ -262,6 +278,13 @@ urlpatterns = [
         "/$",
         course.enrollment.query_participations,
         name="relate-query_participations"),
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/edit-participation"
+         "/(?P<participation_id>[-0-9]+)"
+        "/$",
+        course.enrollment.edit_participation,
+        name="relate-edit_participation"),
 
     # }}}
 
@@ -374,6 +397,15 @@ urlpatterns = [
         "/$",
         course.flow.finish_flow_session_view,
         name="relate-finish_flow_session_view"),
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/flow-session"
+        "/(?P<flow_session_id>[0-9]+)"
+        "/(?P<ordinal>[0-9]+)"
+        "/flow-page-interaction-email"
+        "/$",
+        course.flow.send_email_about_flow_page,
+        name="relate-flow_page_interaction_email"),
 
     url(r"^course"
         "/" + COURSE_ID_REGEX +
@@ -476,7 +508,7 @@ urlpatterns = [
 
     #}}}
 
-    url(r'^admin/', include(admin.site.urls)),
+    url(r'^admin/', admin.site.urls),
     
     # {{{ image_upload
     url(r'^image_upload/', include('image_upload.urls')),
@@ -503,5 +535,11 @@ from django.conf.urls.static import static
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+if settings.DEBUG:
+    import debug_toolbar
+    urlpatterns += [
+        url(r'^__debug__/', include(debug_toolbar.urls)),
+    ]
 
 # vim: fdm=marker

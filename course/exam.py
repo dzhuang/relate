@@ -37,9 +37,10 @@ from django.core.exceptions import (  # noqa
         PermissionDenied, ObjectDoesNotExist, SuspiciousOperation)
 from django.contrib import messages  # noqa
 from django.contrib.auth.decorators import permission_required
+from django import http  # noqa
 from django.db import transaction
 from django.db.models import Q
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.cache import never_cache
@@ -54,7 +55,7 @@ from course.utils import course_view, render_course_page
 from course.constants import (
         exam_ticket_states,
         participation_status,
-        participation_role)
+        participation_permission as pperm)
 from course.views import get_now_or_fake_time
 
 from relate.utils import StyledForm
@@ -300,11 +301,8 @@ class BatchIssueTicketsForm(StyledForm):
 
 @course_view
 def batch_issue_exam_tickets(pctx):
-    if pctx.role not in [
-            participation_role.instructor,
-            ]:
-        raise PermissionDenied(
-                _("must be instructor or TA to batch-issue tickets"))
+    if not pctx.has_permission(pperm.batch_issue_exam_ticket):
+        raise PermissionDenied(_("may not batch-issue tickets"))
 
     form_text = ""
 
@@ -543,6 +541,7 @@ def is_from_exams_only_facility(request):
 
 
 def get_login_exam_ticket(request):
+    # type: (http.HttpRequest) -> ExamTicket
     exam_ticket_pk = request.session.get("relate_exam_ticket_pk_used_for_login")
 
     if exam_ticket_pk is None:
@@ -554,18 +553,21 @@ def get_login_exam_ticket(request):
 # {{{ lockdown middleware
 
 class ExamFacilityMiddleware(object):
-    def process_request(self, request):
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
         exams_only = is_from_exams_only_facility(request)
 
         if not exams_only:
-            return None
+            return self.get_response(request)
 
         if (exams_only and
                 "relate_session_locked_to_exam_flow_session_pk" in request.session):
             # ExamLockdownMiddleware is in control.
-            return None
+            return self.get_response(request)
 
-        from django.core.urlresolvers import resolve
+        from django.urls import resolve
         resolver_match = resolve(request.path)
 
         from course.exam import check_in_for_exam, issue_exam_ticket
@@ -595,6 +597,9 @@ class ExamFacilityMiddleware(object):
         elif request.path.startswith("/saml2"):
             ok = True
 
+        elif request.path.startswith("/select2"):
+            ok = True
+
         elif (
                 (request.user.is_staff
                     or
@@ -604,7 +609,7 @@ class ExamFacilityMiddleware(object):
             ok = True
 
         if not ok:
-            if (request.user.is_authenticated()
+            if (request.user.is_authenticated
                     and resolver_match.func is view_flow_page):
                 messages.add_message(request, messages.INFO,
                         _("Access to flows in an exams-only facility "
@@ -612,14 +617,19 @@ class ExamFacilityMiddleware(object):
                             "To do so, add 'lock_down_as_exam_session' to "
                             "your flow's access permissions."))
 
-            if request.user.is_authenticated():
+            if request.user.is_authenticated:
                 return redirect("relate-list_available_exams")
             else:
                 return redirect("relate-sign_in_choice")
 
+        return self.get_response(request)
+
 
 class ExamLockdownMiddleware(object):
-    def process_request(self, request):
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
         request.relate_exam_lockdown = False
 
         if "relate_session_locked_to_exam_flow_session_pk" in request.session:
@@ -636,7 +646,7 @@ class ExamLockdownMiddleware(object):
 
             request.relate_exam_lockdown = True
 
-            from django.core.urlresolvers import resolve
+            from django.urls import resolve
             resolver_match = resolve(request.path)
 
             from course.views import (get_repo_file, get_current_repo_file)
@@ -664,6 +674,9 @@ class ExamLockdownMiddleware(object):
                 ok = True
 
             elif request.path.startswith("/saml2"):
+                ok = True
+
+            elif request.path.startswith("/select2"):
                 ok = True
 
             elif (
@@ -695,6 +708,8 @@ class ExamLockdownMiddleware(object):
                         exam_flow_session.course.identifier,
                         exam_flow_session.flow_id)
 
+        return self.get_response(request)
+
 # }}}
 
 
@@ -703,7 +718,7 @@ class ExamLockdownMiddleware(object):
 def list_available_exams(request):
     now_datetime = get_now_or_fake_time(request)
 
-    if request.user.is_authenticated():
+    if request.user.is_authenticated:
         participations = (
                 Participation.objects.filter(
                     user=request.user,

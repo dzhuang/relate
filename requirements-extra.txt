@@ -35,3 +35,16 @@ django-qiniu-storage
 
 # For redis, requiring redis-server
 django-redis
+
+# atomic copy and write
+atomicwrites
+
+# debug
+django-debug-panel
+django-debug-toolbar
+
+# email
+django-celery-email
+
+# atomic write files avoiding race condition
+atomicwrites

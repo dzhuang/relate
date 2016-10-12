@@ -33,7 +33,6 @@ from django.utils.translation import ugettext_lazy as _
 from django.utils.timezone import now
 
 from relate.utils import format_datetime_local, as_local_time
-from course.models import Course, FlowSession, FlowPageData
 
 from imagekit.models import ImageSpecField
 from imagekit.processors import ResizeToFit
@@ -61,7 +60,7 @@ def user_directory_path(instance, filename):
 
 class UserImage(models.Model):
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
-            verbose_name=_('Creator'), on_delete=models.CASCADE)
+            verbose_name=_('Creator'), on_delete=models.SET_NULL)
     file = models.ImageField(upload_to=user_directory_path, 
             storage=sendfile_storage)
     slug = models.SlugField(max_length=256, blank=True)
@@ -122,7 +121,7 @@ from jsonfield import JSONField
 
 class FlowPageImage(models.Model):
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
-            verbose_name=_('Creator'), on_delete=models.CASCADE)
+            verbose_name=_('Creator'), on_delete=models.SET_NULL)
     file = models.ImageField(upload_to=user_flowsession_img_path, 
             storage=sendfile_storage)
     slug = models.SlugField(max_length=256, blank=True)
@@ -135,11 +134,11 @@ class FlowPageImage(models.Model):
             options={'quality': 50}
             )
     course = models.ForeignKey(
-            Course, null=True,
-            verbose_name=_('Course'), on_delete=models.CASCADE)
+            "course.Course", null=True,
+            verbose_name=_('Course'), on_delete=models.SET_NULL)
     flow_session = models.ForeignKey(
-            FlowSession, null=True, related_name="page_image_data",
-            verbose_name=_('Flow session'), on_delete=models.CASCADE)
+            "course.FlowSession", null=True, related_name="page_image_data",
+            verbose_name=_('Flow session'), on_delete=models.SET_NULL)
     image_page_id = models.CharField(max_length=200, null=True)
 
     is_image_textify = models.BooleanField(default=False, verbose_name=_("Load textified Image?"))
@@ -161,6 +160,7 @@ class FlowPageImage(models.Model):
     order = models.SmallIntegerField(default=0)
 
     def get_page_ordinal(self):
+        from course.models import FlowPageData
         fpd = FlowPageData.objects.get(
             flow_session=self.flow_session_id, page_id=self.image_page_id)
         return fpd.ordinal

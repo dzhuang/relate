@@ -9,16 +9,6 @@ from copy import deepcopy
 
 lp_list = []
 
-lp = LP(qtype="max",
-        goal=[2, -3, 4],
-        constraints=[
-            [1, 4, -2, "<", 20],
-            [-3, -1, 3, "<", 30],
-            [2, 1, 1, "<", 16],
-        ],
-        )
-
-lp_list.append(lp)
 
 lp = LP (qtype="max",
          goal=[1, 2, 1],
@@ -109,16 +99,6 @@ lp = LP(qtype="max",
             [1, 1, 0, "<", 5],
             [4, -1, 1, "<", 8],
             [0, 0, 1, "<", 2],
-        ],
-        )
-lp_list.append(lp)
-
-lp = LP(qtype="max",
-        goal=[4, -2, 2],
-        constraints=[
-            [3, 1, 1, "<", 60],
-            [1, -1, 2, "<", 10],
-            [2, 2, -2, "<", 40],
         ],
         )
 lp_list.append(lp)
@@ -285,7 +265,6 @@ lp = LP (qtype="max",
          ],
          )
 lp_list.append(lp)
-
 
 lp = LP (qtype="max",
          goal=[1, 2, 3],
