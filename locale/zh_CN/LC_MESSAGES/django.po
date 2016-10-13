@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-10-12 17:43+0800\n"
+"POT-Creation-Date: 2016-10-13 17:27+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -2253,11 +2253,11 @@ msgstr "已评分 (按评分时间排序)"
 msgid "may not assign grades"
 msgstr "不允许评分"
 
-#: .\course\grading.py:499 .\course\templates\course\flow-page.html:167
+#: .\course\grading.py:500 .\course\templates\course\flow-page.html:167
 msgid "Submit"
 msgstr "提交"
 
-#: .\course\grading.py:632
+#: .\course\grading.py:633
 msgid "may not view grader stats"
 msgstr "不允许查看得分统计"
 
@@ -2787,7 +2787,7 @@ msgstr "预览的git commit SHA"
 msgid "Tags"
 msgstr "标签"
 
-#: .\course\models.py:460 .\course\page\base.py:856
+#: .\course\models.py:460 .\course\page\base.py:879
 msgid "Notes"
 msgstr "注释"
 
@@ -3465,36 +3465,43 @@ msgstr ""
 msgid "%s is using the post_form compatiblity hook, which is deprecated."
 msgstr ""
 
-#: .\course\page\base.py:695
+#: .\course\page\base.py:601
+#, python-format
+msgid ""
+"%s is using the update_grade_data_from_grading_form compatiblity hook, which "
+"is deprecated."
+msgstr ""
+
+#: .\course\page\base.py:714
 #, python-format
 msgid ""
 "PageBaseWithTitle subclass '%s' does not implement markdown_body_for_title()"
 msgstr "PageBaseWithTitle的子类\"%s\"未使用markdown_body_for_title()方法"
 
-#: .\course\page\base.py:706
+#: .\course\page\base.py:725
 msgid "no title found in body or title attribute"
 msgstr "没有在body中找到title，也没有title属性"
 
-#: .\course\page\base.py:807
+#: .\course\page\base.py:826
 msgid "Grade assigned, in percent"
 msgstr "给予的评分（百分比）"
 
-#: .\course\page\base.py:813
+#: .\course\page\base.py:832
 msgid "Grade percent"
 msgstr "得分的百分比"
 
-#: .\course\page\base.py:819
+#: .\course\page\base.py:838
 #, python-format
 msgid ""
 "Grade assigned, as points out of %.1f. Fill out either this or 'grade "
 "percent'."
 msgstr "给予的评分, %.1f分中取得的分值. 填入此项或者\"得分的百分比\". "
 
-#: .\course\page\base.py:827
+#: .\course\page\base.py:846
 msgid "Grade points"
 msgstr "得分的分值"
 
-#: .\course\page\base.py:833
+#: .\course\page\base.py:852
 msgid ""
 "Feedback to be shown to student, using <a href='http://documen.tician.de/"
 "relate/content.html#relate-markup'>RELATE-flavored Markdown</a>"
@@ -3502,21 +3509,29 @@ msgstr ""
 "将反馈给学生的信息, 建议使用<a href='http://documen.tician.de/relate/content."
 "html#relate-markup'>RELATE方式的Markdown模式</a>. "
 
-#: .\course\page\base.py:837
+#: .\course\page\base.py:856
 msgid "Feedback text"
 msgstr "反馈文字"
 
-#: .\course\page\base.py:840
+#: .\course\page\base.py:859
 msgid ""
 "Checking this box and submitting the form will notify the participant with a "
 "generic message containing the feedback text"
-msgstr "勾选此项并提交这个表单, 将会向参与者发送一个包含了反馈信息的消息. "
+msgstr "勾选此项并提交这个表单, 将会向参与者发送一个包含了反馈信息的邮件. "
 
-#: .\course\page\base.py:843
+#: .\course\page\base.py:862
 msgid "Notify"
 msgstr "发送通知"
 
-#: .\course\page\base.py:846
+#: .\course\page\base.py:865
+msgid "Allow recipient to reply to this email?"
+msgstr "允许收件人回复本邮件？"
+
+#: .\course\page\base.py:866
+msgid "May reply email to me"
+msgstr "允许回复给我"
+
+#: .\course\page\base.py:869
 msgid ""
 "Whether the grade and feedback are to be shown to student. (If you would "
 "like to release all grades at once, do not use this. Instead, use the 'shown "
@@ -3526,30 +3541,45 @@ msgstr ""
 "是否允许学生看到分数和反馈. (如果您希望把所有成绩一次性发布，请不要使用这一"
 "项, 而是在成绩册管理中的'得分机会'中勾选'展示给学生')."
 
-#: .\course\page\base.py:851
+#: .\course\page\base.py:874
 msgid "Released"
 msgstr "已发布"
 
-#: .\course\page\base.py:854
+#: .\course\page\base.py:877
 msgid "Internal notes, not shown to student"
 msgstr "内部注释, 学生不可见"
 
-#: .\course\page\base.py:869 .\course\page\base.py:883
+#: .\course\page\base.py:882
+msgid ""
+"Checking this box and submitting the form will notify the instructor with a "
+"generic message containing the notes"
+msgstr "勾选此项并提交这个表单, 将会向任课老师发送一个包含以上注释信息的邮件. "
+
+#: .\course\page\base.py:885
+msgid "Notify instructor"
+msgstr "通知任课老师"
+
+#: .\course\page\base.py:898 .\course\page\base.py:912
 msgid "Grade (percent) and Grade (points) disagree"
 msgstr "百分比评分与分值评分不一致"
 
-#: .\course\page\base.py:962
+#: .\course\page\base.py:991
 msgid "New notification"
 msgstr "一条新的通知"
 
-#: .\course\page\base.py:1008 .\course\page\choice.py:280
+#: .\course\page\base.py:1027
+#, python-format
+msgid "Grading notes from %(ta)s"
+msgstr "来自%(ta)s的评分注释"
+
+#: .\course\page\base.py:1071 .\course\page\choice.py:280
 #: .\course\page\choice.py:477 .\course\page\code.py:591
 #: .\course\page\code.py:1003 .\course\page\inline.py:851
-#: .\course\page\text.py:1290
+#: .\course\page\text.py:1296
 msgid "No answer provided."
 msgstr "未回答. "
 
-#: .\course\page\base.py:1030
+#: .\course\page\base.py:1093
 msgid "The following feedback was provided"
 msgstr "有以下的反馈信息"
 
@@ -3585,7 +3615,7 @@ msgid "ChoiceQuestion does not allow any choices marked 'disregard'"
 msgstr ""
 
 #: .\course\page\choice.py:294 .\course\page\inline.py:818
-#: .\course\page\text.py:1312
+#: .\course\page\text.py:1318
 msgid "A correct answer is"
 msgstr "参考答案"
 
@@ -3745,7 +3775,7 @@ msgstr ""
 "不支持的长度单位'%(length_unit)s', 可使用的长度单位包括%(allowed_length_unit)"
 "s"
 
-#: .\course\page\inline.py:293 .\course\page\text.py:1255
+#: .\course\page\inline.py:293 .\course\page\text.py:1261
 msgid "at least one answer must be provided"
 msgstr "至少要提供一个回答"
 
@@ -3756,7 +3786,7 @@ msgstr "至少要提供一个回答"
 msgid "answer"
 msgstr "回答"
 
-#: .\course\page\inline.py:326 .\course\page\text.py:1270
+#: .\course\page\inline.py:326 .\course\page\text.py:1276
 msgid "no matcher is able to provide a plain-text correct answer"
 msgstr "现有的匹配类无法提供一个普通文本型的标准答案"
 
@@ -3816,7 +3846,7 @@ msgstr "page必须是\"%s\"类型"
 msgid "unknown validator type"
 msgstr "未知的验证器类型"
 
-#: .\course\page\text.py:189 .\course\page\text.py:965
+#: .\course\page\text.py:189 .\course\page\text.py:971
 msgid "must be struct or string"
 msgstr "必须是一个struct或string型的数据"
 
@@ -3830,16 +3860,16 @@ msgid "unable to check symbolic expression"
 msgstr "无法检查symbolic表达式"
 
 #: .\course\page\text.py:462 .\course\page\text.py:480
-#: .\course\page\text.py:802 .\course\page\text.py:813
-#: .\course\page\text.py:831
+#: .\course\page\text.py:808 .\course\page\text.py:819
+#: .\course\page\text.py:837
 msgid "does not provide a valid float literal"
 msgstr "提供了一个无效的float字符串"
 
-#: .\course\page\text.py:469 .\course\page\text.py:820
+#: .\course\page\text.py:469 .\course\page\text.py:826
 msgid "not allowed when 'value' is zero"
 msgstr "不允许'value'的值为0"
 
-#: .\course\page\text.py:490 .\course\page\text.py:848
+#: .\course\page\text.py:490 .\course\page\text.py:854
 msgid ""
 "Float match should have either rtol or atol--otherwise it will match any "
 "number"
@@ -3880,48 +3910,48 @@ msgid ""
 "should not exceed 1."
 msgstr ""
 
-#: .\course\page\text.py:591
+#: .\course\page\text.py:591 .\course\page\text.py:599
 msgid "cannot be converted into a list"
 msgstr "无法转换为一个list"
 
-#: .\course\page\text.py:602
+#: .\course\page\text.py:608
 msgid "is not a valid math number"
 msgstr "不是一个有效的数字"
 
-#: .\course\page\text.py:622 .\course\page\text.py:643
-#: .\course\page\text.py:672 .\course\page\text.py:685
+#: .\course\page\text.py:628 .\course\page\text.py:649
+#: .\course\page\text.py:678 .\course\page\text.py:691
 msgid "Error"
 msgstr "错误"
 
-#: .\course\page\text.py:623
+#: .\course\page\text.py:629
 #, python-format
 msgid ""
 "answer provided does not have a required left wrapper, allowed left wrappers "
 "are %s"
 msgstr "回答未输入一个必需的左包含符，允许的左包含符包括%s"
 
-#: .\course\page\text.py:644
+#: .\course\page\text.py:650
 #, python-format
 msgid ""
 "answer provided does not have a required right wrapper, allowed right "
 "wrappers are %s"
 msgstr "回答未输入一个必需的右包含符，允许的右包含符包括%s"
 
-#: .\course\page\text.py:673
+#: .\course\page\text.py:679
 #, python-format
 msgid "'%s' cannot be converted into a list"
 msgstr "'%s'无法转换为一个列表"
 
-#: .\course\page\text.py:686
+#: .\course\page\text.py:692
 msgid "TypeError"
 msgstr "类型错误"
 
-#: .\course\page\text.py:687
+#: .\course\page\text.py:693
 #, python-format
 msgid "can't convert '%s' to a valid math number"
 msgstr "无法将'%s'转换为一个有效的数字"
 
-#: .\course\page\text.py:836
+#: .\course\page\text.py:842
 msgid ""
 "Float match for 'value' zero should have atol--otherwise it will match any "
 "number"
@@ -3930,29 +3960,29 @@ msgstr "对于0值，float匹配器需包括'atol'项，否则任何数字都将
 #. Translators: a "matcher" is used to determine
 #. if the answer to text question (blank filling
 #. question) is correct.
-#: .\course\page\text.py:912
+#: .\course\page\text.py:918
 #, python-format
 msgid "%(matcherclassname)s only accepts '%(matchertype)s' patterns"
 msgstr "%(matcherclassname)s 只接受 \"%(matchertype)s\" 模式"
 
-#: .\course\page\text.py:924
+#: .\course\page\text.py:930
 #, python-format
 msgid "unknown match type '%(matchertype)s'"
 msgstr "未知的匹配(match)类型\"%(matchertype)s\""
 
-#: .\course\page\text.py:943
+#: .\course\page\text.py:949
 msgid "does not specify match type"
 msgstr "无法确定匹配(match)类型"
 
-#: .\course\page\text.py:951
+#: .\course\page\text.py:957
 msgid "uses deprecated 'matcher:answer' style"
 msgstr "使用了已淘汰了的(deprecated) \"matcher:answer\" 类型"
 
-#: .\course\page\text.py:972
+#: .\course\page\text.py:978
 msgid "matcher must supply 'type'"
 msgstr "matcher必须提供\"type\""
 
-#: .\course\page\text.py:1023
+#: .\course\page\text.py:1029
 msgid "unrecognized widget type"
 msgstr "无法识别的构件(widget)类型"
 
@@ -4370,12 +4400,9 @@ msgstr ""
 "系, 例如回复此邮件来说明您的情况. "
 
 #: .\course\templates\course\enrollment-decision-email.txt:12
-#: .\course\templates\course\enrollment-request-email.txt:8
 #: .\course\templates\course\grade-notify.txt:11
-#: .\course\templates\course\sign-in-email.txt:11
-#: .\course\templates\course\submit-notify.txt:8
-msgid "- RELATE staff "
-msgstr "- LearningWhat站务"
+msgid "course staff"
+msgstr "课务"
 
 #: .\course\templates\course\enrollment-request-email.txt:1
 #, python-format
@@ -4395,6 +4422,12 @@ msgstr ""
 "%(admin_uri)s\n"
 "去批准或拒绝这个申请. 提示: 选定(course participations)课程参与中的相关请求, "
 "然后使用下拉菜单中的\"批准\" 或 \"拒绝\" 来达成. \n"
+
+#: .\course\templates\course\enrollment-request-email.txt:8
+#: .\course\templates\course\sign-in-email.txt:11
+#: .\course\templates\course\submit-notify.txt:8
+msgid "- RELATE staff "
+msgstr "- LearningWhat站务"
 
 #: .\course\templates\course\exam-check-in.html:12
 #, python-format
@@ -5027,6 +5060,30 @@ msgstr "提交并转到下一页"
 #: .\course\templates\course\grade-flow-page.html:462
 msgid "Submit and next session"
 msgstr "提交并转到下一个session"
+
+#: .\course\templates\course\grade-internal-notes-notify.txt:2
+#, python-format
+msgid ""
+"\n"
+"I am sending you the internal grading notes regarding %(username)s's work on "
+"the page with title '%(page_title)s' in '%(flow_id)s' of '%"
+"(course_identifier)s'. The full text of the notes follows.\n"
+"-------------------------------------------------------------------\n"
+"%(notes_text)s\n"
+"-------------------------------------------------------------------\n"
+"Click here to review the page in the flow page:\n"
+"%(review_uri)s\n"
+"\n"
+msgstr ""
+"\n"
+"    此邮件是关于用户%(username)s在标题为%(page_title)s的页面的回答(%"
+"(course_identifier)s课程的%(flow_id)s)的评分页面中的内部注释. 全文如下：\n"
+"-------------------------------------------------------------------\n"
+"%(notes_text)s\n"
+"-------------------------------------------------------------------\n"
+"点击以下链在flow页面中查看反馈:\n"
+"%(review_uri)s\n"
+"\n"
 
 #: .\course\templates\course\grade-notify.txt:2
 #, python-format
