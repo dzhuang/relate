@@ -65,7 +65,7 @@
 
       {# {{{ send email button #}
       {% if may_send_email_about_flow_page %}
-        <div class="navbar-right relate-flow-page-menu"
+        <div class="navbar-right relate-flow-page-send-email"
              style="padding-right: 0.4em;">
             <a href="{% url 'relate-flow_page_interaction_email' course.identifier flow_session.id ordinal %}"
                class="btn btn-default relate-nav-button btn-info"
@@ -366,24 +366,6 @@
 
   {# }}} #}
 
-
-  {# {{{ flow page interaction email #}
-
-  {% if may_send_email_about_flow_page %}
-      <div class="row" align="right">
-          <a href="{% url 'relate-flow_page_interaction_email' course.identifier flow_session.id ordinal %}"
-             class="btn btn-primary btn-xs relate-btn-xs-vert-spaced"
-             title="{% trans 'Send an interaction email to course staff about this page' %}"
-             target="_blank"
-          >
-          <i class="fa fa-question-circle"></i>
-          {% trans "Questioning email" %}
-      </a>
-      </div>
-  {% endif %}
-
-  {# }}} #}
-
   {# {{{ change listening, navigation confirmation #}
 
   <script type="text/javascript">
@@ -591,7 +573,7 @@
 
           var cm = this.CodeMirror;
           cm.save = submit_page_for_feedback;
-      });
+        });
   </script>
 
   {# }}} #}
