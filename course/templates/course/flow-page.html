@@ -63,6 +63,21 @@
 
       {# }}} #}
 
+      {# {{{ send email button #}
+      {% if may_send_email_about_flow_page %}
+        <div class="navbar-right relate-flow-page-send-email"
+             style="padding-right: 0.4em;">
+            <a href="{% url 'relate-flow_page_interaction_email' course.identifier flow_session.id ordinal %}"
+               class="btn btn-default relate-nav-button btn-info"
+               title="{% trans 'Send an email about this page to course staff' %}"
+               target="_blank"
+            >
+                <i class="fa fa-envelope-o"></i>
+            </a>
+        </div>
+      {% endif %}
+      {# }}} #}
+
       {# {{{ menu #}
 
       <div class="navbar-right relate-flow-page-menu"
@@ -77,14 +92,6 @@
               <a href='{% url "relate-view_start_flow" course.identifier flow_session.flow_id %}'
                 >{% trans "Return to flow start page" %}</a>
             </li>
-            {% if may_send_email_about_flow_page %}
-              <li>
-                <a href="{% url 'relate-flow_page_interaction_email' course.identifier flow_session.id ordinal %}"
-                target="_blank">
-                   {% trans 'Send an email about this page to course staff' %}
-                </a>
-              </li>
-            {% endif %}
             {% if page_expect_answer_and_gradable %}
               {% if pperm.reopen_flow_session and not flow_session.in_progress and opportunity.id != None %}
                 <li>
@@ -159,21 +166,40 @@
 
       <div class="navbar-right relate-flow-submit"
         style="padding-right: 0.4em;">
-        <button type="submit" name="finish" class="btn btn-default relate-nav-button btn-success"
+        <button type="submit" name="finish" class="btn btn-default relate-nav-button
+        {% if flow_session.in_progress %}
+          {% if not interaction_kind == flow_session_interaction_kind.noninteractive %}
+            btn-success
+          {% endif %}
+        {% endif %}"
         title='
-          {% if interaction_kind == flow_session_interaction_kind.noninteractive %}
+        {% if interaction_kind == flow_session_interaction_kind.noninteractive %}
             {% trans "Go to end" %}
-          {% elif interaction_kind == flow_session_interaction_kind.ungraded %}
+        {% elif flow_session.in_progress %}
+          {% if interaction_kind == flow_session_interaction_kind.ungraded %}
             {% trans "Submit" %}
-          {% elif interaction_kind == flow_session_interaction_kind.practice_grade %}
-            {% trans "Finish" %}
           {% elif interaction_kind == flow_session_interaction_kind.permanent_grade %}
             {% trans "Submit assignment" %}
           {% else %}
             {% trans "Finish" %}
           {% endif %}
+        {% elif not flow_session.in_progress %}
+          {% if interaction_kind == flow_session_interaction_kind.ungraded or interaction_kind == flow_session_interaction_kind.permanent_grade %}
+            {% trans "Result" %}
+          {% else %}
+            {% trans "Finish" %}
+          {% endif %}
+        {% endif %}
         '>
-        <i class="fa fa-check"></i>
+        {% if interaction_kind == flow_session_interaction_kind.permanent_grade or interaction_kind == flow_session_interaction_kind.ungraded %}
+          {% if flow_session.in_progress %}
+            <i class="fa fa-check"></i>
+          {% else %}
+            <i class="fa fa-bar-chart"></i>
+          {% endif %}
+        {% else %}
+            <i class="fa fa-sign-out" aria-hidden="true"></i>
+        {% endif %}{{ interaction_kind }}
         </button>
       </div>
 
@@ -563,7 +589,7 @@
 
           var cm = this.CodeMirror;
           cm.save = submit_page_for_feedback;
-      });
+        });
   </script>
 
   {# }}} #}

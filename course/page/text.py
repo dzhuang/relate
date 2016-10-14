@@ -592,6 +592,12 @@ class FloatListWithWrapperMatcher(TextAnswerMatcher):
                 % location)
 
         for v in value_list:
+            if len(v) == 0:
+                raise ValidationError(
+                    string_concat(
+                        "%s: 'value' ",
+                        _("cannot be converted into a list"))
+                    % location)
             try:
                 float_or_sympy_evalf(v)
             except:
