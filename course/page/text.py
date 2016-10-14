@@ -681,6 +681,13 @@ class FloatListWithWrapperMatcher(TextAnswerMatcher):
                 )
 
         for v in value_list:
+            if len(v.strip()) == 0:
+                raise forms.ValidationError(
+                    string_concat(
+                        ugettext("Error"), ": ",
+                        "'%s' ",
+                        ugettext("cannot be converted into a list"))
+                    % value)
             try:
                 float_or_sympy_evalf(v)
             except:
