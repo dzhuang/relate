@@ -5,6 +5,9 @@ from latex_utils.utils.lpmodel import LP
 from copy import deepcopy
 import numpy as np
 
+SAVED_QUESTION_2_iter = "lp_sensitivity_2_iter.bin"
+SAVED_QUESTION_3_iter = "lp_sensitivity_3_iter.bin"
+
 lp_list = []
 
 lp = LP(qtype="max",
@@ -208,7 +211,7 @@ lp = LP(qtype="max",
 
             # ([0], None, 5) 表示分析c_1的取值范围，以及c_1=5时的结果
             # (None, [2, 5]) 表示分析所有c取值为[2, 5]时的结果
-            "c": [([1], None), ],
+            "c": [([0], None), ],
             "b": [
                 ([2], None),
                 ([0], 16),
@@ -236,7 +239,7 @@ lp = LP(qtype="max",
 
             # ([0], None, 5) 表示分析c_1的取值范围，以及c_1=5时的结果
             # (None, [2, 5]) 表示分析所有c取值为[2, 5]时的结果
-            "c": [([2], None), ],
+            "c": [([0], None), ],
             "b": [
                 ([0], None),
                 ([1], 16),
@@ -1252,6 +1255,11 @@ with open('lp.bin', 'wb') as f:
 with open('lp.bin', 'rb') as f:
     lp_json_list_loaded = pickle.load(f)
 
+final_lp_list1 = []
+final_lp_list2 = []
+count1 = 0
+count2 = 0
+
 count = 0
 for l in lp_json_list_loaded:
     import json
@@ -1275,16 +1283,33 @@ for l in lp_json_list_loaded:
         #after_description=u"""
         #""",
         lp=lp,
-#        show_only_opt_table = True,
+        show_only_opt_table = True,
     )
 
-    if lp.solutionCommon.nit >=3:
-        #final_lp_list.append(lp.json)
-        count += 1
-        print lp_dict
+
+    if lp.solutionCommon.nit in [2] and lp.res.status == 0:
+        r.clipboard_append(tex)
+        final_lp_list1.append(lp.json)
+        count1 += 1
+    if lp.solutionCommon.nit in [3,4] and lp.res.status == 0:
+        final_lp_list2.append(lp.json)
+        count2 += 1
+#        r.clipboard_append(tex)
+
+    # if lp.solutionCommon.nit >=3:
+    #     #final_lp_list.append(lp.json)
+    #     count += 1
+    #     print lp_dict
 
     #count += 1
-        r.clipboard_append(tex)
+    r.clipboard_append(tex)
 
-print count
+print count1, count2
+
+with open(SAVED_QUESTION_2_iter, 'wb') as f:
+        pickle.dump(final_lp_list1, f)
+with open(SAVED_QUESTION_3_iter, 'wb') as f:
+    pickle.dump(final_lp_list2, f)
+
+#print count
 
