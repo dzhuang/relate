@@ -2390,7 +2390,7 @@ class FlowPageInteractionEmailForm(StyledForm):
                 required=True,
                 widget=forms.Textarea,
                 help_text= string_concat(
-                    _("Your question about page %s. ") % review_uri,
+                    _("Your question about page %s . ") % review_uri,
                     _("Notice that <strong>only</strong> question "
                       "for that page will be answered."),
                 ),

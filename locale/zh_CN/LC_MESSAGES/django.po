@@ -1761,8 +1761,8 @@ msgid "Send interaction email"
 msgstr "发送flow页面的答疑邮件"
 
 #: .\course\flow.py:2393
-msgid "Your question about page %s. "
-msgstr "您对于页面%s的疑问. "
+msgid "Your question about page %s . "
+msgstr "您对于页面 %s 的疑问. "
 
 #: .\course\flow.py:2394
 msgid ""
