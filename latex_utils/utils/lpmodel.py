@@ -916,7 +916,7 @@ class sa_x(SA_base):
                 new_lp.solve(method="simplex")
 
                 #print new_variable_index
-                new_lp_x_idx = range(len(self.LP.x_list))
+                new_lp_x_idx = list(range(len(self.LP.x_list)))
                 new_lp_x_idx.append(new_variable_index)
 
                 opt_x = [new_lp.opt_x[idx] for idx in new_lp_x_idx]
@@ -1324,7 +1324,10 @@ class LP(object):
         #goal_list = self.solutionCommon.original_goal_list
 
         for key in ["c", "b", "p", "x", "A"]:
-            sa_klass = getattr(sys.modules[__name__], SA_klass_dict[key])
+            try:
+                sa_klass = getattr(sys.modules[__name__], SA_klass_dict[key])
+            except:
+                sa_klass =  globals()[SA_klass_dict[key]]
             if key in sensitive:
                 #print sensitive[key]
                 for ana in sensitive[key]:
@@ -1333,7 +1336,6 @@ class LP(object):
                         param=ana, n=n, x_list=self.x_list, init_tableau=init_tableau,
                         opt_tableau=opt_tableau, opt_basis=opt_basis)
                     self.sa_result.append(analysis.analysis())
-
 
     def solve(self, disp=False, method="simplex"):
         for solution in [self.solutionCommon, self.solutionPhase1, self.solutionPhase2]:
