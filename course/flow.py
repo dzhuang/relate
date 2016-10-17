@@ -2567,27 +2567,42 @@ def finish_flow_session_view(pctx, flow_session_id):
                 fctx, flow_session, grading_rule,
                 now_datetime=now_datetime)
 
-        # {{{ send notify email if requested
+        # {{{ send notify email if requested.
 
-        if (hasattr(fctx.flow_desc, "notify_on_submit")
-                and fctx.flow_desc.notify_on_submit):
+        if (
+                (hasattr(fctx.flow_desc, "notify_on_submit")
+                 and fctx.flow_desc.notify_on_submit)
+            or
+                flow_permission.send_submit_notif_email in
+                        access_rule.permissions
+            ):
+
             if (grading_rule.grade_identifier
                     and flow_session.participation is not None):
                 from course.models import get_flow_grading_opportunity
-                review_uri = reverse("relate-view_single_grade",
-                        args=(
-                            pctx.course.identifier,
-                            flow_session.participation.id,
-                            get_flow_grading_opportunity(
-                                pctx.course, flow_session.flow_id, fctx.flow_desc,
-                                grading_rule.grade_identifier,
-                                grading_rule.grade_aggregation_strategy).id))
+                review_uri = (
+                    reverse("relate-view_single_grade",
+                            args=(
+                                pctx.course.identifier,
+                                flow_session.participation.id,
+                                get_flow_grading_opportunity(
+                                    pctx.course,
+                                    flow_session.flow_id,
+                                    fctx.flow_desc,
+                                    grading_rule.grade_identifier,
+                                    grading_rule.grade_aggregation_strategy).id))
+                )
             else:
                 review_uri = reverse("relate-view_flow_page",
-                        args=(
-                            pctx.course.identifier,
-                            flow_session.id,
-                            0))
+                                     args=(
+                                         pctx.course.identifier,
+                                         flow_session.id,
+                                         0))
+
+        if (hasattr(fctx.flow_desc, "notify_on_submit")
+                and fctx.flow_desc.notify_on_submit):
+            # This functionality doesn't have time rule. For notications with
+            # time rule, use flow_permission.send_submit_notif_email instead.
 
             with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
                 from django.template.loader import render_to_string
@@ -2618,6 +2633,11 @@ def finish_flow_session_view(pctx, flow_session_id):
                 msg.send()
 
         # }}}
+
+        elif flow_permission.send_submit_notif_email in access_rule.permissions:
+            # {{{ send notify email if requested, in terms of flow_permission
+            # i.e., time_based
+            pass
 
         if is_interactive_flow:
             if flow_permission.cannot_see_flow_result in access_rule.permissions:
