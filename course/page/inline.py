@@ -788,7 +788,7 @@ class InlineMultiQuestion(TextQuestionBase, PageBaseWithValue):
             answer = None
             form = InlineMultiQuestionForm(
                     read_only,
-                self.get_dict_for_form(page_context, page_data),
+                    self.get_dict_for_form(page_context, page_data),
                     page_context)
 
         return form
@@ -799,7 +799,7 @@ class InlineMultiQuestion(TextQuestionBase, PageBaseWithValue):
 
         return InlineMultiQuestionForm(
                 read_only,
-            self.get_dict_for_form(page_context, page_data),
+                self.get_dict_for_form(page_context, page_data),
                 page_context,
                 post_data, files_data)
 
