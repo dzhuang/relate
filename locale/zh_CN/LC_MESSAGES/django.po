@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-10-15 17:29+0800\n"
+"POT-Creation-Date: 2016-10-17 15:18+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -597,6 +597,27 @@ msgstr "您的输入不匹配."
 msgid "Profile data saved."
 msgstr "用户信息已更新. "
 
+#: .\course\auth.py:966
+msgid "Reset"
+msgstr "重置"
+
+#: .\course\auth.py:983
+#, python-format
+msgid "A new authentication token has been set: %s."
+msgstr "一个新的git认证token已设定: %s."
+
+#: .\course\auth.py:989
+msgid "An authentication token has previously been set."
+msgstr "之前已经设定了一个git认证token."
+
+#: .\course\auth.py:992
+msgid "No authentication token has previously been set."
+msgstr "之前尚未设定了git认证token."
+
+#: .\course\auth.py:997 .\course\templates\course\course-base.html:100
+msgid "Manage Git Authentication Token"
+msgstr "管理Git认证token"
+
 #. Translators: format of event kind in Event model
 #: .\course\calendar.py:55 .\course\calendar.py:199 .\course\models.py:276
 msgid "Should be lower_case_with_underscores, no spaces allowed."
@@ -665,7 +686,7 @@ msgstr "未创建event. "
 msgid "Events created."
 msgstr "Event创建成功. "
 
-#: .\course\calendar.py:193 .\course\templates\course\course-base.html:126
+#: .\course\calendar.py:193 .\course\templates\course\course-base.html:127
 msgid "Create recurring events"
 msgstr "创建重复进行的event"
 
@@ -681,7 +702,7 @@ msgstr "Event重新编号完成. "
 msgid "No events found."
 msgstr "未找到Event. "
 
-#: .\course\calendar.py:260 .\course\templates\course\course-base.html:127
+#: .\course\calendar.py:260 .\course\templates\course\course-base.html:128
 msgid "Renumber events"
 msgstr "重新编号"
 
@@ -1761,6 +1782,7 @@ msgid "Send interaction email"
 msgstr "发送flow页面的答疑邮件"
 
 #: .\course\flow.py:2393
+#, python-format
 msgid "Your question about page %s . "
 msgstr "您对于页面 %s 的疑问. "
 
@@ -2079,7 +2101,7 @@ msgid "Max points"
 msgstr "满分分值"
 
 #: .\course\grades.py:1077 .\course\sandbox.py:77
-#: .\course\templates\course\course-base.html:161
+#: .\course\templates\course\course-base.html:162
 #: .\course\templates\course\grade-import-preview.html:15
 #: .\course\versioning.py:525
 msgid "Preview"
@@ -2806,7 +2828,7 @@ msgstr "%(user)s在课程%(course)s中(作为%(role)s)"
 #: .\course\models.py:476 .\course\models.py:519 .\course\models.py:738
 #: .\course\models.py:1168 .\course\models.py:1244 .\course\models.py:1435
 #: .\course\models.py:1724 .\course\models.py:1783
-#: .\course\templates\course\course-base.html:138
+#: .\course\templates\course\course-base.html:139
 msgid "Participation"
 msgstr "课程参与"
 
@@ -2882,7 +2904,7 @@ msgstr "已取消的"
 msgid "Instant flow request"
 msgstr "即时flow"
 
-#: .\course\models.py:711 .\course\templates\course\course-base.html:149
+#: .\course\models.py:711 .\course\templates\course\course-base.html:150
 msgid "Instant flow requests"
 msgstr "即时flow"
 
@@ -4191,7 +4213,7 @@ msgstr ""
 
 #: .\course\templates\course\calendar.html:8
 #: .\course\templates\course\calendar.html:21
-#: .\course\templates\course\course-base.html:121
+#: .\course\templates\course\course-base.html:122
 msgid "Calendar"
 msgstr "教学日历"
 
@@ -4296,60 +4318,60 @@ msgstr "内容管理"
 msgid "Retrieve/preview new course revisions"
 msgstr "获取/预览对课程内容的修订"
 
-#: .\course\templates\course\course-base.html:103
+#: .\course\templates\course\course-base.html:104
 msgid "Edit course"
 msgstr "编辑课程"
 
-#: .\course\templates\course\course-base.html:107
+#: .\course\templates\course\course-base.html:108
 msgid "Content creation"
 msgstr "内容创建"
 
-#: .\course\templates\course\course-base.html:109
+#: .\course\templates\course\course-base.html:110
 msgid "Page sandbox"
 msgstr "Page沙箱"
 
-#: .\course\templates\course\course-base.html:112
+#: .\course\templates\course\course-base.html:113
 msgid "Markup sandbox"
 msgstr "Markup沙箱"
 
-#: .\course\templates\course\course-base.html:117
+#: .\course\templates\course\course-base.html:118
 msgid "Test flow"
 msgstr "测试flow"
 
-#: .\course\templates\course\course-base.html:123
+#: .\course\templates\course\course-base.html:124
 msgid "Edit events"
 msgstr "编辑event"
 
-#: .\course\templates\course\course-base.html:136
+#: .\course\templates\course\course-base.html:137
 msgctxt "menu item"
 msgid "Instructor"
 msgstr "任课老师"
 
-#: .\course\templates\course\course-base.html:140
 #: .\course\templates\course\course-base.html:141
+#: .\course\templates\course\course-base.html:142
 msgctxt "menu item"
 msgid "Preapprove enrollments"
 msgstr "加入课程预批准"
 
-#: .\course\templates\course\course-base.html:144
+#: .\course\templates\course\course-base.html:145
 msgctxt "menu item"
 msgid "Query participations"
 msgstr "查询课程参与"
 
-#: .\course\templates\course\course-base.html:150
+#: .\course\templates\course\course-base.html:151
 msgid "Manage instant flow requests"
 msgstr "管理即时flow"
 
-#: .\course\templates\course\course-base.html:171
+#: .\course\templates\course\course-base.html:172
 msgid "There is an interactive activity going on right now."
 msgstr "目前正在进行一项互动活动. "
 
-#: .\course\templates\course\course-base.html:175
-#: .\course\templates\course\course-base.html:182
+#: .\course\templates\course\course-base.html:176
+#: .\course\templates\course\course-base.html:183
 msgid "Go to activity"
 msgstr "转到课程活动"
 
-#: .\course\templates\course\course-base.html:178
+#: .\course\templates\course\course-base.html:179
 msgid "There are some interactive activities going on right now."
 msgstr "目前正在进行一些互动活动. "
 
