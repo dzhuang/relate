@@ -2302,7 +2302,6 @@ def send_email_about_flow_page(pctx, flow_session_id, ordinal):
         form = FlowPageInteractionEmailForm(request.POST, review_uri)
 
         if form.is_valid():
-            from django.utils import translation
 
             from_email = getattr(
                     settings,
@@ -2329,6 +2328,7 @@ def send_email_about_flow_page(pctx, flow_session_id, ordinal):
             if not recipient_list:
                 recipient_list = instructor_email_list
 
+            from django.utils import translation
             with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
                 from django.template.loader import render_to_string
                 message = render_to_string(
@@ -2390,8 +2390,8 @@ class FlowPageInteractionEmailForm(StyledForm):
                 required=True,
                 widget=forms.Textarea,
                 help_text= string_concat(
-                    _("Your question about page %s . ") % review_uri,
-                    _("Notice that <strong>only</strong> question "
+                    _("Your questions about page %s . ") % review_uri,
+                    _("Notice that <strong>only</strong> questions "
                       "for that page will be answered."),
                 ),
                 label=_("Message"))
