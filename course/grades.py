@@ -69,6 +69,35 @@ from course.models import Course, FlowPageVisitGrade  # noqa
 
 # {{{ student grade book
 
+def may_view_opp_by_access_rule(pctx, opp):
+    # control display of opp by flow_session access_rule
+    from course.content import get_flow_desc
+    flow_desc = None
+    try:
+        flow_desc = get_flow_desc(pctx.repo, pctx.course, opp.flow_id,
+                                  pctx.course_commit_sha)
+    except ObjectDoesNotExist:
+        pass
+
+    if flow_desc:
+        flow_session_qs = FlowSession.objects.filter(
+            course=opp.course, flow_id=opp.flow_id)
+        if flow_session_qs.count():
+            flow_session = flow_session_qs[0]
+
+            from course.utils import get_session_access_rule
+            now_datetime = get_now_or_fake_time(pctx.request)
+            access_rule = get_session_access_rule(
+                    flow_session, flow_desc, now_datetime)
+
+            from course.constants import flow_permission
+            if flow_permission.cannot_see_in_participant_grade_book \
+                    in access_rule.permissions:
+                return False
+
+    return True
+
+
 @course_view
 def view_participant_grades(pctx, participation_id=None):
     if pctx.participation is None:
@@ -118,6 +147,9 @@ def view_participant_grades(pctx, participation_id=None):
         else:
             if not opp.shown_in_grade_book:
                 continue
+
+        if not may_view_opp_by_access_rule(pctx, opp):
+            continue
 
         while (
                 idx < len(grade_changes)
@@ -842,6 +874,7 @@ def view_single_grade(pctx, participation_id, opportunity_id):
         if not (opportunity.shown_in_grade_book
                 and opportunity.shown_in_participant_grade_book
                 and opportunity.result_shown_in_participant_grade_book
+                and may_view_opp_by_access_rule(pctx, opportunity)
                 ):
             raise PermissionDenied(_("grade has not been released"))
 
