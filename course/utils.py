@@ -103,6 +103,17 @@ class FlowSessionStartRule(FlowSessionRuleBase):
         self.session_available_count = session_available_count
 
 
+class FlowSessionNotifyRule(FlowSessionRuleBase):
+    def __init__(
+            self,
+            may_send_notification=None,  # type: Optional[bool]
+            message=None, # type: Optional[Text]
+            ):
+        # type: (...) -> None
+        self.may_send_notification = may_send_notification
+        self.message = message
+
+
 class FlowSessionAccessRule(FlowSessionRuleBase):
     def __init__(
             self,
@@ -347,6 +358,7 @@ def get_flow_rules_str(course, participation, flow_id, flow_desc,
     return flow_rule_str
 
 # }}}
+
 def get_session_start_rule(
         course,  # type: Course
         participation,  # type: Optional[Participation]
@@ -547,6 +559,65 @@ def get_session_access_rule(
                 )
 
     return FlowSessionAccessRule(permissions=frozenset())
+
+
+def get_session_notify_rule(
+        session,  # type: FlowSession
+        flow_desc,  # type: FlowDesc
+        now_datetime,  # type: datetime.datetime
+        facilities=None,  # type: Optional[frozenset[Text]]
+        login_exam_ticket=None,  # type: Optional[ExamTicket]
+        ):
+    # type: (...) -> FlowSessionNotifyRule
+    """Return a :class:`FlowSessionNotifyRule` if submission of
+    a session is expected to send notification else *None*.
+    """
+
+    if facilities is None:
+        facilities = frozenset()
+
+    from relate.utils import dict_to_struct
+    rules = get_flow_rules(flow_desc, flow_rule_kind.notify,
+            session.participation, session.flow_id, now_datetime,
+            default_rules_desc=[
+                dict_to_struct(dict(
+                    notify=False,
+                    ))])  # type: List[FlowSessionNotifyRuleDesc]
+
+    from course.enrollment import get_participation_role_identifiers
+    roles = get_participation_role_identifiers(session.course, session.participation)
+    session_notify_rule = None
+    ds = None
+
+    for rule in rules:
+        if not _eval_generic_conditions(
+                rule, session.course, session.participation,
+                now_datetime, flow_id=session.flow_id,
+                login_exam_ticket=login_exam_ticket):
+            continue
+
+        if not _eval_generic_session_conditions(rule, session, now_datetime):
+            continue
+
+        if hasattr(rule, "if_has_role"):
+            if all(role not in rule.if_has_role for role in roles):
+                continue
+
+        if hasattr(rule, "if_in_facility"):
+            if rule.if_in_facility not in facilities:
+                continue
+
+        if not getattr(rule, "will_notify", False):
+            continue
+
+        if session_notify_rule is None:
+            return FlowSessionNotifyRule(
+                    may_send_notification=True,
+                    message=getattr(rule, "message", None)
+                    )
+
+    return FlowSessionNotifyRule(may_send_notification=False,
+                                 message=None)
 
 
 def get_session_grading_rule(

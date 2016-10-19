@@ -75,6 +75,7 @@ from course.utils import (
         get_session_start_rule,
         get_session_access_rule,
         get_session_grading_rule,
+        get_session_notify_rule,
         get_flow_rules_str, # added by zd
         FlowSessionGradingRule,
         )
@@ -2567,15 +2568,24 @@ def finish_flow_session_view(pctx, flow_session_id):
                 fctx, flow_session, grading_rule,
                 now_datetime=now_datetime)
 
+        notify_rule = get_session_notify_rule(
+            flow_session, fctx.flow_desc, now_datetime)
+
         # {{{ send notify email if requested.
+
+        will_send_submit_notification = False
+        review_uri = None
+        recipient_list = None
+        extra_message = None
 
         if (
                 (hasattr(fctx.flow_desc, "notify_on_submit")
                  and fctx.flow_desc.notify_on_submit)
             or
-                flow_permission.send_submit_notif_email in
-                        access_rule.permissions
+                notify_rule.may_send_notification
             ):
+
+            will_send_submit_notification = True
 
             if (grading_rule.grade_identifier
                     and flow_session.participation is not None):
@@ -2599,30 +2609,61 @@ def finish_flow_session_view(pctx, flow_session_id):
                                          flow_session.id,
                                          0))
 
-        if (hasattr(fctx.flow_desc, "notify_on_submit")
-                and fctx.flow_desc.notify_on_submit):
-            # This functionality doesn't have time rule. For notications with
-            # time rule, use flow_permission.send_submit_notif_email instead.
+            if (hasattr(fctx.flow_desc, "notify_on_submit")
+                    and fctx.flow_desc.notify_on_submit):
+                # This functionality doesn't have time rule. For notications
+                # on a time basis, use flow_permission.send_submit_notif_email instead.
+                recipient_list = fctx.flow_desc.notify_on_submit
 
+
+            # }}}
+
+            elif notify_rule.may_send_notification:
+                # {{{ send notify email if requested, in terms of flow_permission
+                # i.e., time_based
+
+                from course.constants import (
+                    participation_permission as pperm)
+
+                ta_email_list = Participation.objects.filter(
+                    course=pctx.course,
+                    roles__permissions__permission=pperm.assign_grade,
+                    roles__identifier="ta",
+                ).values_list("user__email", flat=True)
+
+                instructor_email_list = Participation.objects.filter(
+                    course=pctx.course,
+                    roles__permissions__permission=pperm.assign_grade,
+                    roles__identifier="instructor"
+                ).values_list("user__email", flat=True)
+
+                recipient_list = ta_email_list
+                if not recipient_list:
+                    recipient_list = instructor_email_list
+
+                extra_message = getattr(notify_rule, "message", None)
+
+        if will_send_submit_notification:
             with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
                 from django.template.loader import render_to_string
                 message = render_to_string("course/submit-notify.txt", {
+                    "extra_message": extra_message,
                     "course": fctx.course,
                     "flow_session": flow_session,
                     "review_uri": pctx.request.build_absolute_uri(review_uri)
-                    })
+                })
 
                 from django.core.mail import EmailMessage
                 msg = EmailMessage(
-                        string_concat("[%(identifier)s:%(flow_id)s] ",
-                            _("Submission by %(participation)s"))
-                        % {'participation': flow_session.participation,
-                            'identifier': fctx.course.identifier,
-                            'flow_id': flow_session.flow_id},
-                        message,
-                        getattr(settings, "NOTIFICATION_EMAIL_FROM",
+                    string_concat("[%(identifier)s:%(flow_id)s] ",
+                                  _("Submission by %(participation)s"))
+                    % {'participation': flow_session.participation,
+                       'identifier': fctx.course.identifier,
+                       'flow_id': flow_session.flow_id},
+                    message,
+                    getattr(settings, "NOTIFICATION_EMAIL_FROM",
                             settings.ROBOT_EMAIL_FROM),
-                        fctx.flow_desc.notify_on_submit)
+                    recipient_list)
                 msg.bcc = [fctx.course.notify_email]
 
                 from relate.utils import get_outbound_mail_connection
@@ -2631,13 +2672,6 @@ def finish_flow_session_view(pctx, flow_session_id):
                     if hasattr(settings, "NOTIFICATION_EMAIL_FROM")
                     else get_outbound_mail_connection("robot"))
                 msg.send()
-
-        # }}}
-
-        elif flow_permission.send_submit_notif_email in access_rule.permissions:
-            # {{{ send notify email if requested, in terms of flow_permission
-            # i.e., time_based
-            pass
 
         if is_interactive_flow:
             if flow_permission.cannot_see_flow_result in access_rule.permissions:

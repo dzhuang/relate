@@ -137,6 +137,16 @@ class FlowSessionAccessRuleDesc(Struct):
     message = None  # type: Text
 
 
+class FlowSessionNotifyRuleDesc(Struct):
+    if_after = None  # type: Date_ish
+    if_before = None  # type: Date_ish
+    if_has_role = None  # type: list
+    if_in_facility = None  # type: Text
+    if_signed_in_with_matching_exam_ticket = None  # type: bool
+    will_notify = None  # type: bool
+    message = None  # type: Text
+
+
 class FlowSessionGradingRuleDesc(Struct):
     grade_identifier = None  # type: Optional[Text]
     grade_aggregation_strategy = None  # type: Optional[Text]
@@ -145,6 +155,7 @@ class FlowSessionGradingRuleDesc(Struct):
 class FlowRulesDesc(Struct):
     start = None  # type: List[FlowSessionStartRuleDesc]
     access = None  # type: List[FlowSessionAccessRuleDesc]
+    notify = None  # type: List[FlowSessionNotifyRuleDesc]
     grading = None  # type: List[FlowSessionGradingRuleDesc]
     grade_identifier = None  # type: Optional[Text]
     grade_aggregation_strategy = None  # type: Optional[Text]

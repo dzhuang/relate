@@ -436,6 +436,7 @@ class flow_rule_kind:  # noqa
     start = "start"
     access = "access"
     grading = "grading"
+    notify = "notify"
 
 
 FLOW_RULE_KIND_CHOICES = (
