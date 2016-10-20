@@ -171,7 +171,7 @@
           {% if grade_info.flow_session %}
           {% include "course/flow-session-state.html" with flow_session=grade_info.flow_session %}
           {% if not flow_session.in_progress %}
-              ({{ grade_info.flow_session.completion_time }})
+              ({{ grade_info.flow_session.completion_time|compact_datetime }})
           {% endif %}
           {% if grade_info.flow_session.access_rules_tag %}
               ({% trans "Rules tag" %}: <tt>{{ grade_info.flow_session.access_rules_tag }}</tt>)
