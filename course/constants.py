@@ -84,6 +84,8 @@ class participation_permission:
 
     edit_course_permissions = "edit_course_permissions"
     view_hidden_course_page = "view_hidden_course_page"
+    view_hidden_gopp = "view_hidden_gopp"
+    view_hidden_gopp_result = "view_hidden_gopp_result"
     view_calendar = "view_calendar"
     send_instant_message = "send_instant_message"
     access_files_for = "access_files_for"

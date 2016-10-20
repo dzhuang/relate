@@ -69,31 +69,62 @@ from course.models import Course, FlowPageVisitGrade  # noqa
 
 # {{{ student grade book
 
+def get_session_access_rule_by_opp(pctx, opp, pperm=None):
+    # type: (...) -> FlowSessionAccessRule
+    """Return a :class:`FlowSessionAccessRule`
+    """
+
+    from course.content import get_flow_desc
+    flow_desc = get_flow_desc(pctx.repo, pctx.course, opp.flow_id,
+                              pctx.course_commit_sha)
+
+    flow_session_qs = FlowSession.objects.filter(
+        course=opp.course, flow_id=opp.flow_id)
+
+    if pperm:
+        flow_session_qs = flow_session_qs.filter(
+            participation__roles__permissions__permission=(pperm)
+        )
+    else:
+        flow_session_qs = flow_session_qs.filter(
+            participation=pctx.participation)
+
+    now_datetime = get_now_or_fake_time(pctx.request)
+
+    if flow_session_qs.exists():
+        test_flow_session = flow_session_qs[0]
+    else:
+        # There's no session with that pperm/participation
+        # then we create a dummy session.
+        from course.utils import FlowSessionStartRule
+        from course.flow import start_flow
+
+        test_flow_session = start_flow(
+                pctx.repo,
+                pctx.course,
+                pctx.participation,
+                pctx.request.user,
+                opp.flow_id,
+                flow_desc,
+                FlowSessionStartRule(may_start_new_session=True),
+                now_datetime,
+                dummy=True)
+
+    from course.utils import get_session_access_rule
+    access_rule = get_session_access_rule(
+        test_flow_session, flow_desc, now_datetime)
+
+    return access_rule
+
+
 def may_view_opp_by_access_rule(pctx, opp):
     # control display of opp by flow_session access_rule
-    from course.content import get_flow_desc
-    flow_desc = None
-    try:
-        flow_desc = get_flow_desc(pctx.repo, pctx.course, opp.flow_id,
-                                  pctx.course_commit_sha)
-    except ObjectDoesNotExist:
-        pass
+    access_rule = get_session_access_rule_by_opp(pctx, opp)
 
-    if flow_desc:
-        flow_session_qs = FlowSession.objects.filter(
-            course=opp.course, flow_id=opp.flow_id)
-        if flow_session_qs.count():
-            flow_session = flow_session_qs[0]
-
-            from course.utils import get_session_access_rule
-            now_datetime = get_now_or_fake_time(pctx.request)
-            access_rule = get_session_access_rule(
-                    flow_session, flow_desc, now_datetime)
-
-            from course.constants import flow_permission
-            if flow_permission.cannot_see_in_participant_grade_book \
-                    in access_rule.permissions:
-                return False
+    from course.constants import flow_permission
+    if flow_permission.cannot_see_in_participant_grade_book \
+            in access_rule.permissions:
+        return False
 
     return True
 
