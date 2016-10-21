@@ -97,11 +97,8 @@ def get_session_access_rule_by_opp(pctx, opp):
                         pctx.course, pctx.participation),
                 flow_id=opp.flow_id)
 
-    from course.utils import get_session_access_rule
-    access_rule = get_session_access_rule(
-        test_flow_session, flow_desc, now_datetime)
-
-    return access_rule
+    return get_session_access_rule(
+            test_flow_session, flow_desc, now_datetime)
 
 
 def may_view_opp_by_access_rule(access_rule):
