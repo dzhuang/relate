@@ -389,6 +389,7 @@ class flow_permission:  # noqa
     see_session_time = "see_session_time"
     lock_down_as_exam_session = "lock_down_as_exam_session"
     send_email_about_flow_page = "send_email_about_flow_page"
+    send_submit_notif_email = "send_submit_notif_email"
     cannot_see_in_participant_grade_book =\
             "cannot_see_in_participant_grade_book"
     cannot_see_result_in_participant_grade_book =\
