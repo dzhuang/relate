@@ -45,7 +45,9 @@ from relate.utils import StyledForm, StyledModelForm
 from crispy_forms.layout import Submit
 from bootstrap3_datetime.widgets import DateTimePicker
 
-from course.utils import course_view, render_course_page
+from course.utils import (
+        course_view, render_course_page,
+        get_session_access_rule)
 from course.models import (
         Participation, participation_status,
         GradingOpportunity, GradeChange, GradeStateMachine,
@@ -57,6 +59,7 @@ from course.constants import (
         participation_permission as pperm,
         flow_permission
         )
+from course.content import get_flow_desc, get_course_commit_sha
 
 # {{{ for mypy
 
@@ -74,25 +77,18 @@ def get_session_access_rule_by_opp(pctx, opp):
     # type: (...) -> FlowSessionAccessRule
     """Return a :class:`FlowSessionAccessRule`
     """
-
-    from course.content import get_flow_desc
     flow_desc = get_flow_desc(pctx.repo, pctx.course, opp.flow_id,
                               pctx.course_commit_sha)
-
     flow_session_qs = FlowSession.objects.filter(
             course=opp.course, flow_id=opp.flow_id,
             participation=pctx.participation)
-
     now_datetime = get_now_or_fake_time(pctx.request)
 
     if flow_session_qs.exists():
         test_flow_session = flow_session_qs[0]
     else:
         # There's no session with that participation
-        # then we create a temp session.
-
-        from course.content import get_course_commit_sha
-
+        # so we instantiate a temp session.
         test_flow_session = FlowSession(
                 course=pctx.course,
                 participation=pctx.participation,
