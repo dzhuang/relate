@@ -369,10 +369,13 @@ class flow_permission:  # noqa
 
     .. attribute:: cannot_see_in_participant_grade_book
 
-        (Optional) If present, participants of won't see this flow in his/her
-        grade book. It can be used to hide grading opportunities with time-based
-        access rules.
+        (Optional) If present, participants won't see this flow in their
+        grade book. It can be used to hide grading opportunities.
 
+    .. attribute:: cannot_see_result_in_participant_grade_book
+
+        (Optional) If present, participants won't see the result of this 
+        flow in their grade book and single grade of this flow.
     """
     view = "view"
     end_session = "end_session"
@@ -386,9 +389,10 @@ class flow_permission:  # noqa
     see_session_time = "see_session_time"
     lock_down_as_exam_session = "lock_down_as_exam_session"
     send_email_about_flow_page = "send_email_about_flow_page"
-    send_submit_notif_email = "send_submit_notif_email"
-    cannot_see_in_participant_grade_book = "cannot_see_in_participant_grade_book"
-    cannot_see_result_in_participant_grade_book = "cannot_see_result_in_participant_grade_book"
+    cannot_see_in_participant_grade_book =\
+            "cannot_see_in_participant_grade_book"
+    cannot_see_result_in_participant_grade_book =\
+            "cannot_see_result_in_participant_grade_book"
 
 FLOW_PERMISSION_CHOICES = (
         (flow_permission.view,
