@@ -84,8 +84,6 @@ class participation_permission:
 
     edit_course_permissions = "edit_course_permissions"
     view_hidden_course_page = "view_hidden_course_page"
-    view_hidden_gopp = "view_hidden_gopp"
-    view_hidden_gopp_result = "view_hidden_gopp_result"
     view_calendar = "view_calendar"
     send_instant_message = "send_instant_message"
     access_files_for = "access_files_for"
@@ -390,6 +388,7 @@ class flow_permission:  # noqa
     send_email_about_flow_page = "send_email_about_flow_page"
     send_submit_notif_email = "send_submit_notif_email"
     cannot_see_in_participant_grade_book = "cannot_see_in_participant_grade_book"
+    cannot_see_result_in_participant_grade_book = "cannot_see_result_in_participant_grade_book"
 
 FLOW_PERMISSION_CHOICES = (
         (flow_permission.view,
@@ -429,6 +428,9 @@ FLOW_PERMISSION_CHOICES = (
         (flow_permission.cannot_see_in_participant_grade_book,
          pgettext_lazy("Flow permission",
                        "Cannot see in participant grade book")),
+        (flow_permission.cannot_see_result_in_participant_grade_book,
+         pgettext_lazy("Flow permission",
+                       "Cannot see result in participant grade book")),
         )
 
 # }}}

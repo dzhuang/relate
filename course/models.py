@@ -593,8 +593,6 @@ def add_default_roles_and_permissions(course,
         rpm(role=role, permission=pp.set_fake_time).save()
         rpm(role=role, permission=pp.set_pretend_facility).save()
         rpm(role=role, permission=pp.view_hidden_course_page).save()
-        rpm(role=role, permission=pp.view_hidden_gopp).save()
-        rpm(role=role, permission=pp.view_hidden_gopp_result).save()
         rpm(role=role, permission=pp.access_files_for,
                 argument="ta").save()
         rpm(role=role, permission=pp.access_files_for,

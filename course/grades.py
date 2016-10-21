@@ -55,6 +55,7 @@ from course.flow import adjust_flow_session_page_data
 from course.views import get_now_or_fake_time
 from course.constants import (
         participation_permission as pperm,
+        flow_permission
         )
 
 # {{{ for mypy
@@ -69,7 +70,7 @@ from course.models import Course, FlowPageVisitGrade  # noqa
 
 # {{{ student grade book
 
-def get_session_access_rule_by_opp(pctx, opp, pperm=None):
+def get_session_access_rule_by_opp(pctx, opp):
     # type: (...) -> FlowSessionAccessRule
     """Return a :class:`FlowSessionAccessRule`
     """
@@ -79,14 +80,7 @@ def get_session_access_rule_by_opp(pctx, opp, pperm=None):
                               pctx.course_commit_sha)
 
     flow_session_qs = FlowSession.objects.filter(
-        course=opp.course, flow_id=opp.flow_id)
-
-    if pperm:
-        flow_session_qs = flow_session_qs.filter(
-            participation__roles__permissions__permission=(pperm)
-        )
-    else:
-        flow_session_qs = flow_session_qs.filter(
+            course=opp.course, flow_id=opp.flow_id,
             participation=pctx.participation)
 
     now_datetime = get_now_or_fake_time(pctx.request)
@@ -94,21 +88,18 @@ def get_session_access_rule_by_opp(pctx, opp, pperm=None):
     if flow_session_qs.exists():
         test_flow_session = flow_session_qs[0]
     else:
-        # There's no session with that pperm/participation
-        # then we create a dummy session.
-        from course.utils import FlowSessionStartRule
-        from course.flow import start_flow
+        # There's no session with that participation
+        # then we create a temp session.
 
-        test_flow_session = start_flow(
-                pctx.repo,
-                pctx.course,
-                pctx.participation,
-                pctx.request.user,
-                opp.flow_id,
-                flow_desc,
-                FlowSessionStartRule(may_start_new_session=True),
-                now_datetime,
-                dummy=True)
+        from course.content import get_course_commit_sha
+
+        test_flow_session = FlowSession(
+                course=pctx.course,
+                participation=pctx.participation,
+                user=pctx.request.user,
+                active_git_commit_sha=get_course_commit_sha(
+                        pctx.course, pctx.participation),
+                flow_id=opp.flow_id)
 
     from course.utils import get_session_access_rule
     access_rule = get_session_access_rule(
@@ -117,15 +108,17 @@ def get_session_access_rule_by_opp(pctx, opp, pperm=None):
     return access_rule
 
 
-def may_view_opp_by_access_rule(pctx, opp):
-    # control display of opp by flow_session access_rule
-    access_rule = get_session_access_rule_by_opp(pctx, opp)
-
-    from course.constants import flow_permission
+def may_view_opp_by_access_rule(access_rule):
     if flow_permission.cannot_see_in_participant_grade_book \
             in access_rule.permissions:
         return False
+    return True
 
+
+def may_view_opp_result_by_access_rule(access_rule):
+    if flow_permission.cannot_see_result_in_participant_grade_book \
+            in access_rule.permissions:
+        return False
     return True
 
 
@@ -170,6 +163,7 @@ def view_participant_grades(pctx, participation_id=None):
     idx = 0
 
     grade_table = []
+    may_view_result = []
     for opp in grading_opps:
         if not is_privileged_view:
             if not (opp.shown_in_grade_book
@@ -179,7 +173,8 @@ def view_participant_grades(pctx, participation_id=None):
             if not opp.shown_in_grade_book:
                 continue
 
-        if not may_view_opp_by_access_rule(pctx, opp):
+        access_rule = get_session_access_rule_by_opp(pctx, opp)
+        if not may_view_opp_by_access_rule(access_rule):
             continue
 
         while (
@@ -202,9 +197,14 @@ def view_participant_grades(pctx, participation_id=None):
                 GradeInfo(
                     opportunity=opp,
                     grade_state_machine=state_machine))
+        may_view_result.append(
+                may_view_opp_result_by_access_rule(access_rule)
+        )
+
+        zipped_grade_info = zip(grade_table, may_view_result)
 
     return render_course_page(pctx, "course/gradebook-participant.html", {
-        "grade_table": grade_table,
+        "zipped_grade_info": zipped_grade_info,
         "grade_participation": grade_participation,
         "grading_opportunities": grading_opps,
         "grade_state_change_types": grade_state_change_types,
@@ -902,10 +902,12 @@ def view_single_grade(pctx, participation_id, opportunity_id):
         if not my_grade:
             raise PermissionDenied(_("may not view other people's grades"))
 
+        access_rule = get_session_access_rule_by_opp(pctx, opportunity)
         if not (opportunity.shown_in_grade_book
                 and opportunity.shown_in_participant_grade_book
                 and opportunity.result_shown_in_participant_grade_book
-                and may_view_opp_by_access_rule(pctx, opportunity)
+                and may_view_opp_by_access_rule(access_rule)
+                and may_view_opp_result_by_access_rule(access_rule)
                 ):
             raise PermissionDenied(_("grade has not been released"))
 

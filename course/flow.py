@@ -413,7 +413,6 @@ def start_flow(
         flow_desc,  # type: FlowDesc
         session_start_rule,  # type: FlowSessionStartRule
         now_datetime,  # type: datetime.datetime
-        dummy=False, # type: Optional[bool]
         ):
     # type: (...) -> FlowSession
 
@@ -421,8 +420,6 @@ def start_flow(
     # The only essential part is the creation of the session.
     # The remainder of the function (opportunity creation and
     # page setup) is atomic and gets retried.
-    # "dummy" is used when we don't want to actually create a
-    # new session.
 
     from course.content import get_course_commit_sha
     course_commit_sha = get_course_commit_sha(course, participation)
@@ -445,9 +442,6 @@ def start_flow(
         in_progress=True,
         expiration_mode=exp_mode,
         access_rules_tag=session_start_rule.tag_session)
-
-    if dummy:
-        return session
 
     session.save()
 
