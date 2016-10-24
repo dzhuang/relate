@@ -395,6 +395,10 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 question_str = question_str_tmp
                 break
 
+        if not success:
+            if page_context.in_sandbox:
+                question_str = question_str_tmp
+
         # generate correct answer at the same time
         answer_str = ""
         if hasattr(self.page_desc, "answer_process_code"):

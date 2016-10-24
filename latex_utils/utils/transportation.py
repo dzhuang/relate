@@ -4,6 +4,7 @@ import numpy as np
 import copy
 from collections import Counter
 from scipy.optimize._linprog import OptimizeResult
+import six
 
 DEFAULT_TRANSPORT_STRING_DICT={
     "SUPPLY_PREFIX": "A",
@@ -21,8 +22,10 @@ DEFAULT_TRANSPORT_STRING_DICT={
     "MAX_DEMAND": u"最高需求量",
 }
 
+
 class NotStandardizableError(Exception):
     """for problem with lowerbound"""
+
 
 def get_array_to_str_list_recursive(array_list, nan_as="", inf_as="M", tex_eq_wrap=False):
     assert isinstance(array_list, (list, np.ndarray))
@@ -31,7 +34,8 @@ def get_array_to_str_list_recursive(array_list, nan_as="", inf_as="M", tex_eq_wr
     if isinstance(array_list, list):
         for i, l in enumerate(array_list):
             if isinstance(l, (np.ndarray, list)):
-                array_list[i] = get_array_to_str_list_recursive(l, nan_as=nan_as, inf_as=inf_as, tex_eq_wrap=tex_eq_wrap)
+                array_list[i] = get_array_to_str_list_recursive(
+                    l, nan_as=nan_as, inf_as=inf_as, tex_eq_wrap=tex_eq_wrap)
             else:
                 try:
                     if l == int(l):
@@ -59,7 +63,7 @@ def get_split_idx_list(list_to_split, idx_to_be_split_list):
             return "%s$%s$" % (s, append_string)
 
     n = len(list_to_split)
-    idx_list = range(n)
+    idx_list = list(range(n))
     assert isinstance(idx_to_be_split_list, list)
     if idx_to_be_split_list:
         assert set(idx_to_be_split_list).issubset(set(idx_list))
@@ -71,6 +75,7 @@ def get_split_idx_list(list_to_split, idx_to_be_split_list):
         else:
             split_idx_list.append(list_to_split[idx])
     return split_idx_list
+
 
 class transport_table_element(object):
     def __init__(self, n_sup, n_dem, tex_table_type="table", enable_split=False, **kwargs):
@@ -104,8 +109,8 @@ class transport_table_element(object):
             sup_split_idx_list = kwargs.get(
                 "sup_split_idx_list", []
             )
-        assert set(dem_split_idx_list).issubset(set(range(n_dem)))
-        assert set(sup_split_idx_list).issubset(set(range(n_sup)))
+        assert set(dem_split_idx_list).issubset(set(list(range(n_dem))))
+        assert set(sup_split_idx_list).issubset(set(list(range(n_sup))))
 
         sup_name_list = kwargs.get("sup_name_list", None)
         dem_name_list = kwargs.get("dem_name_list", None)
@@ -304,12 +309,12 @@ class transportation(object):
 
         self.sup_name_prefix = None
         if sup_name_prefix:
-            assert isinstance(sup_name_prefix, (str, unicode))
+            assert isinstance(sup_name_prefix, six.text_type)
             self.sup_name_prefix = sup_name_prefix
 
         self.dem_name_prefix = None
         if dem_name_prefix:
-            assert isinstance(dem_name_prefix, (str, unicode))
+            assert isinstance(dem_name_prefix, six.text_type)
             self.dem_name_prefix = dem_name_prefix
 
         self.sup_desc = self.kwargs.get(
@@ -333,7 +338,7 @@ class transportation(object):
 
         for kw in [self.sup_desc, self.dem_desc, self.dem_amount_desc, self.sup_amount_desc, self.cost_desc]:
             if kw:
-                assert isinstance(kw, (str, unicode))
+                assert isinstance(kw, six.text_type)
 
         self.standard_costs = None
         self.standard_sup = None
@@ -484,7 +489,7 @@ class transportation(object):
             costs = np.append(costs, np.zeros([self.n_dem, 1]), axis=1)
             self.standard_n_sup += 1
 
-        for i in reversed(range(n_sup_or_dem)):
+        for i in reversed(list(range(n_sup_or_dem))):
             if i not in lower_bound_idx:
                 costs[i, -1] = np.inf
             else:
@@ -717,12 +722,12 @@ def transport_solve(supply, demand, costs, init_method="LCM", stringfy=True):
                 if located_type == "row":
                     row_indices = [(located_index, j) for j in range(m) if allow_fill_X[located_index, j]]
                     row_values = [C[located_index,j] for j in range(m) if allow_fill_X[located_index, j]]
-                    xs = sorted(zip(row_indices, row_values), key=lambda (a, b): b)
+                    xs = sorted(list(zip(row_indices, row_values)), key=lambda x_y: x_y[1])
                     vogel_iter_loc_idx_list.append({"iter": n_iter, "location": "row", "idx":located_index})
                 else:
                     col_indices = [(i, located_index) for i in range(n) if allow_fill_X[i, located_index]]
                     col_values = [C[i, located_index] for i in range(n) if allow_fill_X[i, located_index]]
-                    xs = sorted(zip(col_indices, col_values), key=lambda (a, b): b)
+                    xs = sorted(list(zip(col_indices, col_values)), key=lambda x_y: x_y[1])
                     vogel_iter_loc_idx_list.append({"iter": n_iter, "location": "col", "idx":located_index})
 
                 (i, j), _ = xs[0]
@@ -761,10 +766,10 @@ def transport_solve(supply, demand, costs, init_method="LCM", stringfy=True):
 
         if init_method == "LCM":
             # Least-Cost method
-            xs = sorted(zip(indices, C.flatten()), key=lambda (a, b): b)
+            xs = sorted(list(zip(indices, C.flatten())), key=lambda x_y: x_y[1])
         elif init_method == "NCM":
             # Northwest Corner Method
-            xs = sorted(zip(indices, C.flatten()), key=lambda (a, b): (a[0],a[1]))
+            xs = sorted(list(zip(indices, C.flatten())), key=lambda x_y: (x_y[0][0], x_y[0][1]))
 
         # Iterating C elements in increasing order
         for (i, j), _ in xs:
@@ -807,7 +812,7 @@ def transport_solve(supply, demand, costs, init_method="LCM", stringfy=True):
         S = np.full((n, m), np.nan)
 
         _x, _y = np.where(~np.isnan(X))
-        basis = zip(_x, _y)
+        basis = list(zip(_x, _y))
         f = basis[0][0]
         u[f] = 0
 
@@ -866,10 +871,10 @@ def transport_solve(supply, demand, costs, init_method="LCM", stringfy=True):
             _xs, _ys = np.nonzero(T)
             xcount, ycount = Counter(_xs), Counter(_ys)
 
-            for x, count in xcount.items():
+            for x, count in list(xcount.items()):
                 if count <= 1:
                     T[x,:] = 0
-            for y, count in ycount.items():
+            for y, count in list(ycount.items()):
                 if count <= 1:
                     T[:,y] = 0
 
@@ -878,8 +883,16 @@ def transport_solve(supply, demand, costs, init_method="LCM", stringfy=True):
                 break
 
         # Finding cycle chain order
-        dist = lambda (x1, y1), (x2, y2): (abs(x1-x2) + abs(y1-y2)) \
-            if ((x1==x2 or y1==y2) and not (x1==x2 and y1==y2)) else np.inf
+        def dist(tup1, tup2):
+            (x1, y1) = tup1
+            (x2, y2) = tup2
+            if ((x1 == x2 or y1 == y2) and not (x1 == x2 and y1 == y2)):
+                return (abs(x1-x2) + abs(y1-y2))
+            else:
+                return np.inf
+
+        # dist = lambda (x1, y1), (x2, y2): (abs(x1-x2) + abs(y1-y2)) \
+        #     if ((x1==x2 or y1==y2) and not (x1==x2 and y1==y2)) else np.inf
         fringe = set(tuple(p) for p in np.argwhere(T > 0))
 
         size = len(fringe)
@@ -889,18 +902,18 @@ def transport_solve(supply, demand, costs, init_method="LCM", stringfy=True):
             last = path[-1]
             if last in fringe:
                 fringe.remove(last)
-            next = min(fringe, key=lambda (x, y): dist(last, (x, y)))
+            next = min(fringe, key=lambda x_y: dist(last, (x_y[0], x_y[1])))
             path.append(next)
 
         # Improving solution on cycle elements
         neg = path[1::2]
         pos = path[::2]
-        q = min(X[zip(*neg)])
+        q = min(X[list(zip(*neg))])
         if q == 0:
             has_degenerated_mid_solution = True
         X[start] = 0
-        X[zip(*neg)] -= q
-        X[zip(*pos)] += q
+        X[list(zip(*neg))] -= q
+        X[list(zip(*pos))] += q
 
         # set the first element with value 0 as nan
         for ne in neg:
@@ -944,7 +957,7 @@ def transport_solve(supply, demand, costs, init_method="LCM", stringfy=True):
 
 
 def is_ascii(text):
-    if isinstance(text, unicode):
+    if isinstance(text, six.text_type):
         try:
             text.encode('ascii')
         except UnicodeEncodeError:

@@ -669,5 +669,5 @@ for i, tr in enumerate(transport_dict_list_loaded):
 print success
 print "count_vogel:", count_vogel
 
-with open(SAVED_QUESTION, 'wb') as f:
-    pickle.dump(transport_dict_list, f)
+# with open(SAVED_QUESTION, 'wb') as f:
+#     pickle.dump(transport_dict_list, f)
