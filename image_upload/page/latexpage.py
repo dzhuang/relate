@@ -273,6 +273,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         #assert part in ["question", "answer"]
         will_save_file_local = False
 
+        if page_context.in_sandbox:
+            will_save_file_local = True
 
         # if not getattr(page_data, "question_data", None):
         #     page_data = self.initialize_page_data(page_context)
@@ -291,15 +293,12 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 key_making_string_md5 = updated_page_data["key_making_string_md5"]
 
             # To be used as saving name of the latex page
-            saved_file_name = ""
-            if will_save_file_local:
-                saved_file_name = ("%s_%s" % (md5("%s"
-                                          % (key_making_string_md5, )
-                                          ).hexdigest(), CACHE_VERSION))
+            saved_file_name = ("%s_%s" % (md5("%s"
+                                      % (key_making_string_md5, )
+                                      ).hexdigest(), CACHE_VERSION))
 
-            if saved_file_name:
-                saved_file_path = os.path.join(self.page_saving_folder,
-                                               "%s_%s" % (saved_file_name, part))
+            saved_file_path = os.path.join(self.page_saving_folder,
+                                           "%s_%s" % (saved_file_name, part))
 
             cache_key = ("latexpage:%s:%s:%s"
                          % (CACHE_VERSION,
@@ -309,12 +308,13 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             def_cache = cache.caches["default"]
             result = def_cache.get(cache_key)
             if result is not None:
+                # print "1-----------here"
                 assert isinstance(result, six.string_types)
-                if test_key_existance:
-                    return True
-                if saved_file_path:
+                if will_save_file_local:
                     if not os.path.isfile(saved_file_path):
                         _file_write(saved_file_path, result.encode('UTF-8'))
+                if test_key_existance:
+                    return True
                 return True, result
             else:
                 def_cache.delete(cache_key)
@@ -338,6 +338,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             if success and result is not None:
                 if saved_file_path:
                     if not os.path.isfile(saved_file_path):
+                        # print "2-----------here"
                         _file_write(saved_file_path, result.encode('UTF-8'))
             return True, result
 
@@ -377,8 +378,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             def_cache.add(cache_key, result, None)
 
         if success and result is not None:
-            if saved_file_path:
+            if saved_file_path and will_save_file_local:
                 assert not os.path.isfile(saved_file_path)
+                # print "3-----------here"
                 _file_write(saved_file_path, result.encode('UTF-8'))
 
         return success, result
