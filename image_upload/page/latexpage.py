@@ -316,14 +316,14 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 if test_key_existance:
                     return True
                 return True, result
-            else:
-                def_cache.delete(cache_key)
-                if saved_file_path:
-                    if os.path.isfile(saved_file_path):
-                        try:
-                            os.remove(saved_file_path)
-                        except:
-                            pass
+            # else:
+            #     def_cache.delete(cache_key)
+            #     if saved_file_path:
+            #         if os.path.isfile(saved_file_path):
+            #             try:
+            #                 os.remove(saved_file_path)
+            #             except:
+            #                 pass
 
         # cache_key is None means cache is not enabled
         success = False
