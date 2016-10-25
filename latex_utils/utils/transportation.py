@@ -969,18 +969,27 @@ def is_ascii(text):
             return False
     return True
 
-# if __name__ == '__main__':
-#     tr_dict = {
-#         "sup": [70, 120, 100],
-#         "dem": [75, 60, 70],
-#         "costs": np.matrix([
-#             8, 9, 12,
-#             6, 7, 13,
-#             18, 12, np.inf
-#         ]).reshape(3, 3),
-#     }
-#     tr = transportation(**tr_dict)
-#     tr.solve()
+if __name__ == '__main__':
+    tr_dict = {
+        'costs': np.matrix([[3, 2, 4, 5],
+                            [2, 3, 5, 3],
+                            [1, 4, 2, 4]]),
+        'dem': [[14, 24], 30, [25,40], 30],
+        'sup': [30, 40, 50],
+        "required_init_method": ["LCM"]
+    }
+    # tr_dict = {
+    #     "sup": [70, 120, 100],
+    #     "dem": [75, 60, 70],
+    #     "costs": np.matrix([
+    #         8, 9, 12,
+    #         6, 7, 13,
+    #         18, 12, np.inf
+    #     ]).reshape(3, 3),
+    # }
+    tr = transportation(**tr_dict)
+    result = tr.solve()
+    print result
 
     # supply = [105, 125, 70]
     # demand = [80, [30,80], 70, 85]
