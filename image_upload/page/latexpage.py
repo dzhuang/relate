@@ -308,6 +308,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             def_cache = cache.caches["default"]
             result = def_cache.get(cache_key)
             if result is not None:
+                # print "1-----------here"
                 assert isinstance(result, six.string_types)
                 if will_save_file_local:
                     if not os.path.isfile(saved_file_path):
@@ -337,6 +338,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             if success and result is not None:
                 if saved_file_path:
                     if not os.path.isfile(saved_file_path):
+                        # print "2-----------here"
                         _file_write(saved_file_path, result.encode('UTF-8'))
             return True, result
 
@@ -378,6 +380,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         if success and result is not None:
             if saved_file_path and will_save_file_local:
                 assert not os.path.isfile(saved_file_path)
+                # print "3-----------here"
                 _file_write(saved_file_path, result.encode('UTF-8'))
 
         return success, result
