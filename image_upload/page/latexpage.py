@@ -309,11 +309,11 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             result = def_cache.get(cache_key)
             if result is not None:
                 assert isinstance(result, six.string_types)
-                if test_key_existance:
-                    return True
                 if will_save_file_local:
                     if not os.path.isfile(saved_file_path):
                         _file_write(saved_file_path, result.encode('UTF-8'))
+                if test_key_existance:
+                    return True
                 return True, result
             else:
                 def_cache.delete(cache_key)
