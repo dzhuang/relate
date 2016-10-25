@@ -368,11 +368,12 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 "%s_process_code" % part,
                 common_code_name="background_code")
         except TypeError:
+            return False, result
             # May raise an "'NoneType' object is not iterable" error
             # jinja_runpy error may write a broken saved file??
-            if saved_file_path:
-                if os.path.isfile(saved_file_path):
-                    os.remove(saved_file_path)
+            # if saved_file_path:
+            #     if os.path.isfile(saved_file_path):
+            #         os.remove(saved_file_path)
 
         if success and len(result) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
             def_cache.add(cache_key, result, None)
