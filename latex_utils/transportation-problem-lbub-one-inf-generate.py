@@ -543,6 +543,7 @@ for i, tr in enumerate(transport_dict_list_loaded):
     template = latex_jinja_env.get_template('/utils/transportation.tex')
 
     tex = template.render(
+        t=t,
         question_table_iters=iter(range(1, 5)),
         answer_table_iters=iter(range(1, 100)),
         show_question=True,
