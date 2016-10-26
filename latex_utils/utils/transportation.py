@@ -138,7 +138,7 @@ class transport_table_element(object):
                    "idx": idx + 1
                    }
                 for idx in range(n_sup)]
-        self.sup_name_list = get_split_idx_list(sup_name_list, sup_split_idx_list)
+        self.sup_name_list = get_split_idx_list(sup_name_list, sup_split_idx_list)[:n_sup]
 
         if dem_name_list:
             assert isinstance(dem_name_list, list)
@@ -163,7 +163,7 @@ class transport_table_element(object):
                    "idx": idx + 1
                    }
                 for idx in range(n_dem)]
-        self.dem_name_list = get_split_idx_list(dem_name_list, dem_split_idx_list)
+        self.dem_name_list = get_split_idx_list(dem_name_list, dem_split_idx_list)[:n_dem]
 
 
 def sum_recursive(l):
@@ -520,6 +520,8 @@ class transportation(object):
             self.get_bounded_standardized()
 
         if self.standard_dem and self.standard_sup:
+            self.standard_n_dem = len(self.standard_dem)
+            self.standard_n_sup = len(self.standard_sup)
             return
 
         if self.is_standard:
@@ -970,14 +972,23 @@ def is_ascii(text):
     return True
 
 if __name__ == '__main__':
-    tr_dict = {
-        'costs': np.matrix([[3, 2, 4, 5],
-                            [2, 3, 5, 3],
-                            [1, 4, 2, 4]]),
-        'dem': [[14, 24], 30, [25,40], 30],
-        'sup': [30, 40, 50],
-        "required_init_method": ["LCM"]
-    }
+    # tr_dict = {
+    #     'costs': np.matrix([[3, 2, 4, 5],
+    #                         [2, 3, 5, 3],
+    #                         [1, 4, 2, 4]]),
+    #     'dem': [[14, 24], 30, [25,40], 30],
+    #     'sup': [30, 40, 50],
+    #     "required_init_method": ["LCM"]
+    # }
+    # tr_dict = {
+    #     "sup": [70, 120, 100],
+    #     "dem": [75, 60, 70],
+    #     "costs": np.matrix([
+    #         8, 9, 12,
+    #         6, 7, 13,
+    #         18, 12, 6
+    #     ]).reshape(3, 3),
+    # }
     # tr_dict = {
     #     "sup": [70, 120, 100],
     #     "dem": [75, 60, 70],
@@ -987,8 +998,17 @@ if __name__ == '__main__':
     #         18, 12, np.inf
     #     ]).reshape(3, 3),
     # }
+    tr_dict = {'costs': np.matrix([[ 9,  8, 12],
+        [ 7, 18,  6],
+        [12,  6, 13]]), 'dem': [[75, 95], [60, 145], 70], 'sup': [70, 120, 100]}
+    # {'costs': np.matrix([[6, 7, 13],
+    #                                [8, 18, 9],
+    #                                [12, 12, 6]]), 'dem': [[45, 100], 60, [70, 80]], 'sup': [60, 70, 90]}
     tr = transportation(**tr_dict)
     result = tr.solve()
+    tr.get_tranport_solve_table_element()
+    print tr.standard_dem, tr.standard_n_dem
+    print tr.solve_table_element.dem_name_list
     print result
 
     # supply = [105, 125, 70]
