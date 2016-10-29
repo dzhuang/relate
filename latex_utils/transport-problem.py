@@ -104,7 +104,7 @@ tex = template.render(
 
 #print tex
 
-#_file_write("transport.tex", tex.encode('UTF-8'))
+#file_write("transport.tex", tex.encode('UTF-8'))
 
 solve = TransportSolve(
     sup=price.sup

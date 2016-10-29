@@ -25,7 +25,7 @@ tex = template.render(
 
 
 
-# _file_write("lp_test.tex", tex.encode('UTF-8'))
+# file_write("lp_test.tex", tex.encode('UTF-8'))
 #
 from Tkinter import Tk
 r = Tk()

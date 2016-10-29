@@ -44,7 +44,8 @@ from course.page import (
     InlineMultiQuestion)
 from course.validation import ValidationError
 from course.content import get_repo_blob, get_repo_blob_data_cached
-from course.latex.utils import _file_read, _file_write
+from course.latex.utils import file_read
+from atomicwrites import atomic_write
 
 from image_upload.page.imgupload import ImageUploadQuestion
 from course.page.code import (
@@ -271,10 +272,10 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
     def get_cached_result(self, page_context, page_data, part="", test_key_existance=False):
         #assert part in ["question", "answer"]
-        will_save_file_local = False
+        will_save_file_local = True
 
-        if page_context.in_sandbox:
-            will_save_file_local = True
+        # if page_context.in_sandbox:
+        #     will_save_file_local = True
 
         # if not getattr(page_data, "question_data", None):
         #     page_data = self.initialize_page_data(page_context)
@@ -312,7 +313,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 assert isinstance(result, six.string_types)
                 if will_save_file_local:
                     if not os.path.isfile(saved_file_path):
-                        _file_write(saved_file_path, result.encode('UTF-8'))
+                        with atomic_write(saved_file_path) as f:
+                            f.write(result.encode('UTF-8'))
                 if test_key_existance:
                     return True
                 return True, result
@@ -339,7 +341,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 if saved_file_path:
                     if not os.path.isfile(saved_file_path):
                         # print "2-----------here"
-                        _file_write(saved_file_path, result.encode('UTF-8'))
+                        with atomic_write(saved_file_path) as f:
+                            f.write(result.encode('UTF-8'))
             return True, result
 
         def_cache = cache.caches["default"]
@@ -351,7 +354,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         if result is None:
             if saved_file_path:
                 if os.path.isfile(saved_file_path):
-                    result = _file_read(saved_file_path)
+                    result = file_read(saved_file_path)
                     if result is None:
                         try:
                             os.remove(saved_file_path)
@@ -382,7 +385,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             if saved_file_path and will_save_file_local:
                 assert not os.path.isfile(saved_file_path)
                 # print "3-----------here"
-                _file_write(saved_file_path, result.encode('UTF-8'))
+                with atomic_write(saved_file_path) as f:
+                    f.write(result.encode('UTF-8'))
 
         return success, result
 
