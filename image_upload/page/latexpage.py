@@ -355,11 +355,11 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             if saved_file_path:
                 if os.path.isfile(saved_file_path):
                     result = file_read(saved_file_path)
-                    if result is None:
-                        try:
-                            os.remove(saved_file_path)
-                        except:
-                            pass
+                    # if result is None:
+                    #     try:
+                    #         os.remove(saved_file_path)
+                    #     except:
+                    #         pass
         if result is not None:
             assert isinstance(result, six.string_types), cache_key
             return True, result
