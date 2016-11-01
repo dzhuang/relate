@@ -248,7 +248,7 @@ class network(object):
                               node_label_dict=self.node_label_dict,
                               edge_label_style_dict=self.edge_label_style_dict,
                               use_label=use_label,
-                              no_bidirectional=no_bidirectional
+                              #no_bidirectional=no_bidirectional
                               )
 
     def get_iterated_solution(self, source=0, method="dijkstra"):

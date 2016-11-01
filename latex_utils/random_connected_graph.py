@@ -90,13 +90,14 @@ class Graph(object):
     def as_np_matrix(self, weight_random_range=()):
         import numpy as np
         n_nodes = len(self.nodes)
-        matrix = np.zeros(shape=(n_nodes, n_nodes))
+        matrix = np.matrix(np.zeros(shape=(n_nodes, n_nodes)))
         weight_list = np.ones(len(self.edges))
         if weight_random_range:
             assert isinstance(weight_random_range, (list,tuple))
             assert len(weight_random_range) == 2
             for i in weight_random_range:
                 assert isinstance(i, (int, float))
+            assert weight_random_range[1] > weight_random_range[0]
             weight_list = np.random.randint(
                 weight_random_range[0], weight_random_range[1],
                 len(self.edges))
@@ -294,6 +295,8 @@ if __name__ == '__main__':
                         help='print large graphs with each edge on a new line')
     parser.add_argument('-g', '--gml',
                         help='filename to save the graph to in GML format')
+    parser.add_argument('--weight',nargs='+', type=int,
+                        help='random generate weight range')
     args = parser.parse_args()
 
     # Nodes
@@ -328,8 +331,6 @@ if __name__ == '__main__':
     # Display
     if not args.no_output:
         graph.sort_edges()
-        matrix = graph.as_np_matrix()
-        print matrix
         if args.pretty:
             pprint(graph.edges)
         else:
@@ -340,5 +341,13 @@ if __name__ == '__main__':
     if args.gml:
         graph.write_gml(args.gml)
 
+    if args.weight:
+        matrix = graph.as_np_matrix(args.weight)
+    else:
+        matrix = graph.as_np_matrix()
+    print repr(matrix)
 
-# Basic usage: python random_connected_graph.py random_connected_graph_id.txt
+
+
+# Basic usage: python random_connected_graph.py random_connected_graph_id.txt --weight 20 30 -e 20
+# Basic usage: python random_connected_graph.py 10 --weight 20 30 -e 20
