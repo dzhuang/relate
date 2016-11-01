@@ -768,7 +768,9 @@ with open('dijk_sp.bin', 'rb') as f:
     g_list_loaded = pickle.load(f)
 
 
+n = 0
 for g_dict in g_list_loaded:
+    n += 1
     # r.clipboard_clear()
     g = network(**g_dict)
 
@@ -799,6 +801,9 @@ for g_dict in g_list_loaded:
 
     r.clipboard_append(tex)
     print "最短路条数",len(list(g.get_shortest_path()))
+
+print n
+
 
 
 # preamble of the picture of the graph.

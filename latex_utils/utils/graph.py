@@ -99,7 +99,7 @@ class dijkstra_result(shortest_path_result):
             {node:[] for node in self.final_pred}
             for i in range(n_pred_lines)]
 
-        for i in reversed(range(n_pred_lines)):
+        for i in reversed(list(range(n_pred_lines))):
             for node in self.final_pred:
                 sout = True
                 empty_list_alt = ""
@@ -247,7 +247,9 @@ class network(object):
         return dumps_tikz_doc(g=self.graph, layout=layout,
                               node_label_dict=self.node_label_dict,
                               edge_label_style_dict=self.edge_label_style_dict,
-                              use_label=use_label)
+                              use_label=use_label,
+                              no_bidirectional=no_bidirectional
+                              )
 
     def get_iterated_solution(self, source=0, method="dijkstra"):
         n_node = self.n_node
