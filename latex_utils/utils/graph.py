@@ -8,16 +8,29 @@ import networkx as nx
 import copy
 import networkx.algorithms.shortest_paths.weighted as shortest_path
 from networkx.exception import NetworkXException
+
 try:
-    import shortest_path_weighted as shortest_path_tweaked
-except:
+    from shortest_path_weighted import dijkstra_predecessor_and_distance
+except ImportError:
+    pass
+
+try:
+    from shortest_path_weighted import bellman_ford_predecessor_and_distance
+except ImportError:
+    pass
+
+try:
+    from shortest_path_weighted import all_shortest_paths_from_0
+except ImportError:
     pass
 
 
 ALLOWED_SHORTEST_PATH_METHOD = ['dijkstra', 'bellman_ford']
 
+
 class NetworkNegativeWeightUsingDijkstra(NetworkXException):
     """Using dijkstra to solve shortest path with negative weight"""
+
 
 class shortest_path_result(OptimizeResult):
     def __init__(self, **kwargs):
@@ -40,6 +53,7 @@ class shortest_path_result(OptimizeResult):
 
     def as_latex(self):
         raise NotImplementedError()
+
 
 def trans_node_list_tex(node_list, node_label_dict, empty_list_alt="", sout=True, wrap=True):
     # sout is latex macro \st{}
@@ -98,7 +112,7 @@ class dijkstra_result(shortest_path_result):
 
         simplified_pred_list = [
             {node:[] for node in self.final_pred}
-            for i in range(n_pred_lines)]
+            for i in list(range(n_pred_lines))]
 
         for i in reversed(list(range(n_pred_lines))):
             for node in self.final_pred:
@@ -157,8 +171,8 @@ class bellman_ford_result(shortest_path_result):
     def as_latex(self):
         matrix = copy.deepcopy(self.graph_matrix)
         matrix = matrix.tolist()
-        for i in range(len(matrix)):
-            for j in range(len(matrix[i])):
+        for i in list(range(len(matrix))):
+            for j in list(range(len(matrix[i]))):
                 if matrix[i][j] == 0:
                     matrix[i][j] = ""
                 elif matrix[i][j] == int(matrix[i][j]):
@@ -167,8 +181,8 @@ class bellman_ford_result(shortest_path_result):
 
         dist_list_by_node_npmatrix = np.matrix(self.dist_list).transpose()
         dist_list_by_node = dist_list_by_node_npmatrix.tolist()
-        for i in range(len(dist_list_by_node)):
-            for j in range(len(dist_list_by_node[i])):
+        for i in list(range(len(dist_list_by_node))):
+            for j in list(range(len(dist_list_by_node[i]))):
                 if dist_list_by_node[i][j] == float("inf"):
                     dist_list_by_node[i][j] = ""
                 elif int(dist_list_by_node[i][j]) == dist_list_by_node[i][j]:
@@ -203,7 +217,7 @@ class network(object):
         if isinstance(graph, np.matrix):
             if not graph.shape[0] == graph.shape[1]:
                 raise ValueError("The matrix of the graph is not a square matrix")
-            for i in range(graph.shape[0]):
+            for i in list(range(graph.shape[0])):
                 if not graph[i, i] == 0:
                     raise ValueError(
                         "The diagonal of the matrix is not 0 at [%(idx)d, %(idx)d]" % {"idx": i+1})
@@ -235,7 +249,7 @@ class network(object):
         self.shortest_path_list = []
         self.id = id
 
-        for node in range(len(graph)):
+        for node in list(range(len(graph))):
             if node not in self.node_label_dict:
                 self.node_label_dict[node] = (
                     "%(prefix)s_{%(subscript)s}"
@@ -270,7 +284,7 @@ class network(object):
             seen = copy.deepcopy((kwargs["seen"]))
             nit = kwargs["nit"]
             p_node = []
-            for i in range(n_node):
+            for i in list(range(n_node)):
                 if i not in pred:
                     pred[i] = [0]
                 if i in dist:
@@ -320,21 +334,21 @@ class network(object):
 
     def get_predecessor_and_distance(self, source=0, method="dijkstra", callback=None):
         if method == "dijkstra":
-            return shortest_path_tweaked.dijkstra_predecessor_and_distance(
+            return dijkstra_predecessor_and_distance(
                 self.graph, source=source, callback=callback)
         if method == "bellman_ford":
             dist = {source: 0}
             pred = {source: None}
             if len(self.graph) == 1:
                 return pred, dist
-            return shortest_path_tweaked.bellman_ford_predecessor_and_distance(
+            return bellman_ford_predecessor_and_distance(
                 self.graph, source=0, callback=callback)
 
     def get_shortest_path(self, target=None):
         # this returns an generator
         if not target:
             target = len(self.graph) - 1
-        return shortest_path_tweaked.all_shortest_paths_from_0(self.graph, target=target)
+        return all_shortest_paths_from_0(self.graph, target=target)
 
     def get_shortes_distance(self, source=0, target=None, method='dijkstra'):
         if method not in ALLOWED_SHORTEST_PATH_METHOD:
