@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import unicode_literals
 import numpy as np
 from collections import OrderedDict
 from scipy.optimize._linprog import OptimizeResult
@@ -41,7 +42,7 @@ class shortest_path_result(OptimizeResult):
         raise NotImplementedError()
 
 def trans_node_list_tex(node_list, node_label_dict, empty_list_alt="", sout=True, wrap=True):
-    # sout 是指使用删除线\st{}
+    # sout is latex macro \st{}
     if node_list is not None:
         assert isinstance(node_list, list)
     assert isinstance(node_label_dict, dict)
@@ -184,7 +185,7 @@ class bellman_ford_result(shortest_path_result):
 
 
 class network(object):
-    def __init__(self, graph, directed=True, node_label_dict=None, edge_label_style_dict=None, node_tex_prefix="v"):
+    def __init__(self, graph, directed=True, node_label_dict=None, edge_label_style_dict=None, node_tex_prefix="v", id=None):
         if node_label_dict:
             if not isinstance(node_label_dict, dict):
                 raise ValueError ("node_label_dict must be a dict")
@@ -232,6 +233,7 @@ class network(object):
         self.final_pred = []
         self.final_dist = []
         self.shortest_path_list = []
+        self.id = id
 
         for node in range(len(graph)):
             if node not in self.node_label_dict:
@@ -248,7 +250,7 @@ class network(object):
                               node_label_dict=self.node_label_dict,
                               edge_label_style_dict=self.edge_label_style_dict,
                               use_label=use_label,
-                              #no_bidirectional=no_bidirectional
+                              no_bidirectional=no_bidirectional
                               )
 
     def get_iterated_solution(self, source=0, method="dijkstra"):
@@ -416,13 +418,13 @@ def dumps_tikz_doc(g, layout='spring', node_label_dict=None,
             s=s)
 
     preamble = (
-        '\documentclass{{standalone}}\n'
-        '\usepackage{{amsmath}}\n'
+        r'\documentclass{{standalone}}' '\n'
+        '\\usepackage{{amsmath}}\n'
         '\n'
-        '\usepackage{{tikz}}\n'
-        '\usetikzlibrary{{graphs,graphs.standard,'
+        '\\usepackage{{tikz}}\n'
+        '\\usetikzlibrary{{graphs,graphs.standard,'
         'graphdrawing,quotes,shapes,arrows.meta}}\n'
-        '\usegdlibrary{{ {layout_lib} }}\n').format(
+        '\\usegdlibrary{{ {layout_lib} }}\n').format(
             layout_lib=layout_lib)
 
     return (
@@ -430,7 +432,7 @@ def dumps_tikz_doc(g, layout='spring', node_label_dict=None,
         r'\begin{{document}}' '\n'
         '\n'
         '{tikz}'
-        '\end{{document}}\n').format(
+        r'\end{{document}}\n').format(
             preamble=preamble,
             tikz=tikzpicture)
 

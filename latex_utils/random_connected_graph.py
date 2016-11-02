@@ -87,26 +87,39 @@ class Graph(object):
                 line += '\n'
                 f.write(line.encode('latin-1'))
 
-    def as_np_matrix(self, weight_random_range=()):
+    def as_np_matrix_list(self, weight_random_range=(), force_remove_weight=(6, 9, 69, 96, 61, 16, 19, 91), number_of_matrix=1):
         import numpy as np
         n_nodes = len(self.nodes)
-        matrix = np.matrix(np.zeros(shape=(n_nodes, n_nodes)))
         weight_list = np.ones(len(self.edges))
-        if weight_random_range:
-            assert isinstance(weight_random_range, (list,tuple))
-            assert len(weight_random_range) == 2
-            for i in weight_random_range:
-                assert isinstance(i, (int, float))
-            assert weight_random_range[1] > weight_random_range[0]
+        def generate_random_weight():
             weight_list = np.random.randint(
                 weight_random_range[0], weight_random_range[1],
                 len(self.edges))
+            return weight_list
 
-        for i, (source, target) in enumerate(self.edges):
-            matrix[self.nodes.index(source), self.nodes.index(target)] = weight_list[i]
+        matrix_list = []
+        for i in range(number_of_matrix):
+            matrix = np.matrix(np.zeros(shape=(n_nodes, n_nodes)))
+            if weight_random_range:
+                assert isinstance(weight_random_range, (list,tuple))
+                assert len(weight_random_range) == 2
+                for i in weight_random_range:
+                    assert isinstance(i, (int, float))
+                assert weight_random_range[1] > weight_random_range[0]
+                weight_list = generate_random_weight()
+                while force_remove_weight and len(set.intersection(set(weight_list.tolist()), (force_remove_weight))) > 0:
+                    weight_list = generate_random_weight()
 
-        return matrix
+                else:
+                    assert isinstance(force_remove_weight, (list,tuple))
 
+
+            for i, (source, target) in enumerate(self.edges):
+                matrix[self.nodes.index(source), self.nodes.index(target)] = weight_list[i]
+
+            matrix_list.append(matrix)
+
+        return matrix_list
 
 def check_num_edges(nodes, num_edges, loops, multigraph, digraph):
     """Checks that the number of requested edges is acceptable."""
@@ -342,10 +355,11 @@ if __name__ == '__main__':
         graph.write_gml(args.gml)
 
     if args.weight:
-        matrix = graph.as_np_matrix(args.weight)
+        matrix_list = graph.as_np_matrix_list(args.weight)
     else:
-        matrix = graph.as_np_matrix()
-    print repr(matrix)
+        matrix_list = graph.as_np_matrix_list()
+    for matrix in matrix_list:
+        print repr(matrix)
 
 
 

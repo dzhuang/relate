@@ -476,9 +476,10 @@ class Tex2ImgBase(object):
             image = file_read(image_path)
 
             # avoid race condition
-            from atomicwrites import atomic_write
-            with atomic_write(self.image_saving_path, mode="wb") as f:
-                f.write(image)
+            if not os.path.isfile(self.image_saving_path):
+                from atomicwrites import atomic_write
+                with atomic_write(self.image_saving_path, mode="wb") as f:
+                    f.write(image)
         except OSError:
             raise RuntimeError(error)
         finally:
@@ -548,7 +549,9 @@ class Tex2ImgBase(object):
         if force_regenerate:
             # first remove cached error results and files
             self.get_compile_err_cached(force_regenerate)
-
+            if os.path.isfile(self.image_saving_path):
+                os.remove(self.image_saving_path)
+            self.image_saving_path = self.get_converted_image()
             image_path = self.get_converted_image()
             uri_result = get_file_data_uri(image_path)
             assert isinstance(uri_result, six.string_types)

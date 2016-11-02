@@ -9,7 +9,7 @@
 
 <p align="middle">
 {% call latex(compiler="lualatex", image_format="png", alt="question", tex_preamble=preamble) %}
-
+\RequirePackage{luatex85}
 \VAR{g.as_latex()}
 
 {% endcall %}
