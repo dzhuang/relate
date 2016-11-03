@@ -761,10 +761,10 @@ r.clipboard_clear()
 
 
 import pickle
-with open('dijk_sp.bin', 'wb') as f:
+with open('graph_dijk_sp.bin', 'wb') as f:
     pickle.dump(g_list, f)
 
-with open('dijk_sp.bin', 'rb') as f:
+with open('graph_dijk_sp.bin', 'rb') as f:
     g_list_loaded = pickle.load(f)
 
 
@@ -791,11 +791,11 @@ for g_dict in g_list_loaded:
         g=g,
         source = g.node_label_dict[0],
         target = g.node_label_dict[len(g.graph) - 1],
-        #show_dijkstra = True,
+        show_dijkstra = True,
         dijkstra_is_allowed=dijkstra_is_allowed,
         dijkstra_result = dijkstra_result,
-        show_bellman_ford = True,
-        bellman_ford_result = g.get_iterated_solution(method="bellman_ford"),
+        #show_bellman_ford = True,
+        #bellman_ford_result = g.get_iterated_solution(method="bellman_ford"),
 
     )
 
