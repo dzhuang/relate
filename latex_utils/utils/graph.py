@@ -74,9 +74,9 @@ def trans_node_list_tex(node_list, node_label_dict, empty_list_alt="", sout=True
     return node_label_tex
 
 
-class dijkstra_result(shortest_path_result):
+class DijkstraResult(shortest_path_result):
     def __init__(self, **kwargs):
-        super(dijkstra_result, self).__init__(**kwargs)
+        super(DijkstraResult, self).__init__(**kwargs)
         assert kwargs["pred_list"]
         assert kwargs["seen_list"]
         assert kwargs["p_node_list"]
@@ -150,9 +150,9 @@ class dijkstra_result(shortest_path_result):
         self.tex_L_list = tex_L_list
 
 
-class bellman_ford_result(shortest_path_result):
+class BellmanFordResult(shortest_path_result):
     def __init__(self, **kwargs):
-        super(bellman_ford_result, self).__init__(**kwargs)
+        super(BellmanFordResult, self).__init__(**kwargs)
         assert not kwargs.get("pred_list", None)
         assert kwargs["dist_list"]
         assert kwargs["graph_matrix"] is not None
@@ -317,7 +317,7 @@ class network(object):
         self.final_dist = dist
         if method == "dijkstra":
             final_pred = pred_list[-1]
-            return dijkstra_result(
+            return DijkstraResult(
                 pred_list=pred_list, dist_list=dist_list, seen_list=seen_list,
                 p_node_list=p_node_list, final_pred=final_pred,
                 shortest_path_list=list(self.get_shortest_path()),
@@ -327,10 +327,10 @@ class network(object):
             assert not self.pred_list
             assert not self.seen_list
             assert not self.p_node_list
-            return bellman_ford_result(graph_matrix=self.graph_matrix, final_pred=final_pred, dist_list=dist_list,
-                                       node_label_dict=self.node_label_dict,
-                                       shortest_path_list=list(self.get_shortest_path()),
-                                       )
+            return BellmanFordResult(graph_matrix=self.graph_matrix, final_pred=final_pred, dist_list=dist_list,
+                                     node_label_dict=self.node_label_dict,
+                                     shortest_path_list=list(self.get_shortest_path()),
+                                     )
 
     def get_predecessor_and_distance(self, source=0, method="dijkstra", callback=None):
         if method == "dijkstra":
