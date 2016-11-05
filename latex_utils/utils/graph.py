@@ -359,6 +359,15 @@ class network(object):
             return shortest_path.dijkstra_path_length(
                 self.graph, source=source, target=target)
 
+    def as_capacity_graph(self):
+        capacity_network = nx.DiGraph()
+        n = self.graph.number_of_nodes
+        for edge in self.graph.edges():
+            capacity_network.add_edge(
+                edge[0],edge[1], capacity=self.graph[edge[0]][edge[1]]['weight'])
+
+        return capacity_network
+
 
 def dumps_tikz_doc(g, layout='spring', node_label_dict=None,
                    edge_label_style_dict=None, use_label=True, no_bidirectional=True):

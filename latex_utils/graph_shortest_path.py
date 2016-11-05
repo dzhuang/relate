@@ -773,6 +773,9 @@ for g_dict in g_list_loaded:
     n += 1
     # r.clipboard_clear()
     g = network(**g_dict)
+    #print g.graph.edge
+    #g.as_capacity_graph()
+    #continue
 
     dijkstra_is_allowed = True
     dijkstra_result = None
