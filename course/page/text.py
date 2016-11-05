@@ -416,6 +416,22 @@ def _is_valid_float(s):
         return True
 
 
+class SetMatcherBase(TextAnswerMatcher):
+    is_case_sensitive = False
+    pattern_type = "struct"
+    pass
+
+
+class IntSetMatcher(SetMatcherBase):
+    type = "int_set"
+
+    pass
+
+
+class FloatSetMatcher(SetMatcherBase):
+    pass
+
+
 class FloatListWithWrapperMatcher(TextAnswerMatcher):
     type = "float_list_with_wrapper"
     is_case_sensitive = False
