@@ -44,6 +44,7 @@ import re
 # {{{ multiple text question
 
 from crispy_forms.layout import Layout, Field, HTML
+from crispy_forms.bootstrap import PrependedAppendedText
 
 
 class InlineMultiQuestionForm(StyledInlineForm):
@@ -174,23 +175,20 @@ class AnswerBase(object):
             return 0
 
     def get_field_layout(self, correctness=None):
+        kwargs = {}
+        kwargs["prepended_text"] = getattr(self.answers_desc, "prepended_text", "")
+        kwargs["appended_text"] = getattr(self.answers_desc, "appended_text", "")
+        kwargs["use_popover"] = "true"
+        kwargs["popover_title"] = getattr(self.answers_desc, "hint_title", "")
+        kwargs["popover_content"] = getattr(self.answers_desc, "hint", "")
         if correctness is None:
-            return Field(
-                    self.name,
-                    use_popover="true",
-                    popover_title=getattr(self.answers_desc, "hint_title", ""),
-                    popover_content=getattr(self.answers_desc, "hint", ""),
-                    style=self.get_width_str()
-                    )
+            kwargs["style"] = self.get_width_str()
         else:
-            return Field(
-                    self.name,
-                    use_popover="true",
-                    popover_title=getattr(self.answers_desc, "hint_title", ""),
-                    popover_content=getattr(self.answers_desc, "hint", ""),
-                    style=self.get_width_str(self.width + 2),
-                    correctness=correctness
-                    )
+            kwargs["style"] = self.get_width_str(self.width + 2)
+            kwargs["correctness"] = correctness
+
+        from crispy_forms.bootstrap import PrependedAppendedText
+        return PrependedAppendedText(self.name, **kwargs)
 
     def get_form_field(self, page_context):
         raise NotImplementedError()
@@ -277,6 +275,8 @@ class ShortAnswer(AnswerBase):
                 ),
             allowed_attrs=(
                 ("weight", (int, float)),
+                ("prepended_text", str),
+                ("appended_text", str),
                 ("hint", str),
                 ("hint_title", str),
                 ("width", (str, int, float)),
@@ -399,6 +399,8 @@ class ChoicesAnswer(AnswerBase):
                 ),
             allowed_attrs=(
                 ("weight", (int, float)),
+                ("prepended_text", str),
+                ("appended_text", str),
                 ("hint", str),
                 ("hint_title", str),
                 ("required", bool),
@@ -773,9 +775,15 @@ class InlineMultiQuestion(TextQuestionBase, PageBaseWithValue):
                 correctness_list = []
 
                 for answer_instance in self.answer_instance_list:
-                    if answer[answer_instance.name] is not None:
-                        correctness_list.append(answer_instance.get_correctness(
-                                answer[answer_instance.name]))
+                    try:
+                        if answer[answer_instance.name] is not None:
+                            correctness_list.append(answer_instance.get_correctness(
+                                    answer[answer_instance.name]))
+
+                    # The answer doesn't exist for newly added question 
+                    # for pages which have been submit.
+                    except KeyError:
+                        correctness_list.append(0)
 
                     dict_feedback_form["correctness_list"] = correctness_list
 
