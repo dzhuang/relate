@@ -95,7 +95,7 @@ $$\begin{align*}
 {% endcall %}
 </p>
 
-最短路长为\VAR{(g.final_dist[-1][g.graph|length -1])|int},\BLOCK{ if bellman_ford_result.shortest_path_list|length > 1}有\VAR{bellman_ford_result.shortest_path_list|length}条最短路径：\BLOCK{ else } 最短路径为：\BLOCK{endif}
+最短路长为\VAR{g.final_dist[g.n_node-1]|int},\BLOCK{ if bellman_ford_result.shortest_path_list|length > 1}有\VAR{bellman_ford_result.shortest_path_list|length}条最短路径：\BLOCK{ else } 最短路径为：\BLOCK{endif}
 
 $$\begin{align*}
 \BLOCK{ for path in bellman_ford_result.shortest_path_tex_list }

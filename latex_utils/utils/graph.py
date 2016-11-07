@@ -314,7 +314,14 @@ class network(object):
         self.seen_list = seen_list
         self.p_node_list = p_node_list
 
-        self.final_dist = dist
+        if isinstance(dist, dict):
+            self.final_dist = dist
+        else:
+            dist_dict = {}
+            for idx, v in enumerate(dist[-1]):
+                dist_dict[idx] = v
+            self.final_dist = dist_dict
+
         if method == "dijkstra":
             final_pred = pred_list[-1]
             return DijkstraResult(

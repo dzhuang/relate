@@ -5,6 +5,8 @@ from latex_utils.utils.graph import network, NetworkNegativeWeightUsingDijkstra
 from copy import deepcopy
 import numpy as np
 
+SAVED_QUESTION = "graph_bellman_sp.bin"
+
 g_list = []
 
 g = {"graph":
@@ -816,14 +818,15 @@ r.clipboard_clear()
 
 
 import pickle
-with open('bf_sp.bin', 'wb') as f:
+with open(SAVED_QUESTION, 'wb') as f:
     pickle.dump(g_list, f)
 
-with open('bf_sp.bin', 'rb') as f:
+with open(SAVED_QUESTION, 'rb') as f:
     g_list_loaded = pickle.load(f)
 
-
+n = 0
 for g_dict in g_list_loaded:
+    n += 1
     #r.clipboard_clear()
     g = network(**g_dict)
 
@@ -834,6 +837,9 @@ for g_dict in g_list_loaded:
         dijkstra_result = g.get_iterated_solution(method="dijkstra")
     except NetworkNegativeWeightUsingDijkstra:
         dijkstra_is_allowed = False
+
+    bellman_ford_result = g.get_iterated_solution(method="bellman_ford")
+    print bellman_ford_result
 
     template = latex_jinja_env.get_template('/utils/graph_shortest_path.tex')
     tex = template.render(
@@ -854,3 +860,5 @@ for g_dict in g_list_loaded:
     r.clipboard_append(tex)
     print "最短路条数",len(list(g.get_shortest_path()))
     print list(g.get_shortest_path())
+
+print n

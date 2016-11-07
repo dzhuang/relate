@@ -785,6 +785,8 @@ for g_dict in g_list_loaded:
     except NetworkNegativeWeightUsingDijkstra:
         dijkstra_is_allowed = False
 
+    shortest_path_length=g.final_dist[g.n_node-1]
+
     template = latex_jinja_env.get_template('/utils/graph_shortest_path.tex')
     tex = template.render(
         question_iters = iter(range(0,5)),
@@ -794,11 +796,12 @@ for g_dict in g_list_loaded:
         g=g,
         source = g.node_label_dict[0],
         target = g.node_label_dict[len(g.graph) - 1],
+        shortest_path_length=shortest_path_length,
         show_dijkstra = True,
         dijkstra_is_allowed=dijkstra_is_allowed,
         dijkstra_result = dijkstra_result,
-        #show_bellman_ford = True,
-        #bellman_ford_result = g.get_iterated_solution(method="bellman_ford"),
+        show_bellman_ford = True,
+        bellman_ford_result = g.get_iterated_solution(method="bellman_ford"),
 
     )
 

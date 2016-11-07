@@ -238,7 +238,11 @@ def all_shortest_paths_from_0(G, target, weight="weight"):
         raise nx.NetworkXNoPath()
     stack = [[target,0]]
     top = 0
+    count = 0
     while top >= 0:
+        count += 1
+        if count > 100:
+            raise ValueError("There's loop in the graph.")
         node,i = stack[top]
         if node == source:
             yield [p for p,n in reversed(stack[:top+1])]
