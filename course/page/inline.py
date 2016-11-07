@@ -337,7 +337,11 @@ class ShortAnswer(AnswerBase):
                 break
 
         assert unspec_correct_answer_text
-        return unspec_correct_answer_text
+        return ("%s%s%s"
+                % (getattr(self.answers_desc, "prepended_text", "").strip(),
+                   unspec_correct_answer_text,
+                   getattr(self.answers_desc, "appended_text", "").strip())
+                )
 
     def get_correctness(self, answer):
 
@@ -399,8 +403,6 @@ class ChoicesAnswer(AnswerBase):
                 ),
             allowed_attrs=(
                 ("weight", (int, float)),
-                ("prepended_text", str),
-                ("appended_text", str),
                 ("hint", str),
                 ("hint_title", str),
                 ("required", bool),
@@ -457,8 +459,12 @@ class ChoicesAnswer(AnswerBase):
 
     def get_correct_answer_text(self, page_context):
         corr_idx = self.correct_indices()[0]
-        return self.process_choice_string(
-                page_context, self.answers_desc.choices[corr_idx]).lstrip()
+        return ("%s%s%s"
+                % (getattr(self.answers_desc, "prepended_text", "").strip(),
+                   self.process_choice_string(
+                       page_context, self.answers_desc.choices[corr_idx]).lstrip(),
+                   getattr(self.answers_desc, "appended_text", "").strip())
+                   )
 
     def get_max_correct_answer_len(self, page_context):
         return max([len(answer) for answer in
@@ -783,7 +789,7 @@ class InlineMultiQuestion(TextQuestionBase, PageBaseWithValue):
                     # The answer doesn't exist for newly added question 
                     # for pages which have been submit.
                     except KeyError:
-                        correctness_list.append(0)
+                        correctness_list.append(1)
 
                     dict_feedback_form["correctness_list"] = correctness_list
 
