@@ -187,7 +187,6 @@ class AnswerBase(object):
             kwargs["style"] = self.get_width_str(self.width + 2)
             kwargs["correctness"] = correctness
 
-        from crispy_forms.bootstrap import PrependedAppendedText
         return PrependedAppendedText(self.name, **kwargs)
 
     def get_form_field(self, page_context):
@@ -551,17 +550,20 @@ class InlineMultiQuestion(TextQuestionBase, PageBaseWithValue):
         value: 10
         prompt: |
 
-            # An example
+            # An InlineMultiQuestion example
 
             Complete the following paragraph.
 
         question: |
 
             Foo and [[blank1]] are often used in code examples, or
-            tutorials. The float value of $\frac{1}{5}$ is [[blank_2]].
+            tutorials. $\frac{1}{5}$ is equivelant to [[blank_2]].
 
             The correct answer for this choice question is [[choice_a]].
-            The Upper case of "foo" is [[choice2]]
+            The Upper case of "foo" is [[choice2]].
+
+            One dollar is [[blank3]], and five percent is [[blank4]], and "Bar"
+            wrapped by a pair of parentheses is [[blank5]].
 
         answers:
 
@@ -599,6 +601,39 @@ class InlineMultiQuestion(TextQuestionBase, PageBaseWithValue):
                 - ~CORRECT~ FOO
                 - BAR
                 - fOO
+
+            blank3:
+                type: ShortAnswer
+                width: 3em
+                prepended_text: "$"
+                hint: Blank with prepended text
+                correct_answer:
+                - type: float
+                  value: 1
+                  rtol: 0.00001
+                - <plain> "1"
+
+            blank4:
+                type: ShortAnswer
+                width: 3em
+                appended_text: "%"
+                hint: Blank with appended text
+                correct_answer:
+                - type: float
+                  value: 5
+                  rtol: 0.00001
+                - <plain> "5"
+
+            blank5:
+                type: ShortAnswer
+                width: 6em
+                prepended_text: "("
+                appended_text: ")"
+                required: True
+                hint: Blank with both prepended and appended text
+                correct_answer:
+                - <plain> BAR
+                - <plain>bar
 
     """
 

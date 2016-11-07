@@ -86,11 +86,13 @@ git+https://github.com/dzhuang/python-memcached.git
 # }}}
 
 # {{{ A task queue, used to execute long-running tasks
-celery
+celery<4
+# kombu 4 removes the Django ORM transport
+kombu<4
 
-# django-celery (release) is broken: https://github.com/celery/django-celery/issues/411
-# but fixed in Debian.
-git+https://anonscm.debian.org/git/python-modules/packages/django-celery.git
+# Package index release 3.1.17 (current as of Nov 6, 2015)
+# still affected by https://github.com/celery/django-celery/issues/411
+git+https://github.com/celery/django-celery.git@6232c79557517afa74967fcb980c0db2fb1174d8
 # git+git://github.com/celery/django-celery.git@918b90eb3f69addeba73fa8a77a38aecd6af0a3e
 
 # }}}
