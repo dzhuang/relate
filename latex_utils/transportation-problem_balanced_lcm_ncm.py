@@ -1350,6 +1350,8 @@ for i, tr in enumerate(transport_dict_list_loaded):
 
     t = transportation(**tr)
 
+    print tr
+
 #    r.clipboard_clear ()
 
     #required_init_method = ["LCM", "NCM", "VOGEL"]
@@ -1419,7 +1421,7 @@ for i, tr in enumerate(transport_dict_list_loaded):
 print success
 print "count1:", count1
 
-with open(SAVED_QUESTION, 'wb') as f:
-    pickle.dump(transport_dict_list, f)
+# with open(SAVED_QUESTION, 'wb') as f:
+#     pickle.dump(transport_dict_list, f)
 
 

@@ -780,6 +780,7 @@ def validate_flow_rules(vctx, location, rules):
             allowed_attrs=[
                 # may not start with an underscore
                 ("start", list),
+                ("notify", list),
                 ("grading", list),
                 ("tags", list),
 

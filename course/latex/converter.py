@@ -40,7 +40,7 @@ from django.conf import settings
 
 from .utils import (
     popen_wrapper, get_basename_or_md5,
-    _file_read, _file_write, _atomic_file_write, get_abstract_latex_log)
+    file_read, file_write, get_abstract_latex_log)
 
 
 # {{{ latex compiler classes and image converter classes
@@ -274,7 +274,7 @@ def get_file_data_uri(file_path):
         return None
 
     try:
-        buf = _file_read(file_path)
+        buf = file_read(file_path)
     except OSError:
         raise
 
@@ -391,7 +391,7 @@ class Tex2ImgBase(object):
 
         tex_filename = self.basename + ".tex"
         tex_path = os.path.join(self.working_dir, tex_filename)
-        _file_write(tex_path, self.tex_source.encode('UTF-8'))
+        file_write(tex_path, self.tex_source.encode('UTF-8'))
 
         log_path = tex_path.replace(".tex", ".log")
         compiled_file_path = tex_path.replace(
@@ -403,7 +403,7 @@ class Tex2ImgBase(object):
 
         if status != 0:
             try:
-                log = _file_read(log_path)
+                log = file_read(log_path)
             except OSError:
                 # no log file is generated
                 self._remove_working_dir()
@@ -411,8 +411,11 @@ class Tex2ImgBase(object):
 
             try:
                 log = get_abstract_latex_log(log)
-                # avoide race condition
-                _atomic_file_write(self.errlog_saving_path, log)
+
+                # avoid race condition
+                from atomicwrites import atomic_write
+                with atomic_write(self.errlog_saving_path, mode="wb") as f:
+                    f.write(log)
             except:
                 raise
             finally:
@@ -470,10 +473,13 @@ class Tex2ImgBase(object):
                 ))
 
         try:
-            # race condition
-            #_atomic_file_write() failed to write a valid image
-            # so save file using b64 data instead?
-            shutil.copyfile(image_path, self.image_saving_path)
+            image = file_read(image_path)
+
+            # avoid race condition
+            if not os.path.isfile(self.image_saving_path):
+                from atomicwrites import atomic_write
+                with atomic_write(self.image_saving_path, mode="wb") as f:
+                    f.write(image)
         except OSError:
             raise RuntimeError(error)
         finally:
@@ -512,7 +518,7 @@ class Tex2ImgBase(object):
             # read the saved err_log if it exists
             if os.path.isfile(self.errlog_saving_path):
                 if not force_regenerate:
-                    err_result = _file_read(self.errlog_saving_path)
+                    err_result = file_read(self.errlog_saving_path)
                     assert isinstance(err_result, six.string_types)
                 else:
                     try:
@@ -543,7 +549,9 @@ class Tex2ImgBase(object):
         if force_regenerate:
             # first remove cached error results and files
             self.get_compile_err_cached(force_regenerate)
-
+            if os.path.isfile(self.image_saving_path):
+                os.remove(self.image_saving_path)
+            self.image_saving_path = self.get_converted_image()
             image_path = self.get_converted_image()
             uri_result = get_file_data_uri(image_path)
             assert isinstance(uri_result, six.string_types)

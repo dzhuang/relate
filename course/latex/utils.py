@@ -107,7 +107,7 @@ def get_basename_or_md5(filename, s):
     return basename
 
 
-def _file_read(filename):
+def file_read(filename):
     '''Read the content of a file and close it properly.'''
     f = file(filename, 'rb')
     content = f.read()
@@ -115,17 +115,11 @@ def _file_read(filename):
     return content
 
 
-def _file_write(filename, content):
+def file_write(filename, content):
     '''Write into a file and close it properly.'''
     f = file(filename, 'wb')
     f.write(content)
     f.close()
-
-def _atomic_file_write(filename, content, overwrite=False):
-    '''atomic write a file content without race condition.'''
-    from atomicwrites import atomic_write
-    with atomic_write(filename, overwrite=overwrite) as f:
-        f.write(content)
 
 # }}}
 
@@ -139,7 +133,7 @@ def get_file_data_uri(file_path):
 
     from base64 import b64encode
     from mimetypes import guess_type
-    buf = _file_read(file_path)
+    buf = file_read(file_path)
     mime_type = guess_type(file_path)[0]
 
     return "data:%(mime_type)s;base64,%(b64)s" % {

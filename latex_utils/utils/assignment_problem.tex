@@ -1,0 +1,42 @@
+\BLOCK{- if show_question -}
+\BLOCK{- if problem_description_pre -}
+\VAR{problem_description_pre}
+\BLOCK{- endif -} \#{ problem_description_pre }
+
+{% from "latex.jinja" import mytabular_preamble as preamble %}
+
+<p align="middle">
+{% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
+\begin{table}[H]\centering
+\begin{mytabular}{c|\BLOCK{ for x in range(0, m) }c\BLOCK{ endfor }}\hline\hline
+\diagbox{\VAR{person_str}}{\VAR{cost_str}}{\VAR{task_str}}&\BLOCK{ for x in range(0, m) }\VAR{task_str}\VAR{loop.index}\BLOCK{ if not loop.last }&\BLOCK{ endif }\BLOCK{ endfor }\\ \hline
+\BLOCK{ for idx in range(0, n) } \VAR{ person_str }\VAR{ loop.index } & \VAR{cost[idx]|join("&")} \\
+\BLOCK{ endfor }
+\hline\hline
+\end{mytabular}\end{table}
+
+{% endcall %}
+</p>
+
+
+\BLOCK{ if problem_description_after -}
+\VAR{problem_description_after}
+\BLOCK{ endif -}
+
+
+\BLOCK{- endif -} \#{ show_question }
+
+\BLOCK{ if show_blank -}
+\BLOCK{ if blank_desc -}\VAR{blank_desc}\BLOCK{ endif -}[[blank1]]
+\BLOCK{ endif -} \#{ after_description }
+
+\BLOCK{ if show_blank_answer }
+blank1:
+    type: ShortAnswer
+    width: 10em
+    correct_answer:
+    - type: float
+      rtol: 1
+      atol: 1
+      value: \VAR{result}
+\BLOCK{ endif -}

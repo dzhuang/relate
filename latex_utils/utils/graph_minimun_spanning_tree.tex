@@ -1,0 +1,35 @@
+\BLOCK{- if show_question -}
+求解下图中的最小支持树.
+
+{% set preamble %}
+\usepackage{tikz}
+\usetikzlibrary{graphs,graphs.standard,graphdrawing,quotes,shapes,arrows.meta}
+\usegdlibrary{force}
+{% endset %}
+
+<p align="middle">
+\BLOCK{ if show_id } \VAR{g.id} \BLOCK{ endif }
+{% call latex(compiler="lualatex", image_format="png", alt="question", tex_preamble=preamble\BLOCK{ if force_regenerate==True }, force_regenerate=True\BLOCK{ endif }) %}
+\RequirePackage{luatex85}
+\VAR{g.as_latex(no_bidirectional=False)}
+
+{% endcall %}
+</p>
+
+
+\BLOCK{ endif } \#{ show_question }
+
+\BLOCK{ if show_blank -}
+\BLOCK{ if blank_desc -}\VAR{blank_desc}\BLOCK{ endif -}[[blank1]]
+\BLOCK{ endif -} \#{ after_description }
+
+\BLOCK{ if show_blank_answer }
+blank1:
+    type: ShortAnswer
+    width: 10em
+    correct_answer:
+    - type: float
+      rtol: 0.001
+      atol: 0.01
+      value: \VAR{result}
+\BLOCK{ endif -}

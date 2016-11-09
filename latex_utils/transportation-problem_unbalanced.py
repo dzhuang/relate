@@ -566,7 +566,7 @@ for i, tr in enumerate(transport_dict_list_loaded):
 #    r.clipboard_clear ()
 
     #required_init_method = ["LCM", "NCM", "VOGEL"]
-    required_init_method = tr.get("required_init_method", ["LCM", "NCM", "VOGEL"])
+    required_init_method = tr.get("required_init_method", ["NCM", "LCM", "VOGEL"])
 
 
     show_LCM_result = True
@@ -632,6 +632,6 @@ for i, tr in enumerate(transport_dict_list_loaded):
 print success
 print "count_unbalanced:", count_unbalanced
 
-with open(SAVED_QUESTION, 'wb') as f:
-    pickle.dump(transport_dict_list, f)
+# with open(SAVED_QUESTION, 'wb') as f:
+#     pickle.dump(transport_dict_list, f)
 

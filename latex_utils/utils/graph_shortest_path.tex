@@ -1,5 +1,7 @@
 \BLOCK{- if show_question -}
-求解下图中从$\VAR{source}$至$\VAR{target}$的最短路径及最短距离.
+\BLOCK{- if problem_description_pre -}
+\VAR{problem_description_pre}
+\BLOCK{- endif -}求解下图中从$\VAR{source}$至$\VAR{target}$的最短路径及最短距离.
 
 {% set preamble %}
 \usepackage{tikz}
@@ -9,7 +11,7 @@
 
 <p align="middle">
 {% call latex(compiler="lualatex", image_format="png", alt="question", tex_preamble=preamble) %}
-
+\RequirePackage{luatex85}
 \VAR{g.as_latex()}
 
 {% endcall %}
@@ -53,7 +55,7 @@ $L_{\VAR{ loop.index0 }}=$ &( \BLOCK{ for node in line } \VAR{line[node]} \BLOCK
 {% endcall %}
 </p>
 
-最短路长为\VAR{(g.final_dist[-1][g.graph|length -1])|int},\BLOCK{ if dijkstra_result.shortest_path_list|length > 1}有\VAR{dijkstra_result.shortest_path_list|length}条最短路径：\BLOCK{ else } 最短路径为：\BLOCK{endif}
+最短路长为\VAR{g.final_dist[g.n_node-1]|int}, \BLOCK{ if dijkstra_result.shortest_path_list|length > 1}有\VAR{dijkstra_result.shortest_path_list|length}条最短路径：\BLOCK{ else } 最短路径为：\BLOCK{endif}
 
 $$\begin{align*}
 \BLOCK{ for path in dijkstra_result.shortest_path_tex_list }
@@ -93,7 +95,7 @@ $$\begin{align*}
 {% endcall %}
 </p>
 
-最短路长为\VAR{(g.final_dist[-1][g.graph|length -1])|int},\BLOCK{ if bellman_ford_result.shortest_path_list|length > 1}有\VAR{bellman_ford_result.shortest_path_list|length}条最短路径：\BLOCK{ else } 最短路径为：\BLOCK{endif}
+最短路长为\VAR{g.final_dist[g.n_node-1]|int},\BLOCK{ if bellman_ford_result.shortest_path_list|length > 1}有\VAR{bellman_ford_result.shortest_path_list|length}条最短路径：\BLOCK{ else } 最短路径为：\BLOCK{endif}
 
 $$\begin{align*}
 \BLOCK{ for path in bellman_ford_result.shortest_path_tex_list }

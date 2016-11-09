@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import unicode_literals
 import numpy as np
 from collections import OrderedDict
 from scipy.optimize._linprog import OptimizeResult
@@ -7,16 +8,29 @@ import networkx as nx
 import copy
 import networkx.algorithms.shortest_paths.weighted as shortest_path
 from networkx.exception import NetworkXException
+
 try:
-    import shortest_path_weighted as shortest_path_tweaked
-except:
+    from shortest_path_weighted import dijkstra_predecessor_and_distance
+except ImportError:
+    pass
+
+try:
+    from shortest_path_weighted import bellman_ford_predecessor_and_distance
+except ImportError:
+    pass
+
+try:
+    from shortest_path_weighted import all_shortest_paths_from_0
+except ImportError:
     pass
 
 
 ALLOWED_SHORTEST_PATH_METHOD = ['dijkstra', 'bellman_ford']
 
+
 class NetworkNegativeWeightUsingDijkstra(NetworkXException):
     """Using dijkstra to solve shortest path with negative weight"""
+
 
 class shortest_path_result(OptimizeResult):
     def __init__(self, **kwargs):
@@ -40,8 +54,9 @@ class shortest_path_result(OptimizeResult):
     def as_latex(self):
         raise NotImplementedError()
 
+
 def trans_node_list_tex(node_list, node_label_dict, empty_list_alt="", sout=True, wrap=True):
-    # sout 是指使用删除线\st{}
+    # sout is latex macro \st{}
     if node_list is not None:
         assert isinstance(node_list, list)
     assert isinstance(node_label_dict, dict)
@@ -59,9 +74,9 @@ def trans_node_list_tex(node_list, node_label_dict, empty_list_alt="", sout=True
     return node_label_tex
 
 
-class dijkstra_result(shortest_path_result):
+class DijkstraResult(shortest_path_result):
     def __init__(self, **kwargs):
-        super(dijkstra_result, self).__init__(**kwargs)
+        super(DijkstraResult, self).__init__(**kwargs)
         assert kwargs["pred_list"]
         assert kwargs["seen_list"]
         assert kwargs["p_node_list"]
@@ -97,9 +112,9 @@ class dijkstra_result(shortest_path_result):
 
         simplified_pred_list = [
             {node:[] for node in self.final_pred}
-            for i in range(n_pred_lines)]
+            for i in list(range(n_pred_lines))]
 
-        for i in reversed(range(n_pred_lines)):
+        for i in reversed(list(range(n_pred_lines))):
             for node in self.final_pred:
                 sout = True
                 empty_list_alt = ""
@@ -135,9 +150,9 @@ class dijkstra_result(shortest_path_result):
         self.tex_L_list = tex_L_list
 
 
-class bellman_ford_result(shortest_path_result):
+class BellmanFordResult(shortest_path_result):
     def __init__(self, **kwargs):
-        super(bellman_ford_result, self).__init__(**kwargs)
+        super(BellmanFordResult, self).__init__(**kwargs)
         assert not kwargs.get("pred_list", None)
         assert kwargs["dist_list"]
         assert kwargs["graph_matrix"] is not None
@@ -156,8 +171,8 @@ class bellman_ford_result(shortest_path_result):
     def as_latex(self):
         matrix = copy.deepcopy(self.graph_matrix)
         matrix = matrix.tolist()
-        for i in range(len(matrix)):
-            for j in range(len(matrix[i])):
+        for i in list(range(len(matrix))):
+            for j in list(range(len(matrix[i]))):
                 if matrix[i][j] == 0:
                     matrix[i][j] = ""
                 elif matrix[i][j] == int(matrix[i][j]):
@@ -166,8 +181,8 @@ class bellman_ford_result(shortest_path_result):
 
         dist_list_by_node_npmatrix = np.matrix(self.dist_list).transpose()
         dist_list_by_node = dist_list_by_node_npmatrix.tolist()
-        for i in range(len(dist_list_by_node)):
-            for j in range(len(dist_list_by_node[i])):
+        for i in list(range(len(dist_list_by_node))):
+            for j in list(range(len(dist_list_by_node[i]))):
                 if dist_list_by_node[i][j] == float("inf"):
                     dist_list_by_node[i][j] = ""
                 elif int(dist_list_by_node[i][j]) == dist_list_by_node[i][j]:
@@ -184,7 +199,7 @@ class bellman_ford_result(shortest_path_result):
 
 
 class network(object):
-    def __init__(self, graph, directed=True, node_label_dict=None, edge_label_style_dict=None, node_tex_prefix="v"):
+    def __init__(self, graph, directed=True, node_label_dict=None, edge_label_style_dict=None, node_tex_prefix="v", id=None):
         if node_label_dict:
             if not isinstance(node_label_dict, dict):
                 raise ValueError ("node_label_dict must be a dict")
@@ -202,7 +217,7 @@ class network(object):
         if isinstance(graph, np.matrix):
             if not graph.shape[0] == graph.shape[1]:
                 raise ValueError("The matrix of the graph is not a square matrix")
-            for i in range(graph.shape[0]):
+            for i in list(range(graph.shape[0])):
                 if not graph[i, i] == 0:
                     raise ValueError(
                         "The diagonal of the matrix is not 0 at [%(idx)d, %(idx)d]" % {"idx": i+1})
@@ -232,8 +247,9 @@ class network(object):
         self.final_pred = []
         self.final_dist = []
         self.shortest_path_list = []
+        self.id = id
 
-        for node in range(len(graph)):
+        for node in list(range(len(graph))):
             if node not in self.node_label_dict:
                 self.node_label_dict[node] = (
                     "%(prefix)s_{%(subscript)s}"
@@ -243,11 +259,14 @@ class network(object):
                     if node_tex_prefix else node + 1
                 )
 
-    def as_latex(self, layout="spring", use_label=True, no_bidirectional=True):
+    def as_latex(self, layout="spring", use_label=True, no_bidirectional=True, node_distance="2cm"):
         return dumps_tikz_doc(g=self.graph, layout=layout,
                               node_label_dict=self.node_label_dict,
                               edge_label_style_dict=self.edge_label_style_dict,
-                              use_label=use_label)
+                              use_label=use_label,
+                              no_bidirectional=no_bidirectional,
+                              node_distance=node_distance
+                              )
 
     def get_iterated_solution(self, source=0, method="dijkstra"):
         n_node = self.n_node
@@ -266,7 +285,7 @@ class network(object):
             seen = copy.deepcopy((kwargs["seen"]))
             nit = kwargs["nit"]
             p_node = []
-            for i in range(n_node):
+            for i in list(range(n_node)):
                 if i not in pred:
                     pred[i] = [0]
                 if i in dist:
@@ -296,10 +315,17 @@ class network(object):
         self.seen_list = seen_list
         self.p_node_list = p_node_list
 
-        self.final_dist = dist
+        if isinstance(dist, dict):
+            self.final_dist = dist
+        else:
+            dist_dict = {}
+            for idx, v in enumerate(dist[-1]):
+                dist_dict[idx] = v
+            self.final_dist = dist_dict
+
         if method == "dijkstra":
             final_pred = pred_list[-1]
-            return dijkstra_result(
+            return DijkstraResult(
                 pred_list=pred_list, dist_list=dist_list, seen_list=seen_list,
                 p_node_list=p_node_list, final_pred=final_pred,
                 shortest_path_list=list(self.get_shortest_path()),
@@ -309,28 +335,28 @@ class network(object):
             assert not self.pred_list
             assert not self.seen_list
             assert not self.p_node_list
-            return bellman_ford_result(graph_matrix=self.graph_matrix, final_pred=final_pred, dist_list=dist_list,
-                                       node_label_dict=self.node_label_dict,
-                                       shortest_path_list=list(self.get_shortest_path()),
-                                       )
+            return BellmanFordResult(graph_matrix=self.graph_matrix, final_pred=final_pred, dist_list=dist_list,
+                                     node_label_dict=self.node_label_dict,
+                                     shortest_path_list=list(self.get_shortest_path()),
+                                     )
 
     def get_predecessor_and_distance(self, source=0, method="dijkstra", callback=None):
         if method == "dijkstra":
-            return shortest_path_tweaked.dijkstra_predecessor_and_distance(
+            return dijkstra_predecessor_and_distance(
                 self.graph, source=source, callback=callback)
         if method == "bellman_ford":
             dist = {source: 0}
             pred = {source: None}
             if len(self.graph) == 1:
                 return pred, dist
-            return shortest_path_tweaked.bellman_ford_predecessor_and_distance(
+            return bellman_ford_predecessor_and_distance(
                 self.graph, source=0, callback=callback)
 
     def get_shortest_path(self, target=None):
         # this returns an generator
         if not target:
             target = len(self.graph) - 1
-        return shortest_path_tweaked.all_shortest_paths_from_0(self.graph, target=target)
+        return all_shortest_paths_from_0(self.graph, target=target)
 
     def get_shortes_distance(self, source=0, target=None, method='dijkstra'):
         if method not in ALLOWED_SHORTEST_PATH_METHOD:
@@ -341,9 +367,18 @@ class network(object):
             return shortest_path.dijkstra_path_length(
                 self.graph, source=source, target=target)
 
+    def as_capacity_graph(self):
+        capacity_network = nx.DiGraph()
+        n = self.graph.number_of_nodes
+        for edge in self.graph.edges():
+            capacity_network.add_edge(
+                edge[0],edge[1], capacity=self.graph[edge[0]][edge[1]]['weight'])
+
+        return capacity_network
+
 
 def dumps_tikz_doc(g, layout='spring', node_label_dict=None,
-                   edge_label_style_dict=None, use_label=True, no_bidirectional=True):
+                   edge_label_style_dict=None, use_label=True, no_bidirectional=True, node_distance="2cm"):
     """Return TikZ code as `str` for `networkx` graph `g`."""
 
     if not node_label_dict:
@@ -403,7 +438,7 @@ def dumps_tikz_doc(g, layout='spring', node_label_dict=None,
         s += str(u) + line + style + str(v) + ';\n'
     tikzpicture = (
         r'\begin{{tikzpicture}}[>={{Stealth[length=3mm]}}]' '\n'
-        '\graph[{layout} layout, node distance=2.0cm,'
+        '\graph[{layout} layout, node distance={node_distance},'
         # 'edge quotes mid,'
         'edges={{nodes={{ sloped, inner sep=1pt }} }},'
         'nodes={{circle, draw}} ]{{\n'
@@ -411,16 +446,17 @@ def dumps_tikz_doc(g, layout='spring', node_label_dict=None,
         '}};\n'
         '\end{{tikzpicture}}\n').format(
             layout=layout,
-            s=s)
+            s=s,
+            node_distance=node_distance)
 
     preamble = (
-        '\documentclass{{standalone}}\n'
-        '\usepackage{{amsmath}}\n'
+        r'\documentclass{{standalone}}' '\n'
+        '\\usepackage{{amsmath}}\n'
         '\n'
-        '\usepackage{{tikz}}\n'
-        '\usetikzlibrary{{graphs,graphs.standard,'
+        '\\usepackage{{tikz}}\n'
+        '\\usetikzlibrary{{graphs,graphs.standard,'
         'graphdrawing,quotes,shapes,arrows.meta}}\n'
-        '\usegdlibrary{{ {layout_lib} }}\n').format(
+        '\\usegdlibrary{{ {layout_lib} }}\n').format(
             layout_lib=layout_lib)
 
     return (
@@ -428,7 +464,7 @@ def dumps_tikz_doc(g, layout='spring', node_label_dict=None,
         r'\begin{{document}}' '\n'
         '\n'
         '{tikz}'
-        '\end{{document}}\n').format(
+        r'\end{{document}}\n').format(
             preamble=preamble,
             tikz=tikzpicture)
 

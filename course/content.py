@@ -137,6 +137,16 @@ class FlowSessionAccessRuleDesc(Struct):
     message = None  # type: Text
 
 
+class FlowSessionNotifyRuleDesc(Struct):
+    if_after = None  # type: Date_ish
+    if_before = None  # type: Date_ish
+    if_has_role = None  # type: list
+    if_in_facility = None  # type: Text
+    if_signed_in_with_matching_exam_ticket = None  # type: bool
+    will_notify = None  # type: bool
+    message = None  # type: Text
+
+
 class FlowSessionGradingRuleDesc(Struct):
     grade_identifier = None  # type: Optional[Text]
     grade_aggregation_strategy = None  # type: Optional[Text]
@@ -145,6 +155,7 @@ class FlowSessionGradingRuleDesc(Struct):
 class FlowRulesDesc(Struct):
     start = None  # type: List[FlowSessionStartRuleDesc]
     access = None  # type: List[FlowSessionAccessRuleDesc]
+    notify = None  # type: List[FlowSessionNotifyRuleDesc]
     grading = None  # type: List[FlowSessionGradingRuleDesc]
     grade_identifier = None  # type: Optional[Text]
     grade_aggregation_strategy = None  # type: Optional[Text]
@@ -223,7 +234,12 @@ def get_repo_blob(repo, full_name, commit_sha, allow_tree=True):
     # Allow non-ASCII file name
     full_name_bytes = full_name.encode('utf-8')
 
-    tree_sha = dul_repo[commit_sha].tree
+    try:
+        tree_sha = dul_repo[commit_sha].tree
+    except KeyError:
+        raise ObjectDoesNotExist(
+                _("commit sha '%s' not found") % commit_sha.decode())
+
     tree = dul_repo[tree_sha]
 
     def access_directory_content(maybe_tree, name):

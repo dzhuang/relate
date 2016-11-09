@@ -2,23 +2,23 @@
 \BLOCK{- if t.is_sup_bounded_problem }\BLOCK{ set dim_name= qtable.sup_desc}\BLOCK{ set max_name= qtable.sup_max_desc}\BLOCK{ set total_name= qtable.dem_amount_desc}\BLOCK{ endif -}
 \BLOCK{- if t.is_dem_bounded_problem }\BLOCK{ set dim_name= qtable.dem_desc}\BLOCK{ set max_name= qtable.dem_max_desc}\BLOCK{ set total_name= qtable.sup_amount_desc}\BLOCK{ endif -}
 
+{% from "latex.jinja" import transportation_preamble as preamble %}
+
 \BLOCK{- if show_question -}
 
 \BLOCK{ if problem_description_pre -}
-\VAR{description}
+\VAR{problem_description_pre}
 \BLOCK{ endif }
 
 \BLOCK{if standardize_only }将以下问题转化为标准(产销平衡)的运输问题
-\BLOCK{- if t.is_sup_bounded_problem }，使得在最低供应量必须运出的前提下，尽可能多地满足各地的需求\BLOCK{ endif -}
-\BLOCK{- if t.is_dem_bounded_problem }，使得在最低需求量必须满足的前提下，尽可能多地满足各地的需求\BLOCK{ endif -}.
+\BLOCK{- if t.is_sup_bounded_problem }，使得在最低供应量必须运出的前提下，尽可能多地满足各地的需求（不需要求解）\BLOCK{ endif -}
+\BLOCK{- if t.is_dem_bounded_problem }，使得在最低需求量必须满足的前提下，尽可能多地满足各地的需求（不需要求解）\BLOCK{ endif -}.
 \BLOCK{else}
 求解以下运输问题的最优运输方案
 \BLOCK{- if t.is_sup_bounded_problem }，使得在最低供应量必须运出的前提下，尽可能多地满足各地的需求\BLOCK{ endif -}
 \BLOCK{- if t.is_dem_bounded_problem }，使得在最低需求量必须满足的前提下，尽可能多地满足各地的需求\BLOCK{ endif -}
 \BLOCK{if init_method_list|length <= 2}，要求初始基本可行方案用<strong>\VAR{init_method_list|join("</strong>或<strong>")}</strong>得出\BLOCK{else}，可任意选得出初始基本可行方案的方法\BLOCK{endif}.
 \BLOCK{endif}
-
-{% from "latex.jinja" import transportation_preamble as preamble %}
 
 <p align="middle"><strong>表\VAR{question_table_iters.next()}</strong></br>
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
@@ -43,6 +43,9 @@
 
 {% endcall %}</p>
 
+\BLOCK{ if problem_description_after -}
+\VAR{problem_description_after}
+\BLOCK{ endif }
 
 \BLOCK{ endif } \#{ show_question }
 

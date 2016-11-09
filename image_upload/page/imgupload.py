@@ -1000,11 +1000,7 @@ def feedBackEmail(pctx, flow_session_id, ordinal):
                         }
             )
 
-            try:
-                from urlparse import urljoin
-            except:
-                from urllib.parse import urljoin
-
+            from six.moves.urllib.parse import urljoin
             review_uri = urljoin(getattr(settings, "RELATE_BASE_URL"),
                                  review_url)
 

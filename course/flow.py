@@ -75,6 +75,7 @@ from course.utils import (
         get_session_start_rule,
         get_session_access_rule,
         get_session_grading_rule,
+        get_session_notify_rule,
         get_flow_rules_str, # added by zd
         FlowSessionGradingRule,
         )
@@ -2275,33 +2276,33 @@ def send_email_about_flow_page(pctx, flow_session_id, ordinal):
 
     # }}}
 
+    from django.conf import settings
+    from course.models import FlowSession
+
+    flow_session = get_object_or_404(
+        FlowSession, id=int(flow_session_id))
+    from course.models import FlowPageData
+    page_id = FlowPageData.objects.get(
+        flow_session=flow_session_id, ordinal=ordinal).page_id
+
+    from django.core.urlresolvers import reverse
+    review_url = reverse(
+        "relate-view_flow_page",
+        kwargs={'course_identifier': pctx.course.identifier,
+                'flow_session_id': flow_session_id,
+                'ordinal': ordinal
+                }
+    )
+
+    from six.moves.urllib.parse import urljoin
+
+    review_uri = urljoin(getattr(settings, "RELATE_BASE_URL"),
+                         review_url)
+
     if request.method == "POST":
-        form = FlowPageInteractionEmailForm(request.POST)
+        form = FlowPageInteractionEmailForm(review_uri, request.POST)
 
         if form.is_valid():
-            from django.utils import translation
-            from django.conf import settings
-            from course.models import FlowSession
-
-            flow_session = get_object_or_404(
-                FlowSession, id=int(flow_session_id))
-            from course.models import FlowPageData
-            page_id = FlowPageData.objects.get(
-                flow_session=flow_session_id, ordinal=ordinal).page_id
-
-            from django.core.urlresolvers import reverse
-            review_url = reverse(
-                "relate-view_flow_page",
-                kwargs={'course_identifier': pctx.course.identifier,
-                        'flow_session_id': flow_session_id,
-                        'ordinal': ordinal
-                        }
-            )
-
-            from six.moves.urllib.parse import urljoin
-
-            review_uri = urljoin(getattr(settings, "RELATE_BASE_URL"),
-                                 review_url)
 
             from_email = getattr(
                     settings,
@@ -2328,6 +2329,7 @@ def send_email_about_flow_page(pctx, flow_session_id, ordinal):
             if not recipient_list:
                 recipient_list = instructor_email_list
 
+            from django.utils import translation
             with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
                 from django.template.loader import render_to_string
                 message = render_to_string(
@@ -2373,7 +2375,7 @@ def send_email_about_flow_page(pctx, flow_session_id, ordinal):
                     pctx.course.identifier, flow_session_id, ordinal)
 
     else:
-        form = FlowPageInteractionEmailForm()
+        form = FlowPageInteractionEmailForm(review_uri)
 
     return render_course_page(
             pctx, "course/generic-course-form.html", {
@@ -2383,13 +2385,16 @@ def send_email_about_flow_page(pctx, flow_session_id, ordinal):
 
 
 class FlowPageInteractionEmailForm(StyledForm):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, review_uri, *args, **kwargs):
         super(FlowPageInteractionEmailForm, self).__init__(*args, **kwargs)
         self.fields["message"] = forms.CharField(
                 required=True,
                 widget=forms.Textarea,
-                help_text=_("Your question about the page. "
-                            ),
+                help_text= string_concat(
+                    _("Your questions about page %s . ") % review_uri,
+                    _("Notice that <strong>only</strong> questions "
+                      "for that page will be answered."),
+                ),
                 label=_("Message"))
         self.helper.add_input(
             Submit(
@@ -2563,47 +2568,102 @@ def finish_flow_session_view(pctx, flow_session_id):
                 fctx, flow_session, grading_rule,
                 now_datetime=now_datetime)
 
-        # {{{ send notify email if requested
+        notify_rule = get_session_notify_rule(
+            flow_session, fctx.flow_desc, now_datetime)
 
-        if (hasattr(fctx.flow_desc, "notify_on_submit")
-                and fctx.flow_desc.notify_on_submit):
+        # {{{ send notify email if requested.
+
+        will_send_submit_notification = False
+        review_uri = None
+        recipient_list = None
+        extra_message = None
+
+        if (
+                (hasattr(fctx.flow_desc, "notify_on_submit")
+                 and fctx.flow_desc.notify_on_submit)
+            or
+                notify_rule.may_send_notification
+            ):
+
+            will_send_submit_notification = True
+
             if (grading_rule.grade_identifier
                     and flow_session.participation is not None):
                 from course.models import get_flow_grading_opportunity
-                review_uri = reverse("relate-view_single_grade",
-                        args=(
-                            pctx.course.identifier,
-                            flow_session.participation.id,
-                            get_flow_grading_opportunity(
-                                pctx.course, flow_session.flow_id, fctx.flow_desc,
-                                grading_rule.grade_identifier,
-                                grading_rule.grade_aggregation_strategy).id))
+                review_uri = (
+                    reverse("relate-view_single_grade",
+                            args=(
+                                pctx.course.identifier,
+                                flow_session.participation.id,
+                                get_flow_grading_opportunity(
+                                    pctx.course,
+                                    flow_session.flow_id,
+                                    fctx.flow_desc,
+                                    grading_rule.grade_identifier,
+                                    grading_rule.grade_aggregation_strategy).id))
+                )
             else:
                 review_uri = reverse("relate-view_flow_page",
-                        args=(
-                            pctx.course.identifier,
-                            flow_session.id,
-                            0))
+                                     args=(
+                                         pctx.course.identifier,
+                                         flow_session.id,
+                                         0))
 
+            if (hasattr(fctx.flow_desc, "notify_on_submit")
+                    and fctx.flow_desc.notify_on_submit):
+                # This functionality doesn't have time rule. For notications
+                # on a time basis, use flow_permission.send_submit_notif_email instead.
+                recipient_list = fctx.flow_desc.notify_on_submit
+
+
+            # }}}
+
+            elif notify_rule.may_send_notification:
+                # {{{ send notify email if requested, in terms of flow_permission
+                # i.e., time_based
+
+                from course.constants import (
+                    participation_permission as pperm)
+
+                ta_email_list = Participation.objects.filter(
+                    course=pctx.course,
+                    roles__permissions__permission=pperm.assign_grade,
+                    roles__identifier="ta",
+                ).values_list("user__email", flat=True)
+
+                instructor_email_list = Participation.objects.filter(
+                    course=pctx.course,
+                    roles__permissions__permission=pperm.assign_grade,
+                    roles__identifier="instructor"
+                ).values_list("user__email", flat=True)
+
+                recipient_list = ta_email_list
+                if not recipient_list:
+                    recipient_list = instructor_email_list
+
+                extra_message = getattr(notify_rule, "message", None)
+
+        if will_send_submit_notification:
             with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
                 from django.template.loader import render_to_string
                 message = render_to_string("course/submit-notify.txt", {
+                    "extra_message": extra_message,
                     "course": fctx.course,
                     "flow_session": flow_session,
                     "review_uri": pctx.request.build_absolute_uri(review_uri)
-                    })
+                })
 
                 from django.core.mail import EmailMessage
                 msg = EmailMessage(
-                        string_concat("[%(identifier)s:%(flow_id)s] ",
-                            _("Submission by %(participation)s"))
-                        % {'participation': flow_session.participation,
-                            'identifier': fctx.course.identifier,
-                            'flow_id': flow_session.flow_id},
-                        message,
-                        getattr(settings, "NOTIFICATION_EMAIL_FROM",
+                    string_concat("[%(identifier)s:%(flow_id)s] ",
+                                  _("Submission by %(participation)s"))
+                    % {'participation': flow_session.participation,
+                       'identifier': fctx.course.identifier,
+                       'flow_id': flow_session.flow_id},
+                    message,
+                    getattr(settings, "NOTIFICATION_EMAIL_FROM",
                             settings.ROBOT_EMAIL_FROM),
-                        fctx.flow_desc.notify_on_submit)
+                    recipient_list)
                 msg.bcc = [fctx.course.notify_email]
 
                 from relate.utils import get_outbound_mail_connection
@@ -2612,8 +2672,6 @@ def finish_flow_session_view(pctx, flow_session_id):
                     if hasattr(settings, "NOTIFICATION_EMAIL_FROM")
                     else get_outbound_mail_connection("robot"))
                 msg.send()
-
-        # }}}
 
         if is_interactive_flow:
             if flow_permission.cannot_see_flow_result in access_rule.permissions:

@@ -69,7 +69,7 @@ tex = template.render(
 )
 
 
-#_file_write("lp_dual.tex", tex.encode('UTF-8'))
+#file_write("lp_dual.tex", tex.encode('UTF-8'))
 
 from Tkinter import Tk
 r = Tk()

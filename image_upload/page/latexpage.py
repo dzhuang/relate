@@ -44,7 +44,8 @@ from course.page import (
     InlineMultiQuestion)
 from course.validation import ValidationError
 from course.content import get_repo_blob, get_repo_blob_data_cached
-from course.latex.utils import _file_read, _file_write
+from course.latex.utils import file_read
+from atomicwrites import atomic_write
 
 from image_upload.page.imgupload import ImageUploadQuestion
 from course.page.code import (
@@ -271,8 +272,10 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
     def get_cached_result(self, page_context, page_data, part="", test_key_existance=False):
         #assert part in ["question", "answer"]
-        will_save_file_local = False
+        will_save_file_local = True
 
+        # if page_context.in_sandbox:
+        #     will_save_file_local = True
 
         # if not getattr(page_data, "question_data", None):
         #     page_data = self.initialize_page_data(page_context)
@@ -291,15 +294,12 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 key_making_string_md5 = updated_page_data["key_making_string_md5"]
 
             # To be used as saving name of the latex page
-            saved_file_name = ""
-            if will_save_file_local:
-                saved_file_name = ("%s_%s" % (md5("%s"
-                                          % (key_making_string_md5, )
-                                          ).hexdigest(), CACHE_VERSION))
+            saved_file_name = ("%s_%s" % (md5("%s"
+                                      % (key_making_string_md5, )
+                                      ).hexdigest(), CACHE_VERSION))
 
-            if saved_file_name:
-                saved_file_path = os.path.join(self.page_saving_folder,
-                                               "%s_%s" % (saved_file_name, part))
+            saved_file_path = os.path.join(self.page_saving_folder,
+                                           "%s_%s" % (saved_file_name, part))
 
             cache_key = ("latexpage:%s:%s:%s"
                          % (CACHE_VERSION,
@@ -309,21 +309,23 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             def_cache = cache.caches["default"]
             result = def_cache.get(cache_key)
             if result is not None:
+                # print "1-----------here"
                 assert isinstance(result, six.string_types)
+                if will_save_file_local:
+                    if not os.path.isfile(saved_file_path):
+                        with atomic_write(saved_file_path) as f:
+                            f.write(result.encode('UTF-8'))
                 if test_key_existance:
                     return True
-                if saved_file_path:
-                    if not os.path.isfile(saved_file_path):
-                        _file_write(saved_file_path, result.encode('UTF-8'))
                 return True, result
-            else:
-                def_cache.delete(cache_key)
-                if saved_file_path:
-                    if os.path.isfile(saved_file_path):
-                        try:
-                            os.remove(saved_file_path)
-                        except:
-                            pass
+            # else:
+            #     def_cache.delete(cache_key)
+            #     if saved_file_path:
+            #         if os.path.isfile(saved_file_path):
+            #             try:
+            #                 os.remove(saved_file_path)
+            #             except:
+            #                 pass
 
         # cache_key is None means cache is not enabled
         success = False
@@ -338,7 +340,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             if success and result is not None:
                 if saved_file_path:
                     if not os.path.isfile(saved_file_path):
-                        _file_write(saved_file_path, result.encode('UTF-8'))
+                        # print "2-----------here"
+                        with atomic_write(saved_file_path) as f:
+                            f.write(result.encode('UTF-8'))
             return True, result
 
         def_cache = cache.caches["default"]
@@ -350,12 +354,12 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         if result is None:
             if saved_file_path:
                 if os.path.isfile(saved_file_path):
-                    result = _file_read(saved_file_path)
-                    if result is None:
-                        try:
-                            os.remove(saved_file_path)
-                        except:
-                            pass
+                    result = file_read(saved_file_path)
+                    # if result is None:
+                    #     try:
+                    #         os.remove(saved_file_path)
+                    #     except:
+                    #         pass
         if result is not None:
             assert isinstance(result, six.string_types), cache_key
             return True, result
@@ -367,19 +371,22 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 "%s_process_code" % part,
                 common_code_name="background_code")
         except TypeError:
+            return False, result
             # May raise an "'NoneType' object is not iterable" error
             # jinja_runpy error may write a broken saved file??
-            if saved_file_path:
-                if os.path.isfile(saved_file_path):
-                    os.remove(saved_file_path)
+            # if saved_file_path:
+            #     if os.path.isfile(saved_file_path):
+            #         os.remove(saved_file_path)
 
         if success and len(result) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
             def_cache.add(cache_key, result, None)
 
         if success and result is not None:
-            if saved_file_path:
+            if saved_file_path and will_save_file_local:
                 assert not os.path.isfile(saved_file_path)
-                _file_write(saved_file_path, result.encode('UTF-8'))
+                # print "3-----------here"
+                with atomic_write(saved_file_path) as f:
+                    f.write(result.encode('UTF-8'))
 
         return success, result
 
@@ -394,6 +401,10 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             if success:
                 question_str = question_str_tmp
                 break
+
+        if not success:
+            if page_context.in_sandbox:
+                question_str = question_str_tmp
 
         # generate correct answer at the same time
         answer_str = ""
@@ -486,14 +497,34 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 pass
                 #response_dict["stdout"] = error_msg
             #else:
+
+            review_url = ""
+            if not page_context.in_sandbox:
+
+                from django.core.urlresolvers import reverse
+                review_url = reverse(
+                    "relate-view_flow_page",
+                    kwargs={'course_identifier': page_context.course.identifier,
+                            'flow_session_id': page_context.flow_session.id,
+                            'ordinal': page_context.ordinal
+                            }
+                )
+
+            from six.moves.urllib.parse import urljoin
+            review_uri = urljoin(getattr(settings, "RELATE_BASE_URL"),
+                                 review_url)
+
             from course.page.code import is_nuisance_failure
             from django.utils import translation
             with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
                 from django.template.loader import render_to_string
-                message = render_to_string("course/broken-code-question-email.txt", {
+                message = render_to_string("image_upload/broken-random-latex-question-email.txt", {
+                    "site": getattr(settings, "RELATE_BASE_URL"),
+                    "username": page_context.flow_session.participation.user.username,
                     "page_id": self.page_desc.id,
                     "course": page_context.course,
                     "error_message": error_msg,
+                    "review_uri": review_uri,
                 })
 
                 if (
@@ -503,16 +534,19 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     try:
                         from django.core.mail import EmailMessage
                         msg = EmailMessage(
-                                "".join(["[%s] ",
-                                         _("LaTex page question generation failed")])
-                                % page_context.course.identifier,
+                                "".join(["[%(course)s] ",
+                                         _("LaTex page failed in user %(user)s's session")])
+                                % {"course":page_context.course.identifier,
+                                   "user": page_context.flow_session.participation.user.username,
+                                   },
                                 message,
                                 settings.ROBOT_EMAIL_FROM,
                                 [page_context.course.notify_email])
 
                         from relate.utils import get_outbound_mail_connection
                         msg.connection = get_outbound_mail_connection("robot")
-                        msg.send()
+                        if not getattr(settings, "DEBUG"):
+                            msg.send()
 
                     except Exception:
                         from traceback import format_exc

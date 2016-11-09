@@ -72,7 +72,7 @@
                title="{% trans 'Send an email about this page to course staff' %}"
                target="_blank"
             >
-                <i class="fa fa-envelope-o"></i>
+                <i class="fa fa-envelope-o" aria-hidden="true"></i>
             </a>
         </div>
       {% endif %}
@@ -126,7 +126,7 @@
 
       {# {{{ past submissions #}
 
-      {% if prev_answer_visits %}
+      {% if prev_answer_visits|length > 1 %}
       <div class="navbar-right relate-flow-page-past-submissions"
         style="padding-right: 0.4em; margin-right:0;">
         <div class="dropdown">
@@ -193,13 +193,13 @@
         '>
         {% if interaction_kind == flow_session_interaction_kind.permanent_grade or interaction_kind == flow_session_interaction_kind.ungraded %}
           {% if flow_session.in_progress %}
-            <i class="fa fa-check"></i>
+            <i class="fa fa-check" aria-hidden="true"></i>
           {% else %}
-            <i class="fa fa-bar-chart"></i>
+            <i class="fa fa-bar-chart" aria-hidden="true"></i>
           {% endif %}
         {% else %}
             <i class="fa fa-sign-out" aria-hidden="true"></i>
-        {% endif %}{{ interaction_kind }}
+        {% endif %}
         </button>
       </div>
 

@@ -1,0 +1,34 @@
+(lp0
+S'{"sensitive": {"A": [[[1, 1, 1, "<", 8]]], "x": [[{"p": [1, 0, 1], "c": 4}]], "c": [[[1], null]], "b": [[[0], null], [[1], 16]]}, "z": "Z", "goal": [2, 5, 1], "dual": false, "sign_str": null, "x": "x", "sign": null, "qtype": "max", "x_list": null, "constraints": [[1, 0, 1, "<", 4], [0, 2, 0, "<", 12], [3, 2, 1, "<", 18]]}'
+p1
+aS'{"sensitive": {"A": [[[1, 1, 1, "<", 8]]], "x": [[{"p": [0, 1, 1], "c": 4}]], "c": [[[0], null]], "b": [[[2], null], [[0], 16]]}, "z": "Z", "goal": [3, 6, 2], "dual": false, "sign_str": null, "x": "x", "sign": null, "qtype": "max", "x_list": null, "constraints": [[0, 2, 0, "<", 12], [3, 2, 1, "<", 18], [1, 0, 1, "<", 4]]}'
+p2
+aS'{"sensitive": {"A": [[[1, 1, 1, "<", 8]]], "x": [[{"p": [1, 0, 1], "c": 4}]], "c": [[[0], null]], "b": [[[0], null], [[1], 16]]}, "z": "Z", "goal": [2, 3, 6], "dual": false, "sign_str": null, "x": "x", "sign": null, "qtype": "max", "x_list": null, "constraints": [[1, 1, 0, "<", 4], [0, 0, 2, "<", 12], [1, 3, 2, "<", 18]]}'
+p3
+aS'{"sensitive": {"A": [[[1, 2, 3, "<", 21]]], "p": [[[1], [1, 2]]], "c": [[[2], null]], "b": [[[0], null], [[1], 33]]}, "z": "Z", "goal": [2, 4, 3], "dual": false, "sign_str": null, "x": "x", "sign": null, "qtype": "max", "x_list": null, "constraints": [[2, 2, 1, "<", 15], [1, 3, 2, "<", 24]]}'
+p4
+aS'{"sensitive": {"A": [[[3, 2, 1, "<", 21]]], "p": [[[1], [1, 2]]], "c": [[[0], null]], "b": [[[0], null], [[1], 33]]}, "z": "Z", "goal": [3, 4, 2], "dual": false, "sign_str": null, "x": "x", "sign": null, "qtype": "max", "x_list": null, "constraints": [[1, 2, 2, "<", 15], [2, 3, 1, "<", 24]]}'
+p5
+aS'{"sensitive": {"A": [[[2, 3, 1, "<", 21]]], "p": [[[0], [2, 1]]], "c": [[[1], null]], "b": [[[1], null], [[0], 33]]}, "z": "Z", "goal": [4, 3, 2], "dual": false, "sign_str": null, "x": "x", "sign": null, "qtype": "max", "x_list": null, "constraints": [[3, 2, 1, "<", 24], [2, 1, 2, "<", 15]]}'
+p6
+aS'{"sensitive": {"A": [[[2, 2, 3, "<", 7]]], "p": [[[1], [3, 10], [1, 10]]], "c": [[[2], null]], "b": [[[0], null], [[1], 36]]}, "z": "Z", "goal": [3, 5, 4], "dual": false, "sign_str": null, "x": "x", "sign": null, "qtype": "max", "x_list": null, "constraints": [[2, 2, 1, "<", 3], [5, 15, 10, "<", 24]]}'
+p7
+aS'{"sensitive": {"A": [[[3, 2, 2, "<", 7]]], "p": [[[1], [1, 10], [3, 10]]], "c": [[[0], null]], "b": [[[0], null], [[1], 36]]}, "z": "Z", "goal": [4, 5, 3], "dual": false, "sign_str": null, "x": "x", "sign": null, "qtype": "max", "x_list": null, "constraints": [[1, 2, 2, "<", 3], [10, 15, 5, "<", 24]]}'
+p8
+aS'{"sensitive": {"A": [[[3, 2, 2, "<", 7]]], "p": [[[1], [10, 1], [10, 3]]], "c": [[[0], null]], "b": [[[0], null], [[1], 36]]}, "z": "Z", "goal": [5, 6, 4], "dual": false, "sign_str": null, "x": "x", "sign": null, "qtype": "max", "x_list": null, "constraints": [[10, 15, 5, "<", 24], [1, 2, 2, "<", 3]]}'
+p9
+aS'{"sensitive": {"A": [[[2, 1, 2, "<", 18]]], "x": [[{"p": [3, 1, 1], "c": 4}, {"p": [1, 1, -1], "c": 1}]], "c": [[[0], null]], "b": [[[2], 24], [[0], null]]}, "z": "Z", "goal": [8, 10, 5], "dual": false, "sign_str": null, "x": "x", "sign": null, "qtype": "max", "x_list": null, "constraints": [[1, 1, 1, "<", 11], [4, 12, 1, "<", 48], [2, 3, 1, "<", 20]]}'
+p10
+aS'{"sensitive": {"A": [[[2, 2, 1, "<", 18]]], "x": [[{"p": [3, 1, 1], "c": 4}, {"p": [1, 1, -1], "c": 1}]], "c": [[[1], null]], "b": [[[2], 24], [[0], null]]}, "z": "Z", "goal": [5, 8, 10], "dual": false, "sign_str": null, "x": "x", "sign": null, "qtype": "max", "x_list": null, "constraints": [[1, 1, 1, "<", 11], [1, 4, 12, "<", 48], [1, 2, 3, "<", 20]]}'
+p11
+aS'{"sensitive": {"A": [[[2, 1, 2, "<", 18]]], "x": [[{"p": [1, 1, -1], "c": 1}, {"p": [3, 1, 1], "c": 4}]], "c": [[[2], null]], "b": [[[2], 24], [[1], null]]}, "z": "Z", "goal": [4, 9, 7], "dual": false, "sign_str": null, "x": "x", "sign": null, "qtype": "max", "x_list": null, "constraints": [[1, 12, 4, "<", 48], [1, 1, 1, "<", 11], [1, 3, 2, "<", 20]]}'
+p12
+aS'{"sensitive": {"A": [[[2, 2, 1, "<", 16]]], "x": [[{"p": [4, 2, 1], "c": 4}, {"p": [1, 1, 2], "c": 7}]], "c": [[[0], null]], "b": [[[1], 9], [[2], null]]}, "z": "Z", "goal": [12, 8, 5], "dual": false, "sign_str": null, "x": "x", "sign": null, "qtype": "max", "x_list": null, "constraints": [[3, 2, 1, "<", 20], [1, 1, 1, "<", 11], [12, 4, 1, "<", 48]]}'
+p13
+aS'{"sensitive": {"A": [[[2, 2, 1, "<", 14]]], "x": [[{"p": [1, 1, 2], "c": 7}, {"p": [2, 4, 1], "c": 4}]], "c": [[[2], null]], "b": [[[0], 6], [[2], null]]}, "z": "Z", "goal": [5, 8, 12], "dual": false, "sign_str": null, "x": "x", "sign": null, "qtype": "max", "x_list": null, "constraints": [[1, 1, 1, "<", 11], [1, 2, 3, "<", 20], [1, 4, 12, "<", 48]]}'
+p14
+aS'{"sensitive": {"A": [[[1, 2, 3, "<", 26]]], "p": [[[1], [3, 4], [2, 3]]], "c": [[[2], null]], "b": [[[0], null], [[1], null]]}, "z": "Z", "goal": [2, 4, 3], "dual": false, "sign_str": null, "x": "x", "sign": null, "qtype": "max", "x_list": null, "constraints": [[1, 2, 1, "<", 16], [2, 5, 6, "<", 60]]}'
+p15
+aS'{"sensitive": {"A": [[[3, 2, 1, "<", 26]]], "p": [[[1], [4, 3], [3, 2]]], "c": [[[2], null]], "b": [[[1], null], [[0], null]]}, "z": "Z", "goal": [4, 6, 5], "dual": false, "sign_str": null, "x": "x", "sign": null, "qtype": "max", "x_list": null, "constraints": [[2, 5, 6, "<", 60], [1, 2, 1, "<", 16]]}'
+p16
+a.

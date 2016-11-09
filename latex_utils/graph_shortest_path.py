@@ -301,7 +301,7 @@ g = {"graph":
              0, 0, 0, 0, 0, 0, 0, 0,
          ]).reshape(8, 8),
      "node_label_dict": None,
-     "edge_label_style_dict": {(0,3):"bend right"}
+     "edge_label_style_dict": {(0,3):"bend left"}
     # 2条
      }
 g_list.append(g)
@@ -318,7 +318,7 @@ g = {"graph":
              0, 0, 0, 0, 0, 0, 0, 0,
          ]).reshape(8, 8),
      "node_label_dict": None,
-     "edge_label_style_dict": {(0,3):"bend right"}
+     "edge_label_style_dict": {(0,3):"bend left"}
     # 2条
      }
 g_list.append(g)
@@ -387,7 +387,7 @@ g = {"graph":
              0, 0, 0, 0, 0, 0, 0, 0,
          ]).reshape(8, 8),
      "node_label_dict": None,
-     "edge_label_style_dict": {(4,5):"bend left, pos=0.75", (2,4):"bend left, pos=0.25"}
+     "edge_label_style_dict": {(4,5):"pos=0.25", (1,4):"bend right, pos=0.25", (3,4):"pos=0.25", (2,5):"pos=0.15", (3,6):"bend left, pos=0.75", }
     # 3条
      }
 g_list.append(g)
@@ -405,7 +405,7 @@ g = {"graph":
              0, 0, 0, 0, 0, 0, 0, 0,
          ]).reshape(8, 8),
      "node_label_dict": None,
-     "edge_label_style_dict": {(4,5):"bend left, pos=0.75", (2,4):"bend left, pos=0.25"}
+     "edge_label_style_dict": {(4,5):"pos=0.25", (1,4):"bend right, pos=0.25", (3,4):"pos=0.25", (2,5):"pos=0.15", (3,6):"bend left, pos=0.75", }
     # 2条
      }
 g_list.append(g)
@@ -761,16 +761,21 @@ r.clipboard_clear()
 
 
 import pickle
-with open('dijk_sp.bin', 'wb') as f:
+with open('graph_dijk_sp.bin', 'wb') as f:
     pickle.dump(g_list, f)
 
-with open('dijk_sp.bin', 'rb') as f:
+with open('graph_dijk_sp.bin', 'rb') as f:
     g_list_loaded = pickle.load(f)
 
 
+n = 0
 for g_dict in g_list_loaded:
+    n += 1
     # r.clipboard_clear()
     g = network(**g_dict)
+    #print g.graph.edge
+    #g.as_capacity_graph()
+    #continue
 
     dijkstra_is_allowed = True
     dijkstra_result = None
@@ -779,6 +784,8 @@ for g_dict in g_list_loaded:
         dijkstra_result = g.get_iterated_solution(method="dijkstra")
     except NetworkNegativeWeightUsingDijkstra:
         dijkstra_is_allowed = False
+
+    shortest_path_length=g.final_dist[g.n_node-1]
 
     template = latex_jinja_env.get_template('/utils/graph_shortest_path.tex')
     tex = template.render(
@@ -789,7 +796,8 @@ for g_dict in g_list_loaded:
         g=g,
         source = g.node_label_dict[0],
         target = g.node_label_dict[len(g.graph) - 1],
-        #show_dijkstra = True,
+        shortest_path_length=shortest_path_length,
+        show_dijkstra = True,
         dijkstra_is_allowed=dijkstra_is_allowed,
         dijkstra_result = dijkstra_result,
         show_bellman_ford = True,
@@ -799,6 +807,9 @@ for g_dict in g_list_loaded:
 
     r.clipboard_append(tex)
     print "最短路条数",len(list(g.get_shortest_path()))
+
+print n
+
 
 
 # preamble of the picture of the graph.
