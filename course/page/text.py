@@ -462,6 +462,8 @@ class FloatListWithWrapperMatcher(TextAnswerMatcher):
                     ("forced_left_wrapper_percentage", float),
                     ("forced_right_wrapper_percentage", float),
                     ("list_item_average_percentage", bool),
+                    ("as_set", bool),
+                    ("set_allowed_range", (list, tuple, set)),
                 ),
                 )
 
@@ -720,6 +722,17 @@ class FloatListWithWrapperMatcher(TextAnswerMatcher):
                     raise forms.ValidationError("%(err_type)s: %(err_str)s"
                                                 % {"err_type": tp.__name__, "err_str": str(e)})
 
+        if getattr(self.matcher_desc, "as_set", False):
+            if hasattr(self.matcher_desc, "set_allowed_range"):
+                for v in value_list:
+                    if float(v) not in self.matcher_desc.set_allowed_range:
+                        raise forms.ValidationError(
+                            string_concat(
+                                ugettext("Error"), ": ",
+                                ugettext("'%s' is not in the allwed range")
+                                % str(v))
+                        )
+
         return value_list, used_forced_left_wrapper, used_forced_right_wrapper
 
     def grade(self, s):
@@ -756,6 +769,12 @@ class FloatListWithWrapperMatcher(TextAnswerMatcher):
 
         if len(answer_list) != len(corr_list):
             return 0
+
+        if getattr(self.matcher_desc, "as_set", False):
+            if set(answer_list) == set(corr_list):
+                return 1
+            else:
+                return 0
 
         list_percentage = total_percentage - wrapper_percentage
         each_percent = None

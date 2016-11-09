@@ -259,12 +259,13 @@ class network(object):
                     if node_tex_prefix else node + 1
                 )
 
-    def as_latex(self, layout="spring", use_label=True, no_bidirectional=True):
+    def as_latex(self, layout="spring", use_label=True, no_bidirectional=True, node_distance="2cm"):
         return dumps_tikz_doc(g=self.graph, layout=layout,
                               node_label_dict=self.node_label_dict,
                               edge_label_style_dict=self.edge_label_style_dict,
                               use_label=use_label,
-                              no_bidirectional=no_bidirectional
+                              no_bidirectional=no_bidirectional,
+                              node_distance=node_distance
                               )
 
     def get_iterated_solution(self, source=0, method="dijkstra"):
@@ -377,7 +378,7 @@ class network(object):
 
 
 def dumps_tikz_doc(g, layout='spring', node_label_dict=None,
-                   edge_label_style_dict=None, use_label=True, no_bidirectional=True):
+                   edge_label_style_dict=None, use_label=True, no_bidirectional=True, node_distance="2cm"):
     """Return TikZ code as `str` for `networkx` graph `g`."""
 
     if not node_label_dict:
@@ -437,7 +438,7 @@ def dumps_tikz_doc(g, layout='spring', node_label_dict=None,
         s += str(u) + line + style + str(v) + ';\n'
     tikzpicture = (
         r'\begin{{tikzpicture}}[>={{Stealth[length=3mm]}}]' '\n'
-        '\graph[{layout} layout, node distance=2.0cm,'
+        '\graph[{layout} layout, node distance={node_distance},'
         # 'edge quotes mid,'
         'edges={{nodes={{ sloped, inner sep=1pt }} }},'
         'nodes={{circle, draw}} ]{{\n'
@@ -445,7 +446,8 @@ def dumps_tikz_doc(g, layout='spring', node_label_dict=None,
         '}};\n'
         '\end{{tikzpicture}}\n').format(
             layout=layout,
-            s=s)
+            s=s,
+            node_distance=node_distance)
 
     preamble = (
         r'\documentclass{{standalone}}' '\n'
