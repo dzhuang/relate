@@ -259,11 +259,12 @@ class network(object):
                     if node_tex_prefix else node + 1
                 )
 
-    def as_latex(self, layout="spring", use_label=True, no_bidirectional=True, node_distance="2cm"):
+    def as_latex(self, layout="spring", use_label=True, edge_attr="weight", no_bidirectional=True, node_distance="2cm"):
         return dumps_tikz_doc(g=self.graph, layout=layout,
                               node_label_dict=self.node_label_dict,
                               edge_label_style_dict=self.edge_label_style_dict,
                               use_label=use_label,
+                              edge_attr=edge_attr,
                               no_bidirectional=no_bidirectional,
                               node_distance=node_distance
                               )
@@ -376,9 +377,33 @@ class network(object):
 
         return capacity_network
 
+    def get_max_flow_latex(self, layout="spring", use_label=True, no_bidirectional=True, node_distance="2cm"):
+        G = self.as_capacity_graph()
+        number_of_nodes = len(G.node)
+        max_flow_value, partition = nx.minimum_cut(G, 0, number_of_nodes - 1)
 
-def dumps_tikz_doc(g, layout='spring', node_label_dict=None,
-                   edge_label_style_dict=None, use_label=True, no_bidirectional=True, node_distance="2cm"):
+        _, flow_dict = nx.maximum_flow(G, 0, number_of_nodes - 1)
+        from copy import deepcopy
+
+        max_flow_network = deepcopy(G)
+        for x, y in max_flow_network.edges():
+            max_flow_network[x][y]["label"] = "[%s, %s]" % (G[x][y]["capacity"], flow_dict[x][y])
+
+        return dumps_tikz_doc(g=self.graph, layout=layout,
+                              node_label_dict=self.node_label_dict,
+                              edge_label_style_dict=self.edge_label_style_dict,
+                              use_label=use_label,
+                              edge_attr="label",
+                              no_bidirectional=no_bidirectional,
+                              node_distance=node_distance,
+                              label_data_graph = max_flow_network,
+                              )
+
+
+def dumps_tikz_doc(g, layout='spring', node_label_dict=None, edge_attr="weight",
+                   edge_label_style_dict=None, use_label=True, no_bidirectional=True, node_distance="2cm",
+                   label_data_graph=None,
+                   ):
     """Return TikZ code as `str` for `networkx` graph `g`."""
 
     if not node_label_dict:
@@ -414,7 +439,12 @@ def dumps_tikz_doc(g, layout='spring', node_label_dict=None,
         line = ' -- '
     for u, v, d in g.edges_iter(data=True):
         if use_label:
-            label = str(int(g.get_edge_data(u, v).get("weight")))
+            if label_data_graph is None:
+                label_data_graph = g
+            try:
+                label = str(int(label_data_graph.get_edge_data(u, v).get(edge_attr)))
+            except:
+                label = str(label_data_graph.get_edge_data(u, v).get(edge_attr))
             #label = d.get('label', '')
             color = d.get('color', '')
         else:
