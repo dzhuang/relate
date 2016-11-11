@@ -557,7 +557,7 @@ class InlineMultiQuestion(TextQuestionBase, PageBaseWithValue):
         question: |
 
             Foo and [[blank1]] are often used in code examples, or
-            tutorials. $\frac{1}{5}$ is equivelant to [[blank_2]].
+            tutorials. $\frac{1}{5}$ is equivalent to [[blank_2]].
 
             The correct answer for this choice question is [[choice_a]].
             The Upper case of "foo" is [[choice2]].
@@ -822,7 +822,7 @@ class InlineMultiQuestion(TextQuestionBase, PageBaseWithValue):
                                     answer[answer_instance.name]))
 
                     # The answer doesn't exist for newly added question 
-                    # for pages which have been submit.
+                    # for pages which have been submitted.
                     except KeyError:
                         correctness_list.append(1)
 
