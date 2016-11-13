@@ -1,7 +1,7 @@
 django>=1.10,<1.11
 
 # Automatically renders Django forms in a pretty, Bootstrap-compatible way.
-django-crispy-forms>=1.5.1
+django-crispy-forms>=1.5.1<=1.6.0
 
 # Page data, answer data, ... all represented in JSON. This makes that editable
 # in the Django admin.
