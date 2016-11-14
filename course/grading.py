@@ -138,6 +138,9 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     flow_order_by_list = ['participation__user__username']
     if (grading_rule.grade_aggregation_strategy
             == grade_aggregation_strategy.use_earliest):
+        flow_order_by_list.append('start_time')
+    elif (grading_rule.grade_aggregation_strategy
+         == grade_aggregation_strategy.use_latest):
         flow_order_by_list.append('-start_time')
     all_flow_qs = all_flow_qs.order_by(*flow_order_by_list)
 
