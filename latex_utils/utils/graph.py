@@ -259,14 +259,19 @@ class network(object):
                     if node_tex_prefix else node + 1
                 )
 
-    def as_latex(self, layout="spring", use_label=True, edge_attr="weight", no_bidirectional=True, node_distance="2cm"):
+    def as_latex(self, layout="spring", use_label=True, edge_attr="weight", no_bidirectional=True, node_distance="2cm", hidden_node_list=[], regenerate_node_label_dict=False):
+        if regenerate_node_label_dict:
+            node_label_dict = None
+        else:
+            node_label_dict = self.node_label_dict
         return dumps_tikz_doc(g=self.graph, layout=layout,
-                              node_label_dict=self.node_label_dict,
+                              node_label_dict=node_label_dict,
                               edge_label_style_dict=self.edge_label_style_dict,
                               use_label=use_label,
                               edge_attr=edge_attr,
                               no_bidirectional=no_bidirectional,
-                              node_distance=node_distance
+                              node_distance=node_distance,
+                              hidden_node_list=hidden_node_list,
                               )
 
     def get_iterated_solution(self, source=0, method="dijkstra"):
@@ -377,7 +382,7 @@ class network(object):
 
         return capacity_network
 
-    def get_max_flow_latex(self, layout="spring", use_label=True, no_bidirectional=True, node_distance="2cm"):
+    def get_max_flow_latex(self, layout="spring", use_label=True, no_bidirectional=True, node_distance="2cm", hidden_node_list=[]):
         G = self.as_capacity_graph()
         number_of_nodes = len(G.node)
         max_flow_value, partition = nx.minimum_cut(G, 0, number_of_nodes - 1)
@@ -397,19 +402,25 @@ class network(object):
                               no_bidirectional=no_bidirectional,
                               node_distance=node_distance,
                               label_data_graph = max_flow_network,
+                              hidden_node_list=hidden_node_list,
                               )
 
 
 def dumps_tikz_doc(g, layout='spring', node_label_dict=None, edge_attr="weight",
                    edge_label_style_dict=None, use_label=True, no_bidirectional=True, node_distance="2cm",
-                   label_data_graph=None,
+                   label_data_graph=None, hidden_node_list=[]
                    ):
     """Return TikZ code as `str` for `networkx` graph `g`."""
 
     if not node_label_dict:
         node_label_dict={}
+        i = 0
         for node in g.node:
-            node_label_dict[node] = "$v_{%s}$" % str(node + 1)
+            if node not in hidden_node_list:
+                node_label_dict[node] = "v_{%s}" % str(i + 1)
+                i += 1
+            else:
+                node_label_dict[node] = ""
 
     if layout not in ('layered', 'spring'):
         raise ValueError('Unknown layout: {s}'.format(s=layout))
@@ -422,13 +433,17 @@ def dumps_tikz_doc(g, layout='spring', node_label_dict=None, edge_attr="weight",
     for n, d in g.nodes_iter(data=True):
         # label
         label = node_label_dict.get(n, '')
-        label = 'as={$' + label + '$}' if label else ''
+        if n not in hidden_node_list:
+            label = 'as={$' + label + '$}' if label else ''
+        else:
+            label = 'as={}'
         # geometry
         color = d.get('color', '')
         fill = d.get('fill', '')
         shape = d.get('shape', '')
+        draw = "draw=none" if n in hidden_node_list else ""
         # style
-        style = ', '.join(filter(None, [label, color, fill, shape]))
+        style = ', '.join(filter(None, [label, color, fill, shape, draw]))
         style = '[' + style + ']' if style else ''
         # pack them
         s += '{n}{style};\n'.format(n=n, style=style)
@@ -438,18 +453,22 @@ def dumps_tikz_doc(g, layout='spring', node_label_dict=None, edge_attr="weight",
     else:
         line = ' -- '
     for u, v, d in g.edges_iter(data=True):
-        if use_label:
-            if label_data_graph is None:
-                label_data_graph = g
-            try:
-                label = str(int(label_data_graph.get_edge_data(u, v).get(edge_attr)))
-            except:
-                label = str(label_data_graph.get_edge_data(u, v).get(edge_attr))
-            #label = d.get('label', '')
-            color = d.get('color', '')
+        if not (u in hidden_node_list or v in hidden_node_list):
+            if use_label:
+                if label_data_graph is None:
+                    label_data_graph = g
+                try:
+                    label = str(int(label_data_graph.get_edge_data(u, v).get(edge_attr)))
+                except:
+                    label = str(label_data_graph.get_edge_data(u, v).get(edge_attr))
+                #label = d.get('label', '')
+                color = d.get('color', '')
+            else:
+                label = str(d)
+                color = ''
         else:
-            label = str(d)
-            color = ''
+            label = ""
+
         if label:
             label = '"$' + label + '$"\' above'
         loop = 'loop' if u is v else ''
@@ -463,7 +482,10 @@ def dumps_tikz_doc(g, layout='spring', node_label_dict=None, edge_attr="weight",
         bend = ''
         if no_bidirectional:
             bend = 'bend left' if g.has_edge(v, u) else ''
-        style = ', '.join(filter(None, [label, color, loop, bend, custom_style]))
+        draw_edge=None
+        if u in hidden_node_list or v in hidden_node_list:
+            draw_edge = "draw=none"
+        style = ', '.join(filter(None, [label, color, loop, bend, custom_style, draw_edge]))
         style = ' [' + style + '] ' if style else ''
         s += str(u) + line + style + str(v) + ';\n'
     tikzpicture = (
