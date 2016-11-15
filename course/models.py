@@ -1611,7 +1611,8 @@ class GradeStateMachine(object):
                 (gchange
                 for gchange in self.attempt_id_to_gchange.values()
                 if (gchange.percentage() is not None
-                    and gchange.flow_session.completion_time is not None)
+                    and (gchange.flow_session.completion_time is not None
+                         if gchange.flow_session is not None else False))
                  ),
                 key=lambda gchange: (gchange.flow_session.completion_time,
                                      gchange.grade_time
