@@ -1610,13 +1610,8 @@ class GradeStateMachine(object):
         valid_grade_changes = sorted(
                 (gchange
                 for gchange in self.attempt_id_to_gchange.values()
-                if (gchange.percentage() is not None
-                    and (gchange.flow_session.completion_time is not None
-                         if gchange.flow_session is not None else False))
-                 ),
-                key=lambda gchange: (gchange.flow_session.completion_time,
-                                     gchange.grade_time
-                                     ))
+                if gchange.percentage() is not None),
+                key=lambda gchange: gchange.grade_time)
 
         self.valid_percentages.extend(
                 cast(GradeChange, gchange.percentage())
