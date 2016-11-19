@@ -771,7 +771,9 @@ class FloatListWithWrapperMatcher(TextAnswerMatcher):
             return 0
 
         if getattr(self.matcher_desc, "as_set", False):
-            if set(answer_list) == set(corr_list):
+            answer_list_evalf=[float_or_sympy_evalf(item) for item in answer_list]
+            corr_list_evalf=[float_or_sympy_evalf(item) for item in corr_list]
+            if set(answer_list_evalf) == set(corr_list_evalf):
                 return 1
             else:
                 return 0

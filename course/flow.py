@@ -1094,6 +1094,9 @@ def grade_flow_session(
             if (previous_grade_change.points == gchange.points
                     and previous_grade_change.max_points == gchange.max_points
                     and previous_grade_change.comment == gchange.comment):
+                from django.utils.timezone import now
+                previous_grade_change.grade_time = now()
+                previous_grade_change.save()
                 do_save = False
         else:
             # no previous grade changes
