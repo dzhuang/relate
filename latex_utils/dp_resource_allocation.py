@@ -44,3 +44,8 @@ result = dp.solve(allow_state_func=force_calculate_feasible_state)
 print result
 result = dp.solve()
 print result
+
+print len(result.state_x_table[2]), len(result.x[2])
+
+print result.state_x_table[4][10].keys()
+print result.state_x_table[4][10].values()
