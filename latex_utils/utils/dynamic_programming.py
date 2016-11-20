@@ -178,7 +178,7 @@ class ResourceAllocationDP(DynamicProgramming):
 
             stage_state_list = sorted(list(stage_state_set))
             stage_possible_x_list = sorted(list(stage_possible_x_set))
-
+            stage_dict[stage]["decisions"] = stage_possible_x_list
             # 所有状态下的决策及其值，最优决策，最优值
             for state in stage_state_list:
                 state_dict = OrderedDict()
@@ -269,6 +269,10 @@ class ResourceAllocationDP(DynamicProgramming):
                 self.state_x_table = state_x_table
                 self.verbose_state_x_dict = self.get_verbose_state_x_dict()
 
+            # for unknown f(stage,decision), make sure there's penalty, because we init f with all zeros.
+            penalty = -HUGE_NUMBER if self.opt_type == "max" else HUGE_NUMBER
+            for not_allowed_state_idx in [s for s in list(range(len(self.state_set))) if s not in allowed_state_i_idx_list]:
+                self.f[t, not_allowed_state_idx] = penalty
 
         return ResourceAllocationDPResult(f=self.f, x=self.x, project_list=self.project_list, state_set=self.state_set, policy=self.get_opt_policy(), verbose_state_x_dict=self.verbose_state_x_dict)
 

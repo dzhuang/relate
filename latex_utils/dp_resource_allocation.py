@@ -6,6 +6,19 @@ from copy import deepcopy
 import numpy as np
 import random
 import pickle
+import random
+
+try:
+    # Python 3.x
+    from tkinter import Tk
+except ImportError:
+    # Python 2.x
+    from Tkinter import Tk
+
+r = Tk()
+r.withdraw()
+r.clipboard_clear()
+
 from collections import OrderedDict
 
 from latex_utils.utils.dynamic_programming import ResourceAllocationDP, force_calculate_feasible_state
@@ -23,37 +36,38 @@ company = [1,2,3,4,5]
 invest = [0, 100, 200, 300, 400, 500]
 
 
-gain=np.matrix([
-    0, 9, 12, 16, 21, np.nan,
-    0, 10, 16, 21, 31, 33,
-    0, 7, 12, 17, 21, np.nan,
-    0, 11, 20, 23, 34, 40,
-    np.nan, np.nan, 21, 25, 37, np.nan
-]).reshape(5,6)
-total_resource=100
-invest = [0, 10, 20, 30, 40, 50]
+# gain=np.matrix([
+#     0, 9, 12, 16, 21, np.nan,
+#     0, 10, 16, 21, 31, 33,
+#     0, 7, 12, 17, 21, np.nan,
+#     0, 11, 20, 23, 34, 40,
+#     np.nan, np.nan, 21, 25, 37, np.nan
+# ]).reshape(5,6)
+# total_resource=100
+# invest = [0, 10, 20, 30, 40, 50]
 
 dp = ResourceAllocationDP(
     total_resource=total_resource,
     gain=gain,
     decision_set=invest,
-    allow_non_allocated_resource=False
+    allow_non_allocated_resource=True
 )
 
 
 result = dp.solve(allow_state_func=force_calculate_feasible_state)
 #print result
-result = dp.solve()
+#result = dp.solve()
 
-print result.verbose_state_x_dict
+template = latex_jinja_env.get_template('/utils/dynamic_programming_template.tex')
 
-print result.verbose_state_x_dict[1]
-print result.verbose_state_x_dict[2]
-print result.verbose_state_x_dict[2]["state"]
+tex = template.render(
+    answer_table_iters=iter(range(1,50)),
+    show_question=True,
+    show_answer=True,
+    show_blank=True,
+    show_blank_answer=True,
+    dp_result=result,
+    stage_idx_list = list(reversed(list(result.verbose_state_x_dict.iterkeys())))
+)
 
-d = result.verbose_state_x_dict[1]["state"]
-for k in d.keys():
-    print k, d[k]["state_results"], d[k]["state_opt_x"], d[k]["state_f"]
-
-
-
+r.clipboard_append(tex)

@@ -1,0 +1,62 @@
+\BLOCK{- if show_question -}
+\BLOCK{- if problem_description_pre -}
+\VAR{problem_description_pre}
+\BLOCK{- endif -} \#{ problem_description_pre }
+
+
+
+
+{% from "latex.jinja" import mytabular_preamble as preamble %}
+
+\BLOCK{ set stages = dp_result.verbose_state_x_dict}
+\BLOCK{-for idx in stage_idx_list }
+\BLOCK{ set stage = stages[idx] }
+
+<p align="middle">
+<p align="middle"><strong>答案表\VAR{answer_table_iters.next()}: 第\VAR{idx}阶段表</strong></br>
+{% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
+\BLOCK{ set n_state = stage["state"].items()[0][1]['state_results']|length }
+\newlength\LL \settowidth\LL{100}
+\renewcommand\multirowsetup{\centering}
+\begin{table}[H]
+  \centering
+  \begin{mytabular}{c|\BLOCK{for i in range(n_state)}c\BLOCK{endfor}|c|c}
+    \hline\hline
+     \multirow{2}*{\diagbox{$s_{\VAR{idx}}$}{$x_{\VAR{idx}}$}}& \multicolumn{\VAR{n_state}}{c|}{$g_{\VAR{idx}}(s_{\VAR{idx}}, x_{\VAR{idx}})+f_{\VAR{idx + 1}}(s_{\VAR{idx}}-x_{\VAR{idx}})$} & \multirow{2}*{$f_{\VAR{idx}}(s_{\VAR{idx}})$} & \multirow{2}{\LL}{$x^*_{\VAR{idx}}$} \\
+     \cline{2-\VAR{n_state + 1}}
+      &\VAR{stage.decisions|join("&")}&&  \\
+    \hline
+    \BLOCK{for state in stage.state.items()}
+    \VAR{state[0]}& \VAR{state[1]['state_results']|join("&")}&\VAR{state[1]['state_f']}&\VAR{state[1]['state_opt_x']|join(",")}\\
+    \BLOCK{endfor}
+    \hline\hline
+  \end{mytabular}
+\end{table}
+
+{% endcall %}
+</p>
+
+\BLOCK{ endfor -}
+
+
+\BLOCK{ if problem_description_after -}
+\VAR{problem_description_after}
+\BLOCK{ endif -}
+
+
+\BLOCK{- endif -} \#{ show_question }
+
+\BLOCK{ if show_blank -}
+\BLOCK{ if blank_desc -}\VAR{blank_desc}\BLOCK{ endif -}[[blank1]]
+\BLOCK{ endif -} \#{ after_description }
+
+\BLOCK{ if show_blank_answer }
+blank1:
+    type: ShortAnswer
+    width: 10em
+    correct_answer:
+    - type: float
+      rtol: 1
+      atol: 1
+      value: \VAR{result}
+\BLOCK{ endif -}
