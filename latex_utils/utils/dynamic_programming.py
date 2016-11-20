@@ -26,26 +26,24 @@ class DPResult(dict):
         else:
             return self.__class__.__name__ + "()"
 
+
 class ResourceAllocationDPResult(DPResult):
     def __init__(self, **kwargs):
         super(ResourceAllocationDPResult, self).__init__(**kwargs)
         assert kwargs["f"] is not None
         assert kwargs["x"]
         assert kwargs["policy"]
-        assert kwargs["state_x_table"]
+        assert kwargs["state_set"]
+        assert kwargs["verbose_state_x_dict"]
+        assert kwargs["project_list"]
+
         self.f = kwargs["f"]
         self.x = kwargs["x"]
         self.policy = kwargs["policy"]
-        self.state_x_table = kwargs["state_x_table"]
-        if not kwargs["project_list"]:
-            self.project_list = [i+1 for i in range(len(self.x)-1)]
+        self.state_set = kwargs["state_set"]
+        self.verbose_state_x_dict = kwargs["verbose_state_x_dict"]
         self.opt_value = self.f[1,-1]
-
-        # TODO: generate state_x_table
-        for row in self.state_x_table[1: len(self.state_x_table)]:
-            for item in row:
-                if isinstance(item, OrderedDict) and item:
-                    print item.keys()
+        self.project_list = kwargs["project_list"]
 
 
 class DynamicProgramming(object):
@@ -69,18 +67,21 @@ class ResourceAllocationDP(DynamicProgramming):
         self.decision_set = decision_set
         for d in decision_set:
             assert isinstance(d, (float,int))
-        self.project_list = project_list
         self.opt_type = opt_type
         self.allow_non_allocated_resource = allow_non_allocated_resource
         self.terminal_value = terminal_value
 
         self.n_stages, self.n_decision = np.shape(self.gain)
-        if project_list:
-            assert self.n_stages == len(project_list)
+        self.project_list = project_list
+        if not project_list:
+            self.project_list = [i+1 for i in range(self.n_stages)]
+            assert self.n_stages == len(self.project_list)
         assert self.n_decision == len(decision_set)
         self.state_set = self.get_all_possible_state()
         # print "self.state_set:", self.state_set
         self.init_f_x()
+        self.state_x_table = None
+        self.verbose_state_x_dict = None
 
     def get_gain(self, stage_idx, decision):
         if self.opt_type == "max":
@@ -153,6 +154,61 @@ class ResourceAllocationDP(DynamicProgramming):
 
         return solution_list
 
+    def get_verbose_state_x_dict(self):
+        state_x_table = self.state_x_table
+        n_stage = len(self.project_list)
+        x = self.x
+        f = self.f
+        state_set = self.state_set
+        stage_dict = OrderedDict()
+        for stage in range(1, n_stage + 1):
+            stage_dict[stage] = {}
+            stage_dict[stage]["name"] = self.project_list[stage - 1]
+            stage_dict[stage]["state"] = OrderedDict()
+            # get all possbile state at this stage
+            # 该阶段所有可能的状态stage_state_list，即各阶段表的最左列
+            # 该阶段所有可能的决策stage_possbile_x_list，即各阶段表的表头（第二行）
+            stage_state_set = set()
+            stage_possible_x_set = set()
+            for state_idx, state in enumerate(state_set):
+                stage_x_result = state_x_table[stage][state_idx]
+                if isinstance(stage_x_result, OrderedDict) and stage_x_result:
+                    stage_state_set.add(state)
+                    stage_possible_x_set.update(set(stage_x_result.keys()))
+
+            stage_state_list = sorted(list(stage_state_set))
+            stage_possible_x_list = sorted(list(stage_possible_x_set))
+
+            # 所有状态下的决策及其值，最优决策，最优值
+            for state in stage_state_list:
+                state_dict = OrderedDict()
+                state_results = []
+                state_idx = state_set.index(state)
+                if isinstance(state_x_table[stage][state_idx], OrderedDict):
+                    for decision in stage_possible_x_list:
+                        if decision in state_x_table[stage][state_idx]:
+                            state_results.append(state_x_table[stage][state_idx][decision])
+                        else:
+                            state_results.append("")
+                else:
+                    state_results.append("")
+
+                state_f = f[stage, state_idx]
+                state_opt_x = x[stage][state_idx]
+                state_dict.update(
+                    {state:
+                        {
+                            "state_results": get_simplified_float(state_results),
+                            "state_f": get_simplified_float(state_f),
+                            "state_opt_x": get_simplified_float(state_opt_x)
+                        }
+                    }
+                )
+                stage_dict[stage]["state"].update(state_dict)
+
+        return stage_dict
+
+
     def solve(self, allow_state_func=None):
         state_x_table = deepcopy(self.x)
         for t in range(self.n_stages, 0, -1):
@@ -210,8 +266,11 @@ class ResourceAllocationDP(DynamicProgramming):
                 # End of d loop
                 self.f[t, state_i_idx] = value
                 self.x[t][state_i_idx] = bestMove
+                self.state_x_table = state_x_table
+                self.verbose_state_x_dict = self.get_verbose_state_x_dict()
 
-        return ResourceAllocationDPResult(f=self.f, x=self.x, project_list=self.project_list, policy=self.get_opt_policy(), state_x_table=state_x_table)
+
+        return ResourceAllocationDPResult(f=self.f, x=self.x, project_list=self.project_list, state_set=self.state_set, policy=self.get_opt_policy(), verbose_state_x_dict=self.verbose_state_x_dict)
 
 
 def force_calculate_feasible_state(dp_instance, t):
@@ -272,3 +331,17 @@ def force_calculate_feasible_state(dp_instance, t):
         allowed_state_i_idx_list = [a for a in allowed_state_i_idx_list if a >= dp_instance.get_state_idx(minimum_allocation)]
 
     return allowed_state_i_idx_list
+
+
+def get_simplified_float(f):
+    if isinstance(f, list):
+        return list(get_simplified_float(s) for s in f)
+    elif isinstance(f, tuple):
+        return tuple(get_simplified_float(s) for s in f)
+    try:
+        if int(f) == f:
+            return int(f)
+        else:
+            return f
+    except:
+        return f

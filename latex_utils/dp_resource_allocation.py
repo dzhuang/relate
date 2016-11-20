@@ -6,6 +6,7 @@ from copy import deepcopy
 import numpy as np
 import random
 import pickle
+from collections import OrderedDict
 
 from latex_utils.utils.dynamic_programming import ResourceAllocationDP, force_calculate_feasible_state
 
@@ -36,16 +37,23 @@ dp = ResourceAllocationDP(
     total_resource=total_resource,
     gain=gain,
     decision_set=invest,
-    #allow_non_allocated_resource=False
+    allow_non_allocated_resource=False
 )
 
 
 result = dp.solve(allow_state_func=force_calculate_feasible_state)
-print result
+#print result
 result = dp.solve()
-print result
 
-print len(result.state_x_table[2]), len(result.x[2])
+print result.verbose_state_x_dict
 
-print result.state_x_table[4][10].keys()
-print result.state_x_table[4][10].values()
+print result.verbose_state_x_dict[1]
+print result.verbose_state_x_dict[2]
+print result.verbose_state_x_dict[2]["state"]
+
+d = result.verbose_state_x_dict[1]["state"]
+for k in d.keys():
+    print k, d[k]["state_results"], d[k]["state_opt_x"], d[k]["state_f"]
+
+
+
