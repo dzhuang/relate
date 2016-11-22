@@ -3,17 +3,50 @@
 \VAR{problem_description_pre}
 \BLOCK{- endif -} \#{ problem_description_pre }
 
+\BLOCK{- endif -} \#{ show_question }
 
+\BLOCK{- if show_answer -}
 
+#### 1、写出模型(得分占比50%)：
 
 {% from "latex.jinja" import mytabular_preamble as preamble %}
-
-\BLOCK{ set stages = dp_result.verbose_state_x_dict}
-\BLOCK{-for idx in stage_idx_list }
-\BLOCK{ set stage = stages[idx] }
+{% from "latex.jinja" import question_preamble as math_preamble %}
 
 <p align="middle">
-<p align="middle"><strong>答案表\VAR{answer_table_iters.next()}: 第\VAR{idx}阶段表</strong></br>
+{% call latex(compiler="pdflatex", image_format="png", tex_preamble=math_preamble)  %}
+\large
+\VAR{dp.get_formula_tex()}
+{% endcall %}
+</p>
+</br>
+
+#### 2、求解模型(得分占比50%)：
+注：以下各阶段求解表中未列出的状态，由于没有有效的求解结果，已经略去。学生在作答时，若表中列出了这些状态，则该状态下的行**应为空行**，否则结果为错误。
+
+
+\BLOCK{ set dp_result=dp_result_list[0] }
+\BLOCK{ if dp_result_list|length == 2}
+\BLOCK{ set compare=True }
+\BLOCK{ set dp_result_compare=dp_result_list[1] }
+\BLOCK{ set stages_compare = dp_result_compare.verbose_state_x_dict}
+\BLOCK{ endif }
+
+\BLOCK{ set stages = dp_result.verbose_state_x_dict}
+\BLOCK{for idx in dp_result.verbose_state_x_dict.keys()|reverse}
+\BLOCK{ set stage_state_can_optimize = False }
+\BLOCK{ set stage = stages[idx] }
+\BLOCK{if compare}\BLOCK{ set stage_compare = stages_compare[idx] }\BLOCK{endif}
+
+- <strong> 第\VAR{idx}阶段：</strong>
+
+\BLOCK{ if compare}
+\BLOCK{ if stage["state"]!=stage_compare["state"]}
+\BLOCK{ set stage_state_can_optimize = True }
+本阶段的状态集在计算时可以进一步优化，分别见以下两表：
+\BLOCK{endif}
+\BLOCK{endif}
+
+<p align="middle"><strong>答案表\VAR{answer_table_iters.next()}: 第\VAR{idx}阶段表\BLOCK{ if stage_state_can_optimize}(优化)\BLOCK{endif}</strong></br>
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
 \BLOCK{ set n_state = stage["state"].items()[0][1]['state_results']|length }
 \newlength\LL \settowidth\LL{100}
@@ -22,7 +55,7 @@
   \centering
   \begin{mytabular}{c|\BLOCK{for i in range(n_state)}c\BLOCK{endfor}|c|c}
     \hline\hline
-     \multirow{2}*{\diagbox{$s_{\VAR{idx}}$}{$x_{\VAR{idx}}$}}& \multicolumn{\VAR{n_state}}{c|}{$g_{\VAR{idx}}(s_{\VAR{idx}}, x_{\VAR{idx}})+f_{\VAR{idx + 1}}(s_{\VAR{idx}}-x_{\VAR{idx}})$} & \multirow{2}*{$f_{\VAR{idx}}(s_{\VAR{idx}})$} & \multirow{2}{\LL}{$x^*_{\VAR{idx}}$} \\
+     \multirow{2}*{\diagbox{$s_{\VAR{idx}}$}{$x_{\VAR{dp.get_opt_x_subscript(idx)}}$}}& \multicolumn{\VAR{n_state}}{c|}{$\VAR{dp.get_process_function_tex(idx)}$} & \multirow{2}*{$f_{\VAR{idx}}(s_{\VAR{idx}})$} & \multirow{2}{\LL}{$x^*_{\VAR{dp.get_opt_x_subscript(idx)}}$} \\
      \cline{2-\VAR{n_state + 1}}
       &\VAR{stage.decisions|join("&")}&&  \\
     \hline
@@ -32,19 +65,58 @@
     \hline\hline
   \end{mytabular}
 \end{table}
-
 {% endcall %}
 </p>
 
+\BLOCK{ if stage_state_can_optimize}
+<p align="middle"><strong>答案表\VAR{answer_table_iters.next()}: 第\VAR{idx}阶段表(未优化)</strong></br>
+{% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
+\BLOCK{ set n_state = stage_compare["state"].items()[0][1]['state_results']|length }
+\newlength\LL \settowidth\LL{100}
+\renewcommand\multirowsetup{\centering}
+\begin{table}[H]
+  \centering
+  \begin{mytabular}{c|\BLOCK{for i in range(n_state)}c\BLOCK{endfor}|c|c}
+    \hline\hline
+     \multirow{2}*{\diagbox{$s_{\VAR{idx}}$}{$x_{\VAR{dp.get_opt_x_subscript(idx)}}$}}& \multicolumn{\VAR{n_state}}{c|}{$\VAR{dp.get_process_function_tex(idx)}$} & \multirow{2}*{$f_{\VAR{idx}}(s_{\VAR{idx}})$} & \multirow{2}{\LL}{$x^*_{\VAR{dp.get_opt_x_subscript(idx)}}$} \\
+     \cline{2-\VAR{n_state + 1}}
+      &\VAR{stage_compare.decisions|join("&")}&&  \\
+    \hline
+    \BLOCK{for state in stage_compare.state.items()}
+    \VAR{state[0]}& \VAR{state[1]['state_results']|join("&")}&\VAR{state[1]['state_f']}&\VAR{state[1]['state_opt_x']|join(",")}\\
+    \BLOCK{endfor}
+    \hline\hline
+  \end{mytabular}
+\end{table}
+
+{% endcall %}
+</p>
+\BLOCK{ endif } \#{stage_state_can_optimize}
+</br>
+
 \BLOCK{ endfor -}
 
+最优指标为$f_1(s_1)=\VAR{dp_result.opt_value}$，\BLOCK{ if dp_result.policy|length > 1}有\VAR{dp_result.policy|length}个最优策略，分别为\BLOCK{else}最优策略为\BLOCK{endif}：
+$$
+\BLOCK{ for policy in dp_result.policy }
+\begin{align*}
+\begin{array}{clcl}
+\BLOCK{-for idx in dp_result.verbose_state_x_dict.keys()}
+\BLOCK{if not loop.first} \Rightarrow \BLOCK{endif} & s_{\VAR{idx}}=\VAR{dp.get_stage_state_transfer_tex(idx)}\VAR{policy[0].state[idx]} & \Rightarrow & x^*_{\VAR{dp.get_opt_x_subscript(idx)}}=\VAR{policy[0].opt_x[idx]} \\
+\BLOCK{ endfor}
+\end{array}
+\end{align*}
+$$
+\BLOCK{if not loop.last}和\BLOCK{endif}
+\BLOCK{ endfor }
+
+\BLOCK{- endif -} \#{ show_answer }
 
 \BLOCK{ if problem_description_after -}
 \VAR{problem_description_after}
 \BLOCK{ endif -}
 
 
-\BLOCK{- endif -} \#{ show_question }
 
 \BLOCK{ if show_blank -}
 \BLOCK{ if blank_desc -}\VAR{blank_desc}\BLOCK{ endif -}[[blank1]]

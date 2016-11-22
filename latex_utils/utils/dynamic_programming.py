@@ -6,7 +6,7 @@ from collections import deque, OrderedDict
 
 HUGE_NUMBER = float("inf")
 
-class DPResult(dict):
+class DPResultBase(dict):
     """ Represents the optimization result.
     """
     def __getattr__(self, name):
@@ -27,9 +27,9 @@ class DPResult(dict):
             return self.__class__.__name__ + "()"
 
 
-class ResourceAllocationDPResult(DPResult):
+class DPResult(DPResultBase):
     def __init__(self, **kwargs):
-        super(ResourceAllocationDPResult, self).__init__(**kwargs)
+        super(DPResult, self).__init__(**kwargs)
         assert kwargs["f"] is not None
         assert kwargs["x"]
         assert kwargs["policy"]
@@ -42,63 +42,105 @@ class ResourceAllocationDPResult(DPResult):
         self.policy = kwargs["policy"]
         self.state_set = kwargs["state_set"]
         self.verbose_state_x_dict = kwargs["verbose_state_x_dict"]
-        self.opt_value = self.f[1,-1]
+        self.opt_value = get_simplified_float(self.f[1,-1])
         self.project_list = kwargs["project_list"]
 
 
-class DynamicProgramming(object):
+class ResourceAllocationDPResult(DPResult):
+    pass
+
+
+class DynamicProgrammingBase(object):
     def get_gain(self, stage_idx, decision):
         raise NotImplementedError
     pass
 
-
-class ResourceAllocationDP(DynamicProgramming):
-
-    def __init__(self, total_resource, gain, decision_set, project_list=None, opt_type="max", allow_non_allocated_resource=True, terminal_value=0):
+class DiscreteDynamicProgramming(DynamicProgrammingBase):
+    def __init__(self, total_resource, gain=None, decision_set=None, project_list=None,
+                 opt_type="max", allow_non_allocated_resource=True, terminal_value=0):
         assert isinstance(total_resource, (int, float))
         assert opt_type in ["max", "min"]
         self.total_resource = total_resource
         self.gain = gain
-        if opt_type == "max":
-            self.gain[np.isnan(self.gain)] = -np.inf
-        else:
-            self.gain[np.isnan(self.gain)] = np.inf
-        assert isinstance(gain, np.matrix)
-        self.decision_set = decision_set
-        for d in decision_set:
-            assert isinstance(d, (float,int))
+        if gain is not None:
+            if isinstance(gain, np.matrix):
+                if np.any(np.isnan(self.gain)):
+                    if opt_type == "max":
+                        self.gain[np.isnan(self.gain)] = -np.inf
+                    else:
+                        self.gain[np.isnan(self.gain)] = np.inf
+                self.n_stages, self.n_decision = np.shape(self.gain)
+            else:
+                assert isinstance(gain, (list, tuple))
+                self.n_stages = len(gain)
+                self.n_decision = len(gain[0])
+                for i in range(self.n_stages):
+                    assert len(gain[i]) == self.n_decision
+        if decision_set:
+            self.decision_set = decision_set
+            for d in decision_set:
+                assert isinstance(d, (float,int))
         self.opt_type = opt_type
         self.allow_non_allocated_resource = allow_non_allocated_resource
         self.terminal_value = terminal_value
 
-        self.n_stages, self.n_decision = np.shape(self.gain)
+
         self.project_list = project_list
         if not project_list:
             self.project_list = [i+1 for i in range(self.n_stages)]
-            assert self.n_stages == len(self.project_list)
-        assert self.n_decision == len(decision_set)
+            if self.n_stages:
+                assert self.n_stages == len(self.project_list)
+        if decision_set:
+            assert self.n_decision == len(decision_set)
         self.state_set = self.get_all_possible_state()
-        # print "self.state_set:", self.state_set
-        self.init_f_x()
+        self.f, self.x = self.get_init_f_x()
         self.state_x_table = None
         self.verbose_state_x_dict = None
+        self.policy = None
 
     def get_gain(self, stage_idx, decision):
-        if self.opt_type == "max":
-            null_value = -np.inf
-        else:
-            null_value = np.inf
-        try:
-            decision_idx = self.decision_set.index(decision)
-        except ValueError:
-            decision_idx = None
-        if decision_idx is not None:
-            # print "decision_idx:", decision_idx
-            return self.gain[stage_idx, decision_idx]
-        else:
-            return null_value
+        # need to return a np.matrix, which conains the gaining, 0 based
+        raise NotImplementedError
+
+    def get_process_function_tex(self, stage_index, **kwargs):
+        """
+        :param stage_index: 1-based stage index
+        :param kwargs:
+        :return: the process function tex need to be generated for table use
+        """
+        raise NotImplementedError
+
+    def get_formula_tex(self, n_stage, **kwargs):
+        """
+        :param stage_index: 1-based stage index
+        :param kwargs:
+        :return: the tex of the full formular
+        """
+        raise NotImplementedError
+
+    def get_dp_result_class(self):
+        """
+        :return: the class of the result to be used.
+        """
+        raise NotImplementedError
+
+    def get_stage_state_transfer_tex(self, stage_i):
+        """
+        :param stage_i: 1-based stage index
+        :return: the tex of state_transfer
+        """
+        raise NotImplementedError
+
+    def get_opt_x_subscript(self, stage_i):
+        """
+        :param stage_i: 1-based stage index
+        :return: the tex of state_transfer
+        """
+        return stage_i
+
 
     def get_all_possible_state(self):
+        # need to return a sorted list of all possible state, 0 based
         state_set = set()
         import itertools
         for L in range(0, len(self.decision_set) + 1):
@@ -109,7 +151,31 @@ class ResourceAllocationDP(DynamicProgramming):
                         state_set.add(remainder)
         return sorted(list(state_set))
 
-    def init_f_x(self):
+    def get_init_f_x(self):
+        """
+        :return: f and x
+        Used to initialize self.f and self.x
+        f: a np.array, shape(self.n_stages +2, max_n_state)
+        With terminal value initiated.
+
+        x  a np.array, shape(self.n_stages +1, max_n_state)
+
+        Example:
+            max_n_state = len(self.state_set)
+            f = np.zeros([self.n_stages + 2, max_n_state])
+            x = np.zeros([self.n_stages + 1, max_n_state]).tolist()
+
+            # initiating terminal values for f
+            if not self.allow_non_allocated_resource:
+                for i in range(max_n_state):
+                    if self.opt_type == "max":
+                        f[self.n_stages+1, i] = -HUGE_NUMBER
+                        f[self.n_stages+1, 0] = self.terminal_value
+                    else:
+                        f[self.n_stages+1, i] = HUGE_NUMBER
+            return f, x
+
+        """
         max_n_state = len(self.state_set)
         f = np.zeros([self.n_stages + 2, max_n_state])
         x = np.zeros([self.n_stages + 1, max_n_state]).tolist()
@@ -117,34 +183,37 @@ class ResourceAllocationDP(DynamicProgramming):
             for i in range(max_n_state):
                 if self.opt_type == "max":
                     f[self.n_stages+1, i] = -HUGE_NUMBER
-                    f[self.n_stages+1, 0] = self.terminal_value
                 else:
                     f[self.n_stages+1, i] = HUGE_NUMBER
-        self.f = f
-        self.x = x
+        f[self.n_stages + 1, 0] = self.terminal_value
+        return f, x
 
     def get_state_idx(self, state):
         return list(self.state_set).index(state)
 
     def get_opt_policy(self):
         x = deepcopy(self.x)
-        f = self.f
 
         solution_list = []
         queued_x_idx_tuple_deque = deque()
         while True:
-            resource = deepcopy(self.total_resource)
-            solution = []
+            # initial state
+            state = deepcopy(self.total_resource)
+            state_dict = {1:state}
+            solution_dict = {}
             for t in range(1, self.n_stages + 1):
-                decision_idx = self.get_state_idx(resource)
+
+                decision_idx = self.get_state_idx(state)
                 assert isinstance(x[t][decision_idx], list)
+                assert len(x[t][decision_idx]) >=1
                 if len(x[t][decision_idx]) > 1:
                     if (t,decision_idx) not in queued_x_idx_tuple_deque:
                         queued_x_idx_tuple_deque.append((t,decision_idx))
                 s = x[t][decision_idx][0]
-                solution.append(s)
-                resource = resource - s
-            solution_list.append(solution)
+                solution_dict.update({t:s})
+                state = self.get_next_state(state, s)
+                state_dict.update({t + 1: state})
+            solution_list.append([{"state":state_dict,"opt_x":solution_dict}])
 
             if len(queued_x_idx_tuple_deque) == 0:
                 break
@@ -208,6 +277,39 @@ class ResourceAllocationDP(DynamicProgramming):
 
         return stage_dict
 
+    def get_next_state(self, current_state, decision):
+        raise NotImplementedError
+
+    def get_movevalue(self, gaining_this_stage, f_next_stage):
+        """
+        :param gaining_this_stage:
+        :param f_next_stage:
+        :return: the cumulative relationship between stage gaining and process, multiply of plus
+        """
+        raise NotImplementedError
+
+    def init_decision_result_value(self):
+        """
+
+        :return: the init value of a stage, considering the optimization type
+        of the problem, and the cumulative relationships between stages and process
+        """
+        raise NotImplementedError
+
+    def get_allowed_state_i_idx_list(self, stage_i, allow_state_func=None):
+        """
+        :param stage_i:
+        :param allow_state_func:
+        :return: a list of the allowed state at stage_i
+        """
+        raise NotImplementedError
+
+    def get_allowed_decision_i_idx_list(self, stage_i, state_idx):
+        """
+        :param stage_i:
+        :return: a list of the allowed state at stage_i
+        """
+        raise NotImplementedError
 
     def solve(self, allow_state_func=None):
         state_x_table = deepcopy(self.x)
@@ -216,40 +318,22 @@ class ResourceAllocationDP(DynamicProgramming):
             #     break
 
             # If necessary, determine which states are possible at stage t
-            if allow_state_func:
-                # allow_state_func should return a 0 based list
-                # which should be a subset of possbile_state_idx
-                allowed_state_i_idx_list = allow_state_func(self, t)
-            else:
-                possible_state_idx_list = list(range(len(self.state_set)))
-                if t != 1:
-                    allowed_state_i_idx_list = [idx for idx in possible_state_idx_list]
-                else:
-                    allowed_state_i_idx_list = [possible_state_idx_list[-1]]
+
+            allowed_state_i_idx_list = self.get_allowed_state_i_idx_list(stage_i=t, allow_state_func=allow_state_func)
             for state_i_idx in allowed_state_i_idx_list:
                 # Determine set of decisions d which are possible from this state and stage
-                allowed_decisions_i = [d for d in self.decision_set
-                                       if (
-                                           d <= list(self.state_set)[state_i_idx]
-                                           and
-                                           not np.isinf(self.get_gain(t - 1, d))
-                                       )]
-                if self.opt_type == "max":
-                    value = -HUGE_NUMBER
-                else:
-                    value = HUGE_NUMBER
+                allowed_decisions_i = self.get_allowed_decision_i_idx_list(stage_i=t,state_idx=state_i_idx)
+                value = self.init_decision_result_value()
                 bestMove = []
                 state_x_table[t][state_i_idx] = OrderedDict()
                 for decisions_i in allowed_decisions_i:
-                    # State trasform
-                    # 资源分配问题是这样，换个问题可能就不这样定义了
-                    next_state = list(self.state_set)[state_i_idx] - decisions_i
+                    # State transform
+                    next_state = self.get_next_state(list(self.state_set)[state_i_idx], decisions_i)
                     next_state_idx = list(self.state_set).index(next_state)
                     # Compute immediate costs and/or rewards from decision d
                     gaining_i = self.get_gain(t - 1, decisions_i)
 
-                    # 过程与阶段之间是和的关系，换个问题可能就不这样定义了
-                    moveValue = gaining_i + self.f[t + 1, next_state_idx]
+                    moveValue = self.get_movevalue(gaining_i, self.f[t + 1, next_state_idx])
                     if np.isfinite(moveValue):
                         state_x_table[t][state_i_idx][decisions_i] = moveValue
                     if (
@@ -274,7 +358,279 @@ class ResourceAllocationDP(DynamicProgramming):
             for not_allowed_state_idx in [s for s in list(range(len(self.state_set))) if s not in allowed_state_i_idx_list]:
                 self.f[t, not_allowed_state_idx] = penalty
 
-        return ResourceAllocationDPResult(f=self.f, x=self.x, project_list=self.project_list, state_set=self.state_set, policy=self.get_opt_policy(), verbose_state_x_dict=self.verbose_state_x_dict)
+        result_kass = self.get_dp_result_class()
+        self.policy = self.get_opt_policy()
+
+        return result_kass(f=self.f, x=self.x, project_list=self.project_list, state_set=self.state_set, policy=self.policy, verbose_state_x_dict=self.verbose_state_x_dict)
+
+
+class ResourceAllocationDP(DiscreteDynamicProgramming):
+
+    def get_gain(self, stage_idx, decision):
+        if self.opt_type == "max":
+            null_value = -np.inf
+        else:
+            null_value = np.inf
+        try:
+            decision_idx = self.decision_set.index(decision)
+        except ValueError:
+            decision_idx = None
+        if decision_idx is not None:
+            return self.gain[stage_idx, decision_idx]
+        else:
+            return null_value
+
+
+    def get_allowed_state_i_idx_list(self, stage_i, allow_state_func=None):
+
+        if allow_state_func:
+            # allow_state_func should return a 0 based list
+            # which should be a subset of possbile_state_idx
+            allowed_state_i_idx_list = allow_state_func(self, stage_i)
+        else:
+            possible_state_idx_list = list(range(len(self.state_set)))
+            if stage_i != 1:
+                allowed_state_i_idx_list = [idx for idx in possible_state_idx_list]
+            else:
+                allowed_state_i_idx_list = [possible_state_idx_list[-1]]
+
+        return allowed_state_i_idx_list
+
+    def get_allowed_decision_i_idx_list(self, stage_i, state_idx):
+        allowed_decisions_i = [d for d in self.decision_set
+                               if (
+                                   d <= list(self.state_set)[state_idx]
+                                   and
+                                   not np.isinf(self.get_gain(stage_i - 1, d))
+                               )]
+        return allowed_decisions_i
+
+    def get_next_state(self, current_state, decision):
+        return current_state - decision
+
+    def get_movevalue(self, gaining_this_stage, f_next_stage):
+        return gaining_this_stage + f_next_stage
+
+    def init_decision_result_value(self):
+        if self.opt_type == "max":
+            value = -HUGE_NUMBER
+        else:
+            value = HUGE_NUMBER
+        return value
+
+    def get_process_function_tex(self, stage_index, **kwargs):
+        tex = (
+            u"g_{%(this_stage)s}(s_{%(this_stage)s}, x_{%(this_stage)s})"
+            % {
+                "this_stage": str(stage_index),
+                "next_stage": str(stage_index + 1),
+            }
+        )
+        if stage_index != self.n_stages:
+            tex += (
+                u" + f_{%(next_stage)s}(s_{%(this_stage)s} - x_{%(this_stage)s})"
+                % {
+                    "this_stage": str(stage_index),
+                    "next_stage": str(stage_index + 1),
+                }
+            )
+        return tex
+
+    def get_formula_tex(self, n_stage=None, **kwargs):
+        if not n_stage:
+            n_stage = self.n_stages
+        tex = (
+            r"""
+            \begin{align*}\left\{\begin{array}{ll}
+            \begin{array}{lll}f_{k}(s_{k})&=%(opt_type)s\limits_{\mathclap{x_k\in X_k(s_k)}}\{ g_k(s_k,x_k)+f_{k+1} (s_{k+1}) \}& \\
+            &=%(opt_type)s\limits_{\mathclap{x_k\in X_k(s_k)}}\{ g_k(s_k,x_k)+f_{k+1}(s_k-x_k) \},&k=%(stages_desc)s \end{array}\\
+             f_{%(n_stage_plus1)s}( s_{%(n_stage_plus1)s} )=0
+            \end{array}\right.
+            \end{align*}
+            """
+            % {
+                "opt_type": r"\min" if self.opt_type=="min" else r"\max",
+                "stages_desc": ",".join([str(s) for s in list(range(n_stage, 0, -1))]),
+                "n_stage_plus1": str(n_stage + 1),
+            }
+        )
+        return tex
+
+    def get_stage_state_transfer_tex(self, stage_i):
+        if not self.policy:
+            return
+        if stage_i == 1:
+            return r""
+        return r"s_{%(stage_idx)s}-x^*_{%(stage_idx)s}=" % {"stage_idx": str(stage_i - 1)}
+
+
+    def get_dp_result_class(self):
+        """
+        :return: the class of the result to be used.
+        """
+        return ResourceAllocationDPResult
+
+
+class NonlinearTransportationProblem(DiscreteDynamicProgramming):
+    def __init__(self, cost, supply, demand, **kwargs):
+        assert isinstance(cost, list)
+        assert len(cost) == 2
+        assert len(supply) == 2
+        for s in supply:
+            assert isinstance(s, (int, float))
+            assert s > 0
+        self.n_stages = len(demand)
+        for c in cost:
+            assert len(c) == self.n_stages
+        self.cost = cost
+        self.demand = demand
+        for c in cost:
+            for j, c_j in enumerate(c):
+                assert isinstance(c_j, (tuple,list))
+                assert len(c_j) == 2
+                assert isinstance(demand[j], (int,float))
+                assert demand[j] > 0
+        assert supply[0] <= 6
+        assert sum(supply) == sum(demand)
+        kwargs.pop("decision_set")
+        self.supply = supply
+        self.decision_set = list(range(supply[0]+1))
+        self.n_decision = len(self.decision_set)
+        super(NonlinearTransportationProblem, self).__init__(**kwargs)
+
+    def get_gain(self, stage_idx, decision):
+        if self.opt_type == "max":
+            null_value = -np.inf
+        else:
+            null_value = np.inf
+
+        try:
+            decision_idx = self.decision_set.index(decision)
+        except ValueError:
+            decision_idx = None
+        if decision_idx is not None:
+            if decision == 0:
+                first_supplier_cost = 0
+            else:
+                fixed_cost_first = self.cost[0][stage_idx][0]
+                variable_cost_first = self.cost[0][stage_idx][1]
+                first_supplier_cost = fixed_cost_first + variable_cost_first * decision
+            second_supplier_remainder = self.demand[stage_idx] - decision
+            if second_supplier_remainder < 0:
+                if self.opt_type == "max":
+                    return -HUGE_NUMBER
+                else:
+                    return HUGE_NUMBER
+            assert second_supplier_remainder >= 0
+            if second_supplier_remainder == 0:
+                second_supplier_cost = 0
+            else:
+                fixed_cost_second = self.cost[1][stage_idx][0]
+                variable_cost_second = self.cost[1][stage_idx][1]
+                second_supplier_cost = fixed_cost_second + variable_cost_second * second_supplier_remainder
+
+            return first_supplier_cost + second_supplier_cost
+
+        return null_value
+
+    def get_allowed_state_i_idx_list(self, stage_i, allow_state_func=None):
+        if allow_state_func:
+            # allow_state_func should return a 0 based list
+            # which should be a subset of possbile_state_idx
+            allowed_state_i_idx_list = allow_state_func(self, stage_i)
+        else:
+            afterward_demand_list = []
+            for idx in range(len(self.demand)):
+                if idx >= stage_i - 1:
+                    afterward_demand_list.append(self.demand[idx])
+            afterward_demand = sum(afterward_demand_list)
+            possible_state_max = min(afterward_demand, self.supply[0])
+            possible_state_idx_list = list(range(possible_state_max+1))
+            if stage_i != 1:
+                allowed_state_i_idx_list = [idx for idx in possible_state_idx_list]
+            else:
+                allowed_state_i_idx_list = [possible_state_idx_list[-1]]
+        return allowed_state_i_idx_list
+
+    def get_allowed_decision_i_idx_list(self, stage_i, state_idx):
+        allowed_decisions_i = [d for d in self.decision_set
+                               if (
+                                   d <= self.state_set[state_idx]
+                                   and
+                                   not np.isinf(self.get_gain(stage_i - 1, d))
+                               )]
+        return allowed_decisions_i
+
+    def get_process_function_tex(self, stage_index, **kwargs):
+        tex = (
+            u"g_{1%(this_stage)s}+g_{2%(this_stage)s}"
+            % {
+                "this_stage": str(stage_index),
+                "next_stage": str(stage_index + 1),
+            }
+        )
+        if stage_index != self.n_stages:
+            tex += (
+                u" + f_{%(next_stage)s}(s_{%(this_stage)s} - x_{1%(this_stage)s})"
+                % {
+                    "this_stage": str(stage_index),
+                    "next_stage": str(stage_index + 1),
+                }
+            )
+        return tex
+
+    def get_next_state(self, current_state, decision):
+        return current_state - decision
+
+    def get_movevalue(self, gaining_this_stage, f_next_stage):
+        return gaining_this_stage + f_next_stage
+
+    def init_decision_result_value(self):
+        if self.opt_type == "max":
+            value = -HUGE_NUMBER
+        else:
+            value = HUGE_NUMBER
+        return value
+
+    def get_formula_tex(self, n_stage=None, **kwargs):
+        if not n_stage:
+            n_stage = self.n_stages
+        tex = (
+            r"""
+            \begin{align*}\left\{\begin{array}{ll}
+            \begin{array}{lll}f_{k}(s_{k})&=%(opt_type)s\limits_{\mathclap{x_{1k}\in X_{1k}}}\{g_{1k} + g_{2k} +f_{k+1}(s_{k+1}) \}& \\
+            &=%(opt_type)s\limits_{\mathclap{x_{1k}\in X_{1k}}}\{ g_{1k} + g_{2k} +f_{k+1}(s_{k}-x_{1k}) \},&k=%(stages_desc)s \end{array}\\
+             f_{%(n_stage_plus1)s}( s_{%(n_stage_plus1)s} )=0
+            \end{array}\right.
+            \end{align*}
+            """
+            % {
+                "opt_type": r"\min" if self.opt_type=="min" else r"\max",
+                "stages_desc": ",".join([str(s) for s in list(range(n_stage, 0, -1))]),
+                "n_stage_plus1": str(n_stage + 1),
+            }
+        )
+        return tex
+
+    def get_stage_state_transfer_tex(self, stage_i):
+        if not self.policy:
+            return
+        if stage_i == 1:
+            return ""
+        return r"s_{%(stage_idx)s}-x^*_{1%(stage_idx)s}=" % {"stage_idx": str(stage_i-1)}
+
+    def get_opt_x_subscript(self, stage_i):
+        """
+        :param stage_i: 1-based stage index
+        :return: the tex of state_transfer
+        """
+        return "1%s" % stage_i
+
+    def get_dp_result_class(self):
+        """
+        :return: the class of the result to be used.
+        """
+        return DPResult
 
 
 def force_calculate_feasible_state(dp_instance, t):
