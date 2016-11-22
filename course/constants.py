@@ -394,6 +394,7 @@ class flow_permission:  # noqa
             "cannot_see_in_participant_grade_book"
     cannot_see_result_in_participant_grade_book =\
             "cannot_see_result_in_participant_grade_book"
+    cannot_see_answer_for_sessions_in_progress = "cannot_see_answer_for_sessions_in_progress"
 
 FLOW_PERMISSION_CHOICES = (
         (flow_permission.view,
@@ -436,6 +437,9 @@ FLOW_PERMISSION_CHOICES = (
         (flow_permission.cannot_see_result_in_participant_grade_book,
          pgettext_lazy("Flow permission",
                        "Cannot see result in participant grade book")),
+        (flow_permission.cannot_see_answer_for_sessions_in_progress,
+         pgettext_lazy("Flow permission",
+                       "Cannot see answer for sessions in progress")),
         )
 
 # }}}
