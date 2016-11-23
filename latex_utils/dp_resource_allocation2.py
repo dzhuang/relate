@@ -1380,4 +1380,4 @@ for i, dp_dict in enumerate(dp_list_loaded):
         dp=dp,
         dp_result_list=result_list,
     )
-    print(question_tex + solve_tex)
+    r.clipboard(question_tex + solve_tex)
