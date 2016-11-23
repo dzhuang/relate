@@ -1373,3 +1373,11 @@ for i, dp_dict in enumerate(dp_list_loaded):
     )
 
     r.clipboard_append(blank_tex)
+
+    solve_tex = question_template.render(
+        answer_table_iters=iter(range(1, 50)),
+        show_answer_explanation=True,
+        dp=dp,
+        dp_result_list=result_list,
+    )
+    print(question_tex + solve_tex)
