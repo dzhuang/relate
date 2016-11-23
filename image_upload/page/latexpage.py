@@ -251,7 +251,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                          "key_making_string_md5": md5(key_making_string).hexdigest()
                          }
 
-            for part in ["answer", "question", "blank", "blank_answer"]:
+            for part in ["answer", "question", "blank", "blank_answer", "answer_explanation"]:
                 try:
                     if self.get_cached_result(page_context, page_data, part=part, test_key_existance=True) == True:
                         continue
@@ -395,6 +395,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             page_data = self.initialize_page_data(page_context)
 
         question_str = ""
+        success = False
+        question_str_tmp = ""
         for i in range(MAX_JINJIA_RETRY):
             success, question_str_tmp = self.get_cached_result(
                     page_context, page_data, part="question")
@@ -732,12 +734,23 @@ class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestio
 
         self.answer_instance_list = answer_instance_list
 
+        if hasattr(self.page_desc, "answer_explanation_process_code"):
+            answer_explanation_str = ""
+            for i in range(MAX_JINJIA_RETRY):
+                success, answer_explanation_tmp = self.get_cached_result(
+                    page_context, page_data, part="answer_explanation")
+                if success:
+                    answer_explanation_str = answer_explanation_tmp
+                    break
+
+            self.page_desc.answer_explanation = answer_explanation_str
+
+
     def get_question(self, page_context, page_data):
         self.update_page_desc(page_context, page_data)
         return super(LatexRandomCodeInlineMultiQuestion, self).get_question(page_context, page_data)
 
     def body(self, page_context, page_data):
-
         question_str = ""
         if hasattr(self.page_desc, "blank_process_code"):
             for i in range(MAX_JINJIA_RETRY):
@@ -764,6 +777,11 @@ class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestio
         return super(LatexRandomCodeInlineMultiQuestion, self).required_attrs() + (
             ("blank_process_code", str),
             ("blank_answer_process_code", str)
+        )
+
+    def allowed_attrs(self):
+        return super(LatexRandomCodeInlineMultiQuestion, self).allowed_attrs() + (
+            ("answer_explanation_process_code", str),
         )
 
     def grade(self, page_context, page_data, answer_data, grade_data):

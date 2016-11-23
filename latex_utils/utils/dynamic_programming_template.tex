@@ -5,22 +5,10 @@
 
 \BLOCK{- endif -} \#{ show_question }
 
-\BLOCK{- if show_answer -}
+\BLOCK{- if show_answer_explanation }
 
-#### 1、写出模型(得分占比50%)：
 
-{% from "latex.jinja" import mytabular_preamble as preamble %}
-{% from "latex.jinja" import question_preamble as math_preamble %}
-
-<p align="middle">
-{% call latex(compiler="pdflatex", image_format="png", tex_preamble=math_preamble)  %}
-\large
-\VAR{dp.get_formula_tex()}
-{% endcall %}
-</p>
-</br>
-
-#### 2、求解模型(得分占比50%)：
+##### 2、求解模型
 注：以下各阶段求解表中未列出的状态，由于没有有效的求解结果，已经略去。学生在作答时，若表中列出了这些状态，则该状态下的行**应为空行**，否则结果为错误。
 
 
@@ -48,7 +36,8 @@
 
 <p align="middle"><strong>答案表\VAR{answer_table_iters.next()}: 第\VAR{idx}阶段表\BLOCK{ if stage_state_can_optimize}(优化)\BLOCK{endif}</strong></br>
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
-\BLOCK{ set n_state = stage["state"].items()[0][1]['state_results']|length }
+\BLOCK{ set state_item_list = stage["state"].items()|list }
+\BLOCK{ set n_state = state_item_list[0][1]['state_results']|length }
 \newlength\LL \settowidth\LL{100}
 \renewcommand\multirowsetup{\centering}
 \begin{table}[H]
@@ -110,7 +99,7 @@ $$
 \BLOCK{if not loop.last}和\BLOCK{endif}
 \BLOCK{ endfor }
 
-\BLOCK{- endif -} \#{ show_answer }
+\BLOCK{- endif -} \#{ show_answer_explanation }
 
 \BLOCK{ if problem_description_after -}
 \VAR{problem_description_after}
@@ -119,16 +108,67 @@ $$
 
 
 \BLOCK{ if show_blank -}
-\BLOCK{ if blank_desc -}\VAR{blank_desc}\BLOCK{ endif -}[[blank1]]
+\BLOCK{ if blank1_desc -}\VAR{blank1_desc}\BLOCK{ endif -}[[blank1]]
+
+\BLOCK{ if blank2_desc -}\VAR{blank2_desc}\BLOCK{ endif -}[[blank2]]
+
+\BLOCK{ if blank3_desc -}\VAR{blank3_desc}\BLOCK{ endif -}[[blank3]]
+
+\BLOCK{ if show_blank4 }\BLOCK{ if blank4_desc -}\VAR{blank4_desc}\BLOCK{ endif -}[[blank4]] \BLOCK{endif}
+
 \BLOCK{ endif -} \#{ after_description }
+
 
 \BLOCK{ if show_blank_answer }
 blank1:
     type: ShortAnswer
-    width: 10em
+    width: 5em
+    weight: 0.3
     correct_answer:
     - type: float
       rtol: 1
       atol: 1
-      value: \VAR{result}
+      value: \VAR{result.opt_value}
+
+blank2:
+    type: ShortAnswer
+    width: 5em
+    weight: 0.3
+    correct_answer:
+    - type: float
+      rtol: 1
+      atol: 1
+      value: \VAR{result.policy|length}
+
+blank3:
+    type: ShortAnswer
+    width: 15em
+    weight: 0.3
+    prepended_text: "("
+    appended_text: ")"
+    hint_title: 输入格式示例
+    hint: <p>输入最优策略中各个阶段的最优决策序列，例如$(100, 0, 200, 400, 100)$</p>
+    correct_answer:
+\BLOCK{ for p in result.policy }
+\BLOCK{ set opt_x = p[0]["opt_x"].values()}
+    - type: float_list_with_wrapper
+      rtol: 0.01
+      atol: 0.01
+      value: "\VAR{opt_x|join(",")}"
+\BLOCK{endfor}
+
+blank4:
+    type: ShortAnswer
+    width: 10em
+    prepended_text: "{"
+    appended_text: "}"
+    weight: 0.1
+    hint: 所有可能的最优决策，必须全部写出
+    correct_answer:
+    - type: float_list_with_wrapper
+      as_set: True
+      rtol: 0.01
+      atol: 0.01
+      value: "\VAR{blank4_result|join(",")}"
+
 \BLOCK{ endif -}
