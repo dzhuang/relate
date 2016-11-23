@@ -86,8 +86,8 @@
 \BLOCK{ endfor -}
 
 最优指标为$f_1(s_1)=\VAR{dp_result.opt_value}$，\BLOCK{ if dp_result.policy|length > 1}有\VAR{dp_result.policy|length}个最优策略，分别为\BLOCK{else}最优策略为\BLOCK{endif}：
-$$
 \BLOCK{ for policy in dp_result.policy }
+$$
 \begin{align*}
 \begin{array}{clcl}
 \BLOCK{-for idx in dp_result.verbose_state_x_dict.keys()}
@@ -103,72 +103,4 @@ $$
 
 \BLOCK{ if problem_description_after -}
 \VAR{problem_description_after}
-\BLOCK{ endif -}
-
-
-
-\BLOCK{ if show_blank -}
-\BLOCK{ if blank1_desc -}\VAR{blank1_desc}\BLOCK{ endif -}[[blank1]]
-
-\BLOCK{ if blank2_desc -}\VAR{blank2_desc}\BLOCK{ endif -}[[blank2]]
-
-\BLOCK{ if blank3_desc -}\VAR{blank3_desc}\BLOCK{ endif -}[[blank3]]
-
-\BLOCK{ if show_blank4 }\BLOCK{ if blank4_desc -}\VAR{blank4_desc}\BLOCK{ endif -}[[blank4]] \BLOCK{endif}
-
-\BLOCK{ endif -} \#{ after_description }
-
-
-\BLOCK{ if show_blank_answer }
-blank1:
-    type: ShortAnswer
-    width: 5em
-    weight: 0.3
-    correct_answer:
-    - type: float
-      rtol: 1
-      atol: 1
-      value: \VAR{result.opt_value}
-
-blank2:
-    type: ShortAnswer
-    width: 5em
-    weight: 0.3
-    correct_answer:
-    - type: float
-      rtol: 1
-      atol: 1
-      value: \VAR{result.policy|length}
-
-blank3:
-    type: ShortAnswer
-    width: 15em
-    weight: 0.3
-    prepended_text: "("
-    appended_text: ")"
-    hint_title: 输入格式示例
-    hint: <p>输入最优策略中各个阶段的最优决策序列，例如$(100, 0, 200, 400, 100)$</p>
-    correct_answer:
-\BLOCK{ for p in result.policy }
-\BLOCK{ set opt_x = p[0]["opt_x"].values()}
-    - type: float_list_with_wrapper
-      rtol: 0.01
-      atol: 0.01
-      value: "\VAR{opt_x|join(",")}"
-\BLOCK{endfor}
-
-blank4:
-    type: ShortAnswer
-    width: 10em
-    prepended_text: "{"
-    appended_text: "}"
-    weight: 0.1
-    hint: 所有可能的最优决策，必须全部写出
-    correct_answer:
-    - type: float_list_with_wrapper
-      as_set: True
-      rtol: 0.01
-      atol: 0.01
-      value: "\VAR{blank4_result|join(",")}"
-
 \BLOCK{ endif -}

@@ -63,6 +63,7 @@ class DiscreteDynamicProgramming(DynamicProgrammingBase):
         self.total_resource = total_resource
         self.gain = gain
         self.gain_str_list = None
+        self.gain_str_list_transposed = None
         if gain is not None:
             if isinstance(gain, np.matrix):
                 if np.any(np.isnan(self.gain)):
@@ -78,6 +79,7 @@ class DiscreteDynamicProgramming(DynamicProgrammingBase):
                 for i in range(self.n_stages):
                     assert len(gain[i]) == self.n_decision
             self.gain_str_list = self.get_gain_str_list()
+            self.gain_str_list_transposed = self.get_gain_str_list(transposed=True)
 
         if decision_set:
             self.decision_set = decision_set
@@ -101,7 +103,7 @@ class DiscreteDynamicProgramming(DynamicProgrammingBase):
         self.verbose_state_x_dict = None
         self.policy = None
 
-    def get_gain_str_list(self):
+    def get_gain_str_list(self, transposed=False):
         if self.gain is None:
             return None
         if isinstance(self.gain, np.matrix):
@@ -109,6 +111,8 @@ class DiscreteDynamicProgramming(DynamicProgrammingBase):
         else:
             gain_list = deepcopy(self.gain)
 
+        if transposed:
+            gain_list = [list(x) for x in zip(*gain_list)]
         for gl in gain_list:
             for i, g in enumerate(gl):
                 if not np.isfinite(g):
