@@ -1586,7 +1586,6 @@ def get_page_behavior(
                 flow_permission.see_answer_after_submission in permissions)
 
     if session_in_progress:
-        print permissions
         show_answer = (
             show_answer
             and

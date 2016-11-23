@@ -62,6 +62,8 @@ class DiscreteDynamicProgramming(DynamicProgrammingBase):
         assert opt_type in ["max", "min"]
         self.total_resource = total_resource
         self.gain = gain
+        self.gain_str_list = None
+        self.gain_str_list_transposed = None
         if gain is not None:
             if isinstance(gain, np.matrix):
                 if np.any(np.isnan(self.gain)):
@@ -76,6 +78,9 @@ class DiscreteDynamicProgramming(DynamicProgrammingBase):
                 self.n_decision = len(gain[0])
                 for i in range(self.n_stages):
                     assert len(gain[i]) == self.n_decision
+            self.gain_str_list = self.get_gain_str_list()
+            self.gain_str_list_transposed = self.get_gain_str_list(transposed=True)
+
         if decision_set:
             self.decision_set = decision_set
             for d in decision_set:
@@ -97,6 +102,25 @@ class DiscreteDynamicProgramming(DynamicProgrammingBase):
         self.state_x_table = None
         self.verbose_state_x_dict = None
         self.policy = None
+
+    def get_gain_str_list(self, transposed=False):
+        if self.gain is None:
+            return None
+        if isinstance(self.gain, np.matrix):
+            gain_list = self.gain.tolist()
+        else:
+            gain_list = deepcopy(self.gain)
+
+        if transposed:
+            gain_list = [list(x) for x in zip(*gain_list)]
+        for gl in gain_list:
+            for i, g in enumerate(gl):
+                if not np.isfinite(g):
+                    gl[i] = "-"
+                else:
+                    gl[i] = get_simplified_float(g)
+
+        return gain_list
 
     def get_gain(self, stage_idx, decision):
         # need to return a np.matrix, which conains the gaining, 0 based
@@ -657,8 +681,11 @@ def force_calculate_feasible_state(dp_instance, t):
     for stage in range(t, dp_instance.n_stages):
         min_sum += dp_instance.decision_set[np.where(np.isfinite(dp_instance.gain[stage]))[1][0]]
 
-    if min_sum > 0:
-        minimum_allocation = max(minimum_allocation, min_sum)
+    if not minimum_allocation:
+        minimum_allocation = min_sum
+    else:
+        if min_sum > 0:
+            minimum_allocation = max(minimum_allocation, min_sum)
 
     if minimum_allocation:
         assert minimum_allocation <= dp_instance.total_resource
