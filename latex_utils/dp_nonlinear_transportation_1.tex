@@ -52,13 +52,13 @@
 其中，阶段指标函数$g_{1k}+g_{2k}$为第$k$阶段的运输费用。
 
 此外，模型还需满足运输量平衡条件：
-\begin{align*}
+$$\begin{align*}
 \left\{\begin{array}{l}
 \BLOCK{for idx in range(dp.n_stages)}
 x_{2\VAR{idx+1}}=\VAR{dp.demand[idx]}-x_{1\VAR{idx+1}} \BLOCK{if not loop.last} \\ \BLOCK{endif}
 \BLOCK{endfor}
 \end{array}\right.
-\end{align*}
+\end{align*}$$
 
 </br>
 <hr>
