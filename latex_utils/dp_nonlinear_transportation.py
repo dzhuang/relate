@@ -628,6 +628,7 @@ with open(SAVED_QUESTION, 'rb') as f:
 
 for i, dp_dict in enumerate(dp_list_loaded):
 
+    dp_dict["allow_non_allocated_resource"] = False
     dp = NonlinearTransportationProblem(**dp_dict)
     result = dp.solve()
     # #print result
