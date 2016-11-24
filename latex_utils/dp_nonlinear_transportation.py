@@ -873,13 +873,14 @@ dp_list.append(dp_dict)
 
 
 
-
+# for dp in dp_list:
+#     print dp["allow_non_allocated_resource"]
 
 
 import pickle
 #import dill as pickle
-with open(SAVED_QUESTION, 'wb') as f:
-    pickle.dump(dp_list, f)
+# with open(SAVED_QUESTION, 'wb') as f:
+#     pickle.dump(dp_list, f)
 
 with open(SAVED_QUESTION, 'rb') as f:
     dp_list_loaded = pickle.load(f)
@@ -891,7 +892,9 @@ valid_question_dict_list = []
 
 for i, dp_dict in enumerate(dp_list_loaded):
 
-    dp_dict["allow_non_allocated_resource"] = False
+    print dp_dict["allow_non_allocated_resource"]
+
+    # dp_dict["allow_non_allocated_resource"] = False
     dp = NonlinearTransportationProblem(**dp_dict)
     result = dp.solve()
 
