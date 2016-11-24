@@ -62,7 +62,7 @@ def is_qualified_question(gain, total_resource, decision_set, project_list, mem_
             break
 
     if (not ((first_multiple_stage and first_multiple_result_state and first_multiple_result_x) or len(result.policy) > 1)):
-        print first_multiple_stage and first_multiple_result_state and first_multiple_result_x, len(result.policy)
+        #print first_multiple_stage and first_multiple_result_state and first_multiple_result_x, len(result.policy)
         return False
 
     question_exist = False
@@ -1266,6 +1266,7 @@ with open(SAVED_QUESTION, 'wb') as f:
 with open(SAVED_QUESTION, 'rb') as f:
     dp_list_loaded = pickle.load(f)
 
+#print len(dp_list_loaded)
 for i, dp_dict in enumerate(dp_list_loaded):
 
     dp = ResourceAllocationDP(
@@ -1274,8 +1275,13 @@ for i, dp_dict in enumerate(dp_list_loaded):
 
     result_force_calculate_feasible_state = dp.solve(allow_state_func=force_calculate_feasible_state)
     result = dp.solve()
-    print result_force_calculate_feasible_state
-    print result
+    #print result_force_calculate_feasible_state
+    #print result
+
+    if len(result.policy) > 3:
+        print repr(dp_dict)
+        break
+        continue
 
     #result = dp.solve()
 
@@ -1354,6 +1360,8 @@ for i, dp_dict in enumerate(dp_list_loaded):
         blank4_desc = blank4_desc,
         blank4_result = blank4_result
     )
+
+    r.clipboard_append(answer_tex)
 
     blank_tex = blank_template.render(
         answer_table_iters=iter(range(1,50)),

@@ -92,7 +92,7 @@ def generate_problem(dp, mem_gain_list):
     decision_set = dp.decision_set
     supply = dp.supply
     demand = dp.demand
-    while n < 20:
+    while n < 40:
         cost = get_rand_cost()
         if is_qualified_question(cost, total_resource, decision_set, supply, demand,  mem_gain_list):
             n += 1
@@ -122,6 +122,311 @@ from collections import OrderedDict
 
 from latex_utils.utils.dynamic_programming import force_calculate_feasible_state, NonlinearTransportationProblem
 
+dp_dict = { 'cost': [[(3, 19), (2, 18), (7, 14)], [(8, 17), (6, 16), (9, 13)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(7, 13), (6, 11), (9, 12)], [(4, 19), (2, 17), (8, 14)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(7, 15), (9, 19), (5, 12)], [(8, 18), (2, 16), (4, 14)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(9, 13), (3, 15), (7, 14)], [(8, 12), (6, 17), (4, 19)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(5, 14), (3, 12), (4, 16)], [(6, 19), (7, 11), (9, 15)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(3, 18), (6, 17), (8, 14)], [(5, 13), (9, 11), (7, 16)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(5, 17), (6, 11), (3, 13)], [(4, 16), (7, 18), (2, 12)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(2, 16), (7, 11), (4, 18)], [(5, 12), (3, 14), (9, 17)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(9, 15), (2, 16), (5, 14)], [(6, 19), (3, 11), (7, 18)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(2, 14), (4, 13), (3, 17)], [(6, 18), (5, 19), (7, 11)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(5, 18), (9, 17), (4, 16)], [(8, 11), (6, 15), (2, 13)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(5, 14), (6, 11), (2, 17)], [(7, 13), (8, 15), (9, 18)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(3, 15), (2, 11), (8, 16)], [(6, 13), (7, 12), (9, 14)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(7, 14), (2, 18), (8, 11)], [(5, 19), (4, 16), (9, 13)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(7, 19), (9, 13), (5, 18)], [(2, 16), (4, 12), (3, 15)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+
+dp_dict = { 'cost': [[(5, 16), (3, 15), (9, 14)], [(4, 19), (7, 13), (6, 17)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(2, 14), (6, 13), (5, 12)], [(4, 16), (9, 15), (8, 18)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(9, 19), (6, 14), (3, 12)], [(7, 16), (5, 17), (4, 18)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(7, 16), (5, 17), (6, 15)], [(4, 12), (3, 18), (2, 19)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(3, 11), (4, 16), (5, 18)], [(7, 12), (2, 14), (6, 17)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(4, 18), (6, 11), (2, 16)], [(7, 17), (9, 12), (5, 15)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(3, 11), (9, 13), (7, 19)], [(4, 14), (2, 16), (8, 18)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+
+dp_dict = { 'cost': [[(6, 19), (3, 18), (5, 12)], [(4, 17), (7, 16), (8, 13)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(5, 14), (3, 18), (8, 12)], [(9, 17), (7, 16), (2, 13)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(6, 19), (3, 11), (4, 15)], [(8, 18), (7, 13), (2, 16)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(3, 17), (8, 11), (5, 13)], [(7, 18), (4, 19), (9, 14)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(4, 13), (6, 12), (8, 16)], [(9, 17), (5, 18), (2, 19)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(6, 15), (5, 18), (9, 14)], [(2, 16), (4, 13), (3, 12)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(6, 14), (4, 16), (8, 15)], [(3, 13), (2, 19), (9, 12)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(5, 12), (4, 16), (8, 13)], [(2, 11), (9, 19), (3, 15)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(4, 15), (8, 11), (7, 16)], [(5, 19), (2, 13), (6, 17)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(3, 12), (2, 17), (6, 16)], [(9, 15), (8, 19), (5, 18)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(8, 11), (7, 12), (6, 15)], [(2, 13), (9, 19), (3, 17)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(3, 17), (4, 11), (6, 13)], [(2, 12), (5, 16), (7, 14)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(7, 11), (8, 16), (2, 18)], [(9, 15), (6, 17), (3, 12)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(4, 18), (9, 17), (7, 16)], [(3, 11), (5, 19), (8, 15)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(9, 11), (6, 13), (8, 19)], [(5, 17), (7, 18), (3, 15)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
+
+dp_dict = { 'cost': [[(9, 15), (2, 17), (8, 14)], [(5, 19), (3, 12), (4, 18)]],
+    "total_resource":5,
+    "decision_set":[0, 1, 2, 3, 4, 5],
+    "supply":[5, 12],
+    "demand":[7, 6, 4],
+}
+dp_list.append(dp_dict)
 
 dp_dict = { 'cost': [[(3, 13), (6, 12), (5, 16)], [(4, 11), (2, 15), (7, 14)]],
     "total_resource":5,
@@ -171,13 +476,6 @@ dp_dict = { 'cost': [[(6, 16), (5, 12), (7, 17)], [(8, 18), (9, 15), (2, 13)]],
 }
 dp_list.append(dp_dict)
 
-dp_dict = { 'cost': [[(8, 16), (3, 15), (4, 19)], [(9, 14), (6, 13), (2, 17)]],
-    "total_resource":5,
-    "decision_set":[0, 1, 2, 3, 4, 5],
-    "supply":[5, 12],
-    "demand":[7, 6, 4],
-}
-dp_list.append(dp_dict)
 
 dp_dict = { 'cost': [[(9, 11), (7, 17), (4, 18)], [(8, 12), (2, 14), (3, 19)]],
     "total_resource":5,
@@ -195,13 +493,6 @@ dp_dict = { 'cost': [[(3, 12), (2, 19), (6, 13)], [(4, 11), (8, 15), (9, 18)]],
 }
 dp_list.append(dp_dict)
 
-dp_dict = { 'cost': [[(8, 13), (2, 17), (3, 12)], [(9, 11), (5, 15), (6, 18)]],
-    "total_resource":5,
-    "decision_set":[0, 1, 2, 3, 4, 5],
-    "supply":[5, 12],
-    "demand":[7, 6, 4],
-}
-dp_list.append(dp_dict)
 
 dp_dict = { 'cost': [[(7, 15), (5, 11), (4, 19)], [(2, 13), (3, 14), (8, 12)]],
     "total_resource":5,
@@ -243,14 +534,6 @@ dp_dict = { 'cost': [[(6, 16), (5, 14), (3, 17)], [(9, 19), (2, 12), (4, 18)]],
 }
 dp_list.append(dp_dict)
 
-dp_dict = { 'cost': [[(9, 13), (5, 17), (4, 11)], [(2, 12), (7, 16), (8, 18)]],
-    "total_resource":5,
-    "decision_set":[0, 1, 2, 3, 4, 5],
-    "supply":[5, 12],
-    "demand":[7, 6, 4],
-}
-dp_list.append(dp_dict)
-
 dp_dict = { 'cost': [[(8, 11), (4, 16), (7, 13)], [(3, 19), (2, 18), (6, 15)]],
     "total_resource":5,
     "decision_set":[0, 1, 2, 3, 4, 5],
@@ -259,13 +542,6 @@ dp_dict = { 'cost': [[(8, 11), (4, 16), (7, 13)], [(3, 19), (2, 18), (6, 15)]],
 }
 dp_list.append(dp_dict)
 
-dp_dict = { 'cost': [[(7, 16), (6, 15), (8, 11)], [(5, 13), (4, 12), (2, 17)]],
-    "total_resource":5,
-    "decision_set":[0, 1, 2, 3, 4, 5],
-    "supply":[5, 12],
-    "demand":[7, 6, 4],
-}
-dp_list.append(dp_dict)
 
 dp_dict = { 'cost': [[(9, 18), (8, 14), (6, 15)], [(4, 17), (5, 11), (2, 12)]],
     "total_resource":5,
@@ -420,14 +696,6 @@ dp_dict = { 'cost': [[(5, 17), (9, 16), (3, 11)], [(6, 15), (2, 13), (8, 12)]],
 }
 dp_list.append(dp_dict)
 
-dp_dict = { 'cost': [[(8, 14), (3, 16), (6, 15)], [(5, 19), (9, 13), (2, 12)]],
-    "total_resource":5,
-    "decision_set":[0, 1, 2, 3, 4, 5],
-    "supply":[5, 11],
-    "demand":[7, 4, 5],
-}
-dp_list.append(dp_dict)
-
 dp_dict = { 'cost': [[(9, 11), (3, 18), (2, 16)], [(6, 13), (8, 17), (4, 15)]],
     "total_resource":5,
     "decision_set":[0, 1, 2, 3, 4, 5],
@@ -552,13 +820,6 @@ dp_dict = { 'cost': [[(6, 19), (9, 13), (3, 14)], [(7, 15), (4, 18), (8, 12)]],
 }
 dp_list.append(dp_dict)
 
-dp_dict = { 'cost': [[(8, 18), (5, 14), (2, 15)], [(6, 12), (4, 13), (9, 11)]],
-    "total_resource":5,
-    "decision_set":[0, 1, 2, 3, 4, 5],
-    "supply":[5, 10],
-    "demand":[6, 5, 4],
-}
-dp_list.append(dp_dict)
 
 dp_dict = { 'cost': [[(9, 12), (8, 18), (6, 16)], [(7, 15), (4, 13), (2, 17)]],
     "total_resource":5,
@@ -626,14 +887,24 @@ with open(SAVED_QUESTION, 'rb') as f:
 
 #print dp.get_gain(3, 0)
 
+valid_question_dict_list = []
+
 for i, dp_dict in enumerate(dp_list_loaded):
 
     dp_dict["allow_non_allocated_resource"] = False
     dp = NonlinearTransportationProblem(**dp_dict)
     result = dp.solve()
+
+    if len(result.policy) > 3:
+        print repr(dp_dict)
+        break
+        continue
     # #print result
     # #result = dp.solve()
     #
+
+
+
 
     question_template = latex_jinja_env.get_template('dp_nonlinear_transportation_1.tex')
     #blank_template = latex_jinja_env.get_template('dp_nonlinear_transportation_1_blank.tex')
@@ -658,3 +929,5 @@ for i, dp_dict in enumerate(dp_list_loaded):
     )
 
     r.clipboard_append(tex)
+
+print len(dp_list_loaded)
