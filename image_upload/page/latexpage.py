@@ -415,13 +415,15 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 success, answer_str_tmp = self.get_cached_result(
                                    page_context, page_data, part="answer")
                 if success:
-                    answer_str = answer_str_tmp
+                    markup_to_html(page_context, answer_str_tmp)
                     break
-            markup_to_html(page_context,
-                           answer_str)
+
+            if not success:
+                if page_context.in_sandbox:
+                    answer_str = markup_to_html(page_context, answer_str)
 
         return super(LatexRandomQuestionBase, self).body(page_context, page_data)\
-               + markup_to_html(page_context, question_str)
+               + markup_to_html(page_context, question_str) + answer_str
 
     def jinja_runpy(
             self, page_context, question_data, code_name, common_code_name=""):
@@ -751,27 +753,52 @@ class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestio
         return super(LatexRandomCodeInlineMultiQuestion, self).get_question(page_context, page_data)
 
     def body(self, page_context, page_data):
-        question_str = ""
+
+        blank_str = ""
         if hasattr(self.page_desc, "blank_process_code"):
+            success = False
             for i in range(MAX_JINJIA_RETRY):
-                success, question_str_tmp = self.get_cached_result(
+                success, blank_str_tmp = self.get_cached_result(
                     page_context, page_data, part="blank")
                 if success:
-                    question_str = question_str_tmp
+                    markup_to_html(page_context, blank_str_tmp)
                     break
-            markup_to_html(page_context,question_str)
 
-        question_str = ""
+            if not success:
+                if page_context.in_sandbox:
+                    blank_str = markup_to_html(page_context, blank_str_tmp)
+
+        blank_answer_str = ""
         if hasattr(self.page_desc, "blank_answer_process_code"):
+            blank_answer_str = ""
+            success = False
             for i in range(MAX_JINJIA_RETRY):
-                success, question_str_tmp = self.get_cached_result(
+                success, blank_answer_str_tmp = self.get_cached_result(
                     page_context, page_data, part="blank_answer")
                 if success:
-                    question_str = question_str_tmp
+                    markup_to_html(page_context,blank_answer_str_tmp)
                     break
-            markup_to_html(page_context,question_str)
 
-        return super(LatexRandomCodeInlineMultiQuestion, self).body(page_context, page_data)
+            if not success:
+                if page_context.in_sandbox:
+                    markup_to_html(page_context,blank_answer_str_tmp)
+
+        answer_explanation_str = ""
+        if hasattr(self.page_desc, "answer_explanation_process_code"):
+            success = False
+            for i in range(MAX_JINJIA_RETRY):
+                success, answer_explanation_str_tmp = self.get_cached_result(
+                    page_context, page_data, part="answer_explanation")
+                if success:
+                    markup_to_html(page_context, answer_explanation_str_tmp)
+                    break
+
+            if not success:
+                if page_context.in_sandbox:
+                    answer_explanation_str = answer_explanation_str_tmp
+                    answer_explanation_str = markup_to_html(page_context,answer_explanation_str)
+
+        return super(LatexRandomCodeInlineMultiQuestion, self).body(page_context, page_data) + blank_str + blank_answer_str + answer_explanation_str
 
     def required_attrs(self):
         return super(LatexRandomCodeInlineMultiQuestion, self).required_attrs() + (

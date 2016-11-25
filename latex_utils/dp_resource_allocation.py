@@ -339,16 +339,6 @@ dp_dict = { 'gain': np.matrix([[ np.nan,  150.,  200.,  280.,  290.,  np.nan],
 dp_dict['project_list'] = PROJECT_LIST
 dp_list.append(dp_dict)
 
-dp_dict = { 'gain': np.matrix([[   0.,  270.,  np.nan,  np.nan,  360.,  400.],
-        [   0.,  np.nan,  np.nan,  np.nan,  300.,  420.],
-        [   0.,  110.,  130.,  280.,  310.,  420.],
-        [   0.,  230.,  340.,  360.,  380.,  400.],
-        [   0.,  180.,  210.,  np.nan,  np.nan,  330.]], dtype=np.float),
-    "total_resource":800,
-    "decision_set":[0, 100, 200, 300, 400, 500],
-}
-dp_dict['project_list'] = PROJECT_LIST
-dp_list.append(dp_dict)
 
 dp_dict = { 'gain': np.matrix([[   0.,  130.,  220.,  270.,  np.nan,  420.],
         [ np.nan,  110.,  120.,  np.nan,  370.,  440.],
@@ -636,16 +626,6 @@ dp_dict = { 'gain': np.matrix([[   0.,  np.nan,  250.,  310.,  330.,  np.nan],
 dp_dict['project_list'] = PROJECT_LIST
 dp_list.append(dp_dict)
 
-dp_dict = { 'gain': np.matrix([[   0.,  130.,  np.nan,  220.,  np.nan,  240.],
-        [   0.,  140.,  170.,  np.nan,  np.nan,  np.nan],
-        [   0.,  100.,  120.,  130.,  180.,  400.],
-        [   0.,  160.,  np.nan,  260.,  300.,  np.nan],
-        [   0.,  130.,  200.,  210.,  300.,  300.]], dtype=np.float),
-    "total_resource":800,
-    "decision_set":[0, 100, 200, 300, 400, 500],
-}
-dp_dict['project_list'] = PROJECT_LIST
-dp_list.append(dp_dict)
 
 dp_dict = { 'gain': np.matrix([[ np.nan,  np.nan,  150.,  350.,  np.nan,  np.nan],
         [   0.,  110.,  220.,  np.nan,  320.,  390.],
@@ -779,16 +759,6 @@ dp_dict = { 'gain': np.matrix([[   0.,  130.,  190.,  190.,  250.,  np.nan],
 dp_dict['project_list'] = PROJECT_LIST
 dp_list.append(dp_dict)
 
-dp_dict = { 'gain': np.matrix([[   0.,  180.,  210.,  230.,  260.,  340.],
-        [ np.nan,  np.nan,  np.nan,  330.,  370.,  410.],
-        [   0.,  200.,  240.,  310.,  330.,  np.nan],
-        [ np.nan,  110.,  150.,  np.nan,  320.,  np.nan],
-        [   0.,  170.,  210.,  240.,  np.nan,  390.]], dtype=np.float),
-    "total_resource":800,
-    "decision_set":[0, 100, 200, 300, 400, 500],
-}
-dp_dict['project_list'] = PROJECT_LIST
-dp_list.append(dp_dict)
 
 dp_dict = { 'gain': np.matrix([[   0.,  130.,  200.,  np.nan,  np.nan,  360.],
         [   0.,  160.,  230.,  260.,  380.,  np.nan],
@@ -1043,16 +1013,6 @@ dp_dict = { 'gain': np.matrix([[   0.,  np.nan,  190.,  200.,  390.,  400.],
 dp_dict['project_list'] = PROJECT_LIST
 dp_list.append(dp_dict)
 
-dp_dict = { 'gain': np.matrix([[   0.,  110.,  np.nan,  np.nan,  170.,  310.],
-        [   0.,  np.nan,  150.,  150.,  280.,  330.],
-        [   0.,  np.nan,  270.,  290.,  320.,  380.],
-        [ np.nan,  np.nan,  210.,  240.,  360.,  380.],
-        [   0.,  200.,  310.,  340.,  370.,  np.nan]], dtype=np.float),
-    "total_resource":800,
-    "decision_set":[0, 100, 200, 300, 400, 500],
-}
-dp_dict['project_list'] = PROJECT_LIST
-dp_list.append(dp_dict)
 
 dp_dict = { 'gain': np.matrix([[   0.,  150.,  np.nan,  np.nan,  410.,  420.],
         [   0.,  280.,  np.nan,  np.nan,  340.,  420.],
@@ -1545,6 +1505,7 @@ with open(SAVED_QUESTION, 'wb') as f:
 with open(SAVED_QUESTION, 'rb') as f:
     dp_list_loaded = pickle.load(f)
 
+result3 = 0
 for i, dp_dict in enumerate(dp_list_loaded):
 
     dp = ResourceAllocationDP(
@@ -1553,9 +1514,16 @@ for i, dp_dict in enumerate(dp_list_loaded):
 
     result_force_calculate_feasible_state = dp.solve(allow_state_func=force_calculate_feasible_state)
     result = dp.solve()
-    print result_force_calculate_feasible_state
-    print result
+    #print result_force_calculate_feasible_state
+    #print result
 
+
+    if len(result.policy) == 3:
+        #print repr(dp_dict)
+        result3 += 1
+        #print result3
+        #break
+        #continue
     #result = dp.solve()
 
     x_dict = result_force_calculate_feasible_state.verbose_state_x_dict
@@ -1616,6 +1584,28 @@ for i, dp_dict in enumerate(dp_list_loaded):
 
     r.clipboard_append(question_tex)
 
+    human_readable_result = u"最终结果：最优的总投资收益为%(opt_value)s万元, 最优策略为:" % {
+        "opt_value": result.opt_value,
+    }
+    policy_str = ""
+
+    if len(result.policy) > 1:
+        policy_str += "\n"
+
+    project_list = dp.project_list
+
+    for i ,p in enumerate(result.policy):
+
+        if len(result.policy) > 1:
+            policy_str += "%s: " % str(i+1)
+        policy, = p
+        policy_str += u"，".join([
+            u"%(project)s投资%(decision)s万元" % {"project": project, "decision":decision}
+            for project, decision in zip(project_list, policy["opt_x"].values())
+        ])
+        policy_str += "\n"
+    human_readable_result += policy_str
+
     answer_tex = answer_template.render(
         answer_table_iters=iter(range(1,50)),
         show_question=True,
@@ -1630,7 +1620,8 @@ for i, dp_dict in enumerate(dp_list_loaded):
         blank3_desc = u"一个最优策略为（如有多个可只列出一个）",
         show_blank4 = show_blank4,
         blank4_desc = blank4_desc,
-        blank4_result = blank4_result
+        blank4_result = blank4_result,
+        human_readable_result = human_readable_result
     )
 
     r.clipboard_append(answer_tex)
