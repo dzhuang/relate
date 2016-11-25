@@ -1,6 +1,6 @@
 \BLOCK{- if show_question -}
-设某种物资有\VAR{dp.supply|length}个产地和\VAR{dp.demand|length}个销地：产地$A_1$，$A_2$各产\VAR{dp.supply[0]}与\VAR{dp.supply[1]}个单位；销地\BLOCK{for idx in range(1, dp.demand|length + 1)}$B_{\VAR{idx}}$\BLOCK{if not loop.last},\BLOCK{endif}\BLOCK{endfor}各销\VAR{dp.demand|join(",")}个单位。从产地运往销地，除单位运费外还有一定的固定费用。
-例如，从$A_1$到$B_2$的运费由两部分构成：固定费用为\VAR{dp.cost[0][1][0]}；单位运费为\VAR{dp.cost[0][1][1]}。这样，当运量$x_{12}>0$时，运费按$\VAR{dp.cost[0][1][0]}+\VAR{dp.cost[0][1][1]}\times x_{12}$计算，当运量$x_{12}=0$时，运费是0。在这里引入符号$*$来表示这种关系，如下表。
+设某种物资有\VAR{dp.supply|length}个产地和\VAR{dp.demand|length}个销地：产地$A_1$、$A_2$各产\VAR{dp.supply[0]}、\VAR{dp.supply[1]}件；销地\BLOCK{for idx in range(1, dp.demand|length + 1)}$B_{\VAR{idx}}$\BLOCK{if not loop.last}\BLOCK{if loop.revindex==2}和\BLOCK{else}、\BLOCK{endif}\BLOCK{endif}\BLOCK{endfor}各销\BLOCK{for d in dp.demand}\VAR{d}\BLOCK{if not loop.last}\BLOCK{if loop.revindex==2}和\BLOCK{else}、\BLOCK{endif}\BLOCK{endif}\BLOCK{endfor}件。从产地运往销地，除单位运费外还有一定的固定费用。
+例如，从$A_1$到$B_2$的运费由两部分构成：固定费用为\VAR{dp.cost[0][1][0]}元；单位运费为\VAR{dp.cost[0][1][1]}元。这样，当运量$x_{12}>0$时，运费按$\VAR{dp.cost[0][1][0]}+\VAR{dp.cost[0][1][1]}\times x_{12}$计算；当运量$x_{12}=0$时，运费为0。在这里引入符号$*$来表示这种关系，如下表。
 
 {% from "latex.jinja" import mytabular_preamble as preamble %}
 \BLOCK{ set cost=dp.cost }
@@ -18,7 +18,7 @@
 \end{table}
  {% endcall %}
 </p>
-求一个调运方案，使总费用最小{(约定运输量必须为整数)}。
+求一个调运方案，使总费用最小(约定运输量必须为整数)。
 
 \BLOCK{if after_question_description}\VAR{after_question_description}\BLOCK{endif}
 \BLOCK{endif} \#{show_question}
