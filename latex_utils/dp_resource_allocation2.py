@@ -8,6 +8,9 @@ import random
 import pickle
 import random
 
+from io import BytesIO
+from base64 import b64encode
+
 try:
     # Python 3.x
     from tkinter import Tk
@@ -1273,6 +1276,18 @@ for i, dp_dict in enumerate(dp_list_loaded):
         **dp_dict
     )
 
+    selected_data_bytes = BytesIO()
+    pickle.dump(dp_dict, selected_data_bytes)
+
+    question_data = b64encode(selected_data_bytes.getvalue()).decode()
+
+    #print question_data
+
+    a = "KGRwMApTJ3Byb2plY3RfbGlzdCcKcDEKKGxwMgpWXHU1ZTdmXHU1ZGRlCnAzCmFWXHU2ZGYxXHU1NzMzCnA0CmFWXHU3M2UwXHU2ZDc3CnA1CmFzUyd0b3RhbF9yZXNvdXJjZScKcDYKSTYKc1Mnb3B0X3R5cGUnCnA3ClMnbWF4JwpwOApzUydhbGxvd19ub25fYWxsb2NhdGVkX3Jlc291cmNlJwpwOQpJMDAKc1MnZ2FpbicKcDEwCmNudW1weS5jb3JlLm11bHRpYXJyYXkKX3JlY29uc3RydWN0CnAxMQooY251bXB5Lm1hdHJpeGxpYi5kZWZtYXRyaXgKbWF0cml4CnAxMgooSTAKdHAxMwpTJ2InCnAxNAp0cDE1ClJwMTYKKEkxCihJMwpJNgp0cDE3CmNudW1weQpkdHlwZQpwMTgKKFMnZjgnCnAxOQpJMApJMQp0cDIwClJwMjEKKEkzClMnPCcKcDIyCk5OTkktMQpJLTEKSTAKdHAyMwpiSTAwClMnXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHhmOFx4N2ZceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBceGY4XHg3Zlx4MDBceDAwXHgwMFx4MDBceDAwXHgwMDFAXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHhmOFx4N2ZceDAwXHgwMFx4MDBceDAwXHgwMFx4MDA7QFx4MDBceDAwXHgwMFx4MDBceDAwXHg4MENAXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4MDAsQFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMDhAXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwPUBceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBCQFx4MDBceDAwXHgwMFx4MDBceDAwXHg4MERAXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4MDAsQFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMDtAXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwP0BceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBBQFx4MDBceDAwXHgwMFx4MDBceDAwXHg4MEJAJwpwMjQKdHAyNQpic1MnZGVjaXNpb25fc2V0JwpwMjYKKGxwMjcKSTAKYUkxCmFJMgphSTMKYUk0CmFJNQphcy4="
+
+    if question_data == a:
+        print repr(dp_dict)
+
     result_force_calculate_feasible_state = dp.solve(allow_state_func=force_calculate_feasible_state)
     result = dp.solve()
     #print result_force_calculate_feasible_state
@@ -1389,3 +1404,4 @@ for i, dp_dict in enumerate(dp_list_loaded):
         dp_result_list=result_list,
     )
     r.clipboard_append(question_tex + solve_tex)
+
