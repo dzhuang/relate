@@ -318,6 +318,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 if test_key_existance:
                     return True
                 return True, result
+
             # else:
             #     def_cache.delete(cache_key)
             #     if saved_file_path:
