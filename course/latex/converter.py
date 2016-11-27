@@ -378,7 +378,8 @@ class Tex2ImgBase(object):
             input_path, output_path)
 
     def _remove_working_dir(self):
-        shutil.rmtree(self.working_dir)
+        pass
+        #shutil.rmtree(self.working_dir)
 
     def get_compiled_file(self):
         """
