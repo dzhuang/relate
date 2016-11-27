@@ -419,7 +419,7 @@ class Tex2ImgBase(object):
             except:
                 raise
             finally:
-                #self._remove_working_dir()
+                self._remove_working_dir()
                 from django.utils.html import escape
                 raise ValueError(
                     "<pre>%s</pre>" % escape(log).strip())
