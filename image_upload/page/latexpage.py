@@ -129,9 +129,13 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         self.cache_key_attrs = getattr(page_desc, "cache_key_attrs", [])
         if not self.cache_key_attrs:
             for attr in [
-                    "background_code",
-                    "question_process_code",
-                    "answer_process_code"]:
+                "background_code",
+                "question_process_code",
+                "answer_process_code",
+                "blank_answer_process_code",
+                "blank_process_code",
+                "answer_explanation_process_code",
+            ]:
                 if hasattr(page_desc, attr):
                     self.cache_key_attrs.append(attr)
 
