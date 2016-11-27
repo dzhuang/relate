@@ -378,8 +378,7 @@ class Tex2ImgBase(object):
             input_path, output_path)
 
     def _remove_working_dir(self):
-        pass
-        #shutil.rmtree(self.working_dir)
+        shutil.rmtree(self.working_dir)
 
     def get_compiled_file(self):
         """
@@ -420,7 +419,7 @@ class Tex2ImgBase(object):
             except:
                 raise
             finally:
-                self._remove_working_dir()
+                #self._remove_working_dir()
                 from django.utils.html import escape
                 raise ValueError(
                     "<pre>%s</pre>" % escape(log).strip())
@@ -532,6 +531,15 @@ class Tex2ImgBase(object):
                 if len(err_result) <= getattr(
                         settings, "RELATE_CACHE_MAX_BYTES", 0):
                         def_cache.add(err_cache_key, err_result, None)
+
+            # regenerate cache error
+            from atomicwrites import atomic_write
+            if os.path.isfile(self.errlog_saving_path):
+                with atomic_write(self.image_saving_path.replace(".png", ".tex"), mode="wb") as f:
+                    f.write(self.tex_source)
+            if os.path.isfile(self.errlog_saving_path):
+                with atomic_write(self.errlog_saving_path, mode="wb") as f:
+                    f.write(err_result)
 
             from django.utils.html import escape
             raise ValueError(
