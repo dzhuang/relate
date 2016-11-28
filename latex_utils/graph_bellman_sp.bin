@@ -425,7 +425,7 @@ g2
 (I0
 I3
 tp154
-S'bend left'
+S'bend right'
 p155
 ssg11
 g12
@@ -546,15 +546,15 @@ s(I3
 I4
 tp197
 g5
-s(I3
-I6
-tp198
-S'bend left, pos=0.75'
-p199
 s(I1
 I4
+tp198
+S'bend left, pos=0.25'
+p199
+s(I3
+I6
 tp200
-S'bend right, pos=0.25'
+S'bend right, pos=0.75'
 p201
 ssg11
 g12
@@ -589,12 +589,12 @@ s(I3
 I4
 tp212
 g5
-s(I3
-I6
-tp213
-g199
 s(I1
 I4
+tp213
+g199
+s(I3
+I6
 tp214
 g201
 ssg11

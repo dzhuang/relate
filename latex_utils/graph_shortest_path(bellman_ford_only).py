@@ -339,7 +339,7 @@ g = {"graph":
              0, 0, 0, 0, 0, 0, 0, 0,
          ]).reshape(8, 8),
      "node_label_dict": None,
-     "edge_label_style_dict": {(0,3):"bend left"}
+     "edge_label_style_dict": {(0,3):"bend right"}
     # 2条
      }
 g_list.append(g)
@@ -356,7 +356,7 @@ g = {"graph":
              0, 0, 0, 0, 0, 0, 0, 0,
          ]).reshape(8, 8),
      "node_label_dict": None,
-     "edge_label_style_dict": {(0,3):"bend left"}
+     "edge_label_style_dict": {(0,3):"bend right"}
     # 2条
      }
 g_list.append(g)
@@ -425,7 +425,7 @@ g = {"graph":
              0, 0, 0, 0, 0, 0, 0, 0,
          ]).reshape(8, 8),
      "node_label_dict": None,
-     "edge_label_style_dict": {(4,5):"pos=0.25", (1,4):"bend right, pos=0.25", (3,4):"pos=0.25", (2,5):"pos=0.15", (3,6):"bend left, pos=0.75", }
+     "edge_label_style_dict":{(4, 5): 'pos=0.25', (2, 5): 'pos=0.15', (3, 4): 'pos=0.25', (3, 6): 'bend right, pos=0.75', (1, 4): 'bend left, pos=0.25'},
     # 3条
      }
 g_list.append(g)
@@ -443,7 +443,7 @@ g = {"graph":
              0, 0, 0, 0, 0, 0, 0, 0,
          ]).reshape(8, 8),
      "node_label_dict": None,
-     "edge_label_style_dict": {(4,5):"pos=0.25", (1,4):"bend right, pos=0.25", (3,4):"pos=0.25", (2,5):"pos=0.15", (3,6):"bend left, pos=0.75", }
+     "edge_label_style_dict":{(4, 5): 'pos=0.25', (2, 5): 'pos=0.15', (3, 4): 'pos=0.25', (3, 6): 'bend right, pos=0.75', (1, 4): 'bend left, pos=0.25'},
     # 2条
      }
 g_list.append(g)

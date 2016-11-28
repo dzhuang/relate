@@ -86,7 +86,7 @@ g = {"graph":
         [  0.,   0.,   0.,  24.,   0.,   0.,   5.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (6,9): "pos=0.75", (0,6): "pos=0.75", (1,3): "pos=0.75", (3,7): "pos=0.25", (4,5): "pos=0.75",
+        (6,9): "pos=0.75, bend right=45", (0,6): "pos=0.75", (1,3): "pos=0.75", (3,7): "pos=0.25", (4,5): "pos=0.75", (3,9): "pos=0.75",
         (2, 7): "bend left",
     },
     "directed": False,
@@ -108,7 +108,7 @@ g = {"graph":
         [  0.,   0.,   0.,  14.,   0.,   0.,   7.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (6,9): "pos=0.75", (0,6): "pos=0.75", (1,3): "pos=0.75", (3,7): "pos=0.25", (4,5): "pos=0.75",
+        (6,9): "pos=0.75, bend right=45", (0,6): "pos=0.75", (1,3): "pos=0.75", (3,7): "pos=0.25", (4,5): "pos=0.75", (3,9): "pos=0.75",
         (2, 7): "bend left",
     },
     "directed": False,
@@ -130,7 +130,7 @@ g = {"graph":
         [  0.,   0.,   0.,   8.,   0.,   0.,   5.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (6,9): "pos=0.75", (0,6): "pos=0.75", (1,3): "pos=0.75", (3,7): "pos=0.25", (4,5): "pos=0.75",
+        (6,9): "pos=0.75, bend right=45", (0,6): "pos=0.75", (1,3): "pos=0.75", (3,7): "pos=0.25", (4,5): "pos=0.75", (3,9): "pos=0.75",
         (2, 7): "bend left",
     },
     "directed": False,
@@ -152,7 +152,7 @@ g = {"graph":
         [  0.,   0.,   0.,   5.,   0.,   0.,  24.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (6,9): "pos=0.75", (0,6): "pos=0.75", (1,3): "pos=0.75", (3,7): "pos=0.25", (4,5): "pos=0.75",
+        (6,9): "pos=0.75, bend right=45", (0,6): "pos=0.75", (1,3): "pos=0.75", (3,7): "pos=0.25", (4,5): "pos=0.75", (3,9): "pos=0.75",
         (2, 7): "bend left",
     },
     "directed": False,
@@ -174,7 +174,7 @@ g = {"graph":
         [  0.,   0.,   0.,  21.,   0.,   0.,  17.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (6,9): "pos=0.75", (0,6): "pos=0.75", (1,3): "pos=0.75", (3,7): "pos=0.25", (4,5): "pos=0.75",
+        (6,9): "pos=0.75, bend right=45", (0,6): "pos=0.75", (1,3): "pos=0.75", (3,7): "pos=0.25", (4,5): "pos=0.75", (3,9): "pos=0.75",
         (2, 7): "bend left",
     },
     "directed": False,
@@ -196,7 +196,7 @@ g = {"graph":
         [  0.,   0.,   0.,   8.,   0.,   0.,  10.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (6,9): "pos=0.75", (0,6): "pos=0.75", (1,3): "pos=0.75", (3,7): "pos=0.25", (4,5): "pos=0.75",
+        (6,9): "pos=0.75, bend right=45", (0,6): "pos=0.75", (1,3): "pos=0.75", (3,7): "pos=0.25", (4,5): "pos=0.75", (3,9): "pos=0.75",
         (2, 7): "bend left",
     },
     "directed": False,
@@ -218,7 +218,7 @@ g = {"graph":
         [  0.,   0.,   0.,   5.,   0.,   0.,   8.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (6,9): "pos=0.75", (0,6): "pos=0.75", (1,3): "pos=0.75", (3,7): "pos=0.25", (4,5): "pos=0.75",
+        (6,9): "pos=0.75, bend right=45", (0,6): "pos=0.75", (1,3): "pos=0.75", (3,7): "pos=0.25", (4,5): "pos=0.75", (3,9): "pos=0.75",
         (2, 7): "bend left",
     },
     "directed": False,
@@ -240,7 +240,7 @@ g = {"graph":
         [  0.,   0.,   0.,  14.,   0.,   0.,  18.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (6,9): "pos=0.75", (0,6): "pos=0.75", (1,3): "pos=0.75", (3,7): "pos=0.25", (4,5): "pos=0.75",
+        (6,9): "pos=0.75, bend right=45", (0,6): "pos=0.75", (1,3): "pos=0.75", (3,7): "pos=0.25", (4,5): "pos=0.75", (3,9): "pos=0.75",
         (2, 7): "bend left",
     },
     "directed": False,
@@ -262,7 +262,7 @@ g = {"graph":
         [  0.,   0.,   0.,  15.,   0.,   0.,  20.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (6,9): "pos=0.75", (0,6): "pos=0.75", (1,3): "pos=0.75", (3,7): "pos=0.25", (4,5): "pos=0.75",
+        (6,9): "pos=0.75, bend right=45", (0,6): "pos=0.75", (1,3): "pos=0.75", (3,7): "pos=0.25", (4,5): "pos=0.75", (3,9): "pos=0.75",
         (2, 7): "bend left",
     },
     "directed": False,
@@ -284,7 +284,7 @@ g = {"graph":
         [  0.,   0.,   0.,   8.,   0.,   0.,  20.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (6,9): "pos=0.75", (0,6): "pos=0.75", (1,3): "pos=0.75", (3,7): "pos=0.25", (4,5): "pos=0.75",
+        (6,9): "pos=0.75, bend right=45", (0,6): "pos=0.75", (1,3): "pos=0.75", (3,7): "pos=0.25", (4,5): "pos=0.75", (3,9): "pos=0.75",
         (2, 7): "bend left",
     },
     "directed": False,
@@ -308,8 +308,8 @@ g = {"graph":
         [  0.,   0.,   0.,   0.,   0.,   0.,  18.,  14.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (2,8): "bend right, pos=0.75", (8,9): "bend right", (3,8): "bend left",
-        (6,9): "pos=0.25", (1,4): "pos=0.25", (1,5): "pos=0.25", (4,7): "pos=0.85", (1,9): "pos=0.25",
+        (2,8): "bend right, pos=0.75", (8,9): "bend right", (3,8): "bend left", (3,6): "bend left", (7,9): "bend left",
+        (6,9): "pos=0.25", (1,4): "pos=0.25", (1,5): "pos=0.4", (4,7): "pos=0.85", (1,9): "pos=0.25",
         (1,7): "pos=0.75",
     },
     "directed": False,
@@ -331,8 +331,8 @@ g = {"graph":
         [  0.,   0.,   0.,   0.,   0.,   0.,  11.,  17.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (2,8): "bend right, pos=0.75", (8,9): "bend right", (3,8): "bend left",
-        (6,9): "pos=0.25", (1,4): "pos=0.25", (1,5): "pos=0.25", (4,7): "pos=0.85", (1,9): "pos=0.25",
+        (2,8): "bend right, pos=0.75", (8,9): "bend right", (3,8): "bend left", (3,6): "bend left", (7,9): "bend left",
+        (6,9): "pos=0.25", (1,4): "pos=0.25", (1,5): "pos=0.4", (4,7): "pos=0.85", (1,9): "pos=0.25",
         (1,7): "pos=0.75",
     },
     "directed": False,
@@ -354,8 +354,8 @@ g = {"graph":
         [  0.,   0.,   0.,   0.,   0.,   0.,  22.,  17.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (2,8): "bend right, pos=0.75", (8,9): "bend right", (3,8): "bend left",
-        (6,9): "pos=0.25", (1,4): "pos=0.25", (1,5): "pos=0.25", (4,7): "pos=0.85", (1,9): "pos=0.25",
+        (2,8): "bend right, pos=0.75", (8,9): "bend right", (3,8): "bend left", (3,6): "bend left", (7,9): "bend left",
+        (6,9): "pos=0.25", (1,4): "pos=0.25", (1,5): "pos=0.4", (4,7): "pos=0.85", (1,9): "pos=0.25",
         (1,7): "pos=0.75",
     },
     "directed": False,
@@ -377,8 +377,8 @@ g = {"graph":
         [  0.,   0.,   0.,   0.,   0.,   0.,  14.,  15.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (2,8): "bend right, pos=0.75", (8,9): "bend right", (3,8): "bend left",
-        (6,9): "pos=0.25", (1,4): "pos=0.25", (1,5): "pos=0.25", (4,7): "pos=0.85", (1,9): "pos=0.25",
+        (2,8): "bend right, pos=0.75", (8,9): "bend right", (3,8): "bend left", (3,6): "bend left", (7,9): "bend left",
+        (6,9): "pos=0.25", (1,4): "pos=0.25", (1,5): "pos=0.4", (4,7): "pos=0.85", (1,9): "pos=0.25",
         (1,7): "pos=0.75",
     },
     "directed": False,
@@ -400,8 +400,8 @@ g = {"graph":
         [  0.,   0.,   0.,   0.,   0.,   0.,  15.,  13.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (2,8): "bend right, pos=0.75", (8,9): "bend right", (3,8): "bend left",
-        (6,9): "pos=0.25", (1,4): "pos=0.25", (1,5): "pos=0.25", (4,7): "pos=0.85", (1,9): "pos=0.25",
+        (2,8): "bend right, pos=0.75", (8,9): "bend right", (3,8): "bend left", (3,6): "bend left", (7,9): "bend left",
+        (6,9): "pos=0.25", (1,4): "pos=0.25", (1,5): "pos=0.4", (4,7): "pos=0.85", (1,9): "pos=0.25",
         (1,7): "pos=0.75",
     },
     "directed": False,
@@ -423,8 +423,8 @@ g = {"graph":
         [  0.,   0.,   0.,   0.,   0.,   0.,  17.,  17.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (2,8): "bend right, pos=0.75", (8,9): "bend right", (3,8): "bend left",
-        (6,9): "pos=0.25", (1,4): "pos=0.25", (1,5): "pos=0.25", (4,7): "pos=0.85", (1,9): "pos=0.25",
+        (2,8): "bend right, pos=0.75", (8,9): "bend right", (3,8): "bend left", (3,6): "bend left", (7,9): "bend left",
+        (6,9): "pos=0.25", (1,4): "pos=0.25", (1,5): "pos=0.4", (4,7): "pos=0.85", (1,9): "pos=0.25",
         (1,7): "pos=0.75",
     },
     "directed": False,
@@ -446,8 +446,8 @@ g = {"graph":
         [  0.,   0.,   0.,   0.,   0.,   0.,  24.,  20.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (2,8): "bend right, pos=0.75", (8,9): "bend right", (3,8): "bend left",
-        (6,9): "pos=0.25", (1,4): "pos=0.25", (1,5): "pos=0.25", (4,7): "pos=0.85", (1,9): "pos=0.25",
+        (2,8): "bend right, pos=0.75", (8,9): "bend right", (3,8): "bend left", (3,6): "bend left", (7,9): "bend left",
+        (6,9): "pos=0.25", (1,4): "pos=0.25", (1,5): "pos=0.4", (4,7): "pos=0.85", (1,9): "pos=0.25",
         (1,7): "pos=0.75",
     },
     "directed": False,
@@ -469,8 +469,8 @@ g = {"graph":
         [  0.,   0.,   0.,   0.,   0.,   0.,  24.,  24.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (2,8): "bend right, pos=0.75", (8,9): "bend right", (3,8): "bend left",
-        (6,9): "pos=0.25", (1,4): "pos=0.25", (1,5): "pos=0.25", (4,7): "pos=0.85", (1,9): "pos=0.25",
+        (2,8): "bend right, pos=0.75", (8,9): "bend right", (3,8): "bend left", (3,6): "bend left", (7,9): "bend left",
+        (6,9): "pos=0.25", (1,4): "pos=0.25", (1,5): "pos=0.4", (4,7): "pos=0.85", (1,9): "pos=0.25",
         (1,7): "pos=0.75",
     },
     "directed": False,
@@ -492,8 +492,8 @@ g = {"graph":
         [  0.,   0.,   0.,   0.,   0.,   0.,  21.,   5.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (2,8): "bend right, pos=0.75", (8,9): "bend right", (3,8): "bend left",
-        (6,9): "pos=0.25", (1,4): "pos=0.25", (1,5): "pos=0.25", (4,7): "pos=0.85", (1,9): "pos=0.25",
+        (2,8): "bend right, pos=0.75", (8,9): "bend right", (3,8): "bend left", (3,6): "bend left", (7,9): "bend left",
+        (6,9): "pos=0.25", (1,4): "pos=0.25", (1,5): "pos=0.4", (4,7): "pos=0.85", (1,9): "pos=0.25",
         (1,7): "pos=0.75",
     },
     "directed": False,
@@ -515,8 +515,8 @@ g = {"graph":
         [  0.,   0.,   0.,   0.,   0.,   0.,  13.,   8.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (2,8): "bend right, pos=0.75", (8,9): "bend right", (3,8): "bend left",
-        (6,9): "pos=0.25", (1,4): "pos=0.25", (1,5): "pos=0.25", (4,7): "pos=0.85", (1,9): "pos=0.25",
+        (2,8): "bend right, pos=0.75", (8,9): "bend right", (3,8): "bend left", (3,6): "bend left", (7,9): "bend left",
+        (6,9): "pos=0.25", (1,4): "pos=0.25", (1,5): "pos=0.4", (4,7): "pos=0.85", (1,9): "pos=0.25",
         (1,7): "pos=0.75",
     },
     "directed": False,
@@ -760,8 +760,8 @@ g = {"graph":
         [  0.,   0.,   0.,   0.,  18.,   0.,   0.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (0,7): "bend left=45", (1,6): "bend left", (2,8): "bend right",
-        (4,7): "pos=0.75", (3,9): "pos=0.25"
+        (0,7): "bend right=45", (5,8): "bend right=45", (2,8): "bend right",
+        (4,7): "pos=0.75", (3,9): "pos=0.25", (0,2): "pos=0.25, bend left=15", (5,9): "pos=0.25, bend left=45",
     },
     "directed": False,
     "id": 4,
@@ -782,8 +782,8 @@ g = {"graph":
         [  0.,   0.,   0.,   0.,  20.,   0.,   0.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (0,7): "bend left=45", (1,6): "bend left", (2,8): "bend right",
-        (4,7): "pos=0.75", (3,9): "pos=0.25"
+        (0,7): "bend right=45", (5,8): "bend right=45", (2,8): "bend right",
+        (4,7): "pos=0.75", (3,9): "pos=0.25", (0,2): "pos=0.25, bend left=15", (5,9): "pos=0.25, bend left=45",
     },
     "directed": False,
     "id": 4,
@@ -804,8 +804,8 @@ g = {"graph":
         [  0.,   0.,   0.,   0.,  20.,   0.,   0.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (0,7): "bend left=45", (1,6): "bend left", (2,8): "bend right",
-        (4,7): "pos=0.75", (3,9): "pos=0.25"
+        (0,7): "bend right=45", (5,8): "bend right=45", (2,8): "bend right",
+        (4,7): "pos=0.75", (3,9): "pos=0.25", (0,2): "pos=0.25, bend left=15", (5,9): "pos=0.25, bend left=45",
     },
     "directed": False,
     "id": 4,
@@ -826,8 +826,8 @@ g = {"graph":
         [  0.,   0.,   0.,   0.,  24.,   0.,   0.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (0,7): "bend left=45", (1,6): "bend left", (2,8): "bend right",
-        (4,7): "pos=0.75", (3,9): "pos=0.25"
+        (0,7): "bend right=45", (5,8): "bend right=45", (2,8): "bend right",
+        (4,7): "pos=0.75", (3,9): "pos=0.25", (0,2): "pos=0.25, bend left=15", (5,9): "pos=0.25, bend left=45",
     },
     "directed": False,
     "id": 4,
@@ -848,8 +848,8 @@ g = {"graph":
         [  0.,   0.,   0.,   0.,  18.,   0.,   0.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (0,7): "bend left=45", (1,6): "bend left", (2,8): "bend right",
-        (4,7): "pos=0.75", (3,9): "pos=0.25"
+        (0,7): "bend right=45", (5,8): "bend right=45", (2,8): "bend right",
+        (4,7): "pos=0.75", (3,9): "pos=0.25", (0,2): "pos=0.25, bend left=15", (5,9): "pos=0.25, bend left=45",
     },
     "directed": False,
     "id": 4,
@@ -870,8 +870,8 @@ g = {"graph":
         [  0.,   0.,   0.,   0.,   7.,   0.,   0.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (0,7): "bend left=45", (1,6): "bend left", (2,8): "bend right",
-        (4,7): "pos=0.75", (3,9): "pos=0.25"
+        (0,7): "bend right=45", (5,8): "bend right=45", (2,8): "bend right",
+        (4,7): "pos=0.75", (3,9): "pos=0.25", (0,2): "pos=0.25, bend left=15", (5,9): "pos=0.25, bend left=45",
     },
     "directed": False,
     "id": 4,
@@ -892,8 +892,8 @@ g = {"graph":
         [  0.,   0.,   0.,   0.,  17.,   0.,   0.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (0,7): "bend left=45", (1,6): "bend left", (2,8): "bend right",
-        (4,7): "pos=0.75", (3,9): "pos=0.25"
+        (0,7): "bend right=45", (5,8): "bend right=45", (2,8): "bend right",
+        (4,7): "pos=0.75", (3,9): "pos=0.25", (0,2): "pos=0.25, bend left=15", (5,9): "pos=0.25, bend left=45",
     },
     "directed": False,
     "id": 4,
@@ -914,8 +914,8 @@ g = {"graph":
         [  0.,   0.,   0.,   0.,  14.,   0.,   0.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (0,7): "bend left=45", (1,6): "bend left", (2,8): "bend right",
-        (4,7): "pos=0.75", (3,9): "pos=0.25"
+        (0,7): "bend right=45", (5,8): "bend right=45", (2,8): "bend right",
+        (4,7): "pos=0.75", (3,9): "pos=0.25", (0,2): "pos=0.25, bend left=15", (5,9): "pos=0.25, bend left=45",
     },
     "directed": False,
     "id": 4,
@@ -936,8 +936,8 @@ g = {"graph":
         [  0.,   0.,   0.,   0.,   5.,   0.,   0.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (0,7): "bend left=45", (1,6): "bend left", (2,8): "bend right",
-        (4,7): "pos=0.75", (3,9): "pos=0.25"
+        (0,7): "bend right=45", (5,8): "bend right=45", (2,8): "bend right",
+        (4,7): "pos=0.75", (3,9): "pos=0.25", (0,2): "pos=0.25, bend left=15", (5,9): "pos=0.25, bend left=45",
     },
     "directed": False,
     "id": 4,
@@ -958,8 +958,8 @@ g = {"graph":
         [  0.,   0.,   0.,   0.,  21.,   0.,   0.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (0,7): "bend left=45", (1,6): "bend left", (2,8): "bend right",
-        (4,7): "pos=0.75", (3,9): "pos=0.25"
+        (0,7): "bend right=45", (5,8): "bend right=45", (2,8): "bend right",
+        (4,7): "pos=0.75", (3,9): "pos=0.25", (0,2): "pos=0.25, bend left=15", (5,9): "pos=0.25, bend left=45",
     },
     "directed": False,
     "id": 4,
@@ -982,8 +982,8 @@ g = {"graph":
         [  0.,  10.,   0.,   0.,  11.,   0.,   0.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (0,6): "bend right", (4,7): "bend left",
-        (2,6): "pos=0.25",(3,4): "pos=0.75",(0,2): "pos=0.75",(1,9): "pos=0.25", (2,8): "pos=0.75",
+        (3,6): "bend right", (4,7): "bend left", (3,7): "pos=0.75, bend right=135",
+        (1,9): "pos=0.25", (2,8): "pos=0.25", (2,6): "pos=0.25", (1,2): "pos=0.75",
     },
     "directed": False,
     "id": 6,
@@ -1004,8 +1004,8 @@ g = {"graph":
         [  0.,  23.,   0.,   0.,  24.,   0.,   0.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (0,6): "bend right", (4,7): "bend left",
-        (2,6): "pos=0.25",(3,4): "pos=0.75",(0,2): "pos=0.75",(1,9): "pos=0.25", (2,8): "pos=0.75",
+        (3,6): "bend right", (4,7): "bend left", (3,7): "pos=0.75, bend right=135",
+        (1,9): "pos=0.25", (2,8): "pos=0.25", (2,6): "pos=0.25", (1,2): "pos=0.75",
     },
     "directed": False,
     "id": 6,
@@ -1026,8 +1026,8 @@ g = {"graph":
         [  0.,  20.,   0.,   0.,  11.,   0.,   0.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (0,6): "bend right", (4,7): "bend left",
-        (2,6): "pos=0.25",(3,4): "pos=0.75",(0,2): "pos=0.75",(1,9): "pos=0.25", (2,8): "pos=0.75",
+        (3,6): "bend right", (4,7): "bend left", (3,7): "pos=0.75, bend right=135",
+        (1,9): "pos=0.25", (2,8): "pos=0.25", (2,6): "pos=0.25", (1,2): "pos=0.75",
     },
     "directed": False,
     "id": 6,
@@ -1048,8 +1048,8 @@ g = {"graph":
         [  0.,  11.,   0.,   0.,   8.,   0.,   0.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (0,6): "bend right", (4,7): "bend left",
-        (2,6): "pos=0.25",(3,4): "pos=0.75",(0,2): "pos=0.75",(1,9): "pos=0.25", (2,8): "pos=0.75",
+        (3,6): "bend right", (4,7): "bend left", (3,7): "pos=0.75, bend right=135",
+        (1,9): "pos=0.25", (2,8): "pos=0.25", (2,6): "pos=0.25", (1,2): "pos=0.75",
     },
     "directed": False,
     "id": 6,
@@ -1070,8 +1070,8 @@ g = {"graph":
         [  0.,  20.,   0.,   0.,   8.,   0.,   0.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (0,6): "bend right", (4,7): "bend left",
-        (2,6): "pos=0.25",(3,4): "pos=0.75",(0,2): "pos=0.75",(1,9): "pos=0.25", (2,8): "pos=0.75",
+        (3,6): "bend right", (4,7): "bend left", (3,7): "pos=0.75, bend right=135",
+        (1,9): "pos=0.25", (2,8): "pos=0.25", (2,6): "pos=0.25", (1,2): "pos=0.75",
     },
     "directed": False,
     "id": 6,
@@ -1092,8 +1092,8 @@ g = {"graph":
         [  0.,  22.,   0.,   0.,  10.,   0.,   0.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (0,6): "bend right", (4,7): "bend left",
-        (2,6): "pos=0.25",(3,4): "pos=0.75",(0,2): "pos=0.75",(1,9): "pos=0.25", (2,8): "pos=0.75",
+        (3,6): "bend right", (4,7): "bend left", (3,7): "pos=0.75, bend right=135",
+        (1,9): "pos=0.25", (2,8): "pos=0.25", (2,6): "pos=0.25", (1,2): "pos=0.75",
     },
     "directed": False,
     "id": 6,
@@ -1114,8 +1114,8 @@ g = {"graph":
         [  0.,  18.,   0.,   0.,  20.,   0.,   0.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (0,6): "bend right", (4,7): "bend left",
-        (2,6): "pos=0.25",(3,4): "pos=0.75",(0,2): "pos=0.75",(1,9): "pos=0.25", (2,8): "pos=0.75",
+        (3,6): "bend right", (4,7): "bend left", (3,7): "pos=0.75, bend right=135",
+        (1,9): "pos=0.25", (2,8): "pos=0.25", (2,6): "pos=0.25", (1,2): "pos=0.75",
     },
     "directed": False,
     "id": 6,
@@ -1136,8 +1136,8 @@ g = {"graph":
         [  0.,  23.,   0.,   0.,   8.,   0.,   0.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (0,6): "bend right", (4,7): "bend left",
-        (2,6): "pos=0.25",(3,4): "pos=0.75",(0,2): "pos=0.75",(1,9): "pos=0.25", (2,8): "pos=0.75",
+        (3,6): "bend right", (4,7): "bend left", (3,7): "pos=0.75, bend right=135",
+        (1,9): "pos=0.25", (2,8): "pos=0.25", (2,6): "pos=0.25", (1,2): "pos=0.75",
     },
     "directed": False,
     "id": 6,
@@ -1158,8 +1158,8 @@ g = {"graph":
         [  0.,  22.,   0.,   0.,  21.,   0.,   0.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (0,6): "bend right", (4,7): "bend left",
-        (2,6): "pos=0.25",(3,4): "pos=0.75",(0,2): "pos=0.75",(1,9): "pos=0.25", (2,8): "pos=0.75",
+        (3,6): "bend right", (4,7): "bend left", (3,7): "pos=0.75, bend right=135",
+        (1,9): "pos=0.25", (2,8): "pos=0.25", (2,6): "pos=0.25", (1,2): "pos=0.75",
     },
     "directed": False,
     "id": 6,
@@ -1180,8 +1180,8 @@ g = {"graph":
         [  0.,  18.,   0.,   0.,  11.,   0.,   0.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (0,6): "bend right", (4,7): "bend left",
-        (2,6): "pos=0.25",(3,4): "pos=0.75",(0,2): "pos=0.75",(1,9): "pos=0.25", (2,8): "pos=0.75",
+        (3,6): "bend right", (4,7): "bend left", (3,7): "pos=0.75, bend right=135",
+        (1,9): "pos=0.25", (2,8): "pos=0.25", (2,6): "pos=0.25", (1,2): "pos=0.75",
     },
     "directed": False,
     "id": 6,
@@ -1433,9 +1433,10 @@ g = {"graph":
         [  0.,   0.,   0.,  20.,   0.,  17.,   0.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (3,5): "pos=.75",(3,7): "pos=.15, bend right",
-        (1,6): "pos=.75", (3,5): "pos=.75",
-        (2,8): "pos=.35"
+        (3, 5): "pos=.75", (3, 7): "pos=.15, bend right=45",
+        (1, 6): "pos=.25", (3, 5): "pos=.75",
+        (2, 8): "pos=.85", (0, 9): "pos=.25", (0, 8): "pos=.25",
+        (0, 6): "pos=.35", (3, 6): "pos=.85",
     },
     "directed": False,
     "id": 8,
@@ -1456,9 +1457,10 @@ g = {"graph":
         [  0.,   0.,   0.,  21.,   0.,  21.,   0.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (3, 5): "pos=.75", (3, 7): "pos=.15, bend right",
-        (1, 6): "pos=.75", (3, 5): "pos=.75",
-        (2, 8): "pos=.35"
+        (3, 5): "pos=.75", (3, 7): "pos=.15, bend right=45",
+        (1, 6): "pos=.25", (3, 5): "pos=.75",
+        (2, 8): "pos=.85", (0, 9): "pos=.25", (0, 8): "pos=.25",
+        (0, 6): "pos=.35", (3, 6): "pos=.85",
     },
     "directed": False,
     "id": 8,
@@ -1479,9 +1481,10 @@ g = {"graph":
         [  0.,   0.,   0.,  11.,   0.,  12.,   0.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (3, 5): "pos=.75", (3, 7): "pos=.15, bend right",
-        (1, 6): "pos=.75", (3, 5): "pos=.75",
-        (2, 8): "pos=.35"
+        (3, 5): "pos=.75", (3, 7): "pos=.15, bend right=45",
+        (1, 6): "pos=.25", (3, 5): "pos=.75",
+        (2, 8): "pos=.85", (0, 9): "pos=.25", (0, 8): "pos=.25",
+        (0, 6): "pos=.35", (3, 6): "pos=.85",
     },
     "directed": False,
     "id": 8,
@@ -1502,9 +1505,10 @@ g = {"graph":
         [  0.,   0.,   0.,  20.,   0.,  13.,   0.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (3, 5): "pos=.75", (3, 7): "pos=.15, bend right",
-        (1, 6): "pos=.75", (3, 5): "pos=.75",
-        (2, 8): "pos=.35"
+        (3, 5): "pos=.75", (3, 7): "pos=.15, bend right=45",
+        (1, 6): "pos=.25", (3, 5): "pos=.75",
+        (2, 8): "pos=.85", (0, 9): "pos=.25", (0, 8): "pos=.25",
+        (0, 6): "pos=.35", (3, 6): "pos=.85",
     },
     "directed": False,
     "id": 8,
@@ -1525,9 +1529,10 @@ g = {"graph":
         [  0.,   0.,   0.,  14.,   0.,  23.,   0.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (3, 5): "pos=.75", (3, 7): "pos=.15, bend right",
-        (1, 6): "pos=.75", (3, 5): "pos=.75",
-        (2, 8): "pos=.35"
+        (3, 5): "pos=.75", (3, 7): "pos=.15, bend right=45",
+        (1, 6): "pos=.25", (3, 5): "pos=.75",
+        (2, 8): "pos=.85", (0, 9): "pos=.25", (0, 8): "pos=.25",
+        (0, 6): "pos=.35", (3, 6): "pos=.85",
     },
     "directed": False,
     "id": 8,
@@ -1548,9 +1553,10 @@ g = {"graph":
         [  0.,   0.,   0.,   5.,   0.,  17.,   0.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (3, 5): "pos=.75", (3, 7): "pos=.15, bend right",
-        (1, 6): "pos=.75", (3, 5): "pos=.75",
-        (2, 8): "pos=.35"
+        (3, 5): "pos=.75", (3, 7): "pos=.15, bend right=45",
+        (1, 6): "pos=.25", (3, 5): "pos=.75",
+        (2, 8): "pos=.85", (0, 9): "pos=.25", (0, 8): "pos=.25",
+        (0, 6): "pos=.35", (3, 6): "pos=.85",
     },
     "directed": False,
     "id": 8,
@@ -1571,9 +1577,10 @@ g = {"graph":
         [  0.,   0.,   0.,  11.,   0.,  11.,   0.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (3, 5): "pos=.75", (3, 7): "pos=.15, bend right",
-        (1, 6): "pos=.75", (3, 5): "pos=.75",
-        (2, 8): "pos=.35"
+        (3, 5): "pos=.75", (3, 7): "pos=.15, bend right=45",
+        (1, 6): "pos=.25", (3, 5): "pos=.75",
+        (2, 8): "pos=.85", (0, 9): "pos=.25", (0, 8): "pos=.25",
+        (0, 6): "pos=.35", (3, 6): "pos=.85",
     },
     "directed": False,
     "id": 8,
@@ -1594,9 +1601,10 @@ g = {"graph":
         [  0.,   0.,   0.,  21.,   0.,  20.,   0.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (3, 5): "pos=.75", (3, 7): "pos=.15, bend right",
-        (1, 6): "pos=.75", (3, 5): "pos=.75",
-        (2, 8): "pos=.35"
+        (3, 5): "pos=.75", (3, 7): "pos=.15, bend right=45",
+        (1, 6): "pos=.25", (3, 5): "pos=.75",
+        (2, 8): "pos=.85", (0, 9): "pos=.25", (0, 8): "pos=.25",
+        (0, 6): "pos=.35", (3, 6): "pos=.85",
     },
     "directed": False,
     "id": 8,
@@ -1617,9 +1625,10 @@ g = {"graph":
         [  0.,   0.,   0.,  23.,   0.,  14.,   0.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (3, 5): "pos=.75", (3, 7): "pos=.15, bend right",
-        (1, 6): "pos=.75", (3, 5): "pos=.75",
-        (2, 8): "pos=.35"
+        (3, 5): "pos=.75", (3, 7): "pos=.15, bend right=45",
+        (1, 6): "pos=.25", (3, 5): "pos=.75",
+        (2, 8): "pos=.85", (0, 9): "pos=.25", (0, 8): "pos=.25",
+        (0, 6): "pos=.35", (3, 6): "pos=.85",
     },
     "directed": False,
     "id": 8,
@@ -1640,9 +1649,10 @@ g = {"graph":
         [  0.,   0.,   0.,  23.,   0.,  18.,   0.,   0.,   0.,   0.]]),
     "node_label_dict": None,
     "edge_label_style_dict":{
-        (3, 5): "pos=.75", (3, 7): "pos=.15, bend right",
-        (1, 6): "pos=.75", (3, 5): "pos=.75",
-        (2, 8): "pos=.35"
+        (3, 5): "pos=.75", (3, 7): "pos=.15, bend right=45",
+        (1, 6): "pos=.25", (3, 5): "pos=.75",
+        (2, 8): "pos=.85", (0, 9): "pos=.25", (0, 8): "pos=.25",
+        (0, 6): "pos=.35", (3, 6): "pos=.85",
     },
     "directed": False,
     "id": 8,
@@ -1680,6 +1690,7 @@ for g_dict in g_list_loaded:
         show_answer=True,
         show_blank=True,
         show_blank_answer=True,
+        show_id=True,
         blank_desc=u"求得最小支持树的权重为:",
         g=g,
         result=int(result),
