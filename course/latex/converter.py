@@ -534,8 +534,9 @@ class Tex2ImgBase(object):
 
             # regenerate cache error
             from atomicwrites import atomic_write
-            if not os.path.isfile(self.errlog_saving_path):
-                with atomic_write(self.image_saving_path.replace(".png", ".tex"), mode="wb") as f:
+            error_tex_source_path = self.image_saving_path.replace(".png", ".tex")
+            if not os.path.isfile(error_tex_source_path):
+                with atomic_write(error_tex_source_path, mode="wb") as f:
                     f.write(self.tex_source)
             if not os.path.isfile(self.errlog_saving_path):
                 with atomic_write(self.errlog_saving_path, mode="wb") as f:
