@@ -395,10 +395,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         if success and result is not None:
             if saved_file_path and will_save_file_local:
-                assert not os.path.isfile(saved_file_path)
-                # print "3-----------here"
-                with atomic_write(saved_file_path) as f:
-                    f.write(result.encode('UTF-8'))
+                if not os.path.isfile(saved_file_path):
+                    with atomic_write(saved_file_path) as f:
+                        f.write(result.encode('UTF-8'))
 
         return success, result
 
