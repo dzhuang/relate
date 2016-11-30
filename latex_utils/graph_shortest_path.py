@@ -791,7 +791,7 @@ for g_dict in g_list_loaded:
     tex = template.render(
         question_iters = iter(range(0,5)),
         answer_table_iters=iter(range(1, 20)),
-        show_question = True,
+        #show_question = True,
         show_answer = True,
         g=g,
         source = g.node_label_dict[0],

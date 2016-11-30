@@ -1500,7 +1500,7 @@ dp_list.append(dp_dict)
 # invest = [0, 1, 2, 3, 4, 5]
 
 
-dp_list=[]
+#dp_list=[]
 dp_dict = { 'gain': np.matrix([[ np.nan,  180.,  200.,  230.,  260.,  350.],
         [   0.,  140.,  200.,  220.,  np.nan,  320.],
         [ np.nan,  np.nan,  120.,  np.nan,  300.,  310.],
