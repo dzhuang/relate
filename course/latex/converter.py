@@ -30,6 +30,8 @@ import platform
 import sys
 import shutil
 import re
+from hashlib import md5
+
 
 from django.core.checks import Critical
 from django.core.management.base import CommandError
@@ -265,6 +267,55 @@ class ImageMagick(Imageconverter):
 
 
 # {{{ convert file to data uri
+
+def get_file_data_uri_cached(file_path):
+    uri_result = None
+    try:
+        import django.core.cache as cache
+    except ImproperlyConfigured:
+        uri_cache_key = None
+    else:
+        def_cache = cache.caches["default"]
+
+        uri_cache_key = (
+            "datauri:%s:V0" % (
+                md5(file_path).hexdigest()
+            )
+        )
+        # Memcache is apparently limited to 250 characters.
+        if len(uri_cache_key) < 240:
+            uri_result = def_cache.get(uri_cache_key)
+            if uri_result:
+                return uri_result
+
+    # Neighter regenerated nor cached,
+    # then read or generate the image
+    if not uri_result:
+        if not os.path.isfile(self.image_saving_path):
+            result = get_file_data_uri(file_path)
+        uri_result = get_file_data_uri_cached(self.image_saving_path)
+        assert isinstance(uri_result, six.string_types)
+
+    assert uri_result
+
+    # no cache configured
+    if not uri_cache_key:
+        return uri_result
+
+    # cache configure, but image not cached
+    allowed_max_bytes = getattr(
+        settings, "RELATE_IMAGECACHE_MAX_BYTES",
+        getattr(
+            settings, "RELATE_CACHE_MAX_BYTES",
+        )
+    )
+    if len(uri_result) <= allowed_max_bytes:
+        # image size larger than allowed_max_bytes
+        # won't be cached, espeically for svgs.
+        def_cache.add(uri_cache_key, uri_result, None)
+    return uri_result
+
+    return get_file_data_uri(file_path)
 
 def get_file_data_uri(file_path):
     """
@@ -562,7 +613,7 @@ class Tex2ImgBase(object):
                 os.remove(self.image_saving_path)
             self.image_saving_path = self.get_converted_image()
             image_path = self.get_converted_image()
-            uri_result = get_file_data_uri(image_path)
+            uri_result = get_file_data_uri_cached(image_path)
             assert isinstance(uri_result, six.string_types)
 
         if not uri_result:
@@ -577,7 +628,6 @@ class Tex2ImgBase(object):
         else:
             def_cache = cache.caches["default"]
 
-            from hashlib import md5
             uri_cache_key = (
                 "latex2img:%s:%s" % (
                     self.compiler.cmd,
@@ -601,7 +651,7 @@ class Tex2ImgBase(object):
         if not uri_result:
             if not os.path.isfile(self.image_saving_path):
                 self.image_saving_path = self.get_converted_image()
-            uri_result = get_file_data_uri(self.image_saving_path)
+            uri_result = get_file_data_uri_cached(self.image_saving_path)
             assert isinstance(uri_result, six.string_types)
 
         assert uri_result
