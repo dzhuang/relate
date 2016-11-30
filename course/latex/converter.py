@@ -492,6 +492,8 @@ class Tex2ImgBase(object):
         will be copied to ``output_dir``.
         :return: string, the path of the generated image
         """
+        if settings.DEBUG:
+            print ("i'm converting from source-------------------------------------")
         compiled_file_path = self.get_compiled_file()
         if not compiled_file_path:
             return None
@@ -584,9 +586,12 @@ class Tex2ImgBase(object):
                         def_cache.add(err_cache_key, err_result, None)
 
             # regenerate cache error
+            if settings.DEBUG:
+                print ("---cache error---")
             from atomicwrites import atomic_write
-            if not os.path.isfile(self.errlog_saving_path):
-                with atomic_write(self.image_saving_path.replace(".png", ".tex"), mode="wb") as f:
+            error_tex_source_path = self.image_saving_path.replace(".png", ".tex")
+            if not os.path.isfile(error_tex_source_path):
+                with atomic_write(error_tex_source_path, mode="wb") as f:
                     f.write(self.tex_source)
             if not os.path.isfile(self.errlog_saving_path):
                 with atomic_write(self.errlog_saving_path, mode="wb") as f:
@@ -611,8 +616,7 @@ class Tex2ImgBase(object):
             self.get_compile_err_cached(force_regenerate)
             if os.path.isfile(self.image_saving_path):
                 os.remove(self.image_saving_path)
-            self.image_saving_path = self.get_converted_image()
-            image_path = self.get_converted_image()
+            self.image_saving_path = image_path = self.get_converted_image()
             uri_result = get_file_data_uri_cached(image_path)
             assert isinstance(uri_result, six.string_types)
 
@@ -644,6 +648,8 @@ class Tex2ImgBase(object):
                         assert isinstance(
                             uri_result, six.string_types),\
                             uri_cache_key
+                        if settings.DEBUG:
+                            print ("----------i'm reading from cache---------------------")
                         return uri_result
 
         # Neighter regenerated nor cached,
@@ -651,6 +657,9 @@ class Tex2ImgBase(object):
         if not uri_result:
             if not os.path.isfile(self.image_saving_path):
                 self.image_saving_path = self.get_converted_image()
+            else:
+                if settings.DEBUG:
+                    print ("i'm reading from file---------------------")
             uri_result = get_file_data_uri_cached(self.image_saving_path)
             assert isinstance(uri_result, six.string_types)
 
