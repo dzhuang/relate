@@ -31,7 +31,7 @@ import sys
 import shutil
 import re
 from hashlib import md5
-
+from atomicwrites import atomic_write
 
 from django.core.checks import Critical
 from django.core.management.base import CommandError
@@ -268,8 +268,9 @@ class ImageMagick(Imageconverter):
 
 # {{{ convert file to data uri
 
-def get_file_data_uri_cached(file_path):
+def get_file_data_uri_cached(file_path, image_format):
     uri_result = None
+    uri_file_path = file_path.replace("." + image_format, "_datauri" + "_" + image_format)
     try:
         import django.core.cache as cache
     except ImproperlyConfigured:
@@ -286,15 +287,19 @@ def get_file_data_uri_cached(file_path):
         if len(uri_cache_key) < 240:
             uri_result = def_cache.get(uri_cache_key)
             if uri_result:
+                if not os.path.isfile(uri_file_path):
+                    with atomic_write(uri_file_path, mode="wb") as f:
+                        f.write(uri_result)
                 return uri_result
+
+    if os.path.isfile(uri_file_path):
+        uri_result = file_read(uri_file_path)
 
     # Neighter regenerated nor cached,
     # then read or generate the image
     if not uri_result:
-        if not os.path.isfile(self.image_saving_path):
-            result = get_file_data_uri(file_path)
-        uri_result = get_file_data_uri_cached(self.image_saving_path)
-        assert isinstance(uri_result, six.string_types)
+        if os.path.isfile(file_path):
+            uri_result = get_file_data_uri(file_path)
 
     assert uri_result
 
@@ -313,9 +318,12 @@ def get_file_data_uri_cached(file_path):
         # image size larger than allowed_max_bytes
         # won't be cached, espeically for svgs.
         def_cache.add(uri_cache_key, uri_result, None)
-    return uri_result
 
-    return get_file_data_uri(file_path)
+    if not os.path.isfile(uri_file_path):
+        with atomic_write(uri_file_path, mode="wb") as f:
+            f.write(uri_result)
+
+    return uri_result
 
 def get_file_data_uri(file_path):
     """
@@ -464,7 +472,6 @@ class Tex2ImgBase(object):
                 log = get_abstract_latex_log(log)
 
                 # avoid race condition
-                from atomicwrites import atomic_write
                 with atomic_write(self.errlog_saving_path, mode="wb") as f:
                     f.write(log)
             except:
@@ -530,7 +537,6 @@ class Tex2ImgBase(object):
 
             # avoid race condition
             if not os.path.isfile(self.image_saving_path):
-                from atomicwrites import atomic_write
                 with atomic_write(self.image_saving_path, mode="wb") as f:
                     f.write(image)
         except OSError:
@@ -588,7 +594,6 @@ class Tex2ImgBase(object):
             # regenerate cache error
             if settings.DEBUG:
                 print ("---cache error---")
-            from atomicwrites import atomic_write
             error_tex_source_path = self.image_saving_path.replace(".png", ".tex")
             if not os.path.isfile(error_tex_source_path):
                 with atomic_write(error_tex_source_path, mode="wb") as f:
@@ -617,7 +622,7 @@ class Tex2ImgBase(object):
             if os.path.isfile(self.image_saving_path):
                 os.remove(self.image_saving_path)
             self.image_saving_path = image_path = self.get_converted_image()
-            uri_result = get_file_data_uri_cached(image_path)
+            uri_result = get_file_data_uri_cached(image_path, self.image_format)
             assert isinstance(uri_result, six.string_types)
 
         if not uri_result:
@@ -660,7 +665,7 @@ class Tex2ImgBase(object):
             else:
                 if settings.DEBUG:
                     print ("i'm reading from file---------------------")
-            uri_result = get_file_data_uri_cached(self.image_saving_path)
+            uri_result = get_file_data_uri_cached(self.image_saving_path, self.image_format)
             assert isinstance(uri_result, six.string_types)
 
         assert uri_result
