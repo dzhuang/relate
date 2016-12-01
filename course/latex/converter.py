@@ -276,7 +276,7 @@ def get_file_data_uri_cached(file_path, image_format):
     except ImproperlyConfigured:
         uri_cache_key = None
     else:
-        def_cache = cache.caches["default"]
+        def_cache = cache.caches["latex"]
 
         uri_cache_key = (
             "datauri:%s:V0" % (
@@ -560,7 +560,7 @@ class Tex2ImgBase(object):
         except ImproperlyConfigured:
             err_cache_key = None
         else:
-            def_cache = cache.caches["default"]
+            def_cache = cache.caches["latex"]
             err_cache_key = ("latex_err:%s:%s"
                              % (self.compiler.cmd, self.basename))
             # Memcache is apparently limited to 250 characters.
@@ -635,7 +635,7 @@ class Tex2ImgBase(object):
         except ImproperlyConfigured:
             uri_cache_key = None
         else:
-            def_cache = cache.caches["default"]
+            def_cache = cache.caches["latex"]
 
             uri_cache_key = (
                 "latex2img:%s:%s" % (

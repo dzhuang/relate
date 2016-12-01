@@ -318,10 +318,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                             key_making_string_md5,
                             part))
 
-            def_cache = cache.caches["default"]
+            def_cache = cache.caches["latex"]
             result = def_cache.get(cache_key)
             if result is not None:
-                # print "1-----------here"
                 assert isinstance(result, six.string_types)
                 if will_save_file_local:
                     if not os.path.isfile(saved_file_path):
@@ -329,6 +328,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                             f.write(result.encode('UTF-8'))
                 if test_key_existance:
                     return True
+                if settings.DEBUG:
+                    print("-----I'm reading from cache------")
                 return True, result
             # else:
             #     def_cache.delete(cache_key)
@@ -357,23 +358,22 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                             f.write(result.encode('UTF-8'))
             return True, result
 
-        def_cache = cache.caches["default"]
+        def_cache = cache.caches["latex"]
 
         result = None
         # Memcache is apparently limited to 250 characters.
         if len(cache_key) < 240:
             result = def_cache.get(cache_key)
         if result is None:
+            if settings.DEBUG:
+                print ("-----saved_file_path", saved_file_path)
             if saved_file_path:
                 if os.path.isfile(saved_file_path):
                     result = file_read(saved_file_path)
-                    # if result is None:
-                    #     try:
-                    #         os.remove(saved_file_path)
-                    #     except:
-                    #         pass
         if result is not None:
             assert isinstance(result, six.string_types), cache_key
+            if success and len(result) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
+                def_cache.add(cache_key, result, None)
             return True, result
 
         try:
