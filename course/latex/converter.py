@@ -268,74 +268,7 @@ class ImageMagick(Imageconverter):
 
 # {{{ convert file to data uri
 
-def get_file_data_uri_cached(file_path, image_format):
-    uri_result = None
-    uri_file_path = file_path.replace("." + image_format, "_datauri" + "_" + image_format)
-    try:
-        import django.core.cache as cache
-    except ImproperlyConfigured:
-        uri_cache_key = None
-    else:
-        def_cache = cache.caches["latex"]
-
-        uri_cache_key = (
-            "datauri:%s:V0" % (
-                md5(file_path).hexdigest()
-            )
-        )
-        # Memcache is apparently limited to 250 characters.
-        if len(uri_cache_key) < 240:
-            uri_result = def_cache.get(uri_cache_key)
-            if uri_result:
-                if not os.path.isfile(uri_file_path):
-                    with atomic_write(uri_file_path, mode="wb") as f:
-                        f.write(uri_result)
-                return uri_result
-
-    if os.path.isfile(uri_file_path):
-        uri_result = file_read(uri_file_path)
-        if not uri_result:
-            if os.path.isfile(uri_file_path):
-                try:
-                    os.remove(uri_file_path)
-                except:
-                    pass
-
-    # Neighter regenerated nor cached,
-    # then read or generate the image
-    if not uri_result:
-        if os.path.isfile(file_path):
-            uri_result = get_file_data_uri(file_path)
-
-    assert uri_result
-
-    # no cache configured
-    if not uri_cache_key:
-        if uri_result:
-            if not os.path.isfile(uri_file_path):
-                with atomic_write(uri_file_path, mode="wb") as f:
-                    f.write(uri_result)
-        return uri_result
-
-    # cache configure, but image not cached
-    allowed_max_bytes = getattr(
-        settings, "RELATE_IMAGECACHE_MAX_BYTES",
-        getattr(
-            settings, "RELATE_CACHE_MAX_BYTES",
-        )
-    )
-    if len(uri_result) <= allowed_max_bytes:
-        # image size larger than allowed_max_bytes
-        # won't be cached, espeically for svgs.
-        def_cache.add(uri_cache_key, uri_result, None)
-
-    if not os.path.isfile(uri_file_path):
-        with atomic_write(uri_file_path, mode="wb") as f:
-            f.write(uri_result)
-
-    return uri_result
-
-def get_file_data_uri(file_path):
+def get_image_datauri(file_path):
     """
     Convert file to data URI
     """
@@ -431,10 +364,36 @@ class Tex2ImgBase(object):
             "%s_%s.log" % (self.basename, self.compiler.cmd)
         )
 
-        # Where the generated image will finally be saved.
-        self.image_saving_path = os.path.join(
+        # Where the generated image is supposed to be saved.
+        # but it is actually not saved,
+        # because only the datauri file will be saved
+        # this is used to generate keys
+        self.deprecated_image_saving_path = os.path.join(
             output_dir,
             "%s_%s.%s" % (self.basename,
+                          self.compiler.cmd,
+                          self.image_format)
+        )
+        # This is the actually saved datauri file
+        self.datauri_saving_path = os.path.join(
+            output_dir,
+            "%s_%s_%s_datauri" % (self.basename,
+                          self.compiler.cmd,
+                          self.image_format)
+        )
+
+        self.error_tex_source_path = os.path.join(
+            output_dir,
+            "%s_%s.tex" % (self.basename,
+                          self.compiler.cmd,
+                           )
+        )
+
+
+        # deprecated file
+        self.deprecated_datauri_saving_path = os.path.join(
+            output_dir,
+            "%s_%s_datauri_%s" % (self.basename,
                           self.compiler.cmd,
                           self.image_format)
         )
@@ -503,11 +462,11 @@ class Tex2ImgBase(object):
                     % self.compiler.output_format)
             )
 
-    def get_converted_image(self):
+    def get_converted_image_datauri(self):
         """
         Convert compiled file into image. If succeeded, the image
         will be copied to ``output_dir``.
-        :return: string, the path of the generated image
+        :return: string, the datauri
         """
         if settings.DEBUG:
             print ("i'm converting from source-------------------------------------")
@@ -543,18 +502,20 @@ class Tex2ImgBase(object):
                 ))
 
         try:
-            image = file_read(image_path)
+            datauri = get_image_datauri(image_path)
 
             # avoid race condition
-            if not os.path.isfile(self.image_saving_path):
-                with atomic_write(self.image_saving_path, mode="wb") as f:
-                    f.write(image)
+            if not os.path.isfile(self.datauri_saving_path):
+                with atomic_write(self.datauri_saving_path, mode="wb") as f:
+                    f.write(datauri)
+            # delete deprecated saved images
+
         except OSError:
             raise RuntimeError(error)
         finally:
             self._remove_working_dir()
 
-        return self.image_saving_path
+        return datauri
 
     def get_compile_err_cached(self, force_regenerate=False):
         """
@@ -594,6 +555,7 @@ class Tex2ImgBase(object):
                         os.remove(self.errlog_saving_path)
                     except:
                         pass
+                    return None
 
         if err_result:
             if err_cache_key:
@@ -604,9 +566,9 @@ class Tex2ImgBase(object):
             # regenerate cache error
             if settings.DEBUG:
                 print ("---cache error---")
-            error_tex_source_path = self.image_saving_path.replace(".png", ".tex")
-            if not os.path.isfile(error_tex_source_path):
-                with atomic_write(error_tex_source_path, mode="wb") as f:
+
+            if not os.path.isfile(self.error_tex_source_path):
+                with atomic_write(self.error_tex_source_path, mode="wb") as f:
                     f.write(self.tex_source)
             if not os.path.isfile(self.errlog_saving_path):
                 with atomic_write(self.errlog_saving_path, mode="wb") as f:
@@ -625,23 +587,24 @@ class Tex2ImgBase(object):
         existing file or cached result.
         :return: string, data uri of the coverted image.
         """
-        uri_result = None
+        result = None
         if force_regenerate:
             # first remove cached error results and files
             self.get_compile_err_cached(force_regenerate)
-            if os.path.isfile(self.image_saving_path):
+            if os.path.isfile(self.datauri_saving_path):
                 try:
-                    os.remove(self.image_saving_path)
+                    os.remove(self.datauri_saving_path)
                 except:
                     pass
-            self.image_saving_path = image_path = self.get_converted_image()
-            uri_result = get_file_data_uri_cached(image_path, self.image_format)
-            assert isinstance(uri_result, six.string_types)
+            result = self.get_converted_image_datauri()
+            assert isinstance(result, six.string_types)
 
-        if not uri_result:
+        if not result:
             err_result = self.get_compile_err_cached(force_regenerate)
             if err_result:
-                return None
+                from django.utils.html import escape
+                raise ValueError(
+                    "<pre>%s</pre>" % escape(err_result).strip())
 
         try:
             import django.core.cache as cache
@@ -649,43 +612,104 @@ class Tex2ImgBase(object):
             uri_cache_key = None
         else:
             def_cache = cache.caches["latex"]
+            deprecated_cache = cache.caches["default"]
+
+            deprecated_uri_cache_key = (
+                "latex2img:%s:%s" % (
+                    self.compiler.cmd,
+                    md5(
+                        self.deprecated_image_saving_path.encode("utf-8")
+                    ).hexdigest()
+                )
+            )
 
             uri_cache_key = (
                 "latex2img:%s:%s" % (
                     self.compiler.cmd,
                     md5(
-                        self.image_saving_path.encode("utf-8")
+                        self.datauri_saving_path.encode("utf-8")
                     ).hexdigest()
                 )
             )
-            if not uri_result:
+
+            if not result:
                 # Memcache is apparently limited to 250 characters.
                 if len(uri_cache_key) < 240:
-                    uri_result = def_cache.get(uri_cache_key)
-                    if uri_result:
+                    result_from_deprecated_key = deprecated_cache.get(deprecated_uri_cache_key)
+                    if result_from_deprecated_key:
+                        def_cache.delete(deprecated_uri_cache_key)
+                        deprecated_cache.delete(deprecated_uri_cache_key)
+                        if settings.DEBUG:
+                            print ("----------i'm removing deprecated keys!!!!!!!!-----")
+                    result = def_cache.get(uri_cache_key)
+                    if not result and result_from_deprecated_key:
+                        result = result_from_deprecated_key
+                        def_cache.add(uri_cache_key, result, None)
+                        if settings.DEBUG:
+                            print ("----------i'm adding new keys!!!!!!!!-----")
+                    if result:
                         assert isinstance(
-                            uri_result, six.string_types),\
+                            result, six.string_types),\
                             uri_cache_key
+                        deprecated_cache.delete(uri_cache_key)
                         if settings.DEBUG:
                             print ("----------i'm reading from cache---------------------")
-                        return uri_result
+                        try:
+                            os.remove(self.deprecated_image_saving_path)
+                            os.remove(self.deprecated_datauri_saving_path)
+                            if settings.DEBUG:
+                                print ("image file removed!!!!!!!!!!!!!!!!!!!!!!!!---------------------")
+                        except:
+                            pass
+                        return result
 
         # Neighter regenerated nor cached,
-        # then read or generate the image
-        if not uri_result:
-            if not os.path.isfile(self.image_saving_path):
-                self.image_saving_path = self.get_converted_image()
+        # then read or generate the datauri
+        if not result:
+            if os.path.isfile(self.datauri_saving_path):
+                result = file_read(self.datauri_saving_path)
+            if not result:
+                # possible empty string, remove the file
+                try:
+                    os.remove(self.datauri_saving_path)
+                except:
+                    pass
             else:
                 if settings.DEBUG:
                     print ("i'm reading from file---------------------")
-            uri_result = get_file_data_uri_cached(self.image_saving_path, self.image_format)
-            assert isinstance(uri_result, six.string_types)
 
-        assert uri_result
+        # remove the image files
+        if not result:
+            if os.path.isfile(self.deprecated_image_saving_path):
+                result = get_image_datauri(self.deprecated_image_saving_path)
+                if settings.DEBUG:
+                    print ("i'm reading from deprecated image file!!!!!!!!!!!!!!!!!!!!!!!!---------------------")
+                if not os.path.isfile(self.datauri_saving_path):
+                    with atomic_write(self.datauri_saving_path, mode="wb") as f:
+                        f.write(result)
+                try:
+                    os.remove(self.deprecated_image_saving_path)
+                    if settings.DEBUG:
+                        print ("image file removed!!!!!!!!!!!!!!!!!!!!!!!!---------------------")
+                except:
+                    pass
+                try:
+                    os.remove(self.deprecated_datauri_saving_path)
+                except:
+                    pass
+
+        if not result:
+            result = self.get_converted_image_datauri()
+            assert isinstance(result, six.string_types)
+            if not os.path.isfile(self.datauri_saving_path):
+                with atomic_write(self.datauri_saving_path, mode="wb") as f:
+                    f.write(result)
+
+        assert result
 
         # no cache configured
         if not uri_cache_key:
-            return uri_result
+            return result
 
         # cache configure, but image not cached
         allowed_max_bytes = getattr(
@@ -694,11 +718,11 @@ class Tex2ImgBase(object):
                 settings, "RELATE_CACHE_MAX_BYTES",
             )
         )
-        if len(uri_result) <= allowed_max_bytes:
+        if len(result) <= allowed_max_bytes:
             # image size larger than allowed_max_bytes
             # won't be cached, espeically for svgs.
-            def_cache.add(uri_cache_key, uri_result, None)
-        return uri_result
+            def_cache.add(uri_cache_key, result, None)
+        return result
 
 # }}}
 

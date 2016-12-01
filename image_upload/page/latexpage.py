@@ -265,7 +265,10 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
             for part in ["answer", "question", "blank", "blank_answer", "answer_explanation"]:
                 try:
-                    if self.get_cached_result(page_context, page_data, part=part, test_key_existance=True) == True:
+                    key_exist, result = self.get_cached_result(page_context, page_data, part=part,
+                                                               test_key_existance=True)
+                    if key_exist:
+                        markup_to_html(page_context, result)
                         continue
                 except KeyError:
                     continue
@@ -320,47 +323,28 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
             def_cache = cache.caches["latex"]
             deprecated_cache = cache.caches["default"]
+            deprecated_result = deprecated_cache.get(cache_key)
             result = def_cache.get(cache_key)
+
+            if deprecated_result and not result:
+                result = deprecated_result
+                def_cache.add(cache_key, result)
+                if settings.DEBUG:
+                    print("-----I'm reading from cache, from deprecated caches------")
+
+            deprecated_cache.delete(cache_key)
             if result is not None:
-                deprecated_cache.delete(cache_key)
+
                 assert isinstance(result, six.string_types)
                 if will_save_file_local:
                     if not os.path.isfile(saved_file_path):
                         with atomic_write(saved_file_path) as f:
                             f.write(result.encode('UTF-8'))
                 if test_key_existance:
-                    return True
+                    return True, result
                 if settings.DEBUG:
                     print("-----I'm reading from cache------")
                 return True, result
-
-        if cache_key is not None:
-            deprecated_cache = cache.caches["default"]
-            result = deprecated_cache.get(cache_key)
-            if result is not None:
-                assert isinstance(result, six.string_types)
-                if will_save_file_local:
-                    if not os.path.isfile(saved_file_path):
-                        with atomic_write(saved_file_path) as f:
-                            f.write(result.encode('UTF-8'))
-                def_cache = cache.caches["latex"]
-                def_cache.add(cache_key, result, None)
-                deprecated_cache.delete(cache_key)
-                if test_key_existance:
-                    return True
-                if settings.DEBUG:
-                    print("-----I'm reading from cache------")
-                return True, result
-
-
-            # else:
-            #     def_cache.delete(cache_key)
-            #     if saved_file_path:
-            #         if os.path.isfile(saved_file_path):
-            #             try:
-            #                 os.remove(saved_file_path)
-            #             except:
-            #                 pass
 
         # cache_key is None means cache is not enabled
         success = False
@@ -375,7 +359,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             if success and result is not None:
                 if saved_file_path:
                     if not os.path.isfile(saved_file_path):
-                        # print "2-----------here"
                         with atomic_write(saved_file_path) as f:
                             f.write(result.encode('UTF-8'))
             return True, result
@@ -383,19 +366,21 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         def_cache = cache.caches["latex"]
 
         result = None
-        # Memcache is apparently limited to 250 characters.
-        if len(cache_key) < 240:
-            result = def_cache.get(cache_key)
-        if result is None:
-            if settings.DEBUG:
-                print ("-----saved_file_path", saved_file_path)
-            if saved_file_path:
-                if os.path.isfile(saved_file_path):
+
+        if saved_file_path:
+            if os.path.isfile(saved_file_path):
+                try:
                     result = file_read(saved_file_path)
+                except:
+                    pass
+                if result is not None and settings.DEBUG:
+                    print ("-----------I'm reading from saved_file_path-------------")
         if result is not None:
             assert isinstance(result, six.string_types), cache_key
             if success and len(result) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
-                def_cache.add(cache_key, result, None)
+                if def_cache.get(cache_key) is None:
+                    def_cache.delete(cache_key)
+                def_cache.add(cache_key, result)
             return True, result
 
         try:
@@ -413,7 +398,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             #         os.remove(saved_file_path)
 
         if success and len(result) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
-            def_cache.add(cache_key, result, None)
+            if def_cache.get(cache_key) is None:
+                def_cache.delete(cache_key)
+            def_cache.add(cache_key, result)
 
         if success and result is not None:
             if saved_file_path and will_save_file_local:
