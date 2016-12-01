@@ -347,34 +347,53 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 return True, result
 
         # cache_key is None means cache is not enabled
+        result = None
         success = False
 
         if cache_key is None:
-            success, result = self.jinja_runpy(
-                page_context,
-                page_data["question_data"],
-                "%s_process_code" % part,
-                common_code_name="background_code")
-            assert isinstance(result, six.string_types)
-            if success and result is not None:
-                if saved_file_path:
-                    if not os.path.isfile(saved_file_path):
-                        with atomic_write(saved_file_path) as f:
-                            f.write(result.encode('UTF-8'))
-            return True, result
+            if saved_file_path:
+                if os.path.isfile(saved_file_path):
+                    try:
+                        result = file_read(saved_file_path)
+                    except:
+                        pass
+                    if result is not None:
+                        success = True
+
+            if result is None:
+                try:
+                    success, result = self.jinja_runpy(
+                        page_context,
+                        page_data["question_data"],
+                        "%s_process_code" % part,
+                        common_code_name="background_code")
+                except TypeError:
+                    return False, result
+                    # May raise an "'NoneType' object is not iterable" error
+                    # jinja_runpy error may write a broken saved file??
+                    # if saved_file_path:
+                    #     if os.path.isfile(saved_file_path):
+                    #         os.remove(saved_file_path)
+
+                if success and result is not None:
+                    if saved_file_path and will_save_file_local:
+                        if not os.path.isfile(saved_file_path):
+                            with atomic_write(saved_file_path) as f:
+                                f.write(result.encode('UTF-8'))
+
+            return success, result
 
         def_cache = cache.caches["latex"]
-
-        result = None
-
         if saved_file_path:
             if os.path.isfile(saved_file_path):
                 try:
                     result = file_read(saved_file_path)
                 except:
                     pass
-                if result is not None and settings.DEBUG:
-                    print ("-----------I'm reading from saved_file_path-------------")
+                if result is not None:
+                    success = True
+                    if settings.DEBUG:
+                        print ("-----------I'm reading from saved_file_path-------------")
         if result is not None:
             assert isinstance(result, six.string_types), cache_key
             if success and len(result) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
