@@ -661,6 +661,9 @@ class Tex2ImgBase(object):
                                 print ("image file removed!!!!!!!!!!!!!!!!!!!!!!!!---------------------")
                         except:
                             pass
+                        if not os.path.isfile(self.datauri_saving_path):
+                            with atomic_write(self.datauri_saving_path, mode="wb") as f:
+                                f.write(result)
                         return result
 
         # Neighter regenerated nor cached,
