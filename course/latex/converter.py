@@ -642,6 +642,8 @@ class Tex2ImgBase(object):
                         if settings.DEBUG:
                             print ("----------i'm removing deprecated keys!!!!!!!!-----")
                     result = def_cache.get(uri_cache_key)
+                    if result is None:
+                        def_cache.delete(uri_cache_key)
                     if not result and result_from_deprecated_key:
                         result = result_from_deprecated_key
                         def_cache.add(uri_cache_key, result, None)
