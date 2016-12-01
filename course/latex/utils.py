@@ -33,6 +33,7 @@ from subprocess import Popen, PIPE
 
 from django.utils.translation import (
     ugettext as _, string_concat)
+from django.core.files import File
 from django.core.management.base import CommandError
 from django.utils.encoding import (
     DEFAULT_LOCALE_ENCODING, force_text)
@@ -109,17 +110,17 @@ def get_basename_or_md5(filename, s):
 
 def file_read(filename):
     '''Read the content of a file and close it properly.'''
-    f = file(filename, 'rb')
-    content = f.read()
-    f.close()
+    with open(filename, 'rb') as f:
+        ff = File(f)
+        content = ff.read()
     return content
 
 
 def file_write(filename, content):
     '''Write into a file and close it properly.'''
-    f = file(filename, 'wb')
-    f.write(content)
-    f.close()
+    with open(filename, 'wb') as f:
+        ff = File(f)
+        ff.write(content)
 
 # }}}
 

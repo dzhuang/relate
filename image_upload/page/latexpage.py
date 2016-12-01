@@ -326,8 +326,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             deprecated_result = deprecated_cache.get(cache_key)
             result = def_cache.get(cache_key)
 
-            if deprecated_result and not result:
+            if deprecated_result is not None and result is None:
                 result = deprecated_result
+                def_cache.delete(cache_key)
                 def_cache.add(cache_key, result)
                 if settings.DEBUG:
                     print("-----I'm reading from cache, from deprecated caches------")
