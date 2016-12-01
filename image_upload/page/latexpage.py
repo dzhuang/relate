@@ -319,8 +319,10 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                             part))
 
             def_cache = cache.caches["latex"]
+            deprecated_cache = cache.caches["default"]
             result = def_cache.get(cache_key)
             if result is not None:
+                deprecated_cache.delete(cache_key)
                 assert isinstance(result, six.string_types)
                 if will_save_file_local:
                     if not os.path.isfile(saved_file_path):
