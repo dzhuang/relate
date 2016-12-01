@@ -294,6 +294,12 @@ def get_file_data_uri_cached(file_path, image_format):
 
     if os.path.isfile(uri_file_path):
         uri_result = file_read(uri_file_path)
+        if not uri_result:
+            if os.path.isfile(uri_file_path):
+                try:
+                    os.remove(uri_file_path)
+                except:
+                    pass
 
     # Neighter regenerated nor cached,
     # then read or generate the image
@@ -305,6 +311,10 @@ def get_file_data_uri_cached(file_path, image_format):
 
     # no cache configured
     if not uri_cache_key:
+        if uri_result:
+            if not os.path.isfile(uri_file_path):
+                with atomic_write(uri_file_path, mode="wb") as f:
+                    f.write(uri_result)
         return uri_result
 
     # cache configure, but image not cached
@@ -620,7 +630,10 @@ class Tex2ImgBase(object):
             # first remove cached error results and files
             self.get_compile_err_cached(force_regenerate)
             if os.path.isfile(self.image_saving_path):
-                os.remove(self.image_saving_path)
+                try:
+                    os.remove(self.image_saving_path)
+                except:
+                    pass
             self.image_saving_path = image_path = self.get_converted_image()
             uri_result = get_file_data_uri_cached(image_path, self.image_format)
             assert isinstance(uri_result, six.string_types)

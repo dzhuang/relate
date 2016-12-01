@@ -331,6 +331,26 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 if settings.DEBUG:
                     print("-----I'm reading from cache------")
                 return True, result
+
+        if cache_key is not None:
+            deprecated_cache = cache.caches["default"]
+            result = deprecated_cache.get(cache_key)
+            if result is not None:
+                assert isinstance(result, six.string_types)
+                if will_save_file_local:
+                    if not os.path.isfile(saved_file_path):
+                        with atomic_write(saved_file_path) as f:
+                            f.write(result.encode('UTF-8'))
+                def_cache = cache.caches["latex"]
+                def_cache.add(cache_key, result, None)
+                deprecated_cache.delete(cache_key)
+                if test_key_existance:
+                    return True
+                if settings.DEBUG:
+                    print("-----I'm reading from cache------")
+                return True, result
+
+
             # else:
             #     def_cache.delete(cache_key)
             #     if saved_file_path:
