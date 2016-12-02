@@ -321,19 +321,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                             key_making_string_md5,
                             part))
 
-            def_cache = cache.caches["latex"]
-            deprecated_cache = cache.caches["default"]
-            deprecated_result = deprecated_cache.get(cache_key)
+            def_cache = cache.caches["default"]
             result = def_cache.get(cache_key)
-
-            if deprecated_result is not None and result is None:
-                result = deprecated_result
-                def_cache.delete(cache_key)
-                def_cache.add(cache_key, result)
-                if settings.DEBUG:
-                    print("-----I'm reading from cache, from deprecated caches------")
-
-            deprecated_cache.delete(cache_key)
             if result is not None:
 
                 assert isinstance(result, six.string_types)
@@ -384,7 +373,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
             return success, result
 
-        def_cache = cache.caches["latex"]
+        def_cache = cache.caches["default"]
         if saved_file_path:
             if os.path.isfile(saved_file_path):
                 try:

@@ -364,17 +364,7 @@ class Tex2ImgBase(object):
             "%s_%s.log" % (self.basename, self.compiler.cmd)
         )
 
-        # Where the generated image is supposed to be saved.
-        # but it is actually not saved,
-        # because only the datauri file will be saved
-        # this is used to generate keys
-        self.deprecated_image_saving_path = os.path.join(
-            output_dir,
-            "%s_%s.%s" % (self.basename,
-                          self.compiler.cmd,
-                          self.image_format)
-        )
-        # This is the actually saved datauri file
+        # Where the generated image datauri is supposed to be saved.
         self.datauri_saving_path = os.path.join(
             output_dir,
             "%s_%s_%s_datauri" % (self.basename,
@@ -387,15 +377,6 @@ class Tex2ImgBase(object):
             "%s_%s.tex" % (self.basename,
                           self.compiler.cmd,
                            )
-        )
-
-
-        # deprecated file
-        self.deprecated_datauri_saving_path = os.path.join(
-            output_dir,
-            "%s_%s_datauri_%s" % (self.basename,
-                          self.compiler.cmd,
-                          self.image_format)
         )
 
     def get_compiler_cmdline(self, tex_path):
@@ -508,7 +489,6 @@ class Tex2ImgBase(object):
             if not os.path.isfile(self.datauri_saving_path):
                 with atomic_write(self.datauri_saving_path, mode="wb") as f:
                     f.write(datauri)
-            # delete deprecated saved images
 
         except OSError:
             raise RuntimeError(error)
@@ -531,7 +511,7 @@ class Tex2ImgBase(object):
         except ImproperlyConfigured:
             err_cache_key = None
         else:
-            def_cache = cache.caches["latex"]
+            def_cache = cache.caches["default"]
             err_cache_key = ("latex_err:%s:%s"
                              % (self.compiler.cmd, self.basename))
             # Memcache is apparently limited to 250 characters.
@@ -611,18 +591,7 @@ class Tex2ImgBase(object):
         except ImproperlyConfigured:
             uri_cache_key = None
         else:
-            def_cache = cache.caches["latex"]
-            deprecated_cache = cache.caches["default"]
-
-            deprecated_uri_cache_key = (
-                "latex2img:%s:%s" % (
-                    self.compiler.cmd,
-                    md5(
-                        self.deprecated_image_saving_path.encode("utf-8")
-                    ).hexdigest()
-                )
-            )
-
+            def_cache = cache.caches["default"]
             uri_cache_key = (
                 "latex2img:%s:%s" % (
                     self.compiler.cmd,
@@ -635,34 +604,13 @@ class Tex2ImgBase(object):
             if not result:
                 # Memcache is apparently limited to 250 characters.
                 if len(uri_cache_key) < 240:
-                    result_from_deprecated_key = deprecated_cache.get(deprecated_uri_cache_key)
-                    if result_from_deprecated_key:
-                        def_cache.delete(deprecated_uri_cache_key)
-                        deprecated_cache.delete(deprecated_uri_cache_key)
-                        if settings.DEBUG:
-                            print ("----------i'm removing deprecated keys!!!!!!!!-----")
                     result = def_cache.get(uri_cache_key)
-                    if result is None:
-                        def_cache.delete(uri_cache_key)
-                    if not result and result_from_deprecated_key:
-                        result = result_from_deprecated_key
-                        def_cache.add(uri_cache_key, result, None)
-                        if settings.DEBUG:
-                            print ("----------i'm adding new keys!!!!!!!!-----")
                     if result:
                         assert isinstance(
                             result, six.string_types),\
                             uri_cache_key
-                        deprecated_cache.delete(uri_cache_key)
                         if settings.DEBUG:
                             print ("----------i'm reading from cache---------------------")
-                        try:
-                            os.remove(self.deprecated_image_saving_path)
-                            os.remove(self.deprecated_datauri_saving_path)
-                            if settings.DEBUG:
-                                print ("image file removed!!!!!!!!!!!!!!!!!!!!!!!!---------------------")
-                        except:
-                            pass
                         if not os.path.isfile(self.datauri_saving_path):
                             with atomic_write(self.datauri_saving_path, mode="wb") as f:
                                 f.write(result)
@@ -682,26 +630,6 @@ class Tex2ImgBase(object):
             else:
                 if settings.DEBUG:
                     print ("i'm reading from file---------------------")
-
-        # remove the image files
-        if not result:
-            if os.path.isfile(self.deprecated_image_saving_path):
-                result = get_image_datauri(self.deprecated_image_saving_path)
-                if settings.DEBUG:
-                    print ("i'm reading from deprecated image file!!!!!!!!!!!!!!!!!!!!!!!!---------------------")
-                if not os.path.isfile(self.datauri_saving_path):
-                    with atomic_write(self.datauri_saving_path, mode="wb") as f:
-                        f.write(result)
-                try:
-                    os.remove(self.deprecated_image_saving_path)
-                    if settings.DEBUG:
-                        print ("image file removed!!!!!!!!!!!!!!!!!!!!!!!!---------------------")
-                except:
-                    pass
-                try:
-                    os.remove(self.deprecated_datauri_saving_path)
-                except:
-                    pass
 
         if not result:
             result = self.get_converted_image_datauri()
