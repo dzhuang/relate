@@ -338,7 +338,12 @@ class PageBase(object):
 
                     # }}}
 
+                if not getattr(page_desc, "require_submission", True):
+                    if getattr(page_desc, "value", 0) > 0:
+                        vctx.add_warning(location, _("An optional page should have 'value = 0'"))
+
             self.page_desc = page_desc
+            self.page_desc.require_submission = getattr(self.page_desc, "require_submission", True)
 
         else:
             from warnings import warn
@@ -368,6 +373,7 @@ class PageBase(object):
 
         return (
             ("access_rules", Struct),
+            ("require_submission", bool)
             )
 
     def get_modified_permissions_for_page(self, permissions):

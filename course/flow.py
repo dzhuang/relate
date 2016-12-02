@@ -646,7 +646,7 @@ def get_session_answered_page_data(
 
         page = instantiate_flow_page_with_ctx(fctx, page_data)
         if page.expects_answer():
-            if answer_data is None:
+            if answer_data is None and getattr(page.page_desc, "require_submission", True):
                 unanswered_page_data_list.append(page_data)
             else:
                 answered_page_data_list.append(page_data)
