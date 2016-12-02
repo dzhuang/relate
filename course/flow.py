@@ -2065,11 +2065,12 @@ def view_flow_page(pctx, flow_session_id, ordinal):
             from course.models import get_flow_grading_opportunity
             grading_rule = get_session_grading_rule (
                 flow_session, fpctx.flow_desc, now_datetime)
-            opportunity = get_flow_grading_opportunity (
-                pctx.course, flow_session.flow_id, fpctx.flow_desc,
-                grading_rule.grade_identifier,
-                grading_rule.grade_aggregation_strategy)
-            args["opportunity"] = opportunity
+            if grading_rule.grade_identifier and grading_rule.generates_grade:
+                opportunity = get_flow_grading_opportunity (
+                    pctx.course, flow_session.flow_id, fpctx.flow_desc,
+                    grading_rule.grade_identifier,
+                    grading_rule.grade_aggregation_strategy)
+                args["opportunity"] = opportunity
 
     return render_course_page(
             pctx, "course/flow-page.html", args,
@@ -2729,7 +2730,8 @@ def finish_flow_session_view(pctx, flow_session_id):
                 answered_count=answered_count,
                 unanswered_count=unanswered_count,
                 unanswered_page_data_list=unanswered_page_data_list,
-                total_count=answered_count+unanswered_count)
+                total_count=answered_count+unanswered_count,
+                session_may_generate_grade=grading_rule.generates_grade)
 
 # }}}
 
