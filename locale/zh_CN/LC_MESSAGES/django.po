@@ -4787,7 +4787,7 @@ msgstr ""
 
 #: .\course\templates\course\flow-page.html:299
 msgid "Session duration:"
-msgstr "session的时间长度:"
+msgstr "本Session持续时长:"
 
 #: .\course\templates\course\flow-page.html:301
 msgid "minutes"
