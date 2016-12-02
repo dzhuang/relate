@@ -139,6 +139,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 if hasattr(page_desc, attr):
                     self.cache_key_attrs.append(attr)
 
+        self.will_receive_grade = getattr(page_desc, "will_receive_grade", True)
+
     def required_attrs(self):
         return super(LatexRandomQuestionBase, self).required_attrs() + (
             ("data_files", (list,str)),
@@ -155,8 +157,12 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             ("cache_key_files", list),
             ("cache_key_attrs", list),
             ("use_question_data_file_as_cache", bool),
-            ("warm_up_by_sandbox", bool)
+            ("warm_up_by_sandbox", bool),
+            ("will_receive_grade", bool),
         )
+
+    def is_answer_gradable(self):
+        return self.will_receive_grade
 
     def update_page_data(self, page_context, page_data):
         question_data = page_data.get("question_data", None)
@@ -256,7 +262,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
             # this is used to let sandbox do the warm up job for
             # sequentially ordered data(not random)
-
+            if not page_context.in_sandbox or not warm_up_by_sandbox:
+                break
 
             page_data = {"question_data": question_data,
                          "key_making_string_md5": md5(key_making_string).hexdigest()
@@ -271,9 +278,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                         continue
                 except KeyError:
                     continue
-
-            if not page_context.in_sandbox or not warm_up_by_sandbox:
-                break
 
         if page_context.in_sandbox and warm_up_by_sandbox:
             random_data = choice(all_data)
