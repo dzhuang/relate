@@ -444,7 +444,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 success, answer_str_tmp = self.get_cached_result(
                                    page_context, page_data, part="answer")
                 if success:
-                    markup_to_html(page_context, answer_str_tmp)
+                    #markup_to_html(page_context, answer_str_tmp)
                     break
 
             if not success:
@@ -790,7 +790,7 @@ class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestio
                 success, blank_str_tmp = self.get_cached_result(
                     page_context, page_data, part="blank")
                 if success:
-                    markup_to_html(page_context, blank_str_tmp)
+                    #markup_to_html(page_context, blank_str_tmp)
                     break
 
             if not success:
@@ -805,7 +805,7 @@ class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestio
                 success, blank_answer_str_tmp = self.get_cached_result(
                     page_context, page_data, part="blank_answer")
                 if success:
-                    markup_to_html(page_context,blank_answer_str_tmp)
+                    #markup_to_html(page_context,blank_answer_str_tmp)
                     break
 
             if not success:
@@ -819,7 +819,7 @@ class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestio
                 success, answer_explanation_str_tmp = self.get_cached_result(
                     page_context, page_data, part="answer_explanation")
                 if success:
-                    markup_to_html(page_context, answer_explanation_str_tmp)
+                    #markup_to_html(page_context, answer_explanation_str_tmp)
                     break
 
             if not success:
