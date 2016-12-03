@@ -449,8 +449,7 @@ class Tex2ImgBase(object):
         will be copied to ``output_dir``.
         :return: string, the datauri
         """
-        if settings.DEBUG:
-            print ("i'm converting from source-------------------------------------")
+        print ("i'm converting from source-------------------------------------")
         compiled_file_path = self.get_compiled_file()
         if not compiled_file_path:
             return None
@@ -544,8 +543,7 @@ class Tex2ImgBase(object):
                         def_cache.add(err_cache_key, err_result, None)
 
             # regenerate cache error
-            if settings.DEBUG:
-                print ("---cache error---")
+            print ("---cache error---")
 
             if not os.path.isfile(self.error_tex_source_path):
                 with atomic_write(self.error_tex_source_path, mode="wb") as f:
@@ -609,8 +607,7 @@ class Tex2ImgBase(object):
                         assert isinstance(
                             result, six.string_types),\
                             uri_cache_key
-                        if settings.DEBUG:
-                            print ("----------i'm reading from cache---------------------")
+                        print ("----------i'm reading from cache---------------------")
                         if not os.path.isfile(self.datauri_saving_path):
                             with atomic_write(self.datauri_saving_path, mode="wb") as f:
                                 f.write(result)
@@ -628,8 +625,7 @@ class Tex2ImgBase(object):
                 except:
                     pass
             else:
-                if settings.DEBUG:
-                    print ("i'm reading from file---------------------")
+                print ("i'm reading from file---------------------")
 
         if not result:
             result = self.get_converted_image_datauri()
