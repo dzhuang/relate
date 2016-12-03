@@ -395,7 +395,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             if success and len(result) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
                 if def_cache.get(cache_key) is None:
                     def_cache.delete(cache_key)
-                def_cache.add(cache_key, result)
+                def_cache.add(cache_key, result, None)
             return True, result
 
         try:
@@ -415,7 +415,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         if success and len(result) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
             if def_cache.get(cache_key) is None:
                 def_cache.delete(cache_key)
-            def_cache.add(cache_key, result)
+            def_cache.add(cache_key, result, None)
 
         if success and result is not None:
             if saved_file_path and will_save_file_local:
@@ -464,6 +464,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             self, page_context, question_data, code_name, common_code_name=""):
 
         # {{{ request run
+
+        print ("-----------------------------I am runpy !!!----------------")
 
         assert question_data
         run_jinja_req = {"compile_only": False}
