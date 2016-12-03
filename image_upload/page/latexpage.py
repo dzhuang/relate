@@ -338,8 +338,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                             f.write(result.encode('UTF-8'))
                 if test_key_existance:
                     return True, result
-                if settings.DEBUG:
-                    print("-----I'm reading from cache------")
+                print("-----I'm reading from cache------")
                 return True, result
 
         # cache_key is None means cache is not enabled
@@ -358,6 +357,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
             if result is None:
                 try:
+                    print ("------------!!!!! I'm visiting docker !!!!!!!!!!!!---------------")
                     success, result = self.jinja_runpy(
                         page_context,
                         page_data["question_data"],
@@ -388,8 +388,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     pass
                 if result is not None:
                     success = True
-                    if settings.DEBUG:
-                        print ("-----------I'm reading from saved_file_path-------------")
+                    print ("-----------I'm reading from saved_file_path-------------")
         if result is not None:
             assert isinstance(result, six.string_types), cache_key
             if success and len(result) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
@@ -399,6 +398,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             return True, result
 
         try:
+            print ("------------!!!!! I'm visiting docker !!!!!!!!!!!!---------------")
             success, result = self.jinja_runpy(
                 page_context,
                 page_data["question_data"],
