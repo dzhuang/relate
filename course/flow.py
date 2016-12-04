@@ -634,6 +634,7 @@ def get_session_answered_page_data(
 
     answered_page_data_list = []  # type: List[FlowPageData]
     unanswered_page_data_list = []  # type: List[FlowPageData]
+    is_interactive_flow = False  # type: bool
 
     for i, page_data in enumerate(all_page_data):
         assert i == page_data.ordinal
@@ -645,13 +646,15 @@ def get_session_answered_page_data(
             answer_data = None
 
         page = instantiate_flow_page_with_ctx(fctx, page_data)
-        if page.expects_answer() and getattr(page.page_desc, "require_submission", True):
-            if answer_data is None:
-                unanswered_page_data_list.append(page_data)
-            else:
-                answered_page_data_list.append(page_data)
+        if page.expects_answer():
+            is_interactive_flow = True
+            if getattr(page.page_desc, "require_submission", True):
+                if answer_data is None:
+                    unanswered_page_data_list.append(page_data)
+                else:
+                    answered_page_data_list.append(page_data)
 
-    return (answered_page_data_list, unanswered_page_data_list)
+    return (answered_page_data_list, unanswered_page_data_list, is_interactive_flow)
 
 
 class GradeInfo(object):
@@ -2532,14 +2535,14 @@ def finish_flow_session_view(pctx, flow_session_id):
 
     answer_visits = assemble_answer_visits(flow_session)  # type: List[Optional[FlowPageVisit]]  # noqa
 
-    (answered_page_data_list, unanswered_page_data_list) =\
+    (answered_page_data_list, unanswered_page_data_list, is_interactive_flow) =\
         get_session_answered_page_data(
             fctx, flow_session, answer_visits)
 
     answered_count = len(answered_page_data_list)
     unanswered_count = len(unanswered_page_data_list)
 
-    is_interactive_flow = bool(answered_count + unanswered_count)  # type: bool
+    #is_interactive_flow = bool(answered_count + unanswered_count)  # type: bool
 
     if flow_permission.view not in access_rule.permissions:
         raise PermissionDenied()
