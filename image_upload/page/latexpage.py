@@ -394,7 +394,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             if success and len(result) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
                 if def_cache.get(cache_key) is None:
                     def_cache.delete(cache_key)
-                def_cache.add(cache_key, result, None)
+                def_cache.add(cache_key, result)
             return True, result
 
         try:
@@ -415,7 +415,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         if success and len(result) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
             if def_cache.get(cache_key) is None:
                 def_cache.delete(cache_key)
-            def_cache.add(cache_key, result, None)
+            def_cache.add(cache_key, result)
 
         if success and result is not None:
             if saved_file_path and will_save_file_local:

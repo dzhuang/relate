@@ -540,7 +540,7 @@ class Tex2ImgBase(object):
             if err_cache_key:
                 if len(err_result) <= getattr(
                         settings, "RELATE_CACHE_MAX_BYTES", 0):
-                        def_cache.add(err_cache_key, err_result, None)
+                        def_cache.add(err_cache_key, err_result)
 
             # regenerate cache error
             print ("---cache error---")
@@ -650,7 +650,7 @@ class Tex2ImgBase(object):
         if len(result) <= allowed_max_bytes:
             # image size larger than allowed_max_bytes
             # won't be cached, espeically for svgs.
-            def_cache.add(uri_cache_key, result, None)
+            def_cache.add(uri_cache_key, result)
         return result
 
 # }}}
