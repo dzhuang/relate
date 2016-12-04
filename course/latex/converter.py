@@ -449,7 +449,6 @@ class Tex2ImgBase(object):
         will be copied to ``output_dir``.
         :return: string, the datauri
         """
-        print ("i'm converting from source-------------------------------------")
         compiled_file_path = self.get_compiled_file()
         if not compiled_file_path:
             return None
@@ -510,7 +509,7 @@ class Tex2ImgBase(object):
         except ImproperlyConfigured:
             err_cache_key = None
         else:
-            def_cache = cache.caches["default"]
+            def_cache = cache.caches["latex"]
             err_cache_key = ("latex_err:%s:%s"
                              % (self.compiler.cmd, self.basename))
             # Memcache is apparently limited to 250 characters.
@@ -543,8 +542,6 @@ class Tex2ImgBase(object):
                         def_cache.add(err_cache_key, err_result)
 
             # regenerate cache error
-            print ("---cache error---")
-
             if not os.path.isfile(self.error_tex_source_path):
                 with atomic_write(self.error_tex_source_path, mode="wb") as f:
                     f.write(self.tex_source)
@@ -589,7 +586,7 @@ class Tex2ImgBase(object):
         except ImproperlyConfigured:
             uri_cache_key = None
         else:
-            def_cache = cache.caches["default"]
+            def_cache = cache.caches["latex"]
             uri_cache_key = (
                 "latex2img:%s:%s" % (
                     self.compiler.cmd,
@@ -607,7 +604,6 @@ class Tex2ImgBase(object):
                         assert isinstance(
                             result, six.string_types),\
                             uri_cache_key
-                        print ("----------i'm reading from cache---------------------")
                         if not os.path.isfile(self.datauri_saving_path):
                             with atomic_write(self.datauri_saving_path, mode="wb") as f:
                                 f.write(result)
@@ -624,8 +620,6 @@ class Tex2ImgBase(object):
                     os.remove(self.datauri_saving_path)
                 except:
                     pass
-            else:
-                print ("i'm reading from file---------------------")
 
         if not result:
             result = self.get_converted_image_datauri()
