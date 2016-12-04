@@ -35,7 +35,7 @@ from django.core.exceptions import ObjectDoesNotExist, ImproperlyConfigured
 from django.conf import settings
 from django.utils.html import escape
 
-    from course.content import markup_to_html as mth
+from course.content import markup_to_html as mth
 from course.page.base import (
     PageBaseWithTitle, PageBaseWithValue, PageBaseWithHumanTextFeedback,
     PageBaseWithCorrectAnswer)
