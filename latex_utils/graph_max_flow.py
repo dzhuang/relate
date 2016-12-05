@@ -1435,7 +1435,7 @@ for g_dict in g_list_loaded:
         node_distance="3cm",
         g=g,
         show_flow_network_capacity_only=True,
-#        show_max_flow_network=True,
+        show_max_flow_network=True,
 
         min_cut_set_s=", ".join(str(s+1) for s in partition[0]),
         max_flow_value=max_flow_value,

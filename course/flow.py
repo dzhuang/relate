@@ -634,6 +634,7 @@ def get_session_answered_page_data(
 
     answered_page_data_list = []  # type: List[FlowPageData]
     unanswered_page_data_list = []  # type: List[FlowPageData]
+    is_interactive_flow = False  # type: bool
 
     for i, page_data in enumerate(all_page_data):
         assert i == page_data.ordinal
@@ -646,12 +647,14 @@ def get_session_answered_page_data(
 
         page = instantiate_flow_page_with_ctx(fctx, page_data)
         if page.expects_answer():
-            if answer_data is None:
-                unanswered_page_data_list.append(page_data)
-            else:
-                answered_page_data_list.append(page_data)
+            is_interactive_flow = True
+            if getattr(page.page_desc, "require_submission", True):
+                if answer_data is None:
+                    unanswered_page_data_list.append(page_data)
+                else:
+                    answered_page_data_list.append(page_data)
 
-    return (answered_page_data_list, unanswered_page_data_list)
+    return (answered_page_data_list, unanswered_page_data_list, is_interactive_flow)
 
 
 class GradeInfo(object):
@@ -1806,7 +1809,6 @@ def view_flow_page(pctx, flow_session_id, ordinal):
 
             if viewing_prior_version:
                 from django.template import defaultfilters
-                from relate.utils import as_local_time
                 messages.add_message(request, messages.INFO,
                     _("Viewing prior submission dated %(date)s.")
                     % {
@@ -1929,8 +1931,12 @@ def view_flow_page(pctx, flow_session_id, ordinal):
     session_minutes = None
     time_factor = 1
     if flow_permission.see_session_time in permissions:
+        if not flow_session.in_progress:
+            end_time = as_local_time(flow_session.completion_time)
+        else:
+            end_time = now_datetime
         session_minutes = (
-                now_datetime - flow_session.start_time).total_seconds() / 60
+                end_time - flow_session.start_time).total_seconds() / 60
         if flow_session.participation is not None:
             time_factor = flow_session.participation.time_factor
 
@@ -2062,11 +2068,12 @@ def view_flow_page(pctx, flow_session_id, ordinal):
             from course.models import get_flow_grading_opportunity
             grading_rule = get_session_grading_rule (
                 flow_session, fpctx.flow_desc, now_datetime)
-            opportunity = get_flow_grading_opportunity (
-                pctx.course, flow_session.flow_id, fpctx.flow_desc,
-                grading_rule.grade_identifier,
-                grading_rule.grade_aggregation_strategy)
-            args["opportunity"] = opportunity
+            if grading_rule.grade_identifier and grading_rule.generates_grade:
+                opportunity = get_flow_grading_opportunity (
+                    pctx.course, flow_session.flow_id, fpctx.flow_desc,
+                    grading_rule.grade_identifier,
+                    grading_rule.grade_aggregation_strategy)
+                args["opportunity"] = opportunity
 
     return render_course_page(
             pctx, "course/flow-page.html", args,
@@ -2528,14 +2535,14 @@ def finish_flow_session_view(pctx, flow_session_id):
 
     answer_visits = assemble_answer_visits(flow_session)  # type: List[Optional[FlowPageVisit]]  # noqa
 
-    (answered_page_data_list, unanswered_page_data_list) =\
+    (answered_page_data_list, unanswered_page_data_list, is_interactive_flow) =\
         get_session_answered_page_data(
             fctx, flow_session, answer_visits)
 
     answered_count = len(answered_page_data_list)
     unanswered_count = len(unanswered_page_data_list)
 
-    is_interactive_flow = bool(answered_count + unanswered_count)  # type: bool
+    #is_interactive_flow = bool(answered_count + unanswered_count)  # type: bool
 
     if flow_permission.view not in access_rule.permissions:
         raise PermissionDenied()
@@ -2726,7 +2733,8 @@ def finish_flow_session_view(pctx, flow_session_id):
                 answered_count=answered_count,
                 unanswered_count=unanswered_count,
                 unanswered_page_data_list=unanswered_page_data_list,
-                total_count=answered_count+unanswered_count)
+                total_count=answered_count+unanswered_count,
+                session_may_generate_grade=grading_rule.generates_grade)
 
 # }}}
 

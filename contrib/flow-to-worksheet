@@ -22,6 +22,7 @@ TEMPLATE = Template(r"""
 \usepackage{examtron}
 \pagestyle{empty}
 
+\usepackage{longtable}
 \usepackage{titlesec}
 \usepackage{tikz}
 \titleformat{\section}
@@ -87,6 +88,9 @@ def convert_page_inner(page):
     elif page.type in ["ChoiceQuestion", "MultipleChoiceQuestion",
             "SurveyChoiceQuestion"]:
         prompt = convert_markup(page.prompt)
+
+        if page.type == "MultipleChoiceQuestion":
+            prompt += "\n\n(Select all that apply.)"
 
         choices = [
             "\item "

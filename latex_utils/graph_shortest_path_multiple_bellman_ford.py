@@ -319,7 +319,7 @@ g = { 'graph': np.matrix([[ 0,  6,  7,  2,  0,  0,  0,  0],
         [ 0,  0,  0,  0,  0,  0,  0, -1],
         [ 0,  0,  0,  0,  0,  0,  0,  0]]),
     "node_label_dict": None,
-    "edge_label_style_dict":{(0, 3): 'bend left'},
+    "edge_label_style_dict":{(0, 3): 'bend right'},
 }
 g_list.append(g)
 
@@ -332,7 +332,7 @@ g = { 'graph': np.matrix([[ 0,  8,  3,  6,  0,  0,  0,  0],
         [ 0,  0,  0,  0,  0,  0,  0,  4],
         [ 0,  0,  0,  0,  0,  0,  0,  0]]),
     "node_label_dict": None,
-    "edge_label_style_dict":{(0, 3): 'bend left'},
+    "edge_label_style_dict":{(0, 3): 'bend right'},
 }
 g_list.append(g)
 
@@ -384,7 +384,7 @@ g = { 'graph': np.matrix([[ 0,  4,  6,  0,  0,  0,  0,  0],
         [ 0,  0,  0,  0,  0,  0,  0,  8],
         [ 0,  0,  0,  0,  0,  0,  0,  0]]),
     "node_label_dict": None,
-    "edge_label_style_dict":{(4, 5): 'pos=0.25', (2, 5): 'pos=0.15', (3, 4): 'pos=0.25', (1, 4): 'bend right, pos=0.25', (3, 6): 'bend left, pos=0.75'},
+    "edge_label_style_dict":{(4, 5): 'pos=0.25', (2, 5): 'pos=0.15', (3, 4): 'pos=0.25', (1, 4): 'bend left, pos=0.25', (3, 6): 'bend right, pos=0.75'},
 }
 g_list.append(g)
 
@@ -397,7 +397,7 @@ g = { 'graph': np.matrix([[ 0,  6,  3,  0,  0,  0,  0,  0],
         [ 0,  0,  0,  0,  0,  0,  0,  7],
         [ 0,  0,  0,  0,  0,  0,  0,  0]]),
     "node_label_dict": None,
-    "edge_label_style_dict":{(4, 5): 'pos=0.25', (2, 5): 'pos=0.15', (3, 4): 'pos=0.25', (1, 4): 'bend right, pos=0.25', (3, 6): 'bend left, pos=0.75'},
+    "edge_label_style_dict":{(4, 5): 'pos=0.25', (2, 5): 'pos=0.15', (3, 4): 'pos=0.25', (1, 4): 'bend left, pos=0.25', (3, 6): 'bend right, pos=0.75'},
 }
 g_list.append(g)
 
@@ -849,7 +849,7 @@ g = { 'graph': np.matrix([[ 0,  6,  6,  7,  0,  0,  0,  0],
         [ 0,  0,  0,  0,  0,  0,  0,  1],
         [ 0,  0,  0,  0,  0,  0,  0,  0]]),
     "node_label_dict": None,
-    "edge_label_style_dict":{(0, 3): 'bend left'},
+    "edge_label_style_dict":{(0, 3): 'bend right'},
 }
 g_list.append(g)
 
@@ -862,7 +862,7 @@ g = { 'graph': np.matrix([[ 0,  2, -2,  8,  0,  0,  0,  0],
         [ 0,  0,  0,  0,  0,  0,  0,  1],
         [ 0,  0,  0,  0,  0,  0,  0,  0]]),
     "node_label_dict": None,
-    "edge_label_style_dict":{(0, 3): 'bend left'},
+    "edge_label_style_dict":{(0, 3): 'bend right'},
 }
 g_list.append(g)
 
@@ -914,7 +914,7 @@ g = { 'graph': np.matrix([[ 0,  6,  2,  0,  0,  0,  0,  0],
         [ 0,  0,  0,  0,  0,  0,  0, -1],
         [ 0,  0,  0,  0,  0,  0,  0,  0]]),
     "node_label_dict": None,
-    "edge_label_style_dict":{(4, 5): 'pos=0.25', (2, 5): 'pos=0.15', (3, 4): 'pos=0.25', (3, 6): 'bend left, pos=0.75', (1, 4): 'bend right, pos=0.25'},
+    "edge_label_style_dict":{(4, 5): 'pos=0.25', (2, 5): 'pos=0.15', (3, 4): 'pos=0.25', (3, 6): 'bend right, pos=0.75', (1, 4): 'bend left, pos=0.25'},
 }
 g_list.append(g)
 
@@ -927,7 +927,7 @@ g = { 'graph': np.matrix([[ 0,  3,  3,  0,  0,  0,  0,  0],
         [ 0,  0,  0,  0,  0,  0,  0,  5],
         [ 0,  0,  0,  0,  0,  0,  0,  0]]),
     "node_label_dict": None,
-    "edge_label_style_dict":{(4, 5): 'pos=0.25', (2, 5): 'pos=0.15', (3, 4): 'pos=0.25', (3, 6): 'bend left, pos=0.75', (1, 4): 'bend right, pos=0.25'},
+    "edge_label_style_dict":{(4, 5): 'pos=0.25', (2, 5): 'pos=0.15', (3, 4): 'pos=0.25', (3, 6): 'bend right, pos=0.75', (1, 4): 'bend left, pos=0.25'},
 }
 g_list.append(g)
 

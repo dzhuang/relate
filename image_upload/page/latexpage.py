@@ -35,7 +35,7 @@ from django.core.exceptions import ObjectDoesNotExist, ImproperlyConfigured
 from django.conf import settings
 from django.utils.html import escape
 
-from course.page import markup_to_html
+from course.content import markup_to_html as mth
 from course.page.base import (
     PageBaseWithTitle, PageBaseWithValue, PageBaseWithHumanTextFeedback,
     PageBaseWithCorrectAnswer)
@@ -55,6 +55,24 @@ from course.page.code import (
 CACHE_VERSION = "V0"
 
 MAX_JINJIA_RETRY = 3
+
+
+def markup_to_html(
+        page_context,  # type: PageContext
+        text,  # type: Text
+        warm_up_only=False,  # type: bool
+        use_jinja=True,  # type: bool
+        ):
+    # type: (...) -> Text
+
+    return mth(
+            page_context.course,
+            page_context.repo,
+            page_context.commit_sha,
+            text,
+            validate_only=warm_up_only,
+            use_jinja=use_jinja)
+
 
 def is_course_staff(page_context):
     from course.constants import (
@@ -129,11 +147,17 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         self.cache_key_attrs = getattr(page_desc, "cache_key_attrs", [])
         if not self.cache_key_attrs:
             for attr in [
-                    "background_code",
-                    "question_process_code",
-                    "answer_process_code"]:
+                "background_code",
+                "question_process_code",
+                "answer_process_code",
+                "blank_answer_process_code",
+                "blank_process_code",
+                "answer_explanation_process_code",
+            ]:
                 if hasattr(page_desc, attr):
                     self.cache_key_attrs.append(attr)
+
+        self.will_receive_grade = getattr(page_desc, "will_receive_grade", True)
 
     def required_attrs(self):
         return super(LatexRandomQuestionBase, self).required_attrs() + (
@@ -151,8 +175,12 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             ("cache_key_files", list),
             ("cache_key_attrs", list),
             ("use_question_data_file_as_cache", bool),
-            ("warm_up_by_sandbox", bool)
+            ("warm_up_by_sandbox", bool),
+            ("will_receive_grade", bool),
         )
+
+    def is_answer_gradable(self):
+        return self.will_receive_grade
 
     def update_page_data(self, page_context, page_data):
         question_data = page_data.get("question_data", None)
@@ -242,6 +270,14 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 self.generate_question_data_key_making_string(page_context, selected_data_bytes)
             )
 
+            # for debuging errors using page_data
+            # if question_data == "KGRwMApTJ3Byb2plY3RfbGlzdCcKcDEKKGxwMgpWXHU1YjUwXHU1MTZjXHU1M2Y4MQpwMwphVlx1NWI1MFx1NTE2Y1x1NTNmODIKcDQKYVZcdTViNTBcdTUxNmNcdTUzZjgzCnA1CmFWXHU1YjUwXHU1MTZjXHU1M2Y4NApwNgphVlx1NWI1MFx1NTE2Y1x1NTNmODUKcDcKYXNTJ3RvdGFsX3Jlc291cmNlJwpwOApJODAwCnNTJ2dhaW4nCnA5CmNudW1weS5jb3JlLm11bHRpYXJyYXkKX3JlY29uc3RydWN0CnAxMAooY251bXB5Lm1hdHJpeGxpYi5kZWZtYXRyaXgKbWF0cml4CnAxMQooSTAKdHAxMgpTJ2InCnAxMwp0cDE0ClJwMTUKKEkxCihJNQpJNgp0cDE2CmNudW1weQpkdHlwZQpwMTcKKFMnZjgnCnAxOApJMApJMQp0cDE5ClJwMjAKKEkzClMnPCcKcDIxCk5OTkktMQpJLTEKSTAKdHAyMgpiSTAwClMnXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBceGY4XHg3Zlx4MDBceDAwXHgwMFx4MDBceDAwXHhjMGdAXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwaUBceDAwXHgwMFx4MDBceDAwXHgwMGB4QFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMHlAXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBceGY4XHg3Zlx4MDBceDAwXHgwMFx4MDBceDAwXHg4MFtAXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHhmOFx4N2ZceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBpQFx4MDBceDAwXHgwMFx4MDBceDAwIHdAXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHhmOFx4N2ZceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBceGY4XHg3Zlx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4ZjhceDdmXHgwMFx4MDBceDAwXHgwMFx4MDBceDgwW0BceDAwXHgwMFx4MDBceDAwXHgwMGBzQFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4ZjhceDdmXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHhmOFx4N2ZceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBZQFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMGlAXHgwMFx4MDBceDAwXHgwMFx4MDBAcEBceDAwXHgwMFx4MDBceDAwXHgwMFx4YTB0QFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4ZjhceDdmXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBZQFx4MDBceDAwXHgwMFx4MDBceDAwXHg4MGFAXHgwMFx4MDBceDAwXHgwMFx4MDBAZUBceDAwXHgwMFx4MDBceDAwXHgwMEBvQFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMHRAJwpwMjMKdHAyNApic1MnZGVjaXNpb25fc2V0JwpwMjUKKGxwMjYKSTAKYUkxMDAKYUkyMDAKYUkzMDAKYUk0MDAKYUk1MDAKYXMu":
+            #     #print key_making_string
+            #
+            #     print "here---------------------"
+            #
+            #     print md5(key_making_string).hexdigest()
+
             # this is used to let sandbox do the warm up job for
             # sequentially ordered data(not random)
             if not page_context.in_sandbox or not warm_up_by_sandbox:
@@ -251,9 +287,12 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                          "key_making_string_md5": md5(key_making_string).hexdigest()
                          }
 
-            for part in ["answer", "question", "blank", "blank_answer"]:
+            for part in ["answer", "question", "blank", "blank_answer", "answer_explanation"]:
                 try:
-                    if self.get_cached_result(page_context, page_data, part=part, test_key_existance=True) == True:
+                    key_exist, result = self.get_cached_result(page_context, page_data, part=part,
+                                                               test_key_existance=True)
+                    if key_exist:
+                        markup_to_html(page_context, result, warm_up_only=True)
                         continue
                 except KeyError:
                     continue
@@ -306,62 +345,71 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                             key_making_string_md5,
                             part))
 
-            def_cache = cache.caches["default"]
+            def_cache = cache.caches["latex"]
             result = def_cache.get(cache_key)
             if result is not None:
-                # print "1-----------here"
+
                 assert isinstance(result, six.string_types)
                 if will_save_file_local:
                     if not os.path.isfile(saved_file_path):
                         with atomic_write(saved_file_path) as f:
                             f.write(result.encode('UTF-8'))
                 if test_key_existance:
-                    return True
+                    return True, result
                 return True, result
-            # else:
-            #     def_cache.delete(cache_key)
-            #     if saved_file_path:
-            #         if os.path.isfile(saved_file_path):
-            #             try:
-            #                 os.remove(saved_file_path)
-            #             except:
-            #                 pass
 
         # cache_key is None means cache is not enabled
+        result = None
         success = False
 
         if cache_key is None:
-            success, result = self.jinja_runpy(
-                page_context,
-                page_data["question_data"],
-                "%s_process_code" % part,
-                common_code_name="background_code")
-            assert isinstance(result, six.string_types)
-            if success and result is not None:
-                if saved_file_path:
-                    if not os.path.isfile(saved_file_path):
-                        # print "2-----------here"
-                        with atomic_write(saved_file_path) as f:
-                            f.write(result.encode('UTF-8'))
-            return True, result
-
-        def_cache = cache.caches["default"]
-
-        result = None
-        # Memcache is apparently limited to 250 characters.
-        if len(cache_key) < 240:
-            result = def_cache.get(cache_key)
-        if result is None:
             if saved_file_path:
                 if os.path.isfile(saved_file_path):
-                    result = file_read(saved_file_path)
-                    # if result is None:
-                    #     try:
+                    try:
+                        result = file_read(saved_file_path)
+                    except:
+                        pass
+                    if result is not None:
+                        success = True
+
+            if result is None:
+                try:
+                    success, result = self.jinja_runpy(
+                        page_context,
+                        page_data["question_data"],
+                        "%s_process_code" % part,
+                        common_code_name="background_code")
+                except TypeError:
+                    return False, result
+                    # May raise an "'NoneType' object is not iterable" error
+                    # jinja_runpy error may write a broken saved file??
+                    # if saved_file_path:
+                    #     if os.path.isfile(saved_file_path):
                     #         os.remove(saved_file_path)
-                    #     except:
-                    #         pass
+
+                if success and result is not None:
+                    if saved_file_path and will_save_file_local:
+                        if not os.path.isfile(saved_file_path):
+                            with atomic_write(saved_file_path) as f:
+                                f.write(result.encode('UTF-8'))
+
+            return success, result
+
+        def_cache = cache.caches["latex"]
+        if saved_file_path:
+            if os.path.isfile(saved_file_path):
+                try:
+                    result = file_read(saved_file_path)
+                except:
+                    pass
+                if result is not None:
+                    success = True
         if result is not None:
             assert isinstance(result, six.string_types), cache_key
+            if success and len(result) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
+                if def_cache.get(cache_key) is None:
+                    def_cache.delete(cache_key)
+                def_cache.add(cache_key, result)
             return True, result
 
         try:
@@ -379,14 +427,15 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             #         os.remove(saved_file_path)
 
         if success and len(result) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
-            def_cache.add(cache_key, result, None)
+            if def_cache.get(cache_key) is None:
+                def_cache.delete(cache_key)
+            def_cache.add(cache_key, result)
 
         if success and result is not None:
             if saved_file_path and will_save_file_local:
-                assert not os.path.isfile(saved_file_path)
-                # print "3-----------here"
-                with atomic_write(saved_file_path) as f:
-                    f.write(result.encode('UTF-8'))
+                if not os.path.isfile(saved_file_path):
+                    with atomic_write(saved_file_path) as f:
+                        f.write(result.encode('UTF-8'))
 
         return success, result
 
@@ -395,6 +444,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             page_data = self.initialize_page_data(page_context)
 
         question_str = ""
+        success = False
+        question_str_tmp = ""
         for i in range(MAX_JINJIA_RETRY):
             success, question_str_tmp = self.get_cached_result(
                     page_context, page_data, part="question")
@@ -406,20 +457,22 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             if page_context.in_sandbox:
                 question_str = question_str_tmp
 
-        # generate correct answer at the same time
         answer_str = ""
-        if hasattr(self.page_desc, "answer_process_code"):
-            for i in range(MAX_JINJIA_RETRY):
-                success, answer_str_tmp = self.get_cached_result(
-                                   page_context, page_data, part="answer")
-                if success:
-                    answer_str = answer_str_tmp
-                    break
-            markup_to_html(page_context,
-                           answer_str)
+        if page_context.in_sandbox:
+            # generate correct answer at the same time
+            if hasattr(self.page_desc, "answer_process_code"):
+                for i in range(MAX_JINJIA_RETRY):
+                    success, answer_str_tmp = self.get_cached_result(
+                                       page_context, page_data, part="answer")
+                    if success:
+                        # markup_to_html(page_context, answer_str_tmp, warm_up_only=True)
+                        break
+
+                    if page_context.in_sandbox:
+                        answer_str = markup_to_html(page_context, answer_str)
 
         return super(LatexRandomQuestionBase, self).body(page_context, page_data)\
-               + markup_to_html(page_context, question_str)
+               + markup_to_html(page_context, question_str) + answer_str
 
     def jinja_runpy(
             self, page_context, question_data, code_name, common_code_name=""):
@@ -693,6 +746,7 @@ class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestio
     def update_page_desc(self, page_context, page_data):
         from course.page.inline import WRAPPED_NAME_RE, NAME_RE, NAME_VALIDATE_RE
 
+        success = False
         question_str = ""
         for i in range(MAX_JINJIA_RETRY):
             success, question_str_tmp = self.get_cached_result(
@@ -701,8 +755,12 @@ class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestio
                 question_str = question_str_tmp
                 break
 
-        question = markup_to_html(page_context, question_str)
+        if success:
+            question = markup_to_html(page_context, question_str)
+        else:
+            raise RuntimeError(question_str_tmp)
 
+        success = False
         answers_str = ""
         for i in range(MAX_JINJIA_RETRY):
             success, answer_str_tmp = self.get_cached_result(
@@ -710,6 +768,9 @@ class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestio
             if success:
                 answers_str = answer_str_tmp
                 break
+
+        if not success:
+            raise RuntimeError(answer_str_tmp)
 
         from relate.utils import dict_to_struct
         import yaml
@@ -732,38 +793,34 @@ class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestio
 
         self.answer_instance_list = answer_instance_list
 
+        success = False
+        if hasattr(self.page_desc, "answer_explanation_process_code"):
+            answer_explanation_str = ""
+            for i in range(MAX_JINJIA_RETRY):
+                success, answer_explanation_tmp = self.get_cached_result(
+                    page_context, page_data, part="answer_explanation")
+                if success:
+                    answer_explanation_str = answer_explanation_tmp
+                    break
+
+            if success:
+                self.page_desc.answer_explanation = answer_explanation_str
+            else:
+                raise RuntimeError(answer_explanation_tmp)
+
     def get_question(self, page_context, page_data):
         self.update_page_desc(page_context, page_data)
         return super(LatexRandomCodeInlineMultiQuestion, self).get_question(page_context, page_data)
-
-    def body(self, page_context, page_data):
-
-        question_str = ""
-        if hasattr(self.page_desc, "blank_process_code"):
-            for i in range(MAX_JINJIA_RETRY):
-                success, question_str_tmp = self.get_cached_result(
-                    page_context, page_data, part="blank")
-                if success:
-                    question_str = question_str_tmp
-                    break
-            markup_to_html(page_context,question_str)
-
-        question_str = ""
-        if hasattr(self.page_desc, "blank_answer_process_code"):
-            for i in range(MAX_JINJIA_RETRY):
-                success, question_str_tmp = self.get_cached_result(
-                    page_context, page_data, part="blank_answer")
-                if success:
-                    question_str = question_str_tmp
-                    break
-            markup_to_html(page_context,question_str)
-
-        return super(LatexRandomCodeInlineMultiQuestion, self).body(page_context, page_data)
 
     def required_attrs(self):
         return super(LatexRandomCodeInlineMultiQuestion, self).required_attrs() + (
             ("blank_process_code", str),
             ("blank_answer_process_code", str)
+        )
+
+    def allowed_attrs(self):
+        return super(LatexRandomCodeInlineMultiQuestion, self).allowed_attrs() + (
+            ("answer_explanation_process_code", str),
         )
 
     def grade(self, page_context, page_data, answer_data, grade_data):

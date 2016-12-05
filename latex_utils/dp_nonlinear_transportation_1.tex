@@ -1,0 +1,65 @@
+\BLOCK{- if show_question -}
+设某种物资有\VAR{dp.supply|length}个产地和\VAR{dp.demand|length}个销地：产地$A_1$、$A_2$各产\VAR{dp.supply[0]}、\VAR{dp.supply[1]}件；销地\BLOCK{for idx in range(1, dp.demand|length + 1)}$B_{\VAR{idx}}$\BLOCK{if not loop.last}\BLOCK{if loop.revindex==2}和\BLOCK{else}、\BLOCK{endif}\BLOCK{endif}\BLOCK{endfor}各销\BLOCK{for d in dp.demand}\VAR{d}\BLOCK{if not loop.last}\BLOCK{if loop.revindex==2}和\BLOCK{else}、\BLOCK{endif}\BLOCK{endif}\BLOCK{endfor}件。从产地运往销地，除单位运费外还有一定的固定费用。
+例如，从$A_1$到$B_2$的运费由两部分构成：固定费用为\VAR{dp.cost[0][1][0]}元；单位运费为\VAR{dp.cost[0][1][1]}元。这样，当运量$x_{12}>0$时，运费按$\VAR{dp.cost[0][1][0]}+\VAR{dp.cost[0][1][1]}\times x_{12}$计算；当运量$x_{12}=0$时，运费为0。在这里引入符号$*$来表示这种关系，如下表。
+
+{% from "latex.jinja" import mytabular_preamble as preamble %}
+\BLOCK{ set cost=dp.cost }
+<p align="middle"></br>
+{% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
+\begin{table}[H]\centering
+\topcaption{}
+\begin{mytabular}{c|\BLOCK{for idx in range(1, dp.demand|length + 1)}c|\BLOCK{endfor}c}\hline\hline
+ \diagbox{产地}{运费}{销地}& \BLOCK{for idx in range(1, dp.demand|length + 1)}$B_{\VAR{idx}}$ & \BLOCK{endfor} 产量\\ \hline
+ \BLOCK{ for s_idx in range(2) }
+ $A_{\VAR{s_idx + 1}}$& \BLOCK{ for d_idx in range(dp.demand|length) }$\VAR{cost[s_idx][d_idx][0]|int}+\VAR{cost[s_idx][d_idx][1]|int}* x_{\VAR{s_idx+1}\VAR{d_idx+1}}$ & \BLOCK{endfor} \VAR{dp.supply[s_idx]}\\ \hline
+ \BLOCK{ endfor }
+ 销量& \VAR{dp.demand|join("&")}& \\ \hline\hline
+\end{mytabular}
+\end{table}
+ {% endcall %}
+</p>
+求一个调运方案，使总费用最小(约定运输量必须为整数)。
+
+\BLOCK{if after_question_description}\VAR{after_question_description}\BLOCK{endif}
+\BLOCK{endif} \#{show_question}
+
+
+\BLOCK{if show_answer_explanation}
+<hr>
+<hr>
+详细的建模和求解过程：
+<hr>
+#### 1、动态规划建模
+
+{% from "latex.jinja" import mytabular_preamble as preamble %}
+{% from "latex.jinja" import question_preamble as math_preamble %}
+
+(1) 阶段数：$n=\VAR{dp.demand|length}$，第$k$阶段是$A_1$与$B_k$的运输量决策。
+
+(2) 状态变量：$s_k$表示第$k$阶段初产地$A_1$**尚未运出的量**，有$s_1=\VAR{dp.total_resource}$。
+
+(3) 决策变量：$x_{1k}$表第$k$阶段产地$A_1$运往$B_k$的量。
+
+(4) 状态转移：$s_{k+1}=s_k-x_{1k}$.
+
+(5) 动态规划基本方程：
+<p align="middle">
+{% call latex(compiler="pdflatex", image_format="png", tex_preamble=math_preamble)  %}
+\large
+\VAR{dp.get_formula_tex()}
+{% endcall %}
+</p>
+其中，阶段指标函数$g_{1k}+g_{2k}$为第$k$阶段的运输费用。
+
+此外，模型还需满足运输量平衡条件：
+$$\begin{align*}
+\left\{\begin{array}{l}
+\BLOCK{for idx in range(dp.n_stages)}
+x_{2\VAR{idx+1}}=\VAR{dp.demand[idx]}-x_{1\VAR{idx+1}} \BLOCK{if not loop.last} \\ \BLOCK{endif}
+\BLOCK{endfor}
+\end{array}\right.
+\end{align*}$$
+
+</br>
+<hr>
+\BLOCK{endif}\#{show_answer_explanation}

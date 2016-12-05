@@ -1,0 +1,62 @@
+\BLOCK{- if show_question -}
+W公司市场部门计划在\VAR{dp.project_list|join("、")}三地共租用\VAR{dp.total_resource}台宣传车开展其新产品的现场推介及促销活动。根据往年的宣传效果统计数据，在不同城市、租用不同数量宣传车时的带来的促销收益的估计值（单位：万元）如下表所示，表中被划去的单元格表示不允许相应的方案：
+
+{% from "latex.jinja" import mytabular_preamble as preamble %}
+<p align="middle"></br>
+{% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
+\begin{table}[H]
+ \centering
+ \topcaption{各地宣传车辆的配备数量与收益的关系表}
+ \begin{mytabular}{c|\BLOCK{for d in dp.project_list}c\BLOCK{if not loop.last}|\BLOCK{endif}\BLOCK{endfor}}
+ \hline\hline
+\diagbox{车辆数}{收益$g_k$}{城市}&\VAR{dp.project_list|join("&")}\\ \hline
+\BLOCK{for idx in range(dp.decision_set|length)}
+\VAR{dp.decision_set[idx]}&\VAR{dp.gain_str_list_transposed[idx]|join("&")}\\ \hline
+\BLOCK{endfor}
+ \hline
+ \end{mytabular}
+ \end{table}
+ {% endcall %}
+</p>
+
+问：各城市各应租用多少台宣传车可使该公司所获利的促销收益最大？
+
+
+\BLOCK{endif} \#{show_question}
+
+\BLOCK{if after_question_description}\VAR{after_question_description}\BLOCK{endif}
+
+\BLOCK{if show_answer_explanation}
+<hr>
+<hr>
+详细的建模和求解过程：
+<hr>
+#### 1、动态规划建模
+
+{% from "latex.jinja" import mytabular_preamble as preamble %}
+{% from "latex.jinja" import question_preamble as math_preamble %}
+
+(1) 阶段数$n=\VAR{dp.n_stages}$，以\VAR{dp.project_list|join("、")}作为城市编号的次序，以向第$k$个城市分配车辆的决策作为第$k$阶段。$k=\VAR{range(1, dp.n_stages+1)|join(",")}$；
+
+(2) 状态变量$s_k$为第$k$阶段初**尚未分配的车辆数**，则$s_1=\VAR{dp.total_resource}$（亦即$S_1=\{\VAR{dp.total_resource}\}$）；
+
+(3) 决策变量$x_k$为第$k$阶段向第$k$个城市分配的车辆数，$k=\VAR{range(1, dp.n_stages+1)|join(",")}$；
+
+(4) 状态转移方程为：
+$$
+\begin{align*}
+ &s_{k+1}=s_k-x_k, ~~k=\VAR{range(1, dp.n_stages+1)|join(",")}
+\end{align*}
+$$其中$s_1=\VAR{dp.total_resource}$；
+
+(5) 动态规划基本方程为：
+<p align="middle">
+{% call latex(compiler="pdflatex", image_format="png", tex_preamble=math_preamble)  %}
+\large
+\VAR{dp.get_formula_tex()}
+{% endcall %}
+</p>
+其中，阶段指标$g_k(s_k, x_k)$为第$k$阶段向第$k$个城市分配$x_k$辆车带来的收益。
+</br>
+<hr>
+\BLOCK{endif}\#{show_answer_explanation}
