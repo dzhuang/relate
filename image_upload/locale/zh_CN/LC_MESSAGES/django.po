@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-11-04 11:04+0800\n"
+"POT-Creation-Date: 2016-12-06 17:25+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -200,7 +200,7 @@ msgid ""
 "instructor(s) "
 msgstr "发现参考答案有误？请与老师联系 "
 
-#: .\image_upload\page\imgupload.py:962 .\image_upload\page\latexpage.py:647
+#: .\image_upload\page\imgupload.py:962 .\image_upload\page\latexpage.py:704
 msgid "A correct answer is"
 msgstr "参考答案："
 
@@ -236,17 +236,17 @@ msgstr "反馈"
 msgid "At least 20 characters are required for submission."
 msgstr "至少要输入20个以上的字符才允许提交."
 
-#: .\image_upload\page\latexpage.py:86
+#: .\image_upload\page\latexpage.py:104
 #, python-format
 msgid "'%s' should be listed in 'data_files'"
 msgstr ""
 
-#: .\image_upload\page\latexpage.py:535
+#: .\image_upload\page\latexpage.py:591
 #, python-format
 msgid "LaTex page failed in user %(user)s's session"
 msgstr "用户%(user)s的session中LaTex page加载失败"
 
-#: .\image_upload\page\latexpage.py:553
+#: .\image_upload\page\latexpage.py:610
 msgid ""
 "Both the code and the attempt to notify course staff about the issue failed. "
 "Please contact the course or site staff and inform them of this issue, "
@@ -255,42 +255,42 @@ msgstr ""
 "网页代码错误，同时无法通过邮件通知到课程管理人员. 请与课程管理人员或网站负责"
 "人联系，告知出现的错误，并完整地附上以下的错误信息."
 
-#: .\image_upload\page\latexpage.py:561
+#: .\image_upload\page\latexpage.py:618
 msgid ""
 "Sending an email to the course staff about the following failure failed with "
 "the following error message:"
 msgstr "请发邮件给课程管理员，邮件中包含与错误相关的以下错误信息:"
 
-#: .\image_upload\page\latexpage.py:567
+#: .\image_upload\page\latexpage.py:624
 msgid "The original failure message follows:"
 msgstr "原始的错误信息如下:"
 
-#: .\image_upload\page\latexpage.py:587
+#: .\image_upload\page\latexpage.py:644
 msgid ""
 "The page failed to be rendered. Sorry about that. The staff has been "
 "informed, and it will be fixed as soon as possible."
 msgstr ""
 "页面加载失败. 非常抱歉！课程管理人员应已经收到通知，这个问题将会尽快被修复."
 
-#: .\image_upload\page\latexpage.py:596
+#: .\image_upload\page\latexpage.py:653
 msgid "This is the problematic code"
 msgstr "导致问题的代码如下:"
 
-#: .\image_upload\page\latexpage.py:602
+#: .\image_upload\page\latexpage.py:659
 msgid "This is the exception traceback"
 msgstr "下面为Exception traceback"
 
-#: .\image_upload\page\latexpage.py:611
+#: .\image_upload\page\latexpage.py:668
 msgid ""
 "The page failed to be rendered due to timeout, please try to reload the page "
 "in a while."
 msgstr "页面因超时加载失败，请稍等片刻再刷新."
 
-#: .\image_upload\page\latexpage.py:623
+#: .\image_upload\page\latexpage.py:680
 msgid "Your code produced the following plots"
 msgstr "你的代码生成了以下的图形"
 
-#: .\image_upload\page\latexpage.py:632
+#: .\image_upload\page\latexpage.py:689
 msgid "Figure"
 msgstr ""
 
@@ -305,26 +305,6 @@ msgstr "创建于"
 #: .\image_upload\serialize.py:161
 msgid "modified at"
 msgstr "修改于"
-
-#: .\image_upload\tasks.py:108
-#, python-format
-msgid "%d sessions expired."
-msgstr "%d个session被截止."
-
-#: .\image_upload\tasks.py:144
-#, python-format
-msgid "%d sessions ended."
-msgstr "%d个session被终止."
-
-#: .\image_upload\tasks.py:175
-#, python-format
-msgid "Grades recalculated for %d sessions."
-msgstr ""
-
-#: .\image_upload\tasks.py:209
-#, python-format
-msgid "%d sessions regraded."
-msgstr ""
 
 #: .\image_upload\templates\image_upload\broken-random-latex-question-email.txt:1
 #, python-format
@@ -584,6 +564,12 @@ msgstr "发生错误，请刷新页面或稍后重试"
 #: .\image_upload\views.py:326
 msgid "There are errors，please re-upload the image"
 msgstr "发生错误，请重新上传图片"
+
+#~ msgid "%d sessions expired."
+#~ msgstr "%d个session被截止."
+
+#~ msgid "%d sessions ended."
+#~ msgstr "%d个session被终止."
 
 #~ msgid ""
 #~ "minFileSize should not be greater than maxFileSize, better do not set "

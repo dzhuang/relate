@@ -46,6 +46,7 @@ from image_upload.page.latexpage import (
         LatexRandomChoiceQuestion, LatexRandomMultipleChoiceQuestion,
         LatexRandomCodeTextQuestion, LatexRandomCodeInlineMultiQuestion
 )
+from course.page.code_with_page_context import PythonCodeQuestionWithPageContext
 
 __all__ = (
         "InvalidPageData",
@@ -67,7 +68,8 @@ __all__ = (
         "LatexRandomCodeQuestionWithHumanTextFeedback",
         'LatexRandomChoiceQuestion',
         'LatexRandomMultipleChoiceQuestion',
-        'LatexRandomCodeTextQuestion', "LatexRandomCodeInlineMultiQuestion"
+        'LatexRandomCodeTextQuestion', "LatexRandomCodeInlineMultiQuestion",
+        'PythonCodeQuestionWithPageContext'
         )
 
 __doc__ = """
