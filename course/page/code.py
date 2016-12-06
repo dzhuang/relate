@@ -620,6 +620,15 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                                     page_context.repo, data_file,
                                     page_context.commit_sha).data).decode()
 
+                if (
+                    "question_data" not in run_req["data_files"]
+                    and
+                    page_data
+                    and
+                    page_data.get("question_data", None)
+                ):
+                    run_req["data_files"]["question_data"] = page_data["question_data"]
+
         try:
             response_dict = request_python_run_with_retries(run_req,
                     run_timeout=self.page_desc.timeout)
