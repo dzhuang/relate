@@ -93,7 +93,7 @@ class CommandBase(object):
             )
         elif self.required_version:
             version = ".".join(d for d in m.groups() if d)
-            from distutils.version import LooseVersion as LV
+            import distutils.version.LooseVersion as LV
             if LV(version) < LV(self.required_version):
                 error = Critical(
                     "Version outdated",
@@ -327,7 +327,7 @@ class Tex2ImgBase(object):
             raise ValueError(
                 _("Param 'tex_source' can not be an empty string")
             )
-        assert isinstance(tex_source, unicode)
+        assert isinstance(tex_source, str)
         self.tex_source = tex_source
 
         if output_dir:

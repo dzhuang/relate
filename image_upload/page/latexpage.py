@@ -187,23 +187,23 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         key_making_string = ""
         if self.cache_key_files:
             for cfile in self.cache_key_files:
-                try:
+                #try:
                     cfile_data = get_repo_blob_data_cached(
                         page_context.repo,
                         cfile,
                         page_context.commit_sha)
-                    key_making_string += cfile_data.encode("utf-8")
-                except UnicodeDecodeError:
-                    pass
+                    key_making_string += cfile_data.decode("utf-8")
+                #except UnicodeDecodeError:
+                #    pass
 
         if self.cache_key_attrs:
             for cattr in self.cache_key_attrs:
-                key_making_string += str(getattr(self.page_desc, cattr)).encode("utf-8")
+                key_making_string += str(getattr(self.page_desc, cattr))
 
         if question_data:
             key_making_string += question_data
 
-        page_data["key_making_string_md5"] = md5(key_making_string).hexdigest()
+        page_data["key_making_string_md5"] = md5(key_making_string.encode()).hexdigest()
 
         return page_data
 
@@ -214,18 +214,18 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         key_making_string = ""
         if self.cache_key_files:
             for cfile in self.cache_key_files:
-                try:
+                #try:
                     cfile_data = get_repo_blob_data_cached(
                         page_context.repo,
                         cfile,
                         page_context.commit_sha)
-                    key_making_string += cfile_data.encode("utf-8")
-                except UnicodeDecodeError:
-                    pass
+                    key_making_string += cfile_data.decode("utf-8")
+                #except UnicodeDecodeError:
+                #    pass
 
         if self.cache_key_attrs:
             for cattr in self.cache_key_attrs:
-                key_making_string += str(getattr(self.page_desc, cattr)).encode("utf-8")
+                key_making_string += str(getattr(self.page_desc, cattr))
 
         if question_data:
             key_making_string += question_data
@@ -306,7 +306,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             )
 
         return {"question_data": question_data,
-                "key_making_string_md5": md5(key_making_string).hexdigest()
+                "key_making_string_md5": md5(key_making_string.encode("utf-8")).hexdigest()
                 }
 
     def get_cached_result(self, page_context, page_data, part="", test_key_existance=False):
@@ -332,10 +332,10 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 updated_page_data = self.update_page_data(page_context, page_data)
                 key_making_string_md5 = updated_page_data["key_making_string_md5"]
 
+            print(type(key_making_string_md5))
+
             # To be used as saving name of the latex page
-            saved_file_name = ("%s_%s" % (md5("%s"
-                                      % (key_making_string_md5, )
-                                      ).hexdigest(), CACHE_VERSION))
+            saved_file_name = ("%s_%s" % (md5(key_making_string_md5.encode("utf-8")).hexdigest(), CACHE_VERSION))
 
             saved_file_path = os.path.join(self.page_saving_folder,
                                            "%s_%s" % (saved_file_name, part))
@@ -348,12 +348,15 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             def_cache = cache.caches["latex"]
             result = def_cache.get(cache_key)
             if result is not None:
+                if not isinstance(result, six.text_type):
+                    result = six.text_type(result)
+                    def_cache.set(cache_key, result)
 
-                assert isinstance(result, six.string_types)
+                assert isinstance(result, six.text_type)
                 if will_save_file_local:
                     if not os.path.isfile(saved_file_path):
                         with atomic_write(saved_file_path) as f:
-                            f.write(result.encode('UTF-8'))
+                            f.write(result)
                 if test_key_existance:
                     return True, result
                 return True, result
@@ -405,7 +408,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 if result is not None:
                     success = True
         if result is not None:
-            assert isinstance(result, six.string_types), cache_key
+            assert isinstance(result, six.text_type), cache_key
             if success and len(result) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
                 if def_cache.get(cache_key) is None:
                     def_cache.delete(cache_key)
@@ -435,7 +438,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             if saved_file_path and will_save_file_local:
                 if not os.path.isfile(saved_file_path):
                     with atomic_write(saved_file_path) as f:
-                        f.write(result.encode('UTF-8'))
+                        f.write(result.encode("utf-8"))
 
         return success, result
 

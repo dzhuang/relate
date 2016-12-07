@@ -104,7 +104,7 @@ def get_basename_or_md5(filename, s):
     else:
         if not s:
             return None
-        basename = md5(s).hexdigest()
+        basename = md5(s.encode("utf-8")).hexdigest()
     return basename
 
 

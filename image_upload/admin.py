@@ -137,7 +137,7 @@ class ParticipationTagFilter(admin.SimpleListFilter):
         tag_tuple = ()
 
         for tag in ptag_list:
-            if tag.strip() <> "" and tag <> '<<<NONE>>>':
+            if tag.strip() != "" and tag != '<<<NONE>>>':
                 tag_tuple += (((tag, tag),))
 
         self.tag_tuple = tag_tuple
@@ -168,7 +168,7 @@ class AccessRuleTagFilter(admin.SimpleListFilter):
         tag_tuple = ()
 
         for tag in session_rule_tags:
-            if tag.strip() <> "" and tag <> RULE_TAG_NONE_STRING:
+            if tag.strip() != "" and tag != RULE_TAG_NONE_STRING:
                 tag_tuple += (((tag, tag),))
 
         self.tag_tuple = tag_tuple

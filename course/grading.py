@@ -247,7 +247,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
 
 
-        fpvg_flowsession_id_time_list.sort(key=lambda (x, y): y)
+        fpvg_flowsession_id_time_list.sort(key=lambda xy: xy[1])
         fpvg_flowsession_id_list = [v[0] for v in fpvg_flowsession_id_time_list]
         page_graded_flow_session_list = [fs for fs in all_flow_sessions if fs.pk in fpvg_flowsession_id_list]
 
