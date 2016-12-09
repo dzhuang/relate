@@ -187,17 +187,14 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         key_making_string = ""
         if self.cache_key_files:
             for cfile in self.cache_key_files:
-                try:
+                # try:
                     cfile_data = get_repo_blob_data_cached(
                         page_context.repo,
                         cfile,
                         page_context.commit_sha)
                     key_making_string += cfile_data.decode("utf-8")
-                except UnicodeDecodeError:
-                    pass
-
-        if isinstance(key_making_string, bytes):
-            key_making_string = key_making_string.decode()
+                # except UnicodeDecodeError:
+                #     pass
 
         if self.cache_key_attrs:
             for cattr in self.cache_key_attrs:
@@ -217,16 +214,14 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         key_making_string = ""
         if self.cache_key_files:
             for cfile in self.cache_key_files:
-#                try:
+                # try:
                     cfile_data = get_repo_blob_data_cached(
                         page_context.repo,
                         cfile,
                         page_context.commit_sha)
                     key_making_string += cfile_data.decode("utf-8")
-#                except UnicodeDecodeError:
-#                   pass
-        if isinstance(key_making_string, bytes):
-            key_making_string = key_making_string.decode()
+                # except UnicodeDecodeError:
+                #     pass
 
         if self.cache_key_attrs:
             for cattr in self.cache_key_attrs:
@@ -234,6 +229,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         if question_data:
             key_making_string += question_data
+
+        print(key_making_string)
 
         return question_data, key_making_string
 
@@ -249,7 +246,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             self.page_desc.random_question_data_file,
             page_context.commit_sha)
         bio = BytesIO(repo_bytes_data)
-        repo_data_loaded = pickle.load(bio)
+        repo_data_loaded = pickle.load(bio, encoding="latin-1")
         if not isinstance(repo_data_loaded, (list, tuple)):
             return {}
         n_data = len(repo_data_loaded)
@@ -351,12 +348,14 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             def_cache = cache.caches["latex"]
             result = def_cache.get(cache_key)
             if result is not None:
+                print(result)
 
-                assert isinstance(result, six.string_types)
+                assert isinstance(result, six.text_type)
                 if will_save_file_local:
                     if not os.path.isfile(saved_file_path):
-                        with atomic_write(saved_file_path) as f:
-                            f.write(result.encode('UTF-8'))
+                        print("354")
+                        with atomic_write(saved_file_path, mode="wb") as f:
+                            f.write(result)
                 if test_key_existance:
                     return True, result
                 return True, result
@@ -369,7 +368,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             if saved_file_path:
                 if os.path.isfile(saved_file_path):
                     try:
-                        result = file_read(saved_file_path)
+                        result = file_read(saved_file_path).decode("utf-8")
                     except:
                         pass
                     if result is not None:
@@ -390,11 +389,19 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     #     if os.path.isfile(saved_file_path):
                     #         os.remove(saved_file_path)
 
+                if isinstance(result, six.binary_type):
+                    result = result.decode("utf-8")
+
+                print(result)
+                print(isinstance(result,six.binary_type))
+                print(isinstance(result, six.text_type))
+
                 if success and result is not None:
                     if saved_file_path and will_save_file_local:
                         if not os.path.isfile(saved_file_path):
-                            with atomic_write(saved_file_path) as f:
-                                f.write(result.encode('UTF-8'))
+                            print("397")
+                            with atomic_write(saved_file_path, mode="wb") as f:
+                                f.write(result.decode('utf-8'))
 
             return success, result
 
@@ -402,13 +409,14 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         if saved_file_path:
             if os.path.isfile(saved_file_path):
                 try:
-                    result = file_read(saved_file_path)
-                except:
+                    result = file_read(saved_file_path).decode("utf-8")
+                except OSError:
                     pass
                 if result is not None:
                     success = True
+
         if result is not None:
-            assert isinstance(result, six.string_types), cache_key
+            assert isinstance(result, six.text_type), cache_key
             if success and len(result) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
                 if def_cache.get(cache_key) is None:
                     def_cache.delete(cache_key)
@@ -429,6 +437,11 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             #     if os.path.isfile(saved_file_path):
             #         os.remove(saved_file_path)
 
+        print("result")
+        print(isinstance("result", six.binary_type))
+        if isinstance(result, six.binary_type):
+            result = result.decode("utf-8")
+
         if success and len(result) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
             if def_cache.get(cache_key) is None:
                 def_cache.delete(cache_key)
@@ -436,9 +449,10 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         if success and result is not None:
             if saved_file_path and will_save_file_local:
+                print ("441")
                 if not os.path.isfile(saved_file_path):
-                    with atomic_write(saved_file_path) as f:
-                        f.write(result.encode('UTF-8'))
+                    with atomic_write(saved_file_path, mode="wb") as f:
+                        f.write(result.encode("utf-8"))
 
         return success, result
 
@@ -697,7 +711,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         if success:
             if hasattr(response, "stdout") and response.stdout:
-                return success, response.stdout.encode("utf8")
+                print(response.stdout.encode("utf-8"))
+                print(type(response.stdout))
+                return success, response.stdout
         else:
             return success, '<div class="latexpage-error alert alert-danger">%s</div>' % "\n".join(feedback_bits)
 
