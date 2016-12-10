@@ -41,6 +41,7 @@ class user_status:  # noqa
     unconfirmed = "unconfirmed"
     active = "active"
 
+
 USER_STATUS_CHOICES = (
         (user_status.unconfirmed, pgettext_lazy("User status", "Unconfirmed")),
         (user_status.active, pgettext_lazy("User status", "Active")),
@@ -72,7 +73,7 @@ PARTICIPATION_STATUS_CHOICES = (
 
 # {{{ participation permission
 
-class participation_permission:
+class participation_permission:  # noqa
     edit_course = "edit_course"
     use_admin_interface = "use_admin_interface"
 
@@ -268,6 +269,7 @@ class flow_session_expiration_mode:  # noqa
     # allowed by special permission below
     roll_over = "roll_over"
 
+
 FLOW_SESSION_EXPIRATION_MODE_CHOICES = (
         (flow_session_expiration_mode.end,
             pgettext_lazy("Flow expiration mode", "Submit session for grading")),
@@ -394,6 +396,7 @@ class flow_permission:  # noqa
             "cannot_see_in_participant_grade_book"
     cannot_see_result_in_participant_grade_book =\
             "cannot_see_result_in_participant_grade_book"
+
 
 FLOW_PERMISSION_CHOICES = (
         (flow_permission.view,

@@ -31,6 +31,7 @@ from django.db import connection
 from django.db.models import Q
 from django.shortcuts import (  # noqa
         get_object_or_404, redirect)
+from django.contrib import messages
 from django.core.exceptions import (  # noqa
         PermissionDenied, SuspiciousOperation,
         ObjectDoesNotExist)
@@ -55,6 +56,8 @@ from course.utils import (
         FlowPageContext)
 from course.flow import get_all_page_data
 from course.views import get_now_or_fake_time
+from course.page import InvalidPageData
+
 from django.conf import settings
 from django.utils import translation
 from course.constants import (
@@ -103,6 +106,10 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
         raise SuspiciousOperation(
                 _("Cannot grade anonymous session"))
 
+    from course.flow import adjust_flow_session_page_data
+    adjust_flow_session_page_data(pctx.repo, flow_session,
+            pctx.course.identifier, respect_preview=False)
+
     fpctx = FlowPageContext(pctx.repo, pctx.course, flow_session.flow_id,
             page_ordinal, participation=flow_session.participation,
             flow_session=flow_session, request=pctx.request)
@@ -112,11 +119,6 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
     assert fpctx.page is not None
     assert fpctx.page_context is not None
-
-    from course.flow import adjust_flow_session_page_data
-    adjust_flow_session_page_data(pctx.repo, flow_session,
-            pctx.course.identifier, fpctx.flow_desc,
-            respect_preview=True)
 
     grading_rule = get_session_grading_rule(
             flow_session, fpctx.flow_desc, get_now_or_fake_time(pctx.request))
@@ -424,9 +426,22 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 show_answer=False,
                 may_change_answer=False)
 
-        form = fpctx.page.make_form(
-                fpctx.page_context, fpctx.page_data.data,
-                answer_data, page_behavior)
+        try:
+            form = fpctx.page.make_form(
+                    fpctx.page_context, fpctx.page_data.data,
+                    answer_data, page_behavior)
+        except InvalidPageData as e:
+            messages.add_message(pctx.request, messages.ERROR,
+                    _(
+                        "The page data stored in the database was found "
+                        "to be invalid for the page as given in the "
+                        "course content. Likely the course content was "
+                        "changed in an incompatible way (say, by adding "
+                        "an option to a choice question) without changing "
+                        "the question ID. The precise error encountered "
+                        "was the following: ")+str(e))
+
+            return render_course_page(pctx, "course/course-base.html", {})
 
     if form is not None:
         form_html = fpctx.page.form_to_html(
