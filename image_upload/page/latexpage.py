@@ -230,8 +230,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         if question_data:
             key_making_string += question_data
 
-        print(key_making_string)
-
         return question_data, key_making_string
 
     def initialize_page_data(self, page_context):
@@ -246,7 +244,12 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             self.page_desc.random_question_data_file,
             page_context.commit_sha)
         bio = BytesIO(repo_bytes_data)
-        repo_data_loaded = pickle.load(bio, encoding="latin-1")
+        try:
+            # py3
+            repo_data_loaded = pickle.load(bio, encoding="latin-1")
+        except TypeError:
+            # py2
+            repo_data_loaded = pickle.load(bio)
         if not isinstance(repo_data_loaded, (list, tuple)):
             return {}
         n_data = len(repo_data_loaded)
@@ -348,12 +351,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             def_cache = cache.caches["latex"]
             result = def_cache.get(cache_key)
             if result is not None:
-                print(result)
-
                 assert isinstance(result, six.text_type)
                 if will_save_file_local:
                     if not os.path.isfile(saved_file_path):
-                        print("354")
                         with atomic_write(saved_file_path, mode="wb") as f:
                             f.write(result)
                 if test_key_existance:
@@ -392,14 +392,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 if isinstance(result, six.binary_type):
                     result = result.decode("utf-8")
 
-                print(result)
-                print(isinstance(result,six.binary_type))
-                print(isinstance(result, six.text_type))
-
                 if success and result is not None:
                     if saved_file_path and will_save_file_local:
                         if not os.path.isfile(saved_file_path):
-                            print("397")
                             with atomic_write(saved_file_path, mode="wb") as f:
                                 f.write(result.decode('utf-8'))
 
@@ -437,8 +432,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             #     if os.path.isfile(saved_file_path):
             #         os.remove(saved_file_path)
 
-        print("result")
-        print(isinstance("result", six.binary_type))
         if isinstance(result, six.binary_type):
             result = result.decode("utf-8")
 
@@ -449,7 +442,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         if success and result is not None:
             if saved_file_path and will_save_file_local:
-                print ("441")
                 if not os.path.isfile(saved_file_path):
                     with atomic_write(saved_file_path, mode="wb") as f:
                         f.write(result.encode("utf-8"))
@@ -531,6 +523,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     run_timeout=self.docker_run_timeout)
         except:
             from traceback import format_exc
+            print("".join(format_exc()))
             response_dict = {
                     "result": "uncaught_error",
                     "message": "Error connecting to container",
@@ -711,8 +704,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         if success:
             if hasattr(response, "stdout") and response.stdout:
-                print(response.stdout.encode("utf-8"))
-                print(type(response.stdout))
                 return success, response.stdout
         else:
             return success, '<div class="latexpage-error alert alert-danger">%s</div>' % "\n".join(feedback_bits)

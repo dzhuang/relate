@@ -521,9 +521,6 @@ class Tex2ImgBase(object):
             if err_result is not None:
                 if not isinstance(err_result, six.text_type):
                     err_result = six.text_type(err_result)
-                # print "err_result from cache: ------------------------------"
-                # print "bytes:", isinstance(err_result, bytes)
-                # print "unicode:", isinstance(err_result, unicode)
 
         if err_result is None:
             # read the saved err_log if it exists
@@ -532,9 +529,6 @@ class Tex2ImgBase(object):
                     err_result = file_read(self.errlog_saving_path).decode("utf-8")
                     if not isinstance(err_result, six.text_type):
                         err_result = six.text_type(err_result)
-                    # print "err_result read from file: ------------------------------"
-                    # print "bytes:", isinstance(err_result, bytes)
-                    # print "unicode:", isinstance(err_result, unicode)
                 else:
                     try:
                         os.remove(self.errlog_saving_path)
@@ -613,9 +607,6 @@ class Tex2ImgBase(object):
                     if result:
                         if not isinstance(result, six.text_type):
                             result = six.text_type(result)
-                        # print "url_result from cache: ------------------------------"
-                        # print "bytes:", isinstance(result, bytes)
-                        # print "unicode:", isinstance(result, unicode)
                         if not os.path.isfile(self.datauri_saving_path):
                             with atomic_write(self.datauri_saving_path, mode="wb") as f:
                                 f.write(result)
@@ -626,16 +617,8 @@ class Tex2ImgBase(object):
         if not result:
             if os.path.isfile(self.datauri_saving_path):
                 result = file_read(self.datauri_saving_path).decode("utf-8")
-                #print(result)
-                print( "url_result read from file: ------------------------------")
-                print( "bytes:", isinstance(result, six.binary_type))
-                print( "unicode:", isinstance(result, six.text_type))
                 if not isinstance(result, six.text_type):
                     result = six.text_type(result)
-                #print(result)
-                print( "url_result read from file: ------------------------------")
-                print( "bytes:", isinstance(result, six.binary_type))
-                print( "unicode:", isinstance(result, six.text_type))
             if not result:
                 # possible empty string, remove the file
                 try:
@@ -645,9 +628,6 @@ class Tex2ImgBase(object):
 
         if not result:
             result = self.get_converted_image_datauri()
-            # print "url_result generated: ------------------------------"
-            # print "bytes:", isinstance(result, bytes)
-            # print "unicode:", isinstance(result, unicode)
             if not isinstance(result, six.text_type):
                 result = six.text_type(result)
             if not os.path.isfile(self.datauri_saving_path):
@@ -674,10 +654,6 @@ class Tex2ImgBase(object):
             assert isinstance(result, six.text_type), \
                 uri_cache_key
             def_cache.add(uri_cache_key, result)
-            # test_result = def_cache.get(uri_cache_key)
-            # print "test_result from cache: ------------------------------"
-            # print "bytes:", isinstance(test_result, bytes)
-            # print "unicode:", isinstance(test_result, unicode)
         return result
 
 # }}}

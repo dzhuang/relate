@@ -180,6 +180,7 @@ def request_python_run(run_req, run_timeout, image=None):
                             }
 
         while True:
+            print(connect_host_ip, port)
             try:
                 connection = http_client.HTTPConnection(connect_host_ip, port)
 
