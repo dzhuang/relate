@@ -486,7 +486,7 @@ class Tex2ImgBase(object):
             # avoid race condition
             if not os.path.isfile(self.datauri_saving_path):
                 with atomic_write(self.datauri_saving_path, mode="wb") as f:
-                    f.write(datauri)
+                    f.write(datauri.encode("utf-8"))
 
         except OSError:
             raise RuntimeError(error)
