@@ -309,14 +309,15 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         from django.core.urlresolvers import NoReverseMatch
         from django.core.urlresolvers import reverse
         try:
-            grading_path = reverse(
+            grading_page_uri = reverse(
                 "relate-grade_flow_page",
-                kwargs={'course_identifier': page_context.course.identifier,
-                        'flow_session_id': page_context.flow_session.id,
-                        'page_ordinal': page_context.ordinal
-                        }
+                args=(
+                    page_context.course.identifier,
+                    page_context.flow_session.id,
+                    page_context.ordinal)
             )
-            in_grading_page = grading_path == request_path
+
+            in_grading_page = grading_page_uri == request_path
         except NoReverseMatch:
             if page_context.in_sandbox:
                 pass
