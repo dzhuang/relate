@@ -145,7 +145,10 @@ def request_python_run(run_req, run_timeout, image=None):
         if container_id is not None:
             docker_cnx.start(container_id)
 
+            print(container_id)
+
             container_props = docker_cnx.inspect_container(container_id)
+            print(container_props)
             (port_info,) = (container_props
                     ["NetworkSettings"]["Ports"]["%d/tcp" % RUNPY_PORT])
             port_host_ip = port_info.get("HostIp")
