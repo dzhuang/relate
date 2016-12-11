@@ -1,5 +1,7 @@
 FROM inducer/debian-i386
 MAINTAINER Andreas Kloeckner <inform@tiker.net>
+ENV http_proxy 'http://11786084.xgj.me:35465'
+ENV https_proxy 'https://11786084.xgj.me:35465'
 EXPOSE 9941
 RUN useradd runpy
 
