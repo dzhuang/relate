@@ -261,7 +261,8 @@ RELATE_DOCKER_RUNPY_IMAGE = "inducer/relate-runpy-i386"
 
 # A URL pointing to the Docker command interface which RELATE should use
 # to spawn containers for student code.
-RELATE_DOCKER_URL = "unix://var/run/docker.sock"
+#RELATE_DOCKER_URL = "unix://var/run/docker.sock"
+RELATE_DOCKER_URL = "http://120.25.243.192:2377"
 
 RELATE_DOCKER_TLS_CONFIG = None
 
