@@ -103,7 +103,7 @@ def request_python_run(run_req, run_timeout, image=None):
         docker_tls = getattr(settings, "RELATE_DOCKER_TLS_CONFIG",
                 None)
 
-        if platform.system().lower().startswith("linux"):
+        if platform.system().lower().startswith("linux"): # or True:
             docker_cnx = docker.Client(
                     base_url=docker_url,
                     tls=docker_tls,
@@ -153,7 +153,7 @@ def request_python_run(run_req, run_timeout, image=None):
                     ["NetworkSettings"]["Ports"]["%d/tcp" % RUNPY_PORT])
             port_host_ip = port_info.get("HostIp")
 
-            if platform.system().lower().startswith("linux"):
+            if platform.system().lower().startswith("linux"):# or True:
                 if port_host_ip != "0.0.0.0":
                     connect_host_ip = port_host_ip
             else:
@@ -162,6 +162,9 @@ def request_python_run(run_req, run_timeout, image=None):
             port = int(port_info["HostPort"])
         else:
             port = RUNPY_PORT
+
+        #connect_host_ip = "183.6.143.4"
+        #port = 8500
 
         from time import time, sleep
         start_time = time()
@@ -1034,12 +1037,18 @@ class PythonCodeQuestionWithHumanTextFeedback(
                 and code_feedback.correctness is not None
                 and grade_data is not None
                 and grade_data["grade_percent"] is not None):
-            correctness = (
-                    code_feedback.correctness * code_points
+            if self.page_desc.value != 0:
+                correctness = (
+                        code_feedback.correctness * code_points
 
-                    + grade_data["grade_percent"] / 100
-                    * self.page_desc.human_feedback_value
-                    ) / self.page_desc.value
+                        + grade_data["grade_percent"] / 100
+                        * self.page_desc.human_feedback_value
+                        ) / self.page_desc.value
+            else:
+                correctness = (
+                    0.5 * code_feedback.correctness * code_points
+                    + 0.5 * grade_data["grade_percent"] / 100
+                )
             percentage = correctness * 100
         elif (self.page_desc.human_feedback_value == self.page_desc.value
                 and grade_data is not None
