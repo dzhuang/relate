@@ -804,7 +804,7 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                 ":"
                 "<ul>%s</ul></p>"]) %
                         "".join(
-                            "<li>%s</li>" % escape(fb_item)
+                            "<li>%s</li>" % fb_item
                             for fb_item in response.feedback))
         if hasattr(response, "traceback") and response.traceback:
             feedback_bits.append("".join([
