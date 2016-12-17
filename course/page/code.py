@@ -103,7 +103,7 @@ def request_python_run(run_req, run_timeout, image=None):
         docker_tls = getattr(settings, "RELATE_DOCKER_TLS_CONFIG",
                 None)
 
-        if platform.system().lower().startswith("linux") or True:
+        if platform.system().lower().startswith("linux"):# or True:
             docker_cnx = docker.Client(
                     base_url=docker_url,
                     tls=docker_tls,
@@ -111,11 +111,15 @@ def request_python_run(run_req, run_timeout, image=None):
                     version="1.19")
         else:
             from docker.utils import kwargs_from_env
+            kwargs = kwargs_from_env()
+            #kwargs['tls'] = docker_tls
+            kwargs['tls'].assert_hostname = False
+            kwargs['timeout'] = docker_timeout
             docker_cnx = docker.Client(
-                timeout=docker_timeout,
-                **kwargs_from_env(assert_hostname=False)
+                **kwargs
             )
-
+        from docker.utils import kwargs_from_env
+        print(kwargs_from_env())
         if image is None:
             image = settings.RELATE_DOCKER_RUNPY_IMAGE
 
@@ -153,15 +157,18 @@ def request_python_run(run_req, run_timeout, image=None):
                     ["NetworkSettings"]["Ports"]["%d/tcp" % RUNPY_PORT])
             port_host_ip = port_info.get("HostIp")
 
-            if platform.system().lower().startswith("linux") or True:
+
+            if platform.system().lower().startswith("linux"): # or True:
                 if port_host_ip != "0.0.0.0":
-                    connect_host_ip = port_host_ip
+                    connect_host_ip = getattr(settings, "RELATE_DOCKER_HOST_IP", port_host_ip)
             else:
                 connect_host_ip = getattr(settings, "RELATE_DOCKER_HOST_IP")
 
             port = int(port_info["HostPort"])
         else:
             port = RUNPY_PORT
+
+        print(connect_host_ip)
 
         #connect_host_ip = "183.6.143.4"
         #port = 8500
