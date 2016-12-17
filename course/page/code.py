@@ -103,7 +103,7 @@ def request_python_run(run_req, run_timeout, image=None):
         docker_tls = getattr(settings, "RELATE_DOCKER_TLS_CONFIG",
                 None)
 
-        if platform.system().lower().startswith("linux"): # or True:
+        if platform.system().lower().startswith("linux") or True:
             docker_cnx = docker.Client(
                     base_url=docker_url,
                     tls=docker_tls,
@@ -153,7 +153,7 @@ def request_python_run(run_req, run_timeout, image=None):
                     ["NetworkSettings"]["Ports"]["%d/tcp" % RUNPY_PORT])
             port_host_ip = port_info.get("HostIp")
 
-            if platform.system().lower().startswith("linux"):# or True:
+            if platform.system().lower().startswith("linux") or True:
                 if port_host_ip != "0.0.0.0":
                     connect_host_ip = port_host_ip
             else:
