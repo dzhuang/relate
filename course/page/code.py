@@ -78,7 +78,6 @@ class InvalidPingResponse(RuntimeError):
 
 
 def request_python_run(run_req, run_timeout, image=None):
-    import platform
     import json
     from six.moves import http_client
     import docker
@@ -102,24 +101,17 @@ def request_python_run(run_req, run_timeout, image=None):
                 "unix://var/run/docker.sock")
         docker_tls = getattr(settings, "RELATE_DOCKER_TLS_CONFIG",
                 None)
-
-        if platform.system().lower().startswith("linux"):# or True:
-            docker_cnx = docker.Client(
-                    base_url=docker_url,
-                    tls=docker_tls,
-                    timeout=docker_timeout,
-                    version="1.19")
-        else:
+        docker_kwargs = {
+            "base_url": docker_url,
+            "timeout": docker_timeout,
+            "tls": docker_tls,
+            "version": "1.19"
+        }
+        if getattr(settings, "RELATE_USE_LOCAL_DOCKER_MACHINE", False):
             from docker.utils import kwargs_from_env
-            kwargs = kwargs_from_env()
-            #kwargs['tls'] = docker_tls
-            # kwargs['tls'].assert_hostname = False
-            kwargs['timeout'] = docker_timeout
-            docker_cnx = docker.Client(
-                **kwargs
-            )
-        from docker.utils import kwargs_from_env
-        print(kwargs_from_env())
+            docker_kwargs.update(kwargs_from_env())
+        docker_cnx = docker.Client(**docker_kwargs)
+
         if image is None:
             image = settings.RELATE_DOCKER_RUNPY_IMAGE
 
@@ -149,29 +141,35 @@ def request_python_run(run_req, run_timeout, image=None):
         if container_id is not None:
             docker_cnx.start(container_id)
 
-            print(container_id)
-
             container_props = docker_cnx.inspect_container(container_id)
-            print(container_props)
+            #print(container_props)
             (port_info,) = (container_props
                     ["NetworkSettings"]["Ports"]["%d/tcp" % RUNPY_PORT])
             port_host_ip = port_info.get("HostIp")
 
+            if port_host_ip != "0.0.0.0":
+                connect_host_ip = port_host_ip
 
-            if platform.system().lower().startswith("linux"): # or True:
-                if port_host_ip != "0.0.0.0":
-                    connect_host_ip = getattr(settings, "RELATE_DOCKER_HOST_IP", port_host_ip)
-            else:
-                connect_host_ip = getattr(settings, "RELATE_DOCKER_HOST_IP")
+            #print(getattr(settings, "RELATE_MAPPED_DOCKER_HOST_IP", None), "---------------------------")
+
+            if (not getattr(settings, "RELATE_USE_LOCAL_DOCKER_MACHINE", False)
+                and
+                getattr(settings, "RELATE_MAPPED_DOCKER_HOST_IP", None)
+                ):
+                mapped_ip = settings.RELATE_MAPPED_DOCKER_HOST_IP
+                connect_host_ip = mapped_ip.get(port_host_ip, connect_host_ip)
+
+            if (getattr(settings, "RELATE_USE_LOCAL_DOCKER_MACHINE", False)
+                and
+                getattr(settings, "RELATE_DOCKER_HOST_IP", None)
+                ):
+                connect_host_ip = settings.RELATE_DOCKER_HOST_IP
 
             port = int(port_info["HostPort"])
         else:
             port = RUNPY_PORT
 
-        print(connect_host_ip)
-
-        #connect_host_ip = "183.6.143.4"
-        #port = 8500
+        #print(connect_host_ip)
 
         from time import time, sleep
         start_time = time()
@@ -193,7 +191,7 @@ def request_python_run(run_req, run_timeout, image=None):
                             }
 
         while True:
-            print(connect_host_ip, port)
+            #print(connect_host_ip, port)
             try:
                 connection = http_client.HTTPConnection(connect_host_ip, port)
 
