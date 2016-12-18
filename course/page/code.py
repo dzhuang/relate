@@ -113,7 +113,7 @@ def request_python_run(run_req, run_timeout, image=None):
             from docker.utils import kwargs_from_env
             kwargs = kwargs_from_env()
             #kwargs['tls'] = docker_tls
-            kwargs['tls'].assert_hostname = False
+            # kwargs['tls'].assert_hostname = False
             kwargs['timeout'] = docker_timeout
             docker_cnx = docker.Client(
                 **kwargs
