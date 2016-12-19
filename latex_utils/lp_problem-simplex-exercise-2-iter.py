@@ -754,12 +754,12 @@ for l in lp_json_list_loaded:
     #print(lp.solve_opt_res_str)
     print("iterations:", lp.solutionCommon.nit)
     #if lp.solutionCommon.nit in [2]:
-    if lp.solutionCommon.nit in [4]: # and lp.qtype=="max":
+    if lp.solutionCommon.nit in [3, 4]: # and lp.qtype=="max":
         final_lp_list.append(lp.json)
         count += 1
         r.clipboard_append(tex)
 
 print(count)
 
-# with open('lp_simplex_3_iter_max_min.bin', 'wb') as f:
-#         pickle.dump(final_lp_list, f)
+with open('lp_simplex_3_iter_max_min.bin', 'wb') as f:
+        pickle.dump(final_lp_list, f)
