@@ -764,6 +764,7 @@ for l in lp_json_list_loaded:
         r.clipboard_append(tex)
 
 
+r.mainloop()
 print(count)
 
 with open('lp_simplex_3_iter_max_min_proof.bin', 'wb') as f:

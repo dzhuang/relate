@@ -1306,6 +1306,8 @@ for l in lp_json_list_loaded:
 
 print(count1, count2)
 
+r.mainloop()
+
 with open(SAVED_QUESTION_2_iter, 'wb') as f:
         pickle.dump(final_lp_list1, f)
 with open(SAVED_QUESTION_3_iter, 'wb') as f:

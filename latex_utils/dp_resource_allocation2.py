@@ -1405,3 +1405,4 @@ for i, dp_dict in enumerate(dp_list_loaded):
     )
     r.clipboard_append(question_tex + solve_tex)
 
+r.mainloop()

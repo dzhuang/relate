@@ -260,3 +260,4 @@ for l in lp_json_list_loaded:
 
     r.clipboard_append(tex)
 
+r.mainloop()

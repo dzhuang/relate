@@ -783,5 +783,6 @@ for l in lp_json_list_loaded:
         final_lp_list.append(lp.json)
         count += 1
 
+r.mainloop()
 print(count)
 

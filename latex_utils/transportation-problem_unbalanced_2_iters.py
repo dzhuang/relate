@@ -628,6 +628,7 @@ for i, tr in enumerate(transport_dict_list_loaded):
 
     r.clipboard_append(tex)
 
+r.mainloop()
 
 print(success)
 print("count_unbalanced:", count_unbalanced)

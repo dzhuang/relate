@@ -529,5 +529,7 @@ for lp_dict in json_list:
 
 print(count)
 
+r.mainloop()
+
 with open('lp_simplex_3_iter_artificial.bin', 'wb') as f:
         pickle.dump(final_lp_list, f)

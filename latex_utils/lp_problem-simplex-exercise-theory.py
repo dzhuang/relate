@@ -757,6 +757,7 @@ for l in lp_json_list_loaded:
         count += 1
 
 print(count)
+r.mainloop()
 
 with open('lp_simplex_theory.bin', 'wb') as f:
         pickle.dump(final_lp_list, f)

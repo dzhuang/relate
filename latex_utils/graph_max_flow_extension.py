@@ -2009,5 +2009,6 @@ for g_dict in g_list_loaded:
     r.clipboard_append(tex)
 #    print("最短路条数",len(list(g.get_shortest_path())))
 
+r.mainloop()
 print(n)
 

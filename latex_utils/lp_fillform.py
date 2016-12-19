@@ -22,7 +22,12 @@ lp = LP(qtype="max",
         ],
         )
 
-from Tkinter import Tk
+try:
+    # Python 3.x
+    from tkinter import Tk
+except ImportError:
+    # Python 2.x
+    from Tkinter import Tk
 r = Tk()
 r.withdraw()
 r.clipboard_clear()
@@ -70,3 +75,4 @@ for l in lp_json_list_loaded:
 
     r.clipboard_append(tex)
 
+r.mainloop()

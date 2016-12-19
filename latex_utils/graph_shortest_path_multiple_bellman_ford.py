@@ -1208,35 +1208,3 @@ for g_dict in g_list_loaded:
     print("最短路条数",len(list(g.get_shortest_path())))
 
 print(n)
-
-
-
-# preamble of the picture of the graph.
-"""
-
-{% set preabmle %}
-\usepackage{tikz}
-\usetikzlibrary{graphs,graphs.standard,graphdrawing,quotes,shapes,arrows.meta}
-\usegdlibrary{force}
-{% endset %}
-
-<p align="middle">
-{% call latex(compiler="lualatex", image_format="png", alt="question", tex_preamble=preamble) %}
-
-
-{% endcall %}
-</p>
-
-
-"""
-
-# 求解结果
-"""
-{% from "latex.jinja" import mytabular_preamble as preamble %}
-
-<p align="middle">
-{% call latex(compiler="pdflatex", image_format="png", alt="question", tex_preamble=preamble) %}
-
-{% endcall %}
-</p>
-"""

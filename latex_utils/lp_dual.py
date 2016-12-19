@@ -95,3 +95,4 @@ tex = template.render(
 # )
 
 r.clipboard_append(tex)
+r.mainloop()

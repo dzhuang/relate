@@ -2,8 +2,8 @@
 
 # 产销平衡，(西北角>2 <=3 or 最小元素>2 <=3) 求解有退化，最后无退化
 
-from .utils.latex_utils import latex_jinja_env, _file_write
-from .utils.transportation import transportation
+from latex_utils.utils.latex_utils import latex_jinja_env, _file_write
+from latex_utils.utils.transportation import transportation
 import numpy as np
 import random
 try:
@@ -1424,4 +1424,4 @@ print("count1:", count1)
 # with open(SAVED_QUESTION, 'wb') as f:
 #     pickle.dump(transport_dict_list, f)
 
-
+r.mainloop()

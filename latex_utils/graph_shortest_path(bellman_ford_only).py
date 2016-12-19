@@ -862,3 +862,4 @@ for g_dict in g_list_loaded:
     print(list(g.get_shortest_path()))
 
 print(n)
+r.mainloop()
