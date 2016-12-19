@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from latex_utils.utils.dynamic_programming import ResourceAllocationDP, force_calculate_feasible_state
-from latex_utils.utils.latex_utils import latex_jinja_env, _file_write
+from latex_utils.utils.latex_utils import latex_jinja_env
 from copy import deepcopy
 import numpy as np
 import random

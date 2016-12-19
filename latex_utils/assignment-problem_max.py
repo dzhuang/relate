@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from .utils.latex_utils import latex_jinja_env, _file_write
+from .utils.latex_utils import latex_jinja_env
 import numpy as np
 import random
 from .utils.hungarian import linear_sum_assignment

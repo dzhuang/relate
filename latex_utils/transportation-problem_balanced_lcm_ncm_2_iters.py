@@ -2,7 +2,7 @@
 
 # 产销平衡，(西北角>2 <=3 or 最小元素>2 <=3) 求解有退化，最后无退化
 
-from latex_utils.utils.latex_utils import latex_jinja_env, _file_write
+from latex_utils.utils.latex_utils import latex_jinja_env
 from latex_utils.utils.transportation import transportation
 import numpy as np
 import random

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from latex_utils.utils.latex_utils import latex_jinja_env, _file_write
+from latex_utils.utils.latex_utils import latex_jinja_env
 from latex_utils.utils.lpmodel import LP
 from copy import deepcopy
 
@@ -682,10 +682,12 @@ tex = template.render(
     lp = lp
 )
 
-
-_file_write("lp_test.tex", tex.encode('UTF-8'))
-
-from Tkinter import Tk
+try:
+    # Python 3.x
+    from tkinter import Tk
+except ImportError:
+    # Python 2.x
+    from Tkinter import Tk
 r = Tk()
 r.withdraw()
 r.clipboard_clear()
@@ -752,12 +754,12 @@ for l in lp_json_list_loaded:
     #print(lp.solve_opt_res_str)
     print("iterations:", lp.solutionCommon.nit)
     #if lp.solutionCommon.nit in [2]:
-    if lp.solutionCommon.nit in [3, 4]: # and lp.qtype=="max":
+    if lp.solutionCommon.nit in [4]: # and lp.qtype=="max":
         final_lp_list.append(lp.json)
         count += 1
         r.clipboard_append(tex)
 
 print(count)
 
-with open('lp_simplex_3_iter_max_min.bin', 'wb') as f:
-        pickle.dump(final_lp_list, f)
+# with open('lp_simplex_3_iter_max_min.bin', 'wb') as f:
+#         pickle.dump(final_lp_list, f)

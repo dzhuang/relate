@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from latex_utils.utils.latex_utils import latex_jinja_env, _file_write
+from latex_utils.utils.latex_utils import latex_jinja_env
 from latex_utils.utils.graph import network, NetworkNegativeWeightUsingDijkstra, dumps_tikz_doc
 from copy import deepcopy
 from networkx.algorithms.flow.preflowpush import preflow_push
@@ -2217,10 +2217,6 @@ g = { 'graph': np.matrix([[     0, 135000,  55000, 125000,      0,      0,      
 g_list.append(g)
 
 
-
-
-
-from Tkinter import Tk
 r = Tk()
 r.withdraw()
 r.clipboard_clear()

@@ -5,7 +5,7 @@
 SAVED_QUESTION_2_iter = "lp_dual_complementary_basic_solution_2_iter.bin"
 SAVED_QUESTION_3_iter = "lp_dual_complementary_basic_solution_3_iter.bin"
 
-from latex_utils.utils.latex_utils import latex_jinja_env, _file_write
+from latex_utils.utils.latex_utils import latex_jinja_env
 from latex_utils.utils.lpmodel import LP
 from copy import deepcopy
 
@@ -27,7 +27,12 @@ lp = LP(qtype="max",
         ],
         )
 
-from Tkinter import Tk
+try:
+    # Python 3.x
+    from tkinter import Tk
+except ImportError:
+    # Python 2.x
+    from Tkinter import Tk
 r = Tk()
 r.withdraw()
 r.clipboard_clear()

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from .utils.latex_utils import latex_jinja_env, _file_write
+from .utils.latex_utils import latex_jinja_env
 from .utils.transportchart import PriceChart, BaseChart, TransportResult, TransportSolve
 import numpy as np
 

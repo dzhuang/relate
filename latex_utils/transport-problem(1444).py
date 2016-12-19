@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from .utils.latex_utils import latex_jinja_env, _file_write
+from .utils.latex_utils import latex_jinja_env
 from .utils.transportchart import PriceChart, BaseChart, TransportResult
 
 price = PriceChart(
@@ -101,5 +101,3 @@ tex = template.render(
 )
 
 #print(tex)
-
-_file_write("transport.tex", tex.encode('UTF-8'))

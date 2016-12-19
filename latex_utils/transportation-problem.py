@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from .utils.latex_utils import latex_jinja_env, _file_write
+from .utils.latex_utils import latex_jinja_env
 from .utils.transportation import transportation
 import numpy as np
 
@@ -1224,7 +1224,12 @@ transport_dict_list.append(tr_dict)
 
 print(len(transport_dict_list))
 
-from Tkinter import Tk
+try:
+    # Python 3.x
+    from tkinter import Tk
+except ImportError:
+    # Python 2.x
+    from Tkinter import Tk
 r = Tk()
 r.withdraw()
 r.clipboard_clear()
