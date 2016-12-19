@@ -36,7 +36,7 @@ r.clipboard_clear()
 lp_json_list = []
 lp_json_list.append(lp.json)
 
-#print lp_json_list
+#print(lp_json_list)
 
 import pickle
 with open('lp.bin', 'wb') as f:
@@ -108,7 +108,7 @@ for l in lp_json_list_loaded:
         count2 += 1
         r.clipboard_append(tex)
 
-print count1, count2
+print(count1, count2)
 
 with open(SAVED_QUESTION_2_iter, 'wb') as f:
         pickle.dump(final_lp_list1, f)

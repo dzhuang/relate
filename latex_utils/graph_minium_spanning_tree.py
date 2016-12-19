@@ -1699,5 +1699,5 @@ for g_dict in g_list_loaded:
     r.clipboard_append(tex)
 
 
-print n
+print(n)
 

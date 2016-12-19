@@ -773,7 +773,7 @@ for g_dict in g_list_loaded:
     n += 1
     # r.clipboard_clear()
     g = network(**g_dict)
-    #print g.graph.edge
+    #print(g.graph.edge)
     #g.as_capacity_graph()
     #continue
 
@@ -806,9 +806,9 @@ for g_dict in g_list_loaded:
     )
 
     r.clipboard_append(tex)
-    print "最短路条数",len(list(g.get_shortest_path()))
+    print("最短路条数",len(list(g.get_shortest_path())))
 
-print n
+print(n)
 
 
 

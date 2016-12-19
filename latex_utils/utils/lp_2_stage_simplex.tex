@@ -53,9 +53,9 @@ $$\begin{alignat*}{20}
 \BLOCK{ endif }
 用单纯形法求解：
 
-<p align="middle"><strong>答案表\VAR{answer_table_iters.next()}</strong></br>
+<p align="middle"><strong>答案表\VAR{answer_table_iters.__next__()}</strong></br>
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
-\setcounter{keytable}{\VAR{iters.next()}}
+\setcounter{keytable}{\VAR{iters.__next__()}}
 \begin{keytable}[H]\centering
 \begin{tabular}{c|c|\BLOCK{ for x in range(0, lp.solutionPhase2.all_variable_str_list|length) }
 \BLOCK{ if lp.need_artificial_variable }C{1.5cm}\BLOCK{ else }C{1cm}\BLOCK{ endif }
@@ -106,7 +106,7 @@ $$\begin{alignat*}{20}
 \BLOCK{ if show_2_stage and lp2phase.solutionCommon.artificial_str_list_intro }
 <p align="middle">
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
-\setcounter{keytable}{\VAR{iters.next()}}
+\setcounter{keytable}{\VAR{iters.__next__()}}
 \BLOCK{ if lp2phase.solutionPhase1.need_two_phase }
 \begin{keytable}[H]\centering
 \topcaption{\BLOCK{ if lp2phase.solutionCommon.need_two_phase }第一阶段\BLOCK{ endif }}
@@ -139,7 +139,7 @@ $\mathbf{C_B}$&$\mathbf{X_B}$\BLOCK{ for x in lp2phase.solutionPhase1.all_variab
 
 <p align="middle">
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
-\setcounter{keytable}{\VAR{iters.next()}}
+\setcounter{keytable}{\VAR{iters.__next__()}}
 \begin{keytable}[H]\centering
 \topcaption{\BLOCK{ if lp2phase.solutionPhase1.need_two_phase }第二阶段\BLOCK{ endif }}
 \begin{tabular}{c|c|\BLOCK{ for x in range(0, lp2phase.solutionPhase2.all_variable_str_list|length) }C\BLOCK{ if lp2phase.solutionPhase2.method=="big_m_simplex" }{1.2cm}\BLOCK{ else }{1cm}\BLOCK{ endif }\BLOCK{ endfor }|c}\hline\hline

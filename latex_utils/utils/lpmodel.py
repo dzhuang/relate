@@ -207,7 +207,7 @@ class sa_c(SA_base):
                     next_same_desc = True
 
 
-        #print desc
+        #print(desc)
         return desc
 
     def analysis(self):
@@ -265,7 +265,7 @@ class sa_c(SA_base):
                         ineq_list = [self.C_j_BAR_copy[idx] for idx in self.non_basis_variable
                                      if not isinstance(self.C_j_BAR_copy[idx], sympy_float)
                                      ]
-                        #print ineq_list
+                        #print(ineq_list)
                         ineq_list_str = [
                             r"\bar c_{%(idx)s} = %(cjbar)s & %(c_ineq_latex)s 0"
                             % {"idx": idx+1,
@@ -274,7 +274,7 @@ class sa_c(SA_base):
                                }
                             for idx in self.non_basis_variable
                         ]
-                        #print ineq_list_str
+                        #print(ineq_list_str)
                         if i == 0 :
                             answer_description += u"由$\\bar c_j = c_j - \mathbf{C_B\\bar p}_j$，"
                         answer_description += (
@@ -346,12 +346,12 @@ class sa_c(SA_base):
                         start_tableau[-1, -1] = self.z_copy[0]
                         goal = self.goal_copy
                         goal[c_index] = v
-                        #print "goal", goal
-                        #print start_tableau
+                        #print("goal", goal)
+                        #print(start_tableau)
                         new_lp = LP(qtype=self.LP.qtype, goal=goal,
                                     start_tableau=start_tableau, start_basis=self.opt_basis.tolist())
                         new_lp.solve(method="simplex")
-                        #print new_lp.res
+                        #print(new_lp.res)
 
                     result_i = sa_single_result (answer_description=answer_description, change=change, new_lp=new_lp)
                     result.append(result_i)
@@ -416,7 +416,7 @@ class sa_p(SA_base):
                 desc += u"$%s=(%s)^T$时最优解是什么？" % (p_index_str, ", ".join(trans_latex_fraction(s, wrap=False) for s in v))
                 next_same_desc = True
 
-        #print desc
+        #print(desc)
         return desc
 
     def analysis(self):
@@ -843,7 +843,7 @@ class sa_x(SA_base):
                     u"最优解会有怎样的变化？"
                     % (new_variable_str, new_variable_index+1, new_c, new_variable_index+1, ", ".join(new_p_list)))
 
-        #print desc
+        #print(desc)
         return desc
 
 
@@ -915,7 +915,7 @@ class sa_x(SA_base):
                             start_basis=opt_basis.tolist())
                 new_lp.solve(method="simplex")
 
-                #print new_variable_index
+                #print(new_variable_index)
                 new_lp_x_idx = list(range(len(self.LP.x_list)))
                 new_lp_x_idx.append(new_variable_index)
 
@@ -1329,7 +1329,7 @@ class LP(object):
             except:
                 sa_klass =  globals()[SA_klass_dict[key]]
             if key in sensitive:
-                #print sensitive[key]
+                #print(sensitive[key])
                 for ana in sensitive[key]:
                     analysis = sa_klass(
                         lp=self,
@@ -1406,7 +1406,7 @@ class LP(object):
             basis = np.copy(kwargs['basis'])
             i_p, j_p = np.copy(kwargs['pivot'])
             # if self.solutionCommon.method == "dual_simplex":
-            #     print t
+            #     print(t)
             if nit == 0:
                 self.tableau_origin = t.tolist()
 
@@ -1449,8 +1449,8 @@ class LP(object):
             self.solutionCommon.nit = res.nit
             self.res = res
 
-        #print res
-        #print res.status
+        #print(res)
+        #print(res.status)
 
 
         if res.status == 2 and self.solutionCommon.method != "dual_simplex":

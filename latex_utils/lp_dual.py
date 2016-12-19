@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from utils.latex_utils import latex_jinja_env, _file_write
-from utils.lpmodel import LP
+from .utils.latex_utils import latex_jinja_env, _file_write
+from .utils.lpmodel import LP
 
 lp = LP(qtype="max",
         goal=[1, 1, -1, 1],

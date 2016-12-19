@@ -891,7 +891,7 @@ class lpSimplexSolver(lpSolver):
             if status != 0:
                 message = messages[status]
                 if disp:
-                    print (message)
+                    print((message))
                 return OptimizeResult(x=np.nan, fun=-T[-1, -1], nit=nit1, status=status,
                                        existing_basic_variable_list=self.existing_basic_variable,
                                        slack_list=slack_list, artificial_list=artificial_list,
@@ -932,13 +932,13 @@ class lpSimplexSolver(lpSolver):
 
         if status in (0, 1):
             if disp:
-                print (messages[status])
-                print ("         Current function value: {0: <12.6f}".format (obj))
-                print ("         Iterations: {0:d}".format (nit2))
+                print((messages[status]))
+                print(("         Current function value: {0: <12.6f}".format (obj)))
+                print(("         Iterations: {0:d}".format (nit2)))
         else:
             if disp:
-                print (messages[status])
-                print ("         Iterations: {0:d}".format (nit2))
+                print((messages[status]))
+                print(("         Iterations: {0:d}".format (nit2)))
 
         return OptimizeResult (x=x, fun=obj, nit=int(nit2), status=status, slack=slack,
                                existing_basic_variable_list=self.existing_basic_variable,
@@ -1208,13 +1208,13 @@ class lpDualSimplexSolver(lpSolver):
 
         if status in (0, 1):
             if disp:
-                print (messages[status])
-                print ("         Current function value: {0: <12.6f}".format (obj))
-                print ("         Iterations: {0:d}".format (nit2))
+                print((messages[status]))
+                print(("         Current function value: {0: <12.6f}".format (obj)))
+                print(("         Iterations: {0:d}".format (nit2)))
         else:
             if disp:
-                print (messages[status])
-                print ("         Iterations: {0:d}".format (nit2))
+                print((messages[status]))
+                print(("         Iterations: {0:d}".format (nit2)))
 
         return OptimizeResult(x=x, fun=obj, nit=int(nit2), status=status, slack=slack,
                                existing_basic_variable_list=self.existing_basic_variable,
@@ -1405,13 +1405,13 @@ class lpBigMSolver(lpSolver):
 
         if status in (0, 1):
             if disp:
-                print (messages[status])
-                print ("         Current function value: {0: <12.6f}".format (obj))
-                print ("         Iterations: {0:d}".format (nit))
+                print((messages[status]))
+                print(("         Current function value: {0: <12.6f}".format (obj)))
+                print(("         Iterations: {0:d}".format (nit)))
         else:
             if disp:
-                print (messages[status])
-                print ("         Iterations: {0:d}".format (nit))
+                print((messages[status]))
+                print(("         Iterations: {0:d}".format (nit)))
 
         #print("self.init_tableau", self.init_tableau)
 

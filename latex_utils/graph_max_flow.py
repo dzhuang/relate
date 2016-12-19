@@ -73,7 +73,7 @@ def is_qualified_question(mat, ref_g_list, mem_mat_list, saved_question=SAVED_QU
         return False
 
 
-    print source_flow, source_capacity, sink_capacity
+    print(source_flow, source_capacity, sink_capacity)
 
     # 0点出发所连的点，至少有一条边是未饱和的，设其对应的顶点为x
     not_saturated_source_to = [v for v in flow_dict[0] if flow_dict[0][v] < G[0][v]["capacity"]]
@@ -90,8 +90,8 @@ def is_qualified_question(mat, ref_g_list, mem_mat_list, saved_question=SAVED_QU
     if not this_qualified:
         return False
 
-    print not_saturated_source_to
-    print saturated_source_to
+    print(not_saturated_source_to)
+    print(saturated_source_to)
 
 
     result = g.get_iterated_solution(method="bellman_ford")
@@ -101,7 +101,7 @@ def is_qualified_question(mat, ref_g_list, mem_mat_list, saved_question=SAVED_QU
     question_exist = False
     for i, c in enumerate(mem_mat_list):
         if np.all(mat==c):
-            print "----------------------question exists-------------------"
+            print("----------------------question exists-------------------")
             question_exist = True
             return False
             break
@@ -136,20 +136,20 @@ def generate_problem():
     with open(MULTI_RESULT_QUESTION, 'rb') as f:
         g_list_loaded = pickle.load(f)
 
-    print len(g_list_loaded)
+    print(len(g_list_loaded))
 
     for i, g_dict in enumerate(g_list_loaded):
-        print i
+        print(i)
         if i > 15:
             break
 
         g = deepcopy(g_dict["graph"])
         non_zero_idx = np.nonzero(g)
-        print non_zero_idx
+        print(non_zero_idx)
         non_zero_idx_list = []
         for i in range(len(non_zero_idx[0])):
             non_zero_idx_list.append((non_zero_idx[0][i], non_zero_idx[1][i]))
-        print non_zero_idx_list
+        print(non_zero_idx_list)
         all_value = g[non_zero_idx]
 
         n_value = len(all_value.tolist()[0])
@@ -157,18 +157,18 @@ def generate_problem():
         n_reverse_arrow = random.choice([1,2,3])
         n_reverse_arrow = 0
 
-        print non_zero_idx_list
+        print(non_zero_idx_list)
 
         j = 0
         while j < n_reverse_arrow:
             (r,c) = random.choice(non_zero_idx_list)
             if r != 0 and c != number_of_nodes-1:
-                print r,c
+                print(r,c)
                 g[c,r] = g[r,c]
                 g[r,c] = 0
                 j += 1
 
-        print all_value, "------------------"
+        print(all_value, "------------------")
         all_value = np.random.randint(
             6, 38, n_value) * 5
         all_value = all_value.tolist()
@@ -179,18 +179,18 @@ def generate_problem():
             g_test = deepcopy(g)
             random.shuffle(all_value)
             new_value = np.array([all_value])
-            # print new_value
+            # print(new_value)
             g_test[non_zero_idx] = new_value
             # if i == 1:
-                # print g_test
+                # print(g_test)
             if is_qualified_question(g_test, g_dict, mem_mat_list):
                 mem_mat_list.append(g)
-                print repr(g_test)
+                print(repr(g_test))
                 break
 
 
 # generate_problem()
-# print "here"
+# print("here")
 # exit()
 
 g = { 'graph': np.matrix([[  0,  60, 145,  75,   0,   0,   0,   0,   0,   0,   0],
@@ -1385,13 +1385,13 @@ from networkx.algorithms.flow import edmonds_karp
 #
 # R = edmonds_karp(G, 's', 't')
 # flow_value = nx.maximum_flow_value(G, 's', 't')
-# print flow_value
+# print(flow_value)
 #
 # cut_value, partition = nx.minimum_cut(G, 's', 't')
-# print partition
+# print(partition)
 #
 # mat = nx.to_numpy_matrix(G, weight="capacity", dtype=int, nodelist=["s", "r1", "r2", "r3", "a", "b", "c", "d", "e", "f", "t"])
-# print repr(mat)
+# print(repr(mat))
 
 
 
@@ -1422,7 +1422,7 @@ for g_dict in g_list_loaded:
     #max_flow_value = nx.maximum_flow_value(G, 0, number_of_nodes-1)
     max_flow_value, partition = nx.minimum_cut(G, 0, number_of_nodes-1)
 
-    #print g.get_max_flow_latex(node_distance="3cm")
+    #print(g.get_max_flow_latex(node_distance="3cm"))
 
 
     template = latex_jinja_env.get_template('/utils/graph_max_flow.tex')
@@ -1450,7 +1450,7 @@ for g_dict in g_list_loaded:
     )
 
     r.clipboard_append(tex)
-#    print "最短路条数",len(list(g.get_shortest_path()))
+#    print("最短路条数",len(list(g.get_shortest_path())))
 
-print n
+print(n)
 

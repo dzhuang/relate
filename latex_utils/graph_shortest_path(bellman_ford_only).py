@@ -839,7 +839,7 @@ for g_dict in g_list_loaded:
         dijkstra_is_allowed = False
 
     bellman_ford_result = g.get_iterated_solution(method="bellman_ford")
-    print bellman_ford_result
+    print(bellman_ford_result)
 
     template = latex_jinja_env.get_template('/utils/graph_shortest_path.tex')
     tex = template.render(
@@ -858,7 +858,7 @@ for g_dict in g_list_loaded:
     )
 
     r.clipboard_append(tex)
-    print "最短路条数",len(list(g.get_shortest_path()))
-    print list(g.get_shortest_path())
+    print("最短路条数",len(list(g.get_shortest_path())))
+    print(list(g.get_shortest_path()))
 
-print n
+print(n)

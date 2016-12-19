@@ -38,7 +38,7 @@ def is_qualified_question(mat, ref_g_list, mem_mat_list, saved_question=SAVED_QU
     question_exist = False
     for i, c in enumerate(mem_mat_list):
         if np.all(mat==c):
-            print "----------------------question exists-------------------"
+            print("----------------------question exists-------------------")
             question_exist = True
             return False
             break
@@ -73,15 +73,15 @@ def generate_problem():
     with open(MULTI_RESULT_QUESTION, 'rb') as f:
         g_list_loaded = pickle.load(f)
 
-    print len(g_list_loaded)
+    print(len(g_list_loaded))
 
     for i, g_dict in enumerate(g_list_loaded):
-        print i
+        print(i)
         g = g_dict["graph"]
         non_zero_idx = np.nonzero(g)
         all_value = g[non_zero_idx]
-        print non_zero_idx
-        print all_value
+        print(non_zero_idx)
+        print(all_value)
         all_value = all_value.tolist()[0]
 
         n = 0
@@ -92,15 +92,15 @@ def generate_problem():
             new_value = np.array([all_value])
             g_test[non_zero_idx] = new_value
             if i == 1:
-                print g_test
+                print(g_test)
             if is_qualified_question(g_test, g_dict, mem_mat_list):
                 mem_mat_list.append(g)
-                print repr(g_test)
+                print(repr(g_test))
                 break
 
 
 # generate_problem()
-# print "here"
+# print("here")
 # exit()
 
 g = { 'graph': np.matrix([[ 0,  8, 10,  3,  0,  0,  0,  0],
@@ -1244,9 +1244,9 @@ for g_dict in g_list_loaded:
     )
 
     r.clipboard_append(tex)
-    print "最短路条数",len(list(g.get_shortest_path()))
+    print("最短路条数",len(list(g.get_shortest_path())))
 
-print n
+print(n)
 
 
 

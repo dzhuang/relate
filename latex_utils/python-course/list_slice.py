@@ -31,7 +31,7 @@ while i < 100:
     #     l = [e.title() if e != "PHP" else e for e in l]
     #     L_copy_split[j] = l
 
-    print repr(L_copy_split)
+    print(repr(L_copy_split))
 
     question_list.append(L_copy_split)
 

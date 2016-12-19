@@ -180,7 +180,7 @@ r.clipboard_clear()
 #
 # res=lp.solve()
 #
-# print res.x
+# print(res.x)
 #
 # template = latex_jinja_env.get_template('/utils/lp_simplex.tex')
 # tex = template.render(
@@ -210,7 +210,7 @@ r.clipboard_clear()
 lp_json_list = []
 lp_json_list.append(lp.json)
 #lp_json_list.append(lp2.json)
-#print lp_json_list
+#print(lp_json_list)
 
 
 import pickle

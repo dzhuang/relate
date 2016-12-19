@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from utils.latex_utils import latex_jinja_env, _file_write
-from utils.transportation import transportation, sum_recursive
+from .utils.latex_utils import latex_jinja_env, _file_write
+from .utils.transportation import transportation, sum_recursive
 import numpy as np
 import random
 import copy
@@ -93,7 +93,7 @@ def is_qualified_question(tr_test, saved_question=SAVED_QUESTION):
     #     return False
 
     # if not len(suggested_method) == 3:
-    # #    print "not qualified"
+    # #    print("not qualified")
     #     return False
 
     #tr["required_init_method"] = suggested_method
@@ -107,22 +107,22 @@ def is_qualified_question(tr_test, saved_question=SAVED_QUESTION):
                 d_method = d.get("required_init_method", None)
                 sg_method = tr.get("required_init_method", None)
                 if not sg_method == d_method:
-                    print tr
-                    print suggested_method
+                    print(tr)
+                    print(suggested_method)
                     transport_dict_list_loaded.pop(i)
                     with open(SAVED_QUESTION, 'wb') as f:
                         pickle.dump(transport_dict_list_loaded, f)
                     r.clipboard_clear()
                     r.clipboard_append("'required_init_method': %s" % str(suggested_method))
                     raise ValueError("Existing question with same costs does not have qualified method")
-                print "----------------------question exists-------------------"
+                print("----------------------question exists-------------------")
                 question_exist = True
 
     if not question_exist:
             suggestion = "tr_dict=%s" % str(tr)
             suggestion = suggestion.replace("matrix", "np.matrix")
             suggestion = suggestion.replace("inf", "np.inf")
-            print suggestion
+            print(suggestion)
             r.withdraw()
             r.clipboard_clear()
             r.clipboard_append(suggestion)
@@ -130,22 +130,22 @@ def is_qualified_question(tr_test, saved_question=SAVED_QUESTION):
             r.clipboard_append("transport_dict_list.append(tr_dict)")
             raise ValueError("Please add above problem")
 
-    print tr
-    print "dem:", t.surplus_dem, ", sup:", t.surplus_sup
+    print(tr)
+    print("dem:", t.surplus_dem, ", sup:", t.surplus_sup)
     if t.is_standard_problem:
-        print "标准化问题"
+        print("标准化问题")
     elif t.is_sup_bounded_problem:
         if t.is_infinity_bounded_problem:
-            print "供应无上限的有下限要求的问题"
+            print("供应无上限的有下限要求的问题")
         elif t.is_sup_bounded_problem:
-            print "供应有下限要求的问题"
+            print("供应有下限要求的问题")
     elif t.is_dem_bounded_problem:
         if t.is_infinity_bounded_problem:
-            print "需求无上限的有下限要求的问题"
+            print("需求无上限的有下限要求的问题")
         elif t.is_dem_bounded_problem:
-            print "需求有下限要求的问题"
+            print("需求有下限要求的问题")
     else:
-        print "产销不平衡问题"
+        print("产销不平衡问题")
 
     return True
 
@@ -412,9 +412,9 @@ tr_dict={'costs': np.matrix([[4, 2, 3],
 transport_dict_list.append(tr_dict)
 
 
-print transport_dict_list
+print(transport_dict_list)
 
-print len(transport_dict_list)
+print(len(transport_dict_list))
 
 r = Tk()
 r.withdraw()
@@ -432,7 +432,7 @@ with open(SAVED_QUESTION, 'rb') as f:
 INIT_METHOD_DICT = {"LCM": u"最小元素法", "NCM": u"西北角法", "VOGEL": u"伏格尔法"}
 
 def random_int_list_fixed_sum(l, l_min, l_max):
-    print "here"
+    print("here")
     l_len = len(l)
     l_sum = sum(l)
     new_list = []
@@ -456,19 +456,19 @@ for i, tr in enumerate(transport_dict_list_loaded):
     tr_temp = None
 
     if is_qualified_question(tr_cp):
-        print "i", i
+        print("i", i)
         count_unbalanced += 1
     elif t_test.is_dem_bounded_problem:
-        print tr_test
+        print(tr_test)
         r.clipboard_clear()
         raise ValueError("The above question is not valid!!!!!!!!!")
-    elif t_test.n_sup<> 3 or t_test.n_dem<> 3:
-        print tr_test
+    elif t_test.n_sup!= 3 or t_test.n_dem!= 3:
+        print(tr_test)
         r.clipboard_clear()
         raise ValueError("The above question is not valid!!!!!!!!!")
     else:
         costs = tr["costs"]
-        #print costs
+        #print(costs)
         n, m = costs.shape
         cost_list = costs.reshape([1, n*m]).tolist()[0]
         cost_min = min(cost_list)
@@ -481,7 +481,7 @@ for i, tr in enumerate(transport_dict_list_loaded):
         assert overfill > 0
         dem_idx_list = list(range(len(dem)))
         dem_idx1 = random.choice(dem_idx_list)
-        dem_idx2 = random.choice([idx for idx in dem_idx_list if idx <> dem_idx1])
+        dem_idx2 = random.choice([idx for idx in dem_idx_list if idx != dem_idx1])
         dem[dem_idx1] = [dem[dem_idx1], np.inf]
         if dem_total > 200:
             dem[dem_idx2] = [dem[dem_idx2], dem[dem_idx2] + random.choice([20, 25, 30])]
@@ -490,7 +490,7 @@ for i, tr in enumerate(transport_dict_list_loaded):
         else:
             dem[dem_idx2] = [dem[dem_idx2], dem[dem_idx2] + random.choice([10, 15, 20])]
 
-        #print n, m
+        #print(n, m)
         it = 0
         inner_it = 0
         while it < MAX_RETRY_ITERATION:
@@ -498,28 +498,28 @@ for i, tr in enumerate(transport_dict_list_loaded):
             it += 1
             #print("%d-%d" % (inner_it, it))
             random.shuffle(cost_list)
-            # print cost_list
+            # print(cost_list)
             new_cost = np.matrix(cost_list).reshape([n, m])
             tr_temp["costs"] = new_cost
             tr_temp["sup"] = sup
             tr_temp["dem"] = dem
 
             # if inner_it==0 and it == 100:
-            #     print tr
+            #     print(tr)
             # if inner_it==1 and it == 1:
-            #     print tr
+            #     print(tr)
             #     break
-            #print "here----------------------",tr_temp
+            #print("here----------------------",tr_temp)
             if is_qualified_question(tr_temp):
-                #print "success"
+                #print("success")
                 success = True
                 break
             # if inner_it < MAX_RETRY_ITERATION*10:
             #     if it == MAX_RETRY_ITERATION:
-            #         print "--------------inner-----------------"
-            #         print tr
+            #         print("--------------inner-----------------")
+            #         print(tr)
             #         inner_it += 1
-            #         print inner_it
+            #         print(inner_it)
             #         sup = random_int_list_fixed_sum(sup, sup_min, sup_max)
             #         dem = random_int_list_fixed_sum(dem, dem_min, dem_max)
             #         it = 0
@@ -531,7 +531,7 @@ for i, tr in enumerate(transport_dict_list_loaded):
 
 
         if it == MAX_RETRY_ITERATION:
-            print i
+            print(i)
             continue
             raise ValueError("Failed to create problem")
     if tr_temp:
@@ -558,8 +558,8 @@ for i, tr in enumerate(transport_dict_list_loaded):
 
     r.clipboard_append(tex)
 
-print success
-print "count_unbalanced:", count_unbalanced
+print(success)
+print("count_unbalanced:", count_unbalanced)
 
 # with open(SAVED_QUESTION, 'wb') as f:
 #     pickle.dump(transport_dict_list, f)

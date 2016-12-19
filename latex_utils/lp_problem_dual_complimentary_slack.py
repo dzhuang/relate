@@ -694,9 +694,9 @@ lp_json_list = []
 for lp in lp_list:
     lp_json_list.append(lp.json)
 #lp_json_list.append(lp2.json)
-#print lp_json_list
+#print(lp_json_list)
 
-print lp_json_list
+print(lp_json_list)
 
 
 import pickle
@@ -749,8 +749,8 @@ for l in lp_json_list_loaded:
     )
 
     #r.clipboard_append(tex)
-    #print lp.solve_opt_res_str
-    #print "iterations:", lp.solutionCommon.nit
+    #print(lp.solve_opt_res_str)
+    #print("iterations:", lp.solutionCommon.nit)
     if lp.solve_status == 0:
         # if lp.solutionCommon.nit in [2]:
         if lp.solutionCommon.nit in [3, 4]: # and lp.qtype=="max":
@@ -758,7 +758,7 @@ for l in lp_json_list_loaded:
             count += 1
             r.clipboard_append(tex)
 
-print count
+print(count)
 
 with open('lp_simplex_3_iter_max_min_complimentary_slack.bin', 'wb') as f:
         pickle.dump(final_lp_list, f)

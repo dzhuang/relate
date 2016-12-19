@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from utils.latex_utils import latex_jinja_env, _file_write
+from .utils.latex_utils import latex_jinja_env, _file_write
 import numpy as np
 import random
-from utils.hungarian import linear_sum_assignment
+from .utils.hungarian import linear_sum_assignment
 
 try:
     # Python 3.x
@@ -41,7 +41,7 @@ def is_qualified_question(cost, mem_cost_list, saved_question=SAVED_QUESTION):
     question_exist = False
     for i, c in enumerate(mem_cost_list):
         if np.all(cost==c):
-            print "----------------------question exists-------------------"
+            print("----------------------question exists-------------------")
             question_exist = True
             return False
             break
@@ -49,7 +49,7 @@ def is_qualified_question(cost, mem_cost_list, saved_question=SAVED_QUESTION):
     if not question_exist:
         suggestion = "cost=%s" % repr(cost)
         suggestion = suggestion.replace("array", "np.array")
-        print suggestion
+        print(suggestion)
         r.clipboard_append(suggestion)
         r.clipboard_append("\n")
         r.clipboard_append("cost_list.append(cost)")
@@ -58,8 +58,8 @@ def is_qualified_question(cost, mem_cost_list, saved_question=SAVED_QUESTION):
 
         #raise ValueError("Please add above problem")
 
-    print cost
-    print "number of steps:", nstep
+    print(cost)
+    print("number of steps:", nstep)
 
     return True
 
@@ -766,8 +766,7 @@ cost=np.array([[ 8, 17, 13,  7,  6],
 cost_list.append(cost)
 
 
-
-# print len(cost_list)
+# print(len(cost_list))
 
 r = Tk()
 r.withdraw()
@@ -788,7 +787,7 @@ count_balanced_list = []
 #     success = False
 
     # if is_qualified_question(cost):
-    #     print "i", i
+    #     print("i", i)
     #     count_balanced += 1
     # else:
 
@@ -835,8 +834,8 @@ for i, cost in enumerate(cost_list_loaded):
     r.clipboard_append(tex)
 
 
-#print success
-print "count_balanced:", count_balanced
+#print(success)
+print("count_balanced:", count_balanced)
 
 # with open(SAVED_QUESTION, 'wb') as f:
 #     pickle.dump(cost_list, f)

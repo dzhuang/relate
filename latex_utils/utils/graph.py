@@ -131,7 +131,7 @@ class DijkstraResult(shortest_path_result):
         self.n_pred_lines = n_pred_lines
         simplified_pred_list.reverse()
         self.tex_pred_list = simplified_pred_list
-        #print self.tex_pred_list
+        #print(self.tex_pred_list)
         # }}}
 
         #self.tex_L_list

@@ -221,7 +221,7 @@ def transport(supply, demand, costs, init_method="LCM"):
 
         # Stop condition
         s = np.nanmin(S)
-        #print S
+        #print(S)
         if s > 0:
             break
         elif s == 0:
@@ -319,10 +319,10 @@ if __name__ == '__main__':
     has_degenerated_init_solution, \
     has_degenerated_mid_solution, \
     has_unique_solution = transport(supply, demand, costs, init_method="VOGEL")
-    print routes, z, has_degenerated_init_solution, has_degenerated_mid_solution, has_unique_solution
-    print vogel_list
-    print solution_list
-    print s_matrix_list
+    print(routes, z, has_degenerated_init_solution, has_degenerated_mid_solution, has_unique_solution)
+    print(vogel_list)
+    print(solution_list)
+    print(s_matrix_list)
 #    assert z == 3125
 #    assert has_degenerated_init_solution, has_degenerated_mid_solution
 #    assert not has_unique_solution

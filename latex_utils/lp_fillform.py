@@ -31,7 +31,7 @@ r.clipboard_clear()
 lp_json_list = []
 lp_json_list.append(lp.json)
 
-print lp_json_list
+print(lp_json_list)
 
 import pickle
 with open('lp.bin', 'wb') as f:

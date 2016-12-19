@@ -1,4 +1,4 @@
-from utils.latex_utils import latex_jinja_env, _file_write
+from .utils.latex_utils import latex_jinja_env, _file_write
 
 template = latex_jinja_env.get_template('/utils/jinja-test.tex')
 tex=template.render(section1='Long Form', section2='Short Form')

@@ -35,7 +35,7 @@ r.clipboard_append(tex)
 #
 # res=lp.solve()
 #
-# print res.x
+# print(res.x)
 #
 # template = latex_jinja_env.get_template('/utils/lp_simplex.tex')
 # tex = template.render(
@@ -76,7 +76,7 @@ with open('lp.bin', 'rb') as f:
 
 
 for l in lp_list_loaded:
-    print l
+    print(l)
     l.solve()
     template = latex_jinja_env.get_template('lp_simplex.tex')
     tex = template.render(

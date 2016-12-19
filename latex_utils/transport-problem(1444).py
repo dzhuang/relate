@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from utils.latex_utils import latex_jinja_env, _file_write
-from utils.transportchart import PriceChart, BaseChart, TransportResult
+from .utils.latex_utils import latex_jinja_env, _file_write
+from .utils.transportchart import PriceChart, BaseChart, TransportResult
 
 price = PriceChart(
     sup=[50, 35, 45],
@@ -100,6 +100,6 @@ tex = template.render(
     result_list=result_list
 )
 
-#print tex
+#print(tex)
 
 _file_write("transport.tex", tex.encode('UTF-8'))

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from utils.latex_utils import latex_jinja_env, _file_write
-from utils.transportation import transportation
+from .utils.latex_utils import latex_jinja_env, _file_write
+from .utils.transportation import transportation
 import numpy as np
 import random
 try:
@@ -84,7 +84,7 @@ def is_qualified_question(tr, saved_question=SAVED_QUESTION):
         return False
 
     if not len(suggested_method) == 3:
-        print "not qualified"
+        print("not qualified")
         return False
 
     #tr["required_init_method"] = suggested_method
@@ -98,22 +98,22 @@ def is_qualified_question(tr, saved_question=SAVED_QUESTION):
                 d_method = d.get("required_init_method", None)
                 sg_method = tr.get("required_init_method", None)
                 if not sg_method == d_method:
-                    print tr
-                    print suggested_method
+                    print(tr)
+                    print(suggested_method)
                     transport_dict_list_loaded.pop(i)
                     with open(SAVED_QUESTION, 'wb') as f:
                         pickle.dump(transport_dict_list_loaded, f)
                     r.clipboard_clear()
                     r.clipboard_append("'required_init_method': %s" % str(suggested_method))
                     raise ValueError("Existing question with same costs does not have qualified method")
-                print "----------------------question exists-------------------"
+                print("----------------------question exists-------------------")
                 question_exist = True
 
     if not question_exist:
         if lcm_ratio_qualified:
             suggestion = "tr_dict=%s" % str(tr)
             suggestion = suggestion.replace("matrix", "np.matrix")
-            print suggestion
+            print(suggestion)
             r.withdraw()
             r.clipboard_clear()
             r.clipboard_append(suggestion)
@@ -127,43 +127,43 @@ def is_qualified_question(tr, saved_question=SAVED_QUESTION):
             r.clipboard_clear ()
             return False
 
-    print tr
-    print "dem:", t.surplus_dem, ", sup:", t.surplus_sup
+    print(tr)
+    print("dem:", t.surplus_dem, ", sup:", t.surplus_sup)
     if t.is_standard_problem:
-        print "标准化问题"
+        print("标准化问题")
     elif t.is_sup_bounded_problem:
         if t.is_infinity_bounded_problem:
-            print "供应无上限的有下限要求的问题"
+            print("供应无上限的有下限要求的问题")
         elif t.is_sup_bounded_problem:
-            print "供应有下限要求的问题"
+            print("供应有下限要求的问题")
     elif t.is_dem_bounded_problem:
         if t.is_infinity_bounded_problem:
-            print "需求无上限的有下限要求的问题"
+            print("需求无上限的有下限要求的问题")
         elif t.is_dem_bounded_problem:
-            print "需求有下限要求的问题"
+            print("需求有下限要求的问题")
     else:
-        print "产销不平衡问题"
+        print("产销不平衡问题")
     if NCM_result:
-        print u"西北角法：迭代次数", len(NCM_result.solution_list), \
+        print(u"西北角法：迭代次数", len(NCM_result.solution_list), \
             u"初始化时有退化解：", NCM_result.has_degenerated_init_solution, \
             u"计算中有退化解：", NCM_result.has_degenerated_mid_solution, \
             u"最优解唯一：", NCM_result.has_unique_solution, \
             u"最优解退化：", NCM_result.final_is_degenerated_solution, \
-            u"z", NCM_result.z
+            u"z", NCM_result.z)
     if LCM_result:
-        print u"最小元素法：迭代次数", len(LCM_result.solution_list), \
+        print(u"最小元素法：迭代次数", len(LCM_result.solution_list), \
             u"初始化时有退化解：", LCM_result.has_degenerated_init_solution, \
             u"计算中有退化解：", LCM_result.has_degenerated_mid_solution, \
             u"最优解唯一：", LCM_result.has_unique_solution, \
             u"最优解退化：", LCM_result.final_is_degenerated_solution, \
-            u"z", LCM_result.z
+            u"z", LCM_result.z)
     if VOGEL_result:
-        print u"VOGEL法：迭代次数", len(VOGEL_result.solution_list), \
+        print(u"VOGEL法：迭代次数", len(VOGEL_result.solution_list), \
             u"初始化时有退化解：", VOGEL_result.has_degenerated_init_solution, \
             u"计算中有退化解：", VOGEL_result.has_degenerated_mid_solution, \
             u"最优解唯一：", VOGEL_result.has_unique_solution, \
             u"最优解退化：", VOGEL_result.final_is_degenerated_solution, \
-            u"z", VOGEL_result.z
+            u"z", VOGEL_result.z)
 
     return True
 
@@ -461,7 +461,7 @@ tr_dict={'costs': np.matrix([[4, 6, 4],
         [5, 3, 3]]), 'dem': [60, 90, 20], 'sup': [70, 60, 55]}
 transport_dict_list.append(tr_dict)
 
-print len(transport_dict_list)
+print(len(transport_dict_list))
 
 r = Tk()
 r.withdraw()
@@ -496,21 +496,21 @@ for i, tr in enumerate(transport_dict_list_loaded):
     success = False
 
     if is_qualified_question(tr):
-        print "i", i
+        print("i", i)
         if required_init_method:
             assert isinstance(required_init_method, list)
             assert set(required_init_method).issubset(set(["LCM", "NCM", "VOGEL"]))
         # else:
-        #     print tr
+        #     print(tr)
         #     raise ValueError(u"未指定方法:", tr)
 
         count_unbalanced += 1
     else:
 
-        print tr
+        print(tr)
 
         costs = tr["costs"]
-        #print costs
+        #print(costs)
         n, m = costs.shape
         cost_list = costs.reshape([1, n*m]).tolist()[0]
         cost_min = min(cost_list)
@@ -522,32 +522,32 @@ for i, tr in enumerate(transport_dict_list_loaded):
         sup_min = min(sup)
         sup_max = max(sup)
 
-        #print n, m
+        #print(n, m)
         it = 0
         inner_it = 0
         while it < MAX_RETRY_ITERATION:
             it += 1
             print("%d-%d" % (inner_it, it))
             random.shuffle(cost_list)
-            # print cost_list
+            # print(cost_list)
             new_cost = np.matrix(cost_list).reshape([n, m])
             tr["costs"] = new_cost
             tr["sup"] = sup
             tr["dem"] = dem
             # if inner_it==0 and it == 100:
-            #     print tr
+            #     print(tr)
             # if inner_it==1 and it == 1:
-            #     print tr
+            #     print(tr)
             #     break
             if is_qualified_question(tr):
-                print tr
+                print(tr)
                 success = True
                 break
             if inner_it < MAX_RETRY_ITERATION*10:
                 if it == MAX_RETRY_ITERATION:
-                    print tr
+                    print(tr)
                     inner_it += 1
-                    print inner_it
+                    print(inner_it)
                     sup = random_int_list_fixed_sum(sup, sup_min, sup_max)
                     dem = random_int_list_fixed_sum(dem, dem_min, dem_max)
                     it = 0
@@ -629,8 +629,8 @@ for i, tr in enumerate(transport_dict_list_loaded):
     r.clipboard_append(tex)
 
 
-print success
-print "count_unbalanced:", count_unbalanced
+print(success)
+print("count_unbalanced:", count_unbalanced)
 
 # with open(SAVED_QUESTION, 'wb') as f:
 #     pickle.dump(transport_dict_list, f)
