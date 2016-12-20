@@ -10,17 +10,17 @@ import networkx.algorithms.shortest_paths.weighted as shortest_path
 from networkx.exception import NetworkXException
 
 try:
-    from shortest_path_weighted import dijkstra_predecessor_and_distance
+    from .shortest_path_weighted import dijkstra_predecessor_and_distance
 except ImportError:
     pass
 
 try:
-    from shortest_path_weighted import bellman_ford_predecessor_and_distance
+    from .shortest_path_weighted import bellman_ford_predecessor_and_distance
 except ImportError:
     pass
 
 try:
-    from shortest_path_weighted import all_shortest_paths_from_0
+    from .shortest_path_weighted import all_shortest_paths_from_0
 except ImportError:
     pass
 
@@ -259,7 +259,10 @@ class network(object):
                     if node_tex_prefix else node + 1
                 )
 
-    def as_latex(self, layout="spring", use_label=True, edge_attr="weight", no_bidirectional=True, node_distance="2cm", hidden_node_list=[], regenerate_node_label_dict=False):
+    def as_latex(self, layout="spring", use_label=True, edge_attr="weight", no_bidirectional=True,
+                 node_distance="2cm", hidden_node_list=[], regenerate_node_label_dict=False,
+                 omit_wrapp_tex_structure=False
+                 ):
         if regenerate_node_label_dict:
             node_label_dict = None
         else:
@@ -272,6 +275,7 @@ class network(object):
                               no_bidirectional=no_bidirectional,
                               node_distance=node_distance,
                               hidden_node_list=hidden_node_list,
+                              omit_wrapp_tex_structure=omit_wrapp_tex_structure
                               )
 
     def get_iterated_solution(self, source=0, method="dijkstra"):
@@ -382,7 +386,8 @@ class network(object):
 
         return capacity_network
 
-    def get_max_flow_latex(self, layout="spring", use_label=True, no_bidirectional=True, node_distance="2cm", hidden_node_list=[]):
+    def get_max_flow_latex(self, layout="spring", use_label=True, no_bidirectional=True,
+                           node_distance="2cm", hidden_node_list=[], omit_wrapp_tex_structure=False):
         G = self.as_capacity_graph()
         number_of_nodes = len(G.node)
         max_flow_value, partition = nx.minimum_cut(G, 0, number_of_nodes - 1)
@@ -403,12 +408,13 @@ class network(object):
                               node_distance=node_distance,
                               label_data_graph = max_flow_network,
                               hidden_node_list=hidden_node_list,
+                              omit_wrapp_tex_structure=omit_wrapp_tex_structure
                               )
 
 
 def dumps_tikz_doc(g, layout='spring', node_label_dict=None, edge_attr="weight",
                    edge_label_style_dict=None, use_label=True, no_bidirectional=True, node_distance="2cm",
-                   label_data_graph=None, hidden_node_list=[]
+                   label_data_graph=None, hidden_node_list=[], omit_wrapp_tex_structure=False
                    ):
     """Return TikZ code as `str` for `networkx` graph `g`."""
 
@@ -500,6 +506,9 @@ def dumps_tikz_doc(g, layout='spring', node_label_dict=None, edge_attr="weight",
             layout=layout,
             s=s,
             node_distance=node_distance)
+
+    if omit_wrapp_tex_structure:
+        return tikzpicture
 
     preamble = (
         r'\documentclass{{standalone}}' '\n'

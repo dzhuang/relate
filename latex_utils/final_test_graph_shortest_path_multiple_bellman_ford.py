@@ -1186,7 +1186,7 @@ for g_dict in g_list_loaded:
     except NetworkNegativeWeightUsingDijkstra:
         dijkstra_is_allowed = False
 
-    template = latex_jinja_env.get_template('/utils/graph_shortest_path.tex')
+    template = latex_jinja_env.get_template('/utils/final_test_graph_shortest_path.tex')
     tex = template.render(
         question_iters = iter(range(0,5)),
         answer_table_iters=iter(range(1, 20)),
@@ -1206,5 +1206,3 @@ for g_dict in g_list_loaded:
     print("最短路条数",len(list(g.get_shortest_path())))
 
 print(n)
-
-r.mainloop()

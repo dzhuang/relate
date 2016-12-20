@@ -1173,10 +1173,16 @@ with open(SAVED_QUESTION, 'rb') as f:
 
 
 n = 0
+idx = 0
 for g_dict in g_list_loaded:
-    n += 1
+
+    idx += 1
+
     # r.clipboard_clear()
     g = network(**g_dict)
+
+    if g.has_6_9_edge_weight:
+        continue
 
     dijkstra_is_allowed = True
     dijkstra_result = None
@@ -1186,8 +1192,20 @@ for g_dict in g_list_loaded:
     except NetworkNegativeWeightUsingDijkstra:
         dijkstra_is_allowed = False
 
-    template = latex_jinja_env.get_template('/utils/graph_shortest_path.tex')
+    # --------------------------------------------------------------------选择最短路条数
+    if len(list(g.get_shortest_path())) != 3:
+        continue
+    if g.has_6_9_edge_weight:
+        continue
+
+    if dijkstra_is_allowed:
+        continue
+
+    n += 1
+
+    template = latex_jinja_env.get_template('/utils/final_test_graph_shortest_path.tex')
     tex = template.render(
+        id=str(idx)+"bf",
         question_iters = iter(range(0,5)),
         answer_table_iters=iter(range(1, 20)),
         show_question = True,
@@ -1203,7 +1221,6 @@ for g_dict in g_list_loaded:
     )
 
     r.clipboard_append(tex)
-    print("最短路条数",len(list(g.get_shortest_path())))
 
 print(n)
 

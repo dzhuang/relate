@@ -1,0 +1,26 @@
+
+\\VAR{ajbj}{写出以下问题的对偶问题：
+
+\begin{tabular}{C{.4\textwidth}C{.4\textwidth}}
+\vbox{
+$\begin{alignedat}{20}
+\VAR{lp.get_goal_str(purelatex=True)}\\
+\text{s.t.}\quad
+\BLOCK{ for c in lp.constraints_str_list }
+\VAR{c}
+\BLOCK{ endfor }
+\VAR{lp.sign_str_purelatex}
+\end{alignedat}$}
+&
+\vbox{\daan{
+$\begin{alignedat}{20}
+\VAR{lp_dual.get_goal_str(purelatex=True)}\\
+\text{s.t.}\quad
+\BLOCK{ for c in lp_dual.constraints_str_list }
+\VAR{c}
+\BLOCK{ endfor }
+\VAR{lp_dual.sign_str_purelatex}
+\end{alignedat}$
+}}\\ \cline{2-2}
+\end{tabular}
+}%

@@ -21,10 +21,11 @@ r.clipboard_clear()
 
 g_list = []
 
-MULTI_RESULT_QUESTION = "graph_max_flow.bin"
+MULTI_RESULT_QUESTION = "final_test_graph_max_flow.bin"
 
-SAVED_QUESTION = "graph_max_flow.bin"
+SAVED_QUESTION = "final_test_graph_max_flow.bin"
 
+idx = iter(list(range(200)))
 
 def is_qualified_question(mat, ref_g_list, mem_mat_list, saved_question=SAVED_QUESTION):
 
@@ -207,6 +208,7 @@ g = { 'graph': np.matrix([[  0,  60, 145,  75,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 155, 130, 155,   0,   0,   0,   0,   0,   0,   0],
@@ -223,6 +225,7 @@ g = { 'graph': np.matrix([[  0, 155, 130, 155,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0,  65,  65, 145,   0,   0,   0,   0,   0,   0,   0],
@@ -239,6 +242,7 @@ g = { 'graph': np.matrix([[  0,  65,  65, 145,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 110,  60,  75,   0,   0,   0,   0,   0,   0,   0],
@@ -255,6 +259,7 @@ g = { 'graph': np.matrix([[  0, 110,  60,  75,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0,  65,  50,  80,   0,   0,   0,   0,   0,   0,   0],
@@ -271,6 +276,7 @@ g = { 'graph': np.matrix([[  0,  65,  50,  80,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 130, 115, 130,   0,   0,   0,   0,   0,   0,   0],
@@ -287,6 +293,7 @@ g = { 'graph': np.matrix([[  0, 130, 115, 130,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 130, 115, 165,   0,   0,   0,   0,   0,   0,   0],
@@ -303,6 +310,7 @@ g = { 'graph': np.matrix([[  0, 130, 115, 165,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0,  85, 140, 140,   0,   0,   0,   0,   0,   0,   0],
@@ -319,6 +327,7 @@ g = { 'graph': np.matrix([[  0,  85, 140, 140,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 135, 155, 165,   0,   0,   0,   0,   0,   0,   0],
@@ -335,6 +344,7 @@ g = { 'graph': np.matrix([[  0, 135, 155, 165,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0,  35, 155, 100,   0,   0,   0,   0,   0,   0,   0],
@@ -351,6 +361,7 @@ g = { 'graph': np.matrix([[  0,  35, 155, 100,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0,  75, 130, 130,   0,   0,   0,   0,   0,   0,   0],
@@ -367,6 +378,7 @@ g = { 'graph': np.matrix([[  0,  75, 130, 130,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0,  55, 165, 180,   0,   0,   0,   0,   0,   0,   0],
@@ -383,6 +395,7 @@ g = { 'graph': np.matrix([[  0,  55, 165, 180,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 175, 100, 160,   0,   0,   0,   0,   0,   0,   0],
@@ -399,6 +412,7 @@ g = { 'graph': np.matrix([[  0, 175, 100, 160,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 140,  95, 170,   0,   0,   0,   0,   0,   0,   0],
@@ -415,6 +429,7 @@ g = { 'graph': np.matrix([[  0, 140,  95, 170,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0,  95, 170, 115,   0,   0,   0,   0,   0,   0,   0],
@@ -431,6 +446,7 @@ g = { 'graph': np.matrix([[  0,  95, 170, 115,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0,  90, 140, 110,   0,   0,   0,   0,   0,   0,   0],
@@ -447,6 +463,7 @@ g = { 'graph': np.matrix([[  0,  90, 140, 110,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 
@@ -465,6 +482,7 @@ g = { 'graph': np.matrix([[  0, 110, 100,  75,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 170, 160, 165,   0,   0,   0,   0,   0,   0,   0],
@@ -481,6 +499,7 @@ g = { 'graph': np.matrix([[  0, 170, 160, 165,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0,  75, 130, 125,   0,   0,   0,   0,   0,   0,   0],
@@ -497,6 +516,7 @@ g = { 'graph': np.matrix([[  0,  75, 130, 125,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0,  75, 135,  90,   0,   0,   0,   0,   0,   0,   0],
@@ -513,6 +533,7 @@ g = { 'graph': np.matrix([[  0,  75, 135,  90,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0,  40, 145, 140,   0,   0,   0,   0,   0,   0,   0],
@@ -529,6 +550,7 @@ g = { 'graph': np.matrix([[  0,  40, 145, 140,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0,  75, 180, 155,   0,   0,   0,   0,   0,   0,   0],
@@ -545,6 +567,7 @@ g = { 'graph': np.matrix([[  0,  75, 180, 155,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0,  40, 175, 105,   0,   0,   0,   0,   0,   0,   0],
@@ -561,6 +584,7 @@ g = { 'graph': np.matrix([[  0,  40, 175, 105,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0,  75, 140, 130,   0,   0,   0,   0,   0,   0,   0],
@@ -577,6 +601,7 @@ g = { 'graph': np.matrix([[  0,  75, 140, 130,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 100,  75, 140,   0,   0,   0,   0,   0,   0,   0],
@@ -593,6 +618,7 @@ g = { 'graph': np.matrix([[  0, 100,  75, 140,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 160,  90, 135,   0,   0,   0,   0,   0,   0,   0],
@@ -609,6 +635,7 @@ g = { 'graph': np.matrix([[  0, 160,  90, 135,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 160,  80, 125,   0,   0,   0,   0,   0,   0,   0],
@@ -625,6 +652,7 @@ g = { 'graph': np.matrix([[  0, 160,  80, 125,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 120,  80,  75,   0,   0,   0,   0,   0,   0,   0],
@@ -641,6 +669,7 @@ g = { 'graph': np.matrix([[  0, 120,  80,  75,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 135, 145, 130,   0,   0,   0,   0,   0,   0,   0],
@@ -657,6 +686,7 @@ g = { 'graph': np.matrix([[  0, 135, 145, 130,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 145, 140, 105,   0,   0,   0,   0,   0,   0,   0],
@@ -673,6 +703,7 @@ g = { 'graph': np.matrix([[  0, 145, 140, 105,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 160, 155,  50,   0,   0,   0,   0,   0,   0,   0],
@@ -689,6 +720,7 @@ g = { 'graph': np.matrix([[  0, 160, 155,  50,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0,  70, 180, 100,   0,   0,   0,   0,   0,   0,   0],
@@ -705,6 +737,7 @@ g = { 'graph': np.matrix([[  0,  70, 180, 100,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 145, 170,  40,   0,   0,   0,   0,   0,   0,   0],
@@ -721,6 +754,7 @@ g = { 'graph': np.matrix([[  0, 145, 170,  40,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 115, 160, 100,   0,   0,   0,   0,   0,   0,   0],
@@ -737,6 +771,7 @@ g = { 'graph': np.matrix([[  0, 115, 160, 100,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 185, 170,  85,   0,   0,   0,   0,   0,   0,   0],
@@ -753,6 +788,7 @@ g = { 'graph': np.matrix([[  0, 185, 170,  85,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 175, 140,  80,   0,   0,   0,   0,   0,   0,   0],
@@ -769,6 +805,7 @@ g = { 'graph': np.matrix([[  0, 175, 140,  80,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0,  30, 165,  80,   0,   0,   0,   0,   0,   0,   0],
@@ -785,6 +822,7 @@ g = { 'graph': np.matrix([[  0,  30, 165,  80,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 165, 165,  35,   0,   0,   0,   0,   0,   0,   0],
@@ -801,6 +839,7 @@ g = { 'graph': np.matrix([[  0, 165, 165,  35,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 110,  55,  90,   0,   0,   0,   0,   0,   0,   0],
@@ -817,6 +856,7 @@ g = { 'graph': np.matrix([[  0, 110,  55,  90,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 120,  65, 160,   0,   0,   0,   0,   0,   0,   0],
@@ -833,6 +873,7 @@ g = { 'graph': np.matrix([[  0, 120,  65, 160,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 170, 115, 140,   0,   0,   0,   0,   0,   0,   0],
@@ -849,6 +890,7 @@ g = { 'graph': np.matrix([[  0, 170, 115, 140,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 125,  80, 125,   0,   0,   0,   0,   0,   0,   0],
@@ -865,6 +907,7 @@ g = { 'graph': np.matrix([[  0, 125,  80, 125,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 150, 120,  70,   0,   0,   0,   0,   0,   0,   0],
@@ -881,6 +924,7 @@ g = { 'graph': np.matrix([[  0, 150, 120,  70,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0,  95,  40, 105,   0,   0,   0,   0,   0,   0,   0],
@@ -897,6 +941,7 @@ g = { 'graph': np.matrix([[  0,  95,  40, 105,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 
@@ -916,6 +961,7 @@ g = { 'graph': np.matrix([[  0, 100,  50, 165,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0,  60,  65, 180,   0,   0,   0,   0,   0,   0,   0],
@@ -932,6 +978,7 @@ g = { 'graph': np.matrix([[  0,  60,  65, 180,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0,  80, 140,  50,   0,   0,   0,   0,   0,   0,   0],
@@ -948,6 +995,7 @@ g = { 'graph': np.matrix([[  0,  80, 140,  50,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 130,  35,  55,   0,   0,   0,   0,   0,   0,   0],
@@ -964,6 +1012,7 @@ g = { 'graph': np.matrix([[  0, 130,  35,  55,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 120,  40, 130,   0,   0,   0,   0,   0,   0,   0],
@@ -980,6 +1029,7 @@ g = { 'graph': np.matrix([[  0, 120,  40, 130,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0,  95, 160, 170,   0,   0,   0,   0,   0,   0,   0],
@@ -996,6 +1046,7 @@ g = { 'graph': np.matrix([[  0,  95, 160, 170,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0,  85, 115, 130,   0,   0,   0,   0,   0,   0,   0],
@@ -1012,6 +1063,7 @@ g = { 'graph': np.matrix([[  0,  85, 115, 130,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0,  80, 125, 110,   0,   0,   0,   0,   0,   0,   0],
@@ -1028,6 +1080,7 @@ g = { 'graph': np.matrix([[  0,  80, 125, 110,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0,  60,  70, 175,   0,   0,   0,   0,   0,   0,   0],
@@ -1044,6 +1097,7 @@ g = { 'graph': np.matrix([[  0,  60,  70, 175,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 155, 150, 130,   0,   0,   0,   0,   0,   0,   0],
@@ -1060,6 +1114,7 @@ g = { 'graph': np.matrix([[  0, 155, 150, 130,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 155,  85, 170,   0,   0,   0,   0,   0,   0,   0],
@@ -1076,6 +1131,7 @@ g = { 'graph': np.matrix([[  0, 155,  85, 170,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 110,  60,  60,   0,   0,   0,   0,   0,   0,   0],
@@ -1092,6 +1148,7 @@ g = { 'graph': np.matrix([[  0, 110,  60,  60,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 100, 160,  45,   0,   0,   0,   0,   0,   0,   0],
@@ -1108,6 +1165,7 @@ g = { 'graph': np.matrix([[  0, 100, 160,  45,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 175,  30,  85,   0,   0,   0,   0,   0,   0,   0],
@@ -1124,6 +1182,7 @@ g = { 'graph': np.matrix([[  0, 175,  30,  85,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 
@@ -1141,6 +1200,7 @@ g = { 'graph': np.matrix([[  0, 120, 105, 160,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 125,  75, 180,   0,   0,   0,   0,   0,   0,   0],
@@ -1157,6 +1217,7 @@ g = { 'graph': np.matrix([[  0, 125,  75, 180,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0,  45,  60, 140,   0,   0,   0,   0,   0,   0,   0],
@@ -1173,6 +1234,7 @@ g = { 'graph': np.matrix([[  0,  45,  60, 140,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0,  65, 115, 185,   0,   0,   0,   0,   0,   0,   0],
@@ -1189,6 +1251,7 @@ g = { 'graph': np.matrix([[  0,  65, 115, 185,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0,  95,  90, 185,   0,   0,   0,   0,   0,   0,   0],
@@ -1205,6 +1268,7 @@ g = { 'graph': np.matrix([[  0,  95,  90, 185,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0,  85,  75, 140,   0,   0,   0,   0,   0,   0,   0],
@@ -1221,6 +1285,7 @@ g = { 'graph': np.matrix([[  0,  85,  75, 140,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 110, 160,  40,   0,   0,   0,   0,   0,   0,   0],
@@ -1237,6 +1302,7 @@ g = { 'graph': np.matrix([[  0, 110, 160,  40,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 
@@ -1255,6 +1321,7 @@ g = { 'graph': np.matrix([[  0, 100,  30, 105,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0,  75,  60, 125,   0,   0,   0,   0,   0,   0,   0],
@@ -1271,6 +1338,7 @@ g = { 'graph': np.matrix([[  0,  75,  60, 125,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 130,  40, 165,   0,   0,   0,   0,   0,   0,   0],
@@ -1287,6 +1355,7 @@ g = { 'graph': np.matrix([[  0, 130,  40, 165,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 125, 160,  75,   0,   0,   0,   0,   0,   0,   0],
@@ -1303,6 +1372,7 @@ g = { 'graph': np.matrix([[  0, 125, 160,  75,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0,  80,  65,  60,   0,   0,   0,   0,   0,   0,   0],
@@ -1319,6 +1389,7 @@ g = { 'graph': np.matrix([[  0,  80,  65,  60,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0,  55, 110, 125,   0,   0,   0,   0,   0,   0,   0],
@@ -1335,6 +1406,7 @@ g = { 'graph': np.matrix([[  0,  55, 110, 125,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 g = { 'graph': np.matrix([[  0, 110, 185, 170,   0,   0,   0,   0,   0,   0,   0],
@@ -1351,6 +1423,7 @@ g = { 'graph': np.matrix([[  0, 110, 185, 170,   0,   0,   0,   0,   0,   0,   0
     "node_label_dict": None,
     "edge_label_style_dict":{(5, 9): 'pos=0.25', (2, 6): 'pos=0.25', (6, 8): 'pos=0.25', (4, 8): 'pos=0.25', (5, 7): 'pos=0.25', (1, 5): 'pos=0.25', (2, 4): 'pos=0.25', (3, 5): 'pos=0.25'},
 }
+g["id"] = idx.__next__()
 g_list.append(g)
 
 
@@ -1427,11 +1500,31 @@ for g_dict in g_list_loaded:
     #max_flow_value = nx.maximum_flow_value(G, 0, number_of_nodes-1)
     max_flow_value, partition = nx.minimum_cut(G, 0, number_of_nodes-1)
 
+    reachable, non_reachable = partition
+
+    cutset = set()
+    for u, nbrs in ((n, G[n]) for n in reachable):
+        cutset.update((u, v) for v in nbrs if v in non_reachable)
+
+    sorted_cutset = sorted(cutset)
+    print(sorted_cutset)
+
+    sorted_cutset_str = ",\;".join([r"(v_{%s},\;v_{%s})" % (arc[0]+1, arc[1]+1) for arc in sorted_cutset])
+    print(sorted_cutset_str)
     #print(g.get_max_flow_latex(node_distance="3cm"))
+    print(g_dict["id"])
 
+    if g.has_6_9_edge_weight:
+        continue
 
-    template = latex_jinja_env.get_template('/utils/graph_max_flow.tex')
+    template = latex_jinja_env.get_template('/utils/final_test_graph_max_flow.tex')
     tex = template.render(
+
+
+        id = g_dict["id"],
+        show_id = True,
+
+        ajbj="bj" if n % 2 else "aj",
         question_iters = iter(range(0,5)),
         answer_table_iters=iter(range(1, 20)),
         show_question = True,
@@ -1439,7 +1532,7 @@ for g_dict in g_list_loaded:
         show_blank_answer=True,
         node_distance="3cm",
         g=g,
-        show_flow_network_capacity_only=True,
+        #show_flow_network_capacity_only=True,
         show_max_flow_network=True,
 
         min_cut_set_s=", ".join(str(s+1) for s in partition[0]),
@@ -1447,14 +1540,12 @@ for g_dict in g_list_loaded:
         source = g.node_label_dict[0],
         target = g.node_label_dict[len(g.graph) - 1],
         set_allowed_range = [idx+1 for idx in range(number_of_nodes)],
-        blank1_desc=u"求得该网络的最大流流量为",
-        blank2_desc=u"最小割$(S^*, T^*)$中属于$S^*$集合的节点为"
-        #show_bellman_ford = True,
-        #bellman_ford_result = g.get_iterated_solution(method="bellman_ford"),
-
+        cut_set_string = sorted_cutset_str,
     )
 
-    r.clipboard_append(tex)
+
+    if g_dict["id"] in list(range(65, 69)):
+        r.clipboard_append(tex)
 
 #    print("最短路条数",len(list(g.get_shortest_path())))
 

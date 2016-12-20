@@ -111,8 +111,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             if hasattr(page_desc, "excluded_cache_key_files"):
                 for cf in page_desc.excluded_cache_key_files:
                     if not cf in page_desc.data_files:
-                        vctx.add_warning("%s: '%s' is not in 'data_files'"
-                                              % (location, cf))
+                        vctx.add_warning(location, "'%s' is not in 'data_files'"
+                                              % cf)
 
             for data_file in page_desc.data_files:
                 try:

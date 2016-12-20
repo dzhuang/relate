@@ -172,12 +172,7 @@ tex = template.render(
 
 
 
-try:
-    # Python 3.x
-    from tkinter import Tk
-except ImportError:
-    # Python 2.x
-    from Tkinter import Tk
+from Tkinter import Tk
 r = Tk()
 r.withdraw()
 r.clipboard_clear()

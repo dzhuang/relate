@@ -43,11 +43,11 @@ with open('lp.bin', 'wb') as f:
     pickle.dump(lp_json_list, f)
 
 
-with open('lp.bin', 'rb') as f:
+with open('final_test_lp_simplex_4_iter_max.bin', 'rb') as f:
     lp_json_list_loaded = pickle.load(f)
 
 
-template = latex_jinja_env.get_template('/utils/lp_fillform.tex')
+template = latex_jinja_env.get_template('/utils/final_test_lp_fillform.tex')
 
 for l in lp_json_list_loaded:
     import json
@@ -66,11 +66,12 @@ for l in lp_json_list_loaded:
         show_answer = True,
         #show_lp = True,
         #standardized_lp = lp.standardized_LP(),
-        pre_description=u"""已知某最%s值线性规划问题在引入松弛变量$%s$标准化后，用单纯形法计算时得到的初始单纯形表及最终单纯形表如下表所示，请将最终表中$\\mathbf{\\bar p}_j$、$\\bar c_j$、$\\mathbf{\\bar b}$、$Z$的数字补齐。
+        pre_description=u"""已知某最%s值线性规划问题在引入松弛变量$%s$标准化后，用单纯形法计算时得到的初始单纯形表及最终单纯形表如下表所示，请将最终表中$\\mathbf{\\bar p}_j$、$\\bar c_j$的数字补齐。
         """ % (qtype_str, ",".join(lp.solutionCommon.slack_str_list_intro)),
         lp=lp,
         after_description=u"该问题的对偶问题的最优解是______________________________________________________________________________.",
-        answer_after_description = u"该问题的对偶问题的最优解是<strong>$(%s)$</strong>或<strong>$(%s)$</strong>." % (",".join(lp.dual_opt_solution_str_list[0]), ",".join(lp.dual_opt_solution_str_list[1]))
+        answer_after_description = r"\noindent 以上问题的对偶问题的最优解为：\blank{\longb}{$(%s)$\todosv{注：1)答案也可以是: $(%s)$; \\ 2)不得有转置符！否则扣1 分}{-1cm}}。}"
+                                   % (",".join(lp.dual_opt_solution_str_list[0]), ",".join(lp.dual_opt_solution_str_list[1]))
     )
 
     r.clipboard_append(tex)

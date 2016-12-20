@@ -1,0 +1,214 @@
+\BLOCK{ set qtable=t.question_table_element }
+\BLOCK{- if t.is_sup_bounded_problem }\BLOCK{ set dim_name= qtable.sup_desc}\BLOCK{ set max_name= qtable.sup_max_desc}\BLOCK{ set total_name= qtable.dem_amount_desc}\BLOCK{ endif -}
+\BLOCK{- if t.is_dem_bounded_problem }\BLOCK{ set dim_name= qtable.dem_desc}\BLOCK{ set max_name= qtable.dem_max_desc}\BLOCK{ set total_name= qtable.sup_amount_desc}\BLOCK{ endif -}
+
+{% from "latex.jinja" import transportation_preamble as preamble %}
+
+\BLOCK{- if show_question -}
+
+\BLOCK{ if problem_description_pre -}
+\VAR{problem_description_pre}
+\BLOCK{ endif }
+
+\BLOCK{if standardize_only }将以下问题转化为标准(产销平衡)的运输问题
+\BLOCK{- if t.is_sup_bounded_problem }，使得在最低供应量必须运出的前提下，尽可能多地满足各地的需求（不需要求解）\BLOCK{ endif -}
+\BLOCK{- if t.is_dem_bounded_problem }，使得在最低需求量必须满足的前提下，尽可能多地满足各地的需求（不需要求解）\BLOCK{ endif -}.
+\BLOCK{else}
+求解以下运输问题
+\BLOCK{- if t.is_sup_bounded_problem }，使得在最低供应量必须运出的前提下，尽可能多地满足各地的需求\BLOCK{ endif -}
+\BLOCK{- if t.is_dem_bounded_problem }，使得在最低需求量必须满足的前提下，尽可能多地满足各地的需求\BLOCK{ endif -}
+\BLOCK{if init_method_list|length <= 2}，要求初始基本可行方案用<strong>\VAR{init_method_list|join("</strong>或<strong>")}</strong>得出\BLOCK{else}，可任意选择得出初始基本可行方案的方法（<strong>正式考核时可能指定方法，也可能不指定方法</strong>）\BLOCK{endif}，并判定初始基本可行方案是否最优，如非最优，完成一次优化并且判定新的方案是否最优，且指出需要进一步优化时应选择的非基变量格.
+\BLOCK{endif}
+
+<p align="middle"><strong>表\VAR{question_table_iters.__next__()}</strong></br>
+{% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
+\BLOCK{ if t.question_table_element and t.costs_str -}
+\BLOCK{ set qtable=t.question_table_element } \BLOCK{ set costs=t.costs_str }
+\begin{\VAR{qtable.tex_table_type}}[H]\centering
+%\topcaption{}
+\begin{mytabular}{c|\BLOCK{ for x in range(0, t.n_dem) }c\BLOCK{ endfor }|c\BLOCK{if t.is_sup_bounded_problem}|c\BLOCK{endif}}\hline\hline \diagbox{\VAR{qtable.sup_desc}}{\VAR{qtable.cost_desc}}{\VAR{qtable.dem_desc}}
+&\VAR{qtable.dem_name_list|join("&")}&\BLOCK{if t.is_sup_bounded_problem}\VAR{qtable.sup_min_desc}&\VAR{qtable.sup_max_desc}\BLOCK{else}\VAR{qtable.sup_amount_desc}\BLOCK{endif}\\ \hline
+\BLOCK{ for idx in range(0, t.n_sup) } \VAR{ qtable.sup_name_list[idx] } & \VAR{costs[idx]|join("&")} & \BLOCK{if t.is_sup_bounded_problem}\VAR{t.sup_lower_bound_list_str[idx]}&\VAR{t.sup_upper_bound_list_str[idx]}\BLOCK{else}\VAR{t.sup[idx]}\BLOCK{endif} \\
+\BLOCK{ endfor } \hline
+\BLOCK{if t.is_dem_bounded_problem}
+\VAR{qtable.dem_min_desc}&\VAR{t.dem_lower_bound_list_str|join("&")}&\\ \hline
+\VAR{qtable.dem_max_desc}&\VAR{t.dem_upper_bound_list_str|join("&")}&\\
+\BLOCK{else}
+\VAR{qtable.dem_amount_desc}&\VAR{t.dem|join("&")}&\\
+\BLOCK{endif}
+\hline\hline
+\end{mytabular}\end{\VAR{qtable.tex_table_type}}
+
+\BLOCK{ endif} \#{t.question_table_element and t.costs_str}
+
+{% endcall %}</p>
+
+\BLOCK{ if problem_description_after -}
+\VAR{problem_description_after}
+\BLOCK{ endif }
+
+\BLOCK{ endif } \#{ show_question }
+
+\BLOCK{ if show_answer}
+<strong>解：</strong>本问题为\BLOCK{- if t.is_standard_problem -}产销平衡运输问题
+\BLOCK{- elif t.is_sup_bounded_problem -}最低产量必须运出的运输问题
+\BLOCK{- elif t.is_dem_bounded_problem -}最低需求必须满足的运输问题
+\BLOCK{- else -}产销不平衡问题
+\BLOCK{- endif-}.
+
+\BLOCK{ if t.is_sup_bounded_problem or t.is_dem_bounded_problem }
+\BLOCK{ if t.is_sup_bounded_problem }\BLOCK{ set dim_name= qtable.sup_desc}\BLOCK{ set max_name= qtable.sup_max_desc}\BLOCK{ set total_name= qtable.dem_amount_desc}\BLOCK{ endif }
+\BLOCK{ if t.is_dem_bounded_problem }\BLOCK{ set dim_name= qtable.dem_desc}\BLOCK{ set max_name= qtable.dem_max_desc}\BLOCK{ set total_name= qtable.sup_amount_desc}\BLOCK{ endif }
+
+\BLOCK{ if t.is_infinity_bounded_problem}由于只有一个\VAR{dim_name}的\VAR{max_name}为“无上限”，可计算出其理论上限：
+该\VAR{dim_name}的\VAR{max_name}为\VAR{t.infty_theoretical_value}. \BLOCK{endif}
+
+\BLOCK{ if t.question_no_need_consider_bound }计算可知，总\VAR{total_name}可以满足所有\VAR{dim_name}的\VAR{max_name}，无须进行分割操作.\BLOCK{endif}
+
+\BLOCK{ endif } \#{t.is_sup_bounded_problem }
+
+\BLOCK{ if not t.is_standard_problem }
+标准化后的运输问题的运价表为：
+
+<p align="middle"><strong>答案表\VAR{answer_table_iters.__next__()}</strong></br>
+{% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
+\BLOCK{ if t.standard_table_element and t.standard_costs_str -}
+\BLOCK{ set qtable=t.standard_table_element } \BLOCK{ set costs=t.standard_costs_str }
+\begin{\VAR{qtable.tex_table_type}}[H]\centering
+%\topcaption{}
+\begin{mytabular}{c|\BLOCK{ for x in range(qtable.dem_name_list|length) }c\BLOCK{ endfor }|c}\hline\hline \diagbox{\VAR{qtable.sup_desc}}{\VAR{qtable.cost_desc}}{\VAR{qtable.dem_desc}}
+&\VAR{qtable.dem_name_list|join("&")}&\VAR{qtable.sup_amount_desc}\\ \hline
+\BLOCK{ for idx in range(qtable.sup_name_list|length) } \VAR{ qtable.sup_name_list[idx] } & \VAR{costs[idx]|join("&")} & \VAR{t.standard_sup[idx]} \\
+\BLOCK{ endfor } \hline
+\VAR{qtable.dem_amount_desc}&\VAR{t.standard_dem|join("&")}&\VAR{t.standard_total_amount}\\
+\hline\hline
+\end{mytabular}\end{\VAR{qtable.tex_table_type}}
+
+\BLOCK{ endif} \#{t.question_table_element and t.costs_str}
+
+{% endcall %}</p>
+
+\BLOCK{ endif}  \#{not t.is_standard_problem }
+
+\BLOCK{ if not standardize_only }
+{% set transport_preamble_extra %}
+\BLOCK{ set qtable=t.solve_table_element } \BLOCK{ set costs=t.standard_costs_str_tikz }
+\def\ori{  {  \BLOCK{for idx in (range(costs|length))|reverse}{\VAR{costs[idx]|join(",")}},\BLOCK{endfor}  }  }
+\def\sremainder{
+\BLOCK{for idx in (range(t.standard_sup|length))|reverse}
+\draw (sr\VAR{loop.index0}) node{\footnotesize \VAR{t.standard_sup[idx]}};
+\BLOCK{ endfor }
+}
+\def\dremainder{
+\BLOCK{for idx in range(t.standard_dem|length)}
+\draw (dr\VAR{loop.index0}) node{\footnotesize \VAR{t.standard_dem[idx]}};
+\BLOCK{ endfor }
+}
+\def\total{\footnotesize \VAR{t.standard_total_amount}}
+{% endset %}
+
+\BLOCK{ for method_idx in range(used_method_list|length)}
+\BLOCK{ if not loop.first}<hr>\BLOCK{endif}
+
+\BLOCK{ if (used_method_list|length) > 1 }<strong>(\VAR{loop.index}).</strong>\BLOCK{ endif } 用<strong>\VAR{used_method_list[method_idx]}</strong>得到的初始基本可行方案及后续求解如下：
+
+\BLOCK{ set solution_list=method_result_list[method_idx].solution_list}
+\BLOCK{ set verify_list=method_result_list[method_idx].s_matrix_list}
+\BLOCK{ set vogel_list=method_result_list[method_idx].vogel_list}
+\BLOCK{ set vogel_location=method_result_list[method_idx].vogel_location}
+\BLOCK{ set enter_element_list=method_result_list[method_idx].enter_element_list}
+\BLOCK{ set n_iter=solution_list|length}
+\BLOCK{ set z=method_result_list[method_idx].z}
+\BLOCK{ set has_unique_verify_table=method_result_list[method_idx].has_unique_verify_table}
+\BLOCK{ set has_unique_solution=method_result_list[method_idx].has_unique_solution}
+
+
+\BLOCK{ for it in range(n_iter) -}
+\BLOCK{ if it <= 1}
+\BLOCK{ set result=solution_list[it]}
+\BLOCK{ set verify=verify_list[it]}
+\BLOCK{ set enter_element=enter_element_list[it]}
+
+<table>
+<tr><td>
+<p align="middle"><strong>答案表\VAR{answer_table_iters.__next__()}</strong></br>
+{% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble, tex_preamble_extra=transport_preamble_extra)  %}
+
+\begin{keytable}[H]
+\centering
+%\topcaption{}
+\def\flows{  {  \BLOCK{for idx in (range(result|length))|reverse}{\VAR{result[idx]|join(",")}},\BLOCK{endfor}  }  }
+\begin{tikzpicture}[>=stealth]\draw[thick, draw=black] (0,0) grid (\VAR{t.standard_n_dem},\VAR{t.standard_n_sup});%%%无运输图
+\draworiginlabelwithoutnodelabel{\ori}{\VAR{t.standard_n_sup-1}}{\VAR{t.standard_n_dem-1}}
+\drawflow{\flows}{\VAR{t.standard_n_sup-1}}{\VAR{t.standard_n_dem-1}}
+\sremainder
+\dremainder
+\BLOCK{ for x in range(0, t.standard_n_dem) }
+\node at (B\VAR{x}) {\VAR{qtable.dem_name_list[x]}};
+\BLOCK{ endfor -}
+\BLOCK{ for x in range(0, t.standard_n_sup) }
+\node at (A\VAR{t.standard_n_sup-x-1}) {\VAR{qtable.sup_name_list[x]}};
+\BLOCK{ endfor -}
+\BLOCK{ if loop.first} \#{iter loop}
+\BLOCK{if vogel_list}
+\BLOCK{for vogel_iter in range(vogel_list|length)}
+\drawvogel{\VAR{vogel_iter+1}}{ {\VAR{vogel_list[vogel_iter][1]|join(",")} } }{ {\VAR{vogel_list[vogel_iter][0]|reverse|join(",")} } }{\VAR{t.standard_n_sup-1}}{\VAR{t.standard_n_dem-1}}
+\BLOCK{set vl = vogel_location[vogel_iter]}
+\BLOCK{if vl}
+\BLOCK{if vl["location"] == "row"}\drawvogelcircle{\VAR{vogel_iter+1}}{\VAR{t.standard_n_sup - 1 - vl["idx"]}}{}{\VAR{t.standard_n_sup-1}}{\VAR{t.standard_n_dem-1}}
+\BLOCK{else}\drawvogelcircle{\VAR{vogel_iter+1}}{}{\VAR{vl["idx"]}}{\VAR{t.standard_n_sup-1}}{\VAR{t.standard_n_dem-1}}
+\BLOCK{endif}
+\BLOCK{endif}\#{vl}
+\BLOCK{endfor}
+\vogellabel{\VAR{vogel_list|length}}{\VAR{t.standard_n_sup-1}}{\VAR{t.standard_n_dem-1}}
+\BLOCK{ endif }
+\BLOCK{ endif }\#{loop.first}
+\end{tikzpicture}
+\end{keytable}
+{% endcall %}</p></td>
+
+\BLOCK{ if verify }
+<td> <p>检验数表为：</p>
+<p align="middle"><strong>答案表\VAR{answer_table_iters.__next__()} </strong> 检验数表</br>
+{% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble, tex_preamble_extra=transport_preamble_extra)  %}
+
+\begin{keytable}[H]
+\centering %\topcaption{检验数表}%\label{tab:jysb1}
+\begin{mytabular}{c|\BLOCK{ for x in range(0, t.standard_n_dem) }|C{2.5em}\BLOCK{ endfor }  }
+\hline\hline
+& \VAR{qtable.dem_name_list|join("&")} \\ \hline\hline
+\BLOCK{ for x in range(0, t.standard_n_sup) }
+\VAR{qtable.sup_name_list[x]} & \VAR{verify[x]|join("&")}\\ \hline
+\BLOCK{ endfor }
+\hline
+\end{mytabular}
+\end{keytable}
+
+{% endcall %}</p>
+
+\BLOCK{ if not loop.last }
+
+<p>\BLOCK{ if not loop.first }仍然\BLOCK{endif}存在检验数为负的非基变量格，\BLOCK{ if loop.first }初始基本可行\BLOCK{else}当前\BLOCK{endif}方案非最优，调整$\VAR{(qtable.sup_name_list[enter_element[0]])|replace("$", "")}\VAR{(qtable.dem_name_list[enter_element[1]])|replace("$", "")}$.</p>
+\BLOCK{ endif }
+
+</td></tr></table>
+
+\BLOCK{ if loop.last }
+可知，问题已经取得最优解，且\BLOCK{if has_unique_solution}当前方案为<strong>唯一的最优方案</strong>\BLOCK{else}<strong>此最优方案不唯一</strong>\BLOCK{endif}，最低运费为\VAR{z}.</p>
+\BLOCK{ endif }
+
+
+\BLOCK{ endif }
+
+\BLOCK{ if not loop.last }\BLOCK{ endif }
+
+\BLOCK{ endif }\#{ if it <= 1}
+
+\BLOCK{ endfor }
+
+\BLOCK{ endfor }\#{ method in used_method_list}
+\BLOCK{ endif } \#{not standardize_only }
+
+
+\BLOCK{- endif } \#{ show_answer }
+

@@ -11,6 +11,13 @@ from sympy.simplify import nsimplify
 from sympy.core.numbers import Float as sympy_float
 import os
 
+PULP_INSTALLED = False
+try:
+    from pulp import *
+    PULP_INSTALLED = True
+except ImportError:
+    pass
+
 tol = 1.0E-12
 EQ = [">", "<", "=", ">=", "<=", "=<", "=>"]
 SIGN = [">", "<", "=", ">=", "<=", "=<", "=>", "int", "bin"]
@@ -20,7 +27,7 @@ METHOD_NAME_DICT = {"simplex": u"单纯形法", "dual_simplex": u"对偶单纯�
 OPT_CRITERIA_LITERAL_DICT = {"max": u"非正", "min": u"非负"}
 
 try:
-    from linprog import linprog
+    from .linprog import linprog
 except ImportError:
     pass
 
@@ -1177,12 +1184,13 @@ class LP(object):
         if not (start_tableau is not None and start_basis):
             self.sign = sign[:]
             if not sign_str:
-                self.sign_str = self.get_sign_str(dual)
+                self.sign_str = self.get_sign_str(dual=dual)
             else:
                 self.sign_str = sign_str
 
             self.sign_str = r"\rlap{%s}" % self.sign_str
             self.constraints_str_list = self.get_constraint_str()
+            self.sign_str_purelatex = r"\rlap{$%s$}" % self.get_sign_str(purelatex=True)
 
         self.base_list = []
         self.tableau_list = []
@@ -1214,7 +1222,7 @@ class LP(object):
         self.opt_x = []
         self.opt_value = []
 
-    def get_sign_str(self, dual):
+    def get_sign_str(self, dual=False, purelatex=False):
         """
         得到变量的符号 x_{1},x_{3}\geqslant 0,\,x_{2}\text{无限制},\,x_{3}\text{为整数}
         """
@@ -1251,7 +1259,7 @@ class LP(object):
             cstr_list.append(get_single_constraint(cnstr, self.x_list))
         return cstr_list
 
-    def get_goal_str(self):
+    def get_goal_str(self, purelatex=False, z=None, inline=False):
         goal = self.goal
         try:
             goal = [trans_latex_fraction(str(g), wrap=False) for g in goal]
@@ -1280,7 +1288,16 @@ class LP(object):
                 if not str(g).startswith("-"):
                     goal[i] = "+" + goal[i]
 
-        return r"\%s \quad & \rlap{%s = %s}" % (self.qtype, self.z, "".join(goal))
+        if not z:
+            z = self.z
+
+        if not purelatex:
+            return r"\%s \quad & \rlap{%s = %s}" % (self.qtype, z, "".join(goal))
+        else:
+            if inline:
+                return r"\%s\; %s = %s" % (self.qtype, z, "".join(goal))
+            else:
+                return r"\%s \quad & \rlap{$%s = %s$}" % (self.qtype, z, "".join(goal))
 
     def dual_problem(self):
         qtype = list(set(["max", "min"]) - set([self.qtype]))[0]
@@ -1447,7 +1464,8 @@ class LP(object):
 
         if res.status == 0:
             self.solutionCommon.nit = res.nit
-            self.res = res
+
+        self.res = res
 
         #print(res)
         #print(res.status)
@@ -1662,6 +1680,52 @@ class LP(object):
         else:
             return None
 
+    def as_pulp_problem(self, problem_name="no name", objective_name="objective"):
+        if not PULP_INSTALLED:
+            raise ImportError("PuLP is not installed.")
+        if self.qtype == "max":
+            sense = pulp.LpMaximize
+        else:
+            sense = pulp.LpMinimize
+
+        prob = pulp.LpProblem(problem_name, sense=sense)
+
+        n_variable = len(self.x_list)
+        variable_name = self.x
+        variable_str_list = ["%s%s" % (variable_name, idx+1) for idx in range(n_variable)]
+
+        # vaiables
+        for i, x in enumerate(variable_str_list):
+            lbound, ubound, vtype = get_variable_bound_type_from_sign(self.sign[i])
+            pulp_variable_str = (
+                "%(xi)s = pulp.LpVariable('%(xi)s', %(lbound)s, %(ubound)s, %(vtype)s)"
+                % {
+                    "xi": x,
+                    "lbound": lbound,
+                    "ubound": ubound,
+                    "vtype": vtype
+                }
+            )
+            exec(pulp_variable_str)
+            #print(pulp_variable_str)
+
+        # objective function
+        objective_str = "+".join(["(%s*%s)" %(self.goal[i], variable_str_list[i]) for i in range(n_variable)])
+        #print(objective_str)
+        pulp_objective_str = "prob += %s, '%s'" % (objective_str, objective_name)
+        exec(pulp_objective_str)
+
+        # constraints
+        #print(self.constraints_origin)
+        for i, cst in enumerate(self.constraints_origin):
+            cst_str = "+".join(["(%s*%s)" %(cst[i], variable_str_list[i]) for i in range(n_variable)])
+            rhs_str = "". join(str(c) for c in cst[n_variable: ])
+            rhs_str = rhs_str.replace("=", "==").replace(">", ">=").replace("<", "<=")
+            cst_str += rhs_str
+            exec("prob += %s" % cst_str)
+
+        return prob
+
 
 def get_single_constraint(constraint, x_list, use_seperator=True, as_lhs_rhs_list=False):
     constraint = [trans_latex_fraction(str(cnstr), wrap=False) for cnstr in constraint]
@@ -1817,7 +1881,25 @@ def variable_sign_trans(s):
     elif s == "bin":
         return u"=0\\text{或}1"
     elif s == "int":
-        return u"\\text{为整数}"
+        return u"\\text{为非负整数}"
+    else:
+        raise ValueError()
+
+
+def get_variable_bound_type_from_sign(s):
+    # SIGN = [">", "<", "=", ">=", "<=", "=<", "=>", "int", "bin"]
+    # sign to tuple for bound of variables
+    assert s in SIGN
+    if ">" in s:
+        return 0, None, "pulp.LpContinuous"
+    elif "<" in s:
+        return None, 0, "pulp.LpContinuous"
+    elif s == "=":
+        return None, None, "pulp.LpContinuous"
+    elif s == "bin":
+        return 0, 1, "pulp.LpBinary"
+    elif s == "int":
+        return 0, None, "pulp.LpInteger"
     else:
         raise ValueError()
 
