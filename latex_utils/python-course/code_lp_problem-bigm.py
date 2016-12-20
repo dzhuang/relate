@@ -494,7 +494,7 @@ for l in lp_json_list_loaded:
 for i, lp_dict in enumerate(json_list):
 #    lp_dict = json.loads(l)
 
-    lp_dict["sign"] = ["int", "bin", ">"]
+    #lp_dict["sign"] = ["int", "bin", ">"]
 
     lp = LP(**lp_dict)
     lp2phase = deepcopy(lp)
@@ -579,10 +579,15 @@ print(count)
 
 if unbounded_lp_list:
     with open('lp_problem_unbound.bin', 'wb') as f:
-            pickle.dump(unbounded_lp_list, f)
+            pickle.dump(unbounded_lp_list, f, protocol=2)
 
-if unbounded_lp_list:
+if int_bin_lp_list:
     with open('pulp_mip_problem_optimal.bin', 'wb') as f:
-        pickle.dump(int_bin_lp_list, f)
+        pickle.dump(int_bin_lp_list, f, protocol=2)
 
 # r.mainloop()
+
+with open('lp_problem_unbound.bin', 'rb') as f:
+    p = pickle.load(f)
+
+print(type(p))

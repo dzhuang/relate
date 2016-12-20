@@ -1881,7 +1881,7 @@ def variable_sign_trans(s):
     elif s == "bin":
         return u"=0\\text{或}1"
     elif s == "int":
-        return u"\\text{为非负整数}"
+        return u"\\text{为整数}"
     else:
         raise ValueError()
 
