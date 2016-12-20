@@ -418,6 +418,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 def_cache.add(cache_key, result)
             return True, result
 
+        print(page_data, "============================================")
+
         try:
             success, result = self.jinja_runpy(
                 page_context,

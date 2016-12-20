@@ -475,6 +475,7 @@ with open('lp.bin', 'rb') as f:
 
 final_lp_list = []
 unbounded_lp_list = []
+int_bin_lp_list = []
 count = 0
 
 import json
@@ -492,6 +493,8 @@ for l in lp_json_list_loaded:
 
 for i, lp_dict in enumerate(json_list):
 #    lp_dict = json.loads(l)
+
+    lp_dict["sign"] = ["int", "bin", ">"]
 
     lp = LP(**lp_dict)
     lp2phase = deepcopy(lp)
@@ -534,6 +537,9 @@ for i, lp_dict in enumerate(json_list):
     #     print(lp.opt_value)
     #     print("iterations:", lp.solutionCommon.nit)
 
+    print(lp.sign)
+    assert len(lp.sign) == 3
+
     if lp.solutionCommon.nit in [2, 3, 4]:
         pass
         #  if lp.solutionCommon.nit in [3, 4, 5] and lp.qtype=="max":
@@ -548,29 +554,35 @@ for i, lp_dict in enumerate(json_list):
         #print(pulp.value(pulp_problem.objective))
         status = pulp.LpStatus[pulp_problem.status]
         if status == pulp.LpStatus[LpStatusInfeasible]:
-            print(lp.json, "infea")
+            pass
+            #print(lp.json, "infea")
         elif status == pulp.LpStatus[LpStatusUnbounded]:
-            unbounded_lp_list.append(lp.json)
-            print(lp.json, "unbound---------------------------------------------")
+            unbounded_lp_list.append(lp_dict)
+            #print(lp.json, "unbound---------------------------------------------")
             result = [v.varValue for v in pulp_problem.variables()]
-            print(result)
-        else:
+            #print(result)
+        elif status == pulp.LpStatus[LpStatusOptimal]:
             # for v in pulp_problem.variables():
             #     print(v.name, "=", v.varValue)
-            print(len(pulp_problem.variables()))
+            #print(len(pulp_problem.variables()))
             result = [v.varValue for v in pulp_problem.variables()]
-            print(pulp_problem.constraints)
-            print(result)
+            #print(pulp_problem.constraints)
+            print(pulp_problem)
+            #print(result)
+            int_bin_lp_list.append(lp_dict)
 
-
-
-        count += 1
+            count += 1
+            print(count)
 
 
 print(count)
 
-# if unbounded_lp_list:
-#     with open('lp_problem_unbound.bin', 'wb') as f:
-#             pickle.dump(final_lp_list, f)
+if unbounded_lp_list:
+    with open('lp_problem_unbound.bin', 'wb') as f:
+            pickle.dump(unbounded_lp_list, f)
+
+if unbounded_lp_list:
+    with open('pulp_mip_problem_optimal.bin', 'wb') as f:
+        pickle.dump(int_bin_lp_list, f)
 
 # r.mainloop()
