@@ -289,7 +289,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 break
 
             page_data = {"question_data": question_data,
-                         "key_making_string_md5": md5(key_making_string).hexdigest()
+                         "key_making_string_md5": md5(key_making_string.encode()).hexdigest()
                          }
 
             for part in ["answer", "question", "blank", "blank_answer", "answer_explanation"]:
