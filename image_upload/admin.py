@@ -4,7 +4,7 @@ from django.template.response import SimpleTemplateResponse
 from django import forms
 from django.utils.translation import (
     ugettext_lazy as _, string_concat, pgettext)
-from django.utils.six.moves.urllib.parse import parse_qsl, urlparse, urlunparse
+from six.moves.urllib.parse import parse_qsl, urlparse, urlunparse
 from django.contrib.admin.templatetags.admin_urls import add_preserved_filters
 from django.core.urlresolvers import Resolver404, get_script_prefix, resolve, reverse
 from django.contrib.admin.views.main import ChangeList
