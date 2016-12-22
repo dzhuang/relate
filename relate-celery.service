@@ -14,10 +14,10 @@ ExecStartPre=/bin/mkdir -p /var/run/celery
 ExecStartPre=/bin/chown -R www-data:www-data /var/run/celery/
 ExecStartPre=-/bin/rm -f /var/run/celery/celery.pid
 
-ExecStart=/home/course/my-relate-env3/bin/celery multi start worker \
+ExecStart=/home/course/my-relate-env/bin/celery multi start worker \
     -A relate --pidfile=/var/run/celery/celery.pid \
     --logfile=/var/log/celery/celery.log --loglevel="INFO"
-ExecStop=/home/course/my-relate-env3/bin/celery multi stopwait worker \
+ExecStop=/home/course/my-relate-env/bin/celery multi stopwait worker \
     --pidfile=/var/run/celery/celery.pid
 
 Restart=on-failure
