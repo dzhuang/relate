@@ -288,10 +288,14 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                        in_python=True)
                }
 
-        flow_page_data_idx = FlowPageData.objects.get(
-            flow_session=flow_session_idx,
-            group_id=group_id,
-            page_id=page_id)
+        try:
+            flow_page_data_idx = FlowPageData.objects.get(
+                flow_session=flow_session_idx,
+                group_id=group_id,
+                page_id=page_id)
+        except FlowPageData.DoesNotExist:
+            # Because not all page_id will be included when max_page_count is enabled.
+            continue
 
         uri = reverse("relate-grade_flow_page",
             args=(
