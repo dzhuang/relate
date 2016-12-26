@@ -25,16 +25,16 @@ local_settings = {
         "__file__": _local_settings_file,
         }
 try:
-    # py3.x
-    with open(_local_settings_file, encoding="utf8") as inf:
-        local_settings_contents = inf.read()
-except TypeError:
     # py2.x
     with open(_local_settings_file) as inf:
         local_settings_contents = inf.read()
+except UnicodeDecodeError:
+    # py3.x
+    with open(_local_settings_file, encoding="utf8") as inf:
+        local_settings_contents = inf.read()
 except IOError:
-    pass
-else:
+   pass
+finally:
     exec(compile(local_settings_contents, "local_settings.py", "exec"),
             local_settings)
 
