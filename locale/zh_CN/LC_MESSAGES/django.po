@@ -3551,6 +3551,603 @@ msgstr "%(participation)s在%(exam)s中的测验ticket."
 msgid "Participation and exam must live in the same course"
 msgstr "参与者和测验必须属于同一门课程"
 
+#: .\course\page\base.py:147
+msgid "No information on correctness of answer."
+msgstr "未知回答正确与否. "
+
+#: .\course\page\base.py:149
+msgid "Your answer is not correct."
+msgstr "您的回答不正确. "
+
+#: .\course\page\base.py:151
+msgid "Your answer is correct."
+msgstr "您的回答是正确的. "
+
+#: .\course\page\base.py:155
+msgid "Your answer is correct and earned bonus points."
+msgstr "您的回答是正确的, 并且得到了加分. "
+
+#: .\course\page\base.py:161
+msgid "Your answer is mostly correct."
+msgstr "您的回答基本正确. "
+
+#: .\course\page\base.py:167
+msgid "Your answer is somewhat correct. "
+msgstr "您的回答在一定程度上正确. "
+
+#: .\course\page\base.py:198
+msgid "Invalid correctness value"
+msgstr "无效的正确性数值"
+
+#: .\course\page\base.py:343
+msgid "An optional page should have 'value = 0'"
+msgstr ""
+
+#: .\course\page\base.py:350
+msgid "Not passing page_desc to PageBase.__init__ is deprecated"
+msgstr ""
+
+#: .\course\page\base.py:408
+#, python-format
+msgid "%s is using the make_page_data compatiblity hook, which is deprecated."
+msgstr ""
+
+#: .\course\page\base.py:526
+#, python-format
+msgid "%s is using the post_form compatiblity hook, which is deprecated."
+msgstr ""
+
+#: .\course\page\base.py:607
+#, python-format
+msgid ""
+"%s is using the update_grade_data_from_grading_form compatiblity hook, which "
+"is deprecated."
+msgstr ""
+
+#: .\course\page\base.py:720
+#, python-format
+msgid ""
+"PageBaseWithTitle subclass '%s' does not implement markdown_body_for_title()"
+msgstr "PageBaseWithTitle的子类\"%s\"未使用markdown_body_for_title()方法"
+
+#: .\course\page\base.py:731
+msgid "no title found in body or title attribute"
+msgstr "没有在body中找到title，也没有title属性"
+
+#: .\course\page\base.py:832
+msgid "Grade assigned, in percent"
+msgstr "给予的评分（百分比）"
+
+#: .\course\page\base.py:838
+msgid "Grade percent"
+msgstr "得分的百分比"
+
+#: .\course\page\base.py:844
+#, python-format
+msgid ""
+"Grade assigned, as points out of %.1f. Fill out either this or 'grade "
+"percent'."
+msgstr "给予的评分, %.1f分中取得的分值. 填入此项或者\"得分的百分比\". "
+
+#: .\course\page\base.py:852
+msgid "Grade points"
+msgstr "得分的分值"
+
+#: .\course\page\base.py:858
+msgid ""
+"Feedback to be shown to student, using <a href='http://documen.tician.de/"
+"relate/content.html#relate-markup'>RELATE-flavored Markdown</a>"
+msgstr ""
+"将反馈给学生的信息, 建议使用<a href='http://documen.tician.de/relate/content."
+"html#relate-markup'>RELATE方式的Markdown模式</a>. "
+
+#: .\course\page\base.py:862
+msgid "Feedback text"
+msgstr "反馈文字"
+
+#: .\course\page\base.py:865
+msgid ""
+"Checking this box and submitting the form will notify the participant with a "
+"generic message containing the feedback text"
+msgstr "勾选此项并提交这个表单, 将会向参与者发送一个包含了反馈信息的邮件. "
+
+#: .\course\page\base.py:868
+msgid "Notify"
+msgstr "发送通知"
+
+#: .\course\page\base.py:871
+msgid "Allow recipient to reply to this email?"
+msgstr "允许收件人回复本邮件？"
+
+#: .\course\page\base.py:872
+msgid "May reply email to me"
+msgstr "允许回复给我"
+
+#: .\course\page\base.py:875
+msgid ""
+"Whether the grade and feedback are to be shown to student. (If you would "
+"like to release all grades at once, do not use this. Instead, use the 'shown "
+"to students' checkbox for this 'grading opportunity' in the grade book "
+"admin.)"
+msgstr ""
+"是否允许学生看到分数和反馈. (如果您希望把所有成绩一次性发布，请不要使用这一"
+"项, 而是在成绩册管理中的'得分机会'中勾选'展示给学生')."
+
+#: .\course\page\base.py:880
+msgid "Released"
+msgstr "已发布"
+
+#: .\course\page\base.py:883
+msgid "Internal notes, not shown to student"
+msgstr "内部注释, 学生不可见"
+
+#: .\course\page\base.py:888
+msgid ""
+"Checking this box and submitting the form will notify the instructor with a "
+"generic message containing the notes"
+msgstr "勾选此项并提交这个表单, 将会向任课老师发送一个包含以上注释信息的邮件. "
+
+#: .\course\page\base.py:891
+msgid "Notify instructor"
+msgstr "通知任课老师"
+
+#: .\course\page\base.py:904 .\course\page\base.py:918
+msgid "Grade (percent) and Grade (points) disagree"
+msgstr "百分比评分与分值评分不一致"
+
+#: .\course\page\base.py:997
+msgid "New notification"
+msgstr "一条新的通知"
+
+#: .\course\page\base.py:1033
+#, python-format
+msgid "Grading notes from %(ta)s"
+msgstr "来自%(ta)s的评分注释"
+
+#: .\course\page\base.py:1077 .\course\page\choice.py:280
+#: .\course\page\choice.py:477 .\course\page\code.py:591
+#: .\course\page\code.py:1003 .\course\page\code_with_page_context.py:163
+#: .\course\page\inline.py:900 .\course\page\text.py:1340
+msgid "No answer provided."
+msgstr "未回答. "
+
+#: .\course\page\base.py:1099
+msgid "The following feedback was provided"
+msgstr "有以下的反馈信息"
+
+#. Translators: "choice" in Choice Answer Form in a single-choice question.
+#: .\course\page\choice.py:47
+msgid "Choice"
+msgstr "选项"
+
+#. Translators: "Choice" in Choice Answer Form in a multiple
+#. choice question in which multiple answers can be chosen.
+#: .\course\page\choice.py:58
+msgid "Select all that apply:"
+msgstr "选择所有适合的选项:"
+
+#: .\course\page\choice.py:98 .\course\page\choice.py:608
+#: .\course\page\inline.py:421
+#, python-format
+msgid "choice %(idx)d: unable to convert to string"
+msgstr "选项%(idx)d: 无法转换为字符串"
+
+#: .\course\page\choice.py:161
+msgid ""
+"existing choice permutation not suitable for number of choices in question"
+msgstr "当前的选项排列方式不适用于该问题中选项选择数量的统计"
+
+#: .\course\page\choice.py:234
+#, python-format
+msgid "one or more correct answer(s) expected, %(n_correct)d found"
+msgstr "需要至少1个参考答案，找到%(n_correct)d个"
+
+#: .\course\page\choice.py:244
+msgid "ChoiceQuestion does not allow any choices marked 'disregard'"
+msgstr ""
+
+#: .\course\page\choice.py:294 .\course\page\inline.py:867
+#: .\course\page\text.py:1362
+msgid "A correct answer is"
+msgstr "参考答案"
+
+#: .\course\page\choice.py:395
+msgid ""
+"'allow_partial_credit' or 'allow_partial_credit_subset_only' may not be "
+"specifiedat the same time as 'credit_mode'"
+msgstr ""
+"不能将'allow_partial_credit' 和 'allow_partial_credit_subset_only'同时设"
+"为'credit_mode'."
+
+#: .\course\page\choice.py:415
+msgid ""
+"'allow_partial_credit' and 'allow_partial_credit_subset_only' are not "
+"allowed to coexist when both attribute are 'True'"
+msgstr ""
+"当'allow_partial_credit' 和 'allow_partial_credit_subset_only'都设"
+"为'True'时，两者不能共存."
+
+#: .\course\page\choice.py:429
+#, python-format
+msgid "unrecognized credit_mode '%(credit_mode)s'"
+msgstr "无法识别的credit_mode '%(credit_mode)s'"
+
+#: .\course\page\choice.py:434
+msgid ""
+"'credit_mode' will be required on multi-select choice questions in a future "
+"version. set 'credit_mode: {}' to match current behavior."
+msgstr ""
+"在将来的版本中, 多项选择问题必须设置'credit_mode'. 目前，可用'credit_mode："
+"{}'的方式来对应当前的行为. "
+
+#: .\course\page\choice.py:534
+msgid "The correct answer is"
+msgstr "正确答案"
+
+#: .\course\page\code.py:490
+msgid ""
+"code question does not explicitly allow multiple submission. Either add "
+"access_rules/add_permssions/change_answer or add 'single_submission: True' "
+"to confirm that you intend for only a single submission to be allowed. While "
+"you're at it, consider adding access_rules/add_permssions/see_correctness."
+msgstr ""
+
+#: .\course\page\code.py:678 .\course\page\code_with_page_context.py:250
+msgid "code question execution failed"
+msgstr "编程问题执行失败"
+
+#: .\course\page\code.py:683 .\course\page\code_with_page_context.py:255
+msgid "<unknown flow>"
+msgstr "<未知的flow>"
+
+#: .\course\page\code.py:698 .\course\page\code_with_page_context.py:270
+msgid ""
+"Both the grading code and the attempt to notify course staff about the issue "
+"failed. Please contact the course or site staff and inform them of this "
+"issue, mentioning this entire error message:"
+msgstr ""
+"您的代码错误和通知课务人员的邮件尝试都未成功. 请与课程或网站人员联系, 并告知"
+"全部的错误信息。"
+
+#: .\course\page\code.py:706 .\course\page\code_with_page_context.py:278
+msgid ""
+"Sending an email to the course staff about the following failure failed with "
+"the following error message:"
+msgstr "向课管人员发送电子邮件，在邮件中包含以下的代码失败信息."
+
+#: .\course\page\code.py:712 .\course\page\code_with_page_context.py:284
+msgid "The original failure message follows:"
+msgstr "错误发生时的信息如下:"
+
+#: .\course\page\code.py:740 .\course\page\code_with_page_context.py:312
+msgid ""
+"The grading code failed. Sorry about that. The staff has been informed, and "
+"if this problem is due to an issue with the grading code, it will be fixed "
+"as soon as possible. In the meantime, you'll see a traceback below that may "
+"help you figure out what went wrong."
+msgstr ""
+"用于自动评分的代码出错，抱歉。通知已经送达课管人员，如果这个问题是由于自动评"
+"分的代码引起的，我们将尽快地修复它。同时，你也可以在下面查看traceback信息，它"
+"将帮助你了解是哪里出了问题。"
+
+#: .\course\page\code.py:752 .\course\page\code_with_page_context.py:324
+#, python-format
+msgid ""
+"Your code took too long to execute. The problem specifies that your code may "
+"take at most %s seconds to run. It took longer than that and was aborted."
+msgstr ""
+"你的代码执行时间过长。本问题要求你的代码执行时间不得超过%s秒钟，由于超时所以"
+"代码执行被取消。"
+
+#: .\course\page\code.py:764 .\course\page\code_with_page_context.py:336
+msgid "Your code failed to compile. An error message is below."
+msgstr "你的代码编译失败，下面是错误信息。"
+
+#: .\course\page\code.py:772 .\course\page\code_with_page_context.py:344
+msgid "Your code failed with an exception. A traceback is below."
+msgstr "你的代码执行失败且有一条exception，下面是traceback信息。"
+
+#: .\course\page\code.py:783 .\course\page\code_with_page_context.py:355
+msgid "Here is some feedback on your code"
+msgstr "这是关于你的代码的反馈"
+
+#: .\course\page\code.py:792 .\course\page\code_with_page_context.py:364
+msgid "This is the exception traceback"
+msgstr "这是exception traceback"
+
+#: .\course\page\code.py:805 .\course\page\code_with_page_context.py:377
+#, python-format
+msgid "Your code ran on %s."
+msgstr ""
+
+#: .\course\page\code.py:811 .\course\page\code_with_page_context.py:383
+msgid "Your code printed the following output"
+msgstr "你的代码打印出以下的输出结果"
+
+#: .\course\page\code.py:818 .\course\page\code_with_page_context.py:390
+msgid "Your code printed the following error messages"
+msgstr "你的代码打印出以下的错误信息"
+
+#: .\course\page\code.py:824 .\course\page\code_with_page_context.py:396
+msgid "Your code produced the following plots"
+msgstr "你的代码得到以下的图"
+
+#: .\course\page\code.py:834 .\course\page\code_with_page_context.py:406
+msgid "Figure"
+msgstr "图"
+
+#: .\course\page\code.py:911 .\course\page\code_with_page_context.py:488
+msgid "The following code is a valid answer"
+msgstr "以下的代码是一个有效的回答"
+
+#: .\course\page\code.py:985
+msgid "human_feedback_value greater than overall value of question"
+msgstr "人工评分(human_feedback_value)大于这个问题的总分值"
+
+#: .\course\page\inline.py:135
+#, python-format
+msgid "unknown embedded question type '%(type)s'"
+msgstr "未知的嵌入型问题类型\"%(type)s\""
+
+#: .\course\page\inline.py:149
+msgid "must be struct"
+msgstr "必须是一个struct型的数据"
+
+#: .\course\page\inline.py:236
+#, python-format
+msgid "unrecogonized width attribute string: '%(width_attr)s'"
+msgstr "无法识别的宽度字符串: '%(width_attr)s'"
+
+#: .\course\page\inline.py:247
+#, python-format
+msgid ""
+"unsupported length unit '%(length_unit)s', expected length unit can be %"
+"(allowed_length_unit)s"
+msgstr ""
+"不支持的长度单位'%(length_unit)s', 可使用的长度单位包括%(allowed_length_unit)"
+"s"
+
+#: .\course\page\inline.py:292 .\course\page\text.py:1305
+msgid "at least one answer must be provided"
+msgstr "至少要提供一个回答"
+
+#. Translators: refers to optional
+#. correct answer for checking
+#. correctness sumbitted by students.
+#: .\course\page\inline.py:315
+msgid "answer"
+msgstr "回答"
+
+#: .\course\page\inline.py:325 .\course\page\text.py:1320
+msgid "no matcher is able to provide a plain-text correct answer"
+msgstr "现有的匹配类无法提供一个普通文本型的标准答案"
+
+#: .\course\page\inline.py:438
+#, python-format
+msgid ""
+"one or more correct answer(s) expected  for question '%(question_name)s', %"
+"(n_correct)d found"
+msgstr "问题'%(question_name)s'至少要有1个答案，找到%(n_correct)d个"
+
+#: .\course\page\inline.py:669
+msgid "InlineMultiQuestion requires at least one answer field to be defined."
+msgstr ""
+
+#: .\course\page\inline.py:680
+#, python-format
+msgid "invalid answers name %s. "
+msgstr "无效的答案名称%s. "
+
+#: .\course\page\inline.py:681 .\course\page\inline.py:699
+msgid ""
+"A valid name should start with letters. Alphanumeric with underscores. Do "
+"not use spaces."
+msgstr "一个有效的名称应以字母开头，允许包含数字和下划线, 不允许有空格. "
+
+#: .\course\page\inline.py:698
+#, python-format
+msgid "invalid embedded question name %s. "
+msgstr "无效的嵌入型问题名称%s. "
+
+#: .\course\page\inline.py:716
+#, python-format
+msgid "embedded question name %s not unique."
+msgstr "嵌入问题的名称%s不是唯一的."
+
+#: .\course\page\inline.py:727
+#, python-format
+msgid "correct answer(s) not provided for question %s."
+msgstr "未为问题%s提供正确答案. "
+
+#: .\course\page\inline.py:735
+#, python-format
+msgid "redundant answers %s provided for non-existing question(s)."
+msgstr "为不存在的问题提供了多余的答案%s. "
+
+#: .\course\page\inline.py:762
+#, python-format
+msgid "have unpaired '%s'."
+msgstr "有未配对的\"%s\"."
+
+#: .\course\page\text.py:156
+#, python-format
+msgid "page must be of type '%s'"
+msgstr "page必须是\"%s\"类型"
+
+#: .\course\page\text.py:179
+msgid "unknown validator type"
+msgstr "未知的验证器类型"
+
+#: .\course\page\text.py:189 .\course\page\text.py:1015
+msgid "must be struct or string"
+msgstr "必须是一个struct或string型的数据"
+
+#: .\course\page\text.py:288
+#, python-format
+msgid "regex '%(pattern)s' did not compile"
+msgstr "正则表达式(regex)\"%(pattern)s\"无法编译"
+
+#: .\course\page\text.py:344
+msgid "unable to check symbolic expression"
+msgstr "无法检查symbolic表达式"
+
+#: .\course\page\text.py:480 .\course\page\text.py:498
+#: .\course\page\text.py:852 .\course\page\text.py:863
+#: .\course\page\text.py:881
+msgid "does not provide a valid float literal"
+msgstr "提供了一个无效的float字符串"
+
+#: .\course\page\text.py:487 .\course\page\text.py:870
+msgid "not allowed when 'value' is zero"
+msgstr "不允许'value'的值为0"
+
+#: .\course\page\text.py:508 .\course\page\text.py:898
+msgid ""
+"Float match should have either rtol or atol--otherwise it will match any "
+"number"
+msgstr ""
+"float匹配器需至少包括'rtol'或'atol'中的一项，否则任何数字都将被视为正确答案. "
+
+#: .\course\page\text.py:526
+msgid "does not provide a valid left wrapper"
+msgstr "未提供有效的left wrapper"
+
+#: .\course\page\text.py:542
+msgid "does not provide a valid right wrapper"
+msgstr "未提供有效的right wrapper"
+
+#: .\course\page\text.py:551
+msgid "must be an integar or float"
+msgstr ""
+
+#: .\course\page\text.py:559
+msgid "lenght of this list must be 2"
+msgstr ""
+
+#: .\course\page\text.py:564
+msgid "sum of force_wrapper_percentage_list should not exceed 1."
+msgstr ""
+
+#: .\course\page\text.py:569
+msgid "forced_left_wrapper_percentage should not exceed 1."
+msgstr ""
+
+#: .\course\page\text.py:574
+msgid "forced_right_wrapper_percentage should not exceed 1."
+msgstr ""
+
+#: .\course\page\text.py:583
+msgid ""
+"sum of forced_left_wrapper_percentage and forced_right_wrapper_percentage "
+"should not exceed 1."
+msgstr ""
+
+#: .\course\page\text.py:609 .\course\page\text.py:617
+#: .\course\page\text.py:707
+msgid "cannot be converted into a list"
+msgstr "无法转换为一个list"
+
+#: .\course\page\text.py:626
+msgid "is not a valid math number"
+msgstr "不是一个有效的数字"
+
+#: .\course\page\text.py:646 .\course\page\text.py:667
+#: .\course\page\text.py:696 .\course\page\text.py:705
+#: .\course\page\text.py:716 .\course\page\text.py:731
+msgid "Error"
+msgstr "错误"
+
+#: .\course\page\text.py:647
+#, python-format
+msgid ""
+"answer provided does not have a required left wrapper, allowed left wrappers "
+"are %s"
+msgstr "回答未输入一个必需的左包含符，允许的左包含符包括%s"
+
+#: .\course\page\text.py:668
+#, python-format
+msgid ""
+"answer provided does not have a required right wrapper, allowed right "
+"wrappers are %s"
+msgstr "回答未输入一个必需的右包含符，允许的右包含符包括%s"
+
+#: .\course\page\text.py:697
+#, python-format
+msgid "'%s' cannot be converted into a list"
+msgstr "'%s'无法转换为一个列表"
+
+#: .\course\page\text.py:717
+msgid "TypeError"
+msgstr "类型错误"
+
+#: .\course\page\text.py:718
+#, python-format
+msgid "can't convert '%s' to a valid math number"
+msgstr "无法将'%s'转换为一个有效的数字"
+
+#: .\course\page\text.py:732
+#, python-format
+msgid "'%s' is not in the allwed range"
+msgstr ""
+
+#: .\course\page\text.py:886
+msgid ""
+"Float match for 'value' zero should have atol--otherwise it will match any "
+"number"
+msgstr "对于0值，float匹配器需包括'atol'项，否则任何数字都将被视为正确答案. "
+
+#. Translators: a "matcher" is used to determine
+#. if the answer to text question (blank filling
+#. question) is correct.
+#: .\course\page\text.py:962
+#, python-format
+msgid "%(matcherclassname)s only accepts '%(matchertype)s' patterns"
+msgstr "%(matcherclassname)s 只接受 \"%(matchertype)s\" 模式"
+
+#: .\course\page\text.py:974
+#, python-format
+msgid "unknown match type '%(matchertype)s'"
+msgstr "未知的匹配(match)类型\"%(matchertype)s\""
+
+#: .\course\page\text.py:993
+msgid "does not specify match type"
+msgstr "无法确定匹配(match)类型"
+
+#: .\course\page\text.py:1001
+msgid "uses deprecated 'matcher:answer' style"
+msgstr "使用了已淘汰了的(deprecated) \"matcher:answer\" 类型"
+
+#: .\course\page\text.py:1022
+msgid "matcher must supply 'type'"
+msgstr "matcher必须提供\"type\""
+
+#: .\course\page\text.py:1073
+msgid "unrecognized widget type"
+msgstr "无法识别的构件(widget)类型"
+
+#: .\course\page\upload.py:47
+msgid "Uploaded file"
+msgstr "已上传的文件"
+
+#: .\course\page\upload.py:74
+#, python-format
+msgid ""
+"Please keep file size under %(allowedsize)s. Current filesize is %"
+"(uploadedsize)s."
+msgstr "请将文件大小控制在%(allowedsize)s以下, 当前的大小为%(uploadedsize)s. "
+
+#: .\course\page\upload.py:81
+msgid "Uploaded file is not a PDF."
+msgstr "上传的文档不是pdf文件. "
+
+#: .\course\page\upload.py:167
+msgid "unrecognized mime types"
+msgstr "无法识别的文件类型(mime type)"
+
+#: .\course\page\upload.py:177
+msgid "upload question does not have assigned point value"
+msgstr "上传问题未设定分值"
+
 #: .\course\sandbox.py:66
 msgid "Press Alt/Cmd+(Shift+)P to preview."
 msgstr "按下 Alt/Cmd+(Shift+)P 进行预览."
@@ -6184,486 +6781,3 @@ msgstr "退出登录"
 #: .\relate\templates\user-profile-form.html:7
 msgid "User Profile"
 msgstr "用户信息"
-
-#~ msgid "Currently active"
-#~ msgstr "当前生效"
-
-#~ msgid "No information on correctness of answer."
-#~ msgstr "未知回答正确与否. "
-
-#~ msgid "Your answer is not correct."
-#~ msgstr "您的回答不正确. "
-
-#~ msgid "Your answer is correct."
-#~ msgstr "您的回答是正确的. "
-
-#~ msgid "Your answer is correct and earned bonus points."
-#~ msgstr "您的回答是正确的, 并且得到了加分. "
-
-#~ msgid "Your answer is mostly correct."
-#~ msgstr "您的回答基本正确. "
-
-#~ msgid "Your answer is somewhat correct. "
-#~ msgstr "您的回答在一定程度上正确. "
-
-#~ msgid "Invalid correctness value"
-#~ msgstr "无效的正确性数值"
-
-#~ msgid ""
-#~ "PageBaseWithTitle subclass '%s' does not implement markdown_body_for_title"
-#~ "()"
-#~ msgstr "PageBaseWithTitle的子类\"%s\"未使用markdown_body_for_title()方法"
-
-#~ msgid "no title found in body or title attribute"
-#~ msgstr "没有在body中找到title，也没有title属性"
-
-#~ msgid "Grade assigned, in percent"
-#~ msgstr "给予的评分（百分比）"
-
-#~ msgid "Grade percent"
-#~ msgstr "得分的百分比"
-
-#~ msgid ""
-#~ "Grade assigned, as points out of %.1f. Fill out either this or 'grade "
-#~ "percent'."
-#~ msgstr "给予的评分, %.1f分中取得的分值. 填入此项或者\"得分的百分比\". "
-
-#~ msgid "Grade points"
-#~ msgstr "得分的分值"
-
-#~ msgid ""
-#~ "Feedback to be shown to student, using <a href='http://documen.tician.de/"
-#~ "relate/content.html#relate-markup'>RELATE-flavored Markdown</a>"
-#~ msgstr ""
-#~ "将反馈给学生的信息, 建议使用<a href='http://documen.tician.de/relate/"
-#~ "content.html#relate-markup'>RELATE方式的Markdown模式</a>. "
-
-#~ msgid "Feedback text"
-#~ msgstr "反馈文字"
-
-#~ msgid ""
-#~ "Checking this box and submitting the form will notify the participant "
-#~ "with a generic message containing the feedback text"
-#~ msgstr "勾选此项并提交这个表单, 将会向参与者发送一个包含了反馈信息的邮件. "
-
-#~ msgid "Notify"
-#~ msgstr "发送通知"
-
-#~ msgid "Allow recipient to reply to this email?"
-#~ msgstr "允许收件人回复本邮件？"
-
-#~ msgid "May reply email to me"
-#~ msgstr "允许回复给我"
-
-#~ msgid ""
-#~ "Whether the grade and feedback are to be shown to student. (If you would "
-#~ "like to release all grades at once, do not use this. Instead, use the "
-#~ "'shown to students' checkbox for this 'grading opportunity' in the grade "
-#~ "book admin.)"
-#~ msgstr ""
-#~ "是否允许学生看到分数和反馈. (如果您希望把所有成绩一次性发布，请不要使用这"
-#~ "一项, 而是在成绩册管理中的'得分机会'中勾选'展示给学生')."
-
-#~ msgid "Released"
-#~ msgstr "已发布"
-
-#~ msgid "Internal notes, not shown to student"
-#~ msgstr "内部注释, 学生不可见"
-
-#~ msgid ""
-#~ "Checking this box and submitting the form will notify the instructor with "
-#~ "a generic message containing the notes"
-#~ msgstr ""
-#~ "勾选此项并提交这个表单, 将会向任课老师发送一个包含以上注释信息的邮件. "
-
-#~ msgid "Notify instructor"
-#~ msgstr "通知任课老师"
-
-#~ msgid "Grade (percent) and Grade (points) disagree"
-#~ msgstr "百分比评分与分值评分不一致"
-
-#~ msgid "New notification"
-#~ msgstr "一条新的通知"
-
-#~ msgid "Grading notes from %(ta)s"
-#~ msgstr "来自%(ta)s的评分注释"
-
-#~ msgid "No answer provided."
-#~ msgstr "未回答. "
-
-#~ msgid "The following feedback was provided"
-#~ msgstr "有以下的反馈信息"
-
-#~ msgid "Choice"
-#~ msgstr "选项"
-
-#~ msgid "Select all that apply:"
-#~ msgstr "选择所有适合的选项:"
-
-#~ msgid "choice %(idx)d: unable to convert to string"
-#~ msgstr "选项%(idx)d: 无法转换为字符串"
-
-#~ msgid ""
-#~ "existing choice permutation not suitable for number of choices in question"
-#~ msgstr "当前的选项排列方式不适用于该问题中选项选择数量的统计"
-
-#~ msgid "one or more correct answer(s) expected, %(n_correct)d found"
-#~ msgstr "需要至少1个参考答案，找到%(n_correct)d个"
-
-#~ msgid "A correct answer is"
-#~ msgstr "参考答案"
-
-#~ msgid ""
-#~ "'allow_partial_credit' or 'allow_partial_credit_subset_only' may not be "
-#~ "specifiedat the same time as 'credit_mode'"
-#~ msgstr ""
-#~ "不能将'allow_partial_credit' 和 'allow_partial_credit_subset_only'同时设"
-#~ "为'credit_mode'."
-
-#~ msgid ""
-#~ "'allow_partial_credit' and 'allow_partial_credit_subset_only' are not "
-#~ "allowed to coexist when both attribute are 'True'"
-#~ msgstr ""
-#~ "当'allow_partial_credit' 和 'allow_partial_credit_subset_only'都设"
-#~ "为'True'时，两者不能共存."
-
-#~ msgid "unrecognized credit_mode '%(credit_mode)s'"
-#~ msgstr "无法识别的credit_mode '%(credit_mode)s'"
-
-#~ msgid ""
-#~ "'credit_mode' will be required on multi-select choice questions in a "
-#~ "future version. set 'credit_mode: {}' to match current behavior."
-#~ msgstr ""
-#~ "在将来的版本中, 多项选择问题必须设置'credit_mode'. 目前，可"
-#~ "用'credit_mode：{}'的方式来对应当前的行为. "
-
-#~ msgid "The correct answer is"
-#~ msgstr "正确答案"
-
-#~ msgid "code question execution failed"
-#~ msgstr "编程问题执行失败"
-
-#~ msgid "<unknown flow>"
-#~ msgstr "<未知的flow>"
-
-#~ msgid ""
-#~ "Both the grading code and the attempt to notify course staff about the "
-#~ "issue failed. Please contact the course or site staff and inform them of "
-#~ "this issue, mentioning this entire error message:"
-#~ msgstr ""
-#~ "您的代码错误和通知课务人员的邮件尝试都未成功. 请与课程或网站人员联系, 并告"
-#~ "知全部的错误信息。"
-
-#~ msgid ""
-#~ "Sending an email to the course staff about the following failure failed "
-#~ "with the following error message:"
-#~ msgstr "向课管人员发送电子邮件，在邮件中包含以下的代码失败信息."
-
-#~ msgid "The original failure message follows:"
-#~ msgstr "错误发生时的信息如下:"
-
-#~ msgid ""
-#~ "The grading code failed. Sorry about that. The staff has been informed, "
-#~ "and if this problem is due to an issue with the grading code, it will be "
-#~ "fixed as soon as possible. In the meantime, you'll see a traceback below "
-#~ "that may help you figure out what went wrong."
-#~ msgstr ""
-#~ "用于自动评分的代码出错，抱歉。通知已经送达课管人员，如果这个问题是由于自动"
-#~ "评分的代码引起的，我们将尽快地修复它。同时，你也可以在下面查看traceback信"
-#~ "息，它将帮助你了解是哪里出了问题。"
-
-#~ msgid ""
-#~ "Your code took too long to execute. The problem specifies that your code "
-#~ "may take at most %s seconds to run. It took longer than that and was "
-#~ "aborted."
-#~ msgstr ""
-#~ "你的代码执行时间过长。本问题要求你的代码执行时间不得超过%s秒钟，由于超时所"
-#~ "以代码执行被取消。"
-
-#~ msgid "Your code failed to compile. An error message is below."
-#~ msgstr "你的代码编译失败，下面是错误信息。"
-
-#~ msgid "Your code failed with an exception. A traceback is below."
-#~ msgstr "你的代码执行失败且有一条exception，下面是traceback信息。"
-
-#~ msgid "Here is some feedback on your code"
-#~ msgstr "这是关于你的代码的反馈"
-
-#~ msgid "This is the exception traceback"
-#~ msgstr "这是exception traceback"
-
-#~ msgid "Your code printed the following output"
-#~ msgstr "你的代码打印出以下的输出结果"
-
-#~ msgid "Your code printed the following error messages"
-#~ msgstr "你的代码打印出以下的错误信息"
-
-#~ msgid "Your code produced the following plots"
-#~ msgstr "你的代码得到以下的图"
-
-#~ msgid "Figure"
-#~ msgstr "图"
-
-#~ msgid "The following code is a valid answer"
-#~ msgstr "以下的代码是一个有效的回答"
-
-#~ msgid "human_feedback_value greater than overall value of question"
-#~ msgstr "人工评分(human_feedback_value)大于这个问题的总分值"
-
-#~ msgid "unknown embedded question type '%(type)s'"
-#~ msgstr "未知的嵌入型问题类型\"%(type)s\""
-
-#~ msgid "must be struct"
-#~ msgstr "必须是一个struct型的数据"
-
-#~ msgid "unrecogonized width attribute string: '%(width_attr)s'"
-#~ msgstr "无法识别的宽度字符串: '%(width_attr)s'"
-
-#~ msgid ""
-#~ "unsupported length unit '%(length_unit)s', expected length unit can be %"
-#~ "(allowed_length_unit)s"
-#~ msgstr ""
-#~ "不支持的长度单位'%(length_unit)s', 可使用的长度单位包括%"
-#~ "(allowed_length_unit)s"
-
-#~ msgid "at least one answer must be provided"
-#~ msgstr "至少要提供一个回答"
-
-#~ msgid "answer"
-#~ msgstr "回答"
-
-#~ msgid "no matcher is able to provide a plain-text correct answer"
-#~ msgstr "现有的匹配类无法提供一个普通文本型的标准答案"
-
-#~ msgid ""
-#~ "one or more correct answer(s) expected  for question '%(question_name)s', "
-#~ "%(n_correct)d found"
-#~ msgstr "问题'%(question_name)s'至少要有1个答案，找到%(n_correct)d个"
-
-#~ msgid "invalid answers name %s. "
-#~ msgstr "无效的答案名称%s. "
-
-#~ msgid ""
-#~ "A valid name should start with letters. Alphanumeric with underscores. Do "
-#~ "not use spaces."
-#~ msgstr "一个有效的名称应以字母开头，允许包含数字和下划线, 不允许有空格. "
-
-#~ msgid "invalid embedded question name %s. "
-#~ msgstr "无效的嵌入型问题名称%s. "
-
-#~ msgid "embedded question name %s not unique."
-#~ msgstr "嵌入问题的名称%s不是唯一的."
-
-#~ msgid "correct answer(s) not provided for question %s."
-#~ msgstr "未为问题%s提供正确答案. "
-
-#~ msgid "redundant answers %s provided for non-existing question(s)."
-#~ msgstr "为不存在的问题提供了多余的答案%s. "
-
-#~ msgid "have unpaired '%s'."
-#~ msgstr "有未配对的\"%s\"."
-
-#~ msgid "page must be of type '%s'"
-#~ msgstr "page必须是\"%s\"类型"
-
-#~ msgid "unknown validator type"
-#~ msgstr "未知的验证器类型"
-
-#~ msgid "must be struct or string"
-#~ msgstr "必须是一个struct或string型的数据"
-
-#~ msgid "regex '%(pattern)s' did not compile"
-#~ msgstr "正则表达式(regex)\"%(pattern)s\"无法编译"
-
-#~ msgid "unable to check symbolic expression"
-#~ msgstr "无法检查symbolic表达式"
-
-#~ msgid "does not provide a valid float literal"
-#~ msgstr "提供了一个无效的float字符串"
-
-#~ msgid "not allowed when 'value' is zero"
-#~ msgstr "不允许'value'的值为0"
-
-#~ msgid ""
-#~ "Float match should have either rtol or atol--otherwise it will match any "
-#~ "number"
-#~ msgstr ""
-#~ "float匹配器需至少包括'rtol'或'atol'中的一项，否则任何数字都将被视为正确答"
-#~ "案. "
-
-#~ msgid "does not provide a valid left wrapper"
-#~ msgstr "未提供有效的left wrapper"
-
-#~ msgid "does not provide a valid right wrapper"
-#~ msgstr "未提供有效的right wrapper"
-
-#~ msgid "cannot be converted into a list"
-#~ msgstr "无法转换为一个list"
-
-#~ msgid "is not a valid math number"
-#~ msgstr "不是一个有效的数字"
-
-#~ msgid "Error"
-#~ msgstr "错误"
-
-#~ msgid ""
-#~ "answer provided does not have a required left wrapper, allowed left "
-#~ "wrappers are %s"
-#~ msgstr "回答未输入一个必需的左包含符，允许的左包含符包括%s"
-
-#~ msgid ""
-#~ "answer provided does not have a required right wrapper, allowed right "
-#~ "wrappers are %s"
-#~ msgstr "回答未输入一个必需的右包含符，允许的右包含符包括%s"
-
-#~ msgid "'%s' cannot be converted into a list"
-#~ msgstr "'%s'无法转换为一个列表"
-
-#~ msgid "TypeError"
-#~ msgstr "类型错误"
-
-#~ msgid "can't convert '%s' to a valid math number"
-#~ msgstr "无法将'%s'转换为一个有效的数字"
-
-#~ msgid ""
-#~ "Float match for 'value' zero should have atol--otherwise it will match "
-#~ "any number"
-#~ msgstr ""
-#~ "对于0值，float匹配器需包括'atol'项，否则任何数字都将被视为正确答案. "
-
-#~ msgid "%(matcherclassname)s only accepts '%(matchertype)s' patterns"
-#~ msgstr "%(matcherclassname)s 只接受 \"%(matchertype)s\" 模式"
-
-#~ msgid "unknown match type '%(matchertype)s'"
-#~ msgstr "未知的匹配(match)类型\"%(matchertype)s\""
-
-#~ msgid "does not specify match type"
-#~ msgstr "无法确定匹配(match)类型"
-
-#~ msgid "uses deprecated 'matcher:answer' style"
-#~ msgstr "使用了已淘汰了的(deprecated) \"matcher:answer\" 类型"
-
-#~ msgid "matcher must supply 'type'"
-#~ msgstr "matcher必须提供\"type\""
-
-#~ msgid "unrecognized widget type"
-#~ msgstr "无法识别的构件(widget)类型"
-
-#~ msgid "Uploaded file"
-#~ msgstr "已上传的文件"
-
-#~ msgid ""
-#~ "Please keep file size under %(allowedsize)s. Current filesize is %"
-#~ "(uploadedsize)s."
-#~ msgstr ""
-#~ "请将文件大小控制在%(allowedsize)s以下, 当前的大小为%(uploadedsize)s. "
-
-#~ msgid "Uploaded file is not a PDF."
-#~ msgstr "上传的文档不是pdf文件. "
-
-#~ msgid "unrecognized mime types"
-#~ msgstr "无法识别的文件类型(mime type)"
-
-#~ msgid "upload question does not have assigned point value"
-#~ msgstr "上传问题未设定分值"
-
-#~ msgid "Questioning email"
-#~ msgstr "邮件答疑"
-
-#~ msgid "Past submissions"
-#~ msgstr "过往的提交记录"
-
-#~ msgid "You are currently seeing a preview of revision"
-#~ msgstr "您正在预览修改后的版本"
-
-#~ msgid "View revisions"
-#~ msgstr "查看修改版本"
-
-#~ msgid "Error:"
-#~ msgstr "错误"
-
-#~ msgid "must be at least TA to view analytics"
-#~ msgstr "至少是助教(TA)才能查看分析"
-
-#~ msgid "only instructors and TAs may do that"
-#~ msgstr "只有任课老师(instructor)和助教(TA)可以执行该操作"
-
-#~ msgctxt "Participation role"
-#~ msgid "Observer"
-#~ msgstr "观察者"
-
-#~ msgctxt "Participation role"
-#~ msgid "Auditor"
-#~ msgstr "审查者"
-
-#~ msgid "only instructors may do that"
-#~ msgstr "只有任课老师才有执行该操作的权限"
-
-#~ msgid "must be instructor or TA to batch-issue tickets"
-#~ msgstr "只有任课老师(instructor)和助理(TA)可以批量发布ticket"
-
-#~ msgid "must be instructor or TA to view grades"
-#~ msgstr "只有任课老师(instructor)或助教(TA)可以查看成绩"
-
-#~ msgid "must be instructor or TA to export grades"
-#~ msgstr "只有任课老师(instructor)或助教(TA)可以导出成绩"
-
-#~ msgid "Session expired."
-#~ msgstr "该session已经过期. "
-
-#~ msgid "must be at least TA to download submissions"
-#~ msgstr "至少是助教(TA)才能下载提交"
-
-#~ msgid "must be instructor or TA to view grading stats"
-#~ msgstr "只有任课老师(instructor)或助教(TA)才能查看评分状态"
-
-#~ msgid "only enrolled folks may do that"
-#~ msgstr "只有加入课程的用户才允许进行"
-
-#~ msgid ""
-#~ "Instructors may update course content. Teaching assistants may access and "
-#~ "change grade data. Observers may access analytics. Each role includes "
-#~ "privileges from subsequent roles."
-#~ msgstr ""
-#~ "任课老师(instructor)可以更新课程内容；助教（ta)可以访问并更改评分数据；审"
-#~ "查者(observer)可以访问评分分析内容. 以上三者, 排在前面的角色拥有排在后面的"
-#~ "角色的权限. "
-
-#~ msgid "must be instructor or TA to access sandbox"
-#~ msgstr "只有任课老师(instructor)或助教(TA)才能访问沙箱"
-
-#~ msgid "Edit Participations (admin)"
-#~ msgstr "编辑课程参与(admin)"
-
-#~ msgid "Grading Opportunities"
-#~ msgstr "得分机会"
-
-#~ msgid "Edit Grading Opportunities (admin)"
-#~ msgstr "编辑得分机会(admin)"
-
-#~ msgid "Expire"
-#~ msgstr "过期"
-
-#~ msgid ""
-#~ "What you type into this page is not saved once you navigate away. Please "
-#~ "make sure to retain a copy."
-#~ msgstr ""
-#~ "一旦您离开这个页面，您输入的内容将不会保存, 请保证您保留了一个副本. "
-
-#~ msgid "only staff may create courses"
-#~ msgstr "只有课务人员(staff)及以上才能创建课程"
-
-#~ msgid "must be instructor or TA to update course"
-#~ msgstr "只有任课老师(instructor)和助理(TA)可以更新课程"
-
-#~ msgid "only course staff have access"
-#~ msgstr "只有课务人员(staff)可以访问"
-
-#~ msgid "must be instructor to manage instant flow requests"
-#~ msgstr "只有任课老师(instructor)才能管理即时flow"
-
-#~ msgid "must be instructor or TA to test flows"
-#~ msgstr "只有任课老师(instructor)和助理(TA)可以测试flow"
-
-#~ msgid "must be instructor or TA to grant exceptions"
-#~ msgstr "只有任课老师(instructor)和助理(TA)可以进行破例评分"
