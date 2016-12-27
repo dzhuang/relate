@@ -579,6 +579,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
             from course.page.code import is_nuisance_failure
             from django.utils import translation
+            import now
+            from relate.utils import local_now, format_datetime_local
             with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
                 from django.template.loader import render_to_string
                 message = render_to_string("image_upload/broken-random-latex-question-email.txt", {
@@ -588,6 +590,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     "course": page_context.course,
                     "error_message": error_msg,
                     "review_uri": review_uri,
+                    "time": format_datetime_local(local_now())
                 })
 
                 if (

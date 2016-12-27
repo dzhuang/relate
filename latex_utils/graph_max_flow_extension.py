@@ -2003,6 +2003,7 @@ for g_dict in g_list_loaded:
         blank2_desc=u"最小割$(S^*, T^*)$中属于$S^*$集合的节点为"
 
     )
+    print(type(tex))
     # if n==1:
     r.clipboard_append(tex)
 #    print("最短路条数",len(list(g.get_shortest_path())))

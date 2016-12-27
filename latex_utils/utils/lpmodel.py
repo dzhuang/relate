@@ -28,7 +28,7 @@ OPT_CRITERIA_LITERAL_DICT = {"max": u"非正", "min": u"非负"}
 
 try:
     from .linprog import linprog
-except ImportError:
+except (ImportError, KeyError):
     pass
 
 def latexify(s):
@@ -1354,29 +1354,21 @@ class LP(object):
                         opt_tableau=opt_tableau, opt_basis=opt_basis)
                     self.sa_result.append(analysis.analysis())
 
-    def solve(self, disp=False, method="simplex"):
-        for solution in [self.solutionCommon, self.solutionPhase1, self.solutionPhase2]:
-            solution.pivot_list = []
-            solution.tableau_list = []
-            solution.basis_list = []
-            solution.variable_list = []
-            solution.slack_variable_list = []
-            solution.artificial_variable_list = []
-
-        self.tableau_str_list = []
+    def get_orig_lingprog_solve_param(self):
         b_ub = []
         A_ub = []
         b_eq = []
         A_eq = []
-        C = []
+        c = []
+        # 目前只接受所有变量非负的情况
+        bounds = ((0, None),) * len(self.x_list)
         goal = self.goal_origin
         for g in goal:
             if self.qtype == "max":
-                C.append(-float(g))
+                c.append(-float(g))
             else:
-                C.append(float(g))
-        cnstr_orig_order = []
-
+                c.append(float(g))
+        #cnstr_orig_order = []
         if not (self.start_tableau is not None and self.start_basis):
             constraints = [cnstr for cnstr in self.constraints_origin]
 
@@ -1415,6 +1407,33 @@ class LP(object):
             cnstr_orig_order = eq_cnstr_orig_order + ub_cnstr_orig_order
         else:
             cnstr_orig_order = range(len(self.start_basis))
+        return c, A_ub, b_ub, A_eq, b_eq, bounds, cnstr_orig_order
+
+    def solve(self, disp=False, method="simplex"):
+        for solution in [self.solutionCommon, self.solutionPhase1, self.solutionPhase2]:
+            solution.pivot_list = []
+            solution.tableau_list = []
+            solution.basis_list = []
+            solution.variable_list = []
+            solution.slack_variable_list = []
+            solution.artificial_variable_list = []
+
+        C, A_ub, b_ub, A_eq, b_eq, bounds, cnstr_orig_order = self.get_orig_lingprog_solve_param()
+
+        solve_kwarg = {}
+        solve_kwarg["c"] = C
+        if A_ub:
+            solve_kwarg["A_ub"] = A_ub
+            solve_kwarg["b_ub"] = b_ub
+        if A_eq:
+            solve_kwarg["A_eq"] = A_eq
+            solve_kwarg["b_eq"] = b_eq
+        if bounds:
+            solve_kwarg["bounds"] = bounds
+
+        solve_kwarg["cnstr_orig_order"] = cnstr_orig_order
+        solve_kwarg["start_tableau"] = self.start_tableau
+        solve_kwarg["start_basis"] = self.start_basis
 
         def lin_callback(xk, **kwargs):
             t = np.copy(kwargs['tableau'])
@@ -1442,21 +1461,7 @@ class LP(object):
                 stage_klass.pivot_list.append([np.nan, np.nan])
             stage_klass.method = self.solutionCommon.method = method
 
-        solve_kwarg = {}
-        solve_kwarg["c"] = C
-        if A_ub:
-            solve_kwarg["A_ub"] = A_ub
-            solve_kwarg["b_ub"] = b_ub
-        if A_eq:
-            solve_kwarg["A_eq"] = A_eq
-            solve_kwarg["b_eq"] = b_eq
-
-        solve_kwarg["cnstr_orig_order"] = cnstr_orig_order
-        solve_kwarg["start_tableau"] = self.start_tableau
-        solve_kwarg["start_basis"] = self.start_basis
-
-        res = linprog(bounds=((0, None),) * len(self.x_list),
-                       options={'disp': disp},
+        res = linprog( options={'disp': disp},
                        callback=lin_callback,
                        method=method,
                        **solve_kwarg
