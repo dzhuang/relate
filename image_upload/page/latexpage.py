@@ -579,7 +579,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
             from course.page.code import is_nuisance_failure
             from django.utils import translation
-            import now
             from relate.utils import local_now, format_datetime_local
             with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
                 from django.template.loader import render_to_string
