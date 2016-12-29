@@ -1420,6 +1420,7 @@ for g_dict in g_list_loaded:
     # r.clipboard_clear()
     g = network(**g_dict)
     G = g.as_capacity_graph()
+    G.size()
     number_of_nodes = len(G.node)
     import networkx as nx
 
