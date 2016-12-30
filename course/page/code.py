@@ -308,6 +308,56 @@ def request_python_run_with_retries(run_req, run_timeout, image=None, retry_coun
         return result
 
 
+def sanitize(s):
+    # html saniization
+
+    def is_allowed_data_uri(allowed_mimetypes, uri):
+        import re
+        m = re.match(r"^data:([-a-z0-9]+/[-a-z0-9]+);base64,", uri)
+        if not m:
+            return False
+
+        mimetype = m.group(1)
+        return mimetype in allowed_mimetypes
+
+    import bleach
+
+    def filter_audio_attributes(name, value):
+        if name in ["controls"]:
+            return True
+        else:
+            return False
+
+    def filter_source_attributes(name, value):
+        if name in ["type"]:
+            return True
+        elif name == "src":
+            return is_allowed_data_uri([
+                "audio/wav",
+            ], value)
+        else:
+            return False
+
+    def filter_img_attributes(name, value):
+        if name in ["alt", "title"]:
+            return True
+        elif name == "src":
+            return is_allowed_data_uri([
+                "image/png",
+                "image/jpeg",
+            ], value)
+        else:
+            return False
+
+    return bleach.clean(s,
+                        tags=bleach.ALLOWED_TAGS + ["audio", "video", "source"],
+                        attributes={
+                            "audio": filter_audio_attributes,
+                            "source": filter_source_attributes,
+                            "img": filter_img_attributes,
+                        })
+
+
 class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
     """
     An auto-graded question allowing an answer consisting of Python code.
@@ -829,7 +879,7 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                 ":"
                 "<ul>%s</ul></p>"]) %
                         "".join(
-                            "<li>%s</li>" % fb_item
+                            "<li>%s</li>" % sanitize(fb_item)
                             for fb_item in response.feedback))
         if hasattr(response, "traceback") and response.traceback:
             feedback_bits.append("".join([
@@ -883,60 +933,10 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
             fig_lines.append("</dl>")
             bulk_feedback_bits.extend(fig_lines)
 
-        # {{{ html output / santization
-
         if hasattr(response, "html") and response.html:
-            def is_allowed_data_uri(allowed_mimetypes, uri):
-                import re
-                m = re.match(r"^data:([-a-z0-9]+/[-a-z0-9]+);base64,", uri)
-                if not m:
-                    return False
-
-                mimetype = m.group(1)
-                return mimetype in allowed_mimetypes
-
-            def sanitize(s):
-                import bleach
-
-                def filter_audio_attributes(name, value):
-                    if name in ["controls"]:
-                        return True
-                    else:
-                        return False
-
-                def filter_source_attributes(name, value):
-                    if name in ["type"]:
-                        return True
-                    elif name == "src":
-                        return is_allowed_data_uri([
-                            "audio/wav",
-                            ], value)
-                    else:
-                        return False
-
-                def filter_img_attributes(name, value):
-                    if name in ["alt", "title"]:
-                        return True
-                    elif name == "src":
-                        return is_allowed_data_uri([
-                            "image/png",
-                            "image/jpeg",
-                            ], value)
-                    else:
-                        return False
-
-                return bleach.clean(s,
-                        tags=bleach.ALLOWED_TAGS + ["audio", "video", "source"],
-                        attributes={
-                            "audio": filter_audio_attributes,
-                            "source": filter_source_attributes,
-                            "img": filter_img_attributes,
-                            })
-
+            # html output / santization
             bulk_feedback_bits.extend(
                     sanitize(snippet) for snippet in response.html)
-
-        # }}}
 
         return AnswerFeedback(
                 correctness=correctness,
