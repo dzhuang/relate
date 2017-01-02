@@ -207,9 +207,9 @@ $$\begin{align*}
 \end{align*}$$
 
 \BLOCK{ if not loop.last }
-$x_{\VAR{lp.solutionPhase2.pivot_list[idx][1]+1}}$为入基变量。计算$\bar p_{\VAR{lp.solutionPhase2.pivot_list[idx][0]+1}}$和$\bar b$以确定出基变量：
+$x_{\VAR{lp.solutionPhase2.pivot_list[idx][1]+1}}$为入基变量。计算$\bar p_{\VAR{lp.solutionPhase2.pivot_list[idx][1]+1}}$和$\bar b$以确定出基变量：
 \BLOCK{ endif }
-\BLOCK{ if not loop.last }$$\mathbf{\bar p}_{\VAR{lp.solutionPhase2.pivot_list[idx][0]+1}}=\mathbf{B}^{-1}{\mathbf{p}_{\VAR{lp.solutionPhase2.pivot_list[idx][0]+1}}}=\begin{bmatrix}
+\BLOCK{ if not loop.last }$$\mathbf{\bar p}_{\VAR{lp.solutionPhase2.pivot_list[idx][1]+1}}=\mathbf{B}^{-1}{\mathbf{p}_{\VAR{lp.solutionPhase2.pivot_list[idx][0]+1}}}=\begin{bmatrix}
 \VAR{lp.solutionPhase2.modi_pj_list[idx]|join(" \\\\ ")}
 \end{bmatrix},
 \quad

@@ -354,8 +354,11 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 assert isinstance(result, six.text_type)
                 if will_save_file_local:
                     if not os.path.isfile(saved_file_path):
-                        with atomic_write(saved_file_path, mode="wb") as f:
-                            f.write(result)
+                        try:
+                            with atomic_write(saved_file_path, mode="wb") as f:
+                                f.write(result)
+                        except OSError:
+                            pass
                 if test_key_existance:
                     return True, result
                 return True, result
@@ -395,8 +398,11 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 if success and result is not None:
                     if saved_file_path and will_save_file_local:
                         if not os.path.isfile(saved_file_path):
-                            with atomic_write(saved_file_path, mode="wb") as f:
-                                f.write(result.decode('utf-8'))
+                            try:
+                                with atomic_write(saved_file_path, mode="wb") as f:
+                                    f.write(result.decode('utf-8'))
+                            except OSError:
+                                pass
 
             return success, result
 
@@ -443,8 +449,11 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         if success and result is not None:
             if saved_file_path and will_save_file_local:
                 if not os.path.isfile(saved_file_path):
-                    with atomic_write(saved_file_path, mode="wb") as f:
-                        f.write(result.encode("utf-8"))
+                    try:
+                        with atomic_write(saved_file_path, mode="wb") as f:
+                            f.write(result.encode("utf-8"))
+                    except OSError:
+                        pass
 
         return success, result
 
