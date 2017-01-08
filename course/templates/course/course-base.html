@@ -52,6 +52,8 @@
 
       {% if pperm.view_gradebook %}
         <li role="presentation" class="divider"></li>
+        <li><a href="{% url "relate-view_course_statistics" course.identifier %}" target="_blank">{% trans "Course Statistics" %}</a></li>
+        <li role="presentation" class="divider"></li>
         <li role="presentation" class="dropdown-header">{% trans "Grade Book" %}</li>
         <li><a href="{% url "relate-view_participant_list" course.identifier %}" target="_blank">{% trans "List of Participants" %}</a></li>
         <li><a href="{% url "relate-view_grading_opportunity_list" course.identifier %}">{% trans "List of Grading Opportunities" %}</a></li>
