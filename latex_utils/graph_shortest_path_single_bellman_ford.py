@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from latex_utils.utils.latex_utils import latex_jinja_env, _file_write
+from latex_utils.utils.latex_utils import latex_jinja_env
 from latex_utils.utils.graph import network, NetworkNegativeWeightUsingDijkstra
 from copy import deepcopy
 import numpy as np
@@ -48,7 +48,7 @@ def is_qualified_question(mat, ref_g_list, mem_mat_list, saved_question=SAVED_QU
     question_exist = False
     for i, c in enumerate(mem_mat_list):
         if np.all(mat==c):
-            print "----------------------question exists-------------------"
+            print("----------------------question exists-------------------")
             question_exist = True
             return False
             break
@@ -82,35 +82,35 @@ def generate_problem():
     with open(MULTI_RESULT_QUESTION, 'rb') as f:
         g_list_loaded = pickle.load(f)
 
-    print len(g_list_loaded)
+    print(len(g_list_loaded))
 
     for i, g_dict in enumerate(g_list_loaded):
-        # print i
+        # print(i)
         g = g_dict["graph"]
         non_zero_idx = np.nonzero(g)
         all_value = g[non_zero_idx]
-        # print non_zero_idx
-        # print all_value
+        # print(non_zero_idx)
+        # print(all_value)
         all_value = all_value.tolist()[0]
 
         n = 0
         while n < 100:
             n += 1
-            # print "-------------%s--------------" % n
+            # print("-------------%s--------------" % n)
             g_test = deepcopy(g)
             random.shuffle(all_value)
             new_value = np.array([all_value])
             g_test[non_zero_idx] = new_value
             if i == 1:
-                print g_test
+                print(g_test)
             if is_qualified_question(g_test, g_dict, mem_mat_list):
                 mem_mat_list.append(g)
-                print repr(g_test)
+                print(repr(g_test))
                 break
 
 
 # generate_problem()
-# print "here"
+# print("here")
 # exit()
 
 g = { 'graph': np.matrix([[ 0, -8, -2,  6,  0,  0,  0,  0],
@@ -1158,7 +1158,12 @@ g_list.append(g)
 
 
 
-from Tkinter import Tk
+try:
+    # Python 3.x
+    from tkinter import Tk
+except ImportError:
+    # Python 2.x
+    from Tkinter import Tk
 r = Tk()
 r.withdraw()
 r.clipboard_clear()
@@ -1203,38 +1208,7 @@ for g_dict in g_list_loaded:
     )
 
     r.clipboard_append(tex)
-    print "最短路条数",len(list(g.get_shortest_path()))
+    print("最短路条数",len(list(g.get_shortest_path())))
 
-print n
-
-
-
-# preamble of the picture of the graph.
-"""
-
-{% set preabmle %}
-\usepackage{tikz}
-\usetikzlibrary{graphs,graphs.standard,graphdrawing,quotes,shapes,arrows.meta}
-\usegdlibrary{force}
-{% endset %}
-
-<p align="middle">
-{% call latex(compiler="lualatex", image_format="png", alt="question", tex_preamble=preamble) %}
-
-
-{% endcall %}
-</p>
-
-
-"""
-
-# 求解结果
-"""
-{% from "latex.jinja" import mytabular_preamble as preamble %}
-
-<p align="middle">
-{% call latex(compiler="pdflatex", image_format="png", alt="question", tex_preamble=preamble) %}
-
-{% endcall %}
-</p>
-"""
+print(n)
+r.mainloop()

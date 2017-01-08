@@ -67,11 +67,13 @@ class ImageUploadForm(StyledForm):
     show_save_button = False
     def __init__(self, page_context,
                  page_behavior, page_data, *args, **kwargs):
+        require_image_for_submission = kwargs.pop("require_image_for_submission",True)
         super(ImageUploadForm, self).__init__(*args, **kwargs)
 
         self.page_behavior = page_behavior
         self.page_context = page_context
         self.page_data = page_data
+        self.require_image_for_submission = require_image_for_submission
 
         jfu_button_control = ""
 
@@ -108,21 +110,23 @@ class ImageUploadForm(StyledForm):
         flow_session_id = self.page_context.flow_session.id
         ordinal = self.page_context.ordinal
         flow_owner = self.page_context.flow_session.participation.user
-        from course.models import FlowPageData
-        fpd = FlowPageData.objects.get(
-            flow_session=flow_session_id, ordinal=ordinal)
 
-        qs = FlowPageImage.objects.filter(
-            creator=flow_owner
-        ).filter(flow_session=flow_session_id
-                 ).filter(image_page_id=fpd.page_id)
+        if self.require_image_for_submission:
+            from course.models import FlowPageData
+            fpd = FlowPageData.objects.get(
+                flow_session=flow_session_id, ordinal=ordinal)
 
-        qs_iter = qs.iterator()
+            qs = FlowPageImage.objects.filter(
+                creator=flow_owner
+            ).filter(flow_session=flow_session_id
+                     ).filter(image_page_id=fpd.page_id)
 
-        try:
-            next(qs_iter)
-        except StopIteration:
-            raise forms.ValidationError(_("You have not upload image(s)!"))
+            qs_iter = qs.iterator()
+
+            try:
+                next(qs_iter)
+            except StopIteration:
+                raise forms.ValidationError(_("You have not upload image(s)!"))
 
 
 class ImgUploadHumanTextFeedbackForm(HumanTextFeedbackForm):
@@ -237,6 +241,8 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
 
         self.use_access_rules_tag = getattr(self.page_desc, "use_access_rules_tag", False)
 
+        self.require_image_for_submission = getattr(self.page_desc, "require_image_for_submission", True)
+
         #if self.minFileSize >= 0.05 * 1024 ** 2:
         #    self.minFileSize = 0.05 * 1024 ** 2
 
@@ -269,6 +275,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
             ("previewMaxHeight", (int, float)),
             ("maxNumberOfFiles", (int, float)),
             ("use_access_rules_tag", bool),
+            ("require_image_for_submission", bool),
             ("answer_explanation", "markup"),
         )
 
@@ -288,7 +295,8 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                   answer_data, page_behavior):
 
         form = ImageUploadForm(
-            page_context, page_behavior, page_data)
+            page_context, page_behavior, page_data,
+            require_image_for_submission=self.require_image_for_submission)
 
         return form
 
@@ -296,7 +304,8 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                           page_behavior):
         form = ImageUploadForm(
             page_context, page_behavior, page_data,
-            post_data, files_data)
+            post_data, files_data,
+            require_image_for_submission=self.require_image_for_submission)
 
         return form
 
@@ -309,14 +318,15 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         from django.core.urlresolvers import NoReverseMatch
         from django.core.urlresolvers import reverse
         try:
-            grading_path = reverse(
+            grading_page_uri = reverse(
                 "relate-grade_flow_page",
-                kwargs={'course_identifier': page_context.course.identifier,
-                        'flow_session_id': page_context.flow_session.id,
-                        'page_ordinal': page_context.ordinal
-                        }
+                args=(
+                    page_context.course.identifier,
+                    page_context.flow_session.id,
+                    page_context.ordinal)
             )
-            in_grading_page = grading_path == request_path
+
+            in_grading_page = grading_page_uri == request_path
         except NoReverseMatch:
             if page_context.in_sandbox:
                 pass

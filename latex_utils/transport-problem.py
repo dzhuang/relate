@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from utils.latex_utils import latex_jinja_env, _file_write
-from utils.transportchart import PriceChart, BaseChart, TransportResult, TransportSolve
+from .utils.latex_utils import latex_jinja_env
+from .utils.transportchart import PriceChart, BaseChart, TransportResult, TransportSolve
 import numpy as np
 
 price = PriceChart(
@@ -102,7 +102,7 @@ tex = template.render(
     result_list=result_list
 )
 
-#print tex
+#print(tex)
 
 #file_write("transport.tex", tex.encode('UTF-8'))
 
@@ -125,8 +125,8 @@ solve = TransportSolve(
 
 result =solve.get_result(method="LCM")
 
-# print result.routes
-# print result.has_unique_solution, result.z
+# print(result.routes)
+# print(result.has_unique_solution, result.z)
 
 solve = TransportSolve(
     sup=[72, 6, 115, 20, 100]
@@ -149,8 +149,8 @@ solve = TransportSolve(
 
 result =solve.get_result(method="LCM")
 
-# print result.routes
-# print result.has_unique_solution, result.z
+# print(result.routes)
+# print(result.has_unique_solution, result.z)
 
 solve = TransportSolve(
     sup=price.sup
@@ -171,6 +171,6 @@ solve = TransportSolve(
 
 result =solve.get_result(method="LCM")
 
-print result.routes
-print result.has_unique_solution, result.z
-print result.s_matrix_list
+print(result.routes)
+print(result.has_unique_solution, result.z)
+print(result.s_matrix_list)

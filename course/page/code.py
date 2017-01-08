@@ -78,7 +78,6 @@ class InvalidPingResponse(RuntimeError):
 
 
 def request_python_run(run_req, run_timeout, image=None):
-    import platform
     import json
     from six.moves import http_client
     import docker
@@ -102,19 +101,16 @@ def request_python_run(run_req, run_timeout, image=None):
                 "unix://var/run/docker.sock")
         docker_tls = getattr(settings, "RELATE_DOCKER_TLS_CONFIG",
                 None)
-
-        if platform.system().lower().startswith("linux"):
-            docker_cnx = docker.Client(
-                    base_url=docker_url,
-                    tls=docker_tls,
-                    timeout=docker_timeout,
-                    version="1.19")
-        else:
+        docker_kwargs = {
+            "base_url": docker_url,
+            "timeout": docker_timeout,
+            "tls": docker_tls,
+            "version": "1.19"
+        }
+        if getattr(settings, "RELATE_USE_LOCAL_DOCKER_MACHINE", False):
             from docker.utils import kwargs_from_env
-            docker_cnx = docker.Client(
-                timeout=docker_timeout,
-                **kwargs_from_env(assert_hostname=False)
-            )
+            docker_kwargs.update(kwargs_from_env())
+        docker_cnx = docker.Client(**docker_kwargs)
 
         if image is None:
             image = settings.RELATE_DOCKER_RUNPY_IMAGE
@@ -146,19 +142,34 @@ def request_python_run(run_req, run_timeout, image=None):
             docker_cnx.start(container_id)
 
             container_props = docker_cnx.inspect_container(container_id)
+            #print(container_props)
             (port_info,) = (container_props
                     ["NetworkSettings"]["Ports"]["%d/tcp" % RUNPY_PORT])
             port_host_ip = port_info.get("HostIp")
 
-            if platform.system().lower().startswith("linux"):
-                if port_host_ip != "0.0.0.0":
-                    connect_host_ip = port_host_ip
-            else:
-                connect_host_ip = getattr(settings, "RELATE_DOCKER_HOST_IP")
+            if port_host_ip != "0.0.0.0":
+                connect_host_ip = port_host_ip
+
+            #print(getattr(settings, "RELATE_MAPPED_DOCKER_HOST_IP", None), "---------------------------")
+
+            if (not getattr(settings, "RELATE_USE_LOCAL_DOCKER_MACHINE", False)
+                and
+                getattr(settings, "RELATE_MAPPED_DOCKER_HOST_IP", None)
+                ):
+                mapped_ip = settings.RELATE_MAPPED_DOCKER_HOST_IP
+                connect_host_ip = mapped_ip.get(port_host_ip, connect_host_ip)
+
+            if (getattr(settings, "RELATE_USE_LOCAL_DOCKER_MACHINE", False)
+                and
+                getattr(settings, "RELATE_DOCKER_HOST_IP", None)
+                ):
+                connect_host_ip = settings.RELATE_DOCKER_HOST_IP
 
             port = int(port_info["HostPort"])
         else:
             port = RUNPY_PORT
+
+        #print(connect_host_ip)
 
         from time import time, sleep
         start_time = time()
@@ -180,6 +191,7 @@ def request_python_run(run_req, run_timeout, image=None):
                             }
 
         while True:
+            #print(connect_host_ip, port)
             try:
                 connection = http_client.HTTPConnection(connect_host_ip, port)
 
@@ -294,6 +306,56 @@ def request_python_run_with_retries(run_req, run_timeout, image=None, retry_coun
             continue
 
         return result
+
+
+def sanitize(s):
+    # html saniization
+
+    def is_allowed_data_uri(allowed_mimetypes, uri):
+        import re
+        m = re.match(r"^data:([-a-z0-9]+/[-a-z0-9]+);base64,", uri)
+        if not m:
+            return False
+
+        mimetype = m.group(1)
+        return mimetype in allowed_mimetypes
+
+    import bleach
+
+    def filter_audio_attributes(name, value):
+        if name in ["controls"]:
+            return True
+        else:
+            return False
+
+    def filter_source_attributes(name, value):
+        if name in ["type"]:
+            return True
+        elif name == "src":
+            return is_allowed_data_uri([
+                "audio/wav",
+            ], value)
+        else:
+            return False
+
+    def filter_img_attributes(name, value):
+        if name in ["alt", "title"]:
+            return True
+        elif name == "src":
+            return is_allowed_data_uri([
+                "image/png",
+                "image/jpeg",
+            ], value)
+        else:
+            return False
+
+    return bleach.clean(s,
+                        tags=bleach.ALLOWED_TAGS + ["audio", "video", "source"],
+                        attributes={
+                            "audio": filter_audio_attributes,
+                            "source": filter_source_attributes,
+                            "img": filter_img_attributes,
+                        })
 
 
 class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
@@ -455,6 +517,10 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
           feedback.check_scalar(name, ref, data, accuracy_critical=True,
               rtol=1e-5, atol=1e-8, report_success=True, report_failure=True)
           # returns True if accurate
+
+          feedback.call_user(self, f, *args, **kwargs)
+          # Calls a user-supplied function and prints an appropriate
+          # feedback message in case of failure.
 
     * ``data_files``: A dictionary mapping file names from :attr:`data_files`
       to :class:`bytes` instances with that file's contents.
@@ -620,6 +686,15 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                                     page_context.repo, data_file,
                                     page_context.commit_sha).data).decode()
 
+                if (
+                    "question_data" not in run_req["data_files"]
+                    and
+                    page_data
+                    and
+                    page_data.get("question_data", None)
+                ):
+                    run_req["data_files"]["question_data"] = page_data["question_data"]
+
         try:
             response_dict = request_python_run_with_retries(run_req,
                     run_timeout=self.page_desc.timeout)
@@ -660,12 +735,32 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
 
             error_msg = "\n".join(error_msg_parts)
 
+            review_url = ""
+            if not page_context.in_sandbox:
+
+                from django.core.urlresolvers import reverse
+                review_url = reverse(
+                    "relate-view_flow_page",
+                    kwargs={'course_identifier': page_context.course.identifier,
+                            'flow_session_id': page_context.flow_session.id,
+                            'ordinal': page_context.ordinal
+                            }
+                )
+
+            from six.moves.urllib.parse import urljoin
+            review_uri = urljoin(getattr(settings, "RELATE_BASE_URL"),
+                                 review_url)
+
+            from relate.utils import local_now, format_datetime_local
             with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
                 from django.template.loader import render_to_string
                 message = render_to_string("course/broken-code-question-email.txt", {
+                    "site": getattr(settings, "RELATE_BASE_URL"),
                     "page_id": self.page_desc.id,
                     "course": page_context.course,
                     "error_message": error_msg,
+                    "review_uri": review_uri,
+                    "time": format_datetime_local(local_now())
                     })
 
                 if (
@@ -784,7 +879,7 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                 ":"
                 "<ul>%s</ul></p>"]) %
                         "".join(
-                            "<li>%s</li>" % escape(fb_item)
+                            "<li>%s</li>" % sanitize(fb_item)
                             for fb_item in response.feedback))
         if hasattr(response, "traceback") and response.traceback:
             feedback_bits.append("".join([
@@ -838,60 +933,10 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
             fig_lines.append("</dl>")
             bulk_feedback_bits.extend(fig_lines)
 
-        # {{{ html output / santization
-
         if hasattr(response, "html") and response.html:
-            def is_allowed_data_uri(allowed_mimetypes, uri):
-                import re
-                m = re.match(r"^data:([-a-z0-9]+/[-a-z0-9]+);base64,", uri)
-                if not m:
-                    return False
-
-                mimetype = m.group(1)
-                return mimetype in allowed_mimetypes
-
-            def sanitize(s):
-                import bleach
-
-                def filter_audio_attributes(name, value):
-                    if name in ["controls"]:
-                        return True
-                    else:
-                        return False
-
-                def filter_source_attributes(name, value):
-                    if name in ["type"]:
-                        return True
-                    elif name == "src":
-                        return is_allowed_data_uri([
-                            "audio/wav",
-                            ], value)
-                    else:
-                        return False
-
-                def filter_img_attributes(name, value):
-                    if name in ["alt", "title"]:
-                        return True
-                    elif name == "src":
-                        return is_allowed_data_uri([
-                            "image/png",
-                            "image/jpeg",
-                            ], value)
-                    else:
-                        return False
-
-                return bleach.clean(s,
-                        tags=bleach.ALLOWED_TAGS + ["audio", "video", "source"],
-                        attributes={
-                            "audio": filter_audio_attributes,
-                            "source": filter_source_attributes,
-                            "img": filter_img_attributes,
-                            })
-
+            # html output / santization
             bulk_feedback_bits.extend(
                     sanitize(snippet) for snippet in response.html)
-
-        # }}}
 
         return AnswerFeedback(
                 correctness=correctness,
@@ -1017,12 +1062,18 @@ class PythonCodeQuestionWithHumanTextFeedback(
                 and code_feedback.correctness is not None
                 and grade_data is not None
                 and grade_data["grade_percent"] is not None):
-            correctness = (
-                    code_feedback.correctness * code_points
+            if self.page_desc.value != 0:
+                correctness = (
+                        code_feedback.correctness * code_points
 
-                    + grade_data["grade_percent"] / 100
-                    * self.page_desc.human_feedback_value
-                    ) / self.page_desc.value
+                        + grade_data["grade_percent"] / 100
+                        * self.page_desc.human_feedback_value
+                        ) / self.page_desc.value
+            else:
+                correctness = (
+                    0.5 * code_feedback.correctness * code_points
+                    + 0.5 * grade_data["grade_percent"] / 100
+                )
             percentage = correctness * 100
         elif (self.page_desc.human_feedback_value == self.page_desc.value
                 and grade_data is not None

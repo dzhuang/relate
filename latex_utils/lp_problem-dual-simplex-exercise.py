@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from latex_utils.utils.latex_utils import latex_jinja_env, _file_write
+from latex_utils.utils.latex_utils import latex_jinja_env
 from latex_utils.utils.lpmodel import LP
 from copy import deepcopy
 import random, pickle, json
@@ -70,7 +70,7 @@ lp_json_list = []
 # iters = 0
 # while len(lp_json_list) < 40:
 #     if iters % 10000 == 0:
-#         print iters
+#         print(iters)
 #     iters += 1
 #     lp = create_random_lp_dual_simplex(n, m, qtype="min")
 #     try:
@@ -79,7 +79,7 @@ lp_json_list = []
 #         continue
 #     lp_json = lp.json
 #     if lp.solutionCommon.nit in [2] and lp.res.status == 0:
-#         #print lp.res
+#         #print(lp.res)
 #         valid = True
 #         if abs(lp.res.fun) > 200:
 #             valid = False
@@ -97,10 +97,10 @@ lp_json_list = []
 #             if lp_json not in lp_json_list:
 #                 lp_json_list.append(lp_json)
 #                 dic = json.loads(lp_json)
-#                 print 'lp = LP(qtype="%s",' % lp.qtype
-#                 print '        goal=%s,' % lp.goal
-#                 print '        constraints=%s)' % dic["constraints"]
-#                 print 'lp_list.append(lp)'
+#                 print('lp = LP(qtype="%s",' % lp.qtype)
+#                 print('        goal=%s,' % lp.goal)
+#                 print('        constraints=%s)' % dic["constraints"])
+#                 print('lp_list.append(lp)')
 
 lp = LP(qtype="min",
         goal=[3, 5, 1],
@@ -954,7 +954,12 @@ lp = LP(qtype="max",
         )
 
 
-from Tkinter import Tk
+try:
+    # Python 3.x
+    from tkinter import Tk
+except ImportError:
+    # Python 2.x
+    from Tkinter import Tk
 r = Tk()
 r.withdraw()
 r.clipboard_clear()
@@ -1007,7 +1012,7 @@ for l in lp_json_list_loaded:
         final_lp_list2.append(lp.json)
         count2 += 1
 
-print count1, count2
+print(count1, count2)
 
 with open(SAVED_QUESTION_2_iter, 'wb') as f:
         pickle.dump(final_lp_list1, f)

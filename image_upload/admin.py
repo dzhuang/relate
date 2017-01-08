@@ -4,7 +4,7 @@ from django.template.response import SimpleTemplateResponse
 from django import forms
 from django.utils.translation import (
     ugettext_lazy as _, string_concat, pgettext)
-from django.utils.six.moves.urllib.parse import parse_qsl, urlparse, urlunparse
+from six.moves.urllib.parse import parse_qsl, urlparse, urlunparse
 from django.contrib.admin.templatetags.admin_urls import add_preserved_filters
 from django.core.urlresolvers import Resolver404, get_script_prefix, resolve, reverse
 from django.contrib.admin.views.main import ChangeList
@@ -137,7 +137,7 @@ class ParticipationTagFilter(admin.SimpleListFilter):
         tag_tuple = ()
 
         for tag in ptag_list:
-            if tag.strip() <> "" and tag <> '<<<NONE>>>':
+            if tag.strip() != "" and tag != '<<<NONE>>>':
                 tag_tuple += (((tag, tag),))
 
         self.tag_tuple = tag_tuple
@@ -168,7 +168,7 @@ class AccessRuleTagFilter(admin.SimpleListFilter):
         tag_tuple = ()
 
         for tag in session_rule_tags:
-            if tag.strip() <> "" and tag <> RULE_TAG_NONE_STRING:
+            if tag.strip() != "" and tag != RULE_TAG_NONE_STRING:
                 tag_tuple += (((tag, tag),))
 
         self.tag_tuple = tag_tuple

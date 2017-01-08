@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from latex_utils.utils.latex_utils import latex_jinja_env, _file_write
+from latex_utils.utils.latex_utils import latex_jinja_env
 from latex_utils.utils.lpmodel import LP
 from copy import deepcopy
 
@@ -451,7 +451,12 @@ lp_list.append(lp)
 
 
 
-from Tkinter import Tk
+try:
+    # Python 3.x
+    from tkinter import Tk
+except ImportError:
+    # Python 2.x
+    from Tkinter import Tk
 r = Tk()
 r.withdraw()
 r.clipboard_clear()
@@ -521,13 +526,15 @@ for lp_dict in json_list:
     )
 
     r.clipboard_append(tex)
-    print "iterations:", lp.solutionCommon.nit
+    print("iterations:", lp.solutionCommon.nit)
     if lp.solutionCommon.nit in [3, 4]:
 #    if lp.solutionCommon.nit in [3, 4, 5] and lp.qtype=="max":
         final_lp_list.append(lp.json)
         count += 1
 
-print count
+print(count)
+
+r.mainloop()
 
 with open('lp_simplex_3_iter_artificial.bin', 'wb') as f:
         pickle.dump(final_lp_list, f)

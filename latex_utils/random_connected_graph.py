@@ -332,7 +332,7 @@ if __name__ == '__main__':
 
     # Approach
     if args.approach:
-        print 'Setting approach:', args.approach
+        print('Setting approach:', args.approach)
         approach = locals()[args.approach]
     else:
         approach = random_walk
@@ -359,7 +359,7 @@ if __name__ == '__main__':
     else:
         matrix_list = graph.as_np_matrix_list()
     for matrix in matrix_list:
-        print repr(matrix)
+        print(repr(matrix))
 
 
 

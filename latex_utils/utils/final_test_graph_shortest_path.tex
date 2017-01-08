@@ -1,0 +1,112 @@
+
+
+求解下图中从$\VAR{source}$至$\VAR{target}$的最短路径及最短距离.
+
+\BLOCK{if show_id}
+%------------------------------------------------------\VAR{id}---------------------------------------------------
+\BLOCK{endif}
+
+\iffalse
+% ---------------------------------以下部分需独立编译为shortestpath\VAR{id}.pdf--------------------------------------
+
+\RequirePackage{luatex85}
+\VAR{g.as_latex()}
+
+% ---------------------------------以上部分需独立编译shortestpath\VAR{id}.pdf--------------------------------------
+\fi
+
+\begin{center}
+\includegraphics[scale=1]{shortestpath\VAR{id}.pdf}
+\end{center}
+
+
+\BLOCK{if show_answer -}
+\key{\daan{\todos[inline]{必须有明确的算法，观察法即使答案正确也不得分！}
+
+\BLOCK{ if show_dijkstra }
+
+\BLOCK{ if not dijkstra_is_allowed }
+\jie 图中存在权重为负的弧，Dijkstra解法不适用.
+\BLOCK{ else }
+
+\BLOCK{ if dijkstra_result }
+
+\jie 用简化的Dijkstra标号法求解如下：
+
+\begin{table}[!h]
+\centering
+\tabtopcaption{}
+\begin{tabular}{r\BLOCK{ for i in range(g.graph|length -1) }C{1cm}\BLOCK{ endfor }C{1.2cm}l}
+\multirow{ \VAR{dijkstra_result.n_pred_lines} }*{$pred_j$}
+
+\BLOCK{ for pred_line in dijkstra_result.tex_pred_list }& \BLOCK{ for i in range(g.graph|length) }
+\VAR{pred_line[i]} & \BLOCK{ endfor }\BLOCK{if loop.first}\todos{各节点的前趋节点不能写错，写错或少写少则扣1分，此处最多扣5分}\BLOCK{endif}\\
+\BLOCK{ endfor }
+\cline{2-\VAR{g.graph|length+1}}
+&(\BLOCK{ for node in g.node_label_dict } $\VAR{g.node_label_dict[node]}$ \BLOCK{ if not loop.last}&\BLOCK{endif} \BLOCK{ endfor })~~&\\
+\BLOCK{ for line in dijkstra_result.tex_L_list }\BLOCK{ set outer_loop = loop }
+$L_{\VAR{ loop.index0 }}=$ &( \BLOCK{ for node in line } \VAR{line[node]} \BLOCK{ if not loop.last}&\BLOCK{endif} \BLOCK{ endfor })\BLOCK{if not outer_loop.last};&\BLOCK{else}.&\BLOCK{endif}\\
+\BLOCK{ endfor }
+\todosv{行数应与节点数相同，多/少一行扣2分。}{-3cm}
+\end{tabular}
+\end{table}
+
+最短路长为\VAR{g.final_dist[g.n_node-1]|int}, \BLOCK{ if dijkstra_result.shortest_path_list|length > 1}有\VAR{dijkstra_result.shortest_path_list|length}条最短路径：\BLOCK{ else } 最短路径为：\BLOCK{endif}
+
+\begin{align*}
+\BLOCK{ for path in dijkstra_result.shortest_path_tex_list }
+&\VAR{path|join("\\rightarrow ")} \BLOCK{ if not loop.last }; \\
+\BLOCK{else}.
+\BLOCK{endif}
+\BLOCK{ endfor }
+\end{align*}
+
+\todos[inline]{注：1、必须写出最短路径和最短距离，前者未写扣2分，后者未写扣1分；\\ 2、有多条最短路径，少1条扣2分；\\ 3、最短路长应直接写出，而不是做加法！否则扣1分。}
+
+\BLOCK{ endif } \#{ dijkstra_result }
+\BLOCK{ endif } \#{ dijkstra_is_allowed }
+\BLOCK{ endif } \#{ show_dijkstra }
+
+
+\BLOCK{ if show_bellman_ford }
+
+\BLOCK{ if bellman_ford_result }
+\BLOCK{ if dijkstra_result }\BLOCK{endif}
+
+\BLOCK{ if not show_dijkstra }\jie \BLOCK{endif}
+\BLOCK{ if not dijkstra_is_allowed }
+\todos[inline]{必须采用Bellman-Ford算法，dijkstra算法不得分；观察法和即使答案正确也不得分！}
+\BLOCK{endif}
+用Bellman-Ford解法求解如下：
+
+\begin{table}[!h]
+ \centering
+ \tabtopcaption{}
+ \begin{mytabular}{\BLOCK{for i in range(g.graph|length + 1)}c|\BLOCK{endfor}\BLOCK{for i in range(bellman_ford_result.nit + 1)}|c\BLOCK{endfor}}\hline
+ \hline
+ $w_{ij}$ & \BLOCK{ for node in g.node_label_dict } $\VAR{g.node_label_dict[node]}$ & \BLOCK{endfor} \BLOCK{for i in range(1, bellman_ford_result.nit + 1)}$d_j^{(\VAR{i})}$ & \BLOCK{endfor} $pred_j$ \\
+ \hline\hline
+ \BLOCK{for node in g.node_label_dict}
+ $\VAR{g.node_label_dict[node]}$ & \VAR{bellman_ford_result.matrix[node]|join("&")} & \VAR{bellman_ford_result.dist_list_by_node[node]|join("&")} & \VAR{bellman_ford_result.final_pred_tex_dict[node]} \\
+ \hline
+ \BLOCK{endfor}
+ \hline \end{mytabular}%
+ \end{table}
+
+\todos[inline]{答案必须与此表完全一致. 少一列扣2分；有多个前趋节点的，少写一个扣1分}
+最短路长为\VAR{g.final_dist[g.n_node-1]|int},\BLOCK{ if bellman_ford_result.shortest_path_list|length > 1}有\VAR{bellman_ford_result.shortest_path_list|length}条最短路径：\BLOCK{ else } 最短路径为：\BLOCK{endif}
+
+\begin{align*}
+\BLOCK{ for path in bellman_ford_result.shortest_path_tex_list }
+&\VAR{path|join("\\rightarrow ")} \BLOCK{ if not loop.last }; \\
+\BLOCK{else}.
+\BLOCK{endif}
+\BLOCK{ endfor }
+\end{align*}
+\todos[inline]{注：1、必须写出最短路径和最短距离，前者未写扣2分，后者未写扣1分；\\ 2、有多条最短路径，少1条扣2分；\\ 3、最短路长应直接写出，而不是做加法！否则扣1分。}
+\BLOCK{ endif } \#{ bellman_ford_result }
+\BLOCK{ endif } \#{ show_bellman_ford }
+
+}} \#{key and daan}
+
+\BLOCK{ endif } \#{ show_answer }

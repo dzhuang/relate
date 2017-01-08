@@ -798,7 +798,7 @@ def _linprog_simplex(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
                       message=message, success=False)
 
     # Phase 2
-    print ("PHASE2")
+    print(("PHASE2"))
     nit2, status = _solve_simplex(T, n, basis, maxiter=maxiter-nit1, phase=2,
                                   callback=callback, tol=tol, nit0=nit1,
                                   bland=bland)

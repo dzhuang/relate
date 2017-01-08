@@ -1,0 +1,42 @@
+\BLOCK{- if show_question -}
+
+\BLOCK{- if pre_description -}
+\VAR{pre_description}
+\BLOCK{- endif -} \#{ pre_description }
+
+\begin{center}
+\renewcommand{\baselinestretch}{1}
+\centering \tabtopcaption{}\label{}
+\begin{mytabular}{c|C{1.5em}|C{1.5em}|\BLOCK{ for x in range(0, lp.solutionPhase2.all_variable_str_list|length) }
+C{2em}\BLOCK{ endfor }|C{2.5em}}\hline\hline
+& \multicolumn{2}{c|}{$c_j$}\BLOCK{ for c in lp.solutionPhase2.goal_str_list }&\VAR{c}\BLOCK{ endfor }&\multirow{2}*{$\mathbf{b}$} \\ \cline{2-\VAR{lp.solutionPhase2.all_variable_str_list|length + 3 }}
+& $\mathbf{C_B}$&$\mathbf{X_B}$\BLOCK{ for x in lp.solutionPhase2.all_variable_str_list }&\VAR{x}\BLOCK{ endfor }&\\ \hline
+\BLOCK{ for i in range(0, lp.solutionPhase2.tableau_str_list|length) }
+\BLOCK{ if loop.first or loop.last }
+\BLOCK{ set outer_loop = loop }
+\multirow{\VAR{lp.solutionPhase2.tableau_str_list[0]|length}}{*}{\begin{sideways} \BLOCK{ if loop.first}初始表\BLOCK{ else }最优表\BLOCK{ endif } \end{sideways}}
+\BLOCK{ for j in range(0, lp.solutionPhase2.cb_str_list[i]|length + 1) }
+\BLOCK{ if not loop.last -} & \VAR{lp.solutionPhase2.cb_str_list[i][j]}&\VAR{lp.solutionPhase2.xb_str_list[i][j]}&
+\BLOCK{- else -}
+& \multicolumn{2}{c|}{$\bar c_j$}&\BLOCK{- endif }
+\BLOCK{ if not outer_loop.last } \VAR{(lp.solutionPhase2.tableau_str_list[i][j]|join("&"))|replace("[$\mathbf{", "$")|replace("}$]","$") } \BLOCK{ else }
+\BLOCK{ if not loop.last }
+\BLOCK{ for item in lp.solutionPhase2.tableau_str_list[i][j][:-3]}\da{\VAR{item}}&\BLOCK{endfor} \VAR{lp.solutionPhase2.tableau_str_list[i][j][-3:-1]|join("&")} & \VAR{lp.solutionPhase2.tableau_str_list[i][j][-1]}
+\BLOCK{ else } \BLOCK{for cj in lp.solutionPhase2.tableau_str_list[i][j]}\BLOCK{if not loop.last}\da{\VAR{cj}}\BLOCK{ else }\VAR{cj}\BLOCK{ endif }\BLOCK{if not loop.last}&\BLOCK{ endif }\BLOCK{ endfor }\BLOCK{ endif }\BLOCK{ endif }\\
+
+\BLOCK{- if loop.revindex0 == 1 } \cline{2-\VAR{lp.solutionPhase2.all_variable_str_list|length + 4 }} \BLOCK{ endif }
+\BLOCK{- if loop.revindex0 == 0 } \hline\hline \BLOCK{ endif }
+
+\BLOCK{ endfor }
+\BLOCK{ endif }
+\BLOCK{ endfor }
+\hline\end{mytabular}\daan{\todosv{$\bar p_j$、$\bar c_j$各2分，各部分中的数字必须全部写对，否则该部分不得分}{-2cm}}\end{center}
+
+
+\BLOCK{ if answer_after_description -}
+\VAR{answer_after_description}
+\BLOCK{ endif }
+
+
+
+\BLOCK{ endif } \#{ show_answer }

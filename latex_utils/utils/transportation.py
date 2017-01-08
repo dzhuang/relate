@@ -1007,9 +1007,9 @@ if __name__ == '__main__':
     tr = transportation(**tr_dict)
     result = tr.solve()
     tr.get_tranport_solve_table_element()
-    print tr.standard_dem, tr.standard_n_dem
-    print tr.solve_table_element.dem_name_list
-    print result
+    print(tr.standard_dem, tr.standard_n_dem)
+    print(tr.solve_table_element.dem_name_list)
+    print(result)
 
     # supply = [105, 125, 70]
     # demand = [80, [30,80], 70, 85]
@@ -1022,41 +1022,41 @@ if __name__ == '__main__':
     #                   [np.inf, 14., 8., 14.]])
 
 #     # t = transport_table_element(3, 4, sup_split_idx_list=[0,1], dem_split_idx_list=[0,1], enable_split=True, sup_name_list=[u"工厂1", u"工厂2", u"工厂3"])
-#     # print t.sup_name_list, t.dem_name_list, t.cost_desc, t.sup_desc, t.cost_desc, t.sup_amount_desc
-# #    print is_ascii(u"你好")
-# #    print is_ascii("A_1")
-#     #print sum_recursive([1,[1,2],6])
+#     # print(t.sup_name_list, t.dem_name_list, t.cost_desc, t.sup_desc, t.cost_desc, t.sup_amount_desc)
+# #    print(is_ascii(u"你好"))
+# #    print(is_ascii("A_1"))
+#     #print(sum_recursive([1,[1,2],6]))
 #
-#     #print validate_numeric_recursive([1,2,(3,4), float("inf"), "a"])
+#     #print(validate_numeric_recursive([1,2,(3,4), float("inf"), "a"]))
 
 #     #t.get_standardized(sup_cost_extra=[1, 2, 3, 4])
-# #    print t.standard_costs, t.standard_dem, t.standard_sup
+# #    print(t.standard_costs, t.standard_dem, t.standard_sup)
 # #    result = t.solve(init_method="VOGEL")
-# #    print result
+# #    print(result)
 #     t_table = t.get_table_element(t.standard_n_sup, t.standard_n_dem, enable_split=True, use_given_name=True)
 #     #t_table = t.get_table_element(t.n_sup, t.n_dem, enable_split=False, use_given_name=True)
-#     print t.costs
-#     print t_table.sup_name_list, t_table.dem_name_list, t_table.cost_desc, t_table.sup_desc, t_table.sup_amount_desc, t_table.dem_desc
+#     print(t.costs)
+#     print(t_table.sup_name_list, t_table.dem_name_list, t_table.cost_desc, t_table.sup_desc, t_table.sup_amount_desc, t_table.dem_desc)
 #     for i in t_table.sup_name_list:
-#         print i
+#         print(i)
 #     for i in t_table.dem_name_list:
-#         print i
+#         print(i)
 #
     # t = transportation(sup=supply, dem=demand, costs=costs, dem_name_prefix=u"市场", sup_name_prefix=u"工厂", dem_desc=u"城市")
     # result = t.solve(stringfy=False)
     # solution_list = result.solution_list
 #     solution_list_str = get_array_to_str_list_recursive(solution_list)
-#     #print solution_list_str
-#     #print get_array_to_str_list_recursive(t.costs)
-#     #print get_array_to_str_list_recursive(t.standard_costs)
-# #    print result.routes
-#     print t.standard_costs_str, t.sup
+#     #print(solution_list_str)
+#     #print(get_array_to_str_list_recursive(t.costs))
+#     #print(get_array_to_str_list_recursive(t.standard_costs))
+# #    print(result.routes)
+#     print(t.standard_costs_str, t.sup)
 #     qtable = t.question_table_element
-#     print qtable.sup_desc,qtable.dem_desc, qtable.cost_desc, qtable.dem_amount_desc
-#     print qtable.sup_name_list, qtable.dem_min_desc, qtable.dem_name_list
-#     print t.sup_lower_bound_list_str, t.sup_upper_bound_list_str,
+#     print(qtable.sup_desc,qtable.dem_desc, qtable.cost_desc, qtable.dem_amount_desc)
+#     print(qtable.sup_name_list, qtable.dem_min_desc, qtable.dem_name_list)
+#     print(t.sup_lower_bound_list_str, t.sup_upper_bound_list_str,)
 #     #qtable.sup_name_list
-#     print "t.standard_costs_str_tikz", t.standard_costs_str_tikz
+#     print("t.standard_costs_str_tikz", t.standard_costs_str_tikz)
 #
 #
 #
@@ -1064,15 +1064,15 @@ if __name__ == '__main__':
 #
 #
 #
-# #    print t.has_infty_upper_bound, t.sup_infty_upper_bound_idx
-# #    print t.sup, t.dem
+# #    print(t.has_infty_upper_bound, t.sup_infty_upper_bound_idx)
+# #    print(t.sup, t.dem)
 #
 #     # costs = np.array([[9., 10., 13., 17.],
 #     #                   [7., 8., 14., 16.],
 #     #                   [20., 14., 8., 14.]])
 #     #
 #     # costs2 = np.insert(costs, 1, 0, axis=0)
-#     # print costs2
+#     # print(costs2)
 #
 #
 #

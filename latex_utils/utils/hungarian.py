@@ -267,7 +267,7 @@ def _step6(state):
 if __name__ == '__main__':
     cost = np.array([[4, 1, 3], [2, 0, 5], [3, 2, 2]])
     (row_ind, col_ind), nstep = linear_sum_assignment(cost)
-    print row_ind, col_ind,cost[row_ind, col_ind].sum()
+    print(row_ind, col_ind,cost[row_ind, col_ind].sum())
 
     cost = np.array([
         3, 9, 2, 3, 7,
@@ -277,9 +277,9 @@ if __name__ == '__main__':
         8, 6, 2, 5, 5]
     ).reshape(5,5)
     #cost = np.asarray(cost)
-    #print cost
+    #print(cost)
     (row_ind, col_ind), nstep = linear_sum_assignment(cost)
-    print row_ind, col_ind, cost[row_ind, col_ind].sum(), nstep
+    print(row_ind, col_ind, cost[row_ind, col_ind].sum(), nstep)
 
     cost = np.array([
         5, 8, 7, 4, 6,
@@ -289,7 +289,7 @@ if __name__ == '__main__':
         6, 2, 8, 6, 3,]
     ).reshape(5, 5)
     # cost = np.asarray(cost)
-    #print cost
+    #print(cost)
     (row_ind, col_ind), nstep = linear_sum_assignment(cost)
-    print row_ind, col_ind, cost[row_ind, col_ind].sum(), nstep
+    print(row_ind, col_ind, cost[row_ind, col_ind].sum(), nstep)
 

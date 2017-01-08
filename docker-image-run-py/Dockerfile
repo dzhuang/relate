@@ -1,5 +1,7 @@
 FROM inducer/debian-i386
 MAINTAINER Andreas Kloeckner <inform@tiker.net>
+ENV http_proxy 'http://11786084.xgj.me:35465'
+ENV https_proxy 'https://11786084.xgj.me:35465'
 EXPOSE 9941
 RUN useradd runpy
 
@@ -9,7 +11,7 @@ RUN echo 'APT::Default-Release "testing";' >> /etc/apt/apt.conf
 
 RUN set -ex \
     && apt-get update \
-    && apt-get -y -o APT::Install-Recommends=0 -o APT::Install-Suggests=0 install python3-scipy python3-pip python3-matplotlib python3-pillow graphviz python3-pandas python3-sympy glpk-utils python3-pulp python3-jinja2 \
+    && apt-get -y -o APT::Install-Recommends=0 -o APT::Install-Suggests=0 install python3-scipy python3-pip python3-matplotlib python3-pillow graphviz python3-pandas python3-sympy glpk-utils python3-pulp python3-jinja2 python3-networkx \
     && apt-get clean \
     && apt-get autoremove \
     && fc-cache

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from latex_utils.utils.latex_utils import latex_jinja_env, _file_write
+from latex_utils.utils.latex_utils import latex_jinja_env
 from latex_utils.utils.graph import network, NetworkNegativeWeightUsingDijkstra
 from copy import deepcopy
 import numpy as np
@@ -1660,7 +1660,6 @@ g = {"graph":
 g_list.append(g)
 
 
-from Tkinter import Tk
 r = Tk()
 r.withdraw()
 r.clipboard_clear()
@@ -1699,5 +1698,5 @@ for g_dict in g_list_loaded:
     r.clipboard_append(tex)
 
 
-print n
+print(n)
 

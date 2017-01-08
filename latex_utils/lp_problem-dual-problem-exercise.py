@@ -1,12 +1,17 @@
 # -*- coding: utf-8 -*-
 
-from latex_utils.utils.latex_utils import latex_jinja_env, _file_write
+from latex_utils.utils.latex_utils import latex_jinja_env
 from latex_utils.utils.lpmodel import LP
 from copy import deepcopy
 import random
 import json
 import pickle
-from Tkinter import Tk
+try:
+    # Python 3.x
+    from tkinter import Tk
+except ImportError:
+    # Python 2.x
+    from Tkinter import Tk
 
 SAVED_QUESTION_MAX = "lp_problem_dual_problem_max.bin"
 SAVED_QUESTION_MIN = "lp_problem_dual_problem_min.bin"

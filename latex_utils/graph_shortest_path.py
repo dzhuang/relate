@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from latex_utils.utils.latex_utils import latex_jinja_env, _file_write
+from latex_utils.utils.latex_utils import latex_jinja_env
 from latex_utils.utils.graph import network, NetworkNegativeWeightUsingDijkstra
 from copy import deepcopy
 import numpy as np
@@ -754,7 +754,12 @@ g = {"graph":
      }
 g_list.append(g)
 
-from Tkinter import Tk
+try:
+    # Python 3.x
+    from tkinter import Tk
+except ImportError:
+    # Python 2.x
+    from Tkinter import Tk
 r = Tk()
 r.withdraw()
 r.clipboard_clear()
@@ -773,7 +778,7 @@ for g_dict in g_list_loaded:
     n += 1
     # r.clipboard_clear()
     g = network(**g_dict)
-    #print g.graph.edge
+    #print(g.graph.edge)
     #g.as_capacity_graph()
     #continue
 
@@ -806,38 +811,6 @@ for g_dict in g_list_loaded:
     )
 
     r.clipboard_append(tex)
-    print "最短路条数",len(list(g.get_shortest_path()))
+    print("最短路条数",len(list(g.get_shortest_path())))
 
-print n
-
-
-
-# preamble of the picture of the graph.
-"""
-
-{% set preabmle %}
-\usepackage{tikz}
-\usetikzlibrary{graphs,graphs.standard,graphdrawing,quotes,shapes,arrows.meta}
-\usegdlibrary{force}
-{% endset %}
-
-<p align="middle">
-{% call latex(compiler="lualatex", image_format="png", alt="question", tex_preamble=preamble) %}
-
-
-{% endcall %}
-</p>
-
-
-"""
-
-# 求解结果
-"""
-{% from "latex.jinja" import mytabular_preamble as preamble %}
-
-<p align="middle">
-{% call latex(compiler="pdflatex", image_format="png", alt="question", tex_preamble=preamble) %}
-
-{% endcall %}
-</p>
-"""
+print(n)

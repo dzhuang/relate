@@ -518,6 +518,11 @@ urlpatterns = [
 
     #}}}
 
+    # {{{ course_statistics
+    url(r'^statistics/', include('course_statistics.urls')),
+
+    # }}}
+
     # markdown with preview support
     url(r'^markdownx/', include('markdownx.urls')),
 ]

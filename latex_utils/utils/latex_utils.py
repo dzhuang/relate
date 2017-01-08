@@ -2,12 +2,6 @@ import jinja2
 import os
 from jinja2 import Template
 
-def _file_write(filename, content):
-    '''Write into a file and close it properly.'''
-    f = file(filename, 'wb')
-    f.write(content)
-    f.close()
-
 latex_jinja_env = jinja2.Environment(
 	block_start_string = '\BLOCK{',
 	block_end_string = '}',

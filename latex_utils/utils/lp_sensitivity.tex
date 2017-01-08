@@ -39,7 +39,7 @@ $$\begin{alignat*}{20}
 \BLOCK{ endif }
 用单纯形法求解得到最优表如下：
 
-<p align="middle"><strong>表\VAR{question_table_iters.next()}</strong></br>
+<p align="middle"><strong>表\VAR{question_table_iters.__next__()}</strong></br>
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
 \begin{table}[H]\centering
 \begin{tabular}{c|c|\BLOCK{ for x in range(0, lp.solutionPhase2.all_variable_str_list|length) }C{1cm}\BLOCK{ endfor }|c}\hline\hline
@@ -82,7 +82,7 @@ $\mathbf{C_B}$&$\mathbf{X_B}$\BLOCK{ for x in lp.solutionPhase2.all_variable_str
 \BLOCK{- if ans.answer_description } \VAR{ans.answer_description} \BLOCK{ endif }
 \BLOCK{ if ans.change }
 
-<p align="middle"><strong>答案表\VAR{answer_table_iters.next()}</strong></br>
+<p align="middle"><strong>答案表\VAR{answer_table_iters.__next__()}</strong></br>
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
 \begin{keytable}[H]\centering
 \begin{tabular}{c|c|\BLOCK{ for x in range(0, ans.new_lp.solutionPhase2.all_variable_str_list|length) }
