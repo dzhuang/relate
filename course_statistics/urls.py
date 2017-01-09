@@ -24,7 +24,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-from django.conf.urls import url
+from django.conf.urls import url, include
 from django.views.i18n import javascript_catalog
 
 from course.constants import COURSE_ID_REGEX
@@ -41,6 +41,7 @@ from image_upload.views import (
     flow_page_image_problem,
     flow_page_image_key,
 )
+import crowdsourcing.urls
 
 #from image_upload.page.imgupload import feedBackEmail
 
@@ -61,4 +62,5 @@ urlpatterns = [
         "/$",
         view_stat_by_question,
         name="relate-view_course_statistics_by_question"),
+    url(r'^crowdsourcing/', include(crowdsourcing.urls)),
 ]
