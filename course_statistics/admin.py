@@ -1,19 +1,9 @@
 from django.contrib import admin
-from course_statistics.models import Question, StatisticsQuestion
+from course_statistics.models import Question, Questionnaire
+# from crowdsourcing.admin import (
+#     SurveyAdmin, SurveyAdminForm, submissions_as, SectionInline, QuestionInline
+# )
 
 # Register your models here.
 
 
-class StatisticsQuestionAdmin(admin.ModelAdmin):
-    list_filter = (
-        "survey",
-    )
-
-    list_display = (
-        'id',
-    )
-    list_display_links = ('id',)
-
-    save_on_top = True
-
-admin.site.register(StatisticsQuestion, StatisticsQuestionAdmin)

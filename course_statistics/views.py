@@ -1,5 +1,20 @@
+from django.forms import ModelForm
+from django.forms.models import inlineformset_factory
+
+from django.core.urlresolvers import reverse
+from django.forms.models import inlineformset_factory
 from django.views.generic import (
-        CreateView, DeleteView, ListView, DetailView)
+    ListView,
+    CreateView,
+    UpdateView,
+)
+
+from nested_formset import nestedformset_factory
+
+from questionnaire.models import Question
+
+from django.views.generic import (
+        CreateView, DeleteView, ListView, DetailView, UpdateView)
 from django.utils.translation import (
         ugettext_lazy as _, pgettext_lazy, ugettext, string_concat)
 from django.shortcuts import render
@@ -22,38 +37,46 @@ from course.models import (
         grade_state_change_types,
         FlowSession, FlowPageVisit)
 
+# from crowdsourcing.models import Question, Survey, Answer, Section
+
 from course_statistics.models import (
-    StatisticsQuestion, StatisticStateMachine, QuestionPerParticipant
+    #StatisticsQuestion,
+    Questionnaire, StatisticStateMachine, QuestionPerParticipant
+
 )
 # Create your views here.
 
-class QuestionListView(ListView):
-    # Prevent download Json response in IE 7-10
-    # http://stackoverflow.com/a/13944206/3437454):
-    model = StatisticsQuestion
-
-    def get_queryset(self):
-        flow_session_id = self.kwargs["flow_session_id"]
-        ordinal = self.kwargs["ordinal"]
-
-        try:
-            fpd = FlowPageData.objects.get(
-                    flow_session=flow_session_id, ordinal=ordinal)
-        except ValueError:
-
-            # in sandbox
-            if flow_session_id == "None" or ordinal == "None":
-                return None
-
-        return FlowPageImage.objects\
-                .filter(flow_session=flow_session_id)\
-                .filter(image_page_id=fpd.page_id)\
-                .order_by("order","pk")
+# class ListBlocksView(ListView):
+#     model = Block
+#     fields = '__all__'
+#
+# class QuestionListView(ListView):
+#     # Prevent download Json response in IE 7-10
+#     # http://stackoverflow.com/a/13944206/3437454):
+#     model = StatisticsQuestion
+#
+#     def get_queryset(self):
+#         flow_session_id = self.kwargs["flow_session_id"]
+#         ordinal = self.kwargs["ordinal"]
+#
+#         try:
+#             fpd = FlowPageData.objects.get(
+#                     flow_session=flow_session_id, ordinal=ordinal)
+#         except ValueError:
+#
+#             # in sandbox
+#             if flow_session_id == "None" or ordinal == "None":
+#                 return None
+#
+#         return FlowPageImage.objects\
+#                 .filter(flow_session=flow_session_id)\
+#                 .filter(image_page_id=fpd.page_id)\
+#                 .order_by("order","pk")
 
 
 class StatInfo:
     def __init__(self, question, stat_state_machine):
-        # type: (SurveyQuestion, StatStateMachine) -> None
+        ## type: (SurveyQuestion, StatStateMachine) -> None
         self.question = question
         self.stat_state_machine = stat_state_machine
     def __str__(self):
@@ -61,15 +84,19 @@ class StatInfo:
 
 
 def get_stat_table(course):
-    # type: (Course) -> Tuple[List[Participation], List[SurveyQuestion], List[List[StatInfo]]]  # noqa
+    ## type: (Course) -> Tuple[List[Participation], List[SurveyQuestion], List[List[StatInfo]]]  # noqa
 
     # NOTE: It's important that these queries are sorted consistently,
     # also consistently with the code below.
-    stat_questions = list((StatisticsQuestion.objects
-            .filter(
-                course=course,
-                )
-            .order_by("fieldname")))
+    stat_questions = list(
+        (Question.objects
+         .filter(
+            questionnaire__course=course,
+        )
+         .select_related("questionnaire__course")
+         .order_by("pk")
+         )
+    )
 
     participations = list(Participation.objects
             .filter(
@@ -81,13 +108,13 @@ def get_stat_table(course):
 
     question_status = list(QuestionPerParticipant.objects
             .filter(
-                question__course=course,
+                question__questionnaire__course=course,
                 )
             .annotate(null_id=Count('participation__user__institutional_id'))
             .order_by(
                 "-null_id",
                 "participation__user__institutional_id",
-                "question__fieldname",
+                "question__pk",
                 )
             .select_related("participation")
             .select_related("participation__user")
@@ -184,14 +211,14 @@ def view_stat_book(pctx):
 
     stat_table = sorted(zip(participations, stat_table), key=sort_key)
 
-    #participations, stat_questions, stat_table
-
     return render_course_page(pctx, "course_statistics/statistic_book.html", {
         "stat_table": stat_table,
         "stat_questions": stat_questions,
         "participations": participations,
         #"grade_state_change_types": grade_state_change_types,
         })
+
+
 
 
 @course_view

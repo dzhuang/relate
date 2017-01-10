@@ -33,15 +33,14 @@ from course_statistics.views import (
     view_stat_book,
     view_stat_by_question,
 )
-from image_upload.views import (
-    ImageCreateView, ImageDeleteView, ImageListView,
-    image_crop_modal, image_crop, image_order,
-    user_image_download,
-    flow_page_image_download,
-    flow_page_image_problem,
-    flow_page_image_key,
-)
-import crowdsourcing.urls
+
+from questionnaire.views import CreateQuestionnaireView
+
+# from course_statistics.views import (
+#     SurveyUpdateView
+# )
+
+# import crowdsourcing.urls
 
 #from image_upload.page.imgupload import feedBackEmail
 
@@ -62,5 +61,18 @@ urlpatterns = [
         "/$",
         view_stat_by_question,
         name="relate-view_course_statistics_by_question"),
-    url(r'^crowdsourcing/', include(crowdsourcing.urls)),
+    # url(r'^crowdsourcing/', include(crowdsourcing.urls)),
+    # url('^statistics/(?P<pk>\d+)/$', SurveyUpdateView.as_view(),
+    #     name='stat'),
+
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/survey/stat-by-ques"
+        "/(?P<question_id>[a-zA-Z0-9_]+)"
+        "/$",
+        view_stat_by_question,
+        name="relate-view_course_statistics_by_question"),
+
+    url(r'^create-questionnaire/$', CreateQuestionnaireView.as_view(),
+        name='add-questionnaire'),
 ]

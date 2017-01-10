@@ -3,7 +3,9 @@ from django.utils.translation import (
         ugettext_lazy as _, pgettext_lazy, string_concat)
 from django.db import models
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
-from crowdsourcing.models import Question
+# from crowdsourcing.models import Question, Survey
+
+from questionnaire.models import Question, Questionnaire
 
 from course.models import (
     Course, Participation
@@ -11,24 +13,23 @@ from course.models import (
 
 # Create your models here.
 
-class StatisticsQuestion(Question):
+class StatisticsSurvey(Questionnaire):
     course = models.ForeignKey(Course,
             verbose_name=_('Course'), on_delete=models.CASCADE)
 
     class Meta:
-        verbose_name = _("Statistics Question")
-        verbose_name_plural = _("Statistics Questions")
-        ordering = ("course", "fieldname")
+        verbose_name = _("Course Statistics Survey")
+        verbose_name_plural = _("Course Statistics Surveys")
+        ordering = ("course", "title")
         unique_together = (("course", ),)
 
     def __unicode__(self):
         return (
                 # Translators: For GradingOpportunity
-                _("%(question_name)s (%(question_id)s) in statistic %(survey_name)s of %(course)s")
+                _("%(slug)s (%(title)s) in %(course)s")
                 % {
-                    "question_name": self.question,
-                    "question_id": self.fieldname,
-                    "survey_name": repr(self.survey),
+                    "slug": self.slug,
+                    "title": self.title,
                     "course": self.course})
 
     if six.PY3:
@@ -43,7 +44,7 @@ class StatisticStateMachine(object):
         self.state = None
 
     def _consume_status(self, qstatus):
-        # type: (GradeChange, bool) -> None
+        # type: (Question, bool) -> None
 
         if self.question is None:
             ques = self.question = qstatus.question
@@ -103,7 +104,7 @@ class QuestionPerParticipant(models.Model):
     identifier, where later grades with the same :attr:`attempt_id` supersede earlier
     ones.
     """
-    question = models.ForeignKey(StatisticsQuestion,
+    question = models.ForeignKey(Question,
             verbose_name=_('Statistics Question'), on_delete=models.CASCADE)
 
     participation = models.ForeignKey(Participation,
