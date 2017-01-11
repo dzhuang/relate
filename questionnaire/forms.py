@@ -9,8 +9,6 @@ from django.shortcuts import get_object_or_404
 from .models import (Questionnaire, Question,
                      Choice, Answer)
 
-from xorformfields.forms import (MutuallyExclusiveValueField, MutuallyExclusiveRadioWidget)
-
 import json
 
 class BaseNestedFormset(BaseInlineFormSet):

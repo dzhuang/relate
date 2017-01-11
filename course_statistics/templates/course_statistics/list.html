@@ -1,6 +1,6 @@
 {% extends "course_statistics/survey_base.html" %}
 
-{% block title %}Admin{% endblock %}
+{% block title %}List{% endblock %}
 
 {% block title_tab %}
     Questionnaire list
@@ -37,7 +37,7 @@
                 </span>
                 </p>
                 </p>
-                <a href="{% url 'statistics-questionnaire' questionnaire.id %}" class="secondary-content"><i class="material-icons">insert_chart</i></a>
+{#                <a href="{% url 'statistics-questionnaire' questionnaire.id %}" class="secondary-content"><i class="material-icons">insert_chart</i></a>#}
             </li>
         {% empty %}
             <li>No questionnaire</li>

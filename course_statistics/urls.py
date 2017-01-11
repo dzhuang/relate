@@ -152,7 +152,6 @@ urlpatterns = [
     # Thanks Message and sharing of the link of questionnaire
     #  (Both Back-end and Participant )
     url(r"^course"
-        "/" + COURSE_ID_REGEX +
         '/thanks/$',
         ThanksView.as_view(),
         name='thanks-page')

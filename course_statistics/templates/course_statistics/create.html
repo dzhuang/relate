@@ -1,6 +1,6 @@
 {% extends "course_statistics/survey_base.html" %}
 {% load create_questionnaire_tags %}
-{% block title %} Admin {% endblock %}
+{% block title %} Create {% endblock %}
 
 {% comment %} ----*** Create questionnaire that contains update and create ***---- {% endcomment %}
 {% block title_tab %}
@@ -54,7 +54,7 @@
                 {% comment %} -----*** Updating Questions ***------ {% endcomment %}
                 <!-- Go to thanks Page -->
                 <div class="col s6 left-align">
-                    <a href="{% url 'thanks-page' %}?url={% url 'show-questionnaire' form.instance.id %}" class="btn waves-effect waves-light teal white-text">Finish</a>
+                    <a href="{% url 'thanks-page' %}" class="btn waves-effect waves-light teal white-text">Finish</a>
                 </div>
             {% else %}
                 <!-- Return to list questionnaire -->

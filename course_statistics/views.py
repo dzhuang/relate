@@ -130,14 +130,14 @@ class SurveyMixin(QuestionnaireMixin):
     # model = ParticipationSurvey
 
 
-class CreateQuestionnaireView(QuestionnaireMixin, CreateView):
+class CreateQuestionnaireView(SurveyMixin, CreateView):
     template_name = "course_statistics/create.html"
 
     def get_success_url(self):
         return reverse('update-questionnaire', kwargs={'pk': self.object.id})
 
 
-class UpdateQuestionnaireView(QuestionnaireMixin, UpdateView):
+class UpdateQuestionnaireView(SurveyMixin, UpdateView):
 
     def get_initial(self):
         return {'pk': self.kwargs['pk']}
@@ -148,7 +148,7 @@ class UpdateQuestionnaireView(QuestionnaireMixin, UpdateView):
     def get_context_data(self, **kwargs):
         context = super(UpdateQuestionnaireView, self).get_context_data()
         context['display_questions'] =\
-            DisplaySurveyForm(questionnaire_id=self.kwargs['pk'])
+            DisplayQuestionsForm(questionnaire_id=self.kwargs['pk'])
         return context
 
 class CourseViewMixin(UserPassesTestMixin):
@@ -438,7 +438,7 @@ class FillParticipationSurvey(TQ):
         return kwargs
 
     def get_success_url(self):
-        return reverse('thanks-page', self.kwargs['course_identifier'])
+        return reverse('thanks-page')
 
     def get_context_data(self, **kwargs):
         context = super(FillParticipationSurvey, self).get_context_data(**kwargs)
@@ -451,12 +451,6 @@ class FillParticipationSurvey(TQ):
 
 class ThanksView(TV):
     template_name = "course_statistics/thanks.html"
-
-    def get_context_data(self, **kwargs):
-        context = super(ThanksView, self).get_context_data(**kwargs)
-        print(self.kwargs)
-        context["course_identifier"] = self.kwargs['course_identifier']
-        return context
 
 
 # @course_view
