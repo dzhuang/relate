@@ -1,6 +1,6 @@
 <h1>Edit Question</h1>
 
-<form action="{% url 'stat' pk=statisticssurvey.id %}" method="POST">
+<form action="{% url 'stat' pk=ParticipationSurvey.id %}" method="POST">
 {% csrf_token %}
 {{ form.management_form }}
 {% for section in form %}

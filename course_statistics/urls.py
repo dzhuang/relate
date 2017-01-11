@@ -30,19 +30,20 @@ from django.views.i18n import javascript_catalog
 from course.constants import COURSE_ID_REGEX
 
 from course_statistics.views import (
-    view_stat_book,
-    view_stat_by_question,
+    view_single_survey_book,
+    # view_stat_by_question,
+    view_survey_list,
+    link_survey_with_course,
 )
 
-from questionnaire.views import CreateQuestionnaireView
+from course_statistics.views import (
+    ListQuestionnaireView,
+    CreateQuestionnaireView,
+    UpdateQuestionnaireView,
+    FillParticipationSurvey,
+    ThanksView
+)
 
-# from course_statistics.views import (
-#     SurveyUpdateView
-# )
-
-# import crowdsourcing.urls
-
-#from image_upload.page.imgupload import feedBackEmail
 
 js_info_dict_image_upload = {
     'packages': ('image_upload',),
@@ -51,28 +52,110 @@ js_info_dict_image_upload = {
 urlpatterns = [
     url(r"^course"
         "/" + COURSE_ID_REGEX +
-        "/statistics/stat-book/$",
-        view_stat_book,
-        name="relate-view_course_statistics"),
+        "/all-surveys"
+        "/$",
+        view_survey_list,
+        name="relate-survey_list"),
+#relate-survey_create
     url(r"^course"
         "/" + COURSE_ID_REGEX +
-        "/statistics/stat-by-ques"
-        "/(?P<question_id>[a-zA-Z0-9_]+)"
-        "/$",
-        view_stat_by_question,
-        name="relate-view_course_statistics_by_question"),
+        "/survey/"
+        "$",
+        link_survey_with_course,
+        name="relate-survey_create"),
+#relate-survey_create_generic
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/survey/"
+        "$",
+        link_survey_with_course,
+        name="relate-survey_create_generic"),
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/survey-book/"
+        "/(?P<survey_pk>[0-9_]+)"
+        "$",
+        view_single_survey_book,
+        name="relate-view_survey_by_pk"),
+    # url(r"^course"
+    #     "/" + COURSE_ID_REGEX +
+    #     "/statistics/stat-by-ques"
+    #     "/(?P<question_id>[a-zA-Z0-9_]+)"
+    #     "/$",
+    #     view_stat_by_question,
+    #     name="relate-view_course_statistics_by_question"),
     # url(r'^crowdsourcing/', include(crowdsourcing.urls)),
     # url('^statistics/(?P<pk>\d+)/$', SurveyUpdateView.as_view(),
     #     name='stat'),
 
-    url(r"^course"
-        "/" + COURSE_ID_REGEX +
-        "/survey/stat-by-ques"
-        "/(?P<question_id>[a-zA-Z0-9_]+)"
-        "/$",
-        view_stat_by_question,
-        name="relate-view_course_statistics_by_question"),
+    # url(r"^course"
+    #     "/" + COURSE_ID_REGEX +
+    #     "/survey/stat-by-ques"
+    #     "/(?P<question_id>[a-zA-Z0-9_]+)"
+    #     "/$",
+    #     view_stat_by_question,
+    #     name="relate-view_course_statistics_by_question"),
+#"relate-view_participant_statistics" course.identifier participation.id statistics.id
+    # url(r"^course"
+    #     "/" + COURSE_ID_REGEX +
+    #     "/survey/participant"
+    #     "/(?P<participation_id>[0-9]+)"
+    #     "/(?P<survey_id>[a-zA-Z0-9_]+)"
+    #     "/$",
+    #     view_stat_by_question,
+    #     name="relate-view_participant_statistics"),
+
+    # url(r'^create-questionnaire/$', CreateQuestionnaireView.as_view(),
+    #     name='add-questionnaire'),
+
+    url(r'^questionnaire/$',
+        ListQuestionnaireView.as_view(),
+        name='list-questionnaire'),
 
     url(r'^create-questionnaire/$', CreateQuestionnaireView.as_view(),
         name='add-questionnaire'),
+
+    url(r'create-questionnaire/(?P<pk>\d+)/$',
+        UpdateQuestionnaireView.as_view(),
+        name='update-questionnaire'),
+
+    url(r'^$',
+        ListQuestionnaireView.as_view(),
+        name='list-questionnaire'),
+
+    # Creation of questionnaire (Back-end user)
+    url(r'^create-questionnaire/$', CreateQuestionnaireView.as_view(),
+        name='add-questionnaire'),
+
+    # Updates and displays the questionnaire (Back-end User)
+    url(r'create-questionnaire/(?P<pk>\d+)/$',
+        UpdateQuestionnaireView.as_view(),
+        name='update-questionnaire'),
+
+    # Displays the statistics of questionnaire (Back-end User)
+
+    # Displays the questionnaire (Participant User)
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/survey/participant"
+        "/(?P<participation_id>[0-9]+)"
+        "/(?P<pk>[0-9_]+)"
+        "/$",
+        FillParticipationSurvey.as_view(),
+        name='relate-show_questionnaire'),
+
+    # # Displays single question
+    # url(r'^question/(?P<pk>[0-9]+)/$',
+    #     SingleQuestionView.as_view(),
+    #     name='show-question'),
+
+    # Thanks Message and sharing of the link of questionnaire
+    #  (Both Back-end and Participant )
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        '/thanks/$',
+        ThanksView.as_view(),
+        name='thanks-page')
+
+    #url(r'^questionnaires/', include('questionnaire.urls'))
 ]

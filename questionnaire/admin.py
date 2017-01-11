@@ -18,7 +18,14 @@ class QuestionAdmin(admin.ModelAdmin):
             "order",
             )
 
-admin.site.register(Questionnaire)
+class QuestionnaireAdmin(admin.ModelAdmin):
+    list_display = (
+            "id",
+            "__str__",
+            )
+
+
+admin.site.register(Questionnaire, QuestionnaireAdmin)
 admin.site.register(Question, QuestionAdmin)
 admin.site.register(Choice)
 admin.site.register(Answer, AnswerAdmin)

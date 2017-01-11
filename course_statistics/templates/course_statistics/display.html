@@ -1,0 +1,17 @@
+{% extends "course_statistics/survey_base.html" %}
+{% block title %}Survey of Participant{% endblock %}
+{% block title_tab %}
+    Survey of Participant {{ participation.user.get_full_name }}({{ participation.user.institutional_id }})
+{% endblock %}
+
+{% block content_tab %}
+    <form class="form-horizontal" action="{{ request.path }}" method="POST">
+        {% csrf_token %}
+        {% include "course_statistics/includes/displays/display_questionnaire.html" %}
+        <div class="right-align">
+            <button class="btn waves-effect waves-light " type="submit" name="action">Save
+                <i class="material-icons right">send</i>
+            </button>
+        </div>
+    </form>
+{% endblock %}

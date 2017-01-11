@@ -2,38 +2,80 @@ import six
 from django.utils.translation import (
         ugettext_lazy as _, pgettext_lazy, string_concat)
 from django.db import models
+from django.utils.timezone import now
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 # from crowdsourcing.models import Question, Survey
 
-from questionnaire.models import Question, Questionnaire
+from questionnaire.models import Question, Questionnaire, AnswerQuerySet
+from django.conf import settings
 
 from course.models import (
     Course, Participation
 )
 
+from jsonfield import JSONField
 # Create your models here.
 
-class StatisticsSurvey(Questionnaire):
-    course = models.ForeignKey(Course,
-            verbose_name=_('Course'), on_delete=models.CASCADE)
+class ParticipationSurvey(models.Model):
+    participation = models.ForeignKey(
+        Participation,
+        verbose_name=_('Participation'), on_delete=models.CASCADE)
+    questionnaire = models.ForeignKey(
+        Questionnaire,
+        related_name="survey",
+        verbose_name=_("Survey"),
+        on_delete=models.CASCADE)
 
     class Meta:
         verbose_name = _("Course Statistics Survey")
         verbose_name_plural = _("Course Statistics Surveys")
-        ordering = ("course", "title")
-        unique_together = (("course", ),)
+        ordering = ("participation__course", "questionnaire__title")
+        unique_together = (("participation", ),)
 
     def __unicode__(self):
         return (
                 # Translators: For GradingOpportunity
-                _("%(slug)s (%(title)s) in %(course)s")
+                _("Survey '(%(title)s)' for %(participation)s")
                 % {
-                    "slug": self.slug,
-                    "title": self.title,
-                    "course": self.course})
+                    "title": self.questionnaire.title,
+                    "participation": self.participation})
 
     if six.PY3:
         __str__ = __unicode__
+
+
+class ParticipationSurveyQuestionAnswer(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL,
+                             help_text=_('The user who lastly supplied this answer'),
+                             )
+    participation = models.ForeignKey(
+        Participation,
+        verbose_name=_('Participation'), on_delete=models.CASCADE)
+    question = models.ForeignKey(Question,
+                                 help_text=_('The question that this is an answer to'),
+                                 )
+    answer = JSONField(verbose_name=_('Answer'),
+                       blank=True,
+                       help_text=_('The text answer related to the question'),
+                       )
+    date = models.DateTimeField(default=now, db_index=True,
+                         verbose_name=_('Creation time'))
+
+    objects = AnswerQuerySet.as_manager()
+
+    def __unicode__(self):
+        return u'Qsaire-%s-Qst-%s-Ans-%s-by-%s' % (
+            self.question.questionnaire.title,
+            self.question.id,
+            self.id,
+            self.participation
+        )
+
+    if six.PY3:
+        __str__ = __unicode__
+
+    class Meta:
+        unique_together = ('participation', 'question')
 
 
 class StatisticStateMachine(object):
@@ -118,7 +160,7 @@ class QuestionPerParticipant(models.Model):
     class Meta:
         verbose_name = _("Survey Question Status")
         verbose_name_plural = _("Survey Question Status")
-        ordering = ("question__fieldname", "participation__user__institutional_id",)
+        ordering = ("question__pk", "participation__user__institutional_id",)
 
     def __unicode__(self):
         # Translators: information for GradeChange

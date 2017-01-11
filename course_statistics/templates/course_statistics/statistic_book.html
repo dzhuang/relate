@@ -16,14 +16,14 @@
     <thead>
       <th class="headcol">{% trans "Institutional ID" %}</th>
       <th class="datacol">{% trans "Name" context "real name of a user" %}</th>
-      {% for question in stat_questions %}
-      <th class="datacol"><a href="{% url "relate-view_grades_by_opportunity" course.identifier question.pk %}">{{ question.question }}</a> <tt style="font-size:x-small">({{ question.fieldname }})</tt></th>
+      {% for question in survey_questions %}
+      <th class="datacol"><a href="{% url "relate-view_grades_by_opportunity" course.identifier question.pk %}">{{ question.text }}</a> <tt style="font-size:x-small">({{ question.pk }})</tt></th>
       {% endfor %}
     </thead>
     <tbody>
-      {% for participation, grades in stat_table %}
+      {% for participation, grades in survey_table %}
       <tr>
-        <td class="headcol"><a href="{% url "relate-view_participant_grades" course.identifier participation.id %}"><span class="sensitive">{{ participation.user.institutional_id }}</span></a></td>
+        <td class="headcol"><a href="{% url "relate-show_questionnaire" course.identifier participation.id survey_pk %}"><span class="sensitive">{{ participation.user.institutional_id }}</span></a></td>
         <td class="datacol">
           <span class="sensitive">
             {{ participation.user.get_full_name }}

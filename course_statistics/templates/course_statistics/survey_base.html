@@ -1,0 +1,28 @@
+{% extends "course/course-base.html" %}
+
+{% load i18n %}
+
+{% block header_extra %}
+    {% include "course_statistics/questionnaire_header.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col s12">
+            <div class="col s12">
+                <ul class="tabs">
+                    <li class="tab col s3"><a href="#form1">{% block title_tab %}{% endblock %}</a></li>
+                    {% block other_tabs %}{% endblock %}
+                </ul>
+            </div> <!-- Tabs Navigation -->
+            <div class="row form_b z-depth-1">
+                <div id="form1">{% block content_tab %}{% endblock %}</div>
+                {% block other_tabs_content %}{% endblock %}
+
+            </div> <!-- Tabs Container -->
+        </div>
+    </div>
+</div> <!-- End container -->
+
+{% endblock %}

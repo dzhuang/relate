@@ -519,7 +519,7 @@ urlpatterns = [
     #}}}
 
     # {{{ course_statistics
-    url(r'^statistics/', include('course_statistics.urls')),
+    url(r'^survey/', include('course_statistics.urls')),
 
     # }}}
 

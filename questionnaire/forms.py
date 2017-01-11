@@ -180,9 +180,6 @@ def get_form_field(self, question):
         .order_by('pk')\
         .values_list('text', flat=True)
 
-    print(choices_text)
-
-    #print(choices_text)
     choices = tuple(
         (i + 1, text)
         for i, text in enumerate(choices_text))

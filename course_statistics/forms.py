@@ -11,7 +11,7 @@ from django.views.generic import (
 
 from nested_formset import nestedformset_factory
 
-from course_statistics.models import Questionnaire
+from course_statistics.models import ParticipationSurvey
 
 
 
