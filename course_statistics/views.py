@@ -67,8 +67,6 @@ from course_statistics.models import (
 )
 # Create your views here.
 
-
-@login_required
 @course_view
 def view_survey_list(pctx):
     if not pctx.has_permission(pperm.view_analytics):
@@ -84,7 +82,6 @@ def view_survey_list(pctx):
         "survey_list": survey_list,
         })
 
-@login_required
 @course_view
 def view_survey_by_question(pctx, survey_pk, question_pk):
     # type: (CoursePageContext, Text) -> http.HttpResponse
@@ -164,7 +161,6 @@ def view_survey_by_question(pctx, survey_pk, question_pk):
         })
 
 # }}}
-
 
 
 class ListQuestionnaireView(ListView):
