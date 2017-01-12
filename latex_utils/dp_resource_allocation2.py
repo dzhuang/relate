@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from latex_utils.utils.dynamic_programming import ResourceAllocationDP, force_calculate_feasible_state
-from latex_utils.utils.latex_utils import latex_jinja_env, _file_write
+from latex_utils.utils.latex_utils import latex_jinja_env
 from copy import deepcopy
 import numpy as np
 import random
@@ -54,7 +54,7 @@ def is_qualified_question(gain, total_resource, decision_set, project_list, mem_
         if stage == 1:
             continue
         stage_state_dict = stage_dict["state"]
-        #print stage, stage_state_dict
+        #print(stage, stage_state_dict)
         for state, state_dict in stage_state_dict.items():
             if len(state_dict["state_opt_x"]) > 1:
                 first_multiple_result_x = state_dict["state_opt_x"]
@@ -65,13 +65,13 @@ def is_qualified_question(gain, total_resource, decision_set, project_list, mem_
             break
 
     if (not ((first_multiple_stage and first_multiple_result_state and first_multiple_result_x) or len(result.policy) > 1)):
-        #print first_multiple_stage and first_multiple_result_state and first_multiple_result_x, len(result.policy)
+        #print(first_multiple_stage and first_multiple_result_state and first_multiple_result_x, len(result.policy))
         return False
 
     question_exist = False
     for i, g in enumerate(mem_gain_list):
         if np.all(gain==g):
-            print "----------------------question exists-------------------"
+            print("----------------------question exists-------------------")
             question_exist = True
             return False
             break
@@ -96,7 +96,7 @@ def is_qualified_question(gain, total_resource, decision_set, project_list, mem_
         r.clipboard_append("\n")
         r.clipboard_append("\n")
 
-        print suggestion
+        print(suggestion)
 
         #raise ValueError("Please add above problem")
 
@@ -133,10 +133,10 @@ def generate_problem(dp, mem_gain_list):
     project_list = dp.project_list
     while n < 100:
         gain = get_rand_gain()
-        # print repr(gain)
+        # print(repr(gain))
         if is_qualified_question(gain, total_resource, decision_set, project_list, mem_gain_list):
             n += 1
-            print n
+            print(n)
             mem_gain_list.append(gain)
 
 def generate():
@@ -1269,7 +1269,7 @@ with open(SAVED_QUESTION, 'wb') as f:
 with open(SAVED_QUESTION, 'rb') as f:
     dp_list_loaded = pickle.load(f)
 
-#print len(dp_list_loaded)
+#print(len(dp_list_loaded))
 for i, dp_dict in enumerate(dp_list_loaded):
 
     dp = ResourceAllocationDP(
@@ -1281,20 +1281,20 @@ for i, dp_dict in enumerate(dp_list_loaded):
 
     question_data = b64encode(selected_data_bytes.getvalue()).decode()
 
-    #print question_data
+    #print(question_data)
 
     a = "KGRwMApTJ3Byb2plY3RfbGlzdCcKcDEKKGxwMgpWXHU1ZTdmXHU1ZGRlCnAzCmFWXHU2ZGYxXHU1NzMzCnA0CmFWXHU3M2UwXHU2ZDc3CnA1CmFzUyd0b3RhbF9yZXNvdXJjZScKcDYKSTYKc1Mnb3B0X3R5cGUnCnA3ClMnbWF4JwpwOApzUydhbGxvd19ub25fYWxsb2NhdGVkX3Jlc291cmNlJwpwOQpJMDAKc1MnZ2FpbicKcDEwCmNudW1weS5jb3JlLm11bHRpYXJyYXkKX3JlY29uc3RydWN0CnAxMQooY251bXB5Lm1hdHJpeGxpYi5kZWZtYXRyaXgKbWF0cml4CnAxMgooSTAKdHAxMwpTJ2InCnAxNAp0cDE1ClJwMTYKKEkxCihJMwpJNgp0cDE3CmNudW1weQpkdHlwZQpwMTgKKFMnZjgnCnAxOQpJMApJMQp0cDIwClJwMjEKKEkzClMnPCcKcDIyCk5OTkktMQpJLTEKSTAKdHAyMwpiSTAwClMnXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHhmOFx4N2ZceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBceGY4XHg3Zlx4MDBceDAwXHgwMFx4MDBceDAwXHgwMDFAXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHhmOFx4N2ZceDAwXHgwMFx4MDBceDAwXHgwMFx4MDA7QFx4MDBceDAwXHgwMFx4MDBceDAwXHg4MENAXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4MDAsQFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMDhAXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwPUBceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBCQFx4MDBceDAwXHgwMFx4MDBceDAwXHg4MERAXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4MDAsQFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMDtAXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwP0BceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBBQFx4MDBceDAwXHgwMFx4MDBceDAwXHg4MEJAJwpwMjQKdHAyNQpic1MnZGVjaXNpb25fc2V0JwpwMjYKKGxwMjcKSTAKYUkxCmFJMgphSTMKYUk0CmFJNQphcy4="
 
     if question_data == a:
-        print repr(dp_dict)
+        print(repr(dp_dict))
 
     result_force_calculate_feasible_state = dp.solve(allow_state_func=force_calculate_feasible_state)
     result = dp.solve()
-    #print result_force_calculate_feasible_state
-    #print result
+    #print(result_force_calculate_feasible_state)
+    #print(result)
 
     if len(result.policy) > 3:
-        print repr(dp_dict)
+        print(repr(dp_dict))
         break
         continue
 
@@ -1308,7 +1308,7 @@ for i, dp_dict in enumerate(dp_list_loaded):
         # if stage == 1:
         #     continue
         stage_state_dict = stage_dict["state"]
-        #print stage, stage_state_dict
+        #print(stage, stage_state_dict)
         for state, state_dict in stage_state_dict.items():
             if len(state_dict["state_opt_x"]) > 1:
                 first_multiple_result_x = state_dict["state_opt_x"]
@@ -1405,3 +1405,4 @@ for i, dp_dict in enumerate(dp_list_loaded):
     )
     r.clipboard_append(question_tex + solve_tex)
 
+r.mainloop()

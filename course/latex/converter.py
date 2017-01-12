@@ -93,7 +93,7 @@ class CommandBase(object):
             )
         elif self.required_version:
             version = ".".join(d for d in m.groups() if d)
-            from distutils.version import LooseVersion as LV
+            import distutils.version.LooseVersion as LV
             if LV(version) < LV(self.required_version):
                 error = Critical(
                     "Version outdated",
@@ -327,7 +327,7 @@ class Tex2ImgBase(object):
             raise ValueError(
                 _("Param 'tex_source' can not be an empty string")
             )
-        assert isinstance(tex_source, unicode)
+        assert isinstance(tex_source, six.text_type)
         self.tex_source = tex_source
 
         if output_dir:
@@ -412,7 +412,7 @@ class Tex2ImgBase(object):
 
         if status != 0:
             try:
-                log = file_read(log_path)
+                log = file_read(log_path).decode("utf-8")
             except OSError:
                 # no log file is generated
                 self._remove_working_dir()
@@ -486,7 +486,7 @@ class Tex2ImgBase(object):
             # avoid race condition
             if not os.path.isfile(self.datauri_saving_path):
                 with atomic_write(self.datauri_saving_path, mode="wb") as f:
-                    f.write(datauri)
+                    f.write(datauri.encode("utf-8"))
 
         except OSError:
             raise RuntimeError(error)
@@ -519,15 +519,16 @@ class Tex2ImgBase(object):
                 else:
                     def_cache.delete(err_cache_key)
             if err_result is not None:
-                assert isinstance(err_result, six.string_types),\
-                    err_cache_key
+                if not isinstance(err_result, six.text_type):
+                    err_result = six.text_type(err_result)
 
         if err_result is None:
             # read the saved err_log if it exists
             if os.path.isfile(self.errlog_saving_path):
                 if not force_regenerate:
-                    err_result = file_read(self.errlog_saving_path)
-                    assert isinstance(err_result, six.string_types)
+                    err_result = file_read(self.errlog_saving_path).decode("utf-8")
+                    if not isinstance(err_result, six.text_type):
+                        err_result = six.text_type(err_result)
                 else:
                     try:
                         os.remove(self.errlog_saving_path)
@@ -537,6 +538,8 @@ class Tex2ImgBase(object):
 
         if err_result:
             if err_cache_key:
+                assert isinstance(err_result, six.text_type),\
+                    err_cache_key
                 if len(err_result) <= getattr(
                         settings, "RELATE_CACHE_MAX_BYTES", 0):
                         def_cache.add(err_cache_key, err_result)
@@ -572,7 +575,8 @@ class Tex2ImgBase(object):
                 except:
                     pass
             result = self.get_converted_image_datauri()
-            assert isinstance(result, six.string_types)
+            if not isinstance(result, six.text_type):
+                result = six.text_type(result)
 
         if not result:
             err_result = self.get_compile_err_cached(force_regenerate)
@@ -601,9 +605,8 @@ class Tex2ImgBase(object):
                 if len(uri_cache_key) < 240:
                     result = def_cache.get(uri_cache_key)
                     if result:
-                        assert isinstance(
-                            result, six.string_types),\
-                            uri_cache_key
+                        if not isinstance(result, six.text_type):
+                            result = six.text_type(result)
                         if not os.path.isfile(self.datauri_saving_path):
                             with atomic_write(self.datauri_saving_path, mode="wb") as f:
                                 f.write(result)
@@ -613,7 +616,9 @@ class Tex2ImgBase(object):
         # then read or generate the datauri
         if not result:
             if os.path.isfile(self.datauri_saving_path):
-                result = file_read(self.datauri_saving_path)
+                result = file_read(self.datauri_saving_path).decode("utf-8")
+                if not isinstance(result, six.text_type):
+                    result = six.text_type(result)
             if not result:
                 # possible empty string, remove the file
                 try:
@@ -623,7 +628,8 @@ class Tex2ImgBase(object):
 
         if not result:
             result = self.get_converted_image_datauri()
-            assert isinstance(result, six.string_types)
+            if not isinstance(result, six.text_type):
+                result = six.text_type(result)
             if not os.path.isfile(self.datauri_saving_path):
                 with atomic_write(self.datauri_saving_path, mode="wb") as f:
                     f.write(result)
@@ -641,9 +647,12 @@ class Tex2ImgBase(object):
                 settings, "RELATE_CACHE_MAX_BYTES",
             )
         )
+
         if len(result) <= allowed_max_bytes:
             # image size larger than allowed_max_bytes
             # won't be cached, espeically for svgs.
+            assert isinstance(result, six.text_type), \
+                uri_cache_key
             def_cache.add(uri_cache_key, result)
         return result
 

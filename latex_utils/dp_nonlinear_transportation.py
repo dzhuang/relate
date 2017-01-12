@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from latex_utils.utils.latex_utils import latex_jinja_env, _file_write
+from latex_utils.utils.latex_utils import latex_jinja_env
 from latex_utils.utils.graph import network, NetworkNegativeWeightUsingDijkstra, dumps_tikz_doc
 from latex_utils.utils.dynamic_programming import force_calculate_feasible_state, NonlinearTransportationProblem
 from copy import deepcopy
@@ -43,7 +43,7 @@ def is_qualified_question(cost, total_resource, decision_set, supply, demand, op
     question_exist = False
     for i, g in enumerate(mem_gain_list):
         if np.all(cost==g):
-            print "----------------------question exists-------------------"
+            print("----------------------question exists-------------------")
             question_exist = True
             return False
             break
@@ -69,7 +69,7 @@ def is_qualified_question(cost, total_resource, decision_set, supply, demand, op
         r.clipboard_append("\n")
         r.clipboard_append("\n")
 
-        print suggestion
+        print(suggestion)
 
         #raise ValueError("Please add above problem")
 
@@ -100,7 +100,7 @@ def generate_problem(dp, mem_gain_list):
         cost = get_rand_cost()
         if is_qualified_question(cost, total_resource, decision_set, supply, demand, opt_type, mem_gain_list):
             n += 1
-            print n
+            print(n)
             mem_gain_list.append(cost)
 
 
@@ -1139,7 +1139,7 @@ for i, dp_dict in enumerate(dp_list_loaded):
     result = dp.solve()
 
     if len(result.policy) > 3:
-        print repr(dp_dict)
+        print(repr(dp_dict))
         break
         continue
 
@@ -1151,7 +1151,7 @@ for i, dp_dict in enumerate(dp_list_loaded):
         d = [a_1, a_2]
         decision_result.append(d)
 
-    print decision_result
+    print(decision_result)
 
     question_template = latex_jinja_env.get_template('dp_nonlinear_transportation_1.tex')
     blank_template = latex_jinja_env.get_template('dp_nonlinear_transportation_1_blank.tex')
@@ -1198,4 +1198,4 @@ for i, dp_dict in enumerate(dp_list_loaded):
 
     r.clipboard_append(tex)
 
-print len(dp_list_loaded)
+print(len(dp_list_loaded))

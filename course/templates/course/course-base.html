@@ -52,6 +52,12 @@
 
       {% if pperm.view_gradebook %}
         <li role="presentation" class="divider"></li>
+        <li><a href="{% url "relate-survey_list" course.identifier %}" target="_blank">{% trans "Course Statistics" %}</a></li>
+          {% if user.is_staff %}
+              <li><a href="{% url "relate-survey_create" course.identifier %}" target="_blank">{% trans "Create Course Statistics" %}</a></li>
+{#              <li><a href="{% url "relate-survey_create_generic" %}" target="_blank">{% trans "Create Generic Statistics" %}</a></li>#}
+          {% endif %}
+        <li role="presentation" class="divider"></li>
         <li role="presentation" class="dropdown-header">{% trans "Grade Book" %}</li>
         <li><a href="{% url "relate-view_participant_list" course.identifier %}" target="_blank">{% trans "List of Participants" %}</a></li>
         <li><a href="{% url "relate-view_grading_opportunity_list" course.identifier %}">{% trans "List of Grading Opportunities" %}</a></li>
@@ -82,7 +88,7 @@
       {% if user.is_staff %}
         <li><a href="{% url "admin:course_exam_changelist" %}?course__id__exact={{ course.id }}" target="_blank">{% trans "Edit exams" %}</a></li>
       {% endif %}
-      {% if pperm.batch_issue_exam_tickets %}
+      {% if pperm.batch_issue_exam_ticket %}
         <li><a href="{% url "relate-batch_issue_exam_tickets" course.identifier %}" target="_blank">{% trans "Batch-issue exam tickets" %}</a></li>
       {% endif %}
 

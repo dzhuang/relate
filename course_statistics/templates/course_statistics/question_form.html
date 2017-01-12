@@ -1,0 +1,19 @@
+{% load i18n %}
+<h1>{% trans "Edit Question" %}</h1>
+
+<form action="{% url 'stat' pk=ParticipationSurvey.id %}" method="POST">
+{% csrf_token %}
+{{ form.management_form }}
+{% for section in form %}
+{{ section.as_p }}
+
+{{ section.nested.management_form }}
+{% for question in section.nested %}
+{{ question.as_p }}
+{% endfor %}
+
+{% endfor %}
+
+<input type="submit" value="Save" />
+
+</form>

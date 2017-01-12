@@ -34,7 +34,7 @@
 \BLOCK{endif}
 \BLOCK{endif}
 
-<p align="middle"><strong>答案表\VAR{answer_table_iters.next()}: 第\VAR{idx}阶段表\BLOCK{ if stage_state_can_optimize}(优化)\BLOCK{endif}</strong></br>
+<p align="middle"><strong>答案表\VAR{answer_table_iters.__next__()}: 第\VAR{idx}阶段表\BLOCK{ if stage_state_can_optimize}(优化)\BLOCK{endif}</strong></br>
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
 \BLOCK{ set state_item_list = stage["state"].items()|list }
 \BLOCK{ set n_state = state_item_list[0][1]['state_results']|length }
@@ -58,7 +58,7 @@
 </p>
 
 \BLOCK{ if stage_state_can_optimize}
-<p align="middle"><strong>答案表\VAR{answer_table_iters.next()}: 第\VAR{idx}阶段表(未优化)</strong></br>
+<p align="middle"><strong>答案表\VAR{answer_table_iters.__next__()}: 第\VAR{idx}阶段表(未优化)</strong></br>
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
 \BLOCK{ set state_item_list = stage_compare["state"].items()|list }
 \BLOCK{ set n_state = state_item_list[0][1]['state_results']|length }

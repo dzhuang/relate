@@ -20,7 +20,7 @@
 \BLOCK{if init_method_list|length <= 2}，要求初始基本可行方案用<strong>\VAR{init_method_list|join("</strong>或<strong>")}</strong>得出\BLOCK{else}，可任意选得出初始基本可行方案的方法\BLOCK{endif}.
 \BLOCK{endif}
 
-<p align="middle"><strong>表\VAR{question_table_iters.next()}</strong></br>
+<p align="middle"><strong>表\VAR{question_table_iters.__next__()}</strong></br>
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
 \BLOCK{ if t.question_table_element and t.costs_str -}
 \BLOCK{ set qtable=t.question_table_element } \BLOCK{ set costs=t.costs_str }
@@ -70,7 +70,7 @@
 \BLOCK{ if not t.is_standard_problem }
 标准化后的运输问题的运价表为：
 
-<p align="middle"><strong>答案表\VAR{answer_table_iters.next()}</strong></br>
+<p align="middle"><strong>答案表\VAR{answer_table_iters.__next__()}</strong></br>
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble)  %}
 \BLOCK{ if t.standard_table_element and t.standard_costs_str -}
 \BLOCK{ set qtable=t.standard_table_element } \BLOCK{ set costs=t.standard_costs_str }
@@ -130,7 +130,7 @@
 
 <table>
 <tr><td>
-<p align="middle"><strong>答案表\VAR{answer_table_iters.next()}</strong></br>
+<p align="middle"><strong>答案表\VAR{answer_table_iters.__next__()}</strong></br>
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble, tex_preamble_extra=transport_preamble_extra)  %}
 
 \begin{keytable}[H]
@@ -168,7 +168,7 @@
 
 \BLOCK{ if verify }
 <td> <p>检验数表为：</p>
-<p align="middle"><strong>答案表\VAR{answer_table_iters.next()} </strong> 检验数表</br>
+<p align="middle"><strong>答案表\VAR{answer_table_iters.__next__()} </strong> 检验数表</br>
 {% call latex(compiler="pdflatex", image_format="png", tex_preamble=preamble, tex_preamble_extra=transport_preamble_extra)  %}
 
 \begin{keytable}[H]

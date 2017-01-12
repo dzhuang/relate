@@ -44,16 +44,7 @@ js_info_dict_image_upload = {
     'packages': ('image_upload',),
 }
 
-js_info_dict_other_app = {
-    'packages': ('your.other.app.package',),
-}
-
 urlpatterns = [
-    
-    url(r'^jsi18n/other_app/$', javascript_catalog, js_info_dict_other_app),
-]
-
-urlpatterns = [ 
     url(r"^course"
         "/" + COURSE_ID_REGEX +
         "/flow-session"
@@ -120,7 +111,6 @@ urlpatterns = [
         "/(?P<file_name>[^/]+)$",
         flow_page_image_key,
         name='flow_page_image_key'),
-
 
     url(r"^course"
         "/" + COURSE_ID_REGEX +

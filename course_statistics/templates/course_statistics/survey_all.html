@@ -1,0 +1,23 @@
+{% extends "course/course-base.html" %}
+{% load i18n %}
+
+{% block title %}
+  {% trans "Course Statistics" %} - {% trans "RELATE" %}
+{% endblock %}
+
+{% block content %}
+  <h1>{% trans "Course Statistics: List of Surveys" %}</h1>
+  {% if survey_list %}
+    <ul>
+      {% for survey in survey_list %}
+      <li>
+      <a href="{% url "relate-view_survey_by_pk" course.identifier survey.pk %}">
+        {{ survey.title }}
+      </a>
+      </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    {% trans " No survey have been recorded." %}
+  {% endif %}
+{% endblock %}

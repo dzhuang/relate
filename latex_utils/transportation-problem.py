@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from utils.latex_utils import latex_jinja_env, _file_write
-from utils.transportation import transportation
+from .utils.latex_utils import latex_jinja_env
+from .utils.transportation import transportation
 import numpy as np
 
 transport_dict_list = []
@@ -1222,9 +1222,14 @@ tr_dict = {
 }
 transport_dict_list.append(tr_dict)
 
-print len(transport_dict_list)
+print(len(transport_dict_list))
 
-from Tkinter import Tk
+try:
+    # Python 3.x
+    from tkinter import Tk
+except ImportError:
+    # Python 2.x
+    from Tkinter import Tk
 r = Tk()
 r.withdraw()
 r.clipboard_clear()
@@ -1313,42 +1318,42 @@ for i, tr in enumerate(transport_dict_list_loaded):
 
 
     if True: #i < len(transport_dict_list_loaded) - 1:
-        print "dem:", t.surplus_dem, ", sup:", t.surplus_sup
+        print("dem:", t.surplus_dem, ", sup:", t.surplus_sup)
         if t.is_standard_problem:
-            print "标准化问题"
+            print("标准化问题")
         elif t.is_sup_bounded_problem:
             if t.is_infinity_bounded_problem:
-                print "供应无上限的有下限要求的问题"
+                print("供应无上限的有下限要求的问题")
             elif t.is_sup_bounded_problem:
-                print "供应有下限要求的问题"
+                print("供应有下限要求的问题")
         elif t.is_dem_bounded_problem:
             if t.is_infinity_bounded_problem:
-                print "需求无上限的有下限要求的问题"
+                print("需求无上限的有下限要求的问题")
             elif t.is_dem_bounded_problem:
-                print "需求有下限要求的问题"
+                print("需求有下限要求的问题")
         else:
-            print "产销不平衡问题"
+            print("产销不平衡问题")
         if NCM_result:
-            print u"西北角法：迭代次数", len(NCM_result.solution_list),\
+            print(u"西北角法：迭代次数", len(NCM_result.solution_list),\
                 u"初始化时有退化解：",NCM_result.has_degenerated_init_solution,\
                 u"计算中有退化解：", NCM_result.has_degenerated_mid_solution,\
                 u"最优解唯一：", NCM_result.has_unique_solution, \
                 u"最优解退化：", NCM_result.final_is_degenerated_solution, \
-                u"z", NCM_result.z
+                u"z", NCM_result.z)
         if LCM_result:
-            print u"最小元素法：迭代次数", len(LCM_result.solution_list),\
+            print(u"最小元素法：迭代次数", len(LCM_result.solution_list),\
                 u"初始化时有退化解：",LCM_result.has_degenerated_init_solution,\
                 u"计算中有退化解：", LCM_result.has_degenerated_mid_solution,\
                 u"最优解唯一：", LCM_result.has_unique_solution, \
                 u"最优解退化：", LCM_result.final_is_degenerated_solution, \
-                u"z", LCM_result.z
+                u"z", LCM_result.z)
         if VOGEL_result:
-            print u"VOGEL法：迭代次数", len(VOGEL_result.solution_list),\
+            print(u"VOGEL法：迭代次数", len(VOGEL_result.solution_list),\
                 u"初始化时有退化解：",VOGEL_result.has_degenerated_init_solution,\
                 u"计算中有退化解：", VOGEL_result.has_degenerated_mid_solution,\
                 u"最优解唯一：", VOGEL_result.has_unique_solution,\
                 u"最优解退化：", VOGEL_result.final_is_degenerated_solution, \
-                u"z", VOGEL_result.z
+                u"z", VOGEL_result.z)
 
 
         # count1 产销平衡，(西北角>2 <=3 or 最小元素>2 <=3) 求解有退化，最后无退化
@@ -1363,7 +1368,7 @@ for i, tr in enumerate(transport_dict_list_loaded):
             count1_list.append(t)
 
 
-print "count1:", count1
+print("count1:", count1)
 for i in count1_list:
-    print i.dem, i.sup
+    print(i.dem, i.sup)
 

@@ -1870,7 +1870,7 @@ def view_flow_page(pctx, flow_session_id, ordinal):
                             "changed in an incompatible way (say, by adding "
                             "an option to a choice question) without changing "
                             "the question ID. The precise error encountered "
-                            "was the following: "+str(e)))
+                            "was the following: ")+str(e))
 
                 return render_course_page(pctx, "course/course-base.html", {})
 
@@ -2400,7 +2400,7 @@ class FlowPageInteractionEmailForm(StyledForm):
         self.fields["message"] = forms.CharField(
                 required=True,
                 widget=forms.Textarea,
-                help_text= string_concat(
+                help_text=string_concat(
                     _("Your questions about page %s . ") % review_uri,
                     _("Notice that <strong>only</strong> questions "
                       "for that page will be answered."),

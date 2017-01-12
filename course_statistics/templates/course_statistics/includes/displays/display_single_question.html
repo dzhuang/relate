@@ -1,0 +1,20 @@
+{% load i18n %}
+<h4>{{ questionnaire.title_questionnaire }}</h4>
+{% for question in form %}
+    <div class="section">
+        <div style="margin-left: 25px; margin-right: 25px;">
+            {% if question|length_is:"1" %}
+                {{ question }}
+            {% else %}
+                {% for choice in question %}
+                    <p>
+                        {{ choice.tag }}
+                        <label for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label>
+                    </p>
+                {% endfor %}
+            {% endif %}
+        {{ question.errors }}
+        </div>
+    </div>
+{% endfor %}
+<br>

@@ -11,6 +11,13 @@ from sympy.simplify import nsimplify
 from sympy.core.numbers import Float as sympy_float
 import os
 
+PULP_INSTALLED = False
+try:
+    from pulp import *
+    PULP_INSTALLED = True
+except ImportError:
+    pass
+
 tol = 1.0E-12
 EQ = [">", "<", "=", ">=", "<=", "=<", "=>"]
 SIGN = [">", "<", "=", ">=", "<=", "=<", "=>", "int", "bin"]
@@ -20,8 +27,8 @@ METHOD_NAME_DICT = {"simplex": u"单纯形法", "dual_simplex": u"对偶单纯�
 OPT_CRITERIA_LITERAL_DICT = {"max": u"非正", "min": u"非负"}
 
 try:
-    from linprog import linprog
-except ImportError:
+    from .linprog import linprog
+except (ImportError, KeyError):
     pass
 
 def latexify(s):
@@ -207,7 +214,7 @@ class sa_c(SA_base):
                     next_same_desc = True
 
 
-        #print desc
+        #print(desc)
         return desc
 
     def analysis(self):
@@ -265,7 +272,7 @@ class sa_c(SA_base):
                         ineq_list = [self.C_j_BAR_copy[idx] for idx in self.non_basis_variable
                                      if not isinstance(self.C_j_BAR_copy[idx], sympy_float)
                                      ]
-                        #print ineq_list
+                        #print(ineq_list)
                         ineq_list_str = [
                             r"\bar c_{%(idx)s} = %(cjbar)s & %(c_ineq_latex)s 0"
                             % {"idx": idx+1,
@@ -274,7 +281,7 @@ class sa_c(SA_base):
                                }
                             for idx in self.non_basis_variable
                         ]
-                        #print ineq_list_str
+                        #print(ineq_list_str)
                         if i == 0 :
                             answer_description += u"由$\\bar c_j = c_j - \mathbf{C_B\\bar p}_j$，"
                         answer_description += (
@@ -346,12 +353,12 @@ class sa_c(SA_base):
                         start_tableau[-1, -1] = self.z_copy[0]
                         goal = self.goal_copy
                         goal[c_index] = v
-                        #print "goal", goal
-                        #print start_tableau
+                        #print("goal", goal)
+                        #print(start_tableau)
                         new_lp = LP(qtype=self.LP.qtype, goal=goal,
                                     start_tableau=start_tableau, start_basis=self.opt_basis.tolist())
                         new_lp.solve(method="simplex")
-                        #print new_lp.res
+                        #print(new_lp.res)
 
                     result_i = sa_single_result (answer_description=answer_description, change=change, new_lp=new_lp)
                     result.append(result_i)
@@ -416,7 +423,7 @@ class sa_p(SA_base):
                 desc += u"$%s=(%s)^T$时最优解是什么？" % (p_index_str, ", ".join(trans_latex_fraction(s, wrap=False) for s in v))
                 next_same_desc = True
 
-        #print desc
+        #print(desc)
         return desc
 
     def analysis(self):
@@ -843,7 +850,7 @@ class sa_x(SA_base):
                     u"最优解会有怎样的变化？"
                     % (new_variable_str, new_variable_index+1, new_c, new_variable_index+1, ", ".join(new_p_list)))
 
-        #print desc
+        #print(desc)
         return desc
 
 
@@ -915,7 +922,7 @@ class sa_x(SA_base):
                             start_basis=opt_basis.tolist())
                 new_lp.solve(method="simplex")
 
-                #print new_variable_index
+                #print(new_variable_index)
                 new_lp_x_idx = list(range(len(self.LP.x_list)))
                 new_lp_x_idx.append(new_variable_index)
 
@@ -1177,12 +1184,13 @@ class LP(object):
         if not (start_tableau is not None and start_basis):
             self.sign = sign[:]
             if not sign_str:
-                self.sign_str = self.get_sign_str(dual)
+                self.sign_str = self.get_sign_str(dual=dual)
             else:
                 self.sign_str = sign_str
 
             self.sign_str = r"\rlap{%s}" % self.sign_str
             self.constraints_str_list = self.get_constraint_str()
+            self.sign_str_purelatex = r"\rlap{$%s$}" % self.get_sign_str(purelatex=True)
 
         self.base_list = []
         self.tableau_list = []
@@ -1214,7 +1222,7 @@ class LP(object):
         self.opt_x = []
         self.opt_value = []
 
-    def get_sign_str(self, dual):
+    def get_sign_str(self, dual=False, purelatex=False):
         """
         得到变量的符号 x_{1},x_{3}\geqslant 0,\,x_{2}\text{无限制},\,x_{3}\text{为整数}
         """
@@ -1251,7 +1259,7 @@ class LP(object):
             cstr_list.append(get_single_constraint(cnstr, self.x_list))
         return cstr_list
 
-    def get_goal_str(self):
+    def get_goal_str(self, purelatex=False, z=None, inline=False):
         goal = self.goal
         try:
             goal = [trans_latex_fraction(str(g), wrap=False) for g in goal]
@@ -1280,7 +1288,16 @@ class LP(object):
                 if not str(g).startswith("-"):
                     goal[i] = "+" + goal[i]
 
-        return r"\%s \quad & \rlap{%s = %s}" % (self.qtype, self.z, "".join(goal))
+        if not z:
+            z = self.z
+
+        if not purelatex:
+            return r"\%s \quad & \rlap{%s = %s}" % (self.qtype, z, "".join(goal))
+        else:
+            if inline:
+                return r"\%s\; %s = %s" % (self.qtype, z, "".join(goal))
+            else:
+                return r"\%s \quad & \rlap{$%s = %s$}" % (self.qtype, z, "".join(goal))
 
     def dual_problem(self):
         qtype = list(set(["max", "min"]) - set([self.qtype]))[0]
@@ -1329,7 +1346,7 @@ class LP(object):
             except:
                 sa_klass =  globals()[SA_klass_dict[key]]
             if key in sensitive:
-                #print sensitive[key]
+                #print(sensitive[key])
                 for ana in sensitive[key]:
                     analysis = sa_klass(
                         lp=self,
@@ -1337,29 +1354,21 @@ class LP(object):
                         opt_tableau=opt_tableau, opt_basis=opt_basis)
                     self.sa_result.append(analysis.analysis())
 
-    def solve(self, disp=False, method="simplex"):
-        for solution in [self.solutionCommon, self.solutionPhase1, self.solutionPhase2]:
-            solution.pivot_list = []
-            solution.tableau_list = []
-            solution.basis_list = []
-            solution.variable_list = []
-            solution.slack_variable_list = []
-            solution.artificial_variable_list = []
-
-        self.tableau_str_list = []
+    def get_orig_lingprog_solve_param(self):
         b_ub = []
         A_ub = []
         b_eq = []
         A_eq = []
-        C = []
+        c = []
+        # 目前只接受所有变量非负的情况
+        bounds = ((0, None),) * len(self.x_list)
         goal = self.goal_origin
         for g in goal:
             if self.qtype == "max":
-                C.append(-float(g))
+                c.append(-float(g))
             else:
-                C.append(float(g))
-        cnstr_orig_order = []
-
+                c.append(float(g))
+        #cnstr_orig_order = []
         if not (self.start_tableau is not None and self.start_basis):
             constraints = [cnstr for cnstr in self.constraints_origin]
 
@@ -1398,6 +1407,33 @@ class LP(object):
             cnstr_orig_order = eq_cnstr_orig_order + ub_cnstr_orig_order
         else:
             cnstr_orig_order = range(len(self.start_basis))
+        return c, A_ub, b_ub, A_eq, b_eq, bounds, cnstr_orig_order
+
+    def solve(self, disp=False, method="simplex"):
+        for solution in [self.solutionCommon, self.solutionPhase1, self.solutionPhase2]:
+            solution.pivot_list = []
+            solution.tableau_list = []
+            solution.basis_list = []
+            solution.variable_list = []
+            solution.slack_variable_list = []
+            solution.artificial_variable_list = []
+
+        C, A_ub, b_ub, A_eq, b_eq, bounds, cnstr_orig_order = self.get_orig_lingprog_solve_param()
+
+        solve_kwarg = {}
+        solve_kwarg["c"] = C
+        if A_ub:
+            solve_kwarg["A_ub"] = A_ub
+            solve_kwarg["b_ub"] = b_ub
+        if A_eq:
+            solve_kwarg["A_eq"] = A_eq
+            solve_kwarg["b_eq"] = b_eq
+        if bounds:
+            solve_kwarg["bounds"] = bounds
+
+        solve_kwarg["cnstr_orig_order"] = cnstr_orig_order
+        solve_kwarg["start_tableau"] = self.start_tableau
+        solve_kwarg["start_basis"] = self.start_basis
 
         def lin_callback(xk, **kwargs):
             t = np.copy(kwargs['tableau'])
@@ -1406,7 +1442,7 @@ class LP(object):
             basis = np.copy(kwargs['basis'])
             i_p, j_p = np.copy(kwargs['pivot'])
             # if self.solutionCommon.method == "dual_simplex":
-            #     print t
+            #     print(t)
             if nit == 0:
                 self.tableau_origin = t.tolist()
 
@@ -1425,21 +1461,7 @@ class LP(object):
                 stage_klass.pivot_list.append([np.nan, np.nan])
             stage_klass.method = self.solutionCommon.method = method
 
-        solve_kwarg = {}
-        solve_kwarg["c"] = C
-        if A_ub:
-            solve_kwarg["A_ub"] = A_ub
-            solve_kwarg["b_ub"] = b_ub
-        if A_eq:
-            solve_kwarg["A_eq"] = A_eq
-            solve_kwarg["b_eq"] = b_eq
-
-        solve_kwarg["cnstr_orig_order"] = cnstr_orig_order
-        solve_kwarg["start_tableau"] = self.start_tableau
-        solve_kwarg["start_basis"] = self.start_basis
-
-        res = linprog(bounds=((0, None),) * len(self.x_list),
-                       options={'disp': disp},
+        res = linprog( options={'disp': disp},
                        callback=lin_callback,
                        method=method,
                        **solve_kwarg
@@ -1447,10 +1469,11 @@ class LP(object):
 
         if res.status == 0:
             self.solutionCommon.nit = res.nit
-            self.res = res
 
-        #print res
-        #print res.status
+        self.res = res
+
+        #print(res)
+        #print(res.status)
 
 
         if res.status == 2 and self.solutionCommon.method != "dual_simplex":
@@ -1662,6 +1685,52 @@ class LP(object):
         else:
             return None
 
+    def as_pulp_problem(self, problem_name="no name", objective_name="objective"):
+        if not PULP_INSTALLED:
+            raise ImportError("PuLP is not installed.")
+        if self.qtype == "max":
+            sense = pulp.LpMaximize
+        else:
+            sense = pulp.LpMinimize
+
+        prob = pulp.LpProblem(problem_name, sense=sense)
+
+        n_variable = len(self.x_list)
+        variable_name = self.x
+        variable_str_list = ["%s%s" % (variable_name, idx+1) for idx in range(n_variable)]
+
+        # vaiables
+        for i, x in enumerate(variable_str_list):
+            lbound, ubound, vtype = get_variable_bound_type_from_sign(self.sign[i])
+            pulp_variable_str = (
+                "%(xi)s = pulp.LpVariable('%(xi)s', %(lbound)s, %(ubound)s, %(vtype)s)"
+                % {
+                    "xi": x,
+                    "lbound": lbound,
+                    "ubound": ubound,
+                    "vtype": vtype
+                }
+            )
+            exec(pulp_variable_str)
+            #print(pulp_variable_str)
+
+        # objective function
+        objective_str = "+".join(["(%s*%s)" %(self.goal[i], variable_str_list[i]) for i in range(n_variable)])
+        #print(objective_str)
+        pulp_objective_str = "prob += %s, '%s'" % (objective_str, objective_name)
+        exec(pulp_objective_str)
+
+        # constraints
+        #print(self.constraints_origin)
+        for i, cst in enumerate(self.constraints_origin):
+            cst_str = "+".join(["(%s*%s)" %(cst[i], variable_str_list[i]) for i in range(n_variable)])
+            rhs_str = "". join(str(c) for c in cst[n_variable: ])
+            rhs_str = rhs_str.replace("=", "==").replace(">", ">=").replace("<", "<=")
+            cst_str += rhs_str
+            exec("prob += %s" % cst_str)
+
+        return prob
+
 
 def get_single_constraint(constraint, x_list, use_seperator=True, as_lhs_rhs_list=False):
     constraint = [trans_latex_fraction(str(cnstr), wrap=False) for cnstr in constraint]
@@ -1818,6 +1887,24 @@ def variable_sign_trans(s):
         return u"=0\\text{或}1"
     elif s == "int":
         return u"\\text{为整数}"
+    else:
+        raise ValueError()
+
+
+def get_variable_bound_type_from_sign(s):
+    # SIGN = [">", "<", "=", ">=", "<=", "=<", "=>", "int", "bin"]
+    # sign to tuple for bound of variables
+    assert s in SIGN
+    if ">" in s:
+        return 0, None, "pulp.LpContinuous"
+    elif "<" in s:
+        return None, 0, "pulp.LpContinuous"
+    elif s == "=":
+        return None, None, "pulp.LpContinuous"
+    elif s == "bin":
+        return 0, 1, "pulp.LpBinary"
+    elif s == "int":
+        return 0, None, "pulp.LpInteger"
     else:
         raise ValueError()
 
