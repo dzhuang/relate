@@ -7,12 +7,19 @@
 {% endblock %}
 
 {% block content %}
+    <h4>{% block title_in_content %}{% endblock %}</h4>
 <div class="container">
+<table>
+<td>{% block content_left %}{% endblock %}</td>
+<td>
     <div class="row">
         <div class="col s12">
             <div class="col s12">
                 <ul class="tabs">
-                    <li class="tab col s3"><a href="#form1">{% block title_tab %}{% endblock %}</a></li>
+                    <li class="tab col s3">
+                        <a href="#form1" style="font-size:35px;">
+                            {% block title_tab %}{% endblock %}
+                        </a></li>
                     {% block other_tabs %}{% endblock %}
                 </ul>
             </div> <!-- Tabs Navigation -->
@@ -23,6 +30,12 @@
             </div> <!-- Tabs Container -->
         </div>
     </div>
+</td>
+
+<td>
+{% block content_right %}{% endblock %}
+</td>
+</table>
 </div> <!-- End container -->
 
 {% endblock %}

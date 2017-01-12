@@ -1650,7 +1650,7 @@ class GradeStateMachine(object):
         if self.state is None:
             return u"- ∅ -"
         elif self.state == grade_state_change_types.exempt:
-            return "_((exempt))"
+            return _(("exempt"))
         elif self.state == grade_state_change_types.graded:
             if self.valid_percentages:
                 result = "%.1f%%" % self.percentage()

@@ -1,4 +1,4 @@
-
+{% load i18n %}
 <div class="row"  style="margin-bottom: 0px;">
     <div class="col s11">
         <i class="teal white-text left-align" id="{{ question.prefix }}-counter">{{ forloop.counter }}</i>
@@ -40,24 +40,24 @@
 <hr>
 <div class="row" style="margin-bottom: 0px;">
     <div class="col s6">
-        <strong>Response options:</strong>
+        <strong>{% trans "Response options" %}:</strong>
         <span class="teal-text">
             {% if question.instance.type == "MultiChoiceWithAnswer" %}
-                Choices with multiple answer
+                {% trans "Choices with multiple answer" %}
             {% elif question.instance.type == "MutuallyExclusiveField" %}
-                Choices with mutually exclusive answer
+                {% trans "Choices with mutually exclusive answer" %}
             {% elif question.instance.type == "MultiChoices" %}
-                Multiple choices
+                {% trans "Multiple choices" %}
             {% elif question.instance.type == "yesNoQuestion" %}
-                Yes / No
+                {% trans "Yes / No" %}
             {% elif question.instance.type == "RatingField" %}
-                Rating Scale
+                {% trans "Rating Scale" %}
             {% elif question.instance.type == "TextField" %}
-                Comment Area
+                {% trans "Comment Area" %}
             {% endif %}
         </span>
     </div>
     {% if question.instance.required %}
-        <div class="col s6 right-align"><span class="material-icons teal-text ">error_outline</span><strong>Required Question</strong></div>
+        <div class="col s6 right-align"><span class="material-icons teal-text ">error_outline</span><strong>{% trans "Required Question" %}</strong></div>
     {% endif %}
 </div>

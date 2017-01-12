@@ -1,5 +1,5 @@
 {% load create_questionnaire_tags %}
-
+{% load i18n %}
 {% if empty_question %}
     <div id='{{ question_formset.empty_form.prefix }}' class="empty-question">
 {% endif %}
@@ -18,11 +18,11 @@
             </div>
             <p style="padding-left: initial;">
                 {{ question.required }}
-                <label for="{{ question.required.id_for_label }}" class="checkbox black-text">Required question (Require a response to this question)</label>
+                <label for="{{ question.required.id_for_label }}" class="checkbox black-text">{% trans "Required question (Require a response to this question)" %}</label>
             </p>
         </div>
         <div class="col s6 {% if question.type.errors %}error{% endif %}">
-            Response types
+            {% trans "Response types" %}
             {% for radio in question.type %}
                 <p style="padding: 5px 5px 5px 5px;">
                     <input class="with-gap" type="radio" name="{{ radio.name }}" value="{{ radio.choice_value }}" id="{{ radio.id_for_label }}"

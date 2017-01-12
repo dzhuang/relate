@@ -2,7 +2,7 @@
 {% load i18n %}
 
 {% block title %}
-  {% trans "Course Statistics" %} - {% trans "RELATE" %}
+  {% trans "Course Statistics" %} {{ survey.questionnaire.title }} - {% trans "RELATE" %}
 {% endblock %}
 
 {% block header_extra %}
@@ -10,36 +10,32 @@
 {% endblock %}
 
 {% block content %}
-  <h1>{% trans "Course Statistics" %}</h1>
+  <h1>{% trans "Course Statistics" %} {% trans "Survey" %}: {{ survey.questionnaire.title }}</h1>
 
   <table class="table table-striped gradebook ">
     <thead>
       <th class="headcol">{% trans "Institutional ID" %}</th>
       <th class="datacol">{% trans "Name" context "real name of a user" %}</th>
       {% for question in survey_questions %}
-      <th class="datacol"><a href="{% url "relate-view_grades_by_opportunity" course.identifier question.pk %}">{{ question.text }}</a> <tt style="font-size:x-small">({{ question.pk }})</tt></th>
+      <th class="datacol"><a href="{% url "relate-view_survey_by_question_pk" course.identifier survey.questionnaire.pk question.pk %}">{{ question.text }}</a> <tt style="font-size:x-small">({{ question.pk }})</tt></th>
       {% endfor %}
     </thead>
     <tbody>
-      {% for participation, grades in survey_table %}
+      {% for participation, survey_question in survey_table %}
       <tr>
-        <td class="headcol"><a href="{% url "relate-show_questionnaire" course.identifier participation.id survey_pk %}"><span class="sensitive">{{ participation.user.institutional_id }}</span></a></td>
+        <td class="headcol"><a href="{% url "relate-view_single_user_survey" course.identifier survey.questionnaire.pk participation.id %}"><span class="sensitive">{{ participation.user.institutional_id }}</span></a></td>
         <td class="datacol">
           <span class="sensitive">
             {{ participation.user.get_full_name }}
           </span>
           ({{ participation.get_role_desc }})
         </td>
-        {% for grade_info in grades reversed %}
-          <td class="datacol"
-            {% if grade_info.grade_state_machine.percentage != None %}
-            data-order="{{ grade_info.grade_state_machine.percentage }}"
-            {% else %}
-            data-order="-1"
-            {% endif %}
-                      >
-{#            <a href="{% url "relate-view_single_grade" course.identifier participation.id grade_info.opportunity.id %}"#}
-{#               ><span class="sensitive">{{ grade_info.grade_state_machine.stringify_state }}</span></a>#}
+        {% for survey_info in survey_question %}
+          <td class="datacol">
+            <a href="{% url "relate-view_single_question" course.identifier survey.pk survey_info.question.pk participation.id %}"
+               ><span class="sensitive">
+                {{ survey_info.answer_state_machine.stringify_state }}</span>
+            </a>
           </td>
         {% endfor %}
       </tr>

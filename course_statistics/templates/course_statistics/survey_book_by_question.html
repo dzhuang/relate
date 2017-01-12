@@ -1,0 +1,58 @@
+{% extends "course/course-base.html" %}
+{% load i18n %}
+
+{% block title %}
+  {% trans "Course Statistics" %} {{ survey.questionnaire.title }} -- {{ question.text }} - {% trans "RELATE" %}
+{% endblock %}
+
+{% block header_extra %}
+  {% include "datatables-header.html" %}
+{% endblock %}
+
+{% block content %}
+  <h1>{% trans "Course Statistics" %} {% trans "Survey" %}: {{ survey.questionnaire.title }} -- {% trans "Question" %}: {{ question.text }}
+      <a href="{% url "relate-view_survey_by_pk" course.identifier survey.pk %}"><i class="fa fa-level-up" aria-hidden="true"></i></a>
+    </h1>
+
+  <table class="table table-striped gradebook-by-opportunity">
+    <thead>
+      <th class="headcol">{% trans "Institutional ID" %}</th>
+      <th class="datacol">{% trans "Name" context "real name of a user" %}</th>
+      <th class="datacol">{% trans "Answer" %}</th>
+    </thead>
+    <tbody>
+      {% for participation, survey_question in survey_table %}
+      <tr>
+        <th class="headcol">
+          <a href="{% url "relate-view_single_user_survey" course.identifier survey.pk participation.id  %}"><span class="sensitive">{{ participation.user.institutional_id }}</span></a>
+        </th>
+        <td class="datacol">
+            <span class="sensitive">
+                {{ participation.user.get_full_name }}
+            </span>
+        </td>
+        <td class="datacol" >
+            <a href="{% url "relate-view_single_question" course.identifier survey.pk survey_question.question.pk participation.id %}"
+               ><span class="sensitive">
+                {{ survey_question.answer_state_machine.stringify_state }}</span>
+            </a>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% load static coursetags %}
+  {% get_current_js_lang_name as LANG %}
+  <script type="text/javascript">
+    var tbl = $("table.gradebook-by-opportunity").dataTable({
+        "scrollX": true,
+        "scrollCollapse": true,
+        "paging": false,
+        "ordering": true,
+        "columnDefs": [{ type: 'name', targets: 1 }],
+        "language": {url: '{% static "datatables-i18n/i18n/" %}{{LANG}}.json'},
+    } );
+    new $.fn.dataTable.FixedColumns(tbl);
+  </script>
+
+{% endblock %}

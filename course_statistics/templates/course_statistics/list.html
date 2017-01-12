@@ -1,5 +1,5 @@
 {% extends "course_statistics/survey_base.html" %}
-
+{% load i18n %}
 {% block title %}List{% endblock %}
 
 {% block title_tab %}
@@ -32,7 +32,7 @@
                 <p>
                 <span class="new badge blue-grey" style="position: static;right: 748px; margin-top: 5px;">
                     {% with number=questionnaire.number_responses %}
-                        {{ number }} response{{ number|pluralize }}
+                        {{ number }} {% trans "response" %}{{ number|pluralize }}
                     {%endwith %}
                 </span>
                 </p>

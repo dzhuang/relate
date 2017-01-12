@@ -1,6 +1,8 @@
+
 from crispy_forms.layout import Submit
 from django.shortcuts import (  # noqa
         render, get_object_or_404, redirect, resolve_url)
+from django.utils.decorators import method_decorator
 from django.contrib import messages
 from django import forms
 from django.core.urlresolvers import reverse
@@ -8,6 +10,8 @@ from django.views.generic import (
     ListView,
     CreateView,
     UpdateView,
+    FormView,
+    TemplateView
 )
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.contrib.auth.decorators import login_required
@@ -22,7 +26,7 @@ from questionnaire.views import (
     ThanksView as TV
 )
 
-from course.utils import course_view
+from course.utils import course_view, CoursePageContext, ParticipationPermissionWrapper
 
 from django.views.generic import (
         CreateView, DeleteView, ListView, DetailView, UpdateView)
@@ -55,7 +59,7 @@ from course.models import (
 # from crowdsourcing.models import Question, Survey, Answer, Section
 
 from course_statistics.models import (
-    ParticipationSurvey, StatisticStateMachine, QuestionPerParticipant,
+    ParticipationSurvey, QuestionAnsweredStateMachine,
     ParticipationSurveyQuestionAnswer as PSQA
 )
 # Create your views here.
@@ -77,6 +81,89 @@ def view_survey_list(pctx):
         "survey_list": survey_list,
         })
 
+@login_required
+@course_view
+def view_survey_by_question(pctx, survey_pk, question_pk):
+    # type: (CoursePageContext, Text) -> http.HttpResponse
+
+    if not pctx.has_permission(pperm.view_gradebook):
+        raise PermissionDenied(_("may not view grade book"))
+
+    survey = get_object_or_404(ParticipationSurvey, id=int(survey_pk))
+
+    if pctx.course != survey.participation.course:
+        raise SuspiciousOperation(_("survey from wrong course"))
+
+    question = get_object_or_404(Question, id=int(question_pk))
+
+    survey_questions = survey.questionnaire.questions()
+
+    if question not in survey_questions:
+        raise SuspiciousOperation(_("question from wrong survey"))
+
+    participations = list(Participation.objects
+                          .filter(
+        course=pctx.course,
+        status=participation_status.active)
+                          .annotate(null_id=Count('user__institutional_id'))
+                          .order_by("-null_id", "user__institutional_id")
+                          .select_related("user"))
+
+    answers_for_questions = list(
+        PSQA.objects
+            .filter(
+            participation__course=pctx.course,
+            question=question
+        )
+            .annotate(null_id=Count('participation__user__institutional_id'))
+            .order_by(
+            "-null_id",
+            "participation__user__institutional_id",
+            "question__pk",
+        )
+            .select_related("participation")
+            .select_related("participation__user")
+            .select_related("question"))
+
+    qanswer_idx = 0
+
+    survey_table = []  # type: List[Tuple[Participation, OpportunitySessionGradeInfo]]
+    for idx, participation in enumerate(participations):
+        # Advance in grade change list
+        while (
+                qanswer_idx < len(answers_for_questions)
+                and answers_for_questions[qanswer_idx].participation.pk < participation.pk):
+            qanswer_idx += 1
+
+        my_answer_status = []
+        while (
+                qanswer_idx < len(answers_for_questions)
+                and answers_for_questions[qanswer_idx].participation.pk == participation.pk):
+            my_answer_status.append(answers_for_questions[qanswer_idx])
+            qanswer_idx += 1
+
+        state_machine = QuestionAnsweredStateMachine()
+        state_machine.consume(my_answer_status)
+
+        survey_table.append(
+                (participation, SurveyQuestionAnsweredInfo(
+                    question=question,
+                    answer_state_machine=state_machine,
+                )))
+
+
+    return render_course_page(pctx, "course_statistics/survey_book_by_question.html", {
+        "question": question,
+        "survey_table": survey_table,
+        "survey_questions": survey_questions,
+        "participations": participations,
+        "survey": survey,
+        })
+
+# }}}
+
+
+
 class ListQuestionnaireView(ListView):
     model = Questionnaire
     template_name = "course_statistics/list.html"
@@ -88,40 +175,34 @@ class ListQuestionnaireView(ListView):
 
 
 class DisplaySurveyForm(forms.Form):
-    def __init__(self, questionnaire_id, participation_id, *args, **kwargs):
+    def __init__(self, survey_pk, participation_id, *args, **kwargs):
         super(DisplaySurveyForm, self).__init__(*args, **kwargs)
-        self.participation_id = participation_id
-        self.questionnaire = get_object_or_404(Questionnaire, id=questionnaire_id)
+        self.participation = Participation.objects.get(id=participation_id)
+        self.survey = get_object_or_404(ParticipationSurvey, id=survey_pk)
+        self.questionnaire = self.survey.questionnaire
         for index, question in enumerate(self.questionnaire.questions()):
             get_form_field(self, question)
 
     def save(self, user):
         for index, question in enumerate(self.questionnaire.questions()):
             answer_text = self.cleaned_data['question_{0}'.format(question.pk)]
-            participation = Participation.objects.get(id=self.participation_id)
-
+            print(answer_text)
             if answer_text:
                 try:
                     answer_save = PSQA.objects.get(
-                        participation=participation,
-                        user=user,
+                        survey=self.survey,
+                        participation=self.participation,
                         question=question
                     )
                 except PSQA.DoesNotExist:
                     answer_save = PSQA(
+                        survey=self.survey,
                         user=user,
-                        participation=participation,
+                        participation=self.participation,
                         question=question,
-                        answer = answer_text
                     )
+                answer_save.answer = answer_text
                 answer_save.save()
-
-# class DisplaySurveyForm(DisplaySurveyForm):
-#     def __init__(self, questionnaire_id, *args, **kwargs):
-#         participation_id = kwargs.pop("participation_id")
-#         super(DisplaySurveyForm, self).__init__(*args, **kwargs)
-#         participation = Participation.objects.get(id=int(participation_id))
-
 
 
 class SurveyMixin(QuestionnaireMixin):
@@ -148,7 +229,7 @@ class UpdateQuestionnaireView(SurveyMixin, UpdateView):
     def get_context_data(self, **kwargs):
         context = super(UpdateQuestionnaireView, self).get_context_data()
         context['display_questions'] =\
-            DisplayQuestionsForm(questionnaire_id=self.kwargs['pk'])
+            DisplayQuestionsForm(questionnaire_pk=self.kwargs['pk'])
         return context
 
 class CourseViewMixin(UserPassesTestMixin):
@@ -161,7 +242,6 @@ class CourseViewMixin(UserPassesTestMixin):
         ordinal = self.kwargs['ordinal']
         course_identifier = self.kwargs['course_identifier']
 
-        from course.utils import CoursePageContext
         pctx = CoursePageContext(request, course_identifier)
 
 # class ListBlocksView(ListView):
@@ -192,17 +272,17 @@ class CourseViewMixin(UserPassesTestMixin):
 #                 .order_by("order","pk")
 
 
-class SurveyInfo:
-    def __init__(self, question, stat_state_machine):
+class SurveyQuestionAnsweredInfo:
+    def __init__(self, question, answer_state_machine):
         ## type: (SurveyQuestion, StatStateMachine) -> None
         self.question = question
-        self.stat_state_machine = stat_state_machine
+        self.answer_state_machine = answer_state_machine
     def __str__(self):
-        return repr(self.question) + "---" + repr(self.stat_state_machine)
+        return repr(self.question) + "---" + repr(self.answer_state_machine)
 
 
-def get_survey_table(course, survey_pk):
-    ## type: (Course) -> Tuple[List[Participation], List[SurveyQuestion], List[List[SurveyInfo]]]  # noqa
+def get_survey_table(course, questionnaire_pk):
+    ## type: (Course) -> Tuple[List[Participation], List[SurveyQuestion], List[List[SurveyQuestionAnsweredInfo]]]  # noqa
 
     # NOTE: It's important that these queries are sorted consistently,
     # also consistently with the code below.
@@ -210,7 +290,7 @@ def get_survey_table(course, survey_pk):
     survey_questions = list(
         (Question.objects
          .filter(
-            questionnaire__pk=survey_pk,
+            questionnaire__pk=questionnaire_pk,
         )
          .select_related("questionnaire")
          .order_by("order", "pk")
@@ -225,7 +305,7 @@ def get_survey_table(course, survey_pk):
             .order_by("-null_id","user__institutional_id")
             .select_related("user"))
 
-    question_status = list(QuestionPerParticipant.objects
+    answers_for_questions = list(PSQA.objects
             .filter(
                 participation__course=course,
                 )
@@ -241,80 +321,41 @@ def get_survey_table(course, survey_pk):
 
     idx = 0
 
-    # for participation in participations:
-    #     while (
-    #             idx < len(grade_changes)
-    #             and grade_changes[idx].participation.id < participation.id):
-    #         idx += 1
-    #
-    #     grade_row = []
-    #     for opp in grading_opps:
-    #         while (
-    #                 idx < len(grade_changes)
-    #                 and grade_changes[idx].participation.pk == participation.pk
-    #                 and grade_changes[idx].opportunity.identifier < opp.identifier
-    #                 ):
-    #             idx += 1
-    #
-    #         my_grade_changes = []
-    #         while (
-    #                 idx < len(grade_changes)
-    #                 and grade_changes[idx].opportunity.pk == opp.pk
-    #                 and grade_changes[idx].participation.pk == participation.pk):
-    #             my_grade_changes.append(grade_changes[idx])
-    #             idx += 1
-    #
-    #         state_machine = GradeStateMachine()
-    #         state_machine.consume(my_grade_changes)
-    #
-    #         grade_row.append(
-    #                 GradeInfo(
-    #                     opportunity=opp,
-    #                     grade_state_machine=state_machine))
-    #
-    #     grade_table.append(grade_row)
-
-    stat_table = []
+    survey_table = []
     for participation in participations:
         while (
-                idx < len(question_status)
-                and question_status[idx].participation.id < participation.id):
+                idx < len(answers_for_questions)
+                and answers_for_questions[idx].participation.id < participation.id):
             idx += 1
 
         stat_row = []
         for ques in survey_questions:
             while (
-                    idx < len(question_status)
-                    and question_status[idx].participation.pk == participation.pk
-                    and question_status[idx].question.pk < ques.pk
+                    idx < len(answers_for_questions)
+                    and answers_for_questions[idx].participation.pk == participation.pk
+                    and answers_for_questions[idx].question.pk < ques.pk
                     ):
                 idx += 1
 
-            my_question_status = []
+            my_answer_status = []
             while (
-                    idx < len(question_status)
-                    and question_status[idx].question.pk == ques.pk
-                    and question_status[idx].participation.pk == participation.pk):
-                my_question_status.append(question_status[idx])
+                    idx < len(answers_for_questions)
+                    and answers_for_questions[idx].question.pk == ques.pk
+                    and answers_for_questions[idx].participation.pk == participation.pk):
+                my_answer_status.append(answers_for_questions[idx])
                 idx += 1
 
-            state_machine = StatisticStateMachine()
-            state_machine.consume(my_question_status)
-
-            print(
-                SurveyInfo(
-                    question=ques,
-                    stat_state_machine=state_machine)
-            )
+            state_machine = QuestionAnsweredStateMachine()
+            state_machine.consume(my_answer_status)
 
             stat_row.append(
-                    SurveyInfo(
+                    SurveyQuestionAnsweredInfo(
                         question=ques,
-                        stat_state_machine=state_machine))
+                        answer_state_machine=state_machine))
 
-        stat_table.append(stat_row)
+        survey_table.append(stat_row)
 
-    return participations, survey_questions, stat_table
+    return participations, survey_questions, survey_table
 
 
 @login_required
@@ -324,43 +365,23 @@ def view_single_survey_book(pctx, survey_pk):
     if not pctx.has_permission(pperm.view_gradebook):
         raise PermissionDenied(_("may not view course statistics"))
 
-    participations, survey_questions, survey_table = get_survey_table(pctx.course, survey_pk)
+    survey = get_object_or_404(ParticipationSurvey, pk=survey_pk)
+    questionnaire_pk = survey.questionnaire.pk
+    participations, survey_questions, survey_table = get_survey_table(pctx.course, questionnaire_pk)
 
     def sort_key(entry):
         (participation, question) = entry
         return (participation.user.institutional_id,)
 
     survey_table = sorted(zip(participations, survey_table), key=sort_key)
-    print(survey_table)
+    questionnaire = Questionnaire.objects.get(pk=questionnaire_pk)
 
-    return render_course_page(pctx, "course_statistics/statistic_book.html", {
+    return render_course_page(pctx, "course_statistics/survey_book.html", {
         "survey_table": survey_table,
         "survey_questions": survey_questions,
         "participations": participations,
-        "survey_pk": survey_pk
-        #"grade_state_change_types": grade_state_change_types,
+        "survey": survey,
         })
-
-@login_required
-@course_view
-def view_participant_single_survey(pctx, participation, survey_pk):
-    request = pctx.request
-    if not pctx.has_permission(pperm.view_gradebook):
-        raise PermissionDenied(_("may not view course statistics"))
-
-    part_survey, created =  ParticipationSurvey.objects.get_or_create(
-                    participation=participation,
-                    questionnaire__pk=survey_pk
-                    )
-
-    return render_course_page(pctx, "course_statistics/statistic_book.html", {
-        "survey_table": survey_table,
-        "survey_questions": survey_questions,
-        "participations": participations,
-        #"grade_state_change_types": grade_state_change_types,
-        })
-
-
 
 
 class LinkSurveyForm(StyledForm):
@@ -372,7 +393,7 @@ class LinkSurveyForm(StyledForm):
         self.fields["survey"] = forms.ModelChoiceField(
                 queryset=Questionnaire.objects.order_by("pk"),
                 required=True,
-                help_text=_("Select survey to link to this course."),
+                help_text=_("Select a questionnare to link to this course."),
                 label=_("Survey"))
 
         self.helper.add_input(Submit("submit", _("Link")))
@@ -398,87 +419,264 @@ def link_survey_with_course(pctx):
                     questionnaire=survey
                     )
             messages.add_message(request, messages.INFO,
-                                 _("The survey is linked to the course."))
+                                 _("The questionnare is successfully linked to the course."))
     else:
         form = LinkSurveyForm()
 
     return render(request, "generic-form.html", {
-        "form_description": _("Link survey to course"),
+        "form_description": _("Link questionnare to course"),
         "form": form
         })
 
 #CourseViewMixin
 
-class FillParticipationSurvey(TQ):
+class FillParticipationSurvey(FormView):
     form_class = DisplaySurveyForm
     template_name = 'course_statistics/display.html'
 
+    def __init__(self, **kwargs):
+        super(FillParticipationSurvey, self).__init__(**kwargs)
+        self.questionnaire_pk = None
+        self.survey_pk = None
+        self.participation_id = None
+        self.course_identifier = None
+        self.questionnaire = None
+
     def get_form_kwargs(self):
         kwargs = super(FillParticipationSurvey, self).get_form_kwargs()
-        pk = self.kwargs['pk']
-        participation_id = self.kwargs['participation_id']
+        self.survey_pk = self.kwargs['survey_pk']
+        self.survey = ParticipationSurvey.objects.get(pk=self.survey_pk)
+        self.questionnaire_pk = self.survey.questionnaire.pk
+        self.participation_id = self.kwargs['participation_id']
+        self.course_identifier = self.kwargs['course_identifier']
         kwargs.update({
-            'questionnaire_id': pk,
-            'participation_id': participation_id
+            'survey_pk': self.survey_pk,
+            'participation_id': self.participation_id
         })
 
-        questionnaire = Questionnaire.objects.get(pk=pk)
+        self.questionnaire = questionnaire = self.survey.questionnaire
         exist_answer = {}
         for index, question in enumerate(questionnaire.questions()):
             try:
                 answer = PSQA.objects.get(
-                        participation__id=participation_id,
-                        question=question
-                    )
+                    survey=self.survey,
+                    participation__id=self.participation_id,
+                    question=question
+                )
                 exist_answer['question_{0}'.format(question.pk)] = answer.answer
-                #print(answer.answer)
             except PSQA.DoesNotExist:
                 pass
         kwargs.update(initial=exist_answer)
         return kwargs
 
+    def form_valid(self, form):
+        form.save(user=self.request.user)
+        messages.add_message(self.request, messages.INFO,
+                             _("The answer is saved."))
+        return super(FillParticipationSurvey, self).form_valid(form=form)
+
     def get_success_url(self):
-        return reverse('thanks-page')
+        return reverse('survey-finish-page', args=(self.course_identifier, self.survey.pk, self.participation_id))
 
     def get_context_data(self, **kwargs):
         context = super(FillParticipationSurvey, self).get_context_data(**kwargs)
-
-        participation_id = self.kwargs['participation_id']
-        context["participation"] = Participation.objects.get(id=participation_id)
-        context["course"] = Course.objects.get(identifier=self.kwargs['course_identifier'])
-
+        context["participation"] = Participation.objects.get(id=self.participation_id)
+        context["course"] = Course.objects.get(identifier=self.course_identifier)
+        pctx = CoursePageContext(self.request, self.course_identifier)
+        context["pperm"] = ParticipationPermissionWrapper(pctx)
+        context["survey"] = self.survey
         return context
+
 
 class ThanksView(TV):
     template_name = "course_statistics/thanks.html"
 
 
-# @course_view
-# def view_stat_by_question(pctx, question_id):
-#     request = pctx.request
-#     if not pctx.has_permission(pperm.view_gradebook):
-#         raise PermissionDenied(_("may not view course statistics"))
-#     return render_course_page(pctx, "course_statistics/statistic_book.html",
-#                               {})
+class SurveyFinshView(TemplateView):
+    template_name = "course_statistics/thanks.html"
+
+    def get_context_data(self, **kwargs):
+        context = super(SurveyFinshView, self).get_context_data(**kwargs)
+        survey_pk = self.kwargs['survey_pk']
+        survey = ParticipationSurvey.objects.get(pk=survey_pk)
+        participation_id = self.kwargs['participation_id']
+        course_identifier = self.kwargs['course_identifier']
+        context["course"] = Course.objects.get(identifier=course_identifier)
+        pctx = CoursePageContext(self.request, course_identifier)
+        context["pperm"] = ParticipationPermissionWrapper(pctx)
+        context["survey"] = survey
+        participation = Participation.objects.get(id=participation_id)
+        context["participation"] = participation
+
+        all_participation_id = list(
+            Participation.objects
+                .filter(
+                course=participation.course,
+                status=participation_status.active)
+                .annotate(null_id=Count('user__institutional_id'))
+                .order_by("-null_id", "user__institutional_id")
+                .select_related("user")
+                .values_list("id", flat=True)
+        )
+        this_participation_id = participation.id
+        next_participation_id = None
+        prev_participation_id = None
+        for i, other_participation_id in enumerate(all_participation_id):
+            if other_participation_id == this_participation_id:
+                if i > 0:
+                    prev_participation_id = all_participation_id[i - 1]
+                if i + 1 < len(all_participation_id):
+                    next_participation_id = all_participation_id[i + 1]
+
+        context["next_participation_id"] = next_participation_id
+        context["prev_participation_id"] = prev_participation_id
+
+        return context
 
 
-# class SurveyUpdateView(UpdateView):
-#     model = ParticipationSurvey
-#     fields = '__all__'
-#
-#     def get_template_names(self):
-#         return ['course_statistics/question_form.html']
-#
-#     def get_form_class(self):
-#         return nestedformset_factory(
-#             ParticipationSurvey,
-#             Section,
-#             nested_formset=inlineformset_factory(
-#                 Section,
-#                 Question,
-#                 fields='__all__'
-#             )
-#         )
-#
-#     def get_success_url(self):
-#         return reverse('blocks-list')
+class SingleSurveyQuestionForm(forms.Form):
+    def __init__(self, survey_pk, question_pk, participation_id, *args, **kwargs):
+        """
+        Get list of questions and generate the form related to each question's type
+        :param questionnaire_pk: Id questionnaire
+        """
+        super(SingleSurveyQuestionForm, self).__init__(*args, **kwargs)
+        self.survey_pk = survey_pk
+        self.survey = get_object_or_404(ParticipationSurvey, id=survey_pk)
+        self.question = get_object_or_404(Question, id=question_pk)
+        self.participation = Participation.objects.get(id=participation_id)
+        get_form_field(self, self.question)
+
+    def save(self, user):
+        question = self.question
+        answer_text = self.cleaned_data['question_{0}'.format(question.pk)]
+
+        exist_answer_text = None
+
+        if answer_text:
+            try:
+                answer_save = PSQA.objects.get(
+                    survey=self.survey,
+                    participation=self.participation,
+                    question=question
+                )
+                exist_answer_text = answer_save.answer
+            except PSQA.DoesNotExist:
+                answer_save = PSQA(
+                    user=user,
+                    survey=self.survey,
+                    participation=self.participation,
+                    question=question,
+                )
+
+            if answer_text != exist_answer_text:
+                answer_save.user = user
+                answer_save.answer = answer_text
+                answer_save.save()
+                return True
+            else:
+                return False
+
+        return False
+
+
+class SingleSurveyQuestionView(FormView):
+    form_class = SingleSurveyQuestionForm
+    template_name = 'course_statistics/display_question.html'
+
+    def __init__(self, **kwargs):
+        super(SingleSurveyQuestionView, self).__init__(**kwargs)
+        self.survey = None
+        self.participation_id = None
+        self.course = None
+        self.course_identifier = None
+        self.survey = None
+        self.next_participation_id = None
+        self.prev_participation_id = None
+
+    def get_form_kwargs(self):
+        kwargs = super(SingleSurveyQuestionView, self).get_form_kwargs()
+        self.survey_pk = self.kwargs['survey_pk']
+        self.survey = ParticipationSurvey.objects.get(pk=self.survey_pk)
+        question_pk = self.kwargs['question_pk']
+        self.question = Question.objects.get(pk=question_pk)
+        self.participation_id = participation_id = self.kwargs['participation_id']
+        self.course_identifier = self.kwargs['course_identifier']
+        self.course = Course.objects.get(identifier=self.course_identifier)
+        self.participation = Participation.objects.get(id=self.participation_id)
+        kwargs.update({
+            'question_pk': question_pk,
+            'survey_pk': self.survey_pk,
+            'participation_id': participation_id
+        })
+        exist_answer = {}
+        try:
+            answer = PSQA.objects.get(
+                survey=self.survey,
+                participation__id=participation_id,
+                question__pk=question_pk
+            )
+            exist_answer['question_{0}'.format(question_pk)] = answer.answer
+        except PSQA.DoesNotExist:
+            pass
+        kwargs.update(initial=exist_answer)
+        return kwargs
+
+    def get_success_url(self):
+        if "next_user_answer" in self.request:
+            participation_id = self.next_participation_id
+        elif "prev_user_answer" in self.request:
+            participation_id = self.prev_participation_id
+        else:
+            participation_id = self.participation_id
+        return reverse('relate-view_single_question', kwargs={
+            "course_identifier": self.course_identifier,
+            "survey_pk": self.survey_pk,
+            "participation_id": participation_id,
+            "question_pk": self.question.pk
+        })
+
+    def form_valid(self, form):
+        saved = form.save(user=self.request.user)
+        if not saved:
+            messages.add_message(self.request, messages.WARNING,
+                                 _("The answer is not saved because it is not changed."))
+        else:
+            messages.add_message(self.request, messages.INFO,
+                                 _("The answer is saved."))
+        return super(SingleSurveyQuestionView, self).form_valid(form=form)
+
+    def get_context_data(self, **kwargs):
+        context = super(SingleSurveyQuestionView, self).get_context_data(**kwargs)
+        context["participation"] = self.participation
+        context["course"] = self.course
+        pctx = CoursePageContext(self.request, self.course_identifier)
+        context["pperm"] = ParticipationPermissionWrapper(pctx)
+
+        all_participation_id = list(
+            Participation.objects
+                .filter(
+                course=self.participation.course,
+                status=participation_status.active)
+                .annotate(null_id=Count('user__institutional_id'))
+                .order_by("-null_id", "user__institutional_id")
+                .select_related("user")
+                .values_list("id", flat=True)
+        )
+        this_participation_id = self.participation.id
+        for i, other_participation_id in enumerate(all_participation_id):
+            if other_participation_id == this_participation_id:
+                if i > 0:
+                    self.prev_participation_id = all_participation_id[i - 1]
+                if i + 1 < len(all_participation_id):
+                    self.next_participation_id = all_participation_id[i + 1]
+
+        context["next_participation_id"] = self.next_participation_id
+        context["prev_participation_id"] = self.prev_participation_id
+        context["question"] = self.question
+        context["survey"] = self.survey
+        return context
+
+    @method_decorator(login_required)
+    def dispatch(self, *args, **kwargs):
+        return super(SingleSurveyQuestionView, self).dispatch(*args, **kwargs)

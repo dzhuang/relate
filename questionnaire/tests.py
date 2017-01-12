@@ -161,7 +161,7 @@ class CreateQuestionnaireTests(TestCase):
             'question_1': "yes"
         }
         form = DisplayQuestionsForm(
-            questionnaire_id=self.questionnaire.id,
+            questionnaire_pk=self.questionnaire.id,
             data=data_form
         )
         self.assertTrue(form.is_valid())

@@ -270,13 +270,13 @@ def get_form_field(self, question):
 
 
 class DisplayQuestionsForm(forms.Form):
-    def __init__(self, questionnaire_id, *args, **kwargs):
+    def __init__(self, questionnaire_pk, *args, **kwargs):
         """
         Get list of questions and generate the form related to each question's type
-        :param questionnaire_id: Id questionnaire
+        :param questionnaire_pk: Id questionnaire
         """
         super(DisplayQuestionsForm, self).__init__(*args, **kwargs)
-        self.questionnaire = get_object_or_404(Questionnaire, id=questionnaire_id)
+        self.questionnaire = get_object_or_404(Questionnaire, id=questionnaire_pk)
         for index, question in enumerate(self.questionnaire.questions()):
             get_form_field(self, question)
 
@@ -301,13 +301,13 @@ class DisplayQuestionsForm(forms.Form):
                     return error_integrity
 
 class SingleQuestionForm(forms.Form):
-    def __init__(self, question_id, *args, **kwargs):
+    def __init__(self, question_pk, *args, **kwargs):
         """
         Get list of questions and generate the form related to each question's type
-        :param questionnaire_id: Id questionnaire
+        :param questionnaire_pk: Id questionnaire
         """
         super(SingleQuestionForm, self).__init__(*args, **kwargs)
-        self.question = get_object_or_404(Question, id=question_id)
+        self.question = get_object_or_404(Question, pk=question_pk)
         get_form_field(self, self.question)
 
     def save(self, user):

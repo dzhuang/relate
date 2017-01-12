@@ -77,7 +77,7 @@ class UpdateQuestionnaireView(QuestionnaireMixin, UpdateView):
     def get_context_data(self, **kwargs):
         context = super(UpdateQuestionnaireView, self).get_context_data()
         context['display_questions'] =\
-            DisplayQuestionsForm(questionnaire_id=self.kwargs['pk'])
+            DisplayQuestionsForm(questionnaire_pk=self.kwargs['pk'])
         return context
 
 
@@ -102,7 +102,7 @@ class SingleQuestionView(FormView):
     def get_form_kwargs(self):
         kwargs = super(SingleQuestionView, self).get_form_kwargs()
         pk = self.kwargs['pk']
-        kwargs.update({'question_id': self.kwargs['pk']})
+        kwargs.update({'question_pk': self.kwargs['pk']})
 
         exist_answer = {}
         try:
@@ -136,10 +136,10 @@ class TakeQuestionnaire(FormView):
 
     def get_form_kwargs(self):
         kwargs = super(TakeQuestionnaire, self).get_form_kwargs()
-        pk = self.kwargs['pk']
-        kwargs.update({'questionnaire_id': self.kwargs['pk']})
+        questionnaire_pk = self.kwargs['questionnaire_pk']
+        kwargs.update({'questionnaire_pk': questionnaire_pk})
 
-        questionnaire = Questionnaire.objects.get(pk=pk)
+        questionnaire = Questionnaire.objects.get(pk=questionnaire_pk)
         exist_answer = {}
         for index, question in enumerate(questionnaire.questions()):
             try:

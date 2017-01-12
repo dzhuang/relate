@@ -1,10 +1,11 @@
 {% extends "course_statistics/survey_base.html" %}
 {% load create_questionnaire_tags %}
-{% block title %} Create {% endblock %}
+{% load i18n %}
+{% block title %} {% trans "Create" %} {% endblock %}
 
 {% comment %} ----*** Create questionnaire that contains update and create ***---- {% endcomment %}
 {% block title_tab %}
-    Create Questionnaire
+    {% trans "Create Questionnaire" %}
 {% endblock %}
 
 {% block content_tab %}
@@ -13,7 +14,7 @@
         {{ form.management_form }}
         {% include "course_statistics/includes/creates/questionnaire_add.html" %}
         <br><br>
-        <h4 style="font-size: 17px;" class="flow-text teal-text"><strong>Questions:</strong></h4>
+        <h4 style="font-size: 17px;" class="flow-text teal-text"><strong>{% trans "Questions" %}:</strong></h4>
         {{ question_formset.management_form }}
         <input id="id_{{ question_formset.prefix }}-DEL_NUM_FORMS" name="{{ question_formset.prefix }}-DEL_NUM_FORMS" type="hidden" value=0>
         {% if form.instance.id %}
@@ -59,11 +60,11 @@
             {% else %}
                 <!-- Return to list questionnaire -->
                 <div class="col s6 left-align">
-                    <a href="{% url 'list-questionnaire' %}" class="btn waves-effect waves-light teal white-text">Cancel</a>
+                    <a href="{% url 'list-questionnaire' %}" class="btn waves-effect waves-light teal white-text">{% trans "Cancel" %}</a>
                 </div>
             {% endif %}
             <div class="col s6 right-align">
-                <button class="btn waves-effect waves-light " type="submit" name="action">Save
+                <button class="btn waves-effect waves-light " type="submit" name="action">{% trans "Save" %}
                     <i class="material-icons right">fast_forward</i>
                 </button>
             </div>
@@ -84,7 +85,7 @@
 {% comment %} ----*** Display Questionnaire in the second tab Only in update ***---- {% endcomment %}
 {% block other_tabs %}
     {% if form.instance.id %}
-        <li class="tab col s3"><a href="#form2">Display Questionnaire</a></li>
+        <li class="tab col s3"><a href="#form2">{% trans "Display Questionnaire" %}</a></li>
     {% endif %}
 {% endblock %}
 

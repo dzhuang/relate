@@ -34,6 +34,8 @@ from course_statistics.views import (
     # view_stat_by_question,
     view_survey_list,
     link_survey_with_course,
+    view_survey_by_question,
+    SurveyFinshView,
 )
 
 from course_statistics.views import (
@@ -41,7 +43,8 @@ from course_statistics.views import (
     CreateQuestionnaireView,
     UpdateQuestionnaireView,
     FillParticipationSurvey,
-    ThanksView
+    ThanksView,
+    SingleSurveyQuestionView
 )
 
 
@@ -56,57 +59,40 @@ urlpatterns = [
         "/$",
         view_survey_list,
         name="relate-survey_list"),
-#relate-survey_create
+
     url(r"^course"
         "/" + COURSE_ID_REGEX +
         "/survey/"
         "$",
         link_survey_with_course,
         name="relate-survey_create"),
-#relate-survey_create_generic
+
     url(r"^course"
         "/" + COURSE_ID_REGEX +
         "/survey/"
         "$",
         link_survey_with_course,
         name="relate-survey_create_generic"),
+
     url(r"^course"
         "/" + COURSE_ID_REGEX +
-        "/survey-book/"
+        "/survey-book"
+        "/survey"
         "/(?P<survey_pk>[0-9_]+)"
         "$",
         view_single_survey_book,
         name="relate-view_survey_by_pk"),
-    # url(r"^course"
-    #     "/" + COURSE_ID_REGEX +
-    #     "/statistics/stat-by-ques"
-    #     "/(?P<question_id>[a-zA-Z0-9_]+)"
-    #     "/$",
-    #     view_stat_by_question,
-    #     name="relate-view_course_statistics_by_question"),
-    # url(r'^crowdsourcing/', include(crowdsourcing.urls)),
-    # url('^statistics/(?P<pk>\d+)/$', SurveyUpdateView.as_view(),
-    #     name='stat'),
 
-    # url(r"^course"
-    #     "/" + COURSE_ID_REGEX +
-    #     "/survey/stat-by-ques"
-    #     "/(?P<question_id>[a-zA-Z0-9_]+)"
-    #     "/$",
-    #     view_stat_by_question,
-    #     name="relate-view_course_statistics_by_question"),
-#"relate-view_participant_statistics" course.identifier participation.id statistics.id
-    # url(r"^course"
-    #     "/" + COURSE_ID_REGEX +
-    #     "/survey/participant"
-    #     "/(?P<participation_id>[0-9]+)"
-    #     "/(?P<survey_id>[a-zA-Z0-9_]+)"
-    #     "/$",
-    #     view_stat_by_question,
-    #     name="relate-view_participant_statistics"),
-
-    # url(r'^create-questionnaire/$', CreateQuestionnaireView.as_view(),
-    #     name='add-questionnaire'),
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/survey-by-question"
+        "/survey"
+        "/(?P<survey_pk>[0-9_]+)"
+        "/question"
+        "/(?P<question_pk>[0-9_]+)"
+        "$",
+        view_survey_by_question,
+        name="relate-view_survey_by_question_pk"),
 
     url(r'^questionnaire/$',
         ListQuestionnaireView.as_view(),
@@ -137,24 +123,38 @@ urlpatterns = [
     # Displays the questionnaire (Participant User)
     url(r"^course"
         "/" + COURSE_ID_REGEX +
-        "/survey/participant"
+        "/survey"
+        "/(?P<survey_pk>[0-9_]+)"
+        "/participant"
         "/(?P<participation_id>[0-9]+)"
-        "/(?P<pk>[0-9_]+)"
         "/$",
         FillParticipationSurvey.as_view(),
-        name='relate-show_questionnaire'),
+        name='relate-view_single_user_survey'),
 
-    # # Displays single question
-    # url(r'^question/(?P<pk>[0-9]+)/$',
-    #     SingleQuestionView.as_view(),
-    #     name='show-question'),
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/survey"
+        "/(?P<survey_pk>[0-9_]+)"
+        "/question"
+        "/(?P<question_pk>[0-9_]+)"
+        "/participant"
+        "/(?P<participation_id>[0-9]+)"
+        "/$",
+        SingleSurveyQuestionView.as_view(),
+        name='relate-view_single_question'),
 
-    # Thanks Message and sharing of the link of questionnaire
-    #  (Both Back-end and Participant )
     url(r"^course"
         '/thanks/$',
         ThanksView.as_view(),
-        name='thanks-page')
+        name='thanks-page'),
 
-    #url(r'^questionnaires/', include('questionnaire.urls'))
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/survey"
+        "/(?P<survey_pk>[0-9_]+)"
+        "/participant"
+        "/(?P<participation_id>[0-9]+)"
+        '/finish/$',
+        SurveyFinshView.as_view(),
+        name='survey-finish-page')
 ]

@@ -115,7 +115,7 @@ class QuestionQuerySet(models.QuerySet):
                 q = question.answer_set.answers_multiple_choice(choice.text)
                 # encode the text choice
                 choice_text_str = choice.text.encode('utf-8')
-                # Text choice list composition[choice_text, question_id ]
+                # Text choice list composition[choice_text, question_pk ]
                 choice_question_list.append([choice_text_str, question.id])
                 question_result[choice_text_str+'_count'] = q.count()
                 choices_dates_list = self._filter_choices_by_dates(q
@@ -284,7 +284,7 @@ class Question(models.Model):
                             help_text=_('Note: Title of question'))
 
     required = models.BooleanField(verbose_name=_('Question Required'),
-                                   default=True,
+                                   default=False,
                                    help_text=_('The users are required to answer'),
                                    )
     questionnaire = models.ForeignKey(Questionnaire)

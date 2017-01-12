@@ -30,7 +30,7 @@ urlpatterns = [
         name='statistics-questionnaire'),
 
     # Displays the questionnaire (Participant User)
-    url(r'^take/(?P<pk>[0-9]+)/$',
+    url(r'^take/(?P<questionnaire_pk>[0-9]+)/$',
         TakeQuestionnaire.as_view(),
         name='show-questionnaire'),
 
