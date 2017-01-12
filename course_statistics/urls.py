@@ -48,10 +48,6 @@ from course_statistics.views import (
 )
 
 
-js_info_dict_image_upload = {
-    'packages': ('image_upload',),
-}
-
 urlpatterns = [
     url(r"^course"
         "/" + COURSE_ID_REGEX +

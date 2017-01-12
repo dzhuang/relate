@@ -17,6 +17,13 @@ from .forms import (
     QuestionFormSet)
 
 from .models import Questionnaire, Answer
+from django.contrib.auth.mixins import UserPassesTestMixin
+
+class CourseViewMixin(UserPassesTestMixin):
+    raise_exception = True
+
+    def test_func(self):
+        return self.request.user.is_staff
 
 
 class QuestionnaireMixin(object):
@@ -50,7 +57,7 @@ class QuestionnaireMixin(object):
         return context
 
 
-class ListQuestionnaireView(ListView):
+class ListQuestionnaireView(ListView, CourseViewMixin):
     model = Questionnaire
     template_name = "questionnaire/list.html"
 
@@ -60,13 +67,13 @@ class ListQuestionnaireView(ListView):
         return context
 
 
-class CreateQuestionnaireView(QuestionnaireMixin, CreateView):
+class CreateQuestionnaireView(QuestionnaireMixin, CreateView, CourseViewMixin):
 
     def get_success_url(self):
         return reverse('update-questionnaire', kwargs={'pk': self.object.id})
 
 
-class UpdateQuestionnaireView(QuestionnaireMixin, UpdateView):
+class UpdateQuestionnaireView(QuestionnaireMixin, UpdateView, CourseViewMixin):
 
     def get_initial(self):
         return {'pk': self.kwargs['pk']}
@@ -81,7 +88,7 @@ class UpdateQuestionnaireView(QuestionnaireMixin, UpdateView):
         return context
 
 
-class StatisticsQuestionnaireView(TemplateView):
+class StatisticsQuestionnaireView(CourseViewMixin, TemplateView):
     template_name = 'questionnaire/statistics.html'
 
     def get_queryset(self):
@@ -95,7 +102,7 @@ class StatisticsQuestionnaireView(TemplateView):
         return context
 
 
-class SingleQuestionView(FormView):
+class SingleQuestionView(CourseViewMixin, FormView):
     form_class = SingleQuestionForm
     template_name = 'questionnaire/display_question.html'
 
