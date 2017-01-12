@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+
+from __future__ import division, unicode_literals
 
 from crispy_forms.layout import Submit
 from django.shortcuts import (  # noqa

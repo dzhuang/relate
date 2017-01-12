@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+
+from __future__ import division, unicode_literals
+
 import six
 from django.utils.translation import (
         ugettext_lazy as _, pgettext_lazy, string_concat)

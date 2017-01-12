@@ -1,2 +1,0 @@
-https://github.com/hamdigdoura/django-survey-formset.git
-https://github.com/nyergler/nested-formset
