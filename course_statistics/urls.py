@@ -63,12 +63,12 @@ urlpatterns = [
         link_survey_with_course,
         name="relate-survey_create"),
 
-    url(r"^course"
-        "/" + COURSE_ID_REGEX +
-        "/survey/"
-        "$",
-        link_survey_with_course,
-        name="relate-survey_create_generic"),
+    # url(r"^course"
+    #     "/" + COURSE_ID_REGEX +
+    #     "/survey/"
+    #     "$",
+    #     link_survey_with_course,
+    #     name="relate-survey_create_generic"),
 
     url(r"^course"
         "/" + COURSE_ID_REGEX +
