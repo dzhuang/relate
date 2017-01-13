@@ -58,7 +58,7 @@ django-celery-email
 atomicwrites
 
 # nested-formset
-django-nested-formset
+#django-nested-formset
 
 # questionnaire
-git+https://git.oschina.net/dzhuang/django_questionnaire.git
+#git+https://git.oschina.net/dzhuang/django_questionnaire.git

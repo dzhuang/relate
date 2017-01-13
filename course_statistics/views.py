@@ -14,7 +14,7 @@ from django.views.generic import (
     CreateView,
     UpdateView,
     FormView,
-    TemplateView
+    TemplateView,
 )
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.contrib.auth.decorators import login_required
@@ -66,6 +66,12 @@ from course_statistics.models import (
     ParticipationSurveyQuestionAnswer as PSQA
 )
 # Create your views here.
+
+class CourseViewMixin(UserPassesTestMixin):
+    raise_exception = True
+
+    def test_func(self):
+        return self.request.user.is_staff
 
 
 @login_required
@@ -167,7 +173,7 @@ def view_survey_by_question(pctx, survey_pk, question_pk):
 
 
 
-class ListQuestionnaireView(ListView):
+class ListQuestionnaireView(CourseViewMixin, ListView):
     model = Questionnaire
     template_name = "course_statistics/list.html"
 
@@ -208,20 +214,19 @@ class DisplaySurveyForm(forms.Form):
                 answer_save.save()
 
 
-class SurveyMixin(QuestionnaireMixin):
+class SurveyMixin(CourseViewMixin, QuestionnaireMixin):
     template_name = 'course_statistics/create.html'
     model = Questionnaire
-    # model = ParticipationSurvey
 
 
-class CreateQuestionnaireView(SurveyMixin, CreateView):
+class CreateQuestionnaireView(SurveyMixin, CreateView, CourseViewMixin):
     template_name = "course_statistics/create.html"
 
     def get_success_url(self):
         return reverse('update-questionnaire', kwargs={'pk': self.object.id})
 
 
-class UpdateQuestionnaireView(SurveyMixin, UpdateView):
+class UpdateQuestionnaireView(SurveyMixin, UpdateView, CourseViewMixin):
 
     def get_initial(self):
         return {'pk': self.kwargs['pk']}
@@ -235,17 +240,6 @@ class UpdateQuestionnaireView(SurveyMixin, UpdateView):
             DisplayQuestionsForm(questionnaire_pk=self.kwargs['pk'])
         return context
 
-class CourseViewMixin(UserPassesTestMixin):
-    # Mixin for determin if user can upload/delete/modify image in flow_page
-    raise_exception = True
-
-    def test_func(self):
-        request = self.request
-        flow_session_id = self.kwargs['flow_session_id']
-        ordinal = self.kwargs['ordinal']
-        course_identifier = self.kwargs['course_identifier']
-
-        pctx = CoursePageContext(request, course_identifier)
 
 # class ListBlocksView(ListView):
 #     model = Block

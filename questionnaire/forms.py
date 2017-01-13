@@ -179,7 +179,7 @@ def get_form_field(self, question):
         .values_list('text', flat=True)
 
     choices = tuple(
-        (i + 1, text)
+        (i + 3, text)
         for i, text in enumerate(choices_text))
 
     if question.type == 'yesNoQuestion':
@@ -212,7 +212,7 @@ def get_form_field(self, question):
 
         self.fields['question_{0}'.format(question.pk)] = \
             forms.MultipleChoiceField(
-                choices=((0, "----"),) + tuple(choices),
+                choices=((0, "----"), (1, u"完全正确"), (2, u"未回答(基本未回答)"), (3, u"未掌握原理"),) + tuple(choices),
                 initial='0',
                 widget=forms.CheckboxSelectMultiple,
                 error_messages=error_message,
@@ -224,7 +224,7 @@ def get_form_field(self, question):
 
         self.fields['question_{0}'.format(question.pk)] = \
             forms.ChoiceField(
-                choices=((0, "----"),) + tuple(choices),
+                choices=((0, "----"), (1, u"完全正确"), (2, u"未回答(基本未回答)"), (3, u"未掌握原理"), ) + tuple(choices),
                 widget=forms.RadioSelect({'class': 'with-gap'}),
                 initial='0',
                 error_messages=error_message,
