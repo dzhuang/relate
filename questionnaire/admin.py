@@ -12,6 +12,7 @@ class AnswerAdmin(admin.ModelAdmin):
 class QuestionAdmin(admin.ModelAdmin):
     list_display = (
             "id",
+            "text",
             "__str__",
             "questionnaire",
             "type",
