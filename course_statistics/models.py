@@ -21,10 +21,10 @@ from jsonfield import JSONField
 # Create your models here.
 
 
-class ParticipationSurvey(models.Model):
-    participation = models.ForeignKey(
-        Participation,
-        verbose_name=_('Participation'), on_delete=models.CASCADE)
+class CourseSurvey(models.Model):
+    course = models.ForeignKey(
+        Course,
+        verbose_name=_('Course'), on_delete=models.CASCADE)
     questionnaire = models.ForeignKey(
         Questionnaire,
         related_name="survey",
@@ -34,16 +34,16 @@ class ParticipationSurvey(models.Model):
     class Meta:
         verbose_name = _("Course Statistics Survey")
         verbose_name_plural = _("Course Statistics Surveys")
-        ordering = ("participation__course", "questionnaire__title")
-        unique_together = (("participation", ),)
+        ordering = ("course", "questionnaire__title")
+        unique_together = (("course", ),)
 
     def __unicode__(self):
         return (
                 # Translators: For GradingOpportunity
-                _("Survey '(%(title)s)' for %(participation)s")
+                _("Survey '(%(title)s)' for %(course)s")
                 % {
                     "title": self.questionnaire.title,
-                    "participation": self.participation})
+                    "course": self.course})
 
     if six.PY3:
         __str__ = __unicode__
@@ -66,11 +66,11 @@ class ParticipationSurveyQuestionAnswer(models.Model):
                              help_text=_('The user who lastly supplied this answer'),
                              on_delete=models.CASCADE
                              )
-    survey = models.ForeignKey(ParticipationSurvey,
+    survey = models.ForeignKey(CourseSurvey,
                                help_text=_('The survey'),
                                null=True,
                                on_delete = models.CASCADE
-                             )
+                               )
     participation = models.ForeignKey(
         Participation,
         verbose_name=_('Participation'), on_delete=models.CASCADE)
@@ -110,7 +110,7 @@ class ParticipationSurveyQuestionAnswer(models.Model):
     def clean(self):
         super(ParticipationSurveyQuestionAnswer, self).clean()
 
-        qs = ParticipationSurvey.objects.filter(
+        qs = CourseSurvey.objects.filter(
             participation=self.participation
         )
 

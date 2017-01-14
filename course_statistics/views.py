@@ -19,7 +19,7 @@ from django.views.generic import (
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.contrib.auth.decorators import login_required
 
-from course_statistics.models import ParticipationSurvey
+from course_statistics.models import CourseSurvey
 from questionnaire.models import Question, Questionnaire
 
 from questionnaire.forms import DisplayQuestionsForm, get_form_field
@@ -62,7 +62,7 @@ from course.models import (
 # from crowdsourcing.models import Question, Survey, Answer, Section
 
 from course_statistics.models import (
-    ParticipationSurvey, QuestionAnsweredStateMachine,
+    CourseSurvey, QuestionAnsweredStateMachine,
     ParticipationSurveyQuestionAnswer as PSQA
 )
 # Create your views here.
@@ -98,7 +98,7 @@ def view_survey_by_question(pctx, survey_pk, question_pk):
     if not pctx.has_permission(pperm.view_gradebook):
         raise PermissionDenied(_("may not view grade book"))
 
-    survey = get_object_or_404(ParticipationSurvey, id=int(survey_pk))
+    survey = get_object_or_404(CourseSurvey, id=int(survey_pk))
 
     if pctx.course != survey.participation.course:
         raise SuspiciousOperation(_("survey from wrong course"))
@@ -187,7 +187,7 @@ class DisplaySurveyForm(forms.Form):
     def __init__(self, survey_pk, participation_id, *args, **kwargs):
         super(DisplaySurveyForm, self).__init__(*args, **kwargs)
         self.participation = Participation.objects.get(id=participation_id)
-        self.survey = get_object_or_404(ParticipationSurvey, id=survey_pk)
+        self.survey = get_object_or_404(CourseSurvey, id=survey_pk)
         self.questionnaire = self.survey.questionnaire
         for index, question in enumerate(self.questionnaire.questions()):
             get_form_field(self, question)
@@ -362,7 +362,7 @@ def view_single_survey_book(pctx, survey_pk):
     if not pctx.has_permission(pperm.view_gradebook):
         raise PermissionDenied(_("may not view course statistics"))
 
-    survey = get_object_or_404(ParticipationSurvey, pk=survey_pk)
+    survey = get_object_or_404(CourseSurvey, pk=survey_pk)
     questionnaire_pk = survey.questionnaire.pk
     participations, survey_questions, survey_table = get_survey_table(pctx.course, questionnaire_pk)
 
@@ -411,7 +411,7 @@ def link_survey_with_course(pctx):
                         status=participation_status.active)
                             .order_by("user__last_name")
             ):
-                ParticipationSurvey.objects.get_or_create(
+                CourseSurvey.objects.get_or_create(
                     participation=participation,
                     questionnaire=survey
                     )
@@ -442,7 +442,7 @@ class FillParticipationSurvey(FormView):
     def get_form_kwargs(self):
         kwargs = super(FillParticipationSurvey, self).get_form_kwargs()
         self.survey_pk = self.kwargs['survey_pk']
-        self.survey = ParticipationSurvey.objects.get(pk=self.survey_pk)
+        self.survey = CourseSurvey.objects.get(pk=self.survey_pk)
         self.questionnaire_pk = self.survey.questionnaire.pk
         self.participation_id = self.kwargs['participation_id']
         self.course_identifier = self.kwargs['course_identifier']
@@ -495,7 +495,7 @@ class SurveyFinshView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super(SurveyFinshView, self).get_context_data(**kwargs)
         survey_pk = self.kwargs['survey_pk']
-        survey = ParticipationSurvey.objects.get(pk=survey_pk)
+        survey = CourseSurvey.objects.get(pk=survey_pk)
         participation_id = self.kwargs['participation_id']
         course_identifier = self.kwargs['course_identifier']
         context["course"] = Course.objects.get(identifier=course_identifier)
@@ -539,7 +539,7 @@ class SingleSurveyQuestionForm(forms.Form):
         """
         super(SingleSurveyQuestionForm, self).__init__(*args, **kwargs)
         self.survey_pk = survey_pk
-        self.survey = get_object_or_404(ParticipationSurvey, id=survey_pk)
+        self.survey = get_object_or_404(CourseSurvey, id=survey_pk)
         self.question = get_object_or_404(Question, id=question_pk)
         self.participation = Participation.objects.get(id=participation_id)
         get_form_field(self, self.question)
@@ -594,7 +594,7 @@ class SingleSurveyQuestionView(FormView):
     def get_form_kwargs(self):
         kwargs = super(SingleSurveyQuestionView, self).get_form_kwargs()
         self.survey_pk = self.kwargs['survey_pk']
-        self.survey = ParticipationSurvey.objects.get(pk=self.survey_pk)
+        self.survey = CourseSurvey.objects.get(pk=self.survey_pk)
         question_pk = self.kwargs['question_pk']
         self.question = Question.objects.get(pk=question_pk)
         self.participation_id = participation_id = self.kwargs['participation_id']

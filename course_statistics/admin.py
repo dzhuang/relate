@@ -3,7 +3,7 @@
 from __future__ import division, unicode_literals
 
 from django.contrib import admin
-from course_statistics.models import ParticipationSurvey, ParticipationSurveyQuestionAnswer
+from course_statistics.models import CourseSurvey, ParticipationSurveyQuestionAnswer
 from questionnaire.models import Question, Questionnaire, Answer, Choice
 from questionnaire.admin import QuestionAdmin, QuestionnaireAdmin, AnswerAdmin
 # from crowdsourcing.admin import (
@@ -19,7 +19,7 @@ class ParticipationSurveyAdmin(admin.ModelAdmin):
         "__str__",
     )
 
-admin.site.register(ParticipationSurvey, ParticipationSurveyAdmin)
+admin.site.register(CourseSurvey, ParticipationSurveyAdmin)
 admin.site.register(ParticipationSurveyQuestionAnswer)
 #admin.site.unregister(Question)
 #admin.site.unregister(Questionnaire)

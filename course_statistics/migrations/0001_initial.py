@@ -42,7 +42,7 @@ class Migration(migrations.Migration):
                 ('state', models.CharField(choices=[('filled', 'Filled'), ('unfilled', 'Unfilled')], default='unfilled', max_length=50, verbose_name='State')),
                 ('participation', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='course.Participation', verbose_name='Participation')),
                 ('question', models.ForeignKey(help_text='The question that this is an answer to', on_delete=django.db.models.deletion.CASCADE, to='questionnaire.Question')),
-                ('survey', models.ForeignKey(help_text='The survey', null=True, on_delete=django.db.models.deletion.CASCADE, to='course_statistics.ParticipationSurvey')),
+                ('survey', models.ForeignKey(help_text='The survey', null=True, on_delete=django.db.models.deletion.CASCADE, to='course_statistics.models.CourseSurvey')),
                 ('user', models.ForeignKey(help_text='The user who lastly supplied this answer', on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
             ],
         ),
