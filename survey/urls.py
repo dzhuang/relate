@@ -29,16 +29,16 @@ from django.views.i18n import javascript_catalog
 
 from course.constants import COURSE_ID_REGEX
 
-from course_statistics.views import (
+from survey.views import (
     view_single_survey_book,
     # view_stat_by_question,
     view_survey_list,
-    link_survey_with_course,
+    create_survey_with_questionnaire,
     view_survey_by_question,
-    SurveyFinshView,
+    SurveyFinishView,
 )
 
-from course_statistics.views import (
+from survey.views import (
     ListQuestionnaireView,
     CreateQuestionnaireView,
     UpdateQuestionnaireView,
@@ -49,46 +49,7 @@ from course_statistics.views import (
 
 
 urlpatterns = [
-    url(r"^course"
-        "/" + COURSE_ID_REGEX +
-        "/all-surveys"
-        "/$",
-        view_survey_list,
-        name="relate-survey_list"),
-
-    url(r"^course"
-        "/" + COURSE_ID_REGEX +
-        "/survey/"
-        "$",
-        link_survey_with_course,
-        name="relate-survey_create"),
-
-    # url(r"^course"
-    #     "/" + COURSE_ID_REGEX +
-    #     "/survey/"
-    #     "$",
-    #     link_survey_with_course,
-    #     name="relate-survey_create_generic"),
-
-    url(r"^course"
-        "/" + COURSE_ID_REGEX +
-        "/survey-book"
-        "/survey"
-        "/(?P<questionnaire_pk>[0-9_]+)"
-        "$",
-        view_single_survey_book,
-        name="relate-view_survey_by_pk"),
-
-    url(r"^course"
-        "/" + COURSE_ID_REGEX +
-        "/survey-by-question"
-        "/survey"
-        "/(?P<survey_pk>[0-9_]+)"
-        "/question"
-        "/(?P<question_pk>[0-9_]+)"
-        "$",
-        view_survey_by_question,
-        name="relate-view_survey_by_question_pk"),
+    # generic questionnaire operations
 
     url(r'^questionnaire/$',
         ListQuestionnaireView.as_view(),
@@ -114,7 +75,48 @@ urlpatterns = [
         UpdateQuestionnaireView.as_view(),
         name='update-questionnaire'),
 
-    # Displays the statistics of questionnaire (Back-end User)
+    # course survey operations
+
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/all-surveys"
+        "/$",
+        view_survey_list,
+        name="relate-survey_list"),
+
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/survey/link/"
+        "$",
+        create_survey_with_questionnaire,
+        name="relate-survey_create"),
+
+    # url(r"^course"
+    #     "/" + COURSE_ID_REGEX +
+    #     "/survey/"
+    #     "$",
+    #     create_survey_with_questionnaire,
+    #     name="relate-survey_create_generic"),
+
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/survey-book"
+        "/survey"
+        "/(?P<survey_pk>[0-9_]+)"
+        "$",
+        view_single_survey_book,
+        name="relate-view_survey_by_pk"),
+
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/survey-by-question"
+        "/survey"
+        "/(?P<survey_pk>[0-9_]+)"
+        "/question"
+        "/(?P<question_pk>[0-9_]+)"
+        "$",
+        view_survey_by_question,
+        name="relate-view_survey_by_question_pk"),
 
     # Displays the questionnaire (Participant User)
     url(r"^course"
@@ -151,6 +153,6 @@ urlpatterns = [
         "/participant"
         "/(?P<participation_id>[0-9]+)"
         '/finish/$',
-        SurveyFinshView.as_view(),
+        SurveyFinishView.as_view(),
         name='survey-finish-page')
 ]

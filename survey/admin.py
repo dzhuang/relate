@@ -3,7 +3,7 @@
 from __future__ import division, unicode_literals
 
 from django.contrib import admin
-from course_statistics.models import CourseSurvey, ParticipationSurveyQuestionAnswer
+from survey.models import CourseSurvey, ParticipationSurveyQuestionAnswer
 from questionnaire.models import Question, Questionnaire, Answer, Choice
 from questionnaire.admin import QuestionAdmin, QuestionnaireAdmin, AnswerAdmin
 # from crowdsourcing.admin import (

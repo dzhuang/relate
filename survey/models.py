@@ -22,14 +22,20 @@ from jsonfield import JSONField
 
 
 class CourseSurvey(models.Model):
+    title = models.CharField(max_length=100,
+                             blank=False,
+                             null=False,
+                             verbose_name=_('Survey Title'))
     course = models.ForeignKey(
         Course,
         verbose_name=_('Course'), on_delete=models.CASCADE)
     questionnaire = models.ForeignKey(
         Questionnaire,
-        related_name="survey",
-        verbose_name=_("Survey"),
+        related_name="questionnaire",
+        verbose_name=_("Questionnaire"),
         on_delete=models.CASCADE)
+    creation_time = models.DateTimeField(default=now, db_index=True,
+                         verbose_name=_('Creation time'))
 
     class Meta:
         verbose_name = _("Course Statistics Survey")
@@ -39,11 +45,15 @@ class CourseSurvey(models.Model):
 
     def __unicode__(self):
         return (
-                # Translators: For GradingOpportunity
-                _("Survey '(%(title)s)' for %(course)s")
-                % {
-                    "title": self.questionnaire.title,
-                    "course": self.course})
+            # Translators: For GradingOpportunity
+            _("Survey '(%(title)s)' for %(course)s using %(questionnare_title)s created at %(time)s")
+            % {
+                "title": self.title,
+                "questionnare_title": self.questionnaire.title,
+                "course": self.course,
+                "time": self.creation_time
+            }
+        )
 
     if six.PY3:
         __str__ = __unicode__
@@ -93,7 +103,7 @@ class ParticipationSurveyQuestionAnswer(models.Model):
     objects = AnswerQuerySet.as_manager()
 
     def __unicode__(self):
-        return u'Qsaire-%s-Qst-%s-Ans-%s-by-%s-in-Survey%s' % (
+        return u'Qsaire-%s-Qst-%s-Ans-%s-by-%s-Survey-%s' % (
             self.question.questionnaire.title,
             self.question.id,
             self.id,
@@ -105,7 +115,7 @@ class ParticipationSurveyQuestionAnswer(models.Model):
         __str__ = __unicode__
 
     class Meta:
-        unique_together = ('participation',)
+        unique_together = ('survey','participation','question')
 
     def clean(self):
         super(ParticipationSurveyQuestionAnswer, self).clean()

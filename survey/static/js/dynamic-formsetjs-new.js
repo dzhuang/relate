@@ -37,7 +37,7 @@
             replacement = replacement.replace(/choice_set-[^d]/g, 'choice_set-'+ndx);
             $(el).html(replacement);
 
-            if(typeof valueOldChoice != 'undefined' && valueOldChoice != '') {
+            if(typeof valueOldChoice !== 'undefined' && valueOldChoice !== '') {
                 $('#id_'+prefix+'-'+ndx+'-text').val(valueOldChoice);
             }
 
@@ -139,7 +139,7 @@
         if (verifForm) {
             // Delete Form was existed
 
-            if (typeof ($deleteForm.val()) != 'undefined') {
+            if (typeof ($deleteForm.val()) !== 'undefined') {
                 // Check the check box of form
                 $deleteForm.prop('checked', true);
 
@@ -180,6 +180,8 @@
             var valChoice = $(this).val();
             var $dsplyRadioEl = $("#" + prefix + "-display")
                 , $hidRadioEl = $(".display-none-" + prefix);
+
+            console.log(valChoice,"----------------------------");
 
             if (valChoice === 'MultiChoices' || valChoice === 'MultiChoiceWithAnswer') {
                 // collapsing
@@ -233,36 +235,36 @@
         }
     }
 
-    $(document).ready(function() {
-        $('input[type=checkbox]').change(function () {
-            if (is_null_answer_checkbox($(this))) {
-                if ($(this).prop('checked') === true) {
-                    $(siblings_with_same_name(this)).each(function () {
-                        $(this).prop('checked', false);
-                    });
-                }
-            }
-            else {
-                if (is_exclusive_checkbox($(this))) {
-                    // if an exclusive checkbox is changed
-                    if ($(this).prop('checked') === true) {
-                        $(siblings_with_same_name(this)).each(function () {
-                            $(this).prop('checked', false);
-                        });
-                    }
-                }
-                else {
-                    // if other checkbox is changed
-                    $(siblings_with_same_name(this)).each(function () {
-                        if (is_exclusive_checkbox($(this)) || is_null_answer_checkbox($(this))) {
-                            $(this).prop('checked', false);
-                        }
-                    });
-                }
-            }
-            ensure_null_answer_checkbox_status(this)
-        });
-    });
+    // $(document).ready(function() {
+    //     $('input[type=checkbox]').change(function () {
+    //         if (is_null_answer_checkbox($(this))) {
+    //             if ($(this).prop('checked') === true) {
+    //                 $(siblings_with_same_name(this)).each(function () {
+    //                     $(this).prop('checked', false);
+    //                 });
+    //             }
+    //         }
+    //         else {
+    //             if (is_exclusive_checkbox($(this))) {
+    //                 // if an exclusive checkbox is changed
+    //                 if ($(this).prop('checked') === true) {
+    //                     $(siblings_with_same_name(this)).each(function () {
+    //                         $(this).prop('checked', false);
+    //                     });
+    //                 }
+    //             }
+    //             else {
+    //                 // if other checkbox is changed
+    //                 $(siblings_with_same_name(this)).each(function () {
+    //                     if (is_exclusive_checkbox($(this)) || is_null_answer_checkbox($(this))) {
+    //                         $(this).prop('checked', false);
+    //                     }
+    //                 });
+    //             }
+    //         }
+    //         ensure_null_answer_checkbox_status(this)
+    //     });
+    // });
 
 })();
 

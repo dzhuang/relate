@@ -10,7 +10,7 @@
             {% endif %}
 
             {% for choice in question.nested %}
-               {% include "course_statistics/includes/creates/choice.html" %}
+               {% include "survey/includes/creates/choice.html" %}
             {% endfor %}
 
             <span class="{{ question.nested.prefix }}-add" style="font-size:13px; margin-left: 49px;"><a href="javascript:addFormSet(this, '{{ question.nested.prefix }}','dynamic-form-choice-{{ question.prefix }}', 'empty-choice');"><b>+</b></a></span>

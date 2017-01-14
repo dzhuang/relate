@@ -46,6 +46,7 @@ class BaseNestedFormset(BaseInlineFormSet):
                     if len(inline_items) < min_num_choice \
                             and form.cleaned_data['type'] \
                                     in multiple_choice_type_list:
+                        print("faileddddddddddddd-----------------------------")
                         form.errors['choice'] = _("You must entered at least two"
                                                   " choices")
 

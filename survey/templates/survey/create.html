@@ -1,4 +1,4 @@
-{% extends "course_statistics/survey_base.html" %}
+{% extends "survey/survey_base.html" %}
 {% load create_questionnaire_tags %}
 {% load i18n %}
 {% block title %} {% trans "Create" %} {% endblock %}
@@ -12,7 +12,7 @@
     <form action="." method="post">
         {% csrf_token %}
         {{ form.management_form }}
-        {% include "course_statistics/includes/creates/questionnaire_add.html" %}
+        {% include "survey/includes/creates/questionnaire_add.html" %}
         <br><br>
         <h4 style="font-size: 17px;" class="flow-text teal-text"><strong>{% trans "Questions" %}:</strong></h4>
         {{ question_formset.management_form }}
@@ -23,12 +23,12 @@
                 {% for question in question_formset %}
                     <li class="itemTodrag" id="{{ question.prefix }}-list">
                         <div class="collapsible-header">
-                            {% include "course_statistics/includes/creates/question_list.html" %}
+                            {% include "survey/includes/creates/question_list.html" %}
                         </div>
                         <div class="collapsible-body">
                             <br>
                             <br>
-                            {% include "course_statistics/includes/creates/question.html" %}
+                            {% include "survey/includes/creates/question.html" %}
                         </div>
                     </li>
                 {% endfor %}
@@ -46,7 +46,7 @@
         {% else %}
             {% comment %} ----*** Creating Question ***----- {% endcomment %}
             {% for question in question_formset %}
-                {% include "course_statistics/includes/creates/question.html" %}
+                {% include "survey/includes/creates/question.html" %}
             {% endfor %}
         {% endif %}
         <br>
@@ -72,11 +72,11 @@
         <!-- All Empty Formset Here -->
         {% if form.instance.id %}
             <!-- Empty Question -->
-            {% include "course_statistics/includes/creates/question.html" with question=question_formset.empty_form empty_question="True" %}
+            {% include "survey/includes/creates/question.html" with question=question_formset.empty_form empty_question="True" %}
             <!-- End Empty Question -->
         {% endif %}
         <!-- Empty Empty choice -->
-        {% include "course_statistics/includes/creates/choice.html" with choice=question_formset.empty_form.nested.empty_form question=question_formset.empty_form empty_choice="True" %}
+        {% include "survey/includes/creates/choice.html" with choice=question_formset.empty_form.nested.empty_form question=question_formset.empty_form empty_choice="True" %}
         <!-- End Empty Choice -->
     </form>
 {% endblock %}
@@ -92,7 +92,7 @@
 {% block other_tabs_content %}
     {% if form.instance.id %}
         <div id="form2">
-            {% include "course_statistics/includes/displays/display_questionnaire.html" with form=display_questions %}
+            {% include "survey/includes/displays/display_questionnaire.html" with form=display_questions %}
         </div>
     {% endif %}
 {% endblock %}

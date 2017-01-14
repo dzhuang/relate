@@ -1,4 +1,4 @@
-{% extends "course_statistics/survey_base.html" %}
+{% extends "survey/survey_base.html" %}
 {% load i18n %}
 {% load create_questionnaire_tags %}
 
@@ -18,13 +18,13 @@
                 <div class="col s6">
                     <p class="flow-text teal-text truncate" style="width: 415px;margin-top: 0px;margin-bottom: 0px;"><strong>{{ question.text }}</strong></p>
                     {% if question.type == "MultiChoices" or question.type == "MultiChoiceWithAnswer" %}
-                        {% include "course_statistics/includes/statistics/statistics_multichoices.html" %}
+                        {% include "survey/includes/statistics/statistics_multichoices.html" %}
                     {% elif question.type == "TextField" %}
-                        {% include "course_statistics/includes/statistics/statistics_text.html" %}
+                        {% include "survey/includes/statistics/statistics_text.html" %}
                     {% elif question.type == "RatingField" %}
-                        {% include "course_statistics/includes/statistics/statistics_satistafction.html" %}
+                        {% include "survey/includes/statistics/statistics_satistafction.html" %}
                     {% elif question.type == "yesNoQuestion" %}
-                        {% include "course_statistics/includes/statistics/statistics_yes_no.html" %}
+                        {% include "survey/includes/statistics/statistics_yes_no.html" %}
                     {% endif %}
                 </div>
 

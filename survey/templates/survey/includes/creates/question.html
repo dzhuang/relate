@@ -54,7 +54,7 @@
         {% comment %}
             Creating a new question (Javascript for collapsing choice)
         {% endcomment %}
-        {% include "course_statistics/includes/creates/choices.html" with question=question_formset.empty_form %}
+        {% include "survey/includes/creates/choices.html" with question=question_formset.empty_form %}
 
         {% block jsextra %}
             <script>
@@ -62,9 +62,11 @@
             </script>
         {% endblock %}
     {% else %}
+        -----------------------------------------------include choices ----------------------------------------------
         {%  with question_formset.errors|get_error_choice:forloop.counter0 as error_choice %}
-            {% include "course_statistics/includes/creates/choices.html" %}
+            {% include "survey/includes/creates/choices.html" %}
         {% endwith %}
+        -----------------------------------------------end include choices ----------------------------------------------
     {% endif %}
 </div>
 
