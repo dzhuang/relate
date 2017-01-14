@@ -74,7 +74,7 @@ urlpatterns = [
         "/" + COURSE_ID_REGEX +
         "/survey-book"
         "/survey"
-        "/(?P<survey_pk>[0-9_]+)"
+        "/(?P<questionnaire_pk>[0-9_]+)"
         "$",
         view_single_survey_book,
         name="relate-view_survey_by_pk"),

@@ -278,19 +278,16 @@ class SurveyQuestionAnsweredInfo:
         return repr(self.question) + "---" + repr(self.answer_state_machine)
 
 
-def get_survey_table(course, survey_pk):
+def get_survey_table(course, questionnaire_pk):
     ## type: (Course) -> Tuple[List[Participation], List[SurveyQuestion], List[List[SurveyQuestionAnsweredInfo]]]  # noqa
 
     # NOTE: It's important that these queries are sorted consistently,
     # also consistently with the code below.
 
-    survey = ParticipationSurvey.objects.get(pk=survey_pk)
-
-
     survey_questions = list(
         (Question.objects
          .filter(
-            questionnaire=survey.questionnaire,
+            questionnaire__pk=questionnaire_pk,
         )
          .select_related("questionnaire")
          .order_by("order", "pk")
