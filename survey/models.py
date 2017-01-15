@@ -144,7 +144,7 @@ class ParticipationSurveyQuestionAnswer(models.Model):
         else:
             choices_text = self.question.choices().order_by("pk").values_list('text', flat=True)
             choices = ((0, "----"), (1, u"完全正确"), (2, u"未回答(基本未回答)"), (3, u"未掌握原理")) + tuple(
-                (i + 3, text)
+                (i + 4, text)
                 for i, text in enumerate(choices_text))
             if isinstance(self.answer, list):
                 return "; ".join([dict(choices).get(int(a)) for a in self.answer])

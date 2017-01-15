@@ -17,13 +17,13 @@
       <th class="headcol">{% trans "Institutional ID" %}</th>
       <th class="datacol">{% trans "Name" context "real name of a user" %}</th>
       {% for question in survey_questions %}
-      <th class="datacol"><a href="{% url "relate-view_survey_by_question_pk" course.identifier survey.questionnaire.pk question.pk %}">{{ question.text }}</a> <tt style="font-size:x-small">({{ question.pk }})</tt></th>
+      <th class="datacol"><a href="{% url "relate-view_survey_by_question_pk" course.identifier survey.pk question.pk %}">{{ question.text }}</a> <tt style="font-size:x-small">({{ question.pk }})</tt></th>
       {% endfor %}
     </thead>
     <tbody>
       {% for participation, survey_question in survey_table %}
       <tr>
-        <td class="headcol"><a href="{% url "relate-view_single_user_survey" course.identifier survey.questionnaire.pk participation.id %}"><span class="sensitive">{{ participation.user.institutional_id }}</span></a></td>
+        <td class="headcol"><a href="{% url "relate-view_single_user_survey" course.identifier survey.pk participation.id %}"><span class="sensitive">{{ participation.user.institutional_id }}</span></a></td>
         <td class="datacol">
           <span class="sensitive">
             {{ participation.user.get_full_name }}

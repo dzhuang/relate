@@ -179,7 +179,7 @@ def get_form_field(self, question):
         .values_list('text', flat=True)
 
     choices = tuple(
-        (i + 3, text)
+        (i + 4, text)
         for i, text in enumerate(choices_text))
 
     if question.type == 'yesNoQuestion':

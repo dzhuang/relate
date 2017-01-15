@@ -257,14 +257,12 @@ class SurveyQuestionAnsweredInfo:
         return repr(self.question) + "---" + repr(self.answer_state_machine)
 
 
-def get_survey_table(course, survey_pk):
+def get_survey_table(course, questionnaire_pk):
     ## type: (Course) -> Tuple[List[Participation], List[SurveyQuestion], List[List[SurveyQuestionAnsweredInfo]]]  # noqa
 
     # NOTE: It's important that these queries are sorted consistently,
     # also consistently with the code below.
-
-    survey = get_object_or_404(CourseSurvey, pk=survey_pk)
-    questionnaire = survey.questionnaire
+    questionnaire = get_object_or_404(Questionnaire, pk=int(questionnaire_pk))
 
     survey_questions = list(
         (Question.objects
@@ -344,7 +342,9 @@ def view_single_survey_book(pctx, survey_pk):
     if not pctx.has_permission(pperm.view_gradebook):
         raise PermissionDenied(_("may not view course statistics"))
 
-    survey = get_object_or_404(CourseSurvey, pk=survey_pk)
+    survey = get_object_or_404(CourseSurvey, pk=int(survey_pk))
+    print(survey)
+    print("here")
     questionnaire_pk = survey.questionnaire.pk
     participations, survey_questions, survey_table = get_survey_table(pctx.course, questionnaire_pk)
 
