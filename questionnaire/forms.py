@@ -26,7 +26,7 @@ class BaseNestedFormset(BaseInlineFormSet):
         :return Handle Attribute Error or Clean data
         """
         min_num_question = 1
-        min_num_choice = 2
+        min_num_choice = 1
         if self.total_form_count() >= min_num_question and \
                 (self.total_form_count() == len(self.deleted_forms)):
             raise forms.ValidationError("You must have at least one question")
