@@ -17,7 +17,7 @@
       <th class="headcol">{% trans "Institutional ID" %}</th>
       <th class="datacol">{% trans "Name" context "real name of a user" %}</th>
       {% for question in survey_questions %}
-      <th class="datacol"><a href="{% url "relate-view_survey_by_question_pk" course.identifier survey.pk question.pk %}">{{ question.text }}</a> <tt style="font-size:x-small">({{ question.pk }})</tt></th>
+      <th class="datacol"><a href="{% url "relate-view_survey_by_question_pk" course.identifier survey.pk question.pk %}">{{ question.text }}</a> <tt style="font-size:x-small">({{ question.order }})</tt></th>
       {% endfor %}
     </thead>
     <tbody>

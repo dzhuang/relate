@@ -130,7 +130,6 @@ def view_survey_by_question(pctx, survey_pk, question_pk):
             .order_by(
             "-null_id",
             "participation__user__institutional_id",
-            "question__pk",
         )
             .select_related("participation")
             .select_related("participation__user")
