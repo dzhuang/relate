@@ -86,7 +86,7 @@ class ParticipationSurveyQuestionAnswer(models.Model):
         verbose_name=_('Participation'), on_delete=models.CASCADE)
     question = models.ForeignKey(Question,
                                  help_text=_('The question that this is an answer to'),
-                                 )
+                                 on_delete = models.CASCADE)
     answer = JSONField(verbose_name=_('Answer'),
                        blank=True,
                        help_text=_('The text answer related to the question'),

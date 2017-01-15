@@ -249,6 +249,7 @@ def get_form_field(self, question):
 
 
     elif question.type == 'MutuallyExclusiveField':
+        pass
         error_message = {'required': "This field is required and you "
                                      "must select a response"}
         self.fields['question_{0}'.format(question.pk)] = \

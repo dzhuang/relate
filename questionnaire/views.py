@@ -72,15 +72,6 @@ class CreateQuestionnaireView(QuestionnaireMixin, CreateView, CourseViewMixin):
     def get_success_url(self):
         return reverse('update-questionnaire', kwargs={'pk': self.object.id})
 
-    def get_form_kwargs(self):
-        kwargs = super(CreateQuestionnaireView, self).get_form_kwargs()
-        initial = [
-            {"text": "abcd"},
-            {"text":"cdef"}
-        ]
-        kwargs.update(
-            initial=initial
-        )
 
 class UpdateQuestionnaireView(QuestionnaireMixin, UpdateView, CourseViewMixin):
 
