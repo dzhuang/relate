@@ -72,30 +72,10 @@
     <!-- End Style Sheet  -->
     <!--Import Library -->
     <script src="//cdn.bootcss.com/materialize/0.97.3/js/materialize.min.js"></script>
-    <script type="text/javascript" src="//code.jquery.com/jquery-1.10.2.js"></script>
-    <script type="text/javascript" src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
     <script type="text/javascript" src="{% static 'js/star-rating.min.js' %}"></script>
     <script type="text/javascript" src="{% static 'js/jquery.easypiechart.min.js' %}"></script>
-{#    <script src="//cdn.bootcss.com/Chart.js/2.4.0/Chart.min.js"></script>#}
-
-
-
-{#    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.3/js/materialize.min.js"></script>#}
-{#    <script type="text/javascript" src="{% static 'js/star-rating.min.js' %}"></script>#}
-{#    <script type="text/javascript" src="{% static 'js/jquery.easypiechart.min.js' %}"></script>#}
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/1.0.2/Chart.min.js"></script>
+    <script src="//cdn.bootcss.com/Chart.js/2.4.0/Chart.min.js"></script>
 
     <!-- Import Formset -->
     <script type="text/javascript" src="{% static 'js/dynamic-formsetjs-new.js' %}"></script>
 
-    <!-- Import other scripts -->
-    <script>
-        $(document).ready(function(){
-            $('.dynamic-form-question').each(function(){
-                collapseChoice(this.id);
-            });
-            {% block jsextra %}
-
-            {% endblock %}
-        });
-    </script>

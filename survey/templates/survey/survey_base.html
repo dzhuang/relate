@@ -4,6 +4,14 @@
 
 {% block header_extra %}
     {% include "survey/questionnaire_header.html" %}
+        <!-- Import other scripts -->
+    <script>
+        $(document).ready(function(){
+            {% block jsextra %}
+
+            {% endblock %}
+        });
+    </script>
 {% endblock %}
 
 {% block content %}

@@ -13,7 +13,7 @@
         <div class="col s6">
             <div class="input-field {% if question.text.errors %}error{% endif %}">
                 {{ question.text }}
-                <label for="{{ question.text.id_for_label }}" class="black-text">Question</label>
+                <label for="{{ question.text.id_for_label }}" class="black-text">{% trans "Question" %}</label>
                 {{ question.text.errors }}
             </div>
             <p style="padding-left: initial;">
@@ -62,11 +62,9 @@
             </script>
         {% endblock %}
     {% else %}
-        -----------------------------------------------include choices ----------------------------------------------
         {%  with question_formset.errors|get_error_choice:forloop.counter0 as error_choice %}
             {% include "survey/includes/creates/choices.html" %}
         {% endwith %}
-        -----------------------------------------------end include choices ----------------------------------------------
     {% endif %}
 </div>
 

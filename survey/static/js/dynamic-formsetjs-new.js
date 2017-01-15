@@ -181,8 +181,6 @@
             var $dsplyRadioEl = $("#" + prefix + "-display")
                 , $hidRadioEl = $(".display-none-" + prefix);
 
-            console.log(valChoice,"----------------------------");
-
             if (valChoice === 'MultiChoices' || valChoice === 'MultiChoiceWithAnswer') {
                 // collapsing
                 $hidRadioEl.hide();
@@ -235,36 +233,36 @@
         }
     }
 
-    // $(document).ready(function() {
-    //     $('input[type=checkbox]').change(function () {
-    //         if (is_null_answer_checkbox($(this))) {
-    //             if ($(this).prop('checked') === true) {
-    //                 $(siblings_with_same_name(this)).each(function () {
-    //                     $(this).prop('checked', false);
-    //                 });
-    //             }
-    //         }
-    //         else {
-    //             if (is_exclusive_checkbox($(this))) {
-    //                 // if an exclusive checkbox is changed
-    //                 if ($(this).prop('checked') === true) {
-    //                     $(siblings_with_same_name(this)).each(function () {
-    //                         $(this).prop('checked', false);
-    //                     });
-    //                 }
-    //             }
-    //             else {
-    //                 // if other checkbox is changed
-    //                 $(siblings_with_same_name(this)).each(function () {
-    //                     if (is_exclusive_checkbox($(this)) || is_null_answer_checkbox($(this))) {
-    //                         $(this).prop('checked', false);
-    //                     }
-    //                 });
-    //             }
-    //         }
-    //         ensure_null_answer_checkbox_status(this)
-    //     });
-    // });
+    $(document).ready(function() {
+        $('input[type=checkbox]').change(function () {
+            if (is_null_answer_checkbox($(this))) {
+                if ($(this).prop('checked') === true) {
+                    $(siblings_with_same_name(this)).each(function () {
+                        $(this).prop('checked', false);
+                    });
+                }
+            }
+            else {
+                if (is_exclusive_checkbox($(this))) {
+                    // if an exclusive checkbox is changed
+                    if ($(this).prop('checked') === true) {
+                        $(siblings_with_same_name(this)).each(function () {
+                            $(this).prop('checked', false);
+                        });
+                    }
+                }
+                else {
+                    // if other checkbox is changed
+                    $(siblings_with_same_name(this)).each(function () {
+                        if (is_exclusive_checkbox($(this)) || is_null_answer_checkbox($(this))) {
+                            $(this).prop('checked', false);
+                        }
+                    });
+                }
+            }
+            ensure_null_answer_checkbox_status(this)
+        });
+    });
 
 })();
 

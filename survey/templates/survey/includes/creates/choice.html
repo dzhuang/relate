@@ -1,7 +1,6 @@
 {% load create_questionnaire_tags %}
 {% load i18n %}
 {% if empty_choice %}
-    empty_choice------------------------------------------?
     <div id='{{ question_formset.empty_form.nested.prefix }}' class="empty-choice" style="display: none;">
 {% endif %}
 
@@ -9,6 +8,9 @@
     {% for hidden in choice.hidden_fields %}
         {{ hidden }}
     {% endfor %}
+{#    {% for x in "a b c"|make_list %}#}
+{#        {{ x }}#}
+{#    {% endfor %}#}
     {% if choice.instance.id %}
         <div class="hide">{{ choice.DELETE }}</div>
     {% endif %}
