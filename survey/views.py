@@ -537,6 +537,7 @@ class SurveyFinishView(TemplateView):
             survey=survey,
 
             pperm=ParticipationPermissionWrapper(CoursePageContext(self.request, course_identifier)),
+            this_participation_id=this_participation_id,
             next_participation_id=next_participation_id,
             prev_participation_id=prev_participation_id,
         )
