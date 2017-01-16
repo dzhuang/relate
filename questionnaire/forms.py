@@ -110,7 +110,7 @@ def nested_formset_factory(parent_model, child_model, grandchild_model):
     parent_child.nested_formset_class = inlineformset_factory(
         child_model,
         grandchild_model,
-        max_num=8,
+        max_num=10,
         extra=4,
         validate_max=True,
         widgets={'text': forms.TextInput()},
