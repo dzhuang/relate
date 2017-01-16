@@ -41,7 +41,6 @@ class CourseSurvey(models.Model):
         verbose_name = _("Course Statistics Survey")
         verbose_name_plural = _("Course Statistics Surveys")
         ordering = ("course", "questionnaire__title")
-        unique_together = (("course", ),)
 
     def __unicode__(self):
         return (
