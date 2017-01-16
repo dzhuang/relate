@@ -1,12 +1,12 @@
 {% extends "survey/survey_base.html" %}
 {% load i18n %}
-{% block title %}{% blocktrans trimmed with fullname=participation.user.get_full_name institutional_id=participation.user.institutional_id survey_title=survey.questionnaire.title %}
+{% block title %}{% blocktrans trimmed with fullname=participation.user.get_full_name institutional_id=participation.user.institutional_id survey_title=survey.title %}
     Full survey "{{ survey_title }}" of Participant {{ fullname }}({{ institutional_id }}){% endblocktrans %}{% endblock %}
 {% block title_in_content %}{% blocktrans trimmed with fullname=participation.user.get_full_name institutional_id=participation.user.institutional_id %}
     {{ fullname }}({{ institutional_id }}){% endblocktrans %}
     <a href="{% url "relate-view_survey_by_pk" course.identifier survey.pk %}"><i class="fa fa-level-up" aria-hidden="true"></i></a>
 {% endblock %}
-{% block title_tab %}{% blocktrans trimmed with fullname=participation.user.get_full_name institutional_id=participation.user.institutional_id title=survey.questionnaire.title %}
+{% block title_tab %}{% blocktrans trimmed with fullname=participation.user.get_full_name institutional_id=participation.user.institutional_id title=survey.title %}
     Full survey: {{ title }}
     {% endblocktrans %}
 {% endblock %}

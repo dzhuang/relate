@@ -2,7 +2,7 @@
 {% load i18n %}
 
 {% block title %}
-  {% trans "Course Statistics" %} {{ survey.questionnaire.title }} -- {{ question.text }} - {% trans "RELATE" %}
+  {% trans "Course Statistics" %} {{ survey.title }} -- {{ question.text }} - {% trans "RELATE" %}
 {% endblock %}
 
 {% block header_extra %}
@@ -10,7 +10,7 @@
 {% endblock %}
 
 {% block content %}
-  <h1>{% trans "Course Statistics" %} {% trans "Survey" %}: {{ survey.questionnaire.title }} -- {% trans "Question" %}: {{ question.text }}
+  <h1>{% trans "Course Statistics" %} {% trans "Survey" %}: {{ survey.title }} -- {% trans "Question" %}: {{ question.text }}
       <a href="{% url "relate-view_survey_by_pk" course.identifier survey.pk %}"><i class="fa fa-level-up" aria-hidden="true"></i></a>
     </h1>
 

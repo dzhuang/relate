@@ -2,7 +2,7 @@
 {% load i18n %}
 
 {% block title %}
-  {% trans "Course Statistics" %} {{ survey.questionnaire.title }} - {% trans "RELATE" %}
+  {% trans "Course Statistics" %} {{ survey.title }} - {% trans "RELATE" %}
 {% endblock %}
 
 {% block header_extra %}
@@ -10,7 +10,7 @@
 {% endblock %}
 
 {% block content %}
-  <h1>{% trans "Course Statistics" %} {% trans "Survey" %}: {{ survey.questionnaire.title }}</h1>
+  <h1>{% trans "Course Statistics" %} {% trans "Survey" %}: {{ survey.title }}</h1>
 
   <table class="table table-striped gradebook ">
     <thead>
