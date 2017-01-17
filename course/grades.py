@@ -281,8 +281,6 @@ class GradeInfo:
         # type: (GradingOpportunity, GradeStateMachine) -> None
         self.opportunity = opportunity
         self.grade_state_machine = grade_state_machine
-    def __str__(self):
-        return repr(self.opportunity) + "---" + repr(self.grade_state_machine)
 
 
 def get_grade_table(course):
@@ -345,9 +343,6 @@ def get_grade_table(course):
             state_machine = GradeStateMachine()
             state_machine.consume(my_grade_changes)
 
-            print(GradeInfo(
-                opportunity=opp,
-                grade_state_machine=state_machine))
             grade_row.append(
                     GradeInfo(
                         opportunity=opp,
@@ -364,7 +359,6 @@ def view_gradebook(pctx):
         raise PermissionDenied(_("may not view grade book"))
 
     participations, grading_opps, grade_table = get_grade_table(pctx.course)
-    #print(grade_table)
 
     def grade_key(entry):
         (participation, grades) = entry
