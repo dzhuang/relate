@@ -1657,3 +1657,5 @@ for i, dp_dict in enumerate(dp_list_loaded):
     )
 
     r.clipboard_append(answer_tex)
+
+r.mainloop()

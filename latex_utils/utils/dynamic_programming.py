@@ -100,6 +100,9 @@ class DiscreteDynamicProgramming(DynamicProgrammingBase):
         self.state_set = self.get_all_possible_state()
         self.f, self.x = self.get_init_f_x()
         self.state_x_table = None
+
+        # "verbose_state_x_dict" display result which include all states and decisions
+        # no matter whether or not those state or decisions will appear
         self.verbose_state_x_dict = None
         self.policy = None
 
@@ -406,6 +409,12 @@ class ResourceAllocationDP(DiscreteDynamicProgramming):
 
 
     def get_allowed_state_i_idx_list(self, stage_i, allow_state_func=None):
+        """
+        return the allowed_state of stage_i
+        :param stage_i: index of stage
+        :param allow_state_func:  a function to get the allowed_state
+        :return:
+        """
 
         if allow_state_func:
             # allow_state_func should return a 0 based list
@@ -657,65 +666,47 @@ class NonlinearTransportationProblem(DiscreteDynamicProgramming):
         return DPResult
 
 
-def force_calculate_feasible_state(dp_instance, t):
-    # 确定允许状态集合的上下限
+def force_calculate_feasible_state(dp_instance, stage_i):
+    """
+    确定阶段i(stage_i)允许状态集合
+    :param dp_instance:
+    :param stage_i:
+    :return:
+    """
+
     minimum_allocation = None
 
     possible_state_idx_list = list(range(len(dp_instance.state_set)))
-    if t == 1:
+    if stage_i == 1:
         return [possible_state_idx_list[-1]]
     else:
         allowed_state_i_idx_list = [idx for idx in possible_state_idx_list]
 
-    # 下限
-    # 1前面阶段最多能投多少，剩下的
-    # 2后面阶段至少要投多少
-    max_sum = 0
-    for stage in range(0,t-1):
-        max_sum += dp_instance.decision_set[np.where(np.isfinite(dp_instance.gain[stage]))[1][-1]]
+    # 确定该阶段之前的阶段，可能出现的剩余未使用资源的状态集合
+    prior_stage_i_decision_possibilities_list = (
+        [np.array(dp_instance.decision_set)[np.where(
+            np.isfinite(dp_instance.gain[stage]))[1]].tolist()
+         for stage in range(stage_i - 1)])
+    prior_stage_i_decision_sum = get_all_cartesian_product_sum(
+        prior_stage_i_decision_possibilities_list, ubound=dp_instance.total_resource
+    )
+    prior_remainder_set = set([dp_instance.total_resource - decision_sum for decision_sum in prior_stage_i_decision_sum])
 
-    if max_sum < dp_instance.total_resource:
-        minimum_allocation = dp_instance.total_resource - max_sum
-
-    min_sum = 0
-    for stage in range(t, dp_instance.n_stages):
-        min_sum += dp_instance.decision_set[np.where(np.isfinite(dp_instance.gain[stage]))[1][0]]
-
-    if not minimum_allocation:
-        minimum_allocation = min_sum
+    # 确定该阶段起，可能出现的使用资源数量的总和，但仅在不允许有剩余资源的情况下才使用
+    if not dp_instance.allow_non_allocated_resource:
+        head_on_stage_i_decision_possibilities_list = (
+            [np.array(dp_instance.decision_set)[np.where(
+                np.isfinite(dp_instance.gain[stage]))[1]].tolist()
+             for stage in range(stage_i - 1, dp_instance.n_stages)])
+        head_on_stage_i_decision_sum = get_all_cartesian_product_sum(
+            head_on_stage_i_decision_possibilities_list, ubound=dp_instance.total_resource
+        )
+        head_on_remainder_set = set(head_on_stage_i_decision_sum)
+        allowed_state_list = sorted(list(prior_remainder_set.intersection(head_on_remainder_set)))
     else:
-        if min_sum > 0:
-            minimum_allocation = max(minimum_allocation, min_sum)
+        allowed_state_list = sorted(prior_remainder_set)
 
-    if minimum_allocation:
-        assert minimum_allocation <= dp_instance.total_resource
-
-    # 上限
-    # 1前面阶段至少要投多少，剩下的
-    # 2后面阶段最多能投多少
-    # 3不能超过总量
-    min_sum = 0
-    for stage in range(0,t-1):
-        min_sum += dp_instance.decision_set[np.where(np.isfinite(dp_instance.gain[stage]))[1][0]]
-
-    assert min_sum <= dp_instance.total_resource
-
-    maximum_allocation = dp_instance.total_resource - min_sum
-
-    max_sum = 0
-    for stage in range(t, dp_instance.n_stages):
-        max_sum += dp_instance.decision_set[np.where(np.isfinite(dp_instance.gain[stage]))[1][-1]]
-
-    if dp_instance.allow_non_allocated_resource:
-        # 上限不能超过总量
-        if max_sum > 0:
-            maximum_allocation = min(max(maximum_allocation, max_sum), dp_instance.total_resource)
-
-    if maximum_allocation:
-        allowed_state_i_idx_list = [a for a in allowed_state_i_idx_list if a <= dp_instance.get_state_idx(maximum_allocation)]
-
-    if minimum_allocation:
-        allowed_state_i_idx_list = [a for a in allowed_state_i_idx_list if a >= dp_instance.get_state_idx(minimum_allocation)]
+    allowed_state_i_idx_list = [dp_instance.get_state_idx(state) for state in allowed_state_list]
 
     return allowed_state_i_idx_list
 
@@ -732,3 +723,19 @@ def get_simplified_float(f):
             return f
     except:
         return f
+
+
+def get_all_cartesian_product_sum(iter_lists, ubound=None):
+    """
+    iter_lists中所有元素的可能和的list，如果ubound不为None，则只返回满足的元素
+    return all possible sum of elements in iter_list
+    ref http://stackoverflow.com/a/798893/3437454
+    :param iter_lists:
+    :param ubound:
+    :return:
+    """
+    import itertools
+    assert isinstance(iter_lists, (list, tuple))
+    ubound = ubound or float("inf")
+    cartesian_product = list(itertools.product(*iter_lists))
+    return list(set([sum(e) for e in cartesian_product if sum(e) <= ubound]))
