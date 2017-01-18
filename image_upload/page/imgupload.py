@@ -389,34 +389,27 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         fpd = FlowPageData.objects.get(
             flow_session=flow_session_id, ordinal=ordinal)
 
-        qs = FlowPageImage.objects.filter(
-            creator=flow_owner
-        ).filter(flow_session=flow_session_id
-                 ).filter(image_page_id=fpd.page_id)
+        image_qs = FlowPageImage.objects.filter(
+            flow_session=flow_session_id,
+            image_page_id=fpd.page_id).order_by("order")
 
-        if qs.exists():
-            file = None
-            for q in qs:
-                if q.order == 0:
-                    file= q.file
-                    break
-            if not file:
-                return None
+        if image_qs.exists():
+            from image_upload.utils import InMemoryZip
+            in_mem_zipfile = InMemoryZip()
+            for i, image in enumerate(image_qs):
+                image_file = image.file
+                if not os.path.isfile(image_file.path):
+                    continue
 
-            if not os.path.isfile(file.path):
-                return None
+                file_name, ext = os.path.splitext(image_file.path)
 
-            file_name, ext = os.path.splitext(file.path)
+                thefile = open(image_file.path, 'rb')
+                thefile.seek(0)
+                buf = image_file.read()
+                thefile.close()
+                in_mem_zipfile.append(str(i+1) + ext, buf)
 
-            thefile = open(file.path, 'rb')
-            thefile.seek(0)
-            buf = file.read()
-            thefile.close()
-
-            if ext is None:
-                ext = ".dat"
-
-            return (ext, buf)
+            return (".zip", in_mem_zipfile.read())
 
         return None
 

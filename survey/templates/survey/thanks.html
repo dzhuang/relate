@@ -1,0 +1,51 @@
+{% extends "survey/survey_base.html" %}
+{% load i18n %}
+{% block title %}{% if url_questionnaire %} {% trans "Questionnare Created" %} {% else %}{% if participation and course %}
+        {% blocktrans trimmed with fullname=participation.user.get_full_name institutional_id=participation.user.institutional_id title=survey.title %}
+        {{ fullname }}({{ institutional_id }}) in survey {{ title }}{% endblocktrans %}
+    {% endif %}{% endif %}{% endblock %}
+
+{% block title_in_content %}
+    {% if participation and course %}
+        <a href="{% url "relate-view_single_user_survey" course.identifier survey.pk this_participation_id %}">
+        {% blocktrans trimmed with fullname=participation.user.get_full_name institutional_id=participation.user.institutional_id title=survey.title %}
+        {{ fullname }}({{ institutional_id }}) in survey {{ title }}{% endblocktrans %}
+        </a>
+        <a href="{% url "relate-view_survey_by_pk" course.identifier survey.pk %}"><i class="fa fa-level-up" aria-hidden="true"></i></a>
+    {% endif %}
+{% endblock %}
+
+{% block title_tab %}
+{% endblock %}
+{% block content_tab %}
+
+    {% if url_questionnaire %}
+        <div class="center-align">
+            <h2>{% trans "Questionnare successfully created!" %}</h2>
+        </div>
+    {% else %}
+
+        <h2 class="center-align">{% trans "Finished!" %}</h2>
+        <ul>
+            <h4 class="text-center">
+                <a href="{% url "relate-view_survey_by_pk" course.identifier survey.pk %}" >{% trans "Back to survey book" %}</a>
+            </h4>
+        </ul>
+        <div class="right-align">
+            {% if prev_participation_id %}
+            <a role="button" class="btn btn-primary left-align"
+               href="{% url "relate-view_single_user_survey" course.identifier survey.pk prev_participation_id %}">
+                {% trans "Survey of previous user" %}
+            </a>
+                {% endif %}
+        {% if next_participation_id %}
+            <a role="button" class="btn btn-primary right-align"
+               href="{% url "relate-view_single_user_survey" course.identifier survey.pk next_participation_id %}">
+                {% trans "Survey of next user" %}
+            </a>
+            {% endif %}
+        </div>
+
+    {% endif %}
+
+{% endblock %}

@@ -281,8 +281,6 @@ class GradeInfo:
         # type: (GradingOpportunity, GradeStateMachine) -> None
         self.opportunity = opportunity
         self.grade_state_machine = grade_state_machine
-    def __str__(self):
-        return repr(self.opportunity) + "---" + repr(self.grade_state_machine)
 
 
 def get_grade_table(course):
@@ -345,9 +343,6 @@ def get_grade_table(course):
             state_machine = GradeStateMachine()
             state_machine.consume(my_grade_changes)
 
-            print(GradeInfo(
-                opportunity=opp,
-                grade_state_machine=state_machine))
             grade_row.append(
                     GradeInfo(
                         opportunity=opp,
@@ -364,7 +359,6 @@ def view_gradebook(pctx):
         raise PermissionDenied(_("may not view grade book"))
 
     participations, grading_opps, grade_table = get_grade_table(pctx.course)
-    #print(grade_table)
 
     def grade_key(entry):
         (participation, grades) = entry
@@ -396,7 +390,7 @@ def export_gradebook_csv(pctx):
     else:
         import csv
 
-    fieldnames = ['user_name', 'last_name', 'first_name'] + [
+    fieldnames = ['user_name', 'institutional_id', 'last_name', 'first_name'] + [
             gopp.identifier for gopp in grading_opps]
 
     writer = csv.writer(csvfile)
@@ -406,6 +400,7 @@ def export_gradebook_csv(pctx):
     for participation, grades in zip(participations, grade_table):
         writer.writerow([
             participation.user.username,
+            participation.user.institutional_id,
             participation.user.last_name,
             participation.user.first_name,
             ] + [grade_info.grade_state_machine.stringify_machine_readable_state()

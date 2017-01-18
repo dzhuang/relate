@@ -26,7 +26,7 @@ class BaseNestedFormset(BaseInlineFormSet):
         :return Handle Attribute Error or Clean data
         """
         min_num_question = 1
-        min_num_choice = 2
+        min_num_choice = 1
         if self.total_form_count() >= min_num_question and \
                 (self.total_form_count() == len(self.deleted_forms)):
             raise forms.ValidationError("You must have at least one question")
@@ -110,7 +110,7 @@ def nested_formset_factory(parent_model, child_model, grandchild_model):
     parent_child.nested_formset_class = inlineformset_factory(
         child_model,
         grandchild_model,
-        max_num=8,
+        max_num=10,
         extra=4,
         validate_max=True,
         widgets={'text': forms.TextInput()},
@@ -179,7 +179,7 @@ def get_form_field(self, question):
         .values_list('text', flat=True)
 
     choices = tuple(
-        (i + 3, text)
+        (i + 4, text)
         for i, text in enumerate(choices_text))
 
     if question.type == 'yesNoQuestion':
@@ -249,6 +249,7 @@ def get_form_field(self, question):
 
 
     elif question.type == 'MutuallyExclusiveField':
+        pass
         error_message = {'required': "This field is required and you "
                                      "must select a response"}
         self.fields['question_{0}'.format(question.pk)] = \
