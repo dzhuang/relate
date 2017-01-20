@@ -387,10 +387,16 @@ class network(object):
         return capacity_network
 
     def get_max_flow_latex(self, layout="spring", use_label=True, no_bidirectional=True,
-                           node_distance="2cm", hidden_node_list=[], omit_wrapp_tex_structure=False):
+                           node_distance="2cm", hidden_node_list=[], regenerate_node_label_dict=False,
+                           omit_wrapp_tex_structure=False):
         G = self.as_capacity_graph()
+
+        if regenerate_node_label_dict:
+            node_label_dict = None
+        else:
+            node_label_dict = self.node_label_dict
+
         number_of_nodes = len(G.node)
-        max_flow_value, partition = nx.minimum_cut(G, 0, number_of_nodes - 1)
 
         _, flow_dict = nx.maximum_flow(G, 0, number_of_nodes - 1)
         from copy import deepcopy
@@ -400,7 +406,7 @@ class network(object):
             max_flow_network[x][y]["label"] = "[%s, %s]" % (G[x][y]["capacity"], flow_dict[x][y])
 
         return dumps_tikz_doc(g=self.graph, layout=layout,
-                              node_label_dict=self.node_label_dict,
+                              node_label_dict=node_label_dict,
                               edge_label_style_dict=self.edge_label_style_dict,
                               use_label=use_label,
                               edge_attr="label",

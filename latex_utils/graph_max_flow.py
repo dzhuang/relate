@@ -1428,6 +1428,15 @@ for g_dict in g_list_loaded:
     #max_flow_value = nx.maximum_flow_value(G, 0, number_of_nodes-1)
     max_flow_value, partition = nx.minimum_cut(G, 0, number_of_nodes-1)
 
+    reachable, non_reachable = partition
+    cut_set = set()
+    for u, nbrs in ((n, G[n]) for n in reachable):
+        cut_set.update((u, v) for v in nbrs if v in non_reachable)
+
+    cut_set = sorted(list(cut_set))
+
+    cut_set_str = "$\{%s\}$" % ", ".join(["(v_{%s}, v_{%s})" % (u+1, v+1) for (u,v) in cut_set])
+
     #print(g.get_max_flow_latex(node_distance="3cm"))
 
 
@@ -1449,13 +1458,16 @@ for g_dict in g_list_loaded:
         target = g.node_label_dict[len(g.graph) - 1],
         set_allowed_range = [idx+1 for idx in range(number_of_nodes)],
         blank1_desc=u"求得该网络的最大流流量为",
-        blank2_desc=u"最小割$(S^*, T^*)$中属于$S^*$集合的节点为"
+        blank2_desc=u"最小割$(S^*, T^*)$中属于$S^*$集合的节点为",
+        show_answer_explanation=True,
+        cut_set_str=cut_set_str,
         #show_bellman_ford = True,
         #bellman_ford_result = g.get_iterated_solution(method="bellman_ford"),
 
     )
 
     r.clipboard_append(tex)
+    break
 
 #    print("最短路条数",len(list(g.get_shortest_path())))
 

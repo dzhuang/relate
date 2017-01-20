@@ -1981,6 +1981,15 @@ for g_dict in g_list_loaded:
 
     min_cut_set_s = ", ".join(str(s) for s in partition[0] if s not in hidden_node_list)
 
+    reachable, non_reachable = partition
+    cut_set = set()
+    for u, nbrs in ((n, G[n]) for n in reachable if n not in hidden_node_list):
+        cut_set.update((u, v) for v in nbrs if v in non_reachable and v not in hidden_node_list)
+
+    cut_set = sorted(list(cut_set))
+
+    cut_set_str = "$\{%s\}$" % ", ".join(["(v_{%s}, v_{%s})" % (u, v) for (u,v) in cut_set])
+
     template = latex_jinja_env.get_template('/utils/graph_max_flow_extension.tex')
     tex = template.render(
         question_iters = iter(range(0,5)),
@@ -2000,12 +2009,15 @@ for g_dict in g_list_loaded:
         target=u"v_7, v_8, v_9",
         set_allowed_range = [idx+1 for idx in range(number_of_nodes-len(hidden_node_list))],
         blank1_desc=u"求得该网络的最大流流量为",
-        blank2_desc=u"最小割$(S^*, T^*)$中属于$S^*$集合的节点为"
+        blank2_desc=u"最小割$(S^*, T^*)$中属于$S^*$集合的节点为",
+        show_answer_explanation=True,
+        cut_set_str=cut_set_str,
 
     )
-    print(type(tex))
+    #print(type(tex))
     # if n==1:
     r.clipboard_append(tex)
+    break
 #    print("最短路条数",len(list(g.get_shortest_path())))
 
 r.mainloop()
