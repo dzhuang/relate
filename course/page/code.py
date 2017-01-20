@@ -349,12 +349,24 @@ def sanitize(s):
         else:
             return False
 
+    def filter_code_question_not_tag_atribute(name,value):
+        if name:
+            return False
+        return True
+
     return bleach.clean(s,
-                        tags=bleach.ALLOWED_TAGS + ["audio", "video", "source"],
+                        tags=bleach.ALLOWED_TAGS + [
+                            "audio", "video", "source",
+                            "user code", "setup code", "test code", "module"
+                        ],
                         attributes={
                             "audio": filter_audio_attributes,
                             "source": filter_source_attributes,
                             "img": filter_img_attributes,
+                            "user code": filter_code_question_not_tag_atribute,
+                            "test code": filter_code_question_not_tag_atribute,
+                            "setup code": filter_code_question_not_tag_atribute,
+                            "module": filter_code_question_not_tag_atribute,
                         })
 
 
@@ -879,8 +891,10 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                 ":"
                 "<ul>%s</ul></p>"]) %
                         "".join(
-                            "<li>%s</li>" % sanitize(fb_item)
+                            "<li>%s</li>" % escape(fb_item) #sanitize(fb_item)
                             for fb_item in response.feedback))
+            for fb_item in response.feedback:
+                print(fb_item)
         if hasattr(response, "traceback") and response.traceback:
             feedback_bits.append("".join([
                 "<p>",
