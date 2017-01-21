@@ -142,7 +142,6 @@ def request_python_run(run_req, run_timeout, image=None):
             docker_cnx.start(container_id)
 
             container_props = docker_cnx.inspect_container(container_id)
-            #print(container_props)
             (port_info,) = (container_props
                     ["NetworkSettings"]["Ports"]["%d/tcp" % RUNPY_PORT])
             port_host_ip = port_info.get("HostIp")
@@ -169,8 +168,6 @@ def request_python_run(run_req, run_timeout, image=None):
         else:
             port = RUNPY_PORT
 
-        #print(connect_host_ip)
-
         from time import time, sleep
         start_time = time()
 
@@ -191,7 +188,6 @@ def request_python_run(run_req, run_timeout, image=None):
                             }
 
         while True:
-            #print(connect_host_ip, port)
             try:
                 connection = http_client.HTTPConnection(connect_host_ip, port)
 
@@ -306,68 +302,6 @@ def request_python_run_with_retries(run_req, run_timeout, image=None, retry_coun
             continue
 
         return result
-
-
-def sanitize(s):
-    # html saniization
-
-    def is_allowed_data_uri(allowed_mimetypes, uri):
-        import re
-        m = re.match(r"^data:([-a-z0-9]+/[-a-z0-9]+);base64,", uri)
-        if not m:
-            return False
-
-        mimetype = m.group(1)
-        return mimetype in allowed_mimetypes
-
-    import bleach
-
-    def filter_audio_attributes(name, value):
-        if name in ["controls"]:
-            return True
-        else:
-            return False
-
-    def filter_source_attributes(name, value):
-        if name in ["type"]:
-            return True
-        elif name == "src":
-            return is_allowed_data_uri([
-                "audio/wav",
-            ], value)
-        else:
-            return False
-
-    def filter_img_attributes(name, value):
-        if name in ["alt", "title"]:
-            return True
-        elif name == "src":
-            return is_allowed_data_uri([
-                "image/png",
-                "image/jpeg",
-            ], value)
-        else:
-            return False
-
-    # def filter_code_question_not_tag_atribute(name,value):
-    #     if name:
-    #         return False
-    #     return True
-
-    return bleach.clean(s,
-                        tags=bleach.ALLOWED_TAGS + [
-                            "audio", "video", "source",
-                            # "user code", "setup code", "test code", "module"
-                        ],
-                        attributes={
-                            "audio": filter_audio_attributes,
-                            "source": filter_source_attributes,
-                            "img": filter_img_attributes,
-                            # "user code": filter_code_question_not_tag_atribute,
-                            # "test code": filter_code_question_not_tag_atribute,
-                            # "setup code": filter_code_question_not_tag_atribute,
-                            # "module": filter_code_question_not_tag_atribute,
-                        })
 
 
 class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
@@ -885,6 +819,18 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
             raise RuntimeError("invalid runpy result: %s" % response.result)
 
         if hasattr(response, "feedback") and response.feedback:
+            def sanitize(s):
+                import bleach
+                print(bleach.clean(s, tags=["p", "pre"]))
+                    # html5lib will turn <user code> to <user code="">
+                    # https://github.com/html5lib/html5lib-python/issues/194
+                    # .replace("=\"\">", ">")
+                return (
+                    bleach.clean(s, tags=["p", "pre"])
+                        # html5lib will turn <user code> to <user code="">
+                        # https://github.com/html5lib/html5lib-python/issues/194
+                        .replace("=\"\"&gt;", "&gt;")
+                )
             feedback_bits.append("".join([
                 "<p>",
                 _("Here is some feedback on your code"),
@@ -893,8 +839,6 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                         "".join(
                             "<li>%s</li>" % sanitize(fb_item)
                             for fb_item in response.feedback))
-            for fb_item in response.feedback:
-                print("<li>%s</li>" % fb_item)
         if hasattr(response, "traceback") and response.traceback:
             feedback_bits.append("".join([
                 "<p>",
@@ -947,10 +891,60 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
             fig_lines.append("</dl>")
             bulk_feedback_bits.extend(fig_lines)
 
+        # {{{ html output / santization
+
         if hasattr(response, "html") and response.html:
-            # html output / santization
+            def is_allowed_data_uri(allowed_mimetypes, uri):
+                import re
+                m = re.match(r"^data:([-a-z0-9]+/[-a-z0-9]+);base64,", uri)
+                if not m:
+                    return False
+
+                mimetype = m.group(1)
+                return mimetype in allowed_mimetypes
+
+            def sanitize(s):
+                import bleach
+
+                def filter_audio_attributes(name, value):
+                    if name in ["controls"]:
+                        return True
+                    else:
+                        return False
+
+                def filter_source_attributes(name, value):
+                    if name in ["type"]:
+                        return True
+                    elif name == "src":
+                        return is_allowed_data_uri([
+                            "audio/wav",
+                            ], value)
+                    else:
+                        return False
+
+                def filter_img_attributes(name, value):
+                    if name in ["alt", "title"]:
+                        return True
+                    elif name == "src":
+                        return is_allowed_data_uri([
+                            "image/png",
+                            "image/jpeg",
+                            ], value)
+                    else:
+                        return False
+
+                return bleach.clean(s,
+                        tags=bleach.ALLOWED_TAGS + ["audio", "video", "source"],
+                        attributes={
+                            "audio": filter_audio_attributes,
+                            "source": filter_source_attributes,
+                            "img": filter_img_attributes,
+                            })
+
             bulk_feedback_bits.extend(
                     sanitize(snippet) for snippet in response.html)
+
+        # }}}
 
         return AnswerFeedback(
                 correctness=correctness,
