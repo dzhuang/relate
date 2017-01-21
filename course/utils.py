@@ -25,7 +25,6 @@ THE SOFTWARE.
 """
 
 import six
-from typing import cast, Tuple, List, Text, Iterable, Any, Optional  # noqa
 import datetime  # noqa
 
 from django.shortcuts import (  # noqa
@@ -54,6 +53,7 @@ from course.page.base import (  # noqa
 # {{{ mypy
 
 if False:
+    from typing import cast, Tuple, List, Text, Iterable, Any, Optional, Union  # noqa
     from relate.utils import Repo_ish  # noqa
     from course.models import (  # noqa
             Course,
@@ -715,6 +715,13 @@ def get_session_grading_rule(
 
 # {{{ contexts
 
+class AnyArgumentType:  # noqa
+    pass
+
+
+ANY_ARGUMENT = AnyArgumentType()
+
+
 class CoursePageContext(object):
     def __init__(self, request, course_identifier):
         # type: (http.HttpRequest, Text) -> None
@@ -796,8 +803,12 @@ class CoursePageContext(object):
             return self.participation.permissions()
 
     def has_permission(self, perm, argument=None):
-        # type: (Text, Optional[Text]) -> bool
-        return (perm, argument) in self.permissions()
+        # type: (Text, Union[Text, AnyArgumentType, None]) -> bool
+        if argument is ANY_ARGUMENT:
+            return any(perm == p
+                    for p, arg in self.permissions())
+        else:
+            return (perm, argument) in self.permissions()
 
 
 class FlowContext(object):
@@ -943,7 +954,7 @@ class ParticipationPermissionWrapper(object):
         except AttributeError:
             raise ValueError("permission name '%s' not valid" % perm)
 
-        return self.pctx.has_permission(perm)
+        return self.pctx.has_permission(perm, ANY_ARGUMENT)
 
     def __iter__(self):
         raise TypeError("ParticipationPermissionWrapper is not iterable.")
