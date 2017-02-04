@@ -983,17 +983,24 @@ class PythonCodeQuestionWithHumanTextFeedback(
     This will allow participants multiple attempts at getting
     the right answer.
 
-    The allowed attributes are the same as those of
-    :class:`PythonCodeQuestion`, with the following additional,
-    required attribute:
+    Besides those defined in :class:`PythonCodeQuestion`, the
+    following additional, allowed/required attribute are introduced:
 
     .. attribute:: human_feedback_value
 
-        Required.
+        Optional (deprecated).
         A number. The point value of the feedback component
         by the human grader (who will grade on a 0-100 scale,
         which is scaled to yield :attr:`human_feedback_value`
         at 100).
+
+    .. attribute:: human_feedback_percentage
+
+        Optional.
+        A number. The percentage the feedback by the human
+        grader takes in the overall grade. Noticing that
+        either this attribute or :attr:`human_feedback_value`
+        must be included. `
 
     .. attribute:: rubric
 
