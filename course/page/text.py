@@ -1042,6 +1042,10 @@ class TextQuestionBase(PageBaseWithTitle):
 
         ``TextQuestion``
 
+    .. attribute:: is_optional_page
+
+        |is-optional-page-attr|
+
     .. attribute:: access_rules
 
         |access-rules-page-attr|
@@ -1161,6 +1165,10 @@ class SurveyTextQuestion(TextQuestionBase):
 
         ``TextQuestion``
 
+    .. attribute:: is_optional_page
+
+        |is-optional-page-attr|
+
     .. attribute:: access_rules
 
         |access-rules-page-attr|
@@ -1219,6 +1227,10 @@ class TextQuestion(TextQuestionBase, PageBaseWithValue):
     .. attribute:: type
 
         ``TextQuestion``
+
+    .. attribute:: is_optional_page
+
+        |is-optional-page-attr|
 
     .. attribute:: access_rules
 
@@ -1395,6 +1407,10 @@ class HumanGradedTextQuestion(TextQuestionBase, PageBaseWithValue,
     .. attribute:: type
 
         ``HumanGradedTextQuestion``
+
+    .. attribute:: is_optional_page
+
+        |is-optional-page-attr|
 
     .. attribute:: access_rules
 

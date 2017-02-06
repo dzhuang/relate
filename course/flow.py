@@ -629,7 +629,7 @@ def get_session_answered_page_data(
         flow_session,  # type: FlowSession
         answer_visits  # type: List[Optional[FlowPageVisit]]
         ):
-    # type: (...) -> Tuple[List[FlowPageData], List[FlowPageData]]
+    # type: (...) -> Tuple[List[FlowPageData], List[FlowPageData], bool]
     all_page_data = get_all_page_data(flow_session)
 
     answered_page_data_list = []  # type: List[FlowPageData]
@@ -648,7 +648,7 @@ def get_session_answered_page_data(
         page = instantiate_flow_page_with_ctx(fctx, page_data)
         if page.expects_answer():
             is_interactive_flow = True
-            if getattr(page.page_desc, "require_submission", True):
+            if not page.is_optional_page:
                 if answer_data is None:
                     unanswered_page_data_list.append(page_data)
                 else:
@@ -676,6 +676,10 @@ class GradeInfo(object):
             partially_correct_count,  # type: int
             incorrect_count,  # type: int
             unknown_count,  # type: int
+            optional_fully_correct_count=0,  # type: int
+            optional_partially_correct_count=0,  # type: int
+            optional_incorrect_count=0,  # type: int
+            optional_unknown_count=0,  # type: int
             ):
         # type: (...) -> None
         self.points = points
@@ -686,6 +690,10 @@ class GradeInfo(object):
         self.partially_correct_count = partially_correct_count
         self.incorrect_count = incorrect_count
         self.unknown_count = unknown_count
+        self.optional_fully_correct_count = optional_fully_correct_count
+        self.optional_partially_correct_count = optional_partially_correct_count
+        self.optional_incorrect_count = optional_incorrect_count
+        self.optional_unknown_count = optional_unknown_count
 
     # Rounding to larger than 100% will break the percent bars on the
     # flow results page.
@@ -754,6 +762,32 @@ class GradeInfo(object):
         """Only to be used for visualization purposes."""
         return self.FULL_PERCENT*self.unknown_count/self.total_count()
 
+    def optional_total_count(self):
+        return (self.optional_fully_correct_count
+                + self.optional_partially_correct_count
+                + self.optional_incorrect_count
+                + self.optional_unknown_count)
+
+    def optional_fully_correct_percent(self):
+        """Only to be used for visualization purposes."""
+        return self.FULL_PERCENT * self.optional_fully_correct_count\
+               / self.optional_total_count()
+
+    def optional_partially_correct_percent(self):
+        """Only to be used for visualization purposes."""
+        return self.FULL_PERCENT * self.optional_partially_correct_count\
+               / self.optional_total_count()
+
+    def optional_incorrect_percent(self):
+        """Only to be used for visualization purposes."""
+        return self.FULL_PERCENT * self.optional_incorrect_count\
+               / self.optional_total_count()
+
+    def optional_unknown_percent(self):
+        """Only to be used for visualization purposes."""
+        return self.FULL_PERCENT * self.optional_unknown_count\
+               / self.optional_total_count()
+
     # }}}
 
 
@@ -781,6 +815,11 @@ def gather_grade_info(
     incorrect_count = 0
     unknown_count = 0
 
+    optional_fully_correct_count = 0
+    optional_partially_correct_count = 0
+    optional_incorrect_count = 0
+    optional_unknown_count = 0
+
     for i, page_data in enumerate(all_page_data):
         page = instantiate_flow_page_with_ctx(fctx, page_data)
 
@@ -804,29 +843,42 @@ def gather_grade_info(
 
         feedback = get_feedback_for_grade(grade)
 
-        max_points += grade.max_points
+        if page.is_optional_page:
+            if feedback is None or feedback.correctness is None:
+                optional_unknown_count += 1
+                continue
 
-        if feedback is None or feedback.correctness is None:
-            unknown_count += 1
-            points = None
-            continue
-
-        max_reachable_points += grade.max_points
-
-        page_points = grade.max_points*feedback.correctness
-
-        if points is not None:
-            points += page_points
-
-        provisional_points += page_points
-
-        if grade.max_points > 0:
             if feedback.correctness == 1:
-                fully_correct_count += 1
+                optional_fully_correct_count += 1
             elif feedback.correctness == 0:
-                incorrect_count += 1
+                optional_incorrect_count += 1
             else:
-                partially_correct_count += 1
+                optional_partially_correct_count += 1
+
+        else:
+            max_points += grade.max_points
+
+            if feedback is None or feedback.correctness is None:
+                unknown_count += 1
+                points = None
+                continue
+
+            max_reachable_points += grade.max_points
+
+            page_points = grade.max_points*feedback.correctness
+
+            if points is not None:
+                points += page_points
+
+            provisional_points += page_points
+
+            if grade.max_points > 0:
+                if feedback.correctness == 1:
+                    fully_correct_count += 1
+                elif feedback.correctness == 0:
+                    incorrect_count += 1
+                else:
+                    partially_correct_count += 1
 
     # {{{ adjust max_points if requested
 
@@ -856,7 +908,12 @@ def gather_grade_info(
             fully_correct_count=fully_correct_count,
             partially_correct_count=partially_correct_count,
             incorrect_count=incorrect_count,
-            unknown_count=unknown_count)
+            unknown_count=unknown_count,
+
+            optional_fully_correct_count=optional_fully_correct_count,
+            optional_partially_correct_count=optional_partially_correct_count,
+            optional_incorrect_count=optional_incorrect_count,
+            optional_unknown_count=optional_unknown_count)
 
 
 @transaction.atomic
@@ -2539,11 +2596,6 @@ def finish_flow_session_view(pctx, flow_session_id):
         get_session_answered_page_data(
             fctx, flow_session, answer_visits)
 
-    answered_count = len(answered_page_data_list)
-    unanswered_count = len(unanswered_page_data_list)
-
-    #is_interactive_flow = bool(answered_count + unanswered_count)  # type: bool
-
     if flow_permission.view not in access_rule.permissions:
         raise PermissionDenied()
 
@@ -2726,6 +2778,11 @@ def finish_flow_session_view(pctx, flow_session_id):
 
     else:
         # confirm ending flow
+        answered_count = len(answered_page_data_list)
+        unanswered_count = len(unanswered_page_data_list)
+        required_count = answered_count + unanswered_count
+        session_may_generate_grade = (
+            grading_rule.generates_grade and required_count)
         return render_finish_response(
                 "course/flow-confirm-completion.html",
                 last_page_nr=flow_session.page_count-1,
@@ -2733,8 +2790,8 @@ def finish_flow_session_view(pctx, flow_session_id):
                 answered_count=answered_count,
                 unanswered_count=unanswered_count,
                 unanswered_page_data_list=unanswered_page_data_list,
-                total_count=answered_count+unanswered_count,
-                session_may_generate_grade=grading_rule.generates_grade)
+                required_count=required_count,
+                session_may_generate_grade=session_may_generate_grade)
 
 # }}}
 
