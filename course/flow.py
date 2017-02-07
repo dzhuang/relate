@@ -2121,6 +2121,8 @@ def view_flow_page(pctx, flow_session_id, ordinal):
     if fpctx.page.expects_answer() and fpctx.page.is_answer_gradable():
         args["max_points"] = fpctx.page.max_points(fpctx.page_data)
         args["page_expect_answer_and_gradable"] = True
+
+        # fix flow with grade_identifier by not generates_grade
         if pctx.has_permission(pperm.assign_grade):
             from course.models import get_flow_grading_opportunity
             grading_rule = get_session_grading_rule (
