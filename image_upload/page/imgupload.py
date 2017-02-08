@@ -396,10 +396,16 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         if image_qs.exists():
             from image_upload.utils import InMemoryZip
             in_mem_zipfile = InMemoryZip()
+            image_count = 0
             for i, image in enumerate(image_qs):
                 image_file = image.file
-                if not os.path.isfile(image_file.path):
-                    continue
+                try:
+                    if not os.path.isfile(image_file.path):
+                        continue
+                except Exception as e:
+                    from django.core.exceptions import SuspiciousFileOperation
+                    if isinstance(e, SuspiciousFileOperation):
+                        continue
 
                 file_name, ext = os.path.splitext(image_file.path)
 
@@ -408,8 +414,11 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                 buf = image_file.read()
                 thefile.close()
                 in_mem_zipfile.append(str(i+1) + ext, buf)
+                image_count += 1
 
-            return (".zip", in_mem_zipfile.read())
+            if image_count:
+                return (".zip", in_mem_zipfile.read())
+            return None
 
         return None
 
