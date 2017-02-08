@@ -37,6 +37,8 @@ from relate.utils import format_datetime_local, as_local_time
 from imagekit.models import ImageSpecField
 from imagekit.processors import ResizeToFit
 
+from jsonfield import JSONField
+
 
 @deconstructible
 class UserImageStorage(FileSystemStorage):
@@ -117,7 +119,6 @@ def user_flowsession_img_path(instance, file_name):
         instance.creator_id,
         file_name)
 
-from jsonfield import JSONField
 
 class FlowPageImage(models.Model):
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
