@@ -14,6 +14,16 @@ SHORT_DATE_FORMAT = 'n月j日'          # 2016年9月5日
 SHORT_DATETIME_FORMAT = 'n月j日H:i'  # 2016年9月5日 20:45
 FIRST_DAY_OF_WEEK = 1                   # 星期一 (Monday)
 
+# from relate.utils import format_datetime_local
+# from django.utils.safestring import mark_safe
+#
+# SHORT_DATE_FORMAT = mark_safe(
+#     '<span title="%(time)s">%(time_short)s</span>' %
+#     {"time": format_datetime_local(value),
+#      "time_short": format_datetime_local(value,
+#                                          format="SHORT_DATETIME_FORMAT")
+#      })
+
 # The *_INPUT_FORMATS strings use the Python strftime format syntax,
 # see http://docs.python.org/library/datetime.html#strftime-strptime-behavior
 DATE_INPUT_FORMATS = (
