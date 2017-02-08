@@ -52,7 +52,6 @@ def is_course_staff(pctx):
     request = pctx.request
     course = pctx.course
 
-    from course.constants import participation_permission as pperm
     from course.enrollment import (
         get_participation_for_request,
         get_participation_permissions)
@@ -60,7 +59,7 @@ def is_course_staff(pctx):
     participation = get_participation_for_request(request, course)
 
     perms = get_participation_permissions(course, participation)
-
+    from course.constants import participation_permission as pperm
     if (pperm.assign_grade, None) in perms:
         return True
 
@@ -201,9 +200,9 @@ def flow_page_image_download(pctx, flow_session_id, creator_id,
     download_object = get_object_or_404(FlowPageImage, pk=download_id)
     
     privilege = False
-    # whether the user is allowed to view the private image
-    from course.constants import participation_permission as pperm, participation_status
 
+    # whether the user is allowed to view the private image
+    from course.constants import participation_permission as pperm
     if pctx.has_permission(pperm.assign_grade):
         privilege = True
 

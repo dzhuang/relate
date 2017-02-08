@@ -81,7 +81,6 @@ class PageContext(object):
             repo,  # type: Repo_ish
             commit_sha,  # type: bytes
             flow_session,  # type: FlowSession
-            ordinal=None,  # type: int or None # added by zd
             in_sandbox=False,  # type: bool
             page_uri=None,  # type: Optional[str]
             ):
@@ -93,7 +92,6 @@ class PageContext(object):
         self.flow_session = flow_session
         self.in_sandbox = in_sandbox
         self.page_uri = page_uri
-        self.ordinal = ordinal # added by zd
 
 
 class PageBehavior(object):

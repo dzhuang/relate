@@ -28,6 +28,7 @@ import django.forms as forms
 from django.utils.translation import ugettext as _, string_concat
 from django.db import transaction
 from django.contrib import messages
+from django.core.urlresolvers import reverse
 
 from image_upload.models import FlowPageImage
 
@@ -43,6 +44,19 @@ from relate.utils import StyledForm
 from crispy_forms.layout import Layout, HTML, Submit
 
 import os
+
+
+def get_ordinal_from_page_context(page_context):
+    if page_context.in_sandbox:
+        return None
+
+    from six.moves.urllib.parse import urlparse
+    relative_url = urlparse(page_context.page_uri).path
+
+    from django.urls import resolve
+    func, args, kwargs = resolve(relative_url)
+    assert kwargs["ordinal"]
+    return kwargs["ordinal"]
 
 
 def is_course_staff_request(request, page_context):
@@ -89,12 +103,11 @@ class ImageUploadForm(StyledForm):
 
         self.helper.form_id = "fileupload"
 
-        from django.core.urlresolvers import reverse
         self.helper.form_action = reverse(
             "jfu_upload",
             kwargs={'course_identifier': page_context.course,
                     'flow_session_id': page_context.flow_session.id,
-                    'ordinal': page_context.ordinal
+                    'ordinal': get_ordinal_from_page_context(page_context)
                     }
         )
         self.helper.form_method = "POST"
@@ -108,7 +121,7 @@ class ImageUploadForm(StyledForm):
 
     def clean(self):
         flow_session_id = self.page_context.flow_session.id
-        ordinal = self.page_context.ordinal
+        ordinal = get_ordinal_from_page_context(self.page_context)
         flow_owner = self.page_context.flow_session.participation.user
 
         if self.require_image_for_submission:
@@ -323,7 +336,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                 args=(
                     page_context.course.identifier,
                     page_context.flow_session.id,
-                    page_context.ordinal)
+                    get_ordinal_from_page_context(page_context))
             )
 
             in_grading_page = grading_page_uri == request_path
@@ -339,7 +352,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                "accepted_mime_types": ['image/*'],
                'course_identifier': page_context.course,
                "flow_session_id": page_context.flow_session.id,
-               "ordinal": page_context.ordinal,
+               "ordinal": get_ordinal_from_page_context(page_context),
                "IS_COURSE_STAFF": is_course_staff_request(request, page_context),
                "MAY_CHANGE_ANSWER": form.page_behavior.may_change_answer,
                "SHOW_CREATION_TIME": True,
@@ -361,7 +374,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
 
     def answer_data(self, page_context, page_data, form, files_data):
         flow_session_id = page_context.flow_session.id
-        ordinal = page_context.ordinal
+        ordinal = get_ordinal_from_page_context(page_context)
         flow_owner = page_context.flow_session.participation.user
         from course.models import FlowPageData
         fpd = FlowPageData.objects.get(
@@ -383,7 +396,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
             return None
 
         flow_session_id = page_context.flow_session.id
-        ordinal = page_context.ordinal
+        ordinal = get_ordinal_from_page_context(page_context)
         flow_owner = page_context.flow_session.participation.user
         from course.models import FlowPageData
         fpd = FlowPageData.objects.get(
@@ -954,7 +967,7 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                 "feedBackEmail",
                 kwargs={'course_identifier': page_context.course.identifier,
                         'flow_session_id': page_context.flow_session.id,
-                        'ordinal': page_context.ordinal
+                        'ordinal': get_ordinal_from_page_context(page_context)
                         }
             )
             feedbackbutton = (

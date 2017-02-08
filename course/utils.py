@@ -892,7 +892,6 @@ class FlowPageContext(FlowContext):
                     course=self.course, repo=self.repo,
                     commit_sha=self.course_commit_sha,
                     flow_session=flow_session,
-                    ordinal=ordinal,     # added by zd
                     page_uri=page_uri)
 
         self._prev_answer_visit = False
