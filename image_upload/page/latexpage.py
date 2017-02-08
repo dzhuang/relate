@@ -570,22 +570,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 #response_dict["stdout"] = error_msg
             #else:
 
-            review_url = ""
-            if not page_context.in_sandbox:
-
-                from django.core.urlresolvers import reverse
-                review_url = reverse(
-                    "relate-view_flow_page",
-                    kwargs={'course_identifier': page_context.course.identifier,
-                            'flow_session_id': page_context.flow_session.id,
-                            'ordinal': page_context.ordinal
-                            }
-                )
-
-            from six.moves.urllib.parse import urljoin
-            review_uri = urljoin(getattr(settings, "RELATE_BASE_URL"),
-                                 review_url)
-
             from course.page.code import is_nuisance_failure
             from django.utils import translation
             from relate.utils import local_now, format_datetime_local
@@ -597,7 +581,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     "page_id": self.page_desc.id,
                     "course": page_context.course,
                     "error_message": error_msg,
-                    "review_uri": review_uri,
+                    "review_uri": page_context.page_uri,
                     "time": format_datetime_local(local_now())
                 })
 

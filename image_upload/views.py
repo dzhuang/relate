@@ -52,7 +52,6 @@ def is_course_staff(pctx):
     request = pctx.request
     course = pctx.course
 
-    from course.constants import participation_permission as pperm
     from course.enrollment import (
         get_participation_for_request,
         get_participation_permissions)
@@ -60,7 +59,7 @@ def is_course_staff(pctx):
     participation = get_participation_for_request(request, course)
 
     perms = get_participation_permissions(course, participation)
-
+    from course.constants import participation_permission as pperm
     if (pperm.assign_grade, None) in perms:
         return True
 

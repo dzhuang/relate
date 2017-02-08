@@ -264,7 +264,6 @@ class FlowPageImageAdmin(admin.ModelAdmin):
             return self.view_on_site(obj)
         elif self.view_on_site and hasattr(obj, 'get_absolute_url'):
             from django.core.urlresolvers import reverse
-            from course.models import FlowPageData
 
             try:
                 ordinal = obj.get_page_ordinal()

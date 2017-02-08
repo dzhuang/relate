@@ -244,8 +244,9 @@ class InMemoryZip(object):
 
     def writetofile(self, filename):
         '''Writes the in-memory zip to a file.'''
-        f = file(filename, "w")
-        f.write(self.read())
-        f.close()
+        from django.core.files import File
+        with open(filename, 'w') as f:
+            ff = File(f)
+            ff.write(self.read())
 
 # }}}
