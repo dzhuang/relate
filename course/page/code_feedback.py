@@ -137,7 +137,14 @@ class Feedback:
         import numpy as np
 
         if not isinstance(data, (float, int, np.number)):
-            self.finish(0, "'%s' is not a number" % name)
+            try:
+                # Check whether data is a sympy number because sympy
+                # numbers do not follow the typical interface
+                # See https://github.com/inducer/relate/pull/284
+                if not data.is_number:
+                    self.finish(0, "'%s' is not a number" % name)
+            except AttributeError:
+                self.finish(0, "'%s' is not a number" % name)
 
         good = False
 
