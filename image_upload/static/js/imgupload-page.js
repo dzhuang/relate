@@ -5,6 +5,7 @@ $(document).ready(function () {
     });
     $('#past-submission_dropdown').addClass('hidden');
     new Clipboard('.btn-data-copy');
+    var input_changed = false;
 });
 
 function watch(targetElement, triggerFunction) {
@@ -363,7 +364,6 @@ window.addEventListener('DOMContentLoaded', function () {
 
 function activate_change_listening()
 {
-  var input_changed = false;
 
   function on_input_change(evt)
   {
