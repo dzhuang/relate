@@ -306,7 +306,10 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
                           _('Please upload the image first.')))
 
     image_modified_path = crop_instance.get_random_filename()
-    
+
+    if not request.POST:
+        return {}
+
     if not request.is_ajax():
         raise CropImageError(_('Only Ajax Post is allowed.'))
 
@@ -317,7 +320,6 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
         height = int(float(request.POST['height']))
         rotate = int(float(request.POST['rotate']))
     except:
-        print("here!!!!")
         raise CropImageError(_('There are errors, please refresh the page or try again later'))
 
     try:
@@ -334,9 +336,10 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
     image_orig = image_orig.crop(box)
 
     try:
+        if image_orig.mode != "RGB":
+            image_orig = image_orig.convert("RGB")
         image_orig.save(image_modified_path)
-    except IOError:
-        print("save error----------------")
+    except (OSError, IOError):
         raise CropImageError(_('There are errors, please refresh the page or try again later'))
 
     from relate.utils import as_local_time, local_now
@@ -388,6 +391,10 @@ def image_order(pctx, flow_session_id, ordinal):
     if not (may_change_answer or course_staff_status):
         raise ImgTableOrderError(_('Not allowd to modify answer.'))
     request = pctx.request
+
+    if not request.POST:
+        return {}
+
     if not request.is_ajax():
         raise ImgTableOrderError(_('Only Ajax Post is allowed.'))
 
@@ -402,7 +409,6 @@ def image_order(pctx, flow_session_id, ordinal):
             chg_instance.order = chg_data['new_ord']
             chg_instance.save()
         except:
-            print("order error-----")
             raise ImgTableOrderError(_('There are errors, please refresh the page or try again later'))
 
     response = {'message': ugettext('Done')}
