@@ -1916,6 +1916,8 @@ def view_flow_page(pctx, flow_session_id, ordinal):
             else:
                 feedback = None
 
+            print(answer_data)
+
             try:
                 form = fpctx.page.make_form(
                         page_context, page_data.data,

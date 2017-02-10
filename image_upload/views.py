@@ -65,6 +65,7 @@ def is_course_staff(pctx):
 
     return False
 
+
 class ImageCreateView(LoginRequiredMixin, ImageOperationMixin, JSONResponseMixin, CreateView):
     # Prevent download Json response in IE 7-10
     # http://stackoverflow.com/a/13944206/3437454
@@ -96,6 +97,10 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin, JSONResponseMixin
 
         self.object = form.save(commit=False)
         self.object.creator = self.request.user
+
+        from django.core.files.uploadedfile import TemporaryUploadedFile
+        print(type(self.object.file))
+        print(isinstance(self.object.file, TemporaryUploadedFile))
         self.object.save()
 
         course_identifier = self.kwargs["course_identifier"]
@@ -125,6 +130,7 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin, JSONResponseMixin
     def form_invalid(self, form):
         data = json.dumps(form.errors)
         return self.render_json_response(data, status=400)
+
 
 class ImageItemForm(forms.ModelForm):
     class Meta:
