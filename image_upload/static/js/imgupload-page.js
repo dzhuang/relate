@@ -359,3 +359,53 @@ window.addEventListener('DOMContentLoaded', function () {
     });
 
 });
+
+
+function activate_change_listening()
+{
+  var input_changed = false;
+
+  function on_input_change(evt)
+  {
+    input_changed = true;
+  }
+
+  // $(":checkbox").on("change", on_input_change);
+  // $(":radio").on("change", on_input_change);
+  // $(":text").on("change", on_input_change);
+  // $(":file").on("change", on_input_change);
+  $('#fileupload').on("change", on_input_change);
+  $('#fileupload').on("fileuploaddestroyed", on_input_change);
+  // $("textarea").on("change", on_input_change);
+
+  // }}}
+
+  $(window).on('beforeunload',
+      function()
+      {
+        if (input_changed)
+          return "{% trans 'You have unsaved changes on this page.' %}";
+      });
+
+  function before_submit(evt)
+  {
+    input_changed = false;
+
+    // We can't simply set "disabled" on the submitting button here.
+    // Otherwise the browser will simply remove that button from the POST
+    // data.
+
+    $(".relate-save-button").each(
+        function()
+        {
+          var clone = $(this).clone();
+          $(clone).attr("disabled", "1");
+          $(this).after(clone);
+          $(this).hide();
+        });
+  }
+
+  $(".relate-interaction-container form").on("submit", before_submit);
+}
+
+$(document).ready(activate_change_listening);
