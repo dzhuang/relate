@@ -317,6 +317,7 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
         height = int(float(request.POST['height']))
         rotate = int(float(request.POST['rotate']))
     except:
+        print("here!!!!")
         raise CropImageError(_('There are errors, please refresh the page or try again later'))
 
     try:
@@ -329,12 +330,13 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
         # in pillow 3.3.0
         image_orig = image_orig.rotate(-rotate, expand=True)
 
-    box =  (x, y, x+width, y+height)
+    box = (x, y, x+width, y+height)
     image_orig = image_orig.crop(box)
 
     try:
         image_orig.save(image_modified_path)
     except IOError:
+        print("save error----------------")
         raise CropImageError(_('There are errors, please refresh the page or try again later'))
 
     from relate.utils import as_local_time, local_now
@@ -400,6 +402,7 @@ def image_order(pctx, flow_session_id, ordinal):
             chg_instance.order = chg_data['new_ord']
             chg_instance.save()
         except:
+            print("order error-----")
             raise ImgTableOrderError(_('There are errors, please refresh the page or try again later'))
 
     response = {'message': ugettext('Done')}
