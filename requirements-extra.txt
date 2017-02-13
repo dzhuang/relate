@@ -40,6 +40,8 @@ django-qiniu-storage
 # For redis, requiring redis-server
 django-redis
 
+# For image upload with different storage
+django-proxy-storage
 
 # questionnair
 git+https://git.oschina.net/dzhuang/django-survey-formset.git
