@@ -59,6 +59,15 @@ temp_image_storage_location = getattr(
     os.path.join(tempfile.gettempdir(), "relate_tmp_img"),
 )
 
+def get_mongo_db(database="learningwhat-image-meta-db"):
+    args = []
+    uri = getattr(settings, "RELATE_MONGO_META_DATABASE_URI", None)
+    if uri:
+        args.append(uri)
+    client = MongoClient(*args)
+    db = client[database]
+    return db
+
 
 class UserImageStorage(MultipleOriginalStoragesMixin, ProxyStorageBase):
     #http://chibisov.github.io/django-proxy-storage/docs/
@@ -71,16 +80,32 @@ class UserImageStorage(MultipleOriginalStoragesMixin, ProxyStorageBase):
         collection='meta_backend_collection'
     )
 
-    def save(self, name, content, original_storage_path=None, using=None):
+    def save(self, name, content, max_length=None, original_storage_path=None, using=None):
         if not using:
-            using = 'sendfile'
-        assert using in ["sendfile, temp"]
+            using = "sendfile"
+        print(using, "------------------------")
+        assert using in ["sendfile", "temp"]
         return super(UserImageStorage, self).save(
             name=name,
             content=content,
             original_storage_path=original_storage_path,
             using=using
         )
+
+    # def path(self, name):
+    #     pass
+
+    # def url(self, name):
+    #     meta_backend_obj = self.meta_backend.get(path=name)
+    #     return self.get_original_storage(meta_backend_obj=meta_backend_obj) \
+    #         .url(meta_backend_obj['original_storage_path'])
+
+    def path(self, name):
+        meta_backend_obj = self.meta_backend.get(path=name)
+        # print(dir(self.get_original_storage(meta_backend_obj=meta_backend_obj)))
+        return self.get_original_storage(meta_backend_obj=meta_backend_obj) \
+            .path(meta_backend_obj['original_storage_path'])
+
 
 multiple_image_storage = UserImageStorage()
 

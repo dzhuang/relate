@@ -86,6 +86,8 @@ def serialize(request, instance, file_attr='file'):
 
     error = None
 
+    print(obj.path, "------------from serialize")
+
     try:
         IsFile = os.path.isfile(obj.path)
         size = obj.size
