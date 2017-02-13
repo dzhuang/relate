@@ -737,16 +737,16 @@ class PageBaseWithValue(PageBase):
         super(PageBaseWithValue, self).__init__(vctx, location, page_desc)
 
         if vctx is not None:
-            if not hasattr(page_desc, "value"):
+            if not hasattr(page_desc, "value") and not self.is_optional_page:
                 vctx.add_warning(
                     location,
                     _("Attribute 'value' is not set, default "
                       "value '1' is used."))
-            if hasattr(page_desc, "value") and self.is_optional_page:
+            if getattr(page_desc, "value", 0) and self.is_optional_page:
                 vctx.add_warning(
                     location,
-                    _("Attribute 'value' is ignored when "
-                      "'is_optional_page' is True."))
+                    _("Attribute 'value' with non-zero value "
+                      "is ignored when 'is_optional_page' is True."))
 
     def allowed_attrs(self):
         return super(PageBaseWithValue, self).allowed_attrs() + (
