@@ -28,9 +28,17 @@ import six
 from django.db import models
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
+
 from django.utils.deconstruct import deconstructible
 from django.utils.translation import ugettext_lazy as _
 from django.utils.timezone import now
+
+from proxy_storage.storages.base import (
+    ProxyStorageBase, MultipleOriginalStoragesMixin)
+from proxy_storage.meta_backends.mongo import MongoMetaBackend
+from pymongo import MongoClient
+
+import os, tempfile
 
 from relate.utils import format_datetime_local, as_local_time
 
@@ -39,16 +47,42 @@ from imagekit.processors import ResizeToFit
 
 from jsonfield import JSONField
 
-
 @deconstructible
-class UserImageStorage(FileSystemStorage):
+class SendFileStorage(FileSystemStorage):
     def __init__(self):
-        super(UserImageStorage, self).__init__(
+        super(SendFileStorage, self).__init__(
                 location=settings.SENDFILE_ROOT)
 
+temp_image_storage_location = getattr(
+    settings,
+    "RELATE_TEMP_IMAGE_STORAGE_LOCATION",
+    os.path.join(tempfile.gettempdir(), "relate_tmp_img"),
+)
 
-sendfile_storage = UserImageStorage()
 
+class UserImageStorage(MultipleOriginalStoragesMixin, ProxyStorageBase):
+    #http://chibisov.github.io/django-proxy-storage/docs/
+    original_storages = (
+        ('sendfile', SendFileStorage()),
+        ('temp', FileSystemStorage(location=temp_image_storage_location)),
+    )
+    meta_backend = MongoMetaBackend(
+        database=get_mongo_db(),
+        collection='meta_backend_collection'
+    )
+
+    def save(self, name, content, original_storage_path=None, using=None):
+        if not using:
+            using = 'sendfile'
+        assert using in ["sendfile, temp"]
+        return super(UserImageStorage, self).save(
+            name=name,
+            content=content,
+            original_storage_path=original_storage_path,
+            using=using
+        )
+
+multiple_image_storage = UserImageStorage()
 
 def user_directory_path(instance, filename):
     if instance.creator.get_full_name() is not None:
@@ -63,8 +97,8 @@ def user_directory_path(instance, filename):
 class UserImage(models.Model):
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
             verbose_name=_('Creator'), on_delete=models.SET_NULL)
-    file = models.ImageField(upload_to=user_directory_path, 
-            storage=sendfile_storage)
+    file = models.ImageField(upload_to=user_directory_path,
+                             storage=multiple_image_storage)
     slug = models.SlugField(max_length=256, blank=True)
     creation_time = models.DateTimeField(default=now,
                                          verbose_name=_('Creation Time'))
@@ -123,8 +157,8 @@ def user_flowsession_img_path(instance, file_name):
 class FlowPageImage(models.Model):
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
             verbose_name=_('Creator'), on_delete=models.SET_NULL)
-    file = models.ImageField(upload_to=user_flowsession_img_path, 
-            storage=sendfile_storage)
+    file = models.ImageField(upload_to=user_flowsession_img_path,
+                             storage=multiple_image_storage)
     slug = models.SlugField(max_length=256, blank=True)
     creation_time = models.DateTimeField(default=now)
     file_last_modified = models.DateTimeField(default=now)

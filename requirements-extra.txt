@@ -42,6 +42,7 @@ django-redis
 
 # For image upload with different storage
 django-proxy-storage
+pymongo
 
 # questionnair
 git+https://git.oschina.net/dzhuang/django-survey-formset.git
