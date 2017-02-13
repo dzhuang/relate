@@ -5,6 +5,7 @@ $(document).ready(function () {
     });
     // $('#past-submission_dropdown').addClass('hidden');
     new Clipboard('.btn-data-copy');
+    var input_changed = false;
 });
 
 function watch(targetElement, triggerFunction) {
@@ -89,6 +90,7 @@ $('.btn-srt-tbl').on('click', function () {
                         $(".relate-save-button").removeClass('disabled');
                     });
                     $('#srt_prgrs').html(response.message);
+                    $('#fileupload').trigger("order_changed");
                     window.setTimeout(function () {
                         $('#srt_prgrs').fadeOut();
                     }, 3000);
@@ -332,6 +334,7 @@ window.addEventListener('DOMContentLoaded', function () {
                     setTimeout(function () {
                         $('#modal').modal('hide');
                     }, 2000);
+                    $('#fileupload').trigger("file_edited");
                 })
                 .fail(function (response) {
                     msg = gettext('Failed!') + " " + response.responseJSON.message;
@@ -363,7 +366,6 @@ window.addEventListener('DOMContentLoaded', function () {
 
 function activate_change_listening()
 {
-  var input_changed = false;
 
   function on_input_change(evt)
   {
@@ -371,14 +373,9 @@ function activate_change_listening()
   }
 
   // $(":checkbox").on("change", on_input_change);
-  // $(":radio").on("change", on_input_change);
-  // $(":text").on("change", on_input_change);
-  // $(":file").on("change", on_input_change);
-  $('#fileupload').on("change", on_input_change);
+  $('#fileupload').on("file_edited", on_input_change);
+  $('#fileupload').on("order_changed", on_input_change);
   $('#fileupload').on("fileuploaddestroyed", on_input_change);
-  // $("textarea").on("change", on_input_change);
-
-  // }}}
 
   $(window).on('beforeunload',
       function()
