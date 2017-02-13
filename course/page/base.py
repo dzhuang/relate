@@ -746,7 +746,7 @@ class PageBaseWithValue(PageBase):
         super(PageBaseWithValue, self).__init__(vctx, location, page_desc)
 
         if vctx is not None:
-            if not hasattr(page_desc, "value"):
+            if not hasattr(page_desc, "value") and not self.is_optional_page:
                 vctx.add_warning(
                     location,
                     _("Attribute 'value' is not set, default "
