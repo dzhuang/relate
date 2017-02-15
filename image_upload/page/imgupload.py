@@ -25,11 +25,13 @@ THE SOFTWARE.
 """
 
 import django.forms as forms
-from django.utils.translation import ugettext as _, string_concat
+from django.utils.translation import ugettext as _, string_concat, ugettext_lazy
 from django.db import transaction
 from django.contrib import messages
 from django.core.urlresolvers import reverse
-
+from django.core.files.base import ContentFile
+from PIL import Image
+from image_upload.storages import UserImageStorage
 from image_upload.models import FlowPageImage
 
 from course.page.base import (
@@ -41,9 +43,11 @@ from course.utils import course_view, render_course_page
 
 from relate.utils import StyledForm
 
-from crispy_forms.layout import Layout, HTML, Submit
+from crispy_forms.layout import Layout, HTML, Submit, Field
 
 import os
+
+storage = UserImageStorage()
 
 
 def get_ordinal_from_page_context(page_context):
@@ -79,11 +83,16 @@ def is_course_staff_request(request, page_context):
 
 class ImageUploadForm(StyledForm):
     show_save_button = False
+
     def __init__(self, page_context,
                  page_behavior, page_data, *args, **kwargs):
         require_image_for_submission = kwargs.pop("require_image_for_submission",True)
         super(ImageUploadForm, self).__init__(*args, **kwargs)
 
+        self.fields["hidden_answer"] = forms.CharField(
+                required=False,
+                widget=forms.TextInput(),
+        )
         self.page_behavior = page_behavior
         self.page_context = page_context
         self.page_data = page_data
@@ -120,6 +129,22 @@ class ImageUploadForm(StyledForm):
         )
 
     def clean(self):
+        cleaned_data = super(ImageUploadForm, self).clean()
+        pk_list_str = cleaned_data["hidden_answer"]
+
+        if not pk_list_str:
+            if self.require_image_for_submission:
+                raise forms.ValidationError(_("You have not upload image(s)!"))
+
+        pk_list = []
+        try:
+            pk_list = [int(i.strip()) for i in pk_list_str.split(",")]
+        except:
+            pass
+
+        cleaned_data["hidden_answer"] = pk_list
+        return cleaned_data
+
         flow_session_id = self.page_context.flow_session.id
         ordinal = get_ordinal_from_page_context(self.page_context)
         flow_owner = self.page_context.flow_session.participation.user
@@ -319,13 +344,66 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
             page_context, page_behavior, page_data,
             post_data, files_data,
             require_image_for_submission=self.require_image_for_submission)
-
         return form
 
     def form_to_html(self, request, page_context, form, answer_data):
 
-        request_path = request.get_full_path()
+        ordinal = get_ordinal_from_page_context(page_context)
 
+        prev_visit_id = request.GET.get("visit_id")
+        answer_visit = None
+        if prev_visit_id is not None:
+            try:
+                prev_visit_id = int(prev_visit_id)
+            except ValueError:
+                from django.core.exceptions import SuspiciousOperation
+                raise SuspiciousOperation("non-integer passed for 'visit_id'")
+
+        from course.utils import FlowPageContext
+        from course.flow import get_prev_answer_visits_qset
+        fpctx = FlowPageContext(
+            repo=page_context.repo,
+            course=page_context.course,
+            flow_id=page_context.flow_session.flow_id,
+            ordinal=int(ordinal),
+            flow_session=page_context.flow_session,
+            participation=page_context.flow_session.participation,
+            request=request
+        )
+
+        prev_answer_visits = list(
+                get_prev_answer_visits_qset(fpctx.page_data))
+
+        # {{{ fish out previous answer_visit
+
+        viewing_prior_version = False
+        if prev_answer_visits and prev_visit_id is not None:
+            answer_visit = prev_answer_visits[0]
+
+            for ivisit, pvisit in enumerate(prev_answer_visits):
+                if pvisit.id == prev_visit_id:
+                    answer_visit = pvisit
+                    if ivisit > 0:
+                        viewing_prior_version = True
+
+                    break
+
+
+            prev_visit_id = answer_visit.id
+
+        elif prev_answer_visits:
+            answer_visit = prev_answer_visits[0]
+            prev_visit_id = answer_visit.id
+
+        else:
+            answer_visit = None
+
+        # }}}
+
+        if answer_visit is not None:
+            answer_data = answer_visit.answer
+
+        request_path = request.get_full_path()
         in_grading_page = False
 
         from django.core.urlresolvers import NoReverseMatch
@@ -336,7 +414,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                 args=(
                     page_context.course.identifier,
                     page_context.flow_session.id,
-                    get_ordinal_from_page_context(page_context))
+                    ordinal)
             )
 
             in_grading_page = grading_page_uri == request_path
@@ -352,7 +430,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                "accepted_mime_types": ['image/*'],
                'course_identifier': page_context.course,
                "flow_session_id": page_context.flow_session.id,
-               "ordinal": get_ordinal_from_page_context(page_context),
+               "ordinal": ordinal,
                "IS_COURSE_STAFF": is_course_staff_request(request, page_context),
                "MAY_CHANGE_ANSWER": form.page_behavior.may_change_answer,
                "SHOW_CREATION_TIME": True,
@@ -368,11 +446,34 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                "maxNumberOfFiles": self.maxNumberOfFiles
                }
 
+        pk_list_str = None
+        if answer_data:
+            try:
+                pk_list_str = answer_data.get("answer", None)
+            except:
+                pass
+
+        if pk_list_str:
+            ctx["pk_list_str"] = pk_list_str
+
+        if prev_visit_id:
+            ctx["prev_visit_id"] = prev_visit_id
+
         from django.template.loader import render_to_string
         return render_to_string(
                 "image_upload/imgupload-page-tmpl.html", ctx, request)
 
     def answer_data(self, page_context, page_data, form, files_data):
+        data_dict = {"answer": form.cleaned_data["hidden_answer"]}
+
+        data = data_dict.get("answer", [])
+
+        if isinstance(data, list):
+            try:
+                [int(i) for i in data]
+            except:
+                return data
+
         flow_session_id = page_context.flow_session.id
         ordinal = get_ordinal_from_page_context(page_context)
         flow_owner = page_context.flow_session.participation.user
@@ -380,16 +481,49 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         fpd = FlowPageData.objects.get(
             flow_session=flow_session_id, ordinal=ordinal)
 
-        qs = FlowPageImage.objects\
-            .filter(creator=flow_owner)\
-            .filter(flow_session=flow_session_id)\
+        qs = FlowPageImage.objects \
+            .filter(creator=flow_owner) \
+            .filter(flow_session=flow_session_id) \
             .filter(image_page_id=fpd.page_id)
 
-        if len(qs) > 0:
-            import json
-            return json.dumps(repr(qs))
-        else:
-            return None
+        saved_qs = qs.filter(pk__in=data)
+
+        for img in saved_qs:
+            if storage.is_temp_image(img.file.path) and img.pk in data:
+                name = storage.meta_backend.get(path=img.file.path)['original_storage_path']
+                new_img_name = storage.save(
+                    name=name,
+                    content=img.file,
+                    using="sendfile"
+                )
+                img.file = new_img_name
+                img.save()
+
+        return data_dict
+        # flow_session_id = page_context.flow_session.id
+        # ordinal = get_ordinal_from_page_context(page_context)
+        # flow_owner = page_context.flow_session.participation.user
+        # from course.models import FlowPageData
+        # fpd = FlowPageData.objects.get(
+        #     flow_session=flow_session_id, ordinal=ordinal)
+        #
+        # qs = FlowPageImage.objects\
+        #     .filter(creator=flow_owner)\
+        #     .filter(flow_session=flow_session_id)\
+        #     .filter(image_page_id=fpd.page_id)
+        #
+        # if not qs:
+        #     return None
+        #
+        # # id_list = []
+        # # for image in qs:
+        # #     if storage.is_temp_image(image.file.path):
+        #
+        # if len(qs) > 0:
+        #     import json
+        #     return json.dumps(repr(qs))
+        # else:
+        #     return None
 
     def normalized_bytes_answer(self, page_context, page_data, answer_data):
         if answer_data is None:

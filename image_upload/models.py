@@ -27,97 +27,20 @@ THE SOFTWARE.
 import six
 from django.db import models
 from django.conf import settings
-from django.core.files.storage import FileSystemStorage
 
-from django.utils.deconstruct import deconstructible
 from django.utils.translation import ugettext_lazy as _
 from django.utils.timezone import now
 
-from proxy_storage.storages.base import (
-    ProxyStorageBase, MultipleOriginalStoragesMixin)
-from proxy_storage.meta_backends.mongo import MongoMetaBackend
-from pymongo import MongoClient
-
-import os, tempfile
-
-from relate.utils import format_datetime_local, as_local_time
+from image_upload.storages import (user_directory_path, UserImageStorage)
 
 from imagekit.models import ImageSpecField
 from imagekit.processors import ResizeToFit
 
 from jsonfield import JSONField
 
-@deconstructible
-class SendFileStorage(FileSystemStorage):
-    def __init__(self):
-        super(SendFileStorage, self).__init__(
-                location=settings.SENDFILE_ROOT)
-
-temp_image_storage_location = getattr(
-    settings,
-    "RELATE_TEMP_IMAGE_STORAGE_LOCATION",
-    os.path.join(tempfile.gettempdir(), "relate_tmp_img"),
-)
-
-def get_mongo_db(database="learningwhat-image-meta-db"):
-    args = []
-    uri = getattr(settings, "RELATE_MONGO_META_DATABASE_URI", None)
-    if uri:
-        args.append(uri)
-    client = MongoClient(*args)
-    db = client[database]
-    return db
-
-
-class UserImageStorage(MultipleOriginalStoragesMixin, ProxyStorageBase):
-    #http://chibisov.github.io/django-proxy-storage/docs/
-    original_storages = (
-        ('sendfile', SendFileStorage()),
-        ('temp', FileSystemStorage(location=temp_image_storage_location)),
-    )
-    meta_backend = MongoMetaBackend(
-        database=get_mongo_db(),
-        collection='meta_backend_collection'
-    )
-
-    def save(self, name, content, max_length=None, original_storage_path=None, using=None):
-        if not using:
-            using = "sendfile"
-        print(using, "------------------------")
-        assert using in ["sendfile", "temp"]
-        return super(UserImageStorage, self).save(
-            name=name,
-            content=content,
-            original_storage_path=original_storage_path,
-            using=using
-        )
-
-    # def path(self, name):
-    #     pass
-
-    # def url(self, name):
-    #     meta_backend_obj = self.meta_backend.get(path=name)
-    #     return self.get_original_storage(meta_backend_obj=meta_backend_obj) \
-    #         .url(meta_backend_obj['original_storage_path'])
-
-    def path(self, name):
-        meta_backend_obj = self.meta_backend.get(path=name)
-        # print(dir(self.get_original_storage(meta_backend_obj=meta_backend_obj)))
-        return self.get_original_storage(meta_backend_obj=meta_backend_obj) \
-            .path(meta_backend_obj['original_storage_path'])
-
 
 multiple_image_storage = UserImageStorage()
 
-def user_directory_path(instance, filename):
-    if instance.creator.get_full_name() is not None:
-        user_full_name = instance.creator.get_full_name().replace(' ', '_')
-    else:
-        user_full_name = instance.creator.pk
-    return 'user_images/{0}(user_{1})/{2}'.format(
-        user_full_name,
-        instance.creator_id,
-        filename)
 
 class UserImage(models.Model):
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
@@ -141,20 +64,6 @@ class UserImage(models.Model):
     @models.permalink
     def get_absolute_url(self):
         return ('user_image_download', [self.creator_id, self.pk], {})
-
-    def get_random_filename(self):
-        import os, uuid
-        slug_path = self.file.path.replace(
-                os.path.basename(self.file.path),
-                self.slug)
-        [file_no_ext, ext] = os.path.splitext(slug_path)
-        while True:
-            rand_str4 = str(uuid.uuid4())[-4:]
-            rand_file_name = "".join([file_no_ext, rand_str4, ext])
-#            print "ori_file_name", self.file.path
-#            print "rand_file_name", rand_file_name
-            if not os.path.isfile(rand_file_name):
-                return rand_file_name
 
     class Meta:
         ordering = ("id", "creation_time")
@@ -275,18 +184,6 @@ class FlowPageImage(models.Model):
             else:
                 return None
         return None
-
-    def get_random_filename(self):
-        import os, uuid
-        slug_path = self.file.path.replace(
-                os.path.basename(self.file.path),
-                self.slug)
-        [file_no_ext, ext] = os.path.splitext(slug_path)
-        while True:
-            rand_str4 = str(uuid.uuid4())[-4:]
-            rand_file_name = "".join([file_no_ext, rand_str4, ext])
-            if not os.path.isfile(rand_file_name):
-                return rand_file_name
 
     class Meta:
         ordering = ("id", "creation_time")

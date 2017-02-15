@@ -1,7 +1,7 @@
 $(document).ready(function () {
     'use strict';
     $(".relate-save-button").each(function () {
-        $(this).attr("formaction", window.location.pathname);
+        $(this).attr("formaction", window.location.pathname).detach().appendTo('#real-submit-div');
     });
     // $('#past-submission_dropdown').addClass('hidden');
     new Clipboard('.btn-data-copy');
@@ -169,10 +169,15 @@ $('.btn-srt-tbl-cfm').on('click', function () {
 });
 
 var clicked_row;
+var clicked_row_id;
 $('#fileupload').on("click", ".btn-edit-image", function () {
     'use strict';
     clicked_row = $(event.target).closest('tr');
+    clicked_row_id = $(clicked_row).find('[id*=thumbnail]').prop("id").replace("thumbnail","");
+    console.log(clicked_row_id);
 });
+
+var all_pks;
 
 window.addEventListener('DOMContentLoaded', function () {
     'use strict';
@@ -182,6 +187,7 @@ window.addEventListener('DOMContentLoaded', function () {
         .css('margin', 0).css('border', 0);
     var cropper, image, dataX, dataY, dataHeight, dataWidth, dataRotate;
     $('body').on('shown.bs.modal', function () {
+        $(".relate-save-button").addClass('disabled');
         image = document.querySelector("#image");
         dataX = document.getElementById('dataX');
         dataY = document.getElementById('dataY');
@@ -320,15 +326,14 @@ window.addEventListener('DOMContentLoaded', function () {
                 .done(function (response) {
                     var new_img = response.file;
                     if (window.location.pathname.indexOf("/grading/") === -1) {
-                        $("#thumbnail" + new_img.pk).prop('src', new_img.thumbnailUrl);
+                        $("#thumbnail" + clicked_row_id).prop("id", "thumbnail" + new_img.pk).prop('src', new_img.thumbnailUrl);
                     } else {
-                        $("#thumbnail" + new_img.pk).prop('src', new_img.url);
-                        $("#thumbnail" + new_img.pk).prop('style', "width:40vw");
+                        $("#thumbnail" + clicked_row_id).prop("id", "thumbnail" + new_img.pk).prop('src', new_img.url).prop('style', "width:40vw");
                     }
-                    $("#previewid" + new_img.pk).prop('href', new_img.url);
-                    $("#filename" + new_img.pk).prop('href', new_img.url);
-                    $("#filetime" + new_img.pk).prop('title', new_img.timestr_title).html(new_img.timestr_short);
-                    $("#filesize" + new_img.pk).html(formatFileSize(new_img.size));
+                    $("#previewid" + clicked_row_id).prop("id", "previewid" + new_img.pk).prop('href', new_img.url);
+                    $("#filename" + clicked_row_id).prop("id", "filename" + new_img.pk).prop('href', new_img.url);
+                    $("#filetime" + clicked_row_id).prop("id", "filetime" + new_img.pk).prop('title', new_img.timestr_title).html(new_img.timestr_short);
+                    $("#filesize" + clicked_row_id).prop("id", "filesize" + new_img.pk).html(formatFileSize(new_img.size));
                     cropper.replace(new_img.url);
                     crpMsg(true, gettext('Done!'));
                     setTimeout(function () {
@@ -355,6 +360,7 @@ window.addEventListener('DOMContentLoaded', function () {
 
     });
     $('body').on('hidden.bs.modal', '.modal', function () {
+        $(".relate-save-button").removeClass('disabled');
         $('.img-container').html("");
         $(this).removeData('bs.modal');
         cropper.destroy();
@@ -365,17 +371,23 @@ window.addEventListener('DOMContentLoaded', function () {
 
 
 function activate_change_listening()
-{
+{  var input_changed = false;
+  function pk_changed(evt)
+    {
+        all_pks = [];
+        $("#img-presentation-table").find('[id*=thumbnail]').each(function(){ all_pks.push(this.id.replace("thumbnail","")); });
+        $("#id_hidden_answer").prop("value", all_pks);
+    }
 
   function on_input_change(evt)
   {
     input_changed = true;
   }
 
-  // $(":checkbox").on("change", on_input_change);
-  $('#fileupload').on("file_edited", on_input_change);
-  $('#fileupload').on("order_changed", on_input_change);
-  $('#fileupload').on("fileuploaddestroyed", on_input_change);
+  $(":file").on("change", on_input_change);
+
+  $('#fileupload').on("file_edited order_changed fileuploaddestroyed", on_input_change);
+  $('#fileupload').on("file_edited fileuploadcompleted order_changed fileuploaddestroyed", pk_changed);
 
   $(window).on('beforeunload',
       function()

@@ -86,18 +86,17 @@ def serialize(request, instance, file_attr='file'):
 
     error = None
 
-    print(obj.path, "------------from serialize")
-
     try:
         IsFile = os.path.isfile(obj.path)
         size = obj.size
         obj_name = obj.name
         img_type = mimetypes.guess_type(obj.path)[0] or 'image/png'
-    except:
+    except Exception as e:
         obj_name = None
         size = 0
         img_type = None
-        error = ugettext("The image file does not exist!")
+        if isinstance(e, (OSError, IOError)):
+            error = ugettext("The image file does not exist!")
 
     # use slug by default
     name_field = getattr(instance, 'slug', obj_name)
