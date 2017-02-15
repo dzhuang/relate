@@ -71,9 +71,7 @@ $('.btn-srt-tbl').on('click', function () {
         ).show();
         chg_data = [];
         $('#fileupload > table > tbody > tr').each(function () {
-            if ($(this).data('order').new_ord !== $(this).data('order').old_ord) {
                 chg_data.push($(this).data('order'));
-            }
         });
         
         if (chg_data.length > 0) {

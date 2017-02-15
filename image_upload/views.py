@@ -103,8 +103,6 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin, JSONResponseMixin
         self.object = form.save(commit=False)
         self.object.creator = self.request.user
 
-        self.object.save()
-
         course_identifier = self.kwargs["course_identifier"]
         course = get_object_or_404(Course, identifier=course_identifier)
         flow_session_id = self.kwargs["flow_session_id"]
@@ -115,14 +113,6 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin, JSONResponseMixin
         self.object.flow_session_id = flow_session_id
         self.object.image_page_id = fpd.page_id
         self.object.course = course
-        try:
-            last_order = self.model.objects\
-                .filter(flow_session=flow_session_id)\
-                .filter(image_page_id=fpd.page_id)\
-                .order_by('-order')[0].order
-            self.object.order = last_order + 1
-        except IndexError:
-            pass
         self.object.save()
 
         files = [serialize(self.request, self.object, 'file')]
@@ -460,6 +450,7 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
 class ImgTableOrderError(BadRequest):
     pass
 
+
 @json_view
 @login_required
 @transaction.atomic
@@ -484,17 +475,6 @@ def image_order(pctx, flow_session_id, ordinal):
         raise ImgTableOrderError(_('Only Ajax Post is allowed.'))
 
     chg_data_list = json.loads(request.POST['chg_data'])
-
-    for chg_data in chg_data_list:
-        try:
-            chg_instance = FlowPageImage.objects.get(pk=chg_data['pk'])
-        except FlowPageImage.DoesNotExist:
-            raise ImgTableOrderError(_('Please upload the image first.'))
-        try:
-            chg_instance.order = chg_data['new_ord']
-            chg_instance.save()
-        except:
-            raise ImgTableOrderError(_('There are errors, please refresh the page or try again later'))
 
     response = {'message': ugettext('Done')}
 
