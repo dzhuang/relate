@@ -82,7 +82,7 @@ class PageContext(object):
             commit_sha,  # type: bytes
             flow_session,  # type: FlowSession
             # added by zd
-            ordinal=None,  # type: Optional[Int, None]
+            ordinal=None,  # type: Optional[int]
             in_sandbox=False,  # type: bool
             page_uri=None,  # type: Optional[str]
             ):

@@ -64,7 +64,7 @@ from course.content import get_flow_desc, get_course_commit_sha
 # {{{ for mypy
 
 from typing import cast, Tuple, Text, Optional, Any, Iterable  # noqa
-from course.utils import CoursePageContext  # noqa
+from course.utils import CoursePageContext, FlowSessionAccessRule  # noqa
 from course.content import FlowDesc  # noqa
 from course.models import Course, FlowPageVisitGrade  # noqa
 
@@ -102,6 +102,7 @@ def get_session_access_rule_by_opp(pctx, opp):
 
 
 def may_view_opp_by_access_rule(access_rule):
+    # type: (FlowSessionAccessRule) -> bool
     if flow_permission.cannot_see_in_participant_grade_book \
             in access_rule.permissions:
         return False
@@ -109,6 +110,7 @@ def may_view_opp_by_access_rule(access_rule):
 
 
 def may_view_opp_result_by_access_rule(access_rule):
+    # type: (FlowSessionAccessRule) -> bool
     if flow_permission.cannot_see_result_in_participant_grade_book \
             in access_rule.permissions:
         return False
