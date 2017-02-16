@@ -164,8 +164,6 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
         prev_visit_id = self.request.GET.get("visit_id")
 
 
-        answer_visit = None
-        answer_data = None
         if prev_visit_id is not None:
             try:
                 prev_visit_id = int(prev_visit_id)
@@ -190,23 +188,16 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
 
         # {{{ fish out previous answer_visit
 
-        viewing_prior_version = False
         if prev_answer_visits and prev_visit_id is not None:
             answer_visit = prev_answer_visits[0]
 
             for ivisit, pvisit in enumerate(prev_answer_visits):
                 if pvisit.id == prev_visit_id:
                     answer_visit = pvisit
-                    if ivisit > 0:
-                        viewing_prior_version = True
-
                     break
-
-            prev_visit_id = answer_visit.id
 
         elif prev_answer_visits:
             answer_visit = prev_answer_visits[0]
-            prev_visit_id = answer_visit.id
 
         else:
             answer_visit = None
