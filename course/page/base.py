@@ -746,16 +746,11 @@ class PageBaseWithValue(PageBase):
         super(PageBaseWithValue, self).__init__(vctx, location, page_desc)
 
         if vctx is not None:
-            if not hasattr(page_desc, "value") and not self.is_optional_page:
-                vctx.add_warning(
-                    location,
-                    _("Attribute 'value' is not set, default "
-                      "value '1' is used."))
             if getattr(page_desc, "value", 0) and self.is_optional_page:
-                vctx.add_warning(
+                raise ValidationError(
                     location,
-                    _("Attribute 'value' with non-zero value "
-                      "is ignored when 'is_optional_page' is True."))
+                    _("Attribute 'value' should be removed when "
+                      "'is_optional_page' is True."))
 
     def allowed_attrs(self):
         return super(PageBaseWithValue, self).allowed_attrs() + (
@@ -850,7 +845,7 @@ class HumanTextFeedbackForm(StyledForm):
                     [0, 10, 20, 25, 30, 40, 50, 60, 70, 75, 80, 90, 100]),
                 label=_("Grade percent"))
 
-        if point_value is not None:
+        if point_value is not None and point_value != 0:
             self.fields["grade_points"] = forms.FloatField(
                     min_value=0,
                     max_value=MAX_EXTRA_CREDIT_FACTOR*point_value,
@@ -923,7 +918,7 @@ class HumanTextFeedbackForm(StyledForm):
         if self.point_value is None:
             return self.cleaned_data["grade_percent"]
         elif (self.cleaned_data["grade_percent"] is not None
-                and self.cleaned_data["grade_points"] is not None):
+                and self.cleaned_data.get("grade_points") is not None):
             points_percent = 100*self.cleaned_data["grade_points"]/self.point_value
             direct_percent = self.cleaned_data["grade_percent"]
 
@@ -935,7 +930,7 @@ class HumanTextFeedbackForm(StyledForm):
         elif self.cleaned_data["grade_percent"] is not None:
             return self.cleaned_data["grade_percent"]
 
-        elif self.cleaned_data["grade_points"] is not None:
+        elif self.cleaned_data.get("grade_points") is not None:
             if self.point_value:
                 return 100*self.cleaned_data["grade_points"]/self.point_value
             else:
