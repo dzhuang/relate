@@ -76,7 +76,7 @@ from course.utils import (
         get_session_access_rule,
         get_session_grading_rule,
         get_session_notify_rule,
-        get_flow_rules_str, # added by zd
+        get_flow_rules_str,  # added by zd
         FlowSessionGradingRule,
         )
 from course.exam import get_login_exam_ticket
@@ -195,7 +195,7 @@ def _adjust_flow_session_page_data_inner(repo, flow_session,
                 fpd.save()
 
             # Allow to update data if data changed
-            old_data = dict((k ,fpd.data[k]) for k in fpd.data)
+            old_data = dict((k, fpd.data[k]) for k in fpd.data)
             updated_data = page.update_page_data(pctx, fpd.data)
             if updated_data != old_data:
                 fpd.data = updated_data
@@ -1424,8 +1424,9 @@ def view_start_flow(pctx, flow_id):
                     grade_aggregation_strategy.use_earliest])
 
         # {{{ added by zd
-        flow_rule_str = get_flow_rules_str(pctx.course, pctx.participation, flow_id, 
-                                           fctx.flow_desc, now_datetime)
+        flow_rule_str = get_flow_rules_str(
+            pctx.course, pctx.participation, flow_id,
+            fctx.flow_desc, now_datetime)
 
         if session_start_rule.session_available_count <= 2:
             session_available_count_html = (
@@ -2046,34 +2047,34 @@ def view_flow_page(pctx, flow_session_id, ordinal):
                         _("Your have <b>%(time_remain)s</b> (before <b>"
                           "%(completed_before)s</b>) to submit this session to "
                           "get <b>%(credit_percent)d%%</b> of your grade."), " ") %
-                        {
-                            "time_remain": time_until,
-                            "completed_before": compact_local_datetime_str(
-                                completed_before, now_datetime),
-                            "credit_percent": credit_percent}
-                        + flow_page_warning_message_next)
+                    {
+                        "time_remain": time_until,
+                        "completed_before": compact_local_datetime_str(
+                            completed_before, now_datetime),
+                        "credit_percent": credit_percent}
+                    + flow_page_warning_message_next)
 
             if (session_due
-                and (len(expiration_mode_choices)>1)
-                and not is_next_final
-               ):
+                and len(expiration_mode_choices) > 1
+                and
+                    not is_next_final):
                 flow_page_warning_message += (
-                        string_concat(
-                            _("If you neither submitted this session nor applied "
-                              "'Do not submit session for grading' before <b>"
-                              "%(session_due)s</b>, your session will be "
-                              "ended later, which might also reduce your "
-                              "grade.")) %
-                            { "session_due": compact_local_datetime_str(
-                                session_due, now_datetime)}
-                            )
+                    string_concat(
+                        _("If you neither submitted this session nor applied "
+                          "'Do not submit session for grading' before <b>"
+                          "%(session_due)s</b>, your session will be "
+                          "ended later, which might also reduce your "
+                          "grade.")) % {
+                        "session_due": compact_local_datetime_str(
+                            session_due, now_datetime)
+                    })
 
             from datetime import timedelta
 
             if flow_page_warning_message:
 
                 if time_delta > timedelta(hours=48):
-                    messages.add_message(request, messages.INFO, 
+                    messages.add_message(request, messages.INFO,
                                          flow_page_warning_message)
                 else:
                     messages.add_message(request, messages.WARNING,
@@ -2132,10 +2133,10 @@ def view_flow_page(pctx, flow_session_id, ordinal):
         # fix flow with grade_identifier by not generates_grade
         if pctx.has_permission(pperm.assign_grade):
             from course.models import get_flow_grading_opportunity
-            grading_rule = get_session_grading_rule (
+            grading_rule = get_session_grading_rule(
                 flow_session, fpctx.flow_desc, now_datetime)
             if grading_rule.grade_identifier and grading_rule.generates_grade:
-                opportunity = get_flow_grading_opportunity (
+                opportunity = get_flow_grading_opportunity(
                     pctx.course, flow_session.flow_id, fpctx.flow_desc,
                     grading_rule.grade_identifier,
                     grading_rule.grade_aggregation_strategy)
@@ -2648,13 +2649,10 @@ def finish_flow_session_view(pctx, flow_session_id):
         recipient_list = None
         extra_message = None
 
-        if (
-                (hasattr(fctx.flow_desc, "notify_on_submit")
-                 and fctx.flow_desc.notify_on_submit)
+        if ((hasattr(fctx.flow_desc, "notify_on_submit")
+             and fctx.flow_desc.notify_on_submit)
             or
-                notify_rule.may_send_notification
-            ):
-
+                notify_rule.may_send_notification):
             will_send_submit_notification = True
 
             if (grading_rule.grade_identifier
@@ -2681,10 +2679,10 @@ def finish_flow_session_view(pctx, flow_session_id):
 
             if (hasattr(fctx.flow_desc, "notify_on_submit")
                     and fctx.flow_desc.notify_on_submit):
-                # This functionality doesn't have time rule. For notications
-                # on a time basis, use flow_permission.send_submit_notif_email instead.
+                # This functionality doesn't have time rule.
+                # For notications on a time basis,
+                # use flow_permission.send_submit_notif_email instead.
                 recipient_list = fctx.flow_desc.notify_on_submit
-
 
             # }}}
 

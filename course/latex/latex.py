@@ -30,14 +30,18 @@ from django.utils.translation import ugettext as _
 
 from .utils import strip_comments, strip_spaces
 
+
 class TexDocParseError(Exception):
     pass
+
 
 class TexDocMissingElementError(TexDocParseError):
     pass
 
+
 class TexDocWrongElementOrderError(TexDocParseError):
     pass
+
 
 class TexDoc():
     """

@@ -93,7 +93,7 @@ class PageContext(object):
         self.flow_session = flow_session
         self.in_sandbox = in_sandbox
         self.page_uri = page_uri
-        self.ordinal = ordinal # added by zd
+        self.ordinal = ordinal  # added by zd
 
 
 class PageBehavior(object):

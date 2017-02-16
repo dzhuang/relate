@@ -108,7 +108,7 @@ class CourseAdmin(admin.ModelAdmin):
             "time_period",
             "start_date",
             "end_date",
-            "enroll_deadline", # added by zd
+            "enroll_deadline",  # added by zd
             "hidden",
             "listed",
             "accepts_enrollment")
@@ -117,7 +117,7 @@ class CourseAdmin(admin.ModelAdmin):
             "name",
             "time_period",
             "start_date",
-            "enroll_deadline", # added by zd
+            "enroll_deadline",  # added by zd
             "end_date",
             "hidden",
             "listed",
@@ -359,7 +359,8 @@ class ParticipationPreapprovalAdmin(admin.ModelAdmin):
 
     get_roles.short_description = _("Roles")  # type: ignore
 
-    list_display = ("provided_name", "email", "institutional_id", "course", "get_roles",
+    list_display = ("provided_name",
+                    "email", "institutional_id", "course", "get_roles",
             "creation_time", "creator")
     list_filter = ("course", "roles")
 
@@ -703,7 +704,6 @@ class FlowPageVisitGradeAdmin(admin.ModelAdmin):
             "visit__flow_session__participation__user__last_name",
             )
 
-
     save_on_top = True
 
     # {{{ permissions
@@ -722,6 +722,7 @@ class FlowPageVisitGradeAdmin(admin.ModelAdmin):
             =pperm.use_admin_interface)
 
     # }}}
+
 
 admin.site.register(FlowPageVisitGrade, FlowPageVisitGradeAdmin)
 

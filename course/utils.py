@@ -109,7 +109,7 @@ class FlowSessionNotifyRule(FlowSessionRuleBase):
     def __init__(
             self,
             may_send_notification=None,  # type: Optional[bool]
-            message=None, # type: Optional[Text]
+            message=None,  # type: Optional[Text]
             ):
         # type: (...) -> None
         self.may_send_notification = may_send_notification
@@ -146,8 +146,11 @@ class FlowSessionGradingRule(FlowSessionRuleBase):
             max_points=None,  # type: Optional[float]
             max_points_enforced_cap=None,  # type: Optional[float]
             bonus_points=None,  # type: Optional[float]
-            credit_next=None,  # type: bool # credit precent of next rule # added by zd
-            is_next_final=None,  # type: bool # next rule is deadline # added by zd
+
+            # credit precent of next rule, added by zd
+            credit_next=None,  # type: bool
+            # next rule is deadline # added by zd
+            is_next_final=None,  # type: bool
             ):
         # type: (...) -> None
 
@@ -279,9 +282,9 @@ def get_flow_rules_str(course, participation, flow_id, flow_desc,
     latest_start_datetime = None
 
     for rule in start_rules:
-        if (hasattr(rule, "if_before") 
-            and hasattr(rule, "may_start_new_session")):
-
+        if (hasattr(rule, "if_before")
+            and
+                hasattr(rule, "may_start_new_session")):
             if getattr(rule, "may_start_new_session"):
                 latest_start_datetime = parse_date_spec(course, rule.if_before)
 
@@ -296,9 +299,9 @@ def get_flow_rules_str(course, participation, flow_id, flow_desc,
             string_concat("<li><span class='h4'>",
                           _("Latest start time"),
                           "</span><ul><li class='text-danger'><strong>",
-                          _("Session(s) must start before %s."), 
+                          _("Session(s) must start before %s."),
                           "</strong></li></ul></li>")
-            % latest_start_datetime_str )
+            % latest_start_datetime_str)
     # }}}
 
     # {{{ get stringified grade_rule
@@ -315,12 +318,12 @@ def get_flow_rules_str(course, participation, flow_id, flow_desc,
         if hasattr(rule, "if_completed_before"):
             ds = parse_date_spec(course, rule.if_completed_before)
             due = parse_date_spec(course, getattr(rule, "due", None))
-            credit_percent=getattr(rule, "credit_percent", 100)
+            credit_percent = getattr(rule, "credit_percent", 100)
             date_grading_tuple += (
-                {"complete_before": ds, 
+                {"complete_before": ds,
                  "due": due,
-                 "credit_percent":credit_percent
-                },)
+                 "credit_percent": credit_percent
+                 },)
 
     grade_rule_str = ""
 
@@ -331,7 +334,7 @@ def get_flow_rules_str(course, participation, flow_id, flow_desc,
         grade_rule_str += string_concat(
                 "<li>",
                 _("If completed before %(time)s, you'll get "
-                "%(credit_percent)s%% of your grade."), 
+                "%(credit_percent)s%% of your grade."),
                 "</li>") % {
                         "time": datetime_str,
                         "credit_percent": rule["credit_percent"]}
@@ -340,10 +343,10 @@ def get_flow_rules_str(course, participation, flow_id, flow_desc,
         grade_rule_str = (
             string_concat("<li><span class='h4'>",
                           _("Submission time and Grading"),
-                          "</span><ul>") 
+                          "</span><ul>")
             + grade_rule_str
             + string_concat("<li class='text-danger'><strong>",
-                            _("No grade will be granted for " 
+                            _("No grade will be granted for "
                             "submision later than %s."),
                             "</strong></li></ul></li>") % datetime_str)
 
@@ -360,6 +363,7 @@ def get_flow_rules_str(course, participation, flow_id, flow_desc,
     return flow_rule_str
 
 # }}}
+
 
 def get_session_start_rule(
         course,  # type: Course
@@ -396,9 +400,9 @@ def get_session_start_rule(
     for rule in rules:
 
         # {{{ added by zd
-        if (hasattr(rule, "if_before") 
-            and hasattr(rule, "may_start_new_session")):
-
+        if (hasattr(rule, "if_before")
+            and
+                hasattr(rule, "may_start_new_session")):
             if getattr(rule, "may_start_new_session"):
                 latest_start_datetime = parse_date_spec(course, rule.if_before)
         # }}}
@@ -589,7 +593,6 @@ def get_session_notify_rule(
     from course.enrollment import get_participation_role_identifiers
     roles = get_participation_role_identifiers(session.course, session.participation)
     session_notify_rule = None
-    ds = None
 
     for rule in rules:
         if not _eval_generic_conditions(

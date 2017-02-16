@@ -921,9 +921,10 @@ def markup_to_html(
         from course.latex import tex_to_img_tag
 
         def latex_not_enabled_warning(caller, *args, **kwargs):
-            return  "<div class='alert alert-danger'>%s</div>" % _(
-                "RELATE_LATEX_TO_IMAGE_ENABLED is set to False, "
-                "no image will be generated.")
+            return (
+                "<div class='alert alert-danger'>%s</div>" %
+                ("RELATE_LATEX_TO_IMAGE_ENABLED is set to False, "
+                 "no image will be generated."))
 
         def jinja_tex_to_img_tag(caller, *args, **kwargs):
             from os.path import join
@@ -950,9 +951,9 @@ def markup_to_html(
             if not validate_only:
                 env.globals["latex"] = latex_not_enabled_warning
             else:
-                raise ImproperlyConfigured(_(
-                "RELATE_LATEX_TO_IMAGE_ENABLED is set to False, "
-                "no image will be generated."))
+                raise ImproperlyConfigured(
+                    _("RELATE_LATEX_TO_IMAGE_ENABLED is set to False, "
+                      "no image will be generated."))
             text = template.render(**jinja_env)
 
     # }}}
@@ -1287,10 +1288,6 @@ def compute_chunk_weight_and_shown(
     return 0, True
 
 
-def get_course_desc(repo, course, commit_sha):
-    return get_yaml_from_repo(repo, course.course_file, commit_sha)
-
-
 def get_collapsible_chunk_content(id, title, content, subtitle, sub_color):
     def pre_string(id, title):
         pre_string = (
@@ -1303,7 +1300,7 @@ def get_collapsible_chunk_content(id, title, content, subtitle, sub_color):
 
         if subtitle:
             from django.utils.translation import string_concat
-            pre_string +=(
+            pre_string += (
                 string_concat(
                     '<span style="font-size:x-small; color:%(sub_color)s">',
                     '(',
@@ -1311,7 +1308,7 @@ def get_collapsible_chunk_content(id, title, content, subtitle, sub_color):
                     ')</span>')
                 % {"sub_color": sub_color})
 
-        pre_string +=(
+        pre_string += (
             '</a></h3></div>'
             '<div id="%(id)s_accordion" class="panel-collapse collapse"'
             'markdown="block">'
@@ -1343,7 +1340,10 @@ def get_processed_page_chunks(
                 compute_chunk_weight_and_shown(
                         course, chunk, roles, now_datetime,
                         facilities)
-        chunk.html_content = markup_to_html(course, repo, commit_sha, chunk.content, jinja_env=jinja_env)
+        chunk.html_content = markup_to_html(
+            course, repo, commit_sha, chunk.content,
+            jinja_env=jinja_env
+        )
         if not hasattr(chunk, "title"):
             chunk.title = extract_title_from_markup(chunk.content)
 
