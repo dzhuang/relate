@@ -137,7 +137,9 @@ class FlowSessionGradingRule(FlowSessionRuleBase):
             self,
             grade_identifier,  # type: Optional[Text]
             grade_aggregation_strategy,  # type: Text
-            completed_before,  # type: Text  # added by zd
+
+            # added by zd
+            completed_before,  # type: Text
             due,  # type: Optional[datetime.datetime]
             generates_grade,  # type: bool
             description=None,  # type: Optional[Text]
