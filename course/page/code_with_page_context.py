@@ -28,22 +28,14 @@ import six
 
 import jinja2
 
-from course.validation import ValidationError
-import django.forms as forms
-from django.core.exceptions import ObjectDoesNotExist
 from django.utils.html import escape
 from django.utils.translation import ugettext as _, string_concat
 from django.utils import translation
 from django.conf import settings
 
-from relate.utils import StyledForm
 from course.page.base import (
-        PageBaseWithTitle, markup_to_html, PageBaseWithValue,
-        PageBaseWithHumanTextFeedback,
-        AnswerFeedback, get_auto_feedback,
-
+        markup_to_html, AnswerFeedback, get_auto_feedback,
         get_editor_interaction_mode)
-from course.constants import flow_permission
 from course.page.code import (
     PythonCodeQuestion, PythonCodeForm, request_python_run_with_retries,
     is_nuisance_failure
@@ -79,14 +71,18 @@ class PythonCodeQuestionWithPageContext(PythonCodeQuestion):
                 {
                     "prompt_html":
                     markup_to_html(page_context, self.page_desc.prompt),
-                    "initial_code": self._initial_code_with_page_context(page_context),
+                    "initial_code":
+                        self._initial_code_with_page_context(page_context),
                     "show_setup_code": getattr(
                         self.page_desc, "show_setup_code", False),
-                    "setup_code": self.get_code_with_page_context_str(page_context, "setup_code"),
+                    "setup_code":
+                        self.get_code_with_page_context_str(
+                            page_context, "setup_code"),
                     "show_test_code": getattr(
                         self.page_desc, "show_test_code", False),
                     "test_code": (
-                        self.get_code_with_page_context_str(page_context, "test_code")
+                        self.get_code_with_page_context_str(
+                            page_context, "test_code")
                     ),
                     })
 
@@ -119,7 +115,8 @@ class PythonCodeQuestionWithPageContext(PythonCodeQuestion):
                 post_data, files_data)
 
     def get_code_with_page_context_str(self, page_context, code_name):
-        assert code_name in ["test_code", "setup_code", "correct_code", "initial_code"]
+        assert code_name in [
+            "test_code", "setup_code", "correct_code", "initial_code"]
         code = getattr(self.page_desc, code_name, None)
         if code is None:
             return code
@@ -139,11 +136,13 @@ class PythonCodeQuestionWithPageContext(PythonCodeQuestion):
         return template.render(page_context=page_context)
 
     def get_test_code_with_page_context(self, page_context):
-        test_code = self.get_code_with_page_context_str(page_context, "test_code")
+        test_code = self.get_code_with_page_context_str(
+            page_context, "test_code")
         if test_code is None:
             return test_code
 
-        correct_code = self.get_code_with_page_context_str(page_context, "correct_code")
+        correct_code = self.get_code_with_page_context_str(
+            page_context, "correct_code")
         if correct_code is None:
             correct_code = ""
 
@@ -463,7 +462,6 @@ class PythonCodeQuestionWithPageContext(PythonCodeQuestion):
                 feedback="\n".join(feedback_bits),
                 bulk_feedback="\n".join(bulk_feedback_bits))
 
-
     def correct_answer(self, page_context, page_data, answer_data, grade_data):
         result = ""
 
@@ -472,7 +470,8 @@ class PythonCodeQuestionWithPageContext(PythonCodeQuestion):
                     page_context,
                     self.page_desc.correct_code_explanation)
 
-        correct_code = self.get_code_with_page_context_str(page_context, "correct_code")
+        correct_code = self.get_code_with_page_context_str(
+            page_context, "correct_code")
         if correct_code is not None:
             result += ("".join([
                 _("The following code is a valid answer"),
@@ -482,5 +481,3 @@ class PythonCodeQuestionWithPageContext(PythonCodeQuestion):
         return result
 
 # }}}
-
-

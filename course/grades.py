@@ -232,12 +232,13 @@ def view_participant_list(pctx):
             try:
                 registered_preappr = ParticipationPreapproval.objects\
                         .exclude(institutional_id__isnull=True)\
-                        .get(course=pctx.course, 
+                        .get(course=pctx.course,
                              institutional_id=parti.user.institutional_id)
-                registered_provided_name_list.append(registered_preappr.provided_name)
+                registered_provided_name_list.append(
+                    registered_preappr.provided_name)
             except ParticipationPreapproval.DoesNotExist:
                 registered_provided_name_list.append(None)
-        
+
     participations = zip(participations, registered_provided_name_list)
 
     unregistered = list(ParticipationPreapproval.objects
@@ -1552,11 +1553,12 @@ def download_all_submissions(pctx, flow_id):
                 bytes_answer = page.normalized_bytes_answer(
                         grading_page_context, visit.page_data.data,
                         visit.answer)
-                
+
                 username = visit.flow_session.participation.user.get_full_name()
                 if not username:
                     username = visit.flow_session.participation.user.username
-                institutional_id = visit.flow_session.participation.user.institutional_id
+                institutional_id = (
+                    visit.flow_session.participation.user.institutional_id)
                 if not institutional_id:
                     institutional_id = ""
 

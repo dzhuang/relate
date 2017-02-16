@@ -33,7 +33,7 @@ except UnicodeDecodeError:
     with open(_local_settings_file, encoding="utf8") as inf:
         local_settings_contents = inf.read()
 except IOError:
-   pass
+    pass
 finally:
     exec(compile(local_settings_contents, "local_settings.py", "exec"),
             local_settings)
@@ -250,7 +250,7 @@ for name, val in local_settings.items():
 
 # {{{ celery config
 
-if not "BROKER_URL" in local_settings:
+if "BROKER_URL" not in local_settings:
     BROKER_URL = 'django://'
 
 CELERY_ACCEPT_CONTENT = ['pickle']

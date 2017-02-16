@@ -156,6 +156,7 @@ LATEX_LOG_OMIT_LINE_STARTS = (
     # more
 )
 
+
 def get_abstract_latex_log(log):
     '''abstract error msg from latex compilation log'''
     msg = log.split(LATEX_ERR_LOG_BEGIN_LINE_STARTS)[1]\
@@ -176,13 +177,13 @@ def get_abstract_latex_log(log):
 
 def strip_comments(source):
     # modified from https://gist.github.com/amerberg/a273ca1e579ab573b499
-    tokens = (
+    tokens = (  # noqa
                 'PERCENT', 'BEGINCOMMENT', 'ENDCOMMENT',
                 'BACKSLASH', 'CHAR', 'BEGINVERBATIM',
                 'ENDVERBATIM', 'NEWLINE', 'ESCPCT',
                 'MAKEATLETTER', 'MAKEATOTHER',
              )
-    states = (
+    states = (  # noqa
                 ('makeatblock', 'exclusive'),
                 ('makeatlinecomment', 'exclusive'),
                 ('linecomment', 'exclusive'),
@@ -192,78 +193,78 @@ def strip_comments(source):
 
     # Deal with escaped backslashes, so we don't
     # think they're escaping %
-    def t_BACKSLASH(t):
+    def t_BACKSLASH(t):  # noqa
         r"\\\\"
         return t
 
     # Leaving all % in makeatblock
-    def t_MAKEATLETTER(t):
+    def t_MAKEATLETTER(t):  # noqa
         r"\\makeatletter"
         t.lexer.begin("makeatblock")
         return t
 
     # One-line comments
-    def t_PERCENT(t):
+    def t_PERCENT(t):  # noqa
         r"\%"
         t.lexer.begin("linecomment")
 
     # Escaped percent signs
-    def t_ESCPCT(t):
+    def t_ESCPCT(t):  # noqa
         r"\\\%"
         return t
 
     # Comment environment, as defined by verbatim package
-    def t_BEGINCOMMENT(t):
+    def t_BEGINCOMMENT(t):  # noqa
         r"\\begin\s*{\s*comment\s*}"
         t.lexer.begin("commentenv")
 
     #Verbatim environment (different treatment of comments within)
-    def t_BEGINVERBATIM(t):
+    def t_BEGINVERBATIM(t):  # noqa
         r"\\begin\s*{\s*verbatim\s*}"
         t.lexer.begin("verbatim")
         return t
 
     #Any other character in initial state we leave alone
-    def t_CHAR(t):
+    def t_CHAR(t):  # noqa
         r"."
         return t
 
-    def t_NEWLINE(t):
+    def t_NEWLINE(t):  # noqa
         r"\n"
         return t
 
     # End comment environment
-    def t_commentenv_ENDCOMMENT(t):
+    def t_commentenv_ENDCOMMENT(t):  # noqa
         r"\\end\s*{\s*comment\s*}"
         #Anything after \end{comment} on a line is ignored!
         t.lexer.begin('linecomment')
 
     # Ignore comments of comment environment
-    def t_commentenv_CHAR(t):
+    def t_commentenv_CHAR(t):  # noqa
         r"."
         pass
 
-    def t_commentenv_NEWLINE(t):
+    def t_commentenv_NEWLINE(t):  # noqa
         r"\n"
         pass
 
     #End of verbatim environment
-    def t_verbatim_ENDVERBATIM(t):
+    def t_verbatim_ENDVERBATIM(t):  # noqa
         r"\\end\s*{\s*verbatim\s*}"
         t.lexer.begin('INITIAL')
         return t
 
     #Leave contents of verbatim environment alone
-    def t_verbatim_CHAR(t):
+    def t_verbatim_CHAR(t):  # noqa
         r"."
         return t
 
-    def t_verbatim_NEWLINE(t):
+    def t_verbatim_NEWLINE(t):  # noqa
         r"\n"
         return t
 
     #End a % comment when we get to a new line
-    def t_linecomment_ENDCOMMENT(t):
+    def t_linecomment_ENDCOMMENT(t):  # noqa
         r"\n"
         t.lexer.begin("INITIAL")
 
@@ -271,46 +272,46 @@ def strip_comments(source):
         return t
 
     #Ignore anything after a % on a line
-    def t_linecomment_CHAR(t):
+    def t_linecomment_CHAR(t):  # noqa
         r"."
         pass
 
-    def t_makeatblock_MAKEATOTHER(t):
+    def t_makeatblock_MAKEATOTHER(t):  # noqa
         r"\\makeatother"
         t.lexer.begin('INITIAL')
         return t
 
-    def t_makeatblock_BACKSLASH(t):
+    def t_makeatblock_BACKSLASH(t):  # noqa
         r"\\\\"
         return t
 
     # Escaped percent signs in makeatblock
-    def t_makeatblock_ESCPCT(t):
+    def t_makeatblock_ESCPCT(t):  # noqa
         r"\\\%"
         return t
 
     # presever % in makeatblock
-    def t_makeatblock_PERCENT(t):
+    def t_makeatblock_PERCENT(t):  # noqa
         r"\%"
         t.lexer.begin("makeatlinecomment")
         return t
 
-    def t_makeatlinecomment_NEWLINE(t):
+    def t_makeatlinecomment_NEWLINE(t):  # noqa
         r"\n"
         t.lexer.begin('makeatblock')
         return t
 
     # Leave contents of makeatblock alone
-    def t_makeatblock_CHAR(t):
+    def t_makeatblock_CHAR(t):  # noqa
         r"."
         return t
 
-    def t_makeatblock_NEWLINE(t):
+    def t_makeatblock_NEWLINE(t):  # noqa
         r"\n"
         return t
 
     # For bad characters, we just skip over it
-    def t_ANY_error(t):
+    def t_ANY_error(t):  # noqa
         t.lexer.skip(1)
 
     lexer = ply.lex.lex()
@@ -347,13 +348,13 @@ def strip_spaces(s, allow_single_empty_line=False):
             s = s.replace('\n\n\n', '\n\n')
 
     # remove redundant white spaces and tabs
-    s = s.replace ("\t", " ")
+    s = s.replace("\t", " ")
     while "  " in s:
         s = s.replace("  ", " ")
 
     return s
 
-## }}}
+# }}}
 
 
 def get_all_indirect_subclasses(cls):

@@ -26,7 +26,6 @@ THE SOFTWARE.
 
 import six
 import os
-import platform
 import sys
 import shutil
 import re
@@ -85,10 +84,10 @@ class CommandBase(object):
                 hint=("Unable to run '%(cmd)s'. Is "
                       "%(tool)s installed or has its "
                       "path correctly configured "
-                      "in local_settings.py?")
-                     % {"cmd": self.cmd,
-                        "tool": self.name,
-                        },
+                      "in local_settings.py?") % {
+                    "cmd": self.cmd,
+                    "tool": self.name,
+                },
                 obj=self.name
             )
         elif self.required_version:
@@ -100,11 +99,10 @@ class CommandBase(object):
                     hint=("'%(tool)s' with version "
                           ">=%(required)s is required, "
                           "current version is %(version)s"
-                          )
-                         % {"tool": self.name,
-                            "required": self.required_version,
-                            "version": version
-                            },
+                          ) % {
+                        "tool": self.name,
+                        "required": self.required_version,
+                        "version": version},
                     obj=self.name
                 )
         return error
@@ -179,22 +177,20 @@ class LuaLatex(LatexCompiler):
     name = "LuaLatex"
     cmd = "lualatex"
     output_format = "pdf"
+
     def __init__(self):
         super(LuaLatex, self).__init__()
-        self.latexmk_prog_repl = (
-            "-%s=%s" % ("pdflatex", self.bin_path)
-        )
+        self.latexmk_prog_repl = "-%s=%s" % ("pdflatex", self.bin_path)
 
 
 class XeLatex(LatexCompiler):
     name = "XeLatex"
     cmd = "xelatex"
     output_format = "pdf"
+
     def __init__(self):
         super(XeLatex, self).__init__()
-        self.latexmk_prog_repl = (
-            "-%s=%s" % ("pdflatex", self.bin_path)
-        )
+        self.latexmk_prog_repl = "-%s=%s" % ("pdflatex", self.bin_path)
 
 
 class Imageconverter(CommandBase):
@@ -223,6 +219,7 @@ class Dvipng(TexCompilerBase, Imageconverter):
     name = "dvipng"
     cmd = "dvipng"
     output_format = "png"
+
     def get_converter_cmdline(
             self, input_filepath, output_filepath):
         return [self.bin_path,
@@ -240,6 +237,7 @@ class Dvisvg(TexCompilerBase, Imageconverter):
     name = "dvisvg"
     cmd = "dvisvgm"
     output_format = "svg"
+
     def get_converter_cmdline(
             self, input_filepath, output_filepath):
         return[self.bin_path,
@@ -354,7 +352,7 @@ class Tex2ImgBase(object):
             .replace(".", "").lower()
         self.image_ext = ".%s" % self.image_format
 
-        self.compiled_ext =".%s" % self.compiler.output_format\
+        self.compiled_ext = ".%s" % self.compiler.output_format\
             .replace(".", "").lower()
 
         # Where the latex compilation error log
@@ -608,7 +606,9 @@ class Tex2ImgBase(object):
                         if not isinstance(result, six.text_type):
                             result = six.text_type(result)
                         if not os.path.isfile(self.datauri_saving_path):
-                            with atomic_write(self.datauri_saving_path, mode="wb") as f:
+                            with atomic_write(
+                                    self.datauri_saving_path,
+                                    mode="wb") as f:
                                 f.write(result)
                         return result
 
@@ -704,11 +704,11 @@ ALLOWED_COMPILER_FORMAT_COMBINATION = (
 def get_tex2img_class(compiler, image_format):
     image_format = image_format.replace(".", "").lower()
     compiler = compiler.lower()
-    if not image_format in ALLOWED_LATEX2IMG_FORMAT:
+    if image_format not in ALLOWED_LATEX2IMG_FORMAT:
         raise ValueError(
             _("Unsupported image format '%s'") % image_format)
 
-    if not compiler in ALLOWED_COMPILER:
+    if compiler not in ALLOWED_COMPILER:
         raise ValueError(
             _("Unsupported tex compiler '%s'") % compiler)
 
@@ -717,10 +717,10 @@ def get_tex2img_class(compiler, image_format):
             _("Unsupported combination: "
               "('%(compiler)s', '%(format)s'). "
               "Currently support %(supported)s.")
-              % {"compiler": compiler,
-                 "format": image_format,
-                 "supported": ", ".join(
-                     str(e) for e in ALLOWED_COMPILER_FORMAT_COMBINATION)}
+            % {"compiler": compiler,
+               "format": image_format,
+               "supported": ", ".join(
+                   str(e) for e in ALLOWED_COMPILER_FORMAT_COMBINATION)}
         )
 
     class_name = "%s2%s" % (compiler.title(), image_format.title())
@@ -728,6 +728,7 @@ def get_tex2img_class(compiler, image_format):
     return getattr(sys.modules[__name__], class_name)
 
 # }}}
+
 
 # {{{ check if multiple images are generated due to long pdf
 

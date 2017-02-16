@@ -68,7 +68,6 @@ def do_get_current_js_lang_name(parser, token):
 # }}}
 
 
-
 @register.filter(expects_localtime=True, is_safe=True)
 def compact_datetime(value):
     """Formats a date according to the given format."""
@@ -80,7 +79,8 @@ def compact_datetime(value):
 
     return mark_safe(
         '<span title="%(time)s">%(time_short)s</span>' %
-            {"time": format_datetime_local(value),
-             "time_short": format_datetime_local(value,
-                        format="SHORT_DATETIME_FORMAT")
-                })
+        {"time": format_datetime_local(value),
+         "time_short": format_datetime_local(
+             value,
+             format="SHORT_DATETIME_FORMAT")
+         })

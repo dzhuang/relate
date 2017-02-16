@@ -376,7 +376,7 @@ class flow_permission:  # noqa
 
     .. attribute:: cannot_see_result_in_participant_grade_book
 
-        (Optional) If present, participants won't see the result of this 
+        (Optional) If present, participants won't see the result of this
         flow in their grade book and single grade of this flow.
     """
     view = "view"
