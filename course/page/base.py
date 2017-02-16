@@ -81,7 +81,8 @@ class PageContext(object):
             repo,  # type: Repo_ish
             commit_sha,  # type: bytes
             flow_session,  # type: FlowSession
-            ordinal=None,  # type: int or None # added by zd
+            # added by zd
+            ordinal=None,  # type: Optional[Int, None]
             in_sandbox=False,  # type: bool
             page_uri=None,  # type: Optional[str]
             ):
