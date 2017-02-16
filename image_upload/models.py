@@ -31,7 +31,8 @@ from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 from django.utils.timezone import now
 
-from image_upload.storages import (user_directory_path, UserImageStorage)
+from image_upload.storages import (
+    user_flowsession_img_path, UserImageStorage)
 
 from imagekit.models import ImageSpecField
 from imagekit.processors import ResizeToFit
@@ -40,52 +41,6 @@ from jsonfield import JSONField
 
 
 multiple_image_storage = UserImageStorage()
-
-
-class UserImage(models.Model):
-    creator = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
-            verbose_name=_('Creator'), on_delete=models.SET_NULL)
-    file = models.ImageField(upload_to=user_directory_path,
-                             storage=multiple_image_storage)
-    slug = models.SlugField(max_length=256, blank=True)
-    creation_time = models.DateTimeField(default=now,
-                                         verbose_name=_('Creation Time'))
-
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = self.file.name
-        super(UserImage, self).save(*args, **kwargs)
-
-    def delete(self, *args, **kwargs):
-        """delete -- Remove to leave file."""
-        self.file.delete(False)
-        super(UserImage, self).delete(*args, **kwargs)
-
-    @models.permalink
-    def get_absolute_url(self):
-        return ('user_image_download', [self.creator_id, self.pk], {})
-
-    class Meta:
-        ordering = ("id", "creation_time")
-
-    def __unicode__(self):
-        return _("%(url)s uploaded by %(creator)s") % {
-            'url': self.get_absolute_url(),
-            'creator': self.creator}
-
-    if six.PY3:
-        __str__ = __unicode__
-
-
-def user_flowsession_img_path(instance, file_name):
-    if instance.creator.get_full_name() is not None:
-        user_full_name = instance.creator.get_full_name().replace(' ', '_')
-    else:
-        user_full_name = instance.creator.pk
-    return 'user_images/{0}(user_{1})/{2}'.format(
-        user_full_name,
-        instance.creator_id,
-        file_name)
 
 
 class FlowPageImage(models.Model):

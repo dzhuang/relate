@@ -3,8 +3,8 @@ import tempfile
 
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
-from django.utils.deconstruct import deconstructible
 from django.utils._os import safe_join  # noqa
+from django.utils.deconstruct import deconstructible
 from django.utils.encoding import force_text
 from proxy_storage.meta_backends.mongo import MongoMetaBackend
 from proxy_storage.storages.base import MultipleOriginalStoragesMixin, ProxyStorageBase
@@ -35,6 +35,7 @@ def get_mongo_db(database="learningwhat-image-meta-db"):
     return db
 
 
+@deconstructible
 class ProxyStorage(ProxyStorageBase):
     def save(self, name, content, max_length=None, original_storage_path=None):
         """
@@ -116,7 +117,7 @@ class UserImageStorage(MultipleOriginalStoragesMixin, ProxyStorage):
         return self.save(original_storage_path, content, original_storage_path=original_storage_path, using="sendfile")
 
 
-def user_directory_path(instance, filename):
+def user_flowsession_img_path(instance, file_name):
     if instance.creator.get_full_name() is not None:
         user_full_name = instance.creator.get_full_name().replace(' ', '_')
     else:
@@ -124,4 +125,4 @@ def user_directory_path(instance, filename):
     return 'user_images/{0}(user_{1})/{2}'.format(
         user_full_name,
         instance.creator_id,
-        filename)
+        file_name)
