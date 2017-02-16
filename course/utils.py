@@ -64,6 +64,7 @@ if False:
             FlowSession,
             FlowPageData,
             )
+    from course.content import FlowSessionNotifyRuleDesc  # noqa
 
 # }}}
 
@@ -139,7 +140,7 @@ class FlowSessionGradingRule(FlowSessionRuleBase):
             grade_aggregation_strategy,  # type: Text
 
             # added by zd
-            completed_before,  # type: Text
+            completed_before,  # type: Optional[datetime.datetime]
             due,  # type: Optional[datetime.datetime]
             generates_grade,  # type: bool
             description=None,  # type: Optional[Text]
@@ -150,7 +151,7 @@ class FlowSessionGradingRule(FlowSessionRuleBase):
             bonus_points=None,  # type: Optional[float]
 
             # credit precent of next rule, added by zd
-            credit_next=None,  # type: bool
+            credit_next=None,  # type: Optional[float]
             # next rule is deadline # added by zd
             is_next_final=None,  # type: bool
             ):

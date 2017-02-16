@@ -59,7 +59,7 @@ else:
 # {{{ mypy
 
 from typing import (  # noqa
-        cast, Union, Any, List, Tuple, Optional, Callable, Text)
+        cast, Union, Any, List, Tuple, Optional, Callable, Text, Dict)
 
 if False:
     # for mypy
@@ -869,7 +869,7 @@ def markup_to_html(
         reverse_func=None,  # type: Callable
         validate_only=False,  # type: bool
         use_jinja=True,  # type: bool
-        jinja_env={},  # type: Dict
+        jinja_env={},  # type: Optional[Dict[Text, Any]]
         ):
     # type: (...) -> Text
 
@@ -1288,8 +1288,16 @@ def compute_chunk_weight_and_shown(
     return 0, True
 
 
-def get_collapsible_chunk_content(id, title, content, subtitle, sub_color):
+def get_collapsible_chunk_content(
+        chunk_id,  # type: Text
+        title,  # type: Text
+        content,  # type: Text
+        subtitle,  # type: Text
+        sub_color,  # type: Text
+        ):
+    # type: (...) -> Text
     def pre_string(id, title):
+        # type: (Text, Text) -> Text
         pre_string = (
             '<div class="panel panel-default" style="margin-bottom:0"'
             'markdown="block"><div class="panel-heading" >'
@@ -1318,10 +1326,11 @@ def get_collapsible_chunk_content(id, title, content, subtitle, sub_color):
         return pre_string
 
     def end_string(id, title):
+        # type: (Text, Text) -> Text
         end_string = '</div></div></div>'
         return end_string
 
-    return pre_string(id, title) + content + end_string(id, title)
+    return pre_string(chunk_id, title) + content + end_string(chunk_id, title)
 
 
 def get_processed_page_chunks(
@@ -1332,7 +1341,7 @@ def get_processed_page_chunks(
         roles,  # type: List[Text]
         now_datetime,  # type: datetime.datetime
         facilities,  # type: frozenset[Text]
-        jinja_env,  # type: Text
+        jinja_env={},  # type: Optional[Dict[Text, Any]]
         ):
     # type: (...) -> List[ChunkDesc]
     for chunk in page_desc.chunks:

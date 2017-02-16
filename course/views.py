@@ -101,8 +101,10 @@ def home(request):
     now_datetime = get_now_or_fake_time(request)
 
     current_courses = []
-    inprogress_courses = []  # added by zd
-    past_courses = []
+
+    # added by zd
+    inprogress_courses = []  # type: List[Course]
+    past_courses = []  # type: List[Course]
     for course in Course.objects.filter(listed=True):
         participation = get_participation_for_request(request, course)
 
@@ -130,7 +132,7 @@ def home(request):
                             inprogress_courses.append(course)
                 # }}}
             else:
-                ##past_courses.append(course)
+                # past_courses.append(course)
                 if participation:
                     past_courses.append(course)
 
@@ -172,6 +174,7 @@ def check_course_state(course, participation):
 
 
 def enroll_expire_or_ended_message(course, participation, now_date):
+    # type: (Course, Optional[Participation], datetime.date) -> Text
     message = None
     if course.enroll_deadline:
         if (participation is None
