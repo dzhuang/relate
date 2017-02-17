@@ -39,6 +39,16 @@ from django.utils.encoding import (
     DEFAULT_LOCALE_ENCODING, force_text)
 
 
+# {{{ mypy
+
+from typing import Any, Text, List, Dict, Tuple, Union, Optional, ByteString  # noqa
+
+if False:
+    from course.latex.converter import CommandBase  # noqa
+
+# }}}
+
+
 # {{{ Constants
 
 ALLOWED_COMPILER = ['latex', 'pdflatex', 'xelatex']
@@ -58,6 +68,7 @@ ALLOWED_COMPILER_FORMAT_COMBINATION = (
 
 def popen_wrapper(args, os_err_exc_type=CommandError,
                   stdout_encoding='utf-8', **kwargs):
+    # type: (...) -> Tuple[Text, Text, int]
     """
     Extended from django.core.management.utils.popen_wrapper.
     `**kwargs` is added so that more kwargs can be added.
@@ -95,6 +106,7 @@ def popen_wrapper(args, os_err_exc_type=CommandError,
 # {{{ file read and write
 
 def get_basename_or_md5(filename, s):
+    # type: (Text, Text) -> Optional[Text]
     """
     :return: the basename of `filename` if `filename` is not empty,
     else, return the md5 of string `s`.
@@ -109,6 +121,7 @@ def get_basename_or_md5(filename, s):
 
 
 def file_read(filename):
+    # type: (Text) -> Text
     '''Read the content of a file and close it properly.'''
     with open(filename, 'rb') as f:
         ff = File(f)
@@ -117,6 +130,7 @@ def file_read(filename):
 
 
 def file_write(filename, content):
+    # type: (Text, Text) -> None
     '''Write into a file and close it properly.'''
     with open(filename, 'wb') as f:
         ff = File(f)
@@ -128,6 +142,7 @@ def file_write(filename, content):
 # {{{ convert file to data uri
 
 def get_file_data_uri(file_path):
+    # type: (Text) -> Optional[Text]
     '''Convert file to data URI'''
     if not file_path:
         return None
@@ -147,17 +162,18 @@ def get_file_data_uri(file_path):
 
 # {{{ get error log abstracted
 
-LATEX_ERR_LOG_BEGIN_LINE_STARTS = "\n! "
-LATEX_ERR_LOG_END_LINE_STARTS = "\nHere is how much of TeX's memory"
+LATEX_ERR_LOG_BEGIN_LINE_STARTS = "\n! "  # type: Text
+LATEX_ERR_LOG_END_LINE_STARTS = "\nHere is how much of TeX's memory"  # type: Text
 LATEX_LOG_OMIT_LINE_STARTS = (
     "See the LaTeX manual or LaTeX",
     "Type  H <return>  for",
     " ...",
     # more
-)
+)  # type: Text
 
 
 def get_abstract_latex_log(log):
+    # type: (Text) -> Text
     '''abstract error msg from latex compilation log'''
     msg = log.split(LATEX_ERR_LOG_BEGIN_LINE_STARTS)[1]\
         .split(LATEX_ERR_LOG_END_LINE_STARTS)[0]
@@ -176,6 +192,7 @@ def get_abstract_latex_log(log):
 # {{{ strip comments from source
 
 def strip_comments(source):
+    # type: (Text) -> Text
     # modified from https://gist.github.com/amerberg/a273ca1e579ab573b499
     tokens = (  # noqa
                 'PERCENT', 'BEGINCOMMENT', 'ENDCOMMENT',
@@ -324,6 +341,7 @@ def strip_comments(source):
 # {{{ remove redundant strings
 
 def strip_spaces(s, allow_single_empty_line=False):
+    # type: (Text, Optional[bool]) -> Text
     """
     strip spaces in s, so that the result will be
     considered same although new empty lines or
@@ -358,6 +376,7 @@ def strip_spaces(s, allow_single_empty_line=False):
 
 
 def get_all_indirect_subclasses(cls):
+    # type: (Any) -> List[Any]
     all_subcls = []
 
     for subcls in cls.__subclasses__():
@@ -370,6 +389,7 @@ def get_all_indirect_subclasses(cls):
 
 
 def replace_latex_space_seperator(s):
+    # type: (Text) -> Text
     """
     "{{", "}}", "{%", %}", "{#" and "#}" are used in jinja
     template, so we have to put spaces between those

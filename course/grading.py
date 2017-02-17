@@ -64,7 +64,7 @@ from course.constants import (
 
 # {{{ for mypy
 
-from typing import Text, Any, Optional, List  # noqa
+from typing import Text, Any, Optional, List, Dict, Union  # noqa
 from course.models import (  # noqa
         GradingOpportunity)
 from course.utils import (  # noqa
@@ -560,7 +560,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     all_page_data = get_all_page_data(flow_session)
     assert all_page_data
 
-    all_page_grade_points = []  # type: List[Any]
+    all_page_grade_points = []  # type: List[Union[float, None]]
     all_expect_grade_page_data = []
     for i, pd in enumerate(all_page_data):
         fpctx_i = FlowPageContext(
