@@ -33,7 +33,7 @@ except UnicodeDecodeError:
     with open(_local_settings_file, encoding="utf8") as inf:
         local_settings_contents = inf.read()
 except IOError:
-   pass
+    pass
 finally:
     exec(compile(local_settings_contents, "local_settings.py", "exec"),
             local_settings)
@@ -58,12 +58,15 @@ INSTALLED_APPS = (
 
     "accounts",
     "course",
-    ) + local_settings.get("RELATE_CUSTOM_INSTALLED_APPS", ())
+)
 
-if not local_settings.get("RELATE_STATIC_CDN_ENABLED", False):
-    INSTALLED_APPS = INSTALLED_APPS + ("django.contrib.staticfiles",)
+if local_settings.get("RELATE_CUSTOM_INSTALLED_APPS", False):  # type: ignore
+    INSTALLED_APPS = INSTALLED_APPS + local_settings["RELATE_CUSTOM_INSTALLED_APPS"]  # type: ignore # noqa
 
-if local_settings.get("RELATE_SIGN_IN_BY_SAML2_ENABLED", False):
+if not local_settings.get("RELATE_STATIC_CDN_ENABLED", False):  # type: ignore
+    INSTALLED_APPS = INSTALLED_APPS + ("django.contrib.staticfiles",)  # type: ignore # noqa
+
+if local_settings.get("RELATE_SIGN_IN_BY_SAML2_ENABLED", False):  # type: ignore
     INSTALLED_APPS = INSTALLED_APPS + ("djangosaml2",)  # type: ignore
 
 # }}}
@@ -84,7 +87,10 @@ MIDDLEWARE = (
     "course.exam.ExamFacilityMiddleware",
     "course.exam.ExamLockdownMiddleware",
     "relate.utils.MaintenanceMiddleware",
-) + local_settings.get("RELATE_CUSTOM_MIDDLEWARE_CLASS", ())
+)
+
+if local_settings.get("RELATE_CUSTOM_MIDDLEWARE_CLASS", None):
+    MIDDLEWARE = MIDDLEWARE + local_settings["RELATE_CUSTOM_MIDDLEWARE_CLASS"]  # type: ignore # noqa
 
 # }}}
 
@@ -129,7 +135,10 @@ BOWER_INSTALLED_APPS = (
     "jstree#3.2.1",
     "select2#4.0.1",
     "select2-bootstrap-css",
-    ) + local_settings.get("RELATE_CUSTOM_BOWER_INSTALLED_APPS", ())
+    )
+
+if local_settings.get("RELATE_CUSTOM_BOWER_INSTALLED_APPS", None):
+    BOWER_INSTALLED_APPS = BOWER_INSTALLED_APPS + local_settings["RELATE_CUSTOM_BOWER_INSTALLED_APPS"]   # type: ignore # noqa
 
 CODEMIRROR_PATH = "codemirror"
 
@@ -250,7 +259,7 @@ for name, val in local_settings.items():
 
 # {{{ celery config
 
-if not "BROKER_URL" in local_settings:
+if "BROKER_URL" not in local_settings:
     BROKER_URL = 'django://'
 
 CELERY_ACCEPT_CONTENT = ['pickle']

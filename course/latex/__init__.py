@@ -37,8 +37,15 @@ from course.latex.utils import (
 TIKZ_PGF_RE = re.compile(r"\\begin\{(?:tikzpicture|pgfpicture)\}")
 DEFAULT_IMG_HTML_CLASS = "img-responsive"
 
+# {{{ mypy
+
+from typing import Text, Any, Optional  # noqa
+
+# }}}
+
 
 def tex_to_img_tag(tex_source, *args, **kwargs):
+    # type: (Text, *Any, **Any) -> Optional[Text]
     '''Convert LaTex to IMG tag'''
 
     compiler = kwargs.get("compiler", None)
@@ -71,12 +78,13 @@ def tex_to_img_tag(tex_source, *args, **kwargs):
 
     if html_class_extra:
         if isinstance(html_class_extra, list):
-            html_class_extra = " ".join (html_class_extra)
+            html_class_extra = " ".join(html_class_extra)
         elif not isinstance(html_class_extra, six.string_types):
             raise ValueError(
                 _('"html_class_extra" must be a string or a list'))
-        html_class = "%s %s" %(DEFAULT_IMG_HTML_CLASS, html_class_extra)
-    else: html_class = DEFAULT_IMG_HTML_CLASS
+        html_class = "%s %s" % (DEFAULT_IMG_HTML_CLASS, html_class_extra)
+    else:
+        html_class = DEFAULT_IMG_HTML_CLASS
 
     texdoc = TexDoc(
         tex_source, preamble=tex_preamble,
@@ -88,17 +96,19 @@ def tex_to_img_tag(tex_source, *args, **kwargs):
 
     if (compiler == "latex"
         and image_format == "png"
-        and re.search(TIKZ_PGF_RE, tex_source)):
+        and
+            re.search(TIKZ_PGF_RE, tex_source)):
         image_format = "svg"
 
-    tex2img_class = get_tex2img_class(compiler, image_format)
+    assert isinstance(compiler, six.text_type)
+
+    tex2img_class = get_tex2img_class(compiler, image_format)  # type: ignore
 
     if not alt:
         alt = texdoc.document
 
     if alt:
-        from django.utils.html import escape
-        alt = "alt='%s'" % alt.strip().replace("\n","")
+        alt = "alt='%s'" % alt.strip().replace("\n", "")
 
     latex2img = tex2img_class(
         tex_source=texdoc.as_latex(),

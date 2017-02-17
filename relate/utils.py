@@ -200,7 +200,7 @@ def format_datetime_local(datetime, format='DATETIME_FORMAT'):
 
 
 def compact_local_datetime_str(datetime, now_datetime, in_python=False):
-    from django.conf import settings
+    # type: (datetime.datetime, datetime.datetime, bool) -> str
     if as_local_time(datetime).year == \
             as_local_time(now_datetime).year:
         if in_python:
@@ -213,7 +213,7 @@ def compact_local_datetime_str(datetime, now_datetime, in_python=False):
                         format="DATETIME_FORMAT"),
                  "time_short": format_datetime_local(as_local_time(datetime),
                         format="SHORT_DATETIME_FORMAT")
-                })
+                 })
     else:
         if in_python:
             return format_datetime_local(as_local_time(datetime))
@@ -345,6 +345,7 @@ LANG_MAP_EXTRA = {
         'zh-hant': 'zh-TW',
         'zh-hk': 'zh-TW',
         }
+
 
 def to_js_lang_name(dj_lang_name):
     """

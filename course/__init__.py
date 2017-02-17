@@ -9,6 +9,7 @@ from django.utils import translation
 
 old_render = GetCurrentLanguageNode.render
 
+
 def new_render(cls, context):
     from relate.utils import LANG_MAP_EXTRA
     lang = translation.get_language()
@@ -16,6 +17,7 @@ def new_render(cls, context):
         lang = LANG_MAP_EXTRA[lang].lower()
     context[cls.variable] = lang
     return ''
+
 
 GetCurrentLanguageNode.render = new_render
 

@@ -64,7 +64,7 @@ from course.content import get_flow_desc, get_course_commit_sha
 # {{{ for mypy
 
 from typing import cast, Tuple, Text, Optional, Any, Iterable  # noqa
-from course.utils import CoursePageContext  # noqa
+from course.utils import CoursePageContext, FlowSessionAccessRule  # noqa
 from course.content import FlowDesc  # noqa
 from course.models import Course, FlowPageVisitGrade  # noqa
 
@@ -102,6 +102,7 @@ def get_session_access_rule_by_opp(pctx, opp):
 
 
 def may_view_opp_by_access_rule(access_rule):
+    # type: (FlowSessionAccessRule) -> bool
     if flow_permission.cannot_see_in_participant_grade_book \
             in access_rule.permissions:
         return False
@@ -109,6 +110,7 @@ def may_view_opp_by_access_rule(access_rule):
 
 
 def may_view_opp_result_by_access_rule(access_rule):
+    # type: (FlowSessionAccessRule) -> bool
     if flow_permission.cannot_see_result_in_participant_grade_book \
             in access_rule.permissions:
         return False
@@ -232,12 +234,13 @@ def view_participant_list(pctx):
             try:
                 registered_preappr = ParticipationPreapproval.objects\
                         .exclude(institutional_id__isnull=True)\
-                        .get(course=pctx.course, 
+                        .get(course=pctx.course,
                              institutional_id=parti.user.institutional_id)
-                registered_provided_name_list.append(registered_preappr.provided_name)
+                registered_provided_name_list.append(
+                    registered_preappr.provided_name)
             except ParticipationPreapproval.DoesNotExist:
                 registered_provided_name_list.append(None)
-        
+
     participations = zip(participations, registered_provided_name_list)
 
     unregistered = list(ParticipationPreapproval.objects
@@ -1552,11 +1555,12 @@ def download_all_submissions(pctx, flow_id):
                 bytes_answer = page.normalized_bytes_answer(
                         grading_page_context, visit.page_data.data,
                         visit.answer)
-                
+
                 username = visit.flow_session.participation.user.get_full_name()
                 if not username:
                     username = visit.flow_session.participation.user.username
-                institutional_id = visit.flow_session.participation.user.institutional_id
+                institutional_id = (
+                    visit.flow_session.participation.user.institutional_id)
                 if not institutional_id:
                     institutional_id = ""
 

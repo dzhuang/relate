@@ -26,7 +26,6 @@ THE SOFTWARE.
 
 import six
 import os
-import platform
 import sys
 import shutil
 import re
@@ -44,12 +43,17 @@ from .utils import (
     popen_wrapper, get_basename_or_md5,
     file_read, file_write, get_abstract_latex_log)
 
+# mypy
+
+from typing import Text, Optional, Any, Tuple, List, Union  # noqa
 
 # {{{ latex compiler classes and image converter classes
+
 
 class CommandBase(object):
     @property
     def name(self):
+        # type: () -> Text
         """
         The name of the command tool
         """
@@ -57,15 +61,17 @@ class CommandBase(object):
 
     @property
     def cmd(self):
+        # type: () -> Text
         """
         The string of the command
         """
         raise NotImplementedError
 
-    required_version = ""
-    bin_path = ""
+    required_version = ""  # type: Text
+    bin_path = ""  # type: Text
 
     def check(self):
+        # type: () -> Text
         error = ""
         out = ""
         strerror = ""
@@ -85,10 +91,10 @@ class CommandBase(object):
                 hint=("Unable to run '%(cmd)s'. Is "
                       "%(tool)s installed or has its "
                       "path correctly configured "
-                      "in local_settings.py?")
-                     % {"cmd": self.cmd,
-                        "tool": self.name,
-                        },
+                      "in local_settings.py?") % {
+                    "cmd": self.cmd,
+                    "tool": self.name,
+                },
                 obj=self.name
             )
         elif self.required_version:
@@ -100,11 +106,10 @@ class CommandBase(object):
                     hint=("'%(tool)s' with version "
                           ">=%(required)s is required, "
                           "current version is %(version)s"
-                          )
-                         % {"tool": self.name,
-                            "required": self.required_version,
-                            "version": version
-                            },
+                          ) % {
+                        "tool": self.name,
+                        "required": self.required_version,
+                        "version": version},
                     obj=self.name
                 )
         return error
@@ -112,6 +117,7 @@ class CommandBase(object):
 
 class TexCompilerBase(CommandBase):
     def __init__(self):
+        # type: () -> None
         self.bin_path_dir = getattr(
             settings, "RELATE_%s_BIN_DIR" % self.name.upper(),
             getattr(settings, "RELATE_LATEX_BIN_DIR", "")
@@ -134,13 +140,16 @@ class LatexCompiler(TexCompilerBase):
 
     @property
     def output_format(self):
+        # type: () -> Text
         raise NotImplementedError()
 
     def __init__(self):
+        # type: () -> None
         super(LatexCompiler, self).__init__()
         self.latexmk_prog_repl = self._get_latexmk_prog_repl()
 
     def _get_latexmk_prog_repl(self):
+        # type: () -> Text
         """
         Program replace when using "-pdflatex=" or "-latex="
         arg in latexmk, especially needed when compilers are
@@ -153,6 +162,7 @@ class LatexCompiler(TexCompilerBase):
         )
 
     def get_latexmk_subpro_cmdline(self, input_path):
+        # type: (Text) -> List[Text]
         latexmk = Latexmk()
         return [
             latexmk.bin_path,
@@ -179,31 +189,33 @@ class LuaLatex(LatexCompiler):
     name = "LuaLatex"
     cmd = "lualatex"
     output_format = "pdf"
+
     def __init__(self):
+        # type: () -> None
         super(LuaLatex, self).__init__()
-        self.latexmk_prog_repl = (
-            "-%s=%s" % ("pdflatex", self.bin_path)
-        )
+        self.latexmk_prog_repl = "-%s=%s" % ("pdflatex", self.bin_path)
 
 
 class XeLatex(LatexCompiler):
     name = "XeLatex"
     cmd = "xelatex"
     output_format = "pdf"
+
     def __init__(self):
+        # type: () -> None
         super(XeLatex, self).__init__()
-        self.latexmk_prog_repl = (
-            "-%s=%s" % ("pdflatex", self.bin_path)
-        )
+        self.latexmk_prog_repl = "-%s=%s" % ("pdflatex", self.bin_path)
 
 
 class Imageconverter(CommandBase):
 
     @property
     def output_format(self):
+        # type: () -> Text
         raise NotImplementedError
 
     def __init__(self):
+        # type: () -> None
         bin_path_dir = getattr(
             settings, "RELATE_%s_BIN_DIR" % self.name.upper(),
             ""
@@ -213,6 +225,7 @@ class Imageconverter(CommandBase):
 
     def get_converter_cmdline(
             self, input_filepath, output_filepath):
+        # type: (Text, Text) -> List[Text]
         raise NotImplementedError
 
 
@@ -223,8 +236,10 @@ class Dvipng(TexCompilerBase, Imageconverter):
     name = "dvipng"
     cmd = "dvipng"
     output_format = "png"
+
     def get_converter_cmdline(
             self, input_filepath, output_filepath):
+        # type: (Text, Text) -> List[Text]
         return [self.bin_path,
                 '-o', output_filepath,
                 '-pp', '1',
@@ -240,8 +255,10 @@ class Dvisvg(TexCompilerBase, Imageconverter):
     name = "dvisvg"
     cmd = "dvisvgm"
     output_format = "svg"
+
     def get_converter_cmdline(
             self, input_filepath, output_filepath):
+        # type: (Text, Text) -> List[Text]
         return[self.bin_path,
             '--no-fonts',
             '-o', output_filepath,
@@ -255,6 +272,7 @@ class ImageMagick(Imageconverter):
 
     def get_converter_cmdline(
             self, input_filepath, output_filepath):
+        # type: (Text, Text) -> List[Text]
         return [self.bin_path,
                 '-density', '96',
                 '-quality', '85',
@@ -269,6 +287,7 @@ class ImageMagick(Imageconverter):
 # {{{ convert file to data uri
 
 def get_image_datauri(file_path):
+    # type: (Text) -> Optional[Text]
     """
     Convert file to data URI
     """
@@ -300,6 +319,7 @@ class Tex2ImgBase(object):
 
     @property
     def compiler(self):
+        # type: () -> LatexCompiler
         """
         :return: an instance of `LatexCompiler`
         """
@@ -307,12 +327,14 @@ class Tex2ImgBase(object):
 
     @property
     def converter(self):
+        # type: () -> Imageconverter
         """
         :return: an instance of `Imageconverter`
         """
         raise NotImplementedError()
 
     def __init__(self, tex_source, tex_filename, output_dir):
+        # type: (...) -> None
         """
         :param tex_source: Required, a string representing the
         full tex source code.
@@ -354,7 +376,7 @@ class Tex2ImgBase(object):
             .replace(".", "").lower()
         self.image_ext = ".%s" % self.image_format
 
-        self.compiled_ext =".%s" % self.compiler.output_format\
+        self.compiled_ext = ".%s" % self.compiler.output_format\
             .replace(".", "").lower()
 
         # Where the latex compilation error log
@@ -380,28 +402,44 @@ class Tex2ImgBase(object):
         )
 
     def get_compiler_cmdline(self, tex_path):
+        # type: (Text) -> List[Text]
         return self.compiler.get_latexmk_subpro_cmdline(tex_path)
 
     def get_converter_cmdline(self, input_path, output_path):
+        # type: (Text, Text) -> List[Text]
         return self.converter.get_converter_cmdline(
             input_path, output_path)
 
     def _remove_working_dir(self):
-        shutil.rmtree(self.working_dir)
+        # type: () -> None
+        if self.working_dir:
+            shutil.rmtree(self.working_dir)
 
     def get_compiled_file(self):
+        # type: () -> Text
         """
         Compile latex source. If failed, error log will copied
         to ``output_dir``.
         :return: string, the path of the compiled file if succeeded.
         """
         from tempfile import mkdtemp
-        self.working_dir = mkdtemp(prefix="RELATE_LATEX_")
 
+        while True:
+            try:
+                working_dir = mkdtemp(prefix="RELATE_LATEX_")
+            except:
+                continue
+            if working_dir is not None:
+                self.working_dir = working_dir  # type: ignore
+                break
+
+        assert self.basename is not None
+        assert self.working_dir is not None
         tex_filename = self.basename + ".tex"
         tex_path = os.path.join(self.working_dir, tex_filename)
         file_write(tex_path, self.tex_source.encode('UTF-8'))
 
+        assert tex_path is not None
         log_path = tex_path.replace(".tex", ".log")
         compiled_file_path = tex_path.replace(
             ".tex", self.compiled_ext)
@@ -444,6 +482,7 @@ class Tex2ImgBase(object):
             )
 
     def get_converted_image_datauri(self):
+        # type: () -> Optional[Text]
         """
         Convert compiled file into image. If succeeded, the image
         will be copied to ``output_dir``.
@@ -483,10 +522,11 @@ class Tex2ImgBase(object):
         try:
             datauri = get_image_datauri(image_path)
 
-            # avoid race condition
-            if not os.path.isfile(self.datauri_saving_path):
-                with atomic_write(self.datauri_saving_path, mode="wb") as f:
-                    f.write(datauri.encode("utf-8"))
+            if datauri:
+                # avoid race condition
+                if not os.path.isfile(self.datauri_saving_path):
+                    with atomic_write(self.datauri_saving_path, mode="wb") as f:
+                        f.write(datauri.encode("utf-8"))
 
         except OSError:
             raise RuntimeError(error)
@@ -496,6 +536,7 @@ class Tex2ImgBase(object):
         return datauri
 
     def get_compile_err_cached(self, force_regenerate=False):
+        # type: (Optional[bool]) -> Optional[Text]
         """
         If the problematic latex source is not modified, check
         wheter there is error log both in cache and output_dir.
@@ -556,9 +597,10 @@ class Tex2ImgBase(object):
             raise ValueError(
                 "<pre>%s</pre>" % escape(err_result).strip())
 
-        return None
+        return err_result
 
     def get_data_uri_cached(self, force_regenerate=False):
+        # type: (Optional[bool]) -> Text
         """
         :param force_regenerate: :class:`Bool', if True, the tex file
         will be recompiled and re-convert the image, regardless of
@@ -608,7 +650,9 @@ class Tex2ImgBase(object):
                         if not isinstance(result, six.text_type):
                             result = six.text_type(result)
                         if not os.path.isfile(self.datauri_saving_path):
-                            with atomic_write(self.datauri_saving_path, mode="wb") as f:
+                            with atomic_write(
+                                    self.datauri_saving_path,
+                                    mode="wb") as f:
                                 f.write(result)
                         return result
 
@@ -702,13 +746,14 @@ ALLOWED_COMPILER_FORMAT_COMBINATION = (
 
 
 def get_tex2img_class(compiler, image_format):
+    # type: (Text, Text) -> Any
     image_format = image_format.replace(".", "").lower()
     compiler = compiler.lower()
-    if not image_format in ALLOWED_LATEX2IMG_FORMAT:
+    if image_format not in ALLOWED_LATEX2IMG_FORMAT:
         raise ValueError(
             _("Unsupported image format '%s'") % image_format)
 
-    if not compiler in ALLOWED_COMPILER:
+    if compiler not in ALLOWED_COMPILER:
         raise ValueError(
             _("Unsupported tex compiler '%s'") % compiler)
 
@@ -717,10 +762,10 @@ def get_tex2img_class(compiler, image_format):
             _("Unsupported combination: "
               "('%(compiler)s', '%(format)s'). "
               "Currently support %(supported)s.")
-              % {"compiler": compiler,
-                 "format": image_format,
-                 "supported": ", ".join(
-                     str(e) for e in ALLOWED_COMPILER_FORMAT_COMBINATION)}
+            % {"compiler": compiler,
+               "format": image_format,
+               "supported": ", ".join(
+                   str(e) for e in ALLOWED_COMPILER_FORMAT_COMBINATION)}
         )
 
     class_name = "%s2%s" % (compiler.title(), image_format.title())
@@ -729,9 +774,11 @@ def get_tex2img_class(compiler, image_format):
 
 # }}}
 
+
 # {{{ check if multiple images are generated due to long pdf
 
 def get_number_of_images(image_path, image_ext):
+    # type: (Text, Text) -> int
     if os.path.isfile(image_path):
         return 1
     count = 0

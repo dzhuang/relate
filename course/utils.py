@@ -55,7 +55,7 @@ from course.page.base import (  # noqa
 # {{{ mypy
 
 if False:
-    from typing import Tuple, List, Text, Iterable, Any, Optional, Union  # noqa
+    from typing import Tuple, List, Text, Iterable, Any, Optional, Union, Dict  # noqa
     from relate.utils import Repo_ish  # noqa
     from course.models import (  # noqa
             Course,
@@ -64,6 +64,7 @@ if False:
             FlowSession,
             FlowPageData,
             )
+    from course.content import FlowSessionNotifyRuleDesc  # noqa
 
 # }}}
 
@@ -109,7 +110,7 @@ class FlowSessionNotifyRule(FlowSessionRuleBase):
     def __init__(
             self,
             may_send_notification=None,  # type: Optional[bool]
-            message=None, # type: Optional[Text]
+            message=None,  # type: Optional[Text]
             ):
         # type: (...) -> None
         self.may_send_notification = may_send_notification
@@ -137,7 +138,9 @@ class FlowSessionGradingRule(FlowSessionRuleBase):
             self,
             grade_identifier,  # type: Optional[Text]
             grade_aggregation_strategy,  # type: Text
-            completed_before,  # type: Text  # added by zd
+
+            # added by zd
+            completed_before,  # type: Optional[datetime.datetime]
             due,  # type: Optional[datetime.datetime]
             generates_grade,  # type: bool
             description=None,  # type: Optional[Text]
@@ -146,8 +149,11 @@ class FlowSessionGradingRule(FlowSessionRuleBase):
             max_points=None,  # type: Optional[float]
             max_points_enforced_cap=None,  # type: Optional[float]
             bonus_points=None,  # type: Optional[float]
-            credit_next=None,  # type: bool # credit precent of next rule # added by zd
-            is_next_final=None,  # type: bool # next rule is deadline # added by zd
+
+            # credit precent of next rule, added by zd
+            credit_next=None,  # type: Optional[float]
+            # next rule is deadline # added by zd
+            is_next_final=None,  # type: bool
             ):
         # type: (...) -> None
 
@@ -231,9 +237,12 @@ def get_flow_rules(
         flow_id,  # type: Text
         now_datetime,  # type: datetime.datetime
         consider_exceptions=True,  # type: bool
-        default_rules_desc=[]  # type: List[Any]
+        default_rules_desc=None  # type: Optional[List[Any]]
         ):
     # type: (...) -> List[Any]
+
+    if not default_rules_desc:
+        default_rules_desc = []
 
     if (not hasattr(flow_desc, "rules")
             or not hasattr(flow_desc.rules, kind)):
@@ -264,8 +273,14 @@ def get_flow_rules(
 
 # {{{ added by zd to generate stringified rules in flow start page
 
-def get_flow_rules_str(course, participation, flow_id, flow_desc,
-        now_datetime):
+def get_flow_rules_str(
+        course,  # type: Course
+        participation,  # type: Optional[Participation]
+        flow_id,  # type: Text
+        flow_desc,  # type: FlowDesc
+        now_datetime,  # type: datetime.datetime
+        ):
+    # type: (...) -> Text
 
     from relate.utils import dict_to_struct, compact_local_datetime_str
     # {{{ get stringified latest_start_datetime
@@ -279,9 +294,9 @@ def get_flow_rules_str(course, participation, flow_id, flow_desc,
     latest_start_datetime = None
 
     for rule in start_rules:
-        if (hasattr(rule, "if_before") 
-            and hasattr(rule, "may_start_new_session")):
-
+        if (hasattr(rule, "if_before")
+            and
+                hasattr(rule, "may_start_new_session")):
             if getattr(rule, "may_start_new_session"):
                 latest_start_datetime = parse_date_spec(course, rule.if_before)
 
@@ -296,9 +311,9 @@ def get_flow_rules_str(course, participation, flow_id, flow_desc,
             string_concat("<li><span class='h4'>",
                           _("Latest start time"),
                           "</span><ul><li class='text-danger'><strong>",
-                          _("Session(s) must start before %s."), 
+                          _("Session(s) must start before %s."),
                           "</strong></li></ul></li>")
-            % latest_start_datetime_str )
+            % latest_start_datetime_str)
     # }}}
 
     # {{{ get stringified grade_rule
@@ -309,18 +324,19 @@ def get_flow_rules_str(course, participation, flow_id, flow_desc,
                 grade_identifier=None,
                 ))])
 
-    date_grading_tuple = tuple()
+    date_grading_tuple = tuple()  # type: Tuple[Dict[Any, Any], ...]
 
     for rule in grade_rules:
         if hasattr(rule, "if_completed_before"):
             ds = parse_date_spec(course, rule.if_completed_before)
             due = parse_date_spec(course, getattr(rule, "due", None))
-            credit_percent=getattr(rule, "credit_percent", 100)
-            date_grading_tuple += (
-                {"complete_before": ds, 
-                 "due": due,
-                 "credit_percent":credit_percent
-                },)
+            credit_percent = getattr(rule, "credit_percent", 100)
+            date_grading_tuple = (
+                date_grading_tuple + (
+                    {"complete_before": ds,
+                     "due": due,
+                     "credit_percent": credit_percent
+                     },))
 
     grade_rule_str = ""
 
@@ -331,7 +347,7 @@ def get_flow_rules_str(course, participation, flow_id, flow_desc,
         grade_rule_str += string_concat(
                 "<li>",
                 _("If completed before %(time)s, you'll get "
-                "%(credit_percent)s%% of your grade."), 
+                "%(credit_percent)s%% of your grade."),
                 "</li>") % {
                         "time": datetime_str,
                         "credit_percent": rule["credit_percent"]}
@@ -340,10 +356,10 @@ def get_flow_rules_str(course, participation, flow_id, flow_desc,
         grade_rule_str = (
             string_concat("<li><span class='h4'>",
                           _("Submission time and Grading"),
-                          "</span><ul>") 
+                          "</span><ul>")
             + grade_rule_str
             + string_concat("<li class='text-danger'><strong>",
-                            _("No grade will be granted for " 
+                            _("No grade will be granted for "
                             "submision later than %s."),
                             "</strong></li></ul></li>") % datetime_str)
 
@@ -360,6 +376,7 @@ def get_flow_rules_str(course, participation, flow_id, flow_desc,
     return flow_rule_str
 
 # }}}
+
 
 def get_session_start_rule(
         course,  # type: Course
@@ -396,9 +413,9 @@ def get_session_start_rule(
     for rule in rules:
 
         # {{{ added by zd
-        if (hasattr(rule, "if_before") 
-            and hasattr(rule, "may_start_new_session")):
-
+        if (hasattr(rule, "if_before")
+            and
+                hasattr(rule, "may_start_new_session")):
             if getattr(rule, "may_start_new_session"):
                 latest_start_datetime = parse_date_spec(course, rule.if_before)
         # }}}
@@ -589,7 +606,6 @@ def get_session_notify_rule(
     from course.enrollment import get_participation_role_identifiers
     roles = get_participation_role_identifiers(session.course, session.participation)
     session_notify_rule = None
-    ds = None
 
     for rule in rules:
         if not _eval_generic_conditions(
@@ -1090,10 +1106,19 @@ def get_codemirror_widget(language_mode, interaction_mode,
                   "Ctrl-/": "toggleComment",
                   "Tab": function(cm)
                   {
-                    var spaces = \
-                        Array(cm.getOption("indentUnit") + 1).join(" ");
-                    cm.replaceSelection(spaces);
+                    // from https://github.com/codemirror/CodeMirror/issues/988
+
+                    if (cm.doc.somethingSelected()) {
+                        return CodeMirror.Pass;
+                    }
+                    var spacesPerTab = cm.getOption("indentUnit");
+                    var spacesToInsert = (
+                        spacesPerTab
+                        - (cm.doc.getCursor("start").ch % spacesPerTab));
+                    var spaces = Array(spacesToInsert + 1).join(" ");
+                    cm.replaceSelection(spaces, "end", "+input");
                   },
+                  "Shift-Tab": "indentLess",
                   "F9": function(cm) {
                       cm.setOption("fullScreen",
                         !cm.getOption("fullScreen"));

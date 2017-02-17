@@ -149,19 +149,18 @@ def request_python_run(run_req, run_timeout, image=None):
             if port_host_ip != "0.0.0.0":
                 connect_host_ip = port_host_ip
 
-            #print(getattr(settings, "RELATE_MAPPED_DOCKER_HOST_IP", None), "---------------------------")
+            # print(getattr(settings, "RELATE_MAPPED_DOCKER_HOST_IP", None),
+            #       "---------------------------")
 
             if (not getattr(settings, "RELATE_USE_LOCAL_DOCKER_MACHINE", False)
                 and
-                getattr(settings, "RELATE_MAPPED_DOCKER_HOST_IP", None)
-                ):
+                    getattr(settings, "RELATE_MAPPED_DOCKER_HOST_IP", None)):
                 mapped_ip = settings.RELATE_MAPPED_DOCKER_HOST_IP
                 connect_host_ip = mapped_ip.get(port_host_ip, connect_host_ip)
 
             if (getattr(settings, "RELATE_USE_LOCAL_DOCKER_MACHINE", False)
                 and
-                getattr(settings, "RELATE_DOCKER_HOST_IP", None)
-                ):
+                    getattr(settings, "RELATE_DOCKER_HOST_IP", None)):
                 connect_host_ip = settings.RELATE_DOCKER_HOST_IP
 
             port = int(port_info["HostPort"])
@@ -643,7 +642,8 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                     and
                     page_data.get("question_data", None)
                 ):
-                    run_req["data_files"]["question_data"] = page_data["question_data"]
+                    run_req["data_files"]["question_data"] =\
+                        page_data["question_data"]
 
         try:
             response_dict = request_python_run_with_retries(run_req,
