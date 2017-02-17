@@ -425,20 +425,21 @@ class Tex2ImgBase(object):
         from tempfile import mkdtemp
 
         while True:
-            working_dir = None
             try:
                 working_dir = mkdtemp(prefix="RELATE_LATEX_")
             except:
-                pass
+                continue
             if working_dir is not None:
-                self.working_dir = working_dir
+                self.working_dir = working_dir  # type: ignore
                 break
 
         assert self.basename is not None
+        assert self.working_dir is not None
         tex_filename = self.basename + ".tex"
         tex_path = os.path.join(self.working_dir, tex_filename)
         file_write(tex_path, self.tex_source.encode('UTF-8'))
 
+        assert tex_path is not None
         log_path = tex_path.replace(".tex", ".log")
         compiled_file_path = tex_path.replace(
             ".tex", self.compiled_ext)
