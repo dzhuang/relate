@@ -41,7 +41,7 @@ from django.utils.encoding import (
 
 # {{{ mypy
 
-from typing import Any, Text, List, Dict, Tuple, Union, Optional, ByteString  # noqa
+from typing import Any, Text, List, Tuple, Optional  # noqa
 
 if False:
     from course.latex.converter import CommandBase  # noqa
@@ -121,7 +121,7 @@ def get_basename_or_md5(filename, s):
 
 
 def file_read(filename):
-    # type: (Text) -> Text
+    # type: (Text) -> bytes
     '''Read the content of a file and close it properly.'''
     with open(filename, 'rb') as f:
         ff = File(f)
@@ -130,7 +130,7 @@ def file_read(filename):
 
 
 def file_write(filename, content):
-    # type: (Text, Text) -> None
+    # type: (Text, bytes) -> None
     '''Write into a file and close it properly.'''
     with open(filename, 'wb') as f:
         ff = File(f)
@@ -162,14 +162,14 @@ def get_file_data_uri(file_path):
 
 # {{{ get error log abstracted
 
-LATEX_ERR_LOG_BEGIN_LINE_STARTS = "\n! "  # type: Text
-LATEX_ERR_LOG_END_LINE_STARTS = "\nHere is how much of TeX's memory"  # type: Text
+LATEX_ERR_LOG_BEGIN_LINE_STARTS = "\n! "
+LATEX_ERR_LOG_END_LINE_STARTS = "\nHere is how much of TeX's memory"
 LATEX_LOG_OMIT_LINE_STARTS = (
     "See the LaTeX manual or LaTeX",
     "Type  H <return>  for",
     " ...",
     # more
-)  # type: Text
+)
 
 
 def get_abstract_latex_log(log):

@@ -412,7 +412,8 @@ class Tex2ImgBase(object):
 
     def _remove_working_dir(self):
         # type: () -> None
-        shutil.rmtree(self.working_dir)
+        if self.working_dir:
+            shutil.rmtree(self.working_dir)
 
     def get_compiled_file(self):
         # type: () -> Text
@@ -422,8 +423,18 @@ class Tex2ImgBase(object):
         :return: string, the path of the compiled file if succeeded.
         """
         from tempfile import mkdtemp
-        self.working_dir = mkdtemp(prefix="RELATE_LATEX_")
 
+        while True:
+            working_dir = None
+            try:
+                working_dir = mkdtemp(prefix="RELATE_LATEX_")
+            except:
+                pass
+            if working_dir is not None:
+                self.working_dir = working_dir
+                break
+
+        assert self.basename is not None
         tex_filename = self.basename + ".tex"
         tex_path = os.path.join(self.working_dir, tex_filename)
         file_write(tex_path, self.tex_source.encode('UTF-8'))
@@ -510,10 +521,11 @@ class Tex2ImgBase(object):
         try:
             datauri = get_image_datauri(image_path)
 
-            # avoid race condition
-            if not os.path.isfile(self.datauri_saving_path):
-                with atomic_write(self.datauri_saving_path, mode="wb") as f:
-                    f.write(datauri.encode("utf-8"))
+            if datauri:
+                # avoid race condition
+                if not os.path.isfile(self.datauri_saving_path):
+                    with atomic_write(self.datauri_saving_path, mode="wb") as f:
+                        f.write(datauri.encode("utf-8"))
 
         except OSError:
             raise RuntimeError(error)
