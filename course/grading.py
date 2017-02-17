@@ -64,7 +64,7 @@ from course.constants import (
 
 # {{{ for mypy
 
-from typing import Text, Any, Optional  # noqa
+from typing import Text, Any, Optional, List  # noqa
 from course.models import (  # noqa
         GradingOpportunity)
 from course.utils import (  # noqa
@@ -202,11 +202,11 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
     # {{{ session select2
     graded_flow_sessions_json = []
-    ungraded_flow_sessions_json = []
+    ungraded_flow_sessions_json = []  # type: List[Any]
 
-    fpvg_flowsession_id_list = []
-    fpvg_flowsession_time_list = []
-    page_graded_flow_session_list = []
+    fpvg_flowsession_id_list = []  # type: List[Any]
+    fpvg_flowsession_time_list = []  # type: List[Any]
+    page_graded_flow_session_list = []  # type: List[FlowSession]
     if fpctx.page.expects_answer():
         fpvg_qs = (
             FlowPageVisitGrade.objects.filter(
@@ -253,7 +253,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
         fpvg_flowsession_time_list = (
             [v[1] for v in fpvg_flowsession_id_time_list])
 
-    graded_fs_list = []
+    graded_fs_list = []  # type: List[FlowSession]
     if page_graded_flow_session_list is not None:
         graded_fs_list = (
             sorted(page_graded_flow_session_list,
@@ -273,7 +273,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
     adjusted_list = graded_fs_list + ungraded_fs_list
 
-    all_flow_sessions_json = []
+    all_flow_sessions_json = []  # type: List[Any]
 
     for idx, flow_session_idx in enumerate(adjusted_list):
         text = string_concat(
@@ -558,17 +558,20 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
         grading_opportunity = None
 
     all_page_data = get_all_page_data(flow_session)
+    assert all_page_data
 
-    all_page_grade_points = []
+    all_page_grade_points = []  # type: List[Any]
     all_expect_grade_page_data = []
     for i, pd in enumerate(all_page_data):
         fpctx_i = FlowPageContext(
             pctx.repo, pctx.course, flow_session.flow_id,
             pd.ordinal, participation=flow_session.participation,
             flow_session=flow_session, request=pctx.request)
+
+        assert fpctx_i.page is not None
+
         if fpctx_i.page.expects_answer() and fpctx_i.page.is_answer_gradable():
             all_expect_grade_page_data.append(pd)
-            feedback_i = None
             if fpctx_i.prev_answer_visit is not None:
                 most_recent_grade_i = (
                     fpctx_i.prev_answer_visit.get_most_recent_grade())
