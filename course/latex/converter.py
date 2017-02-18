@@ -416,7 +416,7 @@ class Tex2ImgBase(object):
             shutil.rmtree(self.working_dir)
 
     def get_compiled_file(self):
-        # type: () -> Text
+        # type: () -> Optional[Text]
         """
         Compile latex source. If failed, error log will copied
         to ``output_dir``.
@@ -424,14 +424,8 @@ class Tex2ImgBase(object):
         """
         from tempfile import mkdtemp
 
-        while True:
-            try:
-                working_dir = mkdtemp(prefix="RELATE_LATEX_")
-            except:
-                continue
-            if working_dir is not None:
-                self.working_dir = working_dir  # type: ignore
-                break
+        # https://github.com/python/mypy/issues/1833
+        self.working_dir = mkdtemp(prefix="RELATE_LATEX_")  # type: ignore
 
         assert self.basename is not None
         assert self.working_dir is not None
