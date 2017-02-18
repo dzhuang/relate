@@ -3,7 +3,6 @@ from __future__ import division
 
 import six
 from django.db import models
-from django.contrib.auth.models import User
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
@@ -44,7 +43,8 @@ class QuestionQuerySet(models.QuerySet):
         date_list = []
         count_query = []
         # Grouped the choices by dates
-        grouped = itertools.groupby(result_query, lambda recorded: recorded.get('date'))
+        grouped = itertools.groupby(
+            result_query, lambda recorded: recorded.get('date'))
         for date, query_by_day in grouped:
             # List of date choices
             date_list.append(date)
@@ -57,9 +57,13 @@ class QuestionQuerySet(models.QuerySet):
         # Contain all dates and delete the duplication of date
         no_duplication_dates = list(set(all_dates))
         # Get the max and the min date
-        dates_max_min_list = [min(no_duplication_dates), max(no_duplication_dates)] if no_duplication_dates !=[] else []
+        dates_max_min_list = (
+            [min(no_duplication_dates), max(no_duplication_dates)]
+            if no_duplication_dates != [] else [])
         # Fills the dates between the min and max date
-        date_compare = int((max(no_duplication_dates) - min(no_duplication_dates)).days) if no_duplication_dates !=[] else 0
+        date_compare = int(
+            (max(no_duplication_dates) - min(no_duplication_dates)).days) \
+            if no_duplication_dates != [] else 0
         if date_compare > 1:
             for i in list(range(1, date_compare)):
                 val = (no_duplication_dates[0] + datetime.timedelta(days=i))
@@ -157,17 +161,20 @@ class QuestionQuerySet(models.QuerySet):
         result = {}
         for question in self.types_yes_no():
             rslt = {}
-            val = 0
+            # val = 0
             answers = question.answer_set
             rslt['yes_count'] = answers.answers_yes().count()
             rslt['no_count'] = answers.answers_no().count()
             rslt['total'] = answers.count()
             try:
-                rslt['percent_no'] = round(((rslt['no_count']) / rslt['total'])*100, 1)
+                rslt['percent_no'] = round(
+                    ((rslt['no_count']) / rslt['total']) * 100, 1)
                 # if the question is not required, maybe some participants are not
                 # responding to it.
-                rslt['percent_yes'] = round(((rslt['yes_count']) / rslt['total'])*100, 1)
-                rslt['percent_other'] = round(100-(rslt['percent_yes']+rslt['percent_no']), 1)
+                rslt['percent_yes'] = (
+                    round(((rslt['yes_count']) / rslt['total']) * 100, 1))
+                rslt['percent_other'] = (
+                    round(100 - (rslt['percent_yes'] + rslt['percent_no']), 1))
 
             except ZeroDivisionError:
                 rslt['percent_no'] = 0
@@ -202,7 +209,9 @@ class QuestionQuerySet(models.QuerySet):
             for answer in question.answer_set.answers_rating():
                 total += float(((answer.answer)).encode('utf-8'))
             try:
-                rslt['satisfaction_total'] = round((float(total / (question.answer_set.answers_rating().count() * 5)))*100, 1)
+                rslt['satisfaction_total'] = round(
+                    (float(total / (
+                        question.answer_set.answers_rating().count() * 5)))*100, 1)
             except ZeroDivisionError:
                 rslt['satisfaction_total'] = 0
             rslt['total'] = question.answer_set.answers_rating().count()
@@ -210,10 +219,11 @@ class QuestionQuerySet(models.QuerySet):
             rslt['ok_count'] = question.answer_set.answers_rating_ok().count()
             rslt['good_count'] = question.answer_set.answers_rating_good().count()
             if not question.required:
-                rslt['not_responding'] = question.answer_set.count() - (rslt['poor_count']
-                                                                        + rslt['ok_count']
-                                                                        + rslt['good_count']
-                                                                        )
+                rslt['not_responding'] = (
+                    question.answer_set.count() - (
+                        rslt['poor_count']
+                        + rslt['ok_count']
+                        + rslt['good_count']))
             result[question.id] = rslt
 
         return result
@@ -223,18 +233,21 @@ class QuestionQuerySet(models.QuerySet):
         for question in self.types_text():
             rst = []
             for answer in question.answer_set.all():
-                rst.append([answer.user, (answer.answer).encode('utf-8').replace('"', '')])
+                rst.append(
+                    [answer.user,
+                     (answer.answer).encode('utf-8').replace('"', '')])
             result[question.id] = rst
         return result
 
     def calculate_statistics_all(self):
         result = {}
-        for statistics_dict in (self.calculate_statistics_multi_choices_multi_answers(),
-                                self.calculate_statistics_mutually_exclusive_answers(),
-                                self.calculate_statistics_multi_choices_one_answer(),
-                                self.calculate_statistics_rating(),
-                                self.calculate_statistics_text(),
-                                self.calculate_statistics_yes_no()):
+        for statistics_dict in (
+                self.calculate_statistics_multi_choices_multi_answers(),
+                self.calculate_statistics_mutually_exclusive_answers(),
+                self.calculate_statistics_multi_choices_one_answer(),
+                self.calculate_statistics_rating(),
+                self.calculate_statistics_text(),
+                self.calculate_statistics_yes_no()):
             result.update(statistics_dict)
         return result
 
@@ -361,21 +374,20 @@ class AnswerQuerySet(models.QuerySet):
         return self.filter(answer__contains="%s" % choice)
 
 
-
 class Answer(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL,
-                             help_text=_('The user who supplied this answer'),
-                             )
-    question = models.ForeignKey(Question,
-                                 help_text=_('The question that this is an answer to'),
-                                 )
-    answer = JSONField(verbose_name=_('Answer'),
-                       blank=True,
-                       help_text=_('The text answer related to the question'),
-                       )
-    date = models.DateField(verbose_name=_("Date"),
-                            default=datetime.date.today)
-
+    user = models.ForeignKey(
+            settings.AUTH_USER_MODEL,
+            help_text=_('The user who supplied this answer'),)
+    question = models.ForeignKey(
+            Question,
+            help_text=_('The question that this is an answer to'),)
+    answer = JSONField(
+            verbose_name=_('Answer'),
+            blank=True,
+            help_text=_('The text answer related to the question'),)
+    date = models.DateField(
+            verbose_name=_("Date"),
+            default=datetime.date.today)
     objects = AnswerQuerySet.as_manager()
 
     def __unicode__(self):

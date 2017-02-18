@@ -38,7 +38,7 @@ from image_upload.views import (
     flow_page_image_key,
 )
 
-from image_upload.page.imgupload import feedBackEmail
+from image_upload.page.imgupload import send_feed_back_email
 
 js_info_dict_image_upload = {
     'packages': ('image_upload',),
@@ -137,8 +137,8 @@ urlpatterns = [
         "/(?P<flow_session_id>[0-9]+|None)"
         "/(?P<ordinal>[0-9]+|None)"
         "/email-feedback/$",
-        feedBackEmail,
-        name='feedBackEmail'),
+        send_feed_back_email,
+        name='send_feed_back_email'),
     
     url(r"^jsi18n"
         "/image_upload/$",

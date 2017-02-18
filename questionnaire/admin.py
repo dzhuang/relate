@@ -9,6 +9,7 @@ from .models import (Questionnaire, Question,
 class AnswerAdmin(admin.ModelAdmin):
     list_filter = ('user', )
 
+
 class QuestionAdmin(admin.ModelAdmin):
     list_display = (
             "id",
@@ -18,6 +19,7 @@ class QuestionAdmin(admin.ModelAdmin):
             "type",
             "order",
             )
+
 
 class QuestionnaireAdmin(admin.ModelAdmin):
     list_display = (

@@ -40,12 +40,11 @@ from pymongo import MongoClient
 
 import os, tempfile
 
-from relate.utils import format_datetime_local, as_local_time
-
 from imagekit.models import ImageSpecField
 from imagekit.processors import ResizeToFit
 
 from jsonfield import JSONField
+
 
 @deconstructible
 class SendFileStorage(FileSystemStorage):
@@ -58,6 +57,7 @@ temp_image_storage_location = getattr(
     "RELATE_TEMP_IMAGE_STORAGE_LOCATION",
     os.path.join(tempfile.gettempdir(), "relate_tmp_img"),
 )
+
 
 def get_mongo_db(database="learningwhat-image-meta-db"):
     args = []
@@ -83,7 +83,6 @@ class UserImageStorage(MultipleOriginalStoragesMixin, ProxyStorageBase):
     def save(self, name, content, max_length=None, original_storage_path=None, using=None):
         if not using:
             using = "sendfile"
-        print(using, "------------------------")
         assert using in ["sendfile", "temp"]
         return super(UserImageStorage, self).save(
             name=name,
@@ -91,14 +90,6 @@ class UserImageStorage(MultipleOriginalStoragesMixin, ProxyStorageBase):
             original_storage_path=original_storage_path,
             using=using
         )
-
-    # def path(self, name):
-    #     pass
-
-    # def url(self, name):
-    #     meta_backend_obj = self.meta_backend.get(path=name)
-    #     return self.get_original_storage(meta_backend_obj=meta_backend_obj) \
-    #         .url(meta_backend_obj['original_storage_path'])
 
     def path(self, name):
         meta_backend_obj = self.meta_backend.get(path=name)
@@ -109,6 +100,7 @@ class UserImageStorage(MultipleOriginalStoragesMixin, ProxyStorageBase):
 
 multiple_image_storage = UserImageStorage()
 
+
 def user_directory_path(instance, filename):
     if instance.creator.get_full_name() is not None:
         user_full_name = instance.creator.get_full_name().replace(' ', '_')
@@ -118,6 +110,7 @@ def user_directory_path(instance, filename):
         user_full_name,
         instance.creator_id,
         filename)
+
 
 class UserImage(models.Model):
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
