@@ -49,6 +49,7 @@ from braces.views import JSONResponseMixin
 import json
 from PIL import Image
 from io import BytesIO
+from sendfile import sendfile
 
 storage = UserImageStorage()
 
@@ -71,7 +72,8 @@ def is_course_staff(pctx):
     return False
 
 
-class ImageCreateView(LoginRequiredMixin, ImageOperationMixin, JSONResponseMixin, CreateView):
+class ImageCreateView(LoginRequiredMixin, ImageOperationMixin,
+                      JSONResponseMixin, CreateView):
     # Prevent download Json response in IE 7-10
     # http://stackoverflow.com/a/13944206/3437454
     content_type = 'text/plain'
@@ -95,8 +97,8 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin, JSONResponseMixin
                             "Chrome/Firefox or mobile browser by "
                             "which images will be cropped "
                             "automatically before upload.")
-                        },]
-                    }
+                        },
+                    ]}
 
             return self.render_json_response(file_data)
 
@@ -108,8 +110,7 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin, JSONResponseMixin
         flow_session_id = self.kwargs["flow_session_id"]
         ordinal = self.kwargs["ordinal"]
 
-        fpd=FlowPageData.objects.get(
-            flow_session=flow_session_id, ordinal=ordinal)
+        fpd = FlowPageData.objects.get(flow_session=flow_session_id, ordinal=ordinal)
         self.object.flow_session_id = flow_session_id
         self.object.image_page_id = fpd.page_id
         self.object.course = course
@@ -230,11 +231,11 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
         else:
             data = {}
         return self.render_json_response(data)
+
 # }}}
 
 
 # {{{ sendfile
-from sendfile import sendfile
 
 @login_required
 def user_image_download(request, creator_id, download_id):
@@ -242,21 +243,22 @@ def user_image_download(request, creator_id, download_id):
     download_object = get_object_or_404(Image, pk=download_id)
     return _auth_download(request, download_object)
 
+
 @login_required
 @course_view
 def flow_page_image_download(pctx, flow_session_id, creator_id,
                              download_id, file_name):
     request = pctx.request
     download_object = get_object_or_404(FlowPageImage, pk=download_id)
-    
-    privilege = False
 
+    privilege = False
     # whether the user is allowed to view the private image
     from course.constants import participation_permission as pperm
     if pctx.has_permission(pperm.assign_grade):
         privilege = True
 
     return _auth_download(request, download_object, privilege)
+
 
 @login_required
 def flow_page_image_problem(request, download_id, file_name):
@@ -268,16 +270,17 @@ def flow_page_image_problem(request, download_id, file_name):
         privilege = False
     return _auth_download(request, download_object, privilege)
 
+
 @login_required
 def flow_page_image_key(request, download_id, creator_id, file_name):
     download_object = get_object_or_404(FlowPageImage, pk=download_id)
     privilege = True
     return _auth_download(request, download_object, privilege)
 
+
 @login_required
 def _auth_download(request, download_object, privilege=False):
-    if not (
-        request.user==download_object.creator or privilege):
+    if not request.user == download_object.creator or privilege:
         from django.core.exceptions import PermissionDenied
         raise PermissionDenied(_("may not view other people's resource"))
     return sendfile(request, download_object.file.path)
@@ -309,23 +312,21 @@ def image_crop_modal(pctx, flow_session_id, ordinal, pk):
              'error_message': error_message,
              'STAFF_EDIT_WARNNING': False,
              'owner': None
-            })
+             })
     course_staff_status = is_course_staff(pctx)
     staff_edit_warnning = False
-    if (
-        course_staff_status
+    if (course_staff_status
         and
-        request.user != file.creator
-        ):
+                request.user != file.creator):
         staff_edit_warnning = True
     return render(
-            request,
-            'image_upload/cropper-modal.html',
-            {'file': file,
-             'error_message': error_message,
-             'STAFF_EDIT_WARNNING': staff_edit_warnning,
-             'owner': file.creator
-            })
+        request,
+        'image_upload/cropper-modal.html',
+        {'file': file,
+         'error_message': error_message,
+         'STAFF_EDIT_WARNNING': staff_edit_warnning,
+         'owner': file.creator
+         })
 
 
 @json_view
@@ -333,9 +334,9 @@ def image_crop_modal(pctx, flow_session_id, ordinal, pk):
 @transaction.atomic
 @course_view
 def image_crop(pctx, flow_session_id, ordinal, pk):
-    
     try:
-        page_image_behavior = get_page_image_behavior(pctx, flow_session_id, ordinal)
+        page_image_behavior = get_page_image_behavior(
+            pctx, flow_session_id, ordinal)
         may_change_answer = page_image_behavior.may_change_answer
     except ValueError:
         may_change_answer = True
@@ -370,17 +371,20 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
         height = int(float(request.POST['height']))
         rotate = int(float(request.POST['rotate']))
     except:
-        raise CropImageError(_('There are errors, please refresh the page or try again later'))
+        raise CropImageError(
+            _('There are errors, please refresh the page '
+              'or try again later'))
 
     try:
         new_image = Image.open(image_orig_path)
     except IOError:
-        raise CropImageError(_('There are errors，please re-upload the image'))
+        raise CropImageError(
+            _('There are errors，please re-upload the image'))
     image_format = new_image.format
 
     if rotate != 0:
-        # or it will raise "AttributeError: 'NoneType' object has no attribute 'mode' error
-        # in pillow 3.3.0
+        # or it will raise "AttributeError: 'NoneType' object has no attribute
+        # 'mode' error in pillow 3.3.0
         new_image = new_image.rotate(-rotate, expand=True)
 
     box = (x, y, x+width, y+height)
@@ -431,7 +435,6 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
         new_image.close()
 
     response_file = serialize(request, new_instance, 'file')
-
     data = {'file': response_file}
     return data
 
@@ -447,9 +450,9 @@ class ImgTableOrderError(BadRequest):
 @transaction.atomic
 @course_view
 def image_order(pctx, flow_session_id, ordinal):
-    
     try:
-        page_image_behavior = get_page_image_behavior(pctx, flow_session_id, ordinal)
+        page_image_behavior = get_page_image_behavior(
+            pctx, flow_session_id, ordinal)
         may_change_answer = page_image_behavior.may_change_answer
     except ValueError:
         may_change_answer = True
@@ -470,5 +473,5 @@ def image_order(pctx, flow_session_id, ordinal):
     response = {'message': ugettext('Done')}
 
     #raise ImgTableOrderError("Failed")
-    
+
     return response

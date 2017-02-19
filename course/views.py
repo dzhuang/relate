@@ -101,8 +101,10 @@ def home(request):
     now_datetime = get_now_or_fake_time(request)
 
     current_courses = []
-    inprogress_courses = []  # added by zd
-    past_courses = []
+
+    # added by zd
+    inprogress_courses = []  # type: List[Course]
+    past_courses = []  # type: List[Course]
     for course in Course.objects.filter(listed=True):
         participation = get_participation_for_request(request, course)
 
@@ -130,7 +132,7 @@ def home(request):
                             inprogress_courses.append(course)
                 # }}}
             else:
-                ##past_courses.append(course)
+                # past_courses.append(course)
                 if participation:
                     past_courses.append(course)
 
@@ -171,34 +173,10 @@ def check_course_state(course, participation):
             raise PermissionDenied(_("course page is currently hidden"))
 
 
-def enroll_expire_or_ended_message(course, participation, now_date):
-    message = None
-    if course.enroll_deadline:
-        if (participation is None
-            or
-            participation.status not in
-                    [participation_status.active, participation_status.requested]):
-                if now_date > course.enroll_deadline:
-                    message = _("Enrollment has expired. ")
-                elif course.end_date is not None and now_date > course.end_date:
-                    message = _("This course has ended. ")
-
-    if message:
-        return string_concat(message,
-                             _("Access to this course has been closed for "
-                               "non-participants."))
-    else:
-        return None
-
-
 @course_view
 def course_page(pctx):
     # type: (CoursePageContext) -> http.HttpResponse
-
     now_datetime = get_now_or_fake_time(pctx.request)
-    error_message = (
-            enroll_expire_or_ended_message(
-                pctx.course, pctx.participation, now_datetime.date()))
     jinja_env = {"now": now_datetime}
     from course.content import get_processed_page_chunks, get_course_desc
     page_desc = get_course_desc(pctx.repo, pctx.course, pctx.course_commit_sha)
@@ -213,7 +191,35 @@ def course_page(pctx):
             pctx.course.accepts_enrollment
             and pctx.participation is None)
 
-    if pctx.request.user.is_authenticated and Participation.objects.filter(
+    course = pctx.course
+    if course.enroll_deadline or course.end_date:
+        do_not_show_up = False
+        message = None
+        if not (pctx.request.user.is_authenticated
+                and
+                    Participation.objects.filter(
+                        course=course,
+                        user=pctx.request.user,
+                        status=participation_status.active).count()):
+            if course.end_date is not None:
+                if now_datetime.date() > course.end_date:
+                    message = _("This course has ended. ")
+                    do_not_show_up = True
+            elif course.enroll_deadline is not None:
+                if now_datetime.date() > course.enroll_deadline:
+                    message = _("Enrollment has expired. ")
+                    do_not_show_up = True
+
+        if do_not_show_up:
+            message = string_concat(
+                message,
+                (_("Access to this course has been closed for "
+                          "non-participants.")))
+            messages.add_message(pctx.request, messages.WARNING, message)
+            show_enroll_button = False
+            chunks = []
+
+    elif pctx.request.user.is_authenticated and Participation.objects.filter(
             user=pctx.request.user,
             course=pctx.course,
             status=participation_status.requested).count():
@@ -251,7 +257,6 @@ def course_page(pctx):
                             )
 
     return render_course_page(pctx, "course/course-page.html", {
-        "error_message": error_message,  # added by zd to display enroll error
         "chunks": chunks,
         "show_enroll_button": show_enroll_button,
         })

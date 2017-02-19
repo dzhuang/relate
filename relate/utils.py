@@ -200,6 +200,7 @@ def format_datetime_local(datetime, format='DATETIME_FORMAT'):
 
 
 def compact_local_datetime_str(datetime, now_datetime, in_python=False):
+    # type: (datetime.datetime, datetime.datetime, bool) -> str
     if as_local_time(datetime).year == \
             as_local_time(now_datetime).year:
         if in_python:

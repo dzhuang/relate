@@ -55,7 +55,7 @@ from course.page.base import (  # noqa
 # {{{ mypy
 
 if False:
-    from typing import Tuple, List, Text, Iterable, Any, Optional, Union  # noqa
+    from typing import Tuple, List, Text, Iterable, Any, Optional, Union, Dict  # noqa
     from relate.utils import Repo_ish  # noqa
     from course.models import (  # noqa
             Course,
@@ -64,6 +64,7 @@ if False:
             FlowSession,
             FlowPageData,
             )
+    from course.content import FlowSessionNotifyRuleDesc  # noqa
 
 # }}}
 
@@ -139,7 +140,7 @@ class FlowSessionGradingRule(FlowSessionRuleBase):
             grade_aggregation_strategy,  # type: Text
 
             # added by zd
-            completed_before,  # type: Text
+            completed_before,  # type: Optional[datetime.datetime]
             due,  # type: Optional[datetime.datetime]
             generates_grade,  # type: bool
             description=None,  # type: Optional[Text]
@@ -150,7 +151,7 @@ class FlowSessionGradingRule(FlowSessionRuleBase):
             bonus_points=None,  # type: Optional[float]
 
             # credit precent of next rule, added by zd
-            credit_next=None,  # type: bool
+            credit_next=None,  # type: Optional[float]
             # next rule is deadline # added by zd
             is_next_final=None,  # type: bool
             ):
@@ -236,9 +237,12 @@ def get_flow_rules(
         flow_id,  # type: Text
         now_datetime,  # type: datetime.datetime
         consider_exceptions=True,  # type: bool
-        default_rules_desc=[]  # type: List[Any]
+        default_rules_desc=None  # type: Optional[List[Any]]
         ):
     # type: (...) -> List[Any]
+
+    if not default_rules_desc:
+        default_rules_desc = []
 
     if (not hasattr(flow_desc, "rules")
             or not hasattr(flow_desc.rules, kind)):
@@ -269,8 +273,14 @@ def get_flow_rules(
 
 # {{{ added by zd to generate stringified rules in flow start page
 
-def get_flow_rules_str(course, participation, flow_id, flow_desc,
-        now_datetime):
+def get_flow_rules_str(
+        course,  # type: Course
+        participation,  # type: Optional[Participation]
+        flow_id,  # type: Text
+        flow_desc,  # type: FlowDesc
+        now_datetime,  # type: datetime.datetime
+        ):
+    # type: (...) -> Text
 
     from relate.utils import dict_to_struct, compact_local_datetime_str
     # {{{ get stringified latest_start_datetime
@@ -314,18 +324,19 @@ def get_flow_rules_str(course, participation, flow_id, flow_desc,
                 grade_identifier=None,
                 ))])
 
-    date_grading_tuple = tuple()
+    date_grading_tuple = tuple()  # type: Tuple[Dict[Any, Any], ...]
 
     for rule in grade_rules:
         if hasattr(rule, "if_completed_before"):
             ds = parse_date_spec(course, rule.if_completed_before)
             due = parse_date_spec(course, getattr(rule, "due", None))
             credit_percent = getattr(rule, "credit_percent", 100)
-            date_grading_tuple += (
-                {"complete_before": ds,
-                 "due": due,
-                 "credit_percent": credit_percent
-                 },)
+            date_grading_tuple = (
+                date_grading_tuple + (
+                    {"complete_before": ds,
+                     "due": due,
+                     "credit_percent": credit_percent
+                     },))
 
     grade_rule_str = ""
 

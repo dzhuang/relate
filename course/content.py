@@ -59,7 +59,7 @@ else:
 # {{{ mypy
 
 from typing import (  # noqa
-        cast, Union, Any, List, Tuple, Optional, Callable, Text)
+        cast, Union, Any, List, Tuple, Optional, Callable, Text, Dict)
 
 if False:
     # for mypy
@@ -869,7 +869,7 @@ def markup_to_html(
         reverse_func=None,  # type: Callable
         validate_only=False,  # type: bool
         use_jinja=True,  # type: bool
-        jinja_env={},  # type: Dict
+        jinja_env=None,  # type: Optional[Dict[Text, Any]]
         ):
     # type: (...) -> Text
 
@@ -937,16 +937,21 @@ def markup_to_html(
         template = env.from_string(text)
         latex2image_enabled = getattr(
             settings, "RELATE_LATEX_TO_IMAGE_ENABLED", False)
+
+        kwargs = {}
+        if jinja_env:
+            kwargs.update(jinja_env)
+
         if latex2image_enabled:
             try:
                 env.globals["latex"] = jinja_tex_to_img_tag
-                text = template.render(**jinja_env)
+                text = template.render(**kwargs)
             except:
                 if validate_only:
                     raise
                 else:
                     # fail silently
-                    text = template.render(**jinja_env)
+                    text = template.render(**kwargs)
         else:
             if not validate_only:
                 env.globals["latex"] = latex_not_enabled_warning
@@ -954,7 +959,7 @@ def markup_to_html(
                 raise ImproperlyConfigured(
                     _("RELATE_LATEX_TO_IMAGE_ENABLED is set to False, "
                       "no image will be generated."))
-            text = template.render(**jinja_env)
+            text = template.render(**kwargs)
 
     # }}}
 
@@ -1288,40 +1293,41 @@ def compute_chunk_weight_and_shown(
     return 0, True
 
 
-def get_collapsible_chunk_content(id, title, content, subtitle, sub_color):
-    def pre_string(id, title):
-        pre_string = (
-            '<div class="panel panel-default" style="margin-bottom:0"'
-            'markdown="block"><div class="panel-heading" >'
-            '<h3 class="panel-title">'
-            '<a data-toggle="collapse" href="#%(id)s_accordion" >'
-            % {"id": id})
-        pre_string += title
+def get_collapsible_chunk_content(
+        chunk,  # type: ChunkDesc
+        content,  # type: Text
+        subtitle=None,  # type: Optional[Text]
+        sub_color=None,  # type: Optional[Text]
+        ):
+    # type: (...) -> Text
 
-        if subtitle:
-            from django.utils.translation import string_concat
-            pre_string += (
-                string_concat(
-                    '<span style="font-size:x-small; color:%(sub_color)s">',
-                    '(',
-                    subtitle,
-                    ')</span>')
-                % {"sub_color": sub_color})
+    subtitle_str = ""
+    if subtitle:
+        subtitle_str = (
+            u'<span style="font-size:x-small; %(sub_color)s">'
+            '(%(subtitle)s)</span>' % {
+                "subtitle": subtitle,
+                "sub_color": "color: %s" if sub_color else ""})
 
-        pre_string += (
-            '</a></h3></div>'
-            '<div id="%(id)s_accordion" class="panel-collapse collapse"'
-            'markdown="block">'
-            '<div class="panel-body" markdown="block">'
-            % {"id": id})
+    s = (
+        u'<div class="panel panel-default" style="margin-bottom:0" '
+        'markdown="block"><div class="panel-heading" >'
+        '<h3 class="panel-title">'
+        '<a data-toggle="collapse" href="#%(id)s_accordion">'
+        '%(title)s%(subtitle)s'
+        '</a></h3></div>'
+        '<div id="%(id)s_accordion" class="panel-collapse collapse" '
+        'markdown="block">'
+        '<div class="panel-body" markdown="block">'
+        '%(content)s'
+        '</div></div></div>' % {
+            "id": chunk.id,  # type: ignore
+            "title": chunk.title,
+            "subtitle": subtitle_str,
+            "content": content
+        })
 
-        return pre_string
-
-    def end_string(id, title):
-        end_string = '</div></div></div>'
-        return end_string
-
-    return pre_string(id, title) + content + end_string(id, title)
+    return s
 
 
 def get_processed_page_chunks(
@@ -1332,7 +1338,7 @@ def get_processed_page_chunks(
         roles,  # type: List[Text]
         now_datetime,  # type: datetime.datetime
         facilities,  # type: frozenset[Text]
-        jinja_env,  # type: Text
+        jinja_env=None,  # type: Optional[Dict[Text, Any]]
         ):
     # type: (...) -> List[ChunkDesc]
     for chunk in page_desc.chunks:
@@ -1352,7 +1358,7 @@ def get_processed_page_chunks(
             subtitle = getattr(chunk, "subtitle", None)
             sub_color = getattr(chunk, "sub_color", "black")
             chunk.html_content = get_collapsible_chunk_content(
-                    chunk.id, chunk.title, chunk.html_content, subtitle, sub_color)
+                chunk, chunk.html_content, subtitle, sub_color)
 
     page_desc.chunks.sort(key=lambda chunk: chunk.weight, reverse=True)
 
