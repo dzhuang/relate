@@ -142,7 +142,6 @@ def request_python_run(run_req, run_timeout, image=None):
             docker_cnx.start(container_id)
 
             container_props = docker_cnx.inspect_container(container_id)
-            #print(container_props)
             (port_info,) = (container_props
                     ["NetworkSettings"]["Ports"]["%d/tcp" % RUNPY_PORT])
             port_host_ip = port_info.get("HostIp")
@@ -150,26 +149,23 @@ def request_python_run(run_req, run_timeout, image=None):
             if port_host_ip != "0.0.0.0":
                 connect_host_ip = port_host_ip
 
-            #print(getattr(settings, "RELATE_MAPPED_DOCKER_HOST_IP", None), "---------------------------")
+            # print(getattr(settings, "RELATE_MAPPED_DOCKER_HOST_IP", None),
+            #       "---------------------------")
 
             if (not getattr(settings, "RELATE_USE_LOCAL_DOCKER_MACHINE", False)
                 and
-                getattr(settings, "RELATE_MAPPED_DOCKER_HOST_IP", None)
-                ):
+                    getattr(settings, "RELATE_MAPPED_DOCKER_HOST_IP", None)):
                 mapped_ip = settings.RELATE_MAPPED_DOCKER_HOST_IP
                 connect_host_ip = mapped_ip.get(port_host_ip, connect_host_ip)
 
             if (getattr(settings, "RELATE_USE_LOCAL_DOCKER_MACHINE", False)
                 and
-                getattr(settings, "RELATE_DOCKER_HOST_IP", None)
-                ):
+                    getattr(settings, "RELATE_DOCKER_HOST_IP", None)):
                 connect_host_ip = settings.RELATE_DOCKER_HOST_IP
 
             port = int(port_info["HostPort"])
         else:
             port = RUNPY_PORT
-
-        #print(connect_host_ip)
 
         from time import time, sleep
         start_time = time()
@@ -191,7 +187,6 @@ def request_python_run(run_req, run_timeout, image=None):
                             }
 
         while True:
-            #print(connect_host_ip, port)
             try:
                 connection = http_client.HTTPConnection(connect_host_ip, port)
 
@@ -308,56 +303,6 @@ def request_python_run_with_retries(run_req, run_timeout, image=None, retry_coun
         return result
 
 
-def sanitize(s):
-    # html saniization
-
-    def is_allowed_data_uri(allowed_mimetypes, uri):
-        import re
-        m = re.match(r"^data:([-a-z0-9]+/[-a-z0-9]+);base64,", uri)
-        if not m:
-            return False
-
-        mimetype = m.group(1)
-        return mimetype in allowed_mimetypes
-
-    import bleach
-
-    def filter_audio_attributes(name, value):
-        if name in ["controls"]:
-            return True
-        else:
-            return False
-
-    def filter_source_attributes(name, value):
-        if name in ["type"]:
-            return True
-        elif name == "src":
-            return is_allowed_data_uri([
-                "audio/wav",
-            ], value)
-        else:
-            return False
-
-    def filter_img_attributes(name, value):
-        if name in ["alt", "title"]:
-            return True
-        elif name == "src":
-            return is_allowed_data_uri([
-                "image/png",
-                "image/jpeg",
-            ], value)
-        else:
-            return False
-
-    return bleach.clean(s,
-                        tags=bleach.ALLOWED_TAGS + ["audio", "video", "source"],
-                        attributes={
-                            "audio": filter_audio_attributes,
-                            "source": filter_source_attributes,
-                            "img": filter_img_attributes,
-                        })
-
-
 class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
     """
     An auto-graded question allowing an answer consisting of Python code.
@@ -385,6 +330,10 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
     .. attribute:: type
 
         ``PythonCodeQuestion``
+
+    .. attribute:: is_optional_page
+
+        |is-optional-page-attr|
 
     .. attribute:: access_rules
 
@@ -693,7 +642,8 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                     and
                     page_data.get("question_data", None)
                 ):
-                    run_req["data_files"]["question_data"] = page_data["question_data"]
+                    run_req["data_files"]["question_data"] =\
+                        page_data["question_data"]
 
         try:
             response_dict = request_python_run_with_retries(run_req,
@@ -735,22 +685,6 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
 
             error_msg = "\n".join(error_msg_parts)
 
-            review_url = ""
-            if not page_context.in_sandbox:
-
-                from django.core.urlresolvers import reverse
-                review_url = reverse(
-                    "relate-view_flow_page",
-                    kwargs={'course_identifier': page_context.course.identifier,
-                            'flow_session_id': page_context.flow_session.id,
-                            'ordinal': page_context.ordinal
-                            }
-                )
-
-            from six.moves.urllib.parse import urljoin
-            review_uri = urljoin(getattr(settings, "RELATE_BASE_URL"),
-                                 review_url)
-
             from relate.utils import local_now, format_datetime_local
             with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
                 from django.template.loader import render_to_string
@@ -759,7 +693,7 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                     "page_id": self.page_desc.id,
                     "course": page_context.course,
                     "error_message": error_msg,
-                    "review_uri": review_uri,
+                    "review_uri": page_context.page_uri,
                     "time": format_datetime_local(local_now())
                     })
 
@@ -873,6 +807,9 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
             raise RuntimeError("invalid runpy result: %s" % response.result)
 
         if hasattr(response, "feedback") and response.feedback:
+            def sanitize(s):
+                import bleach
+                return bleach.clean(s, tags=["p", "pre"])
             feedback_bits.append("".join([
                 "<p>",
                 _("Here is some feedback on your code"),
@@ -933,10 +870,60 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
             fig_lines.append("</dl>")
             bulk_feedback_bits.extend(fig_lines)
 
+        # {{{ html output / santization
+
         if hasattr(response, "html") and response.html:
-            # html output / santization
+            def is_allowed_data_uri(allowed_mimetypes, uri):
+                import re
+                m = re.match(r"^data:([-a-z0-9]+/[-a-z0-9]+);base64,", uri)
+                if not m:
+                    return False
+
+                mimetype = m.group(1)
+                return mimetype in allowed_mimetypes
+
+            def sanitize(s):
+                import bleach
+
+                def filter_audio_attributes(name, value):
+                    if name in ["controls"]:
+                        return True
+                    else:
+                        return False
+
+                def filter_source_attributes(name, value):
+                    if name in ["type"]:
+                        return True
+                    elif name == "src":
+                        return is_allowed_data_uri([
+                            "audio/wav",
+                            ], value)
+                    else:
+                        return False
+
+                def filter_img_attributes(name, value):
+                    if name in ["alt", "title"]:
+                        return True
+                    elif name == "src":
+                        return is_allowed_data_uri([
+                            "image/png",
+                            "image/jpeg",
+                            ], value)
+                    else:
+                        return False
+
+                return bleach.clean(s,
+                        tags=bleach.ALLOWED_TAGS + ["audio", "video", "source"],
+                        attributes={
+                            "audio": filter_audio_attributes,
+                            "source": filter_source_attributes,
+                            "img": filter_img_attributes,
+                            })
+
             bulk_feedback_bits.extend(
                     sanitize(snippet) for snippet in response.html)
+
+        # }}}
 
         return AnswerFeedback(
                 correctness=correctness,
@@ -1000,17 +987,24 @@ class PythonCodeQuestionWithHumanTextFeedback(
     This will allow participants multiple attempts at getting
     the right answer.
 
-    The allowed attributes are the same as those of
-    :class:`PythonCodeQuestion`, with the following additional,
-    required attribute:
+    Besides those defined in :class:`PythonCodeQuestion`, the
+    following additional, allowed/required attribute are introduced:
 
     .. attribute:: human_feedback_value
 
-        Required.
+        Optional (deprecated).
         A number. The point value of the feedback component
         by the human grader (who will grade on a 0-100 scale,
         which is scaled to yield :attr:`human_feedback_value`
         at 100).
+
+    .. attribute:: human_feedback_percentage
+
+        Optional.
+        A number. The percentage the feedback by the human
+        grader takes in the overall grade. Noticing that
+        either this attribute or :attr:`human_feedback_value`
+        must be included. `
 
     .. attribute:: rubric
 
@@ -1023,24 +1017,76 @@ class PythonCodeQuestionWithHumanTextFeedback(
         super(PythonCodeQuestionWithHumanTextFeedback, self).__init__(
                 vctx, location, page_desc)
 
-        if (vctx is not None
-                and self.page_desc.human_feedback_value > self.page_desc.value):
-            raise ValidationError("".join([
-                "%s: ",
-                _("human_feedback_value greater than overall "
-                    "value of question")])
-                % location)
+        if vctx is not None:
+            if (hasattr(self.page_desc, "human_feedback_value")
+                and
+                    hasattr(self.page_desc, "human_feedback_percentage")):
+                raise ValidationError(
+                    string_concat(
+                        "%(location)s: ",
+                        _("'human_feedback_value' and "
+                          "'human_feedback_percentage' are not "
+                          "allowed to coexist"))
+                    % {'location': location}
+                )
+            if not (hasattr(self.page_desc, "human_feedback_value")
+                    or hasattr(self.page_desc, "human_feedback_percentage")):
+                raise ValidationError(
+                    string_concat(
+                        "%(location)s: ",
+                        _("expecting either 'human_feedback_value' "
+                          "or 'human_feedback_percentage', found neither."))
+                    % {'location': location}
+                )
+            if hasattr(self.page_desc, "human_feedback_value"):
+                vctx.add_warning(
+                    location,
+                    _("Used deprecated 'human_feedback_value' attribute--"
+                      "use 'human_feedback_percentage' instead."))
+                if self.page_desc.value == 0:
+                    raise ValidationError("".join([
+                        "%s: ",
+                        _("'human_feedback_value' attribute is not allowed "
+                          "if value of question is 0, use "
+                          "'human_feedback_percentage' instead")])
+                        % location)
+                if self.page_desc.human_feedback_value > self.page_desc.value:
+                    raise ValidationError("".join([
+                        "%s: ",
+                        _("human_feedback_value greater than overall "
+                            "value of question")])
+                        % location)
+            if hasattr(self.page_desc, "human_feedback_percentage"):
+                if not (
+                        0 <= self.page_desc.human_feedback_percentage <= 100):
+                    raise ValidationError("".join([
+                        "%s: ",
+                        _("the value of human_feedback_percentage "
+                          "must be between 0 and 100")])
+                        % location)
+
+        if hasattr(self.page_desc, "human_feedback_value"):
+            self.human_feedback_percentage = \
+                self.page_desc.human_feedback_value * 100 / self.page_desc.value
+        else:
+            self.human_feedback_percentage = self.page_desc.human_feedback_percentage
 
     def required_attrs(self):
         return super(
                 PythonCodeQuestionWithHumanTextFeedback, self).required_attrs() + (
                         # value is otherwise optional, but we require it here
                         ("value", (int, float)),
+                        )
+
+    def allowed_attrs(self):
+        return super(
+                PythonCodeQuestionWithHumanTextFeedback, self).allowed_attrs() + (
                         ("human_feedback_value", (int, float)),
+                        ("human_feedback_percentage", (int, float)),
                         )
 
     def human_feedback_point_value(self, page_context, page_data):
-        return self.page_desc.human_feedback_value
+        return self.page_desc.value * self.human_feedback_percentage / 100
 
     def grade(self, page_context, page_data, answer_data, grade_data):
         if answer_data is None:
@@ -1053,7 +1099,7 @@ class PythonCodeQuestionWithHumanTextFeedback(
         code_feedback = PythonCodeQuestion.grade(self, page_context,
                 page_data, answer_data, grade_data)
 
-        human_points = self.page_desc.human_feedback_value
+        human_points = self.human_feedback_point_value(page_context, page_data)
         code_points = self.page_desc.value - human_points
 
         correctness = None
@@ -1062,26 +1108,20 @@ class PythonCodeQuestionWithHumanTextFeedback(
                 and code_feedback.correctness is not None
                 and grade_data is not None
                 and grade_data["grade_percent"] is not None):
-            if self.page_desc.value != 0:
-                correctness = (
-                        code_feedback.correctness * code_points
+            code_feedback_percentage = 100 - self.human_feedback_percentage
+            percentage = (
+                    code_feedback.correctness * code_feedback_percentage
 
-                        + grade_data["grade_percent"] / 100
-                        * self.page_desc.human_feedback_value
-                        ) / self.page_desc.value
-            else:
-                correctness = (
-                    0.5 * code_feedback.correctness * code_points
-                    + 0.5 * grade_data["grade_percent"] / 100
-                )
-            percentage = correctness * 100
-        elif (self.page_desc.human_feedback_value == self.page_desc.value
+                    + grade_data["grade_percent"] / 100
+                    * self.human_feedback_percentage
+                    )
+            correctness = percentage / 100
+        elif (self.human_feedback_percentage == 100
                 and grade_data is not None
                 and grade_data["grade_percent"] is not None):
             correctness = grade_data["grade_percent"] / 100
             percentage = correctness * 100
 
-        human_feedback_percentage = None
         human_feedback_text = None
 
         human_feedback_points = None
@@ -1090,9 +1130,9 @@ class PythonCodeQuestionWithHumanTextFeedback(
                 human_feedback_text = markup_to_html(
                         page_context, grade_data["feedback_text"])
 
-            human_feedback_percentage = grade_data["grade_percent"]
-            if human_feedback_percentage is not None:
-                human_feedback_points = (human_feedback_percentage/100.
+            human_graded_percentage = grade_data["grade_percent"]
+            if human_graded_percentage is not None:
+                human_feedback_points = (human_graded_percentage/100.
                         * human_points)
 
         code_feedback_points = None

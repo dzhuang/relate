@@ -81,7 +81,6 @@ class PageContext(object):
             repo,  # type: Repo_ish
             commit_sha,  # type: bytes
             flow_session,  # type: FlowSession
-            ordinal=None,  # type: int or None # added by zd
             in_sandbox=False,  # type: bool
             page_uri=None,  # type: Optional[str]
             ):
@@ -93,7 +92,6 @@ class PageContext(object):
         self.flow_session = flow_session
         self.in_sandbox = in_sandbox
         self.page_uri = page_uri
-        self.ordinal = ordinal # added by zd
 
 
 class PageBehavior(object):
@@ -145,9 +143,9 @@ def get_auto_feedback(correctness):
     # type: (Optional[float]) -> Text
     if correctness is None:
         return six.text_type(_("No information on correctness of answer."))
-    elif correctness == 0:
+    elif abs(correctness - 0) < 1e-5:
         return six.text_type(_("Your answer is not correct."))
-    elif correctness == 1:
+    elif abs(correctness - 1) < 1e-5:
         return six.text_type(_("Your answer is correct."))
     elif correctness > 1:
         return six.text_type(
@@ -338,12 +336,8 @@ class PageBase(object):
 
                     # }}}
 
-                if not getattr(page_desc, "require_submission", True):
-                    if getattr(page_desc, "value", 0) > 0:
-                        vctx.add_warning(location, _("An optional page should have 'value = 0'"))
-
             self.page_desc = page_desc
-            self.page_desc.require_submission = getattr(self.page_desc, "require_submission", True)
+            self.is_optional_page = getattr(page_desc, "is_optional_page", False)
 
         else:
             from warnings import warn
@@ -373,7 +367,7 @@ class PageBase(object):
 
         return (
             ("access_rules", Struct),
-            ("require_submission", bool)
+            ("is_optional_page", bool),
             )
 
     def get_modified_permissions_for_page(self, permissions):
@@ -598,6 +592,7 @@ class PageBase(object):
             grading_form,  # type: Any
             files_data  # type: Any
             ):
+        # type: (...) -> Any
         """Return an updated version of *grade_data*, which is a
         JSON-persistable object reflecting data on grading of this response.
         This will be passed to other methods as *grade_data*.
@@ -620,6 +615,7 @@ class PageBase(object):
             grading_form,  # type: Any
             files_data  # type: Any
             ):
+        # type: (...) -> Any
 
         return grade_data
 
@@ -746,6 +742,16 @@ class PageBaseWithTitle(PageBase):
 
 
 class PageBaseWithValue(PageBase):
+    def __init__(self, vctx, location, page_desc):
+        super(PageBaseWithValue, self).__init__(vctx, location, page_desc)
+
+        if vctx is not None:
+            if hasattr(page_desc, "value") and self.is_optional_page:
+                raise ValidationError(
+                    location,
+                    _("Attribute 'value' should be removed when "
+                      "'is_optional_page' is True."))
+
     def allowed_attrs(self):
         return super(PageBaseWithValue, self).allowed_attrs() + (
                 ("value", (int, float)),
@@ -755,6 +761,8 @@ class PageBaseWithValue(PageBase):
         return True
 
     def max_points(self, page_data):
+        if self.is_optional_page:
+            return 0
         return getattr(self.page_desc, "value", 1)
 
 
@@ -837,7 +845,7 @@ class HumanTextFeedbackForm(StyledForm):
                     [0, 10, 20, 25, 30, 40, 50, 60, 70, 75, 80, 90, 100]),
                 label=_("Grade percent"))
 
-        if point_value is not None:
+        if point_value is not None and point_value != 0:
             self.fields["grade_points"] = forms.FloatField(
                     min_value=0,
                     max_value=MAX_EXTRA_CREDIT_FACTOR*point_value,
@@ -910,7 +918,7 @@ class HumanTextFeedbackForm(StyledForm):
         if self.point_value is None:
             return self.cleaned_data["grade_percent"]
         elif (self.cleaned_data["grade_percent"] is not None
-                and self.cleaned_data["grade_points"] is not None):
+                and self.cleaned_data.get("grade_points") is not None):
             points_percent = 100*self.cleaned_data["grade_points"]/self.point_value
             direct_percent = self.cleaned_data["grade_percent"]
 
@@ -922,7 +930,7 @@ class HumanTextFeedbackForm(StyledForm):
         elif self.cleaned_data["grade_percent"] is not None:
             return self.cleaned_data["grade_percent"]
 
-        elif self.cleaned_data["grade_points"] is not None:
+        elif self.cleaned_data.get("grade_points") is not None:
             if self.point_value:
                 return 100*self.cleaned_data["grade_points"]/self.point_value
             else:
@@ -968,8 +976,16 @@ class PageBaseWithHumanTextFeedback(PageBase):
         return HumanTextFeedbackForm(
                 human_feedback_point_value, post_data, files_data)
 
-    def update_grade_data_from_grading_form_v2(self, request, page_context,
-            page_data, grade_data, grading_form, files_data):
+    def update_grade_data_from_grading_form_v2(
+            self,
+            request,  # type: http.HttpRequest
+            page_context,  # type: PageContext
+            page_data,  # type: Any
+            grade_data,  # type: Any
+            grading_form,  # type: Any
+            files_data  # type: Any
+            ):
+        # type: (...) -> Any
 
         if grade_data is None:
             grade_data = {}
@@ -1015,7 +1031,7 @@ class PageBaseWithHumanTextFeedback(PageBase):
                 and grading_form.cleaned_data["notify_instructor"]
                 and page_context.flow_session):
             with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
-                from django.template.loader import render_to_string
+                from django.template.loader import render_to_string  # type: ignore
                 message = render_to_string("course/grade-internal-notes-notify.txt",
                         {
                             "page_title": self.title(page_context, page_data),
@@ -1027,7 +1043,7 @@ class PageBaseWithHumanTextFeedback(PageBase):
                             "sender": request.user
                             })
 
-                from django.core.mail import EmailMessage
+                from django.core.mail import EmailMessage  # type: ignore
                 msg = EmailMessage(
                         string_concat("[%(identifier)s:%(flow_id)s] ",
                             _("Grading notes from %(ta)s"))
@@ -1043,7 +1059,7 @@ class PageBaseWithHumanTextFeedback(PageBase):
                 msg.reply_to = [request.user.email]
 
                 if hasattr(settings, "GRADER_FEEDBACK_EMAIL_FROM"):
-                    from relate.utils import get_outbound_mail_connection
+                    from relate.utils import get_outbound_mail_connection  # type: ignore # noqa
                     msg.connection = get_outbound_mail_connection("grader_feedback")
                 msg.send()
 

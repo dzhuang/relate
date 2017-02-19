@@ -9,7 +9,6 @@ from django.shortcuts import get_object_or_404
 from .models import (Questionnaire, Question,
                      Choice, Answer)
 
-import json
 
 class BaseNestedFormset(BaseInlineFormSet):
     def __init__(self, *args, **kwargs):
@@ -71,13 +70,15 @@ class BaseNestedFormset(BaseInlineFormSet):
 
     def save(self, commit=True):
         result = super(BaseNestedFormset, self).save(commit=commit)
-        choice_empty = ['yesNoQuestion', 'TextField', 'RatingField', 'MutuallyExclusiveField']
+        choice_empty = [
+            'yesNoQuestion', 'TextField',
+            'RatingField', 'MutuallyExclusiveField']
         for form in self.ordered_forms:
             # Save the order of the form
-            form.instance.order = \
-                form.cleaned_data['ORDER']\
-                    if form.cleaned_data['ORDER'] is not None \
-                    else self.total_form_count()
+            form.instance.order = (
+                form.cleaned_data['ORDER']
+                if form.cleaned_data['ORDER'] is not None
+                else self.total_form_count())
             # Delete question when type of question `choice_empty`
             if form.cleaned_data['type'] in choice_empty:
                 form.nested.save(commit=False)
@@ -119,6 +120,7 @@ def nested_formset_factory(parent_model, child_model, grandchild_model):
     )
 
     return parent_child
+
 
 # The best link: http://yergler.net/blog/2009/09/27/nested-formsets-with-django/
 # Nested formset
@@ -212,7 +214,10 @@ def get_form_field(self, question):
 
         self.fields['question_{0}'.format(question.pk)] = \
             forms.MultipleChoiceField(
-                choices=((0, "----"), (1, u"完全正确"), (2, u"未回答(基本未回答)"), (3, u"未掌握原理"),) + tuple(choices),
+                choices=((0, "----"),
+                         (1, u"完全正确"),
+                         (2, u"未回答(基本未回答)"),
+                         (3, u"未掌握原理"),) + tuple(choices),
                 initial='0',
                 widget=forms.CheckboxSelectMultiple,
                 error_messages=error_message,
@@ -224,7 +229,10 @@ def get_form_field(self, question):
 
         self.fields['question_{0}'.format(question.pk)] = \
             forms.ChoiceField(
-                choices=((0, "----"), (1, u"完全正确"), (2, u"未回答(基本未回答)"), (3, u"未掌握原理"), ) + tuple(choices),
+                choices=((0, "----"),
+                         (1, u"完全正确"),
+                         (2, u"未回答(基本未回答)"),
+                         (3, u"未掌握原理"), ) + tuple(choices),
                 widget=forms.RadioSelect({'class': 'with-gap'}),
                 initial='0',
                 error_messages=error_message,
@@ -246,28 +254,25 @@ def get_form_field(self, question):
                                'data-glyphicon': "false",
                                'data-size': "sm",
                                'data-stars': 5})
-
-
-    elif question.type == 'MutuallyExclusiveField':
-        pass
-        error_message = {'required': "This field is required and you "
-                                     "must select a response"}
-        self.fields['question_{0}'.format(question.pk)] = \
-            MutuallyExclusiveValueField(
-                fields=(forms.ChoiceField(), forms.ChoiceField()),
-                widget=MutuallyExclusiveRadioWidget(widgets=[
-                    forms.Select(choices=[(1, 1), (2, 2), (3, 3)]),
-                    forms.Select(choices=[(4, 1), (5, 2), (6, 3)]),
-                ]),
-                error_messages=error_message,
-                **options)
-        # MutuallyExclusiveValueField(
-        #     fields=(forms.IntegerField(), forms.IntegerField()),
-        #     widget=MutuallyExclusiveRadioWidget(widgets=[
-        #         forms.Select(choices=[(1, 1), (2, 2)]),
-        #         forms.TextInput(attrs={'placeholder': 'Enter a number'}),
-        #     ]))
-
+    # elif question.type == 'MutuallyExclusiveField':
+    #     pass
+    #     error_message = {'required': "This field is required and you "
+    #                                  "must select a response"}
+    #     self.fields['question_{0}'.format(question.pk)] = \
+    #         MutuallyExclusiveValueField(
+    #             fields=(forms.ChoiceField(), forms.ChoiceField()),
+    #             widget=MutuallyExclusiveRadioWidget(widgets=[
+    #                 forms.Select(choices=[(1, 1), (2, 2), (3, 3)]),
+    #                 forms.Select(choices=[(4, 1), (5, 2), (6, 3)]),
+    #             ]),
+    #             error_messages=error_message,
+    #             **options)
+    #     MutuallyExclusiveValueField(
+    #         fields=(forms.IntegerField(), forms.IntegerField()),
+    #         widget=MutuallyExclusiveRadioWidget(widgets=[
+    #             forms.Select(choices=[(1, 1), (2, 2)]),
+    #             forms.TextInput(attrs={'placeholder': 'Enter a number'}),
+    #         ]))
 
 
 class DisplayQuestionsForm(forms.Form):
@@ -300,6 +305,7 @@ class DisplayQuestionsForm(forms.Form):
                 except IntegrityError:
                     error_integrity = True
                     return error_integrity
+
 
 class SingleQuestionForm(forms.Form):
     def __init__(self, question_pk, *args, **kwargs):

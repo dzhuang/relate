@@ -7,7 +7,7 @@ django-submail>=1.2.0
 
 # For postgresql
 ## for linux, run "apt-get install libpq-dev" first
-psycopg2
+#psycopg2
 
 # For image upload
 ## for linux, run "apt-get install libjpeg-dev" first
@@ -40,6 +40,9 @@ django-qiniu-storage
 # For redis, requiring redis-server
 django-redis
 
+# For image upload with different storage
+django-proxy-storage
+pymongo
 
 # questionnair
 git+https://git.oschina.net/dzhuang/django-survey-formset.git

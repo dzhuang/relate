@@ -136,8 +136,15 @@ class Feedback:
             rtol=1e-5, atol=1e-8, report_success=True, report_failure=True):
         import numpy as np
 
-        if not isinstance(data, (float, int, np.number)):
-            self.finish(0, "'%s' is not a number" % name)
+        if not isinstance(data, (complex, float, int, np.number)):
+            try:
+                # Check whether data is a sympy number because sympy
+                # numbers do not follow the typical interface
+                # See https://github.com/inducer/relate/pull/284
+                if not data.is_number:
+                    self.finish(0, "'%s' is not a number" % name)
+            except AttributeError:
+                self.finish(0, "'%s' is not a number" % name)
 
         good = False
 
@@ -166,7 +173,7 @@ class Feedback:
             from traceback import format_exc
             self.add_feedback(
                     "<p>"
-                    "The '%s' supplied in your code failed with "
+                    "The callable '%s' supplied in your code failed with "
                     "an exception while it was being called by the grading "
                     "code:"
                     "</p>"

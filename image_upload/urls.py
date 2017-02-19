@@ -38,7 +38,7 @@ from image_upload.views import (
     flow_page_image_key,
 )
 
-from image_upload.page.imgupload import feedBackEmail
+from image_upload.page.imgupload import send_feed_back_email
 
 js_info_dict_image_upload = {
     'packages': ('image_upload',),
@@ -71,7 +71,7 @@ urlpatterns = [
         "/(?P<ordinal>[0-9]+|None)"
         "/image/delete"
         "/(?P<pk>\d+)$",
-        ImageDeleteView.as_view(), 
+        ImageDeleteView.as_view(),
         name='jfu_delete'),
 
     url(r"^course"
@@ -104,7 +104,7 @@ urlpatterns = [
         "/(?P<file_name>[^/]+)$",
         flow_page_image_problem,
         name='flow_page_image_problem'),
-    
+
     url(r"^key_img"
         "/(?P<download_id>\d+)"
         "/(?P<creator_id>\d+)"
@@ -137,13 +137,13 @@ urlpatterns = [
         "/(?P<flow_session_id>[0-9]+|None)"
         "/(?P<ordinal>[0-9]+|None)"
         "/email-feedback/$",
-        feedBackEmail,
-        name='feedBackEmail'),
-    
+        send_feed_back_email,
+        name='send_feed_back_email'),
+
     url(r"^jsi18n"
         "/image_upload/$",
         javascript_catalog,
         js_info_dict_image_upload,
         name='javascript-catalog-image-upload'),
-    
+
     ]

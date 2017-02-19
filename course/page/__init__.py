@@ -63,7 +63,7 @@ __all__ = (
         "FileUploadQuestion",
 
         # added by zd
-        "image_uploadQuestion", "ImageUploadQuestionWithAnswer",
+        "ImageUploadQuestion", "ImageUploadQuestionWithAnswer",
         "LatexRandomImageUploadQuestion", "LatexRandomCodeQuestion",
         "LatexRandomCodeQuestionWithHumanTextFeedback",
         'LatexRandomChoiceQuestion',

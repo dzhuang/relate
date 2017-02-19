@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-01-13 00:08+0800\n"
+"POT-Creation-Date: 2017-02-16 13:25+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -17,132 +17,100 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Language: \n"
 
-#: .\questionnaire\forms.py:49
 msgid "You must entered at least two choices"
 msgstr ""
 
-#: .\questionnaire\forms.py:186
 msgid "Yes"
 msgstr "是"
 
-#: .\questionnaire\forms.py:187
 msgid "No"
 msgstr "否"
 
-#: .\questionnaire\models.py:17
 msgid "Questionnaire title"
 msgstr "问卷标题"
 
-#: .\questionnaire\models.py:19
 msgid "Note: Name of the questionnaires"
 msgstr "注意：问卷的名称"
 
-#: .\questionnaire\models.py:21
 msgid "Description"
 msgstr "描述"
 
-#: .\questionnaire\models.py:23
 msgid "Enter the text that presents the questionnaire"
 msgstr "输入展示问题时其显示的文字"
 
-#: .\questionnaire\models.py:244
 msgid "Yes/No"
 msgstr "是/否"
 
-#: .\questionnaire\models.py:245
 msgid "The participant must respond with Yes or No."
 msgstr "回答者必须选择 是 或者 否"
 
-#: .\questionnaire\models.py:249
 msgid "Multiple choices with one Answer"
 msgstr "单项选择"
 
-#: .\questionnaire\models.py:250
 msgid "The participant is conducted to pick one in response options list."
 msgstr "回答者应选择其中一项"
 
-#: .\questionnaire\models.py:255
 msgid "Multiple choices with multiple answers"
 msgstr "多项选择题"
 
-#: .\questionnaire\models.py:256 .\questionnaire\models.py:262
 msgid ""
 "The participant is conducted to pick (one or more responses) in response "
 "options list."
 msgstr "回答者可从中选择一项或多项"
 
-#: .\questionnaire\models.py:261
 msgid "Question with multually exclusive answers"
 msgstr "互斥型选择"
 
-#: .\questionnaire\models.py:267
 msgid "Comment Area"
 msgstr "评论区"
 
-#: .\questionnaire\models.py:268
 msgid "Use the comment box to collect written comments from respondents."
 msgstr "使用评论区来收集回答者的评论."
 
-#: .\questionnaire\models.py:272
 msgid "Rating scale"
 msgstr "星级量表"
 
-#: .\questionnaire\models.py:273
 msgid "The respondents will rate the level of satisfaction."
 msgstr "回答者应选择星级"
 
-#: .\questionnaire\models.py:282
 msgid "Title Question"
 msgstr "问题的标题"
 
-#: .\questionnaire\models.py:284
 msgid "Note: Title of question"
 msgstr "注意：问题的标题"
 
-#: .\questionnaire\models.py:286
 msgid "Question Required"
 msgstr "问题必须回答"
 
-#: .\questionnaire\models.py:288
 msgid "The users are required to answer"
 msgstr "回答者必须回答该问题"
 
-#: .\questionnaire\models.py:291
 msgid "Type of answer"
 msgstr "回答的类型"
 
-#: .\questionnaire\models.py:297
 msgid "order"
 msgstr "序号"
 
-#: .\questionnaire\models.py:299
 msgid "Help Text"
 msgstr "帮助文字"
 
-#: .\questionnaire\models.py:325
 msgid "Text choice"
 msgstr "文字选择"
 
-#: .\questionnaire\models.py:367
 msgid "The user who supplied this answer"
 msgstr "提供该回答的用户"
 
-#: .\questionnaire\models.py:370
 msgid "The question that this is an answer to"
 msgstr "这个回答所面向的问题"
 
-#: .\questionnaire\models.py:372
 msgid "Answer"
 msgstr "回答"
 
-#: .\questionnaire\models.py:374
 msgid "The text answer related to the question"
 msgstr "与该问题相关的文字回答"
 
-#: .\questionnaire\models.py:376
 msgid "Date"
 msgstr "日期"
 
-#: .\questionnaire\views.py:33
 msgid "All updates has been saved successfully."
 msgstr "所有的更新已经保存. "

@@ -25,8 +25,12 @@ THE SOFTWARE.
 """
 
 from six import BytesIO
-
+from django.db.models import Transform, CharField, TextField
 from django.contrib.auth.mixins import UserPassesTestMixin
+from django import forms
+from django.template import Context
+from django.template.loader import get_template
+from django.contrib.admin import widgets
 
 from course.flow import (
         get_page_behavior, get_and_check_flow_session,
@@ -39,9 +43,9 @@ from course.utils import CoursePageContext
 
 import zipfile
 
+
 # extracted from course.flow
 def get_page_image_behavior(pctx, flow_session_id, ordinal):
-    
     if ordinal == "None" and flow_session_id == "None":
         from course.page.base import PageBehavior
         return PageBehavior(
@@ -141,20 +145,16 @@ class ImageOperationMixin(UserPassesTestMixin):
         flow_session_id = self.kwargs['flow_session_id']
         ordinal = self.kwargs['ordinal']
         course_identifier = self.kwargs['course_identifier']
-
         pctx = CoursePageContext(request, course_identifier)
-        
+
         try:
-            return get_page_image_behavior(pctx, flow_session_id, ordinal).may_change_answer
+            return get_page_image_behavior(
+                pctx, flow_session_id, ordinal).may_change_answer
         except ValueError:
             return True
 
-# {{{
 
-from django import forms
-from django.template import Context
-from django.template.loader import get_template
-from django.contrib.admin import widgets
+# {{{
 
 class MarkdownWidget(forms.Textarea):
     def render(self, name, value, attrs=None):
@@ -168,10 +168,10 @@ class MarkdownWidget(forms.Textarea):
             {
                 #'id': "marked-mathjax-input",
                 'onkeyup': "Preview.Update()",
-                #'name': "comment",
-             }
-        )
-        #attrs.update({"autofocus": ""})
+                'name': "comment",
+                })
+
+        # attrs.update({"autofocus": ""})
 
         widget = super(MarkdownWidget, self).render(name, value, attrs)
 
@@ -187,6 +187,7 @@ class MarkdownWidget(forms.Textarea):
             "/static/marked/marked.min.js",
         )
 
+
 class AdminMarkdownWidget(MarkdownWidget, widgets.AdminTextareaWidget):
     class Media:
         css = {
@@ -196,23 +197,24 @@ class AdminMarkdownWidget(MarkdownWidget, widgets.AdminTextareaWidget):
             "/static/marked/marked.min.js",
               )
 
+# }}}
 
-    # }}}
 
-   #{{{ enable query filter charfield by 'len'
-from django.db.models import Transform
-from django.db.models import CharField, TextField
+#{{{ enable query filter charfield by 'len'
 
 class CharacterLength(Transform):
     lookup_name = 'len'
+
     def as_sql(self, compiler, connection):
         lhs, params = compiler.compile(self.lhs)
         return "LENGTH(%s)" % lhs, params
+
 
 CharField.register_lookup(CharacterLength)
 TextField.register_lookup(CharacterLength)
 
 # }}}
+
 
 # {{{ zip as file-like object
 
@@ -244,8 +246,9 @@ class InMemoryZip(object):
 
     def writetofile(self, filename):
         '''Writes the in-memory zip to a file.'''
-        f = file(filename, "w")
-        f.write(self.read())
-        f.close()
+        from django.core.files import File
+        with open(filename, 'w') as f:
+            ff = File(f)
+            ff.write(self.read())
 
 # }}}

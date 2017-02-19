@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
             name='Image',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('file', models.ImageField(storage=image_upload.models.UserImageStorage(), upload_to=image_upload.models.user_directory_path)),
+                ('file', models.ImageField()),
                 ('slug', models.SlugField(max_length=256, blank=True)),
                 ('creation_time', models.DateTimeField(default=django.utils.timezone.now)),
             ],

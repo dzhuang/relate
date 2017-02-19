@@ -4,7 +4,7 @@ from django.contrib.messages import success, error
 from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
-from django.views.generic import (CreateView, FormView, DetailView,
+from django.views.generic import (CreateView, FormView,
                                   UpdateView, TemplateView,
                                   ListView)
 from django.shortcuts import get_object_or_404
@@ -18,6 +18,7 @@ from .forms import (
 
 from .models import Questionnaire, Answer
 from django.contrib.auth.mixins import UserPassesTestMixin
+
 
 class CourseViewMixin(UserPassesTestMixin):
     raise_exception = True
@@ -150,7 +151,8 @@ class TakeQuestionnaire(FormView):
         exist_answer = {}
         for index, question in enumerate(questionnaire.questions()):
             try:
-                answer = Answer.objects.get(user=self.request.user, question=question)
+                answer = Answer.objects.get(
+                    user=self.request.user, question=question)
                 exist_answer['question_{0}'.format(question.pk)] = answer.answer
                 print(answer.answer)
             except Answer.DoesNotExist:

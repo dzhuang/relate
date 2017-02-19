@@ -190,7 +190,7 @@ class CourseCreationForm(StyledModelForm):
             "time_period",
             "start_date",
             "end_date",
-            "enroll_deadline", # added by zd
+            "enroll_deadline",  # added by zd
             "hidden", "listed",
             "accepts_enrollment",
             "git_source", "ssh_private_key", "course_root_path",
@@ -204,7 +204,9 @@ class CourseCreationForm(StyledModelForm):
         widgets = {
                 "start_date": DateTimePicker(options={"format": "YYYY-MM-DD"}),
                 "end_date": DateTimePicker(options={"format": "YYYY-MM-DD"}),
-                "enroll_deadline": DateTimePicker(options={"format": "YYYY-MM-DD"}), # added by zd
+                "enroll_deadline": (
+                    DateTimePicker(
+                        options={"format": "YYYY-MM-DD"})),  # added by zd
                 }
 
     def __init__(self, *args, **kwargs):

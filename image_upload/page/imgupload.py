@@ -24,36 +24,61 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+import os
+from six.moves.urllib.parse import urlparse, urljoin
+
 import django.forms as forms
 from django.utils.translation import ugettext as _, string_concat
+from django.template.loader import render_to_string
 from django.db import transaction
 from django.contrib import messages
+from django.core.urlresolvers import reverse, NoReverseMatch
+from django.urls import resolve
 
-from image_upload.models import FlowPageImage
+from relate.utils import StyledForm
 
 from course.page.base import (
     PageBaseWithTitle, PageBaseWithValue, PageBaseWithHumanTextFeedback,
     PageBaseWithCorrectAnswer, HumanTextFeedbackForm,
     markup_to_html)
 from course.validation import ValidationError
-from course.utils import course_view, render_course_page
+from course.utils import (course_view, render_course_page, FlowPageContext)
+from course.constants import participation_permission as pperm
 
-from relate.utils import StyledForm
+from image_upload.storages import UserImageStorage
+from image_upload.models import FlowPageImage
 
 from crispy_forms.layout import Layout, HTML, Submit
 
-import os
+storage = UserImageStorage()
+
+# {{{  mypy
+
+from typing import Text, Any  # noqa
+from django import http  # noqa
+if False:
+    from course.utils import PageContext  # noqa
+
+# }}}
+
+
+def get_ordinal_from_page_context(page_context):
+    if page_context.in_sandbox:
+        return None
+
+    relative_url = urlparse(page_context.page_uri).path
+
+    func, args, kwargs = resolve(relative_url)
+    assert kwargs["ordinal"]
+    return kwargs["ordinal"]
 
 
 def is_course_staff_request(request, page_context):
     course = page_context.course
-    from course.constants import participation_permission as pperm
     from course.enrollment import (
         get_participation_for_request,
         get_participation_permissions)
-
     participation = get_participation_for_request(request, course)
-
     perms = get_participation_permissions(course, participation)
 
     if (pperm.assign_grade, None) in perms:
@@ -63,13 +88,20 @@ def is_course_staff_request(request, page_context):
 
 # {{{ image upload question
 
+
 class ImageUploadForm(StyledForm):
     show_save_button = False
+
     def __init__(self, page_context,
                  page_behavior, page_data, *args, **kwargs):
-        require_image_for_submission = kwargs.pop("require_image_for_submission",True)
+        require_image_for_submission = kwargs.pop(
+            "require_image_for_submission", True)
         super(ImageUploadForm, self).__init__(*args, **kwargs)
 
+        self.fields["hidden_answer"] = forms.CharField(
+                required=False,
+                widget=forms.TextInput(),
+        )
         self.page_behavior = page_behavior
         self.page_context = page_context
         self.page_data = page_data
@@ -89,12 +121,11 @@ class ImageUploadForm(StyledForm):
 
         self.helper.form_id = "fileupload"
 
-        from django.core.urlresolvers import reverse
         self.helper.form_action = reverse(
             "jfu_upload",
             kwargs={'course_identifier': page_context.course,
                     'flow_session_id': page_context.flow_session.id,
-                    'ordinal': page_context.ordinal
+                    'ordinal': get_ordinal_from_page_context(page_context)
                     }
         )
         self.helper.form_method = "POST"
@@ -107,8 +138,24 @@ class ImageUploadForm(StyledForm):
         )
 
     def clean(self):
+        cleaned_data = super(ImageUploadForm, self).clean()
+        pk_list_str = cleaned_data["hidden_answer"]
+
+        if not pk_list_str:
+            if self.require_image_for_submission:
+                raise forms.ValidationError(_("You have not upload image(s)!"))
+
+        pk_list = []
+        try:
+            pk_list = [int(i.strip()) for i in pk_list_str.split(",")]
+        except:
+            pass
+
+        cleaned_data["hidden_answer"] = pk_list
+        return cleaned_data
+
         flow_session_id = self.page_context.flow_session.id
-        ordinal = self.page_context.ordinal
+        ordinal = get_ordinal_from_page_context(self.page_context)
         flow_owner = self.page_context.flow_session.participation.user
 
         if self.require_image_for_submission:
@@ -131,6 +178,7 @@ class ImageUploadForm(StyledForm):
 
 class ImgUploadHumanTextFeedbackForm(HumanTextFeedbackForm):
     show_save_button = False
+
     def __init__(self, *args, **kwargs):
         use_access_rules_tag = kwargs.pop("use_access_rules_tag", False)
         super(ImgUploadHumanTextFeedbackForm, self).__init__(*args, **kwargs)
@@ -138,7 +186,9 @@ class ImgUploadHumanTextFeedbackForm(HumanTextFeedbackForm):
         if use_access_rules_tag:
             self.fields["access_rules_tag"] = forms.CharField(
                 required=False,
-                help_text=_("Manually set the access_rules_tag of the session, if necessary."),
+                help_text=_(
+                    "Manually set the access_rules_tag of "
+                    "the session, if necessary."),
                 label=_('Access rules tag'))
 
 
@@ -212,36 +262,42 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         super(ImageUploadQuestion, self).__init__(vctx, location, page_desc)
 
         if vctx is not None:
-            if not hasattr(page_desc, "value"):
+            if not hasattr(page_desc, "value") and not self.is_optional_page:
                 vctx.add_warning(location, _("upload question does not have "
                                              "assigned point value"))
         self.maxNumberOfFiles = getattr(page_desc, "maxNumberOfFiles", 1)
 
-        self.imageMaxWidth = getattr(self.page_desc, "imageMaxWidth", 1000)
+        self.imageMaxWidth = getattr(
+            self.page_desc, "imageMaxWidth", 1000)
         if self.imageMaxWidth > 1500:
             self.imageMaxWidth = 1500
         elif self.imageMaxWidth < 200:
             self.imageMaxWidth = 400
 
-        self.imageMaxHeight = getattr(self.page_desc, "imageMaxHeight", 1000)
+        self.imageMaxHeight = getattr(
+            self.page_desc, "imageMaxHeight", 1000)
         if self.imageMaxHeight > 1500:
             self.imageMaxHeight = 1500
         elif self.imageMaxHeight < 200:
             self.imageMaxHeight = 400
 
-        self.maxFileSize = getattr(self.page_desc, "maxFileSize", 1) * 1024 ** 2
+        self.maxFileSize = getattr(
+            self.page_desc, "maxFileSize", 1) * 1024 ** 2
         if self.maxFileSize >= 2 * 1024 ** 2:
             self.maxFileSize = 1.5 * 1024 ** 2
         elif self.maxFileSize < 0.5 * 1024 ** 2:
             self.maxFileSize = 0.5 * 1024 ** 2
 
         # disable minFileSize
-        self.minFileSize = getattr(self.page_desc, "minFileSize", 0.0005) * 1024 ** 2
+        self.minFileSize = getattr(
+            self.page_desc, "minFileSize", 0.0005) * 1024 ** 2
         self.minFileSize = 0.0005 * 1024 ** 2
 
-        self.use_access_rules_tag = getattr(self.page_desc, "use_access_rules_tag", False)
+        self.use_access_rules_tag = getattr(
+            self.page_desc, "use_access_rules_tag", False)
 
-        self.require_image_for_submission = getattr(self.page_desc, "require_image_for_submission", True)
+        self.require_image_for_submission = getattr(
+            self.page_desc, "require_image_for_submission", True)
 
         #if self.minFileSize >= 0.05 * 1024 ** 2:
         #    self.minFileSize = 0.05 * 1024 ** 2
@@ -288,8 +344,11 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
     def body(self, page_context, page_data):
         return (
             markup_to_html(page_context, self.page_desc.prompt)
-            + string_concat("<br/><p class='text-info'><strong><small>(", _("Note: Maxmum number of images: %d"),
-                            ")</small></strong></p>") % (self.maxNumberOfFiles,))
+            + string_concat(
+                "<br/><p class='text-info'><strong><small>(",
+                _("Note: Maxmum number of images: %d"),
+                ")</small></strong></p>")
+            % (self.maxNumberOfFiles,))
 
     def make_form(self, page_context, page_data,
                   answer_data, page_behavior):
@@ -306,24 +365,68 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
             page_context, page_behavior, page_data,
             post_data, files_data,
             require_image_for_submission=self.require_image_for_submission)
-
         return form
 
     def form_to_html(self, request, page_context, form, answer_data):
 
-        request_path = request.get_full_path()
+        ordinal = get_ordinal_from_page_context(page_context)
 
+        prev_visit_id = request.GET.get("visit_id", None)
+        if prev_visit_id is not None:
+            try:
+                prev_visit_id = int(prev_visit_id)
+            except ValueError:
+                from django.core.exceptions import SuspiciousOperation
+                raise SuspiciousOperation("non-integer passed for 'visit_id'")
+
+        from course.flow import get_prev_answer_visits_qset
+        fpctx = FlowPageContext(
+            repo=page_context.repo,
+            course=page_context.course,
+            flow_id=page_context.flow_session.flow_id,
+            ordinal=int(ordinal),
+            flow_session=page_context.flow_session,
+            participation=page_context.flow_session.participation,
+            request=request
+        )
+
+        prev_answer_visits = list(
+                get_prev_answer_visits_qset(fpctx.page_data))
+
+        # {{{ fish out previous answer_visit
+
+        if prev_answer_visits and prev_visit_id is not None:
+            answer_visit = prev_answer_visits[0]
+
+            for ivisit, pvisit in enumerate(prev_answer_visits):
+                if pvisit.id == prev_visit_id:
+                    answer_visit = pvisit
+                    break
+
+            prev_visit_id = answer_visit.id
+
+        elif prev_answer_visits:
+            answer_visit = prev_answer_visits[0]
+            prev_visit_id = answer_visit.id
+
+        else:
+            answer_visit = None
+
+        # }}}
+
+        if answer_visit is not None:
+            answer_data = answer_visit.answer
+
+        request_path = request.get_full_path()
         in_grading_page = False
 
-        from django.core.urlresolvers import NoReverseMatch
-        from django.core.urlresolvers import reverse
         try:
             grading_page_uri = reverse(
                 "relate-grade_flow_page",
                 args=(
                     page_context.course.identifier,
                     page_context.flow_session.id,
-                    page_context.ordinal)
+                    ordinal)
             )
 
             in_grading_page = grading_page_uri == request_path
@@ -339,7 +442,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                "accepted_mime_types": ['image/*'],
                'course_identifier': page_context.course,
                "flow_session_id": page_context.flow_session.id,
-               "ordinal": page_context.ordinal,
+               "ordinal": ordinal,
                "IS_COURSE_STAFF": is_course_staff_request(request, page_context),
                "MAY_CHANGE_ANSWER": form.page_behavior.may_change_answer,
                "SHOW_CREATION_TIME": True,
@@ -355,36 +458,92 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                "maxNumberOfFiles": self.maxNumberOfFiles
                }
 
-        from django.template.loader import render_to_string
+        pk_list_str = None
+        if answer_data:
+            try:
+                pk_list_str = answer_data.get("answer", None)
+            except:
+                pass
+
+        if pk_list_str:
+            ctx["pk_list_str"] = pk_list_str
+
+        if prev_visit_id:
+            ctx["prev_visit_id"] = prev_visit_id
+
         return render_to_string(
                 "image_upload/imgupload-page-tmpl.html", ctx, request)
 
     def answer_data(self, page_context, page_data, form, files_data):
+        data_dict = {"answer": form.cleaned_data["hidden_answer"]}
+
+        data = data_dict.get("answer", [])
+
+        if isinstance(data, list):
+            try:
+                [int(i) for i in data]
+            except:
+                return data
+
         flow_session_id = page_context.flow_session.id
-        ordinal = page_context.ordinal
+        ordinal = get_ordinal_from_page_context(page_context)
         flow_owner = page_context.flow_session.participation.user
         from course.models import FlowPageData
         fpd = FlowPageData.objects.get(
             flow_session=flow_session_id, ordinal=ordinal)
 
-        qs = FlowPageImage.objects\
-            .filter(creator=flow_owner)\
-            .filter(flow_session=flow_session_id)\
+        qs = FlowPageImage.objects \
+            .filter(creator=flow_owner) \
+            .filter(flow_session=flow_session_id) \
             .filter(image_page_id=fpd.page_id)
 
-        if len(qs) > 0:
-            import json
-            return json.dumps(repr(qs))
-        else:
-            return None
+        saved_qs = qs.filter(pk__in=data)
+
+        for img in saved_qs:
+            if storage.is_temp_image(img.file.path) and img.pk in data:
+                name = storage.meta_backend.get(
+                    path=img.file.path)['original_storage_path']
+                new_img_name = storage.save(
+                    name=name,
+                    content=img.file,
+                    using="sendfile"
+                )
+                img.file = new_img_name
+                img.save()
+
+        return data_dict
+        # flow_session_id = page_context.flow_session.id
+        # ordinal = get_ordinal_from_page_context(page_context)
+        # flow_owner = page_context.flow_session.participation.user
+        # from course.models import FlowPageData
+        # fpd = FlowPageData.objects.get(
+        #     flow_session=flow_session_id, ordinal=ordinal)
+        #
+        # qs = FlowPageImage.objects\
+        #     .filter(creator=flow_owner)\
+        #     .filter(flow_session=flow_session_id)\
+        #     .filter(image_page_id=fpd.page_id)
+        #
+        # if not qs:
+        #     return None
+        #
+        # # id_list = []
+        # # for image in qs:
+        # #     if storage.is_temp_image(image.file.path):
+        #
+        # if len(qs) > 0:
+        #     import json
+        #     return json.dumps(repr(qs))
+        # else:
+        #     return None
 
     def normalized_bytes_answer(self, page_context, page_data, answer_data):
         if answer_data is None:
             return None
 
         flow_session_id = page_context.flow_session.id
-        ordinal = page_context.ordinal
-        flow_owner = page_context.flow_session.participation.user
+        ordinal = get_ordinal_from_page_context(page_context)
+        #flow_owner = page_context.flow_session.participation.user
         from course.models import FlowPageData
         fpd = FlowPageData.objects.get(
             flow_session=flow_session_id, ordinal=ordinal)
@@ -396,10 +555,16 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         if image_qs.exists():
             from image_upload.utils import InMemoryZip
             in_mem_zipfile = InMemoryZip()
+            image_count = 0
             for i, image in enumerate(image_qs):
                 image_file = image.file
-                if not os.path.isfile(image_file.path):
-                    continue
+                try:
+                    if not os.path.isfile(image_file.path):
+                        continue
+                except Exception as e:
+                    from django.core.exceptions import SuspiciousFileOperation
+                    if isinstance(e, SuspiciousFileOperation):
+                        continue
 
                 file_name, ext = os.path.splitext(image_file.path)
 
@@ -408,16 +573,17 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                 buf = image_file.read()
                 thefile.close()
                 in_mem_zipfile.append(str(i+1) + ext, buf)
+                image_count += 1
 
-            return (".zip", in_mem_zipfile.read())
+            if image_count:
+                return (".zip", in_mem_zipfile.read())
+            return None
 
         return None
 
     # def correct_answer(self, page_context, page_data, answer_data, grade_data):
     #     if answer_data is None:
     #         return None
-
-
 
     def make_grading_form(self, page_context, page_data, grade_data):
         human_feedback_point_value = self.human_feedback_point_value(
@@ -438,10 +604,12 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                 if access_rules_tag is not None:
                     form_data["access_rules_tag"] = access_rules_tag
             return ImgUploadHumanTextFeedbackForm(
-                human_feedback_point_value, form_data, use_access_rules_tag=use_access_rules_tag)
+                human_feedback_point_value, form_data,
+                use_access_rules_tag=use_access_rules_tag)
         else:
             return ImgUploadHumanTextFeedbackForm(
-                human_feedback_point_value, use_access_rules_tag=use_access_rules_tag)
+                human_feedback_point_value,
+                use_access_rules_tag=use_access_rules_tag)
 
     def post_grading_form(self, page_context, page_data, grade_data,
                           post_data, files_data):
@@ -450,7 +618,8 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
             page_context, page_data)
 
         return ImgUploadHumanTextFeedbackForm(
-            human_feedback_point_value, post_data, files_data, use_access_rules_tag=self.use_access_rules_tag)
+                human_feedback_point_value, post_data,
+                files_data, use_access_rules_tag=self.use_access_rules_tag)
 
     @transaction.atomic
     def update_grade_data_from_grading_form_v2(
@@ -462,15 +631,21 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
             grading_form,  # type: Any
             files_data  # type: Any
             ):
+        # type: (...) -> Any
 
-        grade_data = super(ImageUploadQuestion,self).update_grade_data_from_grading_form_v2(
-                request, page_context, page_data, grade_data, grading_form, files_data)
+        grade_data = (super(ImageUploadQuestion, self)
+            .update_grade_data_from_grading_form_v2(
+                request, page_context, page_data,
+                grade_data, grading_form, files_data))
 
         if self.use_access_rules_tag:
-            if grading_form.cleaned_data["access_rules_tag"] is not None and page_context.flow_session:
-                if not grading_form.cleaned_data["access_rules_tag"] == page_context.flow_session.access_rules_tag:
+            if (grading_form.cleaned_data["access_rules_tag"]
+                    is not None and page_context.flow_session):
+                if (not grading_form.cleaned_data["access_rules_tag"]
+                        == page_context.flow_session.access_rules_tag):
                     the_flow_session = page_context.flow_session
-                    the_flow_session.access_rules_tag = grading_form.cleaned_data["access_rules_tag"]
+                    the_flow_session.access_rules_tag = \
+                        grading_form.cleaned_data["access_rules_tag"]
                     the_flow_session.save()
 
         return grade_data
@@ -484,21 +659,34 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
     grading_sort_by_page_data = True
 
     def __init__(self, vctx, location, page_desc):
-        super(ImageUploadQuestionWithAnswer, self).__init__(vctx, location, page_desc)
-        self.refered_course_id = getattr(page_desc, "refered_course_id")
-        self.refered_flow_id = getattr(page_desc, "refered_flow_id")
-        self.refered_page_id = getattr(page_desc, "refered_page_id")
+        super(ImageUploadQuestionWithAnswer, self).__init__(
+            vctx, location, page_desc)
+        self.refered_course_id = getattr(
+            page_desc, "refered_course_id")
+        self.refered_flow_id = getattr(
+            page_desc, "refered_flow_id")
+        self.refered_page_id = getattr(
+            page_desc, "refered_page_id")
 
-        self.exclude_parti_tag = getattr(page_desc, "exclude_parti_tag", None)
-        self.exclude_username = getattr(page_desc, "exclude_username", None)
-        self.exclude_session_tag = getattr(page_desc, "exclude_session_tag", None)
-        self.include_session_tag = getattr(page_desc, "include_session_tag", None)
-        self.attempt_included = getattr(page_desc, "attempt_included", "last")
-        self.exclude_grade_percentage_lower_than = getattr(page_desc, "exclude_grade_percentage_lower_than", None)
-        self.only_graded_pages = getattr(page_desc, "only_graded_pages", True)
-        self.allow_report_correct_answer_false = getattr(page_desc,"allow_report_correct_answer_false", True)
+        self.exclude_parti_tag = getattr(
+            page_desc, "exclude_parti_tag", None)
+        self.exclude_username = getattr(
+            page_desc, "exclude_username", None)
+        self.exclude_session_tag = getattr(
+            page_desc, "exclude_session_tag", None)
+        self.include_session_tag = getattr(
+            page_desc, "include_session_tag", None)
+        self.attempt_included = getattr(
+            page_desc, "attempt_included", "last")
+        self.exclude_grade_percentage_lower_than = getattr(
+            page_desc, "exclude_grade_percentage_lower_than", None)
+        self.only_graded_pages = getattr(
+            page_desc, "only_graded_pages", True)
+        self.allow_report_correct_answer_false = getattr(
+            page_desc, "allow_report_correct_answer_false", True)
 
-        self.question_requirement = getattr(page_desc, "question_requirement", None)
+        self.question_requirement = getattr(
+            page_desc, "question_requirement", None)
 
         if self.attempt_included not in ["last", "first", "all"]:
             raise ValidationError(
@@ -510,39 +698,41 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                     'location': location})
 
         from course.models import FlowPageVisit
-        from course.constants import participation_permission as pperm
-        fpv_qs = FlowPageVisit.objects.filter(
-            flow_session__course__identifier=self.refered_course_id,
-            flow_session__flow_id=self.refered_flow_id,
-            page_data__page_id=self.refered_page_id,
-            is_submitted_answer=True,
-            flow_session__in_progress=False, )\
+        fpv_qs = (
+            FlowPageVisit.objects.filter(
+                flow_session__course__identifier=self.refered_course_id,
+                flow_session__flow_id=self.refered_flow_id,
+                page_data__page_id=self.refered_page_id,
+                is_submitted_answer=True,
+                flow_session__in_progress=False, )
             .exclude(
-            # FIXME!!
-            flow_session__participation__roles__permissions__permission=pperm.assign_grade
-        )\
-            .select_related("flow_session")\
-            .select_related("flow_session__course")\
-            .prefetch_related("flow_session__participation__roles__permissions")\
-            .select_related("page_data")
+                # FIXME!!
+                flow_session__participation__roles__permissions__permission=(
+                    pperm.assign_grade))
+            .select_related("flow_session")
+            .select_related("flow_session__course")
+            .prefetch_related(
+                "flow_session__participation__roles__permissions")
+            .select_related("page_data"))
 
         fpv_qs_iter = fpv_qs.iterator()
         try:
             next(fpv_qs_iter)
         except StopIteration:
             raise ValidationError(
-                    _("no existing flow page visit found named \"%(refered_page_id)s\" "
-                      "in flow \"%(refered_flow_id)s\" "
-                      "in course \"%(refered_course_id)s\""
-                      )
-                    % {
-                        'refered_course_id': self.refered_course_id,
-                        'refered_flow_id':self.refered_flow_id,
-                        'refered_page_id': self.refered_page_id})
+                _("no existing flow page visit found named "
+                  "\"%(refered_page_id)s\" "
+                  "in flow \"%(refered_flow_id)s\" "
+                  "in course \"%(refered_course_id)s\"") % {
+                    'refered_course_id': self.refered_course_id,
+                    'refered_flow_id': self.refered_flow_id,
+                    'refered_page_id': self.refered_page_id})
 
         if self.exclude_parti_tag:
             for tag in self.exclude_parti_tag:
-                parti_tag_qs = fpv_qs.filter(flow_session__participation__tags__name__in=self.exclude_parti_tag)
+                parti_tag_qs = fpv_qs.filter(
+                    flow_session__participation__tags__name__in=(
+                        self.exclude_parti_tag))
                 if vctx is not None:
                     parti_tag_qs_iter = parti_tag_qs.iterator()
                     try:
@@ -565,16 +755,16 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                     try:
                         next(username_qs_iter)
                     except StopIteration:
-                        vctx.add_warning(location,
-                                         _("no user with username \"%(name)s\" submitted sessions "
-                                           "in flow \"%(refered_flow_id)s\" "
-                                           "in course \"%(refered_course_id)s\""
-                                           )
-                                         % {
-                                             'refered_course_id': self.refered_course_id,
-                                             'refered_flow_id': self.refered_flow_id,
-                                             'name': name,
-                                         })
+                        vctx.add_warning(
+                            location,
+                            _("no user with username \"%(name)s\" "
+                              "submitted sessions in flow "
+                              "\"%(refered_flow_id)s\" "
+                              "in course \"%(refered_course_id)s\""
+                              ) % {
+                                'refered_course_id': self.refered_course_id,
+                                'refered_flow_id': self.refered_flow_id,
+                                'name': name})
 
         if self.exclude_session_tag:
             for session_tag in self.exclude_session_tag:
@@ -585,16 +775,16 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                     try:
                         next(stag_qs_iter)
                     except StopIteration:
-                        vctx.add_warning(location,
-                                         _("no flow session is taged \"%(session_tag)s\" is submitted "
-                                           "in flow \"%(refered_flow_id)s\" "
-                                           "in course \"%(refered_course_id)s\""
-                                           )
-                                         % {
-                                             'refered_course_id': self.refered_course_id,
-                                             'refered_flow_id': self.refered_flow_id,
-                                             'session_tag': session_tag,
-                                         })
+                        vctx.add_warning(
+                            location,
+                            _("no flow session is taged \"%(session_tag)s\" "
+                              "is submitted "
+                              "in flow \"%(refered_flow_id)s\" "
+                              "in course \"%(refered_course_id)s\""
+                              ) % {
+                                'refered_course_id': self.refered_course_id,
+                                'refered_flow_id': self.refered_flow_id,
+                                'session_tag': session_tag})
 
         if self.include_session_tag:
             for session_tag in self.include_session_tag:
@@ -605,25 +795,25 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                     try:
                         next(stag_qs_iter)
                     except StopIteration:
-                        vctx.add_warning(location,
-                                         _("no flow session is taged \"%(session_tag)s\" is submitted "
-                                           "in flow \"%(refered_flow_id)s\" "
-                                           "in course \"%(refered_course_id)s\""
-                                           )
-                                         % {
-                                             'refered_course_id': self.refered_course_id,
-                                             'refered_flow_id': self.refered_flow_id,
-                                             'session_tag': session_tag,
-                                         })
+                        vctx.add_warning(
+                            location,
+                            _("no flow session is taged \"%(session_tag)s\" "
+                              "is submitted in flow \"%(refered_flow_id)s\" "
+                              "in course \"%(refered_course_id)s\"") %
+                            {
+                                'refered_course_id': self.refered_course_id,
+                                'refered_flow_id': self.refered_flow_id,
+                                'session_tag': session_tag,
+                            })
 
         if self.exclude_grade_percentage_lower_than:
             try:
                 grade_percentage = float(self.exclude_grade_percentage_lower_than)
                 if grade_percentage > 1 or grade_percentage < 0:
-                    vctx.add_warning(location,
-                                     _("attribute \"exclude_grade_percentage_lower_than\" "
-                                       "should between 0 and 1")
-                                     )
+                    vctx.add_warning(
+                        location,
+                        _("attribute \"exclude_grade_percentage_lower_than\" "
+                          "should between 0 and 1"))
             except Exception as e:
                 raise ValidationError(
                       string_concat(
@@ -656,33 +846,34 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
     def initialize_page_data(self, page_context):
 
         from course.models import FlowPageVisit
-        from course.constants import participation_permission as pperm
-        visits = (FlowPageVisit.objects
-                  .filter(
-            flow_session__course__identifier=self.refered_course_id,
-            flow_session__flow_id=self.refered_flow_id,
-            page_data__page_id=self.refered_page_id,
-            is_submitted_answer=True,
-            flow_session__in_progress=False,)
-                  .exclude(
-                    # FIXME!!
-                    flow_session__participation__roles__permissions__permission=pperm.assign_grade
-            ).select_related("flow_session")
-                  .select_related("flow_session__course")
-                  .prefetch_related("flow_session__participation__roles__permissions")
-                  .select_related("page_data")
+        visits = (FlowPageVisit.objects.filter(
+                flow_session__course__identifier=self.refered_course_id,
+                flow_session__flow_id=self.refered_flow_id,
+                page_data__page_id=self.refered_page_id,
+                is_submitted_answer=True,
+                flow_session__in_progress=False,)
+              .exclude(
+                # FIXME!!
+                flow_session__participation__roles__permissions__permission=(
+                    pperm.assign_grade))
+              .select_related("flow_session")
+              .select_related("flow_session__course")
+              .prefetch_related("flow_session__participation__roles__permissions")
+              .select_related("page_data")
 
-                  # We overwrite earlier submissions with later ones
-                  # in a dictionary below.
-                  .order_by("visit_time"))
+              # We overwrite earlier submissions with later ones
+              # in a dictionary below.
+              .order_by("visit_time"))
 
         if self.exclude_parti_tag is not None:
             visits = visits.exclude(
-                flow_session__participation__tags__name__in=self.exclude_parti_tag)
+                flow_session__participation__tags__name__in=(
+                    self.exclude_parti_tag))
 
         if self.exclude_username is not None:
             visits = visits.exclude(
-                flow_session__participation__user__username__in=self.exclude_username)
+                flow_session__participation__user__username__in=(
+                    self.exclude_username))
 
         if self.exclude_session_tag is not None:
             visits = visits.exclude(
@@ -694,15 +885,20 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
 
         # visits that are not submitted and not im progress has been filtered
         if self.attempt_included == "first":
-            visits = visits.order_by('flow_session__participation__user__username', 'visit_time')\
-                .distinct('flow_session__participation__user__username')
+            visits = (
+                visits.order_by(
+                    'flow_session__participation__user__username',
+                    'visit_time')
+                .distinct('flow_session__participation__user__username'))
         elif self.attempt_included == "last":
-            visits = visits.order_by('flow_session__participation__user__username', '-visit_time')\
-                .distinct('flow_session__participation__user__username')
+            visits = (
+                visits.order_by(
+                    'flow_session__participation__user__username',
+                    '-visit_time')
+                .distinct('flow_session__participation__user__username'))
 
         if visits.exists():
             import random
-            import json
 
             page_id = None
             flow_session = None
@@ -710,19 +906,23 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
             while len(visits_list) > 0:
                 random.shuffle(visits_list)
                 visit = visits_list[0]
-                if self.only_graded_pages or self.exclude_grade_percentage_lower_than:
+                if (self.only_graded_pages
+                        or self.exclude_grade_percentage_lower_than):
                     most_recent_grade = visit.get_most_recent_grade()
-                    if (self.only_graded_pages and not most_recent_grade.correctness)\
+                    if (self.only_graded_pages
+                        and not most_recent_grade.correctness)\
                             or\
                             (self.exclude_grade_percentage_lower_than
                              and
-                             most_recent_grade.correctness < float(self.exclude_grade_percentage_lower_than)):
-                        visits_list.pop (0)
+                             most_recent_grade.correctness < float(
+                                     self.exclude_grade_percentage_lower_than)):
+                        visits_list.pop(0)
                         continue
 
                 page_id = visit.page_data.page_id
                 flow_session = visit.flow_session
-                qs = FlowPageImage.objects.filter(flow_session=flow_session, image_page_id=page_id)
+                qs = FlowPageImage.objects.filter(
+                    flow_session=flow_session, image_page_id=page_id)
 
                 if len(qs) > 1:
                     all_file_exist = True
@@ -737,7 +937,7 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                         break
                 else:
                     visits_list.pop(0)
-            
+
             if len(visits_list) == 0:
                 return {}
 
@@ -750,7 +950,8 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
 
         return {}
 
-    def get_flowpageimage_qs(self, page_context, page_data, included_order_list=None, excluded_order_list=None):
+    def get_flowpageimage_qs(self, page_context, page_data,
+                             included_order_list=None, excluded_order_list=None):
         if included_order_list:
             assert isinstance(included_order_list, list)
         if excluded_order_list:
@@ -780,7 +981,8 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
         return qs
 
     def get_question_img(self, page_context, page_data):
-        qs = self.get_flowpageimage_qs(page_context, page_data, included_order_list=[0])
+        qs = self.get_flowpageimage_qs(
+            page_context, page_data, included_order_list=[0])
 
         if qs.exists():
             return qs[0]
@@ -788,7 +990,7 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
             return None
 
     def body(self, page_context, page_data):
-        body_html =  markup_to_html(page_context, self.page_desc.prompt)
+        body_html = markup_to_html(page_context, self.page_desc.prompt)
         img = self.get_question_img(page_context, page_data)
         if img:
             if img.is_image_textify and img.image_text:
@@ -822,13 +1024,15 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
         return body_html
 
     def form_to_html(self, request, page_context, form, answer_data):
-        html = super(ImageUploadQuestionWithAnswer,self).form_to_html(request, page_context, form, answer_data)
+        html = super(ImageUploadQuestionWithAnswer, self).form_to_html(
+            request, page_context, form, answer_data)
 
         if is_course_staff_request(request, page_context):
 
-            from image_upload.serialize import get_image_page_data_str, get_image_admin_url
+            from image_upload.serialize import (
+                get_image_page_data_str, get_image_admin_url)
 
-            question_img = self.get_question_img(page_context,form.page_data)
+            question_img = self.get_question_img(page_context, form.page_data)
             answer_qs = self.get_correct_answer_qs(page_context, form.page_data)
 
             first_row = ""
@@ -844,17 +1048,21 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
             if full_qs_list:
                 for answer_img in full_qs_list:
                     i_thumbnail_url = answer_img.file_thumbnail.url
-                    i_img_url = answer_img.get_absolute_url(private=False, key=True)
-                    first_row += '<td><a href="%s" class="adminimage"><img src="%s"></a></td>' \
-                                 % (i_img_url, i_thumbnail_url)
+                    i_img_url = (
+                        answer_img.get_absolute_url(private=False, key=True))
+                    first_row += ('<td><a href="%s" class="adminimage">'
+                                  '<img src="%s"></a></td>' %
+                                  (i_img_url, i_thumbnail_url))
 
                     image_data_dict = get_image_page_data_str(answer_img)
-                    imageAdminUrl = get_image_admin_url(answer_img)
+                    image_admin_url = get_image_admin_url(answer_img)
 
-                    second_row += '<td><a class="btn-data-copy" data-clipboard-text=\'%s\'>' \
-                                  '<i class="fa fa-clipboard" aria-hidden="true"></i>' \
-                                  '</a><a href="%s" target="_blank"><i class="fa fa-user"></i></a></td>' \
-                                  % (image_data_dict, imageAdminUrl)
+                    second_row += (
+                        '<td><a class="btn-data-copy" data-clipboard-text=\'%s\'>'
+                        '<i class="fa fa-clipboard" aria-hidden="true"></i>'
+                        '</a><a href="%s" target="_blank">'
+                        '<i class="fa fa-user"></i></a></td>'
+                        % (image_data_dict, image_admin_url))
 
             js = """<script>
                 document.getElementById('adminonly').onclick = function (event) {
@@ -867,12 +1075,17 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                     };
             </script>"""
 
-            html += "<div><table>" + "<tr id='adminonly'>" + \
-                   first_row + "</tr>" + "<tr>" + second_row + "</tr>" + "</table></div>" + js
+            html += (
+                "<div><table><tr id='adminonly'>"
+                + first_row
+                + "</tr><tr>"
+                + second_row
+                + "</tr></table></div>"
+                + js)
 
         return html
 
-    def get_correct_answer_qs(self,page_context, page_data):
+    def get_correct_answer_qs(self, page_context, page_data):
         qs = self.get_flowpageimage_qs(page_context, page_data)
         answer_qs = FlowPageImage.objects.none()
         qs_iter = qs.iterator()
@@ -904,7 +1117,6 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
         ca = "\n"
 
         answer_qs_iter = answer_qs.iterator()
-
         try:
             first_image = next(answer_qs_iter)
             if first_image.is_image_textify and first_image.image_text:
@@ -915,10 +1127,12 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
             else:
                 for answer in answer_qs:
                     key_img_url = answer.get_absolute_url(private=False, key=True)
-                    ca = ca + ('<a href="%s">'
-                               '<img src="%s" onmouseover="magnify(this)" data-zoom-image="%s">'
-                               '</a>\n'
-                               % (key_img_url, key_img_url, key_img_url))
+                    ca += (
+                        '<a href="%s">'
+                        '<img src="%s" onmouseover="magnify(this)" '
+                        'data-zoom-image="%s">'
+                        '</a>\n'
+                        % (key_img_url, key_img_url, key_img_url))
 
                 js = """<br/><script>
                         document.getElementById('key').onclick = function (event) {
@@ -940,12 +1154,11 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
         student_feedback = ""
         if self.allow_report_correct_answer_false:
 
-            from django.core.urlresolvers import reverse
             email_page_url = reverse(
-                "feedBackEmail",
+                "send_feed_back_email",
                 kwargs={'course_identifier': page_context.course.identifier,
                         'flow_session_id': page_context.flow_session.id,
-                        'ordinal': page_context.ordinal
+                        'ordinal': get_ordinal_from_page_context(page_context)
                         }
             )
             feedbackbutton = (
@@ -955,24 +1168,26 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                 % {"url": email_page_url, "send_email": _("Send Email")})
 
             student_feedback_message = (
-                string_concat(_("Find the given correct answer wrong? Please feel easy to "
-                                "contact the instructor(s) "))
-            )
+                string_concat(
+                    _("Find the given correct answer wrong? "
+                      "Please feel easy to contact the "
+                      "instructor(s) ")))
 
             student_feedback_message += feedbackbutton
-            student_feedback = "<br/> <div style='float:right'>%s </div>"  % student_feedback_message
+            student_feedback = (
+                "<br/> <div style='float:right'>%s </div>"
+                % student_feedback_message)
 
-        CA_PATTERN = string_concat (_ ("A correct answer is"),
-                                    ": <br/> <div id='key'>"
-                                    "<style> #key img {max-width:40vw;}</style> %s</div> %s")  # noqa
+        CA_PATTERN = string_concat(  # noqa
+            _("A correct answer is"),
+            ": <br/> <div id='key'>"
+            "<style> #key img {max-width:40vw;}</style> %s</div> %s")
 
         return CA_PATTERN % (ca, student_feedback)
 
 
 @course_view
-def feedBackEmail(pctx, flow_session_id, ordinal):
-    from django.shortcuts import get_object_or_404, redirect
-
+def send_feed_back_email(pctx, flow_session_id, ordinal):
     request = pctx.request
     if request.method == "POST":
         form = ImgUPloadAnswerEmailFeedbackForm(request.POST)
@@ -980,12 +1195,12 @@ def feedBackEmail(pctx, flow_session_id, ordinal):
         if form.is_valid():
             from django.utils import translation
             from django.conf import settings
-            from course.models import Participation
-            from course.models import FlowSession
-
+            from course.models import Participation, FlowSession
+            from django.shortcuts import get_object_or_404, redirect
             flow_session = get_object_or_404(FlowSession, id=int(flow_session_id))
             from course.models import FlowPageData
-            page_id = FlowPageData.objects.get(flow_session=flow_session_id, ordinal=ordinal).page_id
+            page_id = FlowPageData.objects.get(
+                flow_session=flow_session_id, ordinal=ordinal).page_id
             from course.constants import participation_permission as pperm
             tutor_qs = Participation.objects.filter(
                     course=pctx.course,
@@ -994,7 +1209,6 @@ def feedBackEmail(pctx, flow_session_id, ordinal):
             )
             tutor_email_list = [tutor.user.email for tutor in tutor_qs]
 
-            from django.core.urlresolvers import reverse
             review_url = reverse(
                 "relate-view_flow_page",
                 kwargs={'course_identifier': pctx.course.identifier,
@@ -1002,34 +1216,34 @@ def feedBackEmail(pctx, flow_session_id, ordinal):
                         'ordinal': ordinal
                         }
             )
-
-            from six.moves.urllib.parse import urljoin
             review_uri = urljoin(getattr(settings, "RELATE_BASE_URL"),
                                  review_url)
 
-            from_email = getattr(settings, "STUDENT_FEEDBACK_FROM_EMAIL", settings.SERVER_EMAIL)
+            from_email = getattr(
+                settings, "STUDENT_FEEDBACK_FROM_EMAIL", settings.SERVER_EMAIL)
             student_email = flow_session.participation.user.email
 
             with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
-                from django.template.loader import render_to_string
-                message = render_to_string("image_upload/report-correct-answer-error-email.txt", {
-                    "page_id": page_id,
-                    "flow_session_id": flow_session_id,
-                    "course": pctx.course,
-                    "feedback_text": form.cleaned_data["feedback"],
-                    "review_uri": review_uri,
-                    "username": pctx.participation.user.get_full_name()
-                })
+                message = render_to_string(
+                    "image_upload/report-correct-answer-error-email.txt", {
+                        "page_id": page_id,
+                        "flow_session_id": flow_session_id,
+                        "course": pctx.course,
+                        "feedback_text": form.cleaned_data["feedback"],
+                        "review_uri": review_uri,
+                        "username": pctx.participation.user.get_full_name()
+                    })
 
                 from django.core.mail import EmailMessage
                 msg = EmailMessage(
-                    subject=string_concat("[%(identifier)s:%(flow_id)s--%(page_id)s] ",
-                                          _("Feedback from %(username)s"))
-                            % {'identifier': pctx.course_identifier,
-                               'flow_id': flow_session_id,
-                               'page_id': page_id,
-                               'username': pctx.participation.user.get_full_name()
-                               },
+                    subject=string_concat(
+                        "[%(identifier)s:%(flow_id)s--%(page_id)s] ",
+                        _("Feedback from %(username)s")) % {
+                                'identifier': pctx.course_identifier,
+                                'flow_id': flow_session_id,
+                                'page_id': page_id,
+                                'username': (
+                                    pctx.participation.user.get_full_name())},
                     body=message,
                     from_email=from_email,
                     to=tutor_email_list,
@@ -1045,15 +1259,16 @@ def feedBackEmail(pctx, flow_session_id, ordinal):
                     request, messages.SUCCESS,
                     _("Thank you for your feedback, and notice that you will "
                       "also receive a copy of the email."))
-            return redirect("relate-view_flow_page", pctx.course.identifier,flow_session_id, ordinal)
+            return redirect("relate-view_flow_page",
+                            pctx.course.identifier, flow_session_id, ordinal)
 
     else:
         form = ImgUPloadAnswerEmailFeedbackForm()
 
-    return render_course_page(pctx, "course/generic-course-form.html", {
-         "form": form,
-         "form_description": _("Send feedback email"),
-     })
+    return render_course_page(pctx, "course/generic-course-form.html",
+                              {"form": form,
+                               "form_description": _("Send feedback email"),
+                               })
 
 #}}}
 
@@ -1064,8 +1279,10 @@ class ImgUPloadAnswerEmailFeedbackForm(StyledForm):
         self.fields["feedback"] = forms.CharField(
                 required=True,
                 widget=forms.Textarea,
-                help_text=_("Please input directly your feedback messages <strong>(no email appelation and welcome is required)</strong>. If you are proved to be right, you'll "
-                  "get bonus for the contribution."),
+                help_text=_("Please input directly your feedback messages "
+                            "<strong>(no email appelation and welcome is "
+                            "required)</strong>. If you are proved to be "
+                            "right, you'll get bonus for the contribution."),
                 label=_("Feedback"))
         self.helper.add_input(
             Submit(
@@ -1076,7 +1293,8 @@ class ImgUPloadAnswerEmailFeedbackForm(StyledForm):
         cleaned_data = super(ImgUPloadAnswerEmailFeedbackForm, self).clean()
         feedback = cleaned_data.get("feedback")
         if len(feedback) < 20:
-            raise forms.ValidationError(_("At least 20 characters are required for submission."))
+            raise forms.ValidationError(_("At least 20 characters are "
+                                          "required for submission."))
         return feedback
 
 # vim: foldmethod=marker

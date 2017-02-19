@@ -7,7 +7,7 @@ $(document).ready(function () {
     $(".relate-save-button").each(function () {
         $(this).attr("formaction", window.location.pathname);
     });
-    $('#past-submission_dropdown').addClass('hidden');
+    // $('#past-submission_dropdown').addClass('hidden');
 
     // for copy image_data
     new Clipboard('.btn-data-copy');

@@ -39,6 +39,16 @@ from django.utils.encoding import (
     DEFAULT_LOCALE_ENCODING, force_text)
 
 
+# {{{ mypy
+
+from typing import Any, Text, List, Tuple, Optional  # noqa
+
+if False:
+    from course.latex.converter import CommandBase  # noqa
+
+# }}}
+
+
 # {{{ Constants
 
 ALLOWED_COMPILER = ['latex', 'pdflatex', 'xelatex']
@@ -58,6 +68,7 @@ ALLOWED_COMPILER_FORMAT_COMBINATION = (
 
 def popen_wrapper(args, os_err_exc_type=CommandError,
                   stdout_encoding='utf-8', **kwargs):
+    # type: (...) -> Tuple[Text, Text, int]
     """
     Extended from django.core.management.utils.popen_wrapper.
     `**kwargs` is added so that more kwargs can be added.
@@ -95,6 +106,7 @@ def popen_wrapper(args, os_err_exc_type=CommandError,
 # {{{ file read and write
 
 def get_basename_or_md5(filename, s):
+    # type: (Text, Text) -> Optional[Text]
     """
     :return: the basename of `filename` if `filename` is not empty,
     else, return the md5 of string `s`.
@@ -109,6 +121,7 @@ def get_basename_or_md5(filename, s):
 
 
 def file_read(filename):
+    # type: (Text) -> bytes
     '''Read the content of a file and close it properly.'''
     with open(filename, 'rb') as f:
         ff = File(f)
@@ -117,6 +130,7 @@ def file_read(filename):
 
 
 def file_write(filename, content):
+    # type: (Text, bytes) -> None
     '''Write into a file and close it properly.'''
     with open(filename, 'wb') as f:
         ff = File(f)
@@ -128,6 +142,7 @@ def file_write(filename, content):
 # {{{ convert file to data uri
 
 def get_file_data_uri(file_path):
+    # type: (Text) -> Optional[Text]
     '''Convert file to data URI'''
     if not file_path:
         return None
@@ -156,7 +171,9 @@ LATEX_LOG_OMIT_LINE_STARTS = (
     # more
 )
 
+
 def get_abstract_latex_log(log):
+    # type: (Text) -> Text
     '''abstract error msg from latex compilation log'''
     msg = log.split(LATEX_ERR_LOG_BEGIN_LINE_STARTS)[1]\
         .split(LATEX_ERR_LOG_END_LINE_STARTS)[0]
@@ -175,14 +192,15 @@ def get_abstract_latex_log(log):
 # {{{ strip comments from source
 
 def strip_comments(source):
+    # type: (Text) -> Text
     # modified from https://gist.github.com/amerberg/a273ca1e579ab573b499
-    tokens = (
+    tokens = (  # noqa
                 'PERCENT', 'BEGINCOMMENT', 'ENDCOMMENT',
                 'BACKSLASH', 'CHAR', 'BEGINVERBATIM',
                 'ENDVERBATIM', 'NEWLINE', 'ESCPCT',
                 'MAKEATLETTER', 'MAKEATOTHER',
              )
-    states = (
+    states = (  # noqa
                 ('makeatblock', 'exclusive'),
                 ('makeatlinecomment', 'exclusive'),
                 ('linecomment', 'exclusive'),
@@ -192,78 +210,78 @@ def strip_comments(source):
 
     # Deal with escaped backslashes, so we don't
     # think they're escaping %
-    def t_BACKSLASH(t):
+    def t_BACKSLASH(t):  # noqa
         r"\\\\"
         return t
 
     # Leaving all % in makeatblock
-    def t_MAKEATLETTER(t):
+    def t_MAKEATLETTER(t):  # noqa
         r"\\makeatletter"
         t.lexer.begin("makeatblock")
         return t
 
     # One-line comments
-    def t_PERCENT(t):
+    def t_PERCENT(t):  # noqa
         r"\%"
         t.lexer.begin("linecomment")
 
     # Escaped percent signs
-    def t_ESCPCT(t):
+    def t_ESCPCT(t):  # noqa
         r"\\\%"
         return t
 
     # Comment environment, as defined by verbatim package
-    def t_BEGINCOMMENT(t):
+    def t_BEGINCOMMENT(t):  # noqa
         r"\\begin\s*{\s*comment\s*}"
         t.lexer.begin("commentenv")
 
     #Verbatim environment (different treatment of comments within)
-    def t_BEGINVERBATIM(t):
+    def t_BEGINVERBATIM(t):  # noqa
         r"\\begin\s*{\s*verbatim\s*}"
         t.lexer.begin("verbatim")
         return t
 
     #Any other character in initial state we leave alone
-    def t_CHAR(t):
+    def t_CHAR(t):  # noqa
         r"."
         return t
 
-    def t_NEWLINE(t):
+    def t_NEWLINE(t):  # noqa
         r"\n"
         return t
 
     # End comment environment
-    def t_commentenv_ENDCOMMENT(t):
+    def t_commentenv_ENDCOMMENT(t):  # noqa
         r"\\end\s*{\s*comment\s*}"
         #Anything after \end{comment} on a line is ignored!
         t.lexer.begin('linecomment')
 
     # Ignore comments of comment environment
-    def t_commentenv_CHAR(t):
+    def t_commentenv_CHAR(t):  # noqa
         r"."
         pass
 
-    def t_commentenv_NEWLINE(t):
+    def t_commentenv_NEWLINE(t):  # noqa
         r"\n"
         pass
 
     #End of verbatim environment
-    def t_verbatim_ENDVERBATIM(t):
+    def t_verbatim_ENDVERBATIM(t):  # noqa
         r"\\end\s*{\s*verbatim\s*}"
         t.lexer.begin('INITIAL')
         return t
 
     #Leave contents of verbatim environment alone
-    def t_verbatim_CHAR(t):
+    def t_verbatim_CHAR(t):  # noqa
         r"."
         return t
 
-    def t_verbatim_NEWLINE(t):
+    def t_verbatim_NEWLINE(t):  # noqa
         r"\n"
         return t
 
     #End a % comment when we get to a new line
-    def t_linecomment_ENDCOMMENT(t):
+    def t_linecomment_ENDCOMMENT(t):  # noqa
         r"\n"
         t.lexer.begin("INITIAL")
 
@@ -271,46 +289,46 @@ def strip_comments(source):
         return t
 
     #Ignore anything after a % on a line
-    def t_linecomment_CHAR(t):
+    def t_linecomment_CHAR(t):  # noqa
         r"."
         pass
 
-    def t_makeatblock_MAKEATOTHER(t):
+    def t_makeatblock_MAKEATOTHER(t):  # noqa
         r"\\makeatother"
         t.lexer.begin('INITIAL')
         return t
 
-    def t_makeatblock_BACKSLASH(t):
+    def t_makeatblock_BACKSLASH(t):  # noqa
         r"\\\\"
         return t
 
     # Escaped percent signs in makeatblock
-    def t_makeatblock_ESCPCT(t):
+    def t_makeatblock_ESCPCT(t):  # noqa
         r"\\\%"
         return t
 
     # presever % in makeatblock
-    def t_makeatblock_PERCENT(t):
+    def t_makeatblock_PERCENT(t):  # noqa
         r"\%"
         t.lexer.begin("makeatlinecomment")
         return t
 
-    def t_makeatlinecomment_NEWLINE(t):
+    def t_makeatlinecomment_NEWLINE(t):  # noqa
         r"\n"
         t.lexer.begin('makeatblock')
         return t
 
     # Leave contents of makeatblock alone
-    def t_makeatblock_CHAR(t):
+    def t_makeatblock_CHAR(t):  # noqa
         r"."
         return t
 
-    def t_makeatblock_NEWLINE(t):
+    def t_makeatblock_NEWLINE(t):  # noqa
         r"\n"
         return t
 
     # For bad characters, we just skip over it
-    def t_ANY_error(t):
+    def t_ANY_error(t):  # noqa
         t.lexer.skip(1)
 
     lexer = ply.lex.lex()
@@ -323,6 +341,7 @@ def strip_comments(source):
 # {{{ remove redundant strings
 
 def strip_spaces(s, allow_single_empty_line=False):
+    # type: (Text, Optional[bool]) -> Text
     """
     strip spaces in s, so that the result will be
     considered same although new empty lines or
@@ -347,16 +366,17 @@ def strip_spaces(s, allow_single_empty_line=False):
             s = s.replace('\n\n\n', '\n\n')
 
     # remove redundant white spaces and tabs
-    s = s.replace ("\t", " ")
+    s = s.replace("\t", " ")
     while "  " in s:
         s = s.replace("  ", " ")
 
     return s
 
-## }}}
+# }}}
 
 
 def get_all_indirect_subclasses(cls):
+    # type: (Any) -> List[Any]
     all_subcls = []
 
     for subcls in cls.__subclasses__():
@@ -369,6 +389,7 @@ def get_all_indirect_subclasses(cls):
 
 
 def replace_latex_space_seperator(s):
+    # type: (Text) -> Text
     """
     "{{", "}}", "{%", %}", "{#" and "#}" are used in jinja
     template, so we have to put spaces between those

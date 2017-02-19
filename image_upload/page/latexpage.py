@@ -30,6 +30,14 @@ import pickle
 from hashlib import md5
 import os
 
+# {{{ mypy
+from typing import Text, Any  # noqa
+if False:
+    from course.utils import PageContext  # noqa
+
+# }}}
+
+
 from django.utils.translation import ugettext as _, string_concat
 from django.core.exceptions import ObjectDoesNotExist, ImproperlyConfigured
 from django.conf import settings
@@ -37,20 +45,22 @@ from django.utils.html import escape
 
 from course.content import markup_to_html as mth
 from course.page.base import (
-    PageBaseWithTitle, PageBaseWithValue, PageBaseWithHumanTextFeedback,
+    PageBaseWithTitle, PageBaseWithValue,
     PageBaseWithCorrectAnswer)
-from course.page import (
+from course.page import (  # type: ignore
     ChoiceQuestion, MultipleChoiceQuestion, TextQuestion,
     InlineMultiQuestion)
 from course.validation import ValidationError
 from course.content import get_repo_blob, get_repo_blob_data_cached
+from course.constants import participation_permission as pperm
 from course.latex.utils import file_read
-from atomicwrites import atomic_write
-
-from image_upload.page.imgupload import ImageUploadQuestion
 from course.page.code import (
     PythonCodeQuestion, PythonCodeQuestionWithHumanTextFeedback,
     request_python_run_with_retries)
+
+from image_upload.page.imgupload import ImageUploadQuestion
+
+from atomicwrites import atomic_write
 
 CACHE_VERSION = "V0"
 
@@ -75,9 +85,6 @@ def markup_to_html(
 
 
 def is_course_staff(page_context):
-    from course.constants import (
-        participation_permission as pperm,
-    )
     participation = page_context.flow_session.participation
     if participation.has_permission(pperm.assign_grade):
         return True
@@ -98,19 +105,20 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         if vctx is not None and hasattr(page_desc, "data_files"):
             if hasattr(page_desc, "random_question_data_file"):
-                if not page_desc.random_question_data_file in page_desc.data_files:
+                if page_desc.random_question_data_file not in page_desc.data_files:
                     raise ValidationError(
                         "%s: " % location,
                         string_concat(_("'%s' should be listed in 'data_files'"))
                         % page_desc.random_question_data_file)
             if hasattr(page_desc, "cache_key_files"):
                 for cf in page_desc.cache_key_files:
-                    if not cf in page_desc.data_files:
-                        raise ValidationError("%s: '%s' should be listed in 'data_files'"
-                                              % (location, cf))
+                    if cf not in page_desc.data_files:
+                        raise ValidationError(
+                            _("%s: '%s' should be listed in 'data_files'")
+                            % (location, cf))
             if hasattr(page_desc, "excluded_cache_key_files"):
                 for cf in page_desc.excluded_cache_key_files:
-                    if not cf in page_desc.data_files:
+                    if cf not in page_desc.data_files:
                         vctx.add_warning(location, "'%s' is not in 'data_files'"
                                               % cf)
 
@@ -135,15 +143,22 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         self.docker_run_timeout = getattr(page_desc, "docker_timeout", 2)
 
         # These files/attrs are used to generate rendered body and correct answer
-        
+
         # Whether use question data file as cache
-        use_question_data_file_as_cache = getattr(page_desc, "use_question_data_file_as_cache", False)
-        self.cache_key_files = getattr(page_desc, "cache_key_files", getattr(page_desc, "data_files"))
-        excluded_cache_key_files = getattr(page_desc, "excluded_cache_key_files", None)
+        use_question_data_file_as_cache = getattr(
+            page_desc, "use_question_data_file_as_cache", False)
+        self.cache_key_files = getattr(
+            page_desc, "cache_key_files", getattr(page_desc, "data_files"))
+        excluded_cache_key_files = getattr(
+            page_desc, "excluded_cache_key_files", None)
         if excluded_cache_key_files:
-            self.cache_key_files = [f for f in self.cache_key_files if f not in excluded_cache_key_files]
+            self.cache_key_files = (
+                [f for f in self.cache_key_files
+                 if f not in excluded_cache_key_files])
         if not use_question_data_file_as_cache:
-            self.cache_key_files = [f for f in self.cache_key_files if f != page_desc.random_question_data_file]
+            self.cache_key_files = (
+                [f for f in self.cache_key_files
+                 if f != page_desc.random_question_data_file])
         self.cache_key_attrs = getattr(page_desc, "cache_key_attrs", [])
         if not self.cache_key_attrs:
             for attr in [
@@ -161,7 +176,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
     def required_attrs(self):
         return super(LatexRandomQuestionBase, self).required_attrs() + (
-            ("data_files", (list,str)),
+            ("data_files", (list, str)),
             ("random_question_data_file", str),
             ("question_process_code", str),
         )
@@ -203,11 +218,13 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         if question_data:
             key_making_string += question_data
 
-        page_data["key_making_string_md5"] = md5(key_making_string.encode("utf-8")).hexdigest()
+        page_data["key_making_string_md5"] = (
+            md5(key_making_string.encode("utf-8")).hexdigest())
 
         return page_data
 
-    def generate_question_data_key_making_string(self, page_context, selected_data_bytes):
+    def generate_question_data_key_making_string(
+            self, page_context, selected_data_bytes):
         from base64 import b64encode
         question_data = b64encode(selected_data_bytes.getvalue()).decode()
 
@@ -236,7 +253,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         if not hasattr(self.page_desc, "random_question_data_file"):
             return {}
 
-        warm_up_by_sandbox = getattr(self.page_desc, "warm_up_by_sandbox", False)
+        warm_up_by_sandbox = getattr(
+            self.page_desc, "warm_up_by_sandbox", False)
 
         # get random question_data
         repo_bytes_data = get_repo_blob_data_cached(
@@ -272,11 +290,12 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             pickle.dump(random_data, selected_data_bytes)
 
             question_data, key_making_string = (
-                self.generate_question_data_key_making_string(page_context, selected_data_bytes)
+                self.generate_question_data_key_making_string(
+                    page_context, selected_data_bytes)
             )
 
-            # for debuging errors using page_data
-            # if question_data == "KGRwMApTJ3Byb2plY3RfbGlzdCcKcDEKKGxwMgpWXHU1YjUwXHU1MTZjXHU1M2Y4MQpwMwphVlx1NWI1MFx1NTE2Y1x1NTNmODIKcDQKYVZcdTViNTBcdTUxNmNcdTUzZjgzCnA1CmFWXHU1YjUwXHU1MTZjXHU1M2Y4NApwNgphVlx1NWI1MFx1NTE2Y1x1NTNmODUKcDcKYXNTJ3RvdGFsX3Jlc291cmNlJwpwOApJODAwCnNTJ2dhaW4nCnA5CmNudW1weS5jb3JlLm11bHRpYXJyYXkKX3JlY29uc3RydWN0CnAxMAooY251bXB5Lm1hdHJpeGxpYi5kZWZtYXRyaXgKbWF0cml4CnAxMQooSTAKdHAxMgpTJ2InCnAxMwp0cDE0ClJwMTUKKEkxCihJNQpJNgp0cDE2CmNudW1weQpkdHlwZQpwMTcKKFMnZjgnCnAxOApJMApJMQp0cDE5ClJwMjAKKEkzClMnPCcKcDIxCk5OTkktMQpJLTEKSTAKdHAyMgpiSTAwClMnXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBceGY4XHg3Zlx4MDBceDAwXHgwMFx4MDBceDAwXHhjMGdAXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwaUBceDAwXHgwMFx4MDBceDAwXHgwMGB4QFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMHlAXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBceGY4XHg3Zlx4MDBceDAwXHgwMFx4MDBceDAwXHg4MFtAXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHhmOFx4N2ZceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBpQFx4MDBceDAwXHgwMFx4MDBceDAwIHdAXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHhmOFx4N2ZceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBceGY4XHg3Zlx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4ZjhceDdmXHgwMFx4MDBceDAwXHgwMFx4MDBceDgwW0BceDAwXHgwMFx4MDBceDAwXHgwMGBzQFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4ZjhceDdmXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHhmOFx4N2ZceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBZQFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMGlAXHgwMFx4MDBceDAwXHgwMFx4MDBAcEBceDAwXHgwMFx4MDBceDAwXHgwMFx4YTB0QFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4ZjhceDdmXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMFx4MDBZQFx4MDBceDAwXHgwMFx4MDBceDAwXHg4MGFAXHgwMFx4MDBceDAwXHgwMFx4MDBAZUBceDAwXHgwMFx4MDBceDAwXHgwMEBvQFx4MDBceDAwXHgwMFx4MDBceDAwXHgwMHRAJwpwMjMKdHAyNApic1MnZGVjaXNpb25fc2V0JwpwMjUKKGxwMjYKSTAKYUkxMDAKYUkyMDAKYUkzMDAKYUk0MDAKYUk1MDAKYXMu":
+            # For debuging errors using page_data
+            # if question_data == "KGRwMApTJ3By...":
             #     #print key_making_string
             #
             #     print "here---------------------"
@@ -289,13 +308,16 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 break
 
             page_data = {"question_data": question_data,
-                         "key_making_string_md5": md5(key_making_string.encode()).hexdigest()
+                         "key_making_string_md5":
+                             md5(key_making_string.encode()).hexdigest()
                          }
 
-            for part in ["answer", "question", "blank", "blank_answer", "answer_explanation"]:
+            for part in ["answer", "question", "blank",
+                         "blank_answer", "answer_explanation"]:
                 try:
-                    key_exist, result = self.get_cached_result(page_context, page_data, part=part,
-                                                               test_key_existance=True)
+                    key_exist, result = self.get_cached_result(
+                            page_context, page_data, part=part,
+                            test_key_existance=True)
                     if key_exist:
                         markup_to_html(page_context, result, warm_up_only=True)
                         continue
@@ -307,14 +329,17 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             selected_data_bytes = BytesIO()
             pickle.dump(random_data, selected_data_bytes)
             question_data, key_making_string = (
-                self.generate_question_data_key_making_string(page_context, selected_data_bytes)
+                self.generate_question_data_key_making_string(
+                    page_context, selected_data_bytes)
             )
 
         return {"question_data": question_data,
-                "key_making_string_md5": md5(key_making_string.encode("utf-8")).hexdigest()
+                "key_making_string_md5":
+                    md5(key_making_string.encode("utf-8")).hexdigest()
                 }
 
-    def get_cached_result(self, page_context, page_data, part="", test_key_existance=False):
+    def get_cached_result(self, page_context,
+                          page_data, part="", test_key_existance=False):
         #assert part in ["question", "answer"]
         will_save_file_local = True
 
@@ -335,13 +360,18 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 key_making_string_md5 = page_data["key_making_string_md5"]
             except KeyError:
                 updated_page_data = self.update_page_data(page_context, page_data)
-                key_making_string_md5 = updated_page_data["key_making_string_md5"]
+                key_making_string_md5 = (
+                    updated_page_data["key_making_string_md5"])
 
             # To be used as saving name of the latex page
-            saved_file_name = ("%s_%s" % (md5(key_making_string_md5.encode("utf-8")).hexdigest(), CACHE_VERSION))
+            saved_file_name = (
+                "%s_%s" % (
+                    md5(key_making_string_md5.encode("utf-8")).hexdigest(),
+                    CACHE_VERSION))
 
-            saved_file_path = os.path.join(self.page_saving_folder,
-                                           "%s_%s" % (saved_file_name, part))
+            saved_file_path = os.path.join(
+                    self.page_saving_folder,
+                    "%s_%s" % (saved_file_name, part))
 
             cache_key = ("latexpage:%s:%s:%s"
                          % (CACHE_VERSION,
@@ -418,7 +448,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         if result is not None:
             assert isinstance(result, six.text_type), cache_key
-            if success and len(result) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
+            if (success
+                and len(result) <= (
+                        getattr(settings, "RELATE_CACHE_MAX_BYTES", 0))):
                 if def_cache.get(cache_key) is None:
                     def_cache.delete(cache_key)
                 def_cache.add(cache_key, result)
@@ -441,7 +473,10 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         if isinstance(result, six.binary_type):
             result = result.decode("utf-8")
 
-        if success and len(result) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
+        if (success
+            and
+                    len(result) <= (
+                        getattr(settings, "RELATE_CACHE_MAX_BYTES", 0))):
             if def_cache.get(cache_key) is None:
                 def_cache.delete(cache_key)
             def_cache.add(cache_key, result)
@@ -483,7 +518,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     success, answer_str_tmp = self.get_cached_result(
                                        page_context, page_data, part="answer")
                     if success:
-                        # markup_to_html(page_context, answer_str_tmp, warm_up_only=True)
+                        # markup_to_html(
+                        #     page_context, answer_str_tmp, warm_up_only=True)
                         break
 
                     if page_context.in_sandbox:
@@ -511,8 +547,10 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         transfer_attr_to("setup_code", from_name=code_name)
         if common_code_name:
-            run_jinja_req["setup_code"] = getattr(
-                self.page_desc, common_code_name) + u"\n" + run_jinja_req["setup_code"]
+            run_jinja_req["setup_code"] = (
+                getattr(self.page_desc, common_code_name)
+                +
+                u"\n" + run_jinja_req["setup_code"])
 
         if hasattr(self.page_desc, "data_files"):
             run_jinja_req["data_files"] = {}
@@ -554,15 +592,20 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 if (key not in ["result", "figures"]
                         and val
                         and isinstance(val, six.string_types)):
-                    error_msg_parts.append("-------------------------------------")
+                    error_msg_parts.append(
+                        "-------------------------------------")
                     error_msg_parts.append(key)
-                    error_msg_parts.append("-------------------------------------")
+                    error_msg_parts.append(
+                        "-------------------------------------")
                     error_msg_parts.append(val)
-            error_msg_parts.append("-------------------------------------")
+            error_msg_parts.append(
+                "-------------------------------------")
             error_msg_parts.append("code")
-            error_msg_parts.append("-------------------------------------")
+            error_msg_parts.append(
+                "-------------------------------------")
             error_msg_parts.append(run_jinja_req["setup_code"])
-            error_msg_parts.append("-------------------------------------")
+            error_msg_parts.append(
+                "-------------------------------------")
 
             error_msg = "\n".join(error_msg_parts)
             if getattr(settings, "DEBUG"):
@@ -570,52 +613,41 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 #response_dict["stdout"] = error_msg
             #else:
 
-            review_url = ""
-            if not page_context.in_sandbox:
-
-                from django.core.urlresolvers import reverse
-                review_url = reverse(
-                    "relate-view_flow_page",
-                    kwargs={'course_identifier': page_context.course.identifier,
-                            'flow_session_id': page_context.flow_session.id,
-                            'ordinal': page_context.ordinal
-                            }
-                )
-
-            from six.moves.urllib.parse import urljoin
-            review_uri = urljoin(getattr(settings, "RELATE_BASE_URL"),
-                                 review_url)
-
             from course.page.code import is_nuisance_failure
             from django.utils import translation
             from relate.utils import local_now, format_datetime_local
             with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
                 from django.template.loader import render_to_string
-                message = render_to_string("image_upload/broken-random-latex-question-email.txt", {
-                    "site": getattr(settings, "RELATE_BASE_URL"),
-                    "username": page_context.flow_session.participation.user.username,
-                    "page_id": self.page_desc.id,
-                    "course": page_context.course,
-                    "error_message": error_msg,
-                    "review_uri": review_uri,
-                    "time": format_datetime_local(local_now())
-                })
+                message = render_to_string(
+                    "image_upload/broken-random-latex-question-email.txt",
+                    {
+                        "site": getattr(settings, "RELATE_BASE_URL"),
+                        "username":
+                            page_context.flow_session.participation.user.username,
+                        "page_id": self.page_desc.id,
+                        "course": page_context.course,
+                        "error_message": error_msg,
+                        "review_uri": page_context.page_uri,
+                        "time": format_datetime_local(local_now())
+                    })
 
-                if (
-                            not page_context.in_sandbox
-                        and
-                            not is_nuisance_failure(response_dict)):
+                if (not page_context.in_sandbox
+                    and
+                        not is_nuisance_failure(response_dict)):
                     try:
                         from django.core.mail import EmailMessage
                         msg = EmailMessage(
-                                "".join(["[%(course)s] ",
-                                         _("LaTex page failed in user %(user)s's session")])
-                                % {"course":page_context.course.identifier,
-                                   "user": page_context.flow_session.participation.user.username,
-                                   },
-                                message,
-                                settings.ROBOT_EMAIL_FROM,
-                                [page_context.course.notify_email])
+                            "".join(["[%(course)s] ",
+                                     _("LaTex page failed in "
+                                       "user %(user)s's session")])
+                            % {"course": page_context.course.identifier,
+                               "user":
+                                   (page_context.flow_session.participation
+                                    .user.username),
+                               },
+                            message,
+                            settings.ROBOT_EMAIL_FROM,
+                            [page_context.course.notify_email])
 
                         from relate.utils import get_outbound_mail_connection
                         msg.connection = get_outbound_mail_connection("robot")
@@ -629,15 +661,17 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                                 "<p>",
                                 _(
                                     "Both the code and the attempt to "
-                                    "notify course staff about the issue failed. "
-                                    "Please contact the course or site staff and "
-                                    "inform them of this issue, mentioning this "
+                                    "notify course staff about the issue "
+                                    "failed. "
+                                    "Please contact the course or site staff "
+                                    "and inform them of this issue, "
+                                    "mentioning this "
                                     "entire error message:"),
                                 "</p>",
                                 "<p>",
                                 _(
-                                    "Sending an email to the course staff about the "
-                                    "following failure failed with "
+                                    "Sending an email to the course staff "
+                                    "about the following failure failed with "
                                     "the following error message:"),
                                 "<pre>",
                                 "".join(format_exc()),
@@ -686,8 +720,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             feedback_bits.append("".join([
                 "<p>",
                 _(
-                    "The page failed to be rendered due to timeout, please "
-                    "try to reload the page in a while."
+                    "The page failed to be rendered due to timeout, "
+                    "please try to reload the page in a while."
                     ),
                 "</p>"])
             )
@@ -696,20 +730,21 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             raise RuntimeError("invalid runpy result: %s" % response.result)
 
         if hasattr(response, "figures") and response.figures:
-            fig_lines = ["".join([
-                "<p>",
-                _("Your code produced the following plots"),
-                ":</p>"]),
+            fig_lines = ["".join(
+                ["<p>",
+                 _("Your code produced the following plots"),
+                 ":</p>"]),
                 '<dl class="result-figure-list">',
-                ]
+            ]
 
             for nr, mime_type, b64data in response.figures:
-                fig_lines.extend([
-                    "".join([
-                        "<dt>",
-                        _("Figure"), "%d<dt>"]) % nr,
-                    '<dd><img alt="Figure %d" src="data:%s;base64,%s"></dd>'
-                    % (nr, mime_type, b64data)])
+                fig_lines.extend(
+                    ["".join(
+                        ["<dt>", _("Figure"), "%d<dt>"]) % nr,
+                     '<dd>'
+                     '<img alt="Figure %d" src="data:%s;base64,%s">'
+                     '</dd>'
+                     % (nr, mime_type, b64data)])
 
             fig_lines.append("</dl>")
 
@@ -717,7 +752,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             if hasattr(response, "stdout") and response.stdout:
                 return success, response.stdout
         else:
-            return success, '<div class="latexpage-error alert alert-danger">%s</div>' % "\n".join(feedback_bits)
+            return (success,
+                    '<div class="latexpage-error alert alert-danger">%s'
+                    '</div>' % "\n".join(feedback_bits))
 
         # }}}
 
@@ -760,12 +797,8 @@ class LatexRandomCodeTextQuestion(LatexRandomQuestion, TextQuestion):
 class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestion):
     need_update_page_desc = True
 
-    def __init__(self, vctx, location, page_desc):
-        super(LatexRandomCodeInlineMultiQuestion, self).__init__(vctx, location, page_desc)
-        #self.update_page_desc(vctx, location)
-
     def update_page_desc(self, page_context, page_data):
-        from course.page.inline import WRAPPED_NAME_RE, NAME_RE, NAME_VALIDATE_RE
+        from course.page.inline import WRAPPED_NAME_RE, NAME_RE
 
         success = False
         question_str = ""
@@ -831,7 +864,8 @@ class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestio
 
     def get_question(self, page_context, page_data):
         self.update_page_desc(page_context, page_data)
-        return super(LatexRandomCodeInlineMultiQuestion, self).get_question(page_context, page_data)
+        return super(LatexRandomCodeInlineMultiQuestion, self)\
+            .get_question(page_context, page_data)
 
     def required_attrs(self):
         return super(LatexRandomCodeInlineMultiQuestion, self).required_attrs() + (
@@ -851,12 +885,12 @@ class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestio
 
 
 class LatexRandomCodeQuestionWithHumanTextFeedback(
-    LatexRandomQuestion, PythonCodeQuestionWithHumanTextFeedback):
+        LatexRandomQuestion,
+        PythonCodeQuestionWithHumanTextFeedback):
     pass
 
 
-class LatexRandomMultipleChoiceQuestion(
-    LatexRandomQuestion, MultipleChoiceQuestion):
+class LatexRandomMultipleChoiceQuestion(LatexRandomQuestion, MultipleChoiceQuestion):
 
     def initialize_page_data(self, page_context):
         m_page_data = MultipleChoiceQuestion.initialize_page_data(self, page_context)
@@ -865,8 +899,7 @@ class LatexRandomMultipleChoiceQuestion(
         return page_data
 
 
-class LatexRandomChoiceQuestion(
-    LatexRandomQuestion, ChoiceQuestion):
+class LatexRandomChoiceQuestion(LatexRandomQuestion, ChoiceQuestion):
 
     def initialize_page_data(self, page_context):
         m_page_data = ChoiceQuestion.initialize_page_data(self, page_context)

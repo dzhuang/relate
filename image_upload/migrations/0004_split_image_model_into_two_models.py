@@ -22,7 +22,7 @@ class Migration(migrations.Migration):
             name='FlowPageImage',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('file', models.ImageField(storage=image_upload.models.UserImageStorage(), upload_to=image_upload.models.user_flowsession_img_path)),
+                ('file', models.ImageField(upload_to=image_upload.models.user_flowsession_img_path)),
                 ('slug', models.SlugField(blank=True, max_length=256)),
                 ('creation_time', models.DateTimeField(default=django.utils.timezone.now)),
                 ('file_last_modified', models.DateTimeField(default=django.utils.timezone.now)),
@@ -39,7 +39,7 @@ class Migration(migrations.Migration):
             name='UserImage',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('file', models.ImageField(storage=image_upload.models.UserImageStorage(), upload_to=image_upload.models.user_directory_path)),
+                ('file', models.ImageField()),
                 ('slug', models.SlugField(blank=True, max_length=256)),
                 ('creation_time', models.DateTimeField(default=django.utils.timezone.now)),
                 ('creator', models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL, verbose_name='Creator')),

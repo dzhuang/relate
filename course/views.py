@@ -101,8 +101,10 @@ def home(request):
     now_datetime = get_now_or_fake_time(request)
 
     current_courses = []
-    inprogress_courses = [] # added by zd
-    past_courses = []
+
+    # added by zd
+    inprogress_courses = []  # type: List[Course]
+    past_courses = []  # type: List[Course]
     for course in Course.objects.filter(listed=True):
         participation = get_participation_for_request(request, course)
 
@@ -118,7 +120,7 @@ def home(request):
         if show:
             if (course.end_date is None
                     or now_datetime.date() <= course.end_date):
-                ## current_courses.append(course)
+                # current_courses.append(course)
                 # {{{ # added by zd
                 if course.enroll_deadline is None:
                     current_courses.append(course)
@@ -130,7 +132,7 @@ def home(request):
                             inprogress_courses.append(course)
                 # }}}
             else:
-                ##past_courses.append(course)
+                # past_courses.append(course)
                 if participation:
                     past_courses.append(course)
 
@@ -148,7 +150,7 @@ def home(request):
 
     return render(request, "course/home.html", {
         "current_courses": current_courses,
-        "inprogress_courses": inprogress_courses, # added by zd
+        "inprogress_courses": inprogress_courses,  # added by zd
         "past_courses": past_courses,
         })
 
@@ -170,34 +172,11 @@ def check_course_state(course, participation):
         if not participation.has_permission(pperm.view_hidden_course_page):
             raise PermissionDenied(_("course page is currently hidden"))
 
-def enroll_expire_or_ended_message(course, participation, now_date):
-    message = None
-    if course.enroll_deadline:
-        if (participation is None
-            or
-            participation.status not in
-                    [participation_status.active, participation_status.requested]
-            ):
-                if now_date > course.enroll_deadline:
-                    message = _("Enrollment has expired. ")
-                elif course.end_date is not None and now_date > course.end_date:
-                    message = _("This course has ended. ")
-    
-    if message:
-        return string_concat(message,
-                             _("Access to this course has been closed for "
-                               "non-participants."))
-    else:
-        return None
 
 @course_view
 def course_page(pctx):
     # type: (CoursePageContext) -> http.HttpResponse
-
     now_datetime = get_now_or_fake_time(pctx.request)
-    error_message = (
-            enroll_expire_or_ended_message(
-                pctx.course, pctx.participation, now_datetime.date()))
     jinja_env = {"now": now_datetime}
     from course.content import get_processed_page_chunks, get_course_desc
     page_desc = get_course_desc(pctx.repo, pctx.course, pctx.course_commit_sha)
@@ -206,13 +185,41 @@ def course_page(pctx):
             pctx.course, pctx.repo, pctx.course_commit_sha, page_desc,
             pctx.role_identifiers(), get_now_or_fake_time(pctx.request),
             facilities=pctx.request.relate_facilities,
-            jinja_env=jinja_env) # added by zd
+            jinja_env=jinja_env)  # added by zd
 
     show_enroll_button = (
             pctx.course.accepts_enrollment
             and pctx.participation is None)
 
-    if pctx.request.user.is_authenticated and Participation.objects.filter(
+    course = pctx.course
+    if course.enroll_deadline or course.end_date:
+        do_not_show_up = False
+        message = None
+        if not (pctx.request.user.is_authenticated
+                and
+                    Participation.objects.filter(
+                        course=course,
+                        user=pctx.request.user,
+                        status=participation_status.active).count()):
+            if course.end_date is not None:
+                if now_datetime.date() > course.end_date:
+                    message = _("This course has ended. ")
+                    do_not_show_up = True
+            elif course.enroll_deadline is not None:
+                if now_datetime.date() > course.enroll_deadline:
+                    message = _("Enrollment has expired. ")
+                    do_not_show_up = True
+
+        if do_not_show_up:
+            message = string_concat(
+                message,
+                (_("Access to this course has been closed for "
+                          "non-participants.")))
+            messages.add_message(pctx.request, messages.WARNING, message)
+            show_enroll_button = False
+            chunks = []
+
+    elif pctx.request.user.is_authenticated and Participation.objects.filter(
             user=pctx.request.user,
             course=pctx.course,
             status=participation_status.requested).count():
@@ -250,7 +257,6 @@ def course_page(pctx):
                             )
 
     return render_course_page(pctx, "course/course-page.html", {
-        "error_message": error_message, # added by zd to display enroll error
         "chunks": chunks,
         "show_enroll_button": show_enroll_button,
         })
@@ -426,7 +432,7 @@ def get_fake_time(request):
         from django.conf import settings
         from pytz import timezone
         tz = timezone(settings.TIME_ZONE)
-        return tz.localize(
+        return tz.localize(  # type: ignore
                 datetime.datetime.fromtimestamp(
                     request.session["relate_fake_time"]))
     else:
@@ -792,7 +798,7 @@ def strify_session_for_exception(session):
     result = (_("started at %(start_time)s") % {
             "start_time": format_datetime_local(
                 as_local_time(session.start_time))}
-             )
+              )
 
     if session.access_rules_tag:
         result += " tagged '%s'" % session.access_rules_tag
@@ -1049,6 +1055,9 @@ class ExceptionStage3Form(StyledForm):
                 initial=default_data.get("due"),
                 label=_("Due time"))
 
+        self.fields["generates_grade"] = forms.BooleanField(required=False,
+                initial=default_data.get("generates_grade", True),
+                label=_("Generates grade"))
         self.fields["credit_percent"] = forms.FloatField(required=False,
                 initial=default_data.get("credit_percent"),
                 label=_("Credit percent"))
@@ -1064,6 +1073,7 @@ class ExceptionStage3Form(StyledForm):
 
         layout.append(Div("create_grading_exception",
             "due_same_as_access_expiration", "due",
+            "generates_grade",
             "credit_percent", "bonus_points", "max_points",
             "max_points_enforced_cap",
             css_class="well"))
@@ -1206,17 +1216,13 @@ def grant_exception_stage_3(pctx, participation_id, flow_id, session_id):
                     new_grading_rule["if_completed_before"] = due_local_naive
 
                 for attr_name in ["credit_percent", "bonus_points",
-                        "max_points", "max_points_enforced_cap"]:
+                        "max_points", "max_points_enforced_cap", "generates_grade"]:
                     if form.cleaned_data[attr_name] is not None:
                         new_grading_rule[attr_name] = form.cleaned_data[attr_name]
 
                 if (form.cleaned_data.get("restrict_to_same_tag")
                         and session.access_rules_tag is not None):
                     new_grading_rule["if_has_tag"] = session.access_rules_tag
-
-                if hasattr(grading_rule, "generates_grade"):
-                    new_grading_rule["generates_grade"] = \
-                            grading_rule.generates_grade
 
                 validate_session_grading_rule(
                         vctx, ugettext("newly created exception"),
@@ -1248,9 +1254,13 @@ def grant_exception_stage_3(pctx, participation_id, flow_id, session_id):
     else:
         data = {
                 "restrict_to_same_tag": session.access_rules_tag is not None,
-                "credit_percent": grading_rule.credit_percent,
                 #"due_same_as_access_expiration": True,
                 "due": grading_rule.due,
+                "generates_grade": grading_rule.generates_grade,
+                "credit_percent": grading_rule.credit_percent,
+                "bonus_points": grading_rule.bonus_points,
+                "max_points": grading_rule.max_points,
+                "max_points_enforced_cap": grading_rule.max_points_enforced_cap,
                 }
         for perm in access_rule.permissions:
             data[perm] = True

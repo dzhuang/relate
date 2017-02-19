@@ -76,7 +76,7 @@ from course.utils import (
         get_session_access_rule,
         get_session_grading_rule,
         get_session_notify_rule,
-        get_flow_rules_str, # added by zd
+        get_flow_rules_str,  # added by zd
         FlowSessionGradingRule,
         )
 from course.exam import get_login_exam_ticket
@@ -195,7 +195,7 @@ def _adjust_flow_session_page_data_inner(repo, flow_session,
                 fpd.save()
 
             # Allow to update data if data changed
-            old_data = dict((k ,fpd.data[k]) for k in fpd.data)
+            old_data = dict((k, fpd.data[k]) for k in fpd.data)
             updated_data = page.update_page_data(pctx, fpd.data)
             if updated_data != old_data:
                 fpd.data = updated_data
@@ -377,7 +377,7 @@ def grade_page_visit(visit, visit_grade_model=FlowPageVisitGrade,
             flow_session=flow_session)
 
     if getattr(page, "need_update_page_desc", False):
-        page.update_page_desc(grading_page_context, page_data.data)
+        page.update_page_desc(grading_page_context, page_data.data)  # type: ignore
 
     with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
         answer_feedback = page.grade(
@@ -629,7 +629,7 @@ def get_session_answered_page_data(
         flow_session,  # type: FlowSession
         answer_visits  # type: List[Optional[FlowPageVisit]]
         ):
-    # type: (...) -> Tuple[List[FlowPageData], List[FlowPageData]]
+    # type: (...) -> Tuple[List[FlowPageData], List[FlowPageData], bool]
     all_page_data = get_all_page_data(flow_session)
 
     answered_page_data_list = []  # type: List[FlowPageData]
@@ -648,7 +648,7 @@ def get_session_answered_page_data(
         page = instantiate_flow_page_with_ctx(fctx, page_data)
         if page.expects_answer():
             is_interactive_flow = True
-            if getattr(page.page_desc, "require_submission", True):
+            if not page.is_optional_page:
                 if answer_data is None:
                     unanswered_page_data_list.append(page_data)
                 else:
@@ -676,6 +676,10 @@ class GradeInfo(object):
             partially_correct_count,  # type: int
             incorrect_count,  # type: int
             unknown_count,  # type: int
+            optional_fully_correct_count=0,  # type: int
+            optional_partially_correct_count=0,  # type: int
+            optional_incorrect_count=0,  # type: int
+            optional_unknown_count=0,  # type: int
             ):
         # type: (...) -> None
         self.points = points
@@ -686,6 +690,10 @@ class GradeInfo(object):
         self.partially_correct_count = partially_correct_count
         self.incorrect_count = incorrect_count
         self.unknown_count = unknown_count
+        self.optional_fully_correct_count = optional_fully_correct_count
+        self.optional_partially_correct_count = optional_partially_correct_count
+        self.optional_incorrect_count = optional_incorrect_count
+        self.optional_unknown_count = optional_unknown_count
 
     # Rounding to larger than 100% will break the percent bars on the
     # flow results page.
@@ -754,6 +762,32 @@ class GradeInfo(object):
         """Only to be used for visualization purposes."""
         return self.FULL_PERCENT*self.unknown_count/self.total_count()
 
+    def optional_total_count(self):
+        return (self.optional_fully_correct_count
+                + self.optional_partially_correct_count
+                + self.optional_incorrect_count
+                + self.optional_unknown_count)
+
+    def optional_fully_correct_percent(self):
+        """Only to be used for visualization purposes."""
+        return self.FULL_PERCENT * self.optional_fully_correct_count\
+               / self.optional_total_count()
+
+    def optional_partially_correct_percent(self):
+        """Only to be used for visualization purposes."""
+        return self.FULL_PERCENT * self.optional_partially_correct_count\
+               / self.optional_total_count()
+
+    def optional_incorrect_percent(self):
+        """Only to be used for visualization purposes."""
+        return self.FULL_PERCENT * self.optional_incorrect_count\
+               / self.optional_total_count()
+
+    def optional_unknown_percent(self):
+        """Only to be used for visualization purposes."""
+        return self.FULL_PERCENT * self.optional_unknown_count\
+               / self.optional_total_count()
+
     # }}}
 
 
@@ -781,6 +815,11 @@ def gather_grade_info(
     incorrect_count = 0
     unknown_count = 0
 
+    optional_fully_correct_count = 0
+    optional_partially_correct_count = 0
+    optional_incorrect_count = 0
+    optional_unknown_count = 0
+
     for i, page_data in enumerate(all_page_data):
         page = instantiate_flow_page_with_ctx(fctx, page_data)
 
@@ -804,29 +843,42 @@ def gather_grade_info(
 
         feedback = get_feedback_for_grade(grade)
 
-        max_points += grade.max_points
+        if page.is_optional_page:
+            if feedback is None or feedback.correctness is None:
+                optional_unknown_count += 1
+                continue
 
-        if feedback is None or feedback.correctness is None:
-            unknown_count += 1
-            points = None
-            continue
-
-        max_reachable_points += grade.max_points
-
-        page_points = grade.max_points*feedback.correctness
-
-        if points is not None:
-            points += page_points
-
-        provisional_points += page_points
-
-        if grade.max_points > 0:
             if feedback.correctness == 1:
-                fully_correct_count += 1
+                optional_fully_correct_count += 1
             elif feedback.correctness == 0:
-                incorrect_count += 1
+                optional_incorrect_count += 1
             else:
-                partially_correct_count += 1
+                optional_partially_correct_count += 1
+
+        else:
+            max_points += grade.max_points
+
+            if feedback is None or feedback.correctness is None:
+                unknown_count += 1
+                points = None
+                continue
+
+            max_reachable_points += grade.max_points
+
+            page_points = grade.max_points*feedback.correctness
+
+            if points is not None:
+                points += page_points
+
+            provisional_points += page_points
+
+            if grade.max_points > 0:
+                if feedback.correctness == 1:
+                    fully_correct_count += 1
+                elif feedback.correctness == 0:
+                    incorrect_count += 1
+                else:
+                    partially_correct_count += 1
 
     # {{{ adjust max_points if requested
 
@@ -840,10 +892,12 @@ def gather_grade_info(
     if grading_rule.max_points_enforced_cap is not None:
         max_reachable_points = min(
                 max_reachable_points, grading_rule.max_points_enforced_cap)
-        points = min(
-                points, grading_rule.max_points_enforced_cap)
-        provisional_points = min(
-                provisional_points, grading_rule.max_points_enforced_cap)
+        if points is not None:
+            points = min(
+                    points, grading_rule.max_points_enforced_cap)
+        if provisional_points is not None:
+            provisional_points = min(
+                    provisional_points, grading_rule.max_points_enforced_cap)
 
     # }}}
 
@@ -856,7 +910,12 @@ def gather_grade_info(
             fully_correct_count=fully_correct_count,
             partially_correct_count=partially_correct_count,
             incorrect_count=incorrect_count,
-            unknown_count=unknown_count)
+            unknown_count=unknown_count,
+
+            optional_fully_correct_count=optional_fully_correct_count,
+            optional_partially_correct_count=optional_partially_correct_count,
+            optional_incorrect_count=optional_incorrect_count,
+            optional_unknown_count=optional_unknown_count)
 
 
 @transaction.atomic
@@ -1365,8 +1424,9 @@ def view_start_flow(pctx, flow_id):
                     grade_aggregation_strategy.use_earliest])
 
         # {{{ added by zd
-        flow_rule_str = get_flow_rules_str(pctx.course, pctx.participation, flow_id, 
-                                           fctx.flow_desc, now_datetime)
+        flow_rule_str = get_flow_rules_str(
+            pctx.course, pctx.participation, flow_id,
+            fctx.flow_desc, now_datetime)
 
         if session_start_rule.session_available_count <= 2:
             session_available_count_html = (
@@ -1757,6 +1817,7 @@ def view_flow_page(pctx, flow_session_id, ordinal):
 
     answer_visit = None
     prev_visit_id = None
+    viewing_prior_version = False
 
     if request.method == "POST":
         if "finish" in request.POST:
@@ -1795,7 +1856,6 @@ def view_flow_page(pctx, flow_session_id, ordinal):
             except ValueError:
                 raise SuspiciousOperation("non-integer passed for 'visit_id'")
 
-        viewing_prior_version = False
         if prev_answer_visits and prev_visit_id is not None:
             answer_visit = prev_answer_visits[0]
 
@@ -1809,13 +1869,17 @@ def view_flow_page(pctx, flow_session_id, ordinal):
 
             if viewing_prior_version:
                 from django.template import defaultfilters
-                messages.add_message(request, messages.INFO,
-                    _("Viewing prior submission dated %(date)s.")
+                messages.add_message(request, messages.INFO, (
+                    _("Viewing prior submission dated %(date)s. ")
                     % {
                         "date": defaultfilters.date(
-                            as_local_time(pvisit.visit_time),
+                            as_local_time(answer_visit.visit_time),
                             "DATETIME_FORMAT"),
-                        })
+                    }
+                    +
+                    '<a class="btn btn-default btn-sm" href="?" '
+                    'role="button">&laquo; %s</a>'
+                    % _("Go back")))
 
             prev_visit_id = answer_visit.id
 
@@ -1983,34 +2047,34 @@ def view_flow_page(pctx, flow_session_id, ordinal):
                         _("Your have <b>%(time_remain)s</b> (before <b>"
                           "%(completed_before)s</b>) to submit this session to "
                           "get <b>%(credit_percent)d%%</b> of your grade."), " ") %
-                        {
-                            "time_remain": time_until,
-                            "completed_before": compact_local_datetime_str(
-                                completed_before, now_datetime),
-                            "credit_percent": credit_percent}
-                        + flow_page_warning_message_next)
+                    {
+                        "time_remain": time_until,
+                        "completed_before": compact_local_datetime_str(
+                            completed_before, now_datetime),
+                        "credit_percent": credit_percent}
+                    + flow_page_warning_message_next)
 
             if (session_due
-                and (len(expiration_mode_choices)>1)
-                and not is_next_final
-               ):
+                and len(expiration_mode_choices) > 1
+                and
+                    not is_next_final):
                 flow_page_warning_message += (
-                        string_concat(
-                            _("If you neither submitted this session nor applied "
-                              "'Do not submit session for grading' before <b>"
-                              "%(session_due)s</b>, your session will be "
-                              "ended later, which might also reduce your "
-                              "grade.")) %
-                            { "session_due": compact_local_datetime_str(
-                                session_due, now_datetime)}
-                            )
+                    string_concat(
+                        _("If you neither submitted this session nor applied "
+                          "'Do not submit session for grading' before <b>"
+                          "%(session_due)s</b>, your session will be "
+                          "ended later, which might also reduce your "
+                          "grade.")) % {
+                        "session_due": compact_local_datetime_str(
+                            session_due, now_datetime)
+                    })
 
             from datetime import timedelta
 
             if flow_page_warning_message:
 
                 if time_delta > timedelta(hours=48):
-                    messages.add_message(request, messages.INFO, 
+                    messages.add_message(request, messages.INFO,
                                          flow_page_warning_message)
                 else:
                     messages.add_message(request, messages.WARNING,
@@ -2057,6 +2121,7 @@ def view_flow_page(pctx, flow_session_id, ordinal):
         "interaction_kind": get_interaction_kind(
             fpctx, flow_session, generates_grade, all_page_data),
 
+        "viewing_prior_version": viewing_prior_version,
         "prev_answer_visits": prev_answer_visits,
         "prev_visit_id": prev_visit_id,
     }
@@ -2064,12 +2129,14 @@ def view_flow_page(pctx, flow_session_id, ordinal):
     if fpctx.page.expects_answer() and fpctx.page.is_answer_gradable():
         args["max_points"] = fpctx.page.max_points(fpctx.page_data)
         args["page_expect_answer_and_gradable"] = True
+
+        # fix flow with grade_identifier by not generates_grade
         if pctx.has_permission(pperm.assign_grade):
             from course.models import get_flow_grading_opportunity
-            grading_rule = get_session_grading_rule (
+            grading_rule = get_session_grading_rule(
                 flow_session, fpctx.flow_desc, now_datetime)
             if grading_rule.grade_identifier and grading_rule.generates_grade:
-                opportunity = get_flow_grading_opportunity (
+                opportunity = get_flow_grading_opportunity(
                     pctx.course, flow_session.flow_id, fpctx.flow_desc,
                     grading_rule.grade_identifier,
                     grading_rule.grade_aggregation_strategy)
@@ -2295,7 +2362,6 @@ def send_email_about_flow_page(pctx, flow_session_id, ordinal):
     page_id = FlowPageData.objects.get(
         flow_session=flow_session_id, ordinal=ordinal).page_id
 
-    from django.core.urlresolvers import reverse
     review_url = reverse(
         "relate-view_flow_page",
         kwargs={'course_identifier': pctx.course.identifier,
@@ -2539,11 +2605,6 @@ def finish_flow_session_view(pctx, flow_session_id):
         get_session_answered_page_data(
             fctx, flow_session, answer_visits)
 
-    answered_count = len(answered_page_data_list)
-    unanswered_count = len(unanswered_page_data_list)
-
-    #is_interactive_flow = bool(answered_count + unanswered_count)  # type: bool
-
     if flow_permission.view not in access_rule.permissions:
         raise PermissionDenied()
 
@@ -2588,13 +2649,10 @@ def finish_flow_session_view(pctx, flow_session_id):
         recipient_list = None
         extra_message = None
 
-        if (
-                (hasattr(fctx.flow_desc, "notify_on_submit")
-                 and fctx.flow_desc.notify_on_submit)
+        if ((hasattr(fctx.flow_desc, "notify_on_submit")
+             and fctx.flow_desc.notify_on_submit)
             or
-                notify_rule.may_send_notification
-            ):
-
+                notify_rule.may_send_notification):
             will_send_submit_notification = True
 
             if (grading_rule.grade_identifier
@@ -2621,10 +2679,10 @@ def finish_flow_session_view(pctx, flow_session_id):
 
             if (hasattr(fctx.flow_desc, "notify_on_submit")
                     and fctx.flow_desc.notify_on_submit):
-                # This functionality doesn't have time rule. For notications
-                # on a time basis, use flow_permission.send_submit_notif_email instead.
+                # This functionality doesn't have time rule.
+                # For notications on a time basis,
+                # use flow_permission.send_submit_notif_email instead.
                 recipient_list = fctx.flow_desc.notify_on_submit
-
 
             # }}}
 
@@ -2726,6 +2784,11 @@ def finish_flow_session_view(pctx, flow_session_id):
 
     else:
         # confirm ending flow
+        answered_count = len(answered_page_data_list)
+        unanswered_count = len(unanswered_page_data_list)
+        required_count = answered_count + unanswered_count
+        session_may_generate_grade = (
+            grading_rule.generates_grade and required_count)
         return render_finish_response(
                 "course/flow-confirm-completion.html",
                 last_page_nr=flow_session.page_count-1,
@@ -2733,8 +2796,8 @@ def finish_flow_session_view(pctx, flow_session_id):
                 answered_count=answered_count,
                 unanswered_count=unanswered_count,
                 unanswered_page_data_list=unanswered_page_data_list,
-                total_count=answered_count+unanswered_count,
-                session_may_generate_grade=grading_rule.generates_grade)
+                required_count=required_count,
+                session_may_generate_grade=session_may_generate_grade)
 
 # }}}
 

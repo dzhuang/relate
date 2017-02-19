@@ -11,6 +11,57 @@ ALLOWED_HOSTS = [
 # Configure the following as url as above.
 RELATE_BASE_URL = "http://YOUR/RELATE/SITE/DOMAIN"
 
+# {{{ my specific
+SENDFILE_BACKEND = 'sendfile.backends.nginx'
+SENDFILE_URL = '/YOUR/SENDFILE/URL'
+SENDFILE_ROOT = '/YOUR/SENDFILE/ROOT'
+
+RELATE_CUSTOM_BOWER_INSTALLED_APPS = (
+    "pdf.js=https://github.com/mozilla/pdf.js/releases/download/v1.3.91/pdfjs-1.3.91-dist.zip",
+    "jquery-file-upload",
+    "blueimp-gallery",
+
+    ## IE9 below support of HTML5 elements and media queries
+    "html5shiv",
+    "respond",
+
+    #"jquery-form",
+    "cropperjs",
+
+    # https://clipboardjs.com/
+    "clipboard",
+    "marked",
+    "ez-plus"
+
+    # for survey
+    'jquery-form',
+    'jcarousel',
+    'bootstrap-datepicker',
+    )
+
+RELATE_CUSTOM_INSTALLED_APPS = (
+    'django.contrib.sites',
+    'image_upload',
+    "jfu",
+    'imagekit',
+    "djcelery_email",
+    "survey",
+    "questionnaire",
+    )
+
+SITE_ID = 1
+
+from relate import customized
+RELATE_USER_FULL_NAME_FORMAT_METHOD = customized.format_full_name
+
+RELATE_LATEX_TO_IMAGE_ENABLED = True
+
+RELATE_LATEX_BIN_DIR = \
+    "/usr/local/texlive/2015/bin/x86_64-linux"
+
+#}}}
+
+
 # Uncomment this to use a real database. If left commented out, a local SQLite3
 # database will be used, which is not recommended for production use.
 #

@@ -4,21 +4,17 @@ from __future__ import division, unicode_literals
 
 import six
 from django.utils.translation import (
-        ugettext_lazy as _, pgettext_lazy, string_concat)
+        ugettext_lazy as _, pgettext_lazy)
 from django.db import models
 from django.utils.timezone import now
-from django.core.exceptions import ValidationError, ObjectDoesNotExist
-# from crowdsourcing.models import Question, Survey
+from django.core.exceptions import ValidationError
 
 from questionnaire.models import Question, Questionnaire, AnswerQuerySet
 from django.conf import settings
 
-from course.models import (
-    Course, Participation
-)
+from course.models import Course, Participation
 
 from jsonfield import JSONField
-# Create your models here.
 
 
 class CourseSurvey(models.Model):
@@ -44,8 +40,8 @@ class CourseSurvey(models.Model):
 
     def __unicode__(self):
         return (
-            # Translators: For GradingOpportunity
-            _("Survey '(%(title)s)' for %(course)s using %(questionnare_title)s created at %(time)s")
+            _("Survey '(%(title)s)' for %(course)s using "
+              "%(questionnare_title)s created at %(time)s")
             % {
                 "title": self.title,
                 "questionnare_title": self.questionnaire.title,
@@ -61,6 +57,7 @@ class CourseSurvey(models.Model):
 class question_answered_state_types:  # noqa
     filled = "filled"
     unfilled = "unfilled"
+
 
 QUESTION_ANSWERED_STATE_CHOICES = (
         (question_answered_state_types.filled,
@@ -78,18 +75,19 @@ class ParticipationSurveyQuestionAnswer(models.Model):
     survey = models.ForeignKey(CourseSurvey,
                                help_text=_('The survey'),
                                null=True,
-                               on_delete = models.CASCADE
+                               on_delete=models.CASCADE
                                )
     participation = models.ForeignKey(
         Participation,
         verbose_name=_('Participation'), on_delete=models.CASCADE)
-    question = models.ForeignKey(Question,
-                                 help_text=_('The question that this is an answer to'),
-                                 on_delete = models.CASCADE)
-    answer = JSONField(verbose_name=_('Answer'),
-                       blank=True,
-                       help_text=_('The text answer related to the question'),
-                       )
+    question = models.ForeignKey(
+        Question,
+        help_text=_('The question that this is an answer to'),
+        on_delete=models.CASCADE)
+    answer = JSONField(
+        verbose_name=_('Answer'),
+        blank=True,
+        help_text=_('The text answer related to the question'),)
     date = models.DateTimeField(default=now, db_index=True,
                          verbose_name=_('Creation time'))
 
@@ -114,7 +112,7 @@ class ParticipationSurveyQuestionAnswer(models.Model):
         __str__ = __unicode__
 
     class Meta:
-        unique_together = ('survey','participation','question')
+        unique_together = ('survey', 'participation', 'question')
 
     def clean(self):
         super(ParticipationSurveyQuestionAnswer, self).clean()
@@ -124,8 +122,9 @@ class ParticipationSurveyQuestionAnswer(models.Model):
         )
 
         if self.question.questionnaire not in qs:
-            raise ValidationError(_("Participation and answered question must live "
-                    "in the same course"))
+            raise ValidationError(_("Participation and answered "
+                                    "question must live in the "
+                                    "same course"))
 
     def get_state_desc(self):
         return dict(QUESTION_ANSWERED_STATE_CHOICES).get(
@@ -134,17 +133,23 @@ class ParticipationSurveyQuestionAnswer(models.Model):
     def get_answer_str(self):
         if self.answer is None:
             return None
-        if self.question.type not in ['yesNoQuestion', 'MultiChoices', 'MultiChoiceWithAnswer']:
+        if self.question.type not in ['yesNoQuestion',
+                                      'MultiChoices',
+                                      'MultiChoiceWithAnswer']:
             return self.answer
         if self.question.type == 'yesNoQuestion':
             choices_yes_no = (("yes", _("Yes")),
                               ("no", _("No")),)
             return dict(choices_yes_no).get(self.answer)
         else:
-            choices_text = self.question.choices().order_by("pk").values_list('text', flat=True)
-            choices = ((0, "----"), (1, u"完全正确"), (2, u"未回答(基本未回答)"), (3, u"未掌握原理")) + tuple(
-                (i + 4, text)
-                for i, text in enumerate(choices_text))
+            choices_text = self.question.choices()\
+                .order_by("pk").values_list('text', flat=True)
+            choices = ((0, "----"),
+                       (1, u"完全正确"),
+                       (2, u"未回答(基本未回答)"),
+                       (3, u"未掌握原理")) \
+                      + tuple((i + 4, text)
+                              for i, text in enumerate(choices_text))
             if isinstance(self.answer, list):
                 return "; ".join([dict(choices).get(int(a)) for a in self.answer])
             else:
@@ -179,7 +184,6 @@ class QuestionAnsweredStateMachine(object):
             self.state = question_answered_state_types.filled
 
     def consume(self, iterable):
-        # type: (Iterable[ParticipationSurveyQuestionAnswer], bool) -> QuestionAnsweredStateMachine
         for answer_for_quest in iterable:
             self._consume_status(answer_for_quest)
         return self
