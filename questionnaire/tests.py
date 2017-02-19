@@ -13,8 +13,9 @@ from django.test import TestCase  # noqa
 # class CreateQuestionnaireTests(TestCase):
 #     def setUp(self):
 #         self.client = Client()
-#         self.questionnaire = Questionnaire.objects.create(title='questionnaire test',
-#                                                           description='test')
+#         self.questionnaire = Questionnaire.objects.create(
+#             title='questionnaire test',
+#             description='test')
 #         self.user = User.objects.create_user(username='test',
 #                                              email='test@test.tn',
 #                                              password='test0000')
@@ -159,7 +160,8 @@ from django.test import TestCase  # noqa
 #         # add a new question `YesNoQuestion`
 #         self.test_add_question_type_yes_no()
 #         # Authenticate as user
-#         login = self.client.login(username=self.user.username, password='test0000')
+#         login = self.client.login(
+#             username=self.user.username, password='test0000')
 #         self.assertTrue(login)
 #         data_form = {
 #             'question_0': "yes",
