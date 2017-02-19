@@ -76,8 +76,9 @@ def get_mongo_db(database="learningwhat-image-meta-db"):
 
 @deconstructible
 class ProxyStorage(ProxyStorageBase):
-    def save(self, name, content, max_length=None, original_storage_path=None):
-        # type: (Text, Any, Optional[int], Optional[Text]) -> Text
+    def save(self, name, content, max_length=None,
+             original_storage_path=None, using=None):
+        # type: (Text, Any, Optional[int], Optional[Text], Optional[Text]) -> Text
         """
         if original_storage is absent, name should be file.name,
         a relative path in location
@@ -152,7 +153,7 @@ class UserImageStorage(MultipleOriginalStoragesMixin, ProxyStorage):
 
     def save(self, name, content, max_length=None,
              original_storage_path=None, using=None):
-        # type: (...) -> ignore
+        # type: (Text, Any, Optional[int], Optional[Text], Optional[Text]) -> Text
         if not using:
             using = "temp"
         assert using in ["sendfile", "temp"]
@@ -162,7 +163,7 @@ class UserImageStorage(MultipleOriginalStoragesMixin, ProxyStorage):
             content=content,
             original_storage_path=original_storage_path,
             using=using
-        )  # type: ignore
+        )
 
     def save_to_sendfile_storage_path(self, path, content):
         # type: (Text, Any) -> Text
