@@ -120,6 +120,7 @@ class ProxyStorage(ProxyStorageBase):
             ).path(path)
         except NotImplementedError:
             pass
+        print(safe_join('/', os.path.normpath(path)).lstrip('/'))
         return safe_join('/', os.path.normpath(path)).lstrip('/')
 
     def size(self, name):

@@ -256,7 +256,7 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
                     img = FlowPageImage.objects.get(pk=img_pk)
                     full_path = img.file.name
                     original_storage_path = os.path.relpath(
-                        full_path, protected_root)
+                        full_path, protected_root).lstrip("/")
                     data = storage.get_data_for_meta_backend_save(
                         original_name=original_storage_path,
                         path=full_path,
