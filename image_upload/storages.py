@@ -63,8 +63,12 @@ temp_image_storage_location = getattr(
 )
 
 
-def get_mongo_db(database="learningwhat-image-meta-db"):
+def get_mongo_db(database=None):
     # type: (Optional[Text]) -> MongoClient
+    if not database:
+        database = getattr(
+            settings, "RELATE_MONGODB_IMG_META_DB_NAME",
+            "learningwhat-image-meta-db")
     args = []
     uri = getattr(settings, "RELATE_MONGO_META_DATABASE_URI", None)
     if uri:
