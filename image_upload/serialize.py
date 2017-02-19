@@ -39,6 +39,7 @@ import json
 
 from image_upload.models import FlowPageImage
 
+
 def order_name(name):
     """order_name
     -- Limit a text to 20 chars length, if necessary strips the middle
@@ -52,6 +53,7 @@ def order_name(name):
     if len(name) <= 25:
         return name
     return name[:15] + "..." + name[-7:]
+
 
 def get_image_page_data_str(image):
     if not isinstance(image, FlowPageImage):
@@ -67,12 +69,16 @@ def get_image_page_data_str(image):
 
     return str(json.dumps(image_data_dict).encode("utf-8"))
 
+
 def get_image_admin_url(image):
     if not isinstance(image, FlowPageImage):
         return None
     if image.flow_session.in_progress:
         return None
-    return reverse('admin:image_upload_flowpageimage_change', args=(image.pk,))
+    return reverse(
+        'admin:image_upload_flowpageimage_change',
+        args=(image.pk,))
+
 
 def serialize(request, instance, file_attr='file'):
     """serialize -- Serialize a Picture instance into a dict.
@@ -83,13 +89,9 @@ def serialize(request, instance, file_attr='file'):
     """
 
     obj = getattr(instance, file_attr)
-
     error = None
-
-    print(obj.path, "------------from serialize")
-
     try:
-        IsFile = os.path.isfile(obj.path)
+        assert os.path.isfile(obj.path)
         size = obj.size
         obj_name = obj.name
         img_type = mimetypes.guess_type(obj.path)[0] or 'image/png'
@@ -103,7 +105,7 @@ def serialize(request, instance, file_attr='file'):
     name_field = getattr(instance, 'slug', obj_name)
     name = order_name(name_field)
 
-    deleteUrl = reverse('jfu_delete',
+    delete_url = reverse('jfu_delete',
             kwargs={
                 'course_identifier': instance.course.identifier,
                 'flow_session_id': instance.flow_session_id,
@@ -112,7 +114,7 @@ def serialize(request, instance, file_attr='file'):
                 }
         )
 
-    updateUrl = reverse('jfu_update',
+    update_url = reverse('jfu_update',
             kwargs={
                 'course_identifier': instance.course.identifier,
                 'flow_session_id': instance.flow_session_id,
@@ -121,7 +123,7 @@ def serialize(request, instance, file_attr='file'):
                 }
             )
 
-    cropHandlerUrl = reverse('image_crop',
+    crop_handler_url = reverse('image_crop',
             kwargs={
                 'course_identifier': instance.course.identifier,
                 'flow_session_id': instance.flow_session_id,
@@ -130,38 +132,39 @@ def serialize(request, instance, file_attr='file'):
                 }
             )
 
-    creationTime = format_datetime_local(
+    creation_time = format_datetime_local(
             as_local_time(instance.creation_time))
 
-    creationTimeShort = compact_local_datetime_str(
+    creation_time_short = compact_local_datetime_str(
             as_local_time(instance.creation_time),
             get_now_or_fake_time(request),
             in_python=True)
 
-    timestr_title = ugettext("Created at") + " " + creationTime
-    timestr_short = creationTimeShort
+    timestr_title = "%s%s" % (ugettext("Created at "), creation_time)
+    timestr_short = creation_time_short
 
-    show_modifiedTime = False
-    # Only display file_last_modified time when modification is 
+    show_modified_time = False
+    # Only display file_last_modified time when modification is
     # within 5 minutes on creation.
     if instance.file_last_modified > (
             instance.creation_time + timedelta(minutes=5)):
-        show_modifiedTime = True
+        show_modified_time = True
 
-
-    modifiedTime = ""
-    modifiedTimeShort = ""
-
-    if show_modifiedTime:
-        modifiedTime = format_datetime_local(
+    if show_modified_time:
+        modified_time = format_datetime_local(
                 as_local_time(instance.file_last_modified))
 
-        modifiedTimeShort = compact_local_datetime_str(
+        modified_time_short = compact_local_datetime_str(
                             as_local_time(instance.file_last_modified),
                             get_now_or_fake_time(request),
                             in_python=True)
-        timestr_title = timestr_title + ", " + ugettext("modified at") + " " + modifiedTime
-        timestr_short = timestr_short + " (" + modifiedTimeShort + ")"
+        timestr_title = "%s, %s %s" % (
+                timestr_title,
+                ugettext("modified at "),
+                modified_time)
+        timestr_short = "%s (%s)" % (
+                timestr_short,
+                modified_time_short)
 
     return {
         'url': instance.get_absolute_url(),
@@ -174,9 +177,9 @@ def serialize(request, instance, file_attr='file'):
         'error': error,
         'pk': instance.pk,
         'order': instance.order,
-        'updateUrl': updateUrl,
-        'deleteUrl': deleteUrl,
-        'cropHandlerUrl': cropHandlerUrl,
+        'updateUrl': update_url,
+        'deleteUrl': delete_url,
+        'crop_handler_url': crop_handler_url,
         'imageAdminUrl': get_image_admin_url(instance),
         'image_data_dict': get_image_page_data_str(instance),
         'deleteType': 'POST',
