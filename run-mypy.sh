@@ -6,5 +6,5 @@ mypy \
   --ignore-missing-imports \
   --follow-imports=skip \
   --disallow-untyped-calls \
-  relate course image_upload survey
+  relate course image_upload
   # --disallow-untyped-defs \
