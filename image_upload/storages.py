@@ -3,11 +3,12 @@ import tempfile
 
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
-from django.utils._os import safe_join  # noqa
+from django.utils._os import safe_join
 from django.utils.deconstruct import deconstructible
 from django.utils.encoding import force_text
 from proxy_storage.meta_backends.mongo import MongoMetaBackend
-from proxy_storage.storages.base import MultipleOriginalStoragesMixin, ProxyStorageBase
+from proxy_storage.storages.base import (
+    MultipleOriginalStoragesMixin, ProxyStorageBase)
 from pymongo import MongoClient
 
 
@@ -39,14 +40,18 @@ def get_mongo_db(database="learningwhat-image-meta-db"):
 class ProxyStorage(ProxyStorageBase):
     def save(self, name, content, max_length=None, original_storage_path=None):
         """
-        if original_storage is absent, name should be file.name, a relative path in location
+        if original_storage is absent, name should be file.name,
+        a relative path in location
         """
 
         # save file to original storage
         if not original_storage_path:
-            original_storage_path = self.get_original_storage().save(name, content, max_length=max_length)
+            original_storage_path = (
+                self.get_original_storage()
+                    .save(name, content, max_length=max_length))
 
-        # Get the proper name for the file, as it will actually be saved to meta backend
+        # Get the proper name for the file,
+        # as it will actually be saved to meta backend
         # possibility of race condition
         name = self.get_available_name(
             self.get_original_storage_full_path(original_storage_path)
@@ -63,7 +68,9 @@ class ProxyStorage(ProxyStorageBase):
 
     def get_original_storage_full_path(self, path, meta_backend_obj=None):
         try:
-            path = self.get_original_storage(meta_backend_obj=meta_backend_obj).path(path)
+            path = self.get_original_storage(
+                meta_backend_obj=meta_backend_obj
+            ).path(path)
         except NotImplementedError:
             pass
         return safe_join('/', os.path.normpath(path)).lstrip('/')
@@ -98,7 +105,8 @@ class UserImageStorage(MultipleOriginalStoragesMixin, ProxyStorage):
         collection='meta_backend_collection'
     )
 
-    def save(self, name, content, max_length=None, original_storage_path=None, using=None):
+    def save(self, name, content, max_length=None,
+             original_storage_path=None, using=None):
         if not using:
             using = "temp"
         assert using in ["sendfile", "temp"]
@@ -111,10 +119,14 @@ class UserImageStorage(MultipleOriginalStoragesMixin, ProxyStorage):
         )
 
     def save_to_sendfile_storage_path(self, path, content, **kwargs):
-        original_storage_path = self.meta_backend.get(path=path)['original_storage_path']
+        original_storage_path = (
+            self.meta_backend.get(path=path)['original_storage_path'])
         if not self.is_temp_image(path=path):
             return original_storage_path
-        return self.save(original_storage_path, content, original_storage_path=original_storage_path, using="sendfile")
+        return self.save(
+            original_storage_path, content,
+            original_storage_path=original_storage_path,
+            using="sendfile")
 
 
 def user_flowsession_img_path(instance, file_name):

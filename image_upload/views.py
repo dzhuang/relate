@@ -35,7 +35,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils.translation import ugettext_lazy as _, string_concat, ugettext
 from django.db import transaction
 
-from course.models import Course, FlowPageData, Participation, FlowSession
+from course.models import Course, FlowPageData, FlowSession
 from course.utils import course_view
 
 from image_upload.serialize import serialize
@@ -164,7 +164,6 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
         pctx = CoursePageContext(self.request, course_identifier)
         prev_visit_id = self.request.GET.get("visit_id")
 
-
         if prev_visit_id is not None:
             try:
                 prev_visit_id = int(prev_visit_id)
@@ -185,7 +184,6 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
 
         prev_answer_visits = list(
                 get_prev_answer_visits_qset(fpctx.page_data))
-
 
         # {{{ fish out previous answer_visit
 
@@ -215,7 +213,9 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
 
         # Creating a QuerySet from a list while preserving order using Django
         # https://codybonney.com/creating-a-queryset-from-a-list-while-preserving-order-using-django/
-        clauses = ' '.join(['WHEN id=%s THEN %s' % (pk, i) for i, pk in enumerate(pk_list)])
+        clauses = (
+            ' '.join(['WHEN id=%s THEN %s' % (pk, i)
+                      for i, pk in enumerate(pk_list)]))
         ordering = 'CASE %s END' % clauses
         queryset = FlowPageImage.objects.filter(pk__in=pk_list).extra(
             select={'ordering': ordering}, order_by=('ordering',))
@@ -357,7 +357,6 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
             string_concat(_('File not found.'),
                           _('Please upload the image first.')))
 
-
     if not request.POST:
         return {}
 
@@ -406,23 +405,23 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
     new_image.save(new_image_io, format=image_format)
 
     new_instance = FlowPageImage()
-    new_instance.creator=crop_instance.creator
+    new_instance.creator = crop_instance.creator
     new_instance.file.save(
         name=crop_instance.slug,
         content=ContentFile(new_image_io.getvalue()),
         save=False
     )
 
-    new_instance.slug=crop_instance.slug
-    new_instance.creation_time=crop_instance.creation_time
-    new_instance.file_last_modified=new_image_file_last_modified
-    new_instance.course=crop_instance.course
-    new_instance.flow_session=crop_instance.flow_session
-    new_instance.image_page_id=crop_instance.image_page_id
-    new_instance.is_image_textify=crop_instance.is_image_textify
-    new_instance.image_text=crop_instance.image_text
-    new_instance.image_data=crop_instance.image_data
-    new_instance.use_image_data=crop_instance.use_image_data
+    new_instance.slug = crop_instance.slug
+    new_instance.creation_time = crop_instance.creation_time
+    new_instance.file_last_modified = new_image_file_last_modified
+    new_instance.course = crop_instance.course
+    new_instance.flow_session = crop_instance.flow_session
+    new_instance.image_page_id = crop_instance.image_page_id
+    new_instance.is_image_textify = crop_instance.is_image_textify
+    new_instance.image_text = crop_instance.image_text
+    new_instance.image_data = crop_instance.image_data
+    new_instance.use_image_data = crop_instance.use_image_data
 
     try:
         new_instance.save()
@@ -468,10 +467,6 @@ def image_order(pctx, flow_session_id, ordinal):
     if not request.is_ajax():
         raise ImgTableOrderError(_('Only Ajax Post is allowed.'))
 
-    chg_data_list = json.loads(request.POST['chg_data'])
-
     response = {'message': ugettext('Done')}
-
-    #raise ImgTableOrderError("Failed")
 
     return response

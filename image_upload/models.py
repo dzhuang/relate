@@ -52,33 +52,33 @@ class FlowPageImage(models.Model):
     creation_time = models.DateTimeField(default=now)
     file_last_modified = models.DateTimeField(default=now)
     file_thumbnail = ImageSpecField(
-            source='file',
-            processors=[ResizeToFit(100, 100)],
-            format='PNG',
-            options={'quality': 50}
-            )
+        source='file',
+        processors=[ResizeToFit(100, 100)],
+        format='PNG',
+        options={'quality': 50})
     course = models.ForeignKey(
-            "course.Course", null=True,
-            verbose_name=_('Course'), on_delete=models.SET_NULL)
+        "course.Course", null=True,
+        verbose_name=_('Course'), on_delete=models.SET_NULL)
     flow_session = models.ForeignKey(
-            "course.FlowSession", null=True, related_name="page_image_data",
-            verbose_name=_('Flow session'), on_delete=models.SET_NULL)
+        "course.FlowSession", null=True, related_name="page_image_data",
+        verbose_name=_('Flow session'), on_delete=models.SET_NULL)
     image_page_id = models.CharField(max_length=200, null=True)
 
-    is_image_textify = models.BooleanField(default=False, verbose_name=_("Load textified Image?"))
-
+    is_image_textify = models.BooleanField(
+        default=False, verbose_name=_("Load textified Image?"))
     image_text = models.TextField(
         verbose_name=_("Related Html"),
         help_text=_("The html for the FlowPageImage"),
         blank=True, null=True
     )
+    image_data = JSONField(
+        null=True, blank=True,
 
-    image_data = JSONField(null=True, blank=True,
-                      # Show correct characters in admin for non ascii languages.
-                      dump_kwargs={'ensure_ascii': False},
-                      verbose_name=_('External image data'))
-
-    use_image_data = models.BooleanField(default=False, verbose_name=_("Use external Image data?"))
+        # Show correct characters in admin for non ascii languages.
+        dump_kwargs={'ensure_ascii': False},
+        verbose_name=_('External image data'))
+    use_image_data = models.BooleanField(
+        default=False, verbose_name=_("Use external Image data?"))
 
     # The order of the img in a flow session page.
     order = models.SmallIntegerField(default=0)
@@ -111,24 +111,24 @@ class FlowPageImage(models.Model):
                     self.pk,
                     file_name], {}
                     )
-        elif key==False:
-            return ('flow_page_image_problem', [
-                self.pk,
-                file_name], {}
-                    )
-        elif key==True:
-            return ('flow_page_image_key', [
-                self.pk,
-                self.creator_id,
-                file_name], {}
-                    )
+        elif key is False:
+            return ('flow_page_image_problem',
+                    [self.pk, file_name], {})
+        elif key is True:
+            return ('flow_page_image_key',
+                    [self.pk, self.creator_id, file_name], {})
 
     def admin_image(self):
         if self.order == 0:
             img_url = self.get_absolute_url(private=False)
         else:
             img_url = self.get_absolute_url(key=True)
-        return '<img src="%s" class="img-responsive" style="max-height:300pt"/>' % img_url
+        if img_url:
+            return ("<img src='%s' "
+                    "class='img-responsive' "
+                    "style='max-height:300pt'/>" % img_url)
+        return None
+
     admin_image.short_description = 'Image'
     admin_image.allow_tags = True
 

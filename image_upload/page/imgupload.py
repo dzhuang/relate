@@ -25,12 +25,10 @@ THE SOFTWARE.
 """
 
 import django.forms as forms
-from django.utils.translation import ugettext as _, string_concat, ugettext_lazy
+from django.utils.translation import ugettext as _, string_concat
 from django.db import transaction
 from django.contrib import messages
 from django.core.urlresolvers import reverse
-from django.core.files.base import ContentFile
-from PIL import Image
 from image_upload.storages import UserImageStorage
 from image_upload.models import FlowPageImage
 
@@ -43,10 +41,9 @@ from course.utils import course_view, render_course_page
 
 from relate.utils import StyledForm
 
-from crispy_forms.layout import Layout, HTML, Submit, Field
+from crispy_forms.layout import Layout, HTML, Submit
 
 import os
-import json
 
 storage = UserImageStorage()
 
@@ -391,18 +388,13 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
 
         # {{{ fish out previous answer_visit
 
-        viewing_prior_version = False
         if prev_answer_visits and prev_visit_id is not None:
             answer_visit = prev_answer_visits[0]
 
             for ivisit, pvisit in enumerate(prev_answer_visits):
                 if pvisit.id == prev_visit_id:
                     answer_visit = pvisit
-                    if ivisit > 0:
-                        viewing_prior_version = True
-
                     break
-
 
             prev_visit_id = answer_visit.id
 
@@ -505,7 +497,8 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
 
         for img in saved_qs:
             if storage.is_temp_image(img.file.path) and img.pk in data:
-                name = storage.meta_backend.get(path=img.file.path)['original_storage_path']
+                name = storage.meta_backend.get(
+                    path=img.file.path)['original_storage_path']
                 new_img_name = storage.save(
                     name=name,
                     content=img.file,
