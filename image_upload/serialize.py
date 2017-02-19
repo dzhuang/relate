@@ -65,7 +65,7 @@ def get_image_page_data_str(image):
         'order_set': list((image.order,)),
     }
 
-    return json.dumps(image_data_dict).encode("utf-8")
+    return str(json.dumps(image_data_dict).encode("utf-8"))
 
 def get_image_admin_url(image):
     if not isinstance(image, FlowPageImage):

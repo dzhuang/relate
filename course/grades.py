@@ -390,7 +390,7 @@ def export_gradebook_csv(pctx):
     else:
         import csv
 
-    fieldnames = ['user_name', 'last_name', 'first_name'] + [
+    fieldnames = ['user_name', 'institutional_id', 'last_name', 'first_name'] + [
             gopp.identifier for gopp in grading_opps]
 
     writer = csv.writer(csvfile)
@@ -400,6 +400,7 @@ def export_gradebook_csv(pctx):
     for participation, grades in zip(participations, grade_table):
         writer.writerow([
             participation.user.username,
+            participation.user.institutional_id,
             participation.user.last_name,
             participation.user.first_name,
             ] + [grade_info.grade_state_machine.stringify_machine_readable_state()

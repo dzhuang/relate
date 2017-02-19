@@ -52,7 +52,11 @@
 
       {% if pperm.view_gradebook %}
         <li role="presentation" class="divider"></li>
-        <li><a href="{% url "relate-view_course_statistics" course.identifier %}" target="_blank">{% trans "Course Statistics" %}</a></li>
+        <li><a href="{% url "relate-survey_list" course.identifier %}" target="_blank">{% trans "Course Statistics" %}</a></li>
+          {% if user.is_staff %}
+              <li><a href="{% url "relate-survey_create" course.identifier %}" target="_blank">{% trans "Create Course Statistics" %}</a></li>
+{#              <li><a href="{% url "relate-survey_create_generic" %}" target="_blank">{% trans "Create Generic Statistics" %}</a></li>#}
+          {% endif %}
         <li role="presentation" class="divider"></li>
         <li role="presentation" class="dropdown-header">{% trans "Grade Book" %}</li>
         <li><a href="{% url "relate-view_participant_list" course.identifier %}" target="_blank">{% trans "List of Participants" %}</a></li>
