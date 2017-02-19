@@ -280,7 +280,7 @@ def flow_page_image_key(request, download_id, creator_id, file_name):
 
 @login_required
 def _auth_download(request, download_object, privilege=False):
-    if not request.user == download_object.creator or privilege:
+    if not request.user == download_object.creator or not privilege:
         from django.core.exceptions import PermissionDenied
         raise PermissionDenied(_("may not view other people's resource"))
     return sendfile(request, download_object.file.path)
