@@ -131,9 +131,15 @@ class ProxyStorage(ProxyStorageBase):
 
     def path(self, name):
         # type: (Text) -> Text
-        meta_backend_obj = self.meta_backend.get(path=name)
-        return self.get_original_storage(meta_backend_obj=meta_backend_obj) \
-            .path(meta_backend_obj['original_storage_path'])
+        from proxy_storage.meta_backends.base import MetaBackendObjectDoesNotExist
+        try:
+            meta_backend_obj = self.meta_backend.get(path=name)
+            return self.get_original_storage(meta_backend_obj=meta_backend_obj) \
+                .path(meta_backend_obj['original_storage_path'])
+        except MetaBackendObjectDoesNotExist:
+            # fall back
+            print("fall backed")
+            return name
 
     def is_temp_image(self, path):
         # type: (Text) -> bool

@@ -24,7 +24,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+import os
+
 from django.shortcuts import get_object_or_404
+from django.conf import settings
 from django import forms, http
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
@@ -50,6 +53,7 @@ import json
 from PIL import Image
 from io import BytesIO
 from sendfile import sendfile
+from pymongo.errors import DuplicateKeyError
 
 storage = UserImageStorage()
 
@@ -197,6 +201,7 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
 
         elif prev_answer_visits:
             answer_visit = prev_answer_visits[0]
+            print(answer_visit)
 
         else:
             answer_visit = None
@@ -207,7 +212,73 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
             return None
 
         answer_data = answer_visit.answer
-        pk_list = answer_data.get("answer", None)
+        pk_list = []
+        if not answer_data:
+            return None
+        if not isinstance(answer_data, dict):
+            fpd = None
+            try:
+                fpd = FlowPageData.objects.get(
+                    flow_session=flow_session_id, ordinal=ordinal)
+            except ValueError:
+
+                # in sandbox
+                if flow_session_id == "None" or ordinal == "None":
+                    return None
+
+            if not fpd:
+                return None
+
+            qs = (FlowPageImage.objects.filter(
+                flow_session=flow_session_id,
+                image_page_id=fpd.page_id)
+                  .order_by("order", "pk"))
+            if not qs:
+                return None
+
+            will_save_new_data = True
+            for q in qs:
+                a = json.loads(answer_data)
+                if repr(q) in a:
+                    pk_list.append(q.pk)
+                elif os.path.split(q.file.name)[-1] in a:
+                    pk_list.append(q.pk)
+                else:
+                    will_save_new_data = False
+                    break
+
+            if not will_save_new_data:
+                return None
+            else:
+                protected_root = getattr(settings, "SENDFILE_ROOT")
+                new_answer_data = {"answer": pk_list}
+                for img_pk in pk_list:
+                    img = FlowPageImage.objects.get(pk=img_pk)
+                    full_path = img.file.name
+                    original_storage_path = os.path.relpath(
+                        full_path, protected_root)
+                    data = storage.get_data_for_meta_backend_save(
+                        original_name=original_storage_path,
+                        path=full_path,
+                        content=img.file,
+                        original_storage_path=original_storage_path,
+                    )
+                    data.update({
+                        'original_storage_name': "sendfile"
+                    })
+                    saved = True
+                    try:
+                        storage.meta_backend.create(data=data)
+                    except DuplicateKeyError:
+                        saved = False
+                        pass
+
+                    if not saved:
+                        answer_visit.answer = new_answer_data
+                        answer_visit.save()
+
+        if not pk_list:
+            pk_list = answer_data.get("answer", None)
         if not pk_list:
             return None
 

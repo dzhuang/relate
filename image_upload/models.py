@@ -136,8 +136,8 @@ class FlowPageImage(models.Model):
                     "style='max-height:300pt'/>" % img_url)
         return None
 
-    admin_image.short_description = 'Image'  # type:ignore
-    admin_image.allow_tags = True  # type:ignore
+    admin_image.short_description = 'Image'  # type: ignore
+    admin_image.allow_tags = True  # type: ignore
 
     def get_image_text(self):
         if self.is_image_textify:
