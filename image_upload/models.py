@@ -27,7 +27,6 @@ THE SOFTWARE.
 import six
 from django.db import models
 from django.conf import settings
-
 from django.utils.translation import ugettext_lazy as _
 from django.utils.timezone import now
 

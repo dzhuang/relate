@@ -44,13 +44,15 @@ from course.page import (
     InlineMultiQuestion)
 from course.validation import ValidationError
 from course.content import get_repo_blob, get_repo_blob_data_cached
+from course.constants import participation_permission as pperm
 from course.latex.utils import file_read
-from atomicwrites import atomic_write
-
-from image_upload.page.imgupload import ImageUploadQuestion
 from course.page.code import (
     PythonCodeQuestion, PythonCodeQuestionWithHumanTextFeedback,
     request_python_run_with_retries)
+
+from image_upload.page.imgupload import ImageUploadQuestion
+
+from atomicwrites import atomic_write
 
 CACHE_VERSION = "V0"
 
@@ -75,9 +77,6 @@ def markup_to_html(
 
 
 def is_course_staff(page_context):
-    from course.constants import (
-        participation_permission as pperm,
-    )
     participation = page_context.flow_session.participation
     if participation.has_permission(pperm.assign_grade):
         return True

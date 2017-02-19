@@ -24,26 +24,31 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+import os
+from six.moves.urllib.parse import urlparse, urljoin
+
 import django.forms as forms
 from django.utils.translation import ugettext as _, string_concat
+from django.template.loader import render_to_string
 from django.db import transaction
 from django.contrib import messages
-from django.core.urlresolvers import reverse
-from image_upload.storages import UserImageStorage
-from image_upload.models import FlowPageImage
+from django.core.urlresolvers import reverse, NoReverseMatch
+from django.urls import resolve
+
+from relate.utils import StyledForm
 
 from course.page.base import (
     PageBaseWithTitle, PageBaseWithValue, PageBaseWithHumanTextFeedback,
     PageBaseWithCorrectAnswer, HumanTextFeedbackForm,
     markup_to_html)
 from course.validation import ValidationError
-from course.utils import course_view, render_course_page
+from course.utils import (course_view, render_course_page, FlowPageContext)
+from course.constants import participation_permission as pperm
 
-from relate.utils import StyledForm
+from image_upload.storages import UserImageStorage
+from image_upload.models import FlowPageImage
 
 from crispy_forms.layout import Layout, HTML, Submit
-
-import os
 
 storage = UserImageStorage()
 
@@ -52,10 +57,8 @@ def get_ordinal_from_page_context(page_context):
     if page_context.in_sandbox:
         return None
 
-    from six.moves.urllib.parse import urlparse
     relative_url = urlparse(page_context.page_uri).path
 
-    from django.urls import resolve
     func, args, kwargs = resolve(relative_url)
     assert kwargs["ordinal"]
     return kwargs["ordinal"]
@@ -63,13 +66,10 @@ def get_ordinal_from_page_context(page_context):
 
 def is_course_staff_request(request, page_context):
     course = page_context.course
-    from course.constants import participation_permission as pperm
     from course.enrollment import (
         get_participation_for_request,
         get_participation_permissions)
-
     participation = get_participation_for_request(request, course)
-
     perms = get_participation_permissions(course, participation)
 
     if (pperm.assign_grade, None) in perms:
@@ -362,8 +362,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
 
         ordinal = get_ordinal_from_page_context(page_context)
 
-        prev_visit_id = request.GET.get("visit_id")
-        answer_visit = None
+        prev_visit_id = request.GET.get("visit_id", None)
         if prev_visit_id is not None:
             try:
                 prev_visit_id = int(prev_visit_id)
@@ -371,7 +370,6 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                 from django.core.exceptions import SuspiciousOperation
                 raise SuspiciousOperation("non-integer passed for 'visit_id'")
 
-        from course.utils import FlowPageContext
         from course.flow import get_prev_answer_visits_qset
         fpctx = FlowPageContext(
             repo=page_context.repo,
@@ -413,8 +411,6 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         request_path = request.get_full_path()
         in_grading_page = False
 
-        from django.core.urlresolvers import NoReverseMatch
-        from django.core.urlresolvers import reverse
         try:
             grading_page_uri = reverse(
                 "relate-grade_flow_page",
@@ -466,7 +462,6 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         if prev_visit_id:
             ctx["prev_visit_id"] = prev_visit_id
 
-        from django.template.loader import render_to_string
         return render_to_string(
                 "image_upload/imgupload-page-tmpl.html", ctx, request)
 
@@ -693,7 +688,6 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                     'location': location})
 
         from course.models import FlowPageVisit
-        from course.constants import participation_permission as pperm
         fpv_qs = (
             FlowPageVisit.objects.filter(
                 flow_session__course__identifier=self.refered_course_id,
@@ -842,7 +836,6 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
     def initialize_page_data(self, page_context):
 
         from course.models import FlowPageVisit
-        from course.constants import participation_permission as pperm
         visits = (FlowPageVisit.objects.filter(
                 flow_session__course__identifier=self.refered_course_id,
                 flow_session__flow_id=self.refered_flow_id,
@@ -1151,7 +1144,6 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
         student_feedback = ""
         if self.allow_report_correct_answer_false:
 
-            from django.core.urlresolvers import reverse
             email_page_url = reverse(
                 "send_feed_back_email",
                 kwargs={'course_identifier': page_context.course.identifier,
@@ -1186,8 +1178,6 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
 
 @course_view
 def send_feed_back_email(pctx, flow_session_id, ordinal):
-    from django.shortcuts import get_object_or_404, redirect
-
     request = pctx.request
     if request.method == "POST":
         form = ImgUPloadAnswerEmailFeedbackForm(request.POST)
@@ -1195,9 +1185,8 @@ def send_feed_back_email(pctx, flow_session_id, ordinal):
         if form.is_valid():
             from django.utils import translation
             from django.conf import settings
-            from course.models import Participation
-            from course.models import FlowSession
-
+            from course.models import Participation, FlowSession
+            from django.shortcuts import get_object_or_404, redirect
             flow_session = get_object_or_404(FlowSession, id=int(flow_session_id))
             from course.models import FlowPageData
             page_id = FlowPageData.objects.get(
@@ -1210,7 +1199,6 @@ def send_feed_back_email(pctx, flow_session_id, ordinal):
             )
             tutor_email_list = [tutor.user.email for tutor in tutor_qs]
 
-            from django.core.urlresolvers import reverse
             review_url = reverse(
                 "relate-view_flow_page",
                 kwargs={'course_identifier': pctx.course.identifier,
@@ -1218,8 +1206,6 @@ def send_feed_back_email(pctx, flow_session_id, ordinal):
                         'ordinal': ordinal
                         }
             )
-
-            from six.moves.urllib.parse import urljoin
             review_uri = urljoin(getattr(settings, "RELATE_BASE_URL"),
                                  review_url)
 
@@ -1228,7 +1214,6 @@ def send_feed_back_email(pctx, flow_session_id, ordinal):
             student_email = flow_session.participation.user.email
 
             with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
-                from django.template.loader import render_to_string
                 message = render_to_string(
                     "image_upload/report-correct-answer-error-email.txt", {
                         "page_id": page_id,

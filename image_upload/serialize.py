@@ -26,10 +26,11 @@ THE SOFTWARE.
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext
 
-from course.views import get_now_or_fake_time
 from relate.utils import (
     as_local_time, format_datetime_local,
     compact_local_datetime_str)
+
+from course.views import get_now_or_fake_time
 
 from datetime import timedelta
 import mimetypes
