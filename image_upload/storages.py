@@ -120,8 +120,10 @@ class ProxyStorage(ProxyStorageBase):
             ).path(path)
         except NotImplementedError:
             pass
+        print(path)
         print(safe_join('/', os.path.normpath(path)).lstrip('/'))
-        return safe_join('/', os.path.normpath(path)).lstrip('/')
+        print(os.path.normpath(path))
+        return os.path.normpath(path)
 
     def size(self, name):
         # type: (Text) -> Union[int, float]
