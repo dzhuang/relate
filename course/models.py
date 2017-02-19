@@ -237,6 +237,7 @@ class Course(models.Model):
         return reverse("relate-course_page", args=(self.identifier,))
 
     def get_from_email(self):
+        # type: () -> Text
         if settings.RELATE_EMAIL_SMTP_ALLOW_NONAUTHORIZED_SENDER:
             return self.from_email
         else:

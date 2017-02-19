@@ -52,6 +52,15 @@ from crispy_forms.layout import Layout, HTML, Submit
 
 storage = UserImageStorage()
 
+# {{{  mypy
+
+from typing import Text, Any  # noqa
+from django import http  # noqa
+if False:
+    from course.utils import PageContext  # noqa
+
+# }}}
+
 
 def get_ordinal_from_page_context(page_context):
     if page_context.in_sandbox:
@@ -622,6 +631,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
             grading_form,  # type: Any
             files_data  # type: Any
             ):
+        # type: (...) -> Any
 
         grade_data = (super(ImageUploadQuestion, self)
             .update_grade_data_from_grading_form_v2(

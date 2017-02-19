@@ -38,6 +38,13 @@ from imagekit.processors import ResizeToFit
 
 from jsonfield import JSONField
 
+# {{{ mypy
+
+from typing import Text, Optional  # noqa
+
+
+# }}}
+
 
 multiple_image_storage = UserImageStorage()
 
@@ -118,6 +125,7 @@ class FlowPageImage(models.Model):
                     [self.pk, self.creator_id, file_name], {})
 
     def admin_image(self):
+        # type: () -> Optional[Text]
         if self.order == 0:
             img_url = self.get_absolute_url(private=False)
         else:
@@ -128,8 +136,8 @@ class FlowPageImage(models.Model):
                     "style='max-height:300pt'/>" % img_url)
         return None
 
-    admin_image.short_description = 'Image'
-    admin_image.allow_tags = True
+    admin_image.short_description = 'Image'  # type:ignore
+    admin_image.allow_tags = True  # type:ignore
 
     def get_image_text(self):
         if self.is_image_textify:

@@ -23,6 +23,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+from typing import Any  # noqa
+
 from django.contrib import admin
 from django.contrib.admin.options import IncorrectLookupParameters
 from django.template.response import SimpleTemplateResponse
@@ -239,18 +241,19 @@ class FlowPageImageAdmin(admin.ModelAdmin):
 
     def get_flow_id(self, obj):
         return obj.flow_session.flow_id
-    get_flow_id.short_description = _("Flow ID")
-    get_flow_id.admin_order_field = "flow_session__flow_id"
+    get_flow_id.short_description = _("Flow ID")  # type: ignore
+    get_flow_id.admin_order_field = "flow_session__flow_id"  # type: ignore  # noqa
 
     def has_image_text(self, obj):
         return True if obj.image_text else False
-    has_image_text.short_description = _("Has image text?")
-    has_image_text.boolean = True
+    has_image_text.short_description = _("Has image text?")  # type: ignore
+    has_image_text.boolean = True  # type: ignore
 
     def get_full_name(self, obj):
         return obj.flow_session.participation.user.get_full_name()
-    get_full_name.short_description = pgettext("real name of a user", "Name")
-    get_full_name.admin_order_field = "flow_session__participation__user__last_name"
+    get_full_name.short_description = pgettext("real name of a user", "Name")  # type: ignore  # noqa
+    get_full_name.admin_order_field = (  # type: ignore
+        "flow_session__participation__user__last_name")
 
     list_filter = (
         "course",

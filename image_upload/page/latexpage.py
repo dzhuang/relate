@@ -30,6 +30,14 @@ import pickle
 from hashlib import md5
 import os
 
+# {{{ mypy
+from typing import Text, Any  # noqa
+if False:
+    from course.utils import PageContext  # noqa
+
+# }}}
+
+
 from django.utils.translation import ugettext as _, string_concat
 from django.core.exceptions import ObjectDoesNotExist, ImproperlyConfigured
 from django.conf import settings
@@ -39,7 +47,7 @@ from course.content import markup_to_html as mth
 from course.page.base import (
     PageBaseWithTitle, PageBaseWithValue,
     PageBaseWithCorrectAnswer)
-from course.page import (
+from course.page import (  # type: ignore
     ChoiceQuestion, MultipleChoiceQuestion, TextQuestion,
     InlineMultiQuestion)
 from course.validation import ValidationError

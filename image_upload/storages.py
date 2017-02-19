@@ -39,10 +39,19 @@ from proxy_storage.storages.base import (
 
 from pymongo import MongoClient
 
+# {{{ mypy
+
+from typing import (Text, Optional, Any, Union)  # noqa
+if False:
+    from image_upload.models import FlowPageImage  # noqa
+
+# }}}
+
 
 @deconstructible
 class SendFileStorage(FileSystemStorage):
     def __init__(self):
+        # type: () -> None
         super(SendFileStorage, self).__init__(
                 location=settings.SENDFILE_ROOT)
 
@@ -55,6 +64,7 @@ temp_image_storage_location = getattr(
 
 
 def get_mongo_db(database="learningwhat-image-meta-db"):
+    # type: (Optional[Text]) -> MongoClient
     args = []
     uri = getattr(settings, "RELATE_MONGO_META_DATABASE_URI", None)
     if uri:
@@ -67,6 +77,7 @@ def get_mongo_db(database="learningwhat-image-meta-db"):
 @deconstructible
 class ProxyStorage(ProxyStorageBase):
     def save(self, name, content, max_length=None, original_storage_path=None):
+        # type: (Text, Any, Optional[int], Optional[Text]) -> Text
         """
         if original_storage is absent, name should be file.name,
         a relative path in location
@@ -77,6 +88,8 @@ class ProxyStorage(ProxyStorageBase):
             original_storage_path = (
                 self.get_original_storage()
                     .save(name, content, max_length=max_length))
+
+        assert original_storage_path is not None
 
         # Get the proper name for the file,
         # as it will actually be saved to meta backend
@@ -95,6 +108,7 @@ class ProxyStorage(ProxyStorageBase):
         return force_text(name)
 
     def get_original_storage_full_path(self, path, meta_backend_obj=None):
+        # type: (Text, Optional[object]) -> Text
         try:
             path = self.get_original_storage(
                 meta_backend_obj=meta_backend_obj
@@ -104,6 +118,7 @@ class ProxyStorage(ProxyStorageBase):
         return safe_join('/', os.path.normpath(path)).lstrip('/')
 
     def size(self, name):
+        # type: (Text) -> Union[int, float]
         meta_backend_obj = self.meta_backend.get(path=name)
         return self.get_original_storage(meta_backend_obj=meta_backend_obj)\
             .size(meta_backend_obj['path'])
@@ -114,11 +129,13 @@ class ProxyStorage(ProxyStorageBase):
     #         .url(meta_backend_obj['original_storage_path'])
 
     def path(self, name):
+        # type: (Text) -> Text
         meta_backend_obj = self.meta_backend.get(path=name)
         return self.get_original_storage(meta_backend_obj=meta_backend_obj) \
             .path(meta_backend_obj['original_storage_path'])
 
     def is_temp_image(self, path):
+        # type: (Text) -> bool
         return self.meta_backend.get(path=path)['original_storage_name'] == "temp"
 
 
@@ -135,6 +152,7 @@ class UserImageStorage(MultipleOriginalStoragesMixin, ProxyStorage):
 
     def save(self, name, content, max_length=None,
              original_storage_path=None, using=None):
+        # type: (...) -> ignore
         if not using:
             using = "temp"
         assert using in ["sendfile", "temp"]
@@ -144,9 +162,10 @@ class UserImageStorage(MultipleOriginalStoragesMixin, ProxyStorage):
             content=content,
             original_storage_path=original_storage_path,
             using=using
-        )
+        )  # type: ignore
 
-    def save_to_sendfile_storage_path(self, path, content, **kwargs):
+    def save_to_sendfile_storage_path(self, path, content):
+        # type: (Text, Any) -> Text
         original_storage_path = (
             self.meta_backend.get(path=path)['original_storage_path'])
         if not self.is_temp_image(path=path):
@@ -158,6 +177,7 @@ class UserImageStorage(MultipleOriginalStoragesMixin, ProxyStorage):
 
 
 def user_flowsession_img_path(instance, file_name):
+    # type: (FlowPageImage, Text) -> Text
     if instance.creator.get_full_name() is not None:
         user_full_name = instance.creator.get_full_name().replace(' ', '_')
     else:

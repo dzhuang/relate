@@ -592,6 +592,7 @@ class PageBase(object):
             grading_form,  # type: Any
             files_data  # type: Any
             ):
+        # type: (...) -> Any
         """Return an updated version of *grade_data*, which is a
         JSON-persistable object reflecting data on grading of this response.
         This will be passed to other methods as *grade_data*.
@@ -614,6 +615,7 @@ class PageBase(object):
             grading_form,  # type: Any
             files_data  # type: Any
             ):
+        # type: (...) -> Any
 
         return grade_data
 
@@ -744,7 +746,7 @@ class PageBaseWithValue(PageBase):
         super(PageBaseWithValue, self).__init__(vctx, location, page_desc)
 
         if vctx is not None:
-            if getattr(page_desc, "value", 0) and self.is_optional_page:
+            if hasattr(page_desc, "value") and self.is_optional_page:
                 raise ValidationError(
                     location,
                     _("Attribute 'value' should be removed when "
@@ -974,8 +976,16 @@ class PageBaseWithHumanTextFeedback(PageBase):
         return HumanTextFeedbackForm(
                 human_feedback_point_value, post_data, files_data)
 
-    def update_grade_data_from_grading_form_v2(self, request, page_context,
-            page_data, grade_data, grading_form, files_data):
+    def update_grade_data_from_grading_form_v2(
+            self,
+            request,  # type: http.HttpRequest
+            page_context,  # type: PageContext
+            page_data,  # type: Any
+            grade_data,  # type: Any
+            grading_form,  # type: Any
+            files_data  # type: Any
+            ):
+        # type: (...) -> Any
 
         if grade_data is None:
             grade_data = {}
@@ -1021,7 +1031,7 @@ class PageBaseWithHumanTextFeedback(PageBase):
                 and grading_form.cleaned_data["notify_instructor"]
                 and page_context.flow_session):
             with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
-                from django.template.loader import render_to_string
+                from django.template.loader import render_to_string  # type: ignore
                 message = render_to_string("course/grade-internal-notes-notify.txt",
                         {
                             "page_title": self.title(page_context, page_data),
@@ -1033,7 +1043,7 @@ class PageBaseWithHumanTextFeedback(PageBase):
                             "sender": request.user
                             })
 
-                from django.core.mail import EmailMessage
+                from django.core.mail import EmailMessage  # type: ignore
                 msg = EmailMessage(
                         string_concat("[%(identifier)s:%(flow_id)s] ",
                             _("Grading notes from %(ta)s"))
@@ -1049,7 +1059,7 @@ class PageBaseWithHumanTextFeedback(PageBase):
                 msg.reply_to = [request.user.email]
 
                 if hasattr(settings, "GRADER_FEEDBACK_EMAIL_FROM"):
-                    from relate.utils import get_outbound_mail_connection
+                    from relate.utils import get_outbound_mail_connection  # type: ignore # noqa
                     msg.connection = get_outbound_mail_connection("grader_feedback")
                 msg.send()
 
