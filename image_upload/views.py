@@ -257,25 +257,26 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
                     full_path = img.file.name
                     original_storage_path = os.path.relpath(
                         full_path, protected_root).lstrip("/")
-                    data = storage.get_data_for_meta_backend_save(
-                        original_name=original_storage_path,
-                        path=full_path,
-                        content=img.file,
-                        original_storage_path=original_storage_path,
-                    )
-                    data.update({
-                        'original_storage_name': "sendfile"
-                    })
-                    saved = True
-                    try:
-                        storage.meta_backend.create(data=data)
-                    except DuplicateKeyError:
-                        saved = False
-                        pass
-
-                    if not saved:
-                        answer_visit.answer = new_answer_data
-                        answer_visit.save()
+                    print(original_storage_path)
+                    # data = storage.get_data_for_meta_backend_save(
+                    #     original_name=original_storage_path,
+                    #     path=full_path,
+                    #     content=img.file,
+                    #     original_storage_path=original_storage_path,
+                    # )
+                    # data.update({
+                    #     'original_storage_name': "sendfile"
+                    # })
+                    # saved = True
+                    # try:
+                    #     storage.meta_backend.create(data=data)
+                    # except DuplicateKeyError:
+                    #     saved = False
+                    #     pass
+                    #
+                    # if not saved:
+                    #     answer_visit.answer = new_answer_data
+                    #     answer_visit.save()
 
         if not pk_list:
             pk_list = answer_data.get("answer", None)
