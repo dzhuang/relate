@@ -88,20 +88,41 @@ def serialize(request, instance, file_attr='file'):
     file_attr -- attribute name that contains the FileField or ImageField
 
     """
+    try:
+        print(instance.slug, "slug")
+    except:
+        pass
+    # print(instance.slug, "slug")
 
     obj = getattr(instance, file_attr)
+    #print(obj.name)
     error = None
     try:
-        assert os.path.isfile(obj.path)
-        size = obj.size
+        size = 0
+        try:
+            assert os.path.isfile(obj.path)
+            size = instance.file.size
+        except Exception as e:
+            from proxy_storage.meta_backends.base import \
+                MetaBackendObjectDoesNotExist
+            if isinstance(e, (MetaBackendObjectDoesNotExist, AssertionError)):
+                from image_upload.views import get_rel_and_full_path
+                rp, fp = get_rel_and_full_path(instance.file.name)
+                from image_upload.storages import UserImageStorage
+                storage = UserImageStorage()
+                size = storage.size(fp)
+
         obj_name = obj.name
         img_type = mimetypes.guess_type(obj.path)[0] or 'image/png'
     except Exception as e:
+        print(type(e))
         obj_name = None
         size = 0
         img_type = None
         if isinstance(e, (OSError, IOError)):
             error = ugettext("The image file does not exist!")
+
+    print(size)
 
     # use slug by default
     name_field = getattr(instance, 'slug', obj_name)
@@ -172,7 +193,7 @@ def serialize(request, instance, file_attr='file'):
         'url': instance.get_absolute_url(),
         'name': name,
         'type': img_type,
-        'thumbnailUrl': None,  # Fixme instance.file_thumbnail.url,
+        'thumbnailUrl': None,  # Fixme: instance.file_thumbnail.url,
         'timestr_title': timestr_title,
         'timestr_short': timestr_short,
         'size': size,

@@ -56,6 +56,7 @@ from sendfile import sendfile
 from pymongo.errors import DuplicateKeyError
 
 storage = UserImageStorage()
+protected_root = getattr(settings, "SENDFILE_ROOT")
 
 
 def is_course_staff(pctx):
@@ -120,11 +121,11 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin,
         self.object.course = course
         self.object.save()
 
-        print("---------------", self.object.file.path, self.object.file.name)
+        #print("---------------", self.object.file.path, self.object.file.name)
 
         files = [serialize(self.request, self.object, 'file')]
         data = {'files': files}
-        print(data)
+        #print(data)
         return self.render_json_response(data)
 
     def form_invalid(self, form):
@@ -163,6 +164,7 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
     model = FlowPageImage
 
     def get_queryset(self):
+        print(getattr(settings, "DEFAULT_FILE_STORAGE", "None"), "DEFAULT_FILE_STORAGE")
         flow_session_id = self.kwargs["flow_session_id"]
         flow_session = get_object_or_404(FlowSession, id=int(flow_session_id))
         ordinal = self.kwargs["ordinal"]
@@ -204,7 +206,7 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
 
         elif prev_answer_visits:
             answer_visit = prev_answer_visits[0]
-            print(answer_visit)
+            #print(answer_visit)
 
         else:
             answer_visit = None
@@ -215,6 +217,7 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
             return None
 
         answer_data = answer_visit.answer
+        print(answer_data)
         pk_list = []
         if not answer_data:
             return None
@@ -236,12 +239,20 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
                 flow_session=flow_session_id,
                 image_page_id=fpd.page_id)
                   .order_by("order", "pk"))
+
+            print(fpd.page_id)
+            print(flow_session_id)
+
+            print(len(qs))
+
             if not qs:
                 return None
 
             will_save_new_data = True
             for q in qs:
                 a = json.loads(answer_data)
+                print(repr(q), "repr")
+                print(a, "a")
                 if repr(q) in a:
                     pk_list.append(q.pk)
                 elif os.path.split(q.file.name)[-1] in a:
@@ -253,23 +264,29 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
             if not will_save_new_data:
                 return None
             else:
-                protected_root = getattr(settings, "SENDFILE_ROOT")
+
                 new_answer_data = {"answer": pk_list}
+
                 for img_pk in pk_list:
                     img = FlowPageImage.objects.get(pk=img_pk)
                     full_path = img.file.name
-                    original_storage_path = os.path.relpath(
-                        full_path, protected_root).lstrip("/")
-                    print(original_storage_path)
+                    rp, fp = get_rel_and_full_path(full_path)
+
+                    print(img.file.path, "image saved path")
+                    print(fp, "this is the full path")
+                    original_storage_path = rp
+                    print(original_storage_path, "this is the relative path")
                     data = storage.get_data_for_meta_backend_save(
-                        original_name=original_storage_path,
-                        path=full_path,
+                        original_name=fp,
+                        path=fp,
                         content=img.file,
                         original_storage_path=original_storage_path,
                     )
                     data.update({
                         'original_storage_name': "sendfile"
                     })
+
+                    print(data)
                     saved = True
                     try:
                         storage.meta_backend.create(data=data)
@@ -305,6 +322,7 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
             data = {'files': files}
         else:
             data = {}
+        #print(data)
         return self.render_json_response(data)
 
 # }}}
@@ -325,6 +343,7 @@ def flow_page_image_download(pctx, flow_session_id, creator_id,
                              download_id, file_name):
     request = pctx.request
     download_object = get_object_or_404(FlowPageImage, pk=download_id)
+    print(download_object.file.path, "download_path")
 
     #print("-----------download-view------------:", download_object.file.path)
 
@@ -335,6 +354,12 @@ def flow_page_image_download(pctx, flow_session_id, creator_id,
     from course.constants import participation_permission as pperm
     if pctx.has_permission(pperm.assign_grade):
         privilege = True
+    rp, fp = get_rel_and_full_path(download_object.file.path)
+    print(rp, fp, "--------from download_view-------")
+    # if download_object.file.path == fp:
+    #     privilege = False
+
+    print("privilege", privilege)
 
     return _auth_download(request, download_object, privilege)
 
@@ -359,11 +384,18 @@ def flow_page_image_key(request, download_id, creator_id, file_name):
 
 @login_required
 def _auth_download(request, download_object, privilege=False):
-    if not request.user == download_object.creator or not privilege:
+    if (not request.user == download_object.creator
+        and not request.user.is_staff
+        or not privilege
+            ):
         from django.core.exceptions import PermissionDenied
+        print("denied")
         raise PermissionDenied(_("may not view other people's resource"))
-    from sendfile.backends import nginx, development
-    return sendfile(request, download_object.file.path)
+    print(download_object.file.path, "download_path within auth_download view")
+    rp, fp = get_rel_and_full_path(download_object.file.path)
+    print(fp, "-----------------------final-------------view")
+
+    return sendfile(request, fp)
 
 # }}}
 
@@ -550,3 +582,19 @@ def image_order(pctx, flow_session_id, ordinal):
     response = {'message': ugettext('Done')}
 
     return response
+
+
+def get_rel_and_full_path(path, root=None):
+    rel_path = None
+    full_path = None
+    if not root:
+        root = protected_root
+
+    if not os.path.isfile(path):
+        rel_path = path
+        full_path = os.path.join(root, path)
+    else:
+        full_path = path
+        rel_path = os.path.relpath(full_path, root)
+    return (rel_path.lstrip("/"), full_path)
+
