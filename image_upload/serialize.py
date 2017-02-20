@@ -172,7 +172,7 @@ def serialize(request, instance, file_attr='file'):
         'url': instance.get_absolute_url(),
         'name': name,
         'type': img_type,
-        'thumbnailUrl': instance.file_thumbnail.url,
+        'thumbnailUrl': None,  # Fixme instance.file_thumbnail.url,
         'timestr_title': timestr_title,
         'timestr_short': timestr_short,
         'size': size,

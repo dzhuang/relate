@@ -120,8 +120,11 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin,
         self.object.course = course
         self.object.save()
 
+        print("---------------", self.object.file.path, self.object.file.name)
+
         files = [serialize(self.request, self.object, 'file')]
         data = {'files': files}
+        print(data)
         return self.render_json_response(data)
 
     def form_invalid(self, form):
@@ -258,25 +261,25 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
                     original_storage_path = os.path.relpath(
                         full_path, protected_root).lstrip("/")
                     print(original_storage_path)
-                    # data = storage.get_data_for_meta_backend_save(
-                    #     original_name=original_storage_path,
-                    #     path=full_path,
-                    #     content=img.file,
-                    #     original_storage_path=original_storage_path,
-                    # )
-                    # data.update({
-                    #     'original_storage_name': "sendfile"
-                    # })
-                    # saved = True
-                    # try:
-                    #     storage.meta_backend.create(data=data)
-                    # except DuplicateKeyError:
-                    #     saved = False
-                    #     pass
-                    #
-                    # if not saved:
-                    #     answer_visit.answer = new_answer_data
-                    #     answer_visit.save()
+                    data = storage.get_data_for_meta_backend_save(
+                        original_name=original_storage_path,
+                        path=full_path,
+                        content=img.file,
+                        original_storage_path=original_storage_path,
+                    )
+                    data.update({
+                        'original_storage_name': "sendfile"
+                    })
+                    saved = True
+                    try:
+                        storage.meta_backend.create(data=data)
+                    except DuplicateKeyError:
+                        saved = False
+                        pass
+
+                    if not saved:
+                        answer_visit.answer = new_answer_data
+                        answer_visit.save()
 
         if not pk_list:
             pk_list = answer_data.get("answer", None)
@@ -323,6 +326,10 @@ def flow_page_image_download(pctx, flow_session_id, creator_id,
     request = pctx.request
     download_object = get_object_or_404(FlowPageImage, pk=download_id)
 
+    #print("-----------download-view------------:", download_object.file.path)
+
+    print(download_object.file.path, "download_path")
+
     privilege = False
     # whether the user is allowed to view the private image
     from course.constants import participation_permission as pperm
@@ -355,6 +362,7 @@ def _auth_download(request, download_object, privilege=False):
     if not request.user == download_object.creator or not privilege:
         from django.core.exceptions import PermissionDenied
         raise PermissionDenied(_("may not view other people's resource"))
+    from sendfile.backends import nginx, development
     return sendfile(request, download_object.file.path)
 
 # }}}

@@ -508,6 +508,8 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                     content=img.file,
                     using="sendfile"
                 )
+
+                print(os.path.isfile(new_img_name))
                 img.file = new_img_name
                 img.save()
 
