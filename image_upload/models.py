@@ -100,7 +100,7 @@ class FlowPageImage(models.Model):
             print(self.file.name, "the file.name when saving")
             self.slug = self.file.name
         super(FlowPageImage, self).save(*args, **kwargs)
-        print(self.file.file.name, "the name after saving")
+        print(self.file.name, "the name after saving")
 
     def delete(self, *args, **kwargs):
         """delete -- Remove to leave file."""

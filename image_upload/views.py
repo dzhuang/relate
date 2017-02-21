@@ -271,7 +271,7 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
                     img = FlowPageImage.objects.get(pk=img_pk)
                     full_path = img.file.file.name
 
-                    print(full_path)
+                    print("---------------full path of image in answerdata--------------", full_path)
                     print(img.file.file.name)
                     print(img.file.path, "image saved path")
                     print(full_path, "this is the full path")
