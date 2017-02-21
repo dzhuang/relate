@@ -83,10 +83,10 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin,
     # http://stackoverflow.com/a/13944206/3437454
     content_type = 'text/plain'
     model = FlowPageImage
-    fields = ("file", "slug")
+    fields = ("image", "slug")
 
     def form_valid(self, form):
-        file = form.cleaned_data.get('file')
+        file = form.cleaned_data.get('image')
         from django.conf import settings
 
         max_allowed_jfu_size = getattr(
@@ -121,9 +121,9 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin,
         self.object.course = course
         self.object.save()
 
-        #print("---------------", self.object.file.path, self.object.file.name)
+        #print("---------------", self.object.image.path, self.object.image.file.name)
 
-        files = [serialize(self.request, self.object, 'file')]
+        files = [serialize(self.request, self.object, 'image')]
         data = {'files': files}
         #print(data)
         return self.render_json_response(data)
@@ -136,7 +136,7 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin,
 class ImageItemForm(forms.ModelForm):
     class Meta:
         model = FlowPageImage
-        fields = ("file",)
+        fields = ("image",)
 
 
 class ImageDeleteView(LoginRequiredMixin, ImageOperationMixin, DeleteView):
@@ -255,8 +255,8 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
                 print(a, "a")
                 if repr(q) in a:
                     pk_list.append(q.pk)
-                elif os.path.split(q.file.name)[-1] in a:
-                    pk_list.append(q.pk)
+                # elif os.path.split(q.image.name)[-1] in a:
+                #     pk_list.append(q.pk)
                 else:
                     will_save_new_data = False
                     break
@@ -269,34 +269,49 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
 
                 for img_pk in pk_list:
                     img = FlowPageImage.objects.get(pk=img_pk)
-                    full_path = img.file.name
-                    rp, fp = get_rel_and_full_path(full_path)
+                    full_path = img.file.file.name
 
+                    print(full_path)
+                    print(img.file.file.name)
                     print(img.file.path, "image saved path")
-                    print(fp, "this is the full path")
-                    original_storage_path = rp
+                    print(full_path, "this is the full path")
+                    original_storage_path = img.file.path
                     print(original_storage_path, "this is the relative path")
-                    data = storage.get_data_for_meta_backend_save(
-                        original_name=fp,
-                        path=fp,
-                        content=img.file,
-                        original_storage_path=original_storage_path,
-                    )
-                    data.update({
-                        'original_storage_name': "sendfile"
-                    })
-
-                    print(data)
                     saved = True
-                    try:
-                        storage.meta_backend.create(data=data)
-                    except DuplicateKeyError:
-                        saved = False
-                        pass
 
-                    if not saved:
-                        answer_visit.answer = new_answer_data
-                        answer_visit.save()
+                    exist = storage.meta_backend.exists(path=full_path)
+                    if exist:
+                        obj = storage.meta_backend.get(path=full_path)
+                        obj.update(
+                            {
+                                "original_name": full_path,
+                                "path": full_path,
+                                "original_storage_path": original_storage_path,
+                                'original_storage_name': "sendfile"
+                            }
+                        )
+
+                    else:
+
+                        data = storage.get_data_for_meta_backend_save(
+                            original_name=full_path,
+                            path=full_path,
+                            content=img.file,
+                            original_storage_path=original_storage_path,
+                        )
+                        data.update({
+                            'original_storage_name': "sendfile"
+                        })
+
+                        # try:
+                        storage.meta_backend.create(data=data)
+                        # except DuplicateKeyError:
+                        #     saved = False
+                        #     pass
+
+                    # if not saved:
+                    #     answer_visit.answer = new_answer_data
+                    #     answer_visit.save()
 
         if not pk_list:
             pk_list = answer_data.get("answer", None)
@@ -317,7 +332,7 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
     def render_to_response(self, context, **response_kwargs):
         queryset = self.get_queryset()
         if queryset:
-            files = [serialize(self.request, p, 'file')
+            files = [serialize(self.request, p, 'image')
                     for p in self.get_queryset()]
             data = {'files': files}
         else:
@@ -343,20 +358,20 @@ def flow_page_image_download(pctx, flow_session_id, creator_id,
                              download_id, file_name):
     request = pctx.request
     download_object = get_object_or_404(FlowPageImage, pk=download_id)
-    print(download_object.file.path, "download_path")
+    print(download_object.image.path, "download_path")
 
-    #print("-----------download-view------------:", download_object.file.path)
+    #print("-----------download-view------------:", download_object.image.path)
 
-    print(download_object.file.path, "download_path")
+    print(download_object.image.path, "download_path")
 
     privilege = False
     # whether the user is allowed to view the private image
     from course.constants import participation_permission as pperm
     if pctx.has_permission(pperm.assign_grade):
         privilege = True
-    rp, fp = get_rel_and_full_path(download_object.file.path)
+    rp, fp = get_rel_and_full_path(download_object.image.path)
     print(rp, fp, "--------from download_view-------")
-    # if download_object.file.path == fp:
+    # if download_object.image.path == fp:
     #     privilege = False
 
     print("privilege", privilege)
@@ -518,7 +533,7 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
 
     new_instance = FlowPageImage()
     new_instance.creator = crop_instance.creator
-    new_instance.file.save(
+    new_instance.image.save(
         name=crop_instance.slug,
         content=ContentFile(new_image_io.getvalue()),
         save=False
@@ -545,7 +560,7 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
     finally:
         new_image.close()
 
-    response_file = serialize(request, new_instance, 'file')
+    response_file = serialize(request, new_instance, 'image')
     data = {'file': response_file}
     return data
 

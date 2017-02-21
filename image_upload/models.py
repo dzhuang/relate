@@ -52,13 +52,13 @@ multiple_image_storage = UserImageStorage()
 class FlowPageImage(models.Model):
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
             verbose_name=_('Creator'), on_delete=models.SET_NULL)
-    file = models.ImageField(upload_to=user_flowsession_img_path,
-                             storage=multiple_image_storage)
+    image = models.ImageField(upload_to=user_flowsession_img_path,
+                              storage=multiple_image_storage)
     slug = models.SlugField(max_length=256, blank=True)
     creation_time = models.DateTimeField(default=now)
     file_last_modified = models.DateTimeField(default=now)
     file_thumbnail = ImageSpecField(
-        source='file',
+        source='image',
         processors=[ResizeToFit(100, 100)],
         format='PNG',
         options={'quality': 50})
@@ -97,18 +97,18 @@ class FlowPageImage(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = self.file.name
+            self.slug = self.image.name
         super(FlowPageImage, self).save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        """delete -- Remove to leave file."""
-        self.file.delete(False)
+        """delete -- Remove to leave image."""
+        self.image.delete(False)
         super(FlowPageImage, self).delete(*args, **kwargs)
 
     @models.permalink
     def get_absolute_url(self, private=True, key=False):
         import os
-        file_name = os.path.basename(self.file.path)
+        file_name = os.path.basename(self.image.path)
         if private:
             return ('flow_page_image_download', [
                     self.course.identifier,

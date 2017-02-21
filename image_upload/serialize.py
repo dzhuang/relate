@@ -101,13 +101,13 @@ def serialize(request, instance, file_attr='file'):
         size = 0
         try:
             assert os.path.isfile(obj.path)
-            size = instance.file.size
+            size = instance.image.size
         except Exception as e:
             from proxy_storage.meta_backends.base import \
                 MetaBackendObjectDoesNotExist
             if isinstance(e, (MetaBackendObjectDoesNotExist, AssertionError)):
                 from image_upload.views import get_rel_and_full_path
-                rp, fp = get_rel_and_full_path(instance.file.name)
+                rp, fp = get_rel_and_full_path(instance.image.file.name)
                 from image_upload.storages import UserImageStorage
                 storage = UserImageStorage()
                 size = storage.size(fp)
