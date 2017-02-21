@@ -73,7 +73,7 @@ def get_mongo_db(database=None):
     uri = getattr(settings, "RELATE_MONGO_META_DATABASE_URI", None)
     if uri:
         args.append(uri)
-    client = MongoClient(*args)
+    client = MongoClient(*args, connect=False)
     db = client[database]
     return db
 
