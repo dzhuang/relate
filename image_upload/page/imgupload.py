@@ -475,7 +475,11 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                 "image_upload/imgupload-page-tmpl.html", ctx, request)
 
     def answer_data(self, page_context, page_data, form, files_data):
-        data_dict = {"answer": form.cleaned_data["hidden_answer"]}
+        answers = form.cleaned_data["hidden_answer"]
+        if not answers:
+            return None
+
+        data_dict = {"answer": answers}
 
         data = data_dict.get("answer", [])
 
