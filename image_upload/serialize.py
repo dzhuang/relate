@@ -88,10 +88,6 @@ def serialize(request, instance, file_attr='image'):
     file_attr -- attribute name that contains the FileField or ImageField
 
     """
-    try:
-        print(instance.slug, "slug")
-    except:
-        pass
     obj = getattr(instance, file_attr)
     error = None
     try:
@@ -113,14 +109,12 @@ def serialize(request, instance, file_attr='image'):
         obj_name = obj.name
         img_type = mimetypes.guess_type(obj.path)[0] or 'image/png'
     except Exception as e:
-        print(type(e))
+        print(type(e), str(e))
         obj_name = None
         size = 0
         img_type = None
         if isinstance(e, (OSError, IOError)):
             error = ugettext("The image file does not exist!")
-
-    print(size)
 
     # use slug by default
     name_field = getattr(instance, 'slug', obj_name)

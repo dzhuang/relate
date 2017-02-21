@@ -120,9 +120,9 @@ class ProxyStorage(ProxyStorageBase):
             ).path(path)
         except NotImplementedError:
             pass
-        print(path)
-        print(safe_join('/', os.path.normpath(path)).lstrip('/'))
-        print(os.path.normpath(path))
+        # print(path)
+        # print(safe_join('/', os.path.normpath(path)).lstrip('/'))
+        # print(os.path.normpath(path))
         return os.path.normpath(path)
 
     def size(self, name):
@@ -145,14 +145,13 @@ class ProxyStorage(ProxyStorageBase):
                 .path(meta_backend_obj['original_storage_path'])
         except MetaBackendObjectDoesNotExist:
             # fall back
-            #print("fall backed")
+            print("%s is not in MetaBackend, so it is fall backed" % name)
             #print(name)
-            print(name)
             return name
 
-    def is_temp_image(self, path):
+    def is_temp_image(self, name):
         # type: (Text) -> bool
-        return self.meta_backend.get(path=path)['original_storage_name'] == "temp"
+        return self.meta_backend.get(path=name)['original_storage_name'] == "temp"
 
 
 class UserImageStorage(MultipleOriginalStoragesMixin, ProxyStorage):

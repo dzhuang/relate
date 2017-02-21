@@ -570,7 +570,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     run_timeout=self.docker_run_timeout)
         except:
             from traceback import format_exc
-            print("".join(format_exc()))
             response_dict = {
                     "result": "uncaught_error",
                     "message": "Error connecting to container",
