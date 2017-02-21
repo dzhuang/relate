@@ -337,7 +337,6 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
             data = {'files': files}
         else:
             data = {}
-        #print(data)
         return self.render_json_response(data)
 
 # }}}
