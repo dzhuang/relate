@@ -53,10 +53,8 @@ import json
 from PIL import Image
 from io import BytesIO
 from sendfile import sendfile
-from pymongo.errors import DuplicateKeyError
 
 storage = UserImageStorage()
-protected_root = getattr(settings, "SENDFILE_ROOT")
 
 
 def is_course_staff(pctx):
@@ -87,8 +85,6 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin,
 
     def form_valid(self, form):
         image = form.cleaned_data.get('image')
-        from django.conf import settings
-
         max_allowed_jfu_size = getattr(
             settings, "RELATE_JFU_MAX_IMAGE_SIZE", 2) * 1024**2
 
@@ -582,20 +578,6 @@ def image_order(pctx, flow_session_id, ordinal):
 
     return response
 
-
-def get_rel_and_full_path(path, root=None):
-    rel_path = None
-    full_path = None
-    if not root:
-        root = protected_root
-
-    if not os.path.isfile(path):
-        rel_path = path
-        full_path = os.path.join(root, path)
-    else:
-        full_path = path
-        rel_path = os.path.relpath(full_path, root)
-    return (rel_path.lstrip("/"), full_path)
 
 # {{{ This should be removed as soon as all computer are migrated!
 
