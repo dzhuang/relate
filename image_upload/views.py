@@ -217,6 +217,9 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
             return None
 
         pk_list = []
+
+        # {{{ to be removed
+
         if not isinstance(answer_data, dict):
             fpd = None
             try:
@@ -291,6 +294,8 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
 
                     answer_visit.answer = new_answer_data
                     answer_visit.save()
+
+            #  to be removed }}}
 
         if not pk_list:
             pk_list = answer_data.get("answer", None)
@@ -592,6 +597,7 @@ def get_rel_and_full_path(path, root=None):
         rel_path = os.path.relpath(full_path, root)
     return (rel_path.lstrip("/"), full_path)
 
+# {{{ This should be removed as soon as all computer are migrated!
 
 def migrate_to_meta_backend():
     """
@@ -743,3 +749,4 @@ def migrate_answer_data():
                 new_answer_data = {"answer": pk_list}
                 answer_visit.answer = new_answer_data
                 answer_visit.save()
+# }}}
