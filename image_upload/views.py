@@ -255,8 +255,8 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
                 print(a, "a")
                 if repr(q) in a:
                     pk_list.append(q.pk)
-                elif os.path.split(q.file.name)[-1] in a:
-                    pk_list.append(q.pk)
+                # elif os.path.split(q.file.name)[-1] in a:
+                #     pk_list.append(q.pk)
                 else:
                     will_save_new_data = False
                     break
@@ -269,34 +269,51 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
 
                 for img_pk in pk_list:
                     img = FlowPageImage.objects.get(pk=img_pk)
-                    full_path = img.file.name
-                    rp, fp = get_rel_and_full_path(full_path)
+                    full_path = img.file.file.name
 
+                    print(full_path)
+                    print(img.file.file.name)
                     print(img.file.path, "image saved path")
-                    print(fp, "this is the full path")
-                    original_storage_path = rp
+                    print(full_path, "this is the full path")
+                    original_storage_path = img.file.path
                     print(original_storage_path, "this is the relative path")
-                    data = storage.get_data_for_meta_backend_save(
-                        original_name=fp,
-                        path=fp,
-                        content=img.file,
-                        original_storage_path=original_storage_path,
-                    )
-                    data.update({
-                        'original_storage_name': "sendfile"
-                    })
-
-                    print(data)
                     saved = True
-                    try:
-                        storage.meta_backend.create(data=data)
-                    except DuplicateKeyError:
-                        saved = False
-                        pass
 
-                    if not saved:
+                    exist = storage.meta_backend.exists(path=full_path)
+                    if exist:
+                        obj = storage.meta_backend.get(path=full_path)
+                        obj.update(
+                            {
+                                "original_name": full_path,
+                                "path": full_path,
+                                "original_storage_path": original_storage_path,
+                                'original_storage_name': "sendfile"
+                            }
+                        )
+
+                    else:
+
+                        data = storage.get_data_for_meta_backend_save(
+                            original_name=full_path,
+                            path=full_path,
+                            content=img.file,
+                            original_storage_path=original_storage_path,
+                        )
+                        data.update({
+                            'original_storage_name': "sendfile"
+                        })
+
+                        # try:
+                        storage.meta_backend.create(data=data)
                         answer_visit.answer = new_answer_data
                         answer_visit.save()
+                        # except DuplicateKeyError:
+                        #     saved = False
+                        #     pass
+
+                    # if not saved:
+                    #     answer_visit.answer = new_answer_data
+                    #     answer_visit.save()
 
         if not pk_list:
             pk_list = answer_data.get("answer", None)
@@ -322,7 +339,6 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
             data = {'files': files}
         else:
             data = {}
-        #print(data)
         return self.render_json_response(data)
 
 # }}}

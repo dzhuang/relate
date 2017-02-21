@@ -167,6 +167,12 @@ class UserImageStorage(MultipleOriginalStoragesMixin, ProxyStorage):
         collection='meta_backend_collection'
     )
 
+    def _open(self, name, mode='rb'):
+        try:
+            super(UserImageStorage, self)._open(name, mode)
+        except IOError:
+            return SendFileStorage()._open(name, mode)
+
     def save(self, name, content, max_length=None,
              original_storage_path=None, using=None):
         # type: (Text, Any, Optional[int], Optional[Text], Optional[Text]) -> Text
