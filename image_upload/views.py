@@ -121,11 +121,8 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin,
         self.object.course = course
         self.object.save()
 
-        #print("---------------", self.object.image.path, self.object.image.image.name)
-
         files = [serialize(self.request, self.object, 'image')]
         data = {'files': files}
-        #print(data)
         return self.render_json_response(data)
 
     def form_invalid(self, form):
@@ -205,7 +202,6 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
 
         elif prev_answer_visits:
             answer_visit = prev_answer_visits[0]
-            #print(answer_visit)
 
         else:
             answer_visit = None
@@ -216,7 +212,6 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
             return None
 
         answer_data = answer_visit.answer
-        # print(answer_data)
 
         if not answer_data:
             return None
@@ -240,28 +235,15 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
                 image_page_id=fpd.page_id)
                   .order_by("order", "pk"))
 
-            print(fpd.page_id)
-            print(flow_session_id)
-
-            print(len(qs))
-
             if not qs:
                 return None
 
             will_save_new_data = True
             for q in qs:
                 a = json.loads(answer_data)
-                print(repr(q), "repr")
-                print(a, "a")
                 if repr(q) in a:
                     pk_list.append(q.pk)
-                # elif os.path.split(q.image.name)[-1] in a:
-                #     pk_list.append(q.pk)
                 else:
-                    print("------alert-------")
-                    # raise ValueError("%s not in %s" % (repr(q), x))
-                    print("%s not in %s" % (repr(q), x))
-                    # print("------------------")
                     will_save_new_data = False
                     pk_list = []
                     break
@@ -282,12 +264,7 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
                             "FlowPageImage %s (%s) does't have a"
                             " valid path %s " % img, img.pk, full_path)
 
-                    print(img.image.path, "image saved path")
-                    print(full_path, "this is the full path")
                     original_storage_path = img.image.name
-                    print(original_storage_path, "this is the relative path")
-                    saved = True
-
                     exist = storage.meta_backend.exists(path=full_path)
                     if exist:
                         obj = storage.meta_backend.get(path=full_path)
@@ -310,13 +287,8 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
                             'original_storage_name': "sendfile"
                         })
 
-                        # try:
                         storage.meta_backend.create(data=data)
-                        # except DuplicateKeyError:
-                        #     saved = False
-                        #     pass
 
-                    # if not saved:
                     answer_visit.answer = new_answer_data
                     answer_visit.save()
 
@@ -364,7 +336,6 @@ def flow_page_image_download(pctx, flow_session_id, creator_id,
                              download_id, file_name):
     request = pctx.request
     download_object = get_object_or_404(FlowPageImage, pk=download_id)
-    # print(download_object.image.path, "download_path")
 
     if storage.is_temp_image(download_object.image.file.name):
         return _non_auth_download(request, download_object)
@@ -374,12 +345,6 @@ def flow_page_image_download(pctx, flow_session_id, creator_id,
     from course.constants import participation_permission as pperm
     if pctx.has_permission(pperm.assign_grade):
         privilege = True
-    # rp, fp = get_rel_and_full_path(download_object.image.path)
-    # print(rp, fp, "--------from download_view-------")
-    # if download_object.image.path == fp:
-    #     privilege = False
-
-    print("privilege", privilege)
 
     return _auth_download(request, download_object, privilege)
 
@@ -405,11 +370,11 @@ def flow_page_image_key(request, download_id, creator_id, file_name):
 @login_required
 def _auth_download(request, download_object, privilege=False):
     if (not request.user == download_object.creator
-        and not request.user.is_staff
-        or not privilege
-            ):
+        and
+            not request.user.is_staff
+        or
+            not privilege):
         from django.core.exceptions import PermissionDenied
-        print("denied")
         raise PermissionDenied(_("may not view other people's resource"))
 
     return sendfile(request, download_object.image.path)
@@ -418,9 +383,9 @@ def _auth_download(request, download_object, privilege=False):
 @login_required
 def _non_auth_download(request, download_object):
     if (not request.user == download_object.creator
-        and not request.user.is_staff):
+        and
+            not request.user.is_staff):
         from django.core.exceptions import PermissionDenied
-        print("denied")
         raise PermissionDenied(_("may not view other people's resource"))
 
     from sendfile.backends.development import sendfile
@@ -642,7 +607,7 @@ def migrate_to_meta_backend():
         except FileNotFoundError:
             continue
         except:
-            if img.pk in [1965,1966, 1967]:
+            if img.pk in [1965, 1966, 1967]:
                 continue
             print(img.pk)
             raise
@@ -658,8 +623,6 @@ def migrate_to_meta_backend():
                 "FlowPageImage %s (%s) does't have a"
                 " valid path %s " % (img, img.pk, full_path))
 
-        # print(img.image.path, "image saved path")
-        # print(full_path, "this is the full path")
         original_storage_path = str(img.image)
         try:
             assert original_storage_path != full_path
@@ -667,14 +630,14 @@ def migrate_to_meta_backend():
             if "course_imgs/" in full_path:
                 continue
             if original_storage_path.startswith("/srv/www/relate/protected/"):
-                original_storage_path = original_storage_path.replace("/srv/www/relate/protected/", "")
+                original_storage_path = original_storage_path.replace(
+                    "/srv/www/relate/protected/", "")
             else:
                 print("Full_path:", full_path)
                 print("Relative_path:", original_storage_path)
                 raise ValueError(
                     "FlowPageImage %s (%s) does't have a"
                     " valid path %s" % (img, img.pk, full_path))
-
 
         try:
             assert original_storage_path in full_path
@@ -729,8 +692,6 @@ def migrate_answer_data():
             continue
         for answer_visit in all:
             answer_data = answer_visit.answer
-            # print(answer_data)
-
             if not answer_data:
                 continue
 
@@ -740,7 +701,7 @@ def migrate_answer_data():
             print(answer_data)
             print(answer_visit.id)
 
-            if not "<QuerySet" in answer_data:
+            if "<QuerySet" not in answer_data:
                 print("passed------------------------")
                 continue
 
@@ -762,18 +723,13 @@ def migrate_answer_data():
             will_save_new_data = True
             for q in qs:
                 x = json.loads(answer_data)
-                # print(repr(q), "repr")
-                # print(x, "a")
                 p = str(repr(q)).split(" ")[1]
                 if p in x:
                     pk_list.append(q.pk)
                     print("--added--")
-                # elif os.path.split(q.image.name)[-1] in a:
-                #     pk_list.append(q.pk)
                 else:
                     print("------alert-------")
                     print("%s not in %s" % (p, x))
-                    # print("------------------")
                     will_save_new_data = False
                     pk_list = []
                     break
@@ -784,10 +740,6 @@ def migrate_answer_data():
             if not will_save_new_data:
                 continue
             else:
-                # print("old_answer:", answer_data)
                 new_answer_data = {"answer": pk_list}
-                # print("new_answer_data:", new_answer_data)
-                # print(answer_visit.id)
                 answer_visit.answer = new_answer_data
                 answer_visit.save()
-                # return

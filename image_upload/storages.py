@@ -29,7 +29,6 @@ import tempfile
 
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
-from django.utils._os import safe_join
 from django.utils.deconstruct import deconstructible
 from django.utils.encoding import force_text
 
@@ -120,9 +119,6 @@ class ProxyStorage(ProxyStorageBase):
             ).path(path)
         except NotImplementedError:
             pass
-        # print(path)
-        # print(safe_join('/', os.path.normpath(path)).lstrip('/'))
-        # print(os.path.normpath(path))
         return os.path.normpath(path)
 
     def size(self, name):
@@ -130,11 +126,6 @@ class ProxyStorage(ProxyStorageBase):
         meta_backend_obj = self.meta_backend.get(path=name)
         return self.get_original_storage(meta_backend_obj=meta_backend_obj)\
             .size(meta_backend_obj['path'])
-
-    # def url(self, name):
-    #     meta_backend_obj = self.meta_backend.get(path=name)
-    #     return self.get_original_storage(meta_backend_obj=meta_backend_obj)\
-    #         .url(meta_backend_obj['original_storage_path'])
 
     def path(self, name):
         # type: (Text) -> Text
@@ -145,14 +136,13 @@ class ProxyStorage(ProxyStorageBase):
                 .path(meta_backend_obj['original_storage_path'])
         except MetaBackendObjectDoesNotExist:
             # fall back
-            print("%s is not in MetaBackend, so it is fall backed" % name)
+            # print("%s is not in MetaBackend, so it is fall backed" % name)
             s = SendFileStorage()
             path = s.path(name)
             if os.path.isfile(path):
                 return path
             else:
-                print("%s is also not in UserImageStorage!!" % name)
-                return name
+                raise OSError("%s is also not in SendFileStorage!!" % name)
 
     def is_temp_image(self, path):
         # type: (Text) -> bool
@@ -164,7 +154,6 @@ class UserImageStorage(MultipleOriginalStoragesMixin, ProxyStorage):
     original_storages = (
         ('temp', FileSystemStorage(
             location=temp_image_storage_location,
-            # base_url="/tempimage/"
         )),
         ('sendfile', SendFileStorage()),
     )
@@ -179,7 +168,7 @@ class UserImageStorage(MultipleOriginalStoragesMixin, ProxyStorage):
         except IOError:
             # Fallback for existing images which are not migrated
             # to ProxyStorage
-            print("File %s not in ProxyStorage" % name)
+            # ("File %s not in ProxyStorage" % name)
             return SendFileStorage()._open(name, mode)
 
     def save(self, name, content, max_length=None,

@@ -93,11 +93,7 @@ def serialize(request, instance, file_attr='image'):
     try:
         size = 0
         try:
-            #assert os.path.isfile(obj.file.name)
-            print("1---------------")
-            print(instance.image.name)
             size = instance.image.file.size
-            print("2---------------")
         except Exception as e:
             print(type(e), str(e))
             from proxy_storage.meta_backends.base import \
@@ -106,13 +102,9 @@ def serialize(request, instance, file_attr='image'):
                 from image_upload.storages import SendFileStorage
                 storage = SendFileStorage()
                 size = storage.size(instance.image)
-        print("1---------------")
         obj_name = obj.name
         img_type = mimetypes.guess_type(obj.name)[0] or 'image/png'
-        print(img_type)
-        print("2---------------")
     except Exception as e:
-        print(type(e), str(e))
         obj_name = None
         size = 0
         img_type = None
@@ -183,8 +175,6 @@ def serialize(request, instance, file_attr='image'):
         timestr_short = "%s (%s)" % (
                 timestr_short,
                 modified_time_short)
-
-    print("here------------")
 
     return {
         'url': instance.get_absolute_url(),
