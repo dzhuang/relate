@@ -57,7 +57,7 @@ class FlowPageImage(models.Model):
     slug = models.SlugField(max_length=256, blank=True)
     creation_time = models.DateTimeField(default=now)
     file_last_modified = models.DateTimeField(default=now)
-    file_thumbnail = ImageSpecField(
+    image_thumbnail = ImageSpecField(
         source='image',
         processors=[ResizeToFit(100, 100)],
         format='PNG',

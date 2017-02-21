@@ -81,7 +81,7 @@ def get_image_admin_url(image):
         args=(image.pk,))
 
 
-def serialize(request, instance, file_attr='file'):
+def serialize(request, instance, file_attr='image'):
     """serialize -- Serialize a Picture instance into a dict.
 
     instance -- Image instance
@@ -97,6 +97,7 @@ def serialize(request, instance, file_attr='file'):
     obj = getattr(instance, file_attr)
     #print(obj.name)
     error = None
+    print(type(obj), "this should be a image type")
     try:
         size = 0
         try:
@@ -193,7 +194,7 @@ def serialize(request, instance, file_attr='file'):
         'url': instance.get_absolute_url(),
         'name': name,
         'type': img_type,
-        'thumbnailUrl': instance.file_thumbnail.url,
+        'thumbnailUrl': instance.image_thumbnail.url,
         'timestr_title': timestr_title,
         'timestr_short': timestr_short,
         'size': size,

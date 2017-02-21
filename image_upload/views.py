@@ -86,19 +86,19 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin,
     fields = ("image", "slug")
 
     def form_valid(self, form):
-        file = form.cleaned_data.get('image')
+        image = form.cleaned_data.get('image')
         from django.conf import settings
 
         max_allowed_jfu_size = getattr(
             settings, "RELATE_JFU_MAX_IMAGE_SIZE", 2) * 1024**2
 
-        if file._size > max_allowed_jfu_size:
+        if image._size > max_allowed_jfu_size:
             file_data = {
                     "files": [{
                         "name": form.cleaned_data.get('slug'),
-                        "size": file._size,
+                        "size": image._size,
                         "error": ugettext(
-                            "The file is too big. Please use "
+                            "The image is too big. Please use "
                             "Chrome/Firefox or mobile browser by "
                             "which images will be cropped "
                             "automatically before upload.")
@@ -121,7 +121,7 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin,
         self.object.course = course
         self.object.save()
 
-        #print("---------------", self.object.image.path, self.object.image.file.name)
+        #print("---------------", self.object.image.path, self.object.image.image.name)
 
         files = [serialize(self.request, self.object, 'image')]
         data = {'files': files}
@@ -148,7 +148,7 @@ class ImageDeleteView(LoginRequiredMixin, ImageOperationMixin, DeleteView):
             from django.core.exceptions import PermissionDenied
             raise PermissionDenied(_("may not delete other people's image"))
         else:
-            if storage.is_temp_image(self.object.file.path):
+            if storage.is_temp_image(self.object.image.path):
                 self.object.delete()
                 response = http.JsonResponse(True, safe=False)
             else:
@@ -269,13 +269,13 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
 
                 for img_pk in pk_list:
                     img = FlowPageImage.objects.get(pk=img_pk)
-                    full_path = img.file.file.name
+                    full_path = img.image.file.name
 
                     print(full_path)
-                    print(img.file.file.name)
-                    print(img.file.path, "image saved path")
+                    print(img.image.file.name)
+                    print(img.iage.path, "image saved path")
                     print(full_path, "this is the full path")
-                    original_storage_path = img.file.path
+                    original_storage_path = img.image.path
                     print(original_storage_path, "this is the relative path")
                     saved = True
 
@@ -296,7 +296,7 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
                         data = storage.get_data_for_meta_backend_save(
                             original_name=full_path,
                             path=full_path,
-                            content=img.file,
+                            content=img.image,
                             original_storage_path=original_storage_path,
                         )
                         data.update({
@@ -369,8 +369,8 @@ def flow_page_image_download(pctx, flow_session_id, creator_id,
     from course.constants import participation_permission as pperm
     if pctx.has_permission(pperm.assign_grade):
         privilege = True
-    rp, fp = get_rel_and_full_path(download_object.image.path)
-    print(rp, fp, "--------from download_view-------")
+    # rp, fp = get_rel_and_full_path(download_object.image.path)
+    # print(rp, fp, "--------from download_view-------")
     # if download_object.image.path == fp:
     #     privilege = False
 
@@ -406,11 +406,11 @@ def _auth_download(request, download_object, privilege=False):
         from django.core.exceptions import PermissionDenied
         print("denied")
         raise PermissionDenied(_("may not view other people's resource"))
-    print(download_object.file.path, "download_path within auth_download view")
-    rp, fp = get_rel_and_full_path(download_object.file.path)
-    print(fp, "-----------------------final-------------view")
+    # print(download_object.image.path, "download_path within auth_download view")
+    # rp, fp = get_rel_and_full_path(download_object.image.path)
+    # print(fp, "-----------------------final-------------view")
 
-    return sendfile(request, fp)
+    return sendfile(request, download_object.image.path)
 
 # }}}
 
@@ -427,7 +427,7 @@ def image_crop_modal(pctx, flow_session_id, ordinal, pk):
     request = pctx.request
     error_message = None
     try:
-        file = FlowPageImage.objects.get(id=pk)
+        image = FlowPageImage.objects.get(id=pk)
     except FlowPageImage.DoesNotExist:
         error_message = (
             string_concat(_('File not found.'),
@@ -435,7 +435,7 @@ def image_crop_modal(pctx, flow_session_id, ordinal, pk):
         return render(
             request,
             'image_upload/cropper-modal.html',
-            {'file': None,
+            {'image': None,
              'error_message': error_message,
              'STAFF_EDIT_WARNNING': False,
              'owner': None
@@ -444,15 +444,15 @@ def image_crop_modal(pctx, flow_session_id, ordinal, pk):
     staff_edit_warnning = False
     if (course_staff_status
         and
-                request.user != file.creator):
+                request.user != image.creator):
         staff_edit_warnning = True
     return render(
         request,
         'image_upload/cropper-modal.html',
-        {'file': file,
+        {'image': image,
          'error_message': error_message,
          'STAFF_EDIT_WARNNING': staff_edit_warnning,
-         'owner': file.creator
+         'owner': image.creator
          })
 
 
@@ -478,7 +478,7 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
     except FlowPageImage.DoesNotExist:
         raise CropImageError(_('Please upload the image first.'))
 
-    image_orig_path = crop_instance.file.path
+    image_orig_path = crop_instance.image.path
     if not image_orig_path:
         raise CropImageError(
             string_concat(_('File not found.'),

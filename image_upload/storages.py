@@ -159,7 +159,9 @@ class UserImageStorage(MultipleOriginalStoragesMixin, ProxyStorage):
     #http://chibisov.github.io/django-proxy-storage/docs/
     original_storages = (
         ('temp', FileSystemStorage(
-            location=temp_image_storage_location, base_url="/tempimage/")),
+            location=temp_image_storage_location,
+            # base_url="/tempimage/"
+        )),
         ('sendfile', SendFileStorage()),
     )
     meta_backend = MongoMetaBackend(

@@ -500,17 +500,17 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         saved_qs = qs.filter(pk__in=data)
 
         for img in saved_qs:
-            if storage.is_temp_image(img.file.path) and img.pk in data:
+            if storage.is_temp_image(img.image.path) and img.pk in data:
                 name = storage.meta_backend.get(
-                    path=img.file.path)['original_storage_path']
+                    path=img.image.path)['original_storage_path']
                 new_img_name = storage.save(
                     name=name,
-                    content=img.file,
+                    content=img.image,
                     using="sendfile"
                 )
 
                 print(os.path.isfile(new_img_name))
-                img.file = new_img_name
+                img.image = new_img_name
                 img.save()
 
         return data_dict
@@ -559,7 +559,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
             in_mem_zipfile = InMemoryZip()
             image_count = 0
             for i, image in enumerate(image_qs):
-                image_file = image.file
+                image_file = image.image
                 try:
                     if not os.path.isfile(image_file.path):
                         continue
@@ -929,7 +929,7 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
                 if len(qs) > 1:
                     all_file_exist = True
                     for fpi in qs:
-                        if not os.path.exists(fpi.file.path):
+                        if not os.path.exists(fpi.image.path):
                             all_file_exist = False
                             break
                     if not all_file_exist:
@@ -1049,7 +1049,7 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
 
             if full_qs_list:
                 for answer_img in full_qs_list:
-                    i_thumbnail_url = answer_img.file_thumbnail.url
+                    i_thumbnail_url = answer_img.image_thumbnail.url
                     i_img_url = (
                         answer_img.get_absolute_url(private=False, key=True))
                     first_row += ('<td><a href="%s" class="adminimage">'

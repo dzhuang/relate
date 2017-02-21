@@ -28,7 +28,7 @@
                         {% endcomment %}
                             {% block FILE_INPUT %}
                                 {# The file input for the upload form. #}
-                                <input type="file" name="file" multiple 
+                                <input type="file" name="image" multiple
                                     {% if accepted_mime_types %}
                                         accept='{{ accepted_mime_types|join:"," }}'
                                     {% endif %}
