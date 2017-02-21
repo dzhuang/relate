@@ -92,18 +92,15 @@ def serialize(request, instance, file_attr='image'):
         print(instance.slug, "slug")
     except:
         pass
-    # print(instance.slug, "slug")
-
     obj = getattr(instance, file_attr)
-    #print(obj.name)
     error = None
-    print(type(obj), "this should be a image type")
     try:
         size = 0
         try:
             assert os.path.isfile(obj.path)
             size = instance.image.size
         except Exception as e:
+            print(type(e), str(e))
             from proxy_storage.meta_backends.base import \
                 MetaBackendObjectDoesNotExist
             if isinstance(e, (MetaBackendObjectDoesNotExist, AssertionError)):

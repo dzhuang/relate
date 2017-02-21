@@ -164,7 +164,6 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
     model = FlowPageImage
 
     def get_queryset(self):
-        print(getattr(settings, "DEFAULT_FILE_STORAGE", "None"), "DEFAULT_FILE_STORAGE")
         flow_session_id = self.kwargs["flow_session_id"]
         flow_session = get_object_or_404(FlowSession, id=int(flow_session_id))
         ordinal = self.kwargs["ordinal"]
@@ -217,17 +216,18 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
             return None
 
         answer_data = answer_visit.answer
-        print(answer_data)
-        pk_list = []
+        # print(answer_data)
+
         if not answer_data:
             return None
+
+        pk_list = []
         if not isinstance(answer_data, dict):
             fpd = None
             try:
                 fpd = FlowPageData.objects.get(
                     flow_session=flow_session_id, ordinal=ordinal)
             except ValueError:
-
                 # in sandbox
                 if flow_session_id == "None" or ordinal == "None":
                     return None
@@ -258,22 +258,30 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
                 # elif os.path.split(q.image.name)[-1] in a:
                 #     pk_list.append(q.pk)
                 else:
+                    print("------alert-------")
+                    print("%s not in %s" % (repr(q), a))
+                    # print("------------------")
                     will_save_new_data = False
+                    pk_list = []
                     break
+
+            if not pk_list:
+                return None
 
             if not will_save_new_data:
                 return None
             else:
-
                 new_answer_data = {"answer": pk_list}
 
                 for img_pk in pk_list:
                     img = FlowPageImage.objects.get(pk=img_pk)
-                    full_path = img.image.file.name
+                    full_path = img.image.file.path
+                    if not os.path.isfile(full_path):
+                        raise ValueError(
+                            "FlowPageImage %s (%s) does't have a"
+                            " valid path %s " % img, img.pk, full_path)
 
-                    print(full_path)
-                    print(img.image.file.name)
-                    print(img.iage.path, "image saved path")
+                    print(img.image.path, "image saved path")
                     print(full_path, "this is the full path")
                     original_storage_path = img.image.path
                     print(original_storage_path, "this is the relative path")
@@ -290,9 +298,7 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
                                 'original_storage_name': "sendfile"
                             }
                         )
-
                     else:
-
                         data = storage.get_data_for_meta_backend_save(
                             original_name=full_path,
                             path=full_path,
@@ -310,8 +316,8 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
                         #     pass
 
                     # if not saved:
-                    #     answer_visit.answer = new_answer_data
-                    #     answer_visit.save()
+                    answer_visit.answer = new_answer_data
+                    answer_visit.save()
 
         if not pk_list:
             pk_list = answer_data.get("answer", None)

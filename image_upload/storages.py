@@ -175,6 +175,7 @@ class UserImageStorage(MultipleOriginalStoragesMixin, ProxyStorage):
         except IOError:
             # Fallback for existing images which are not migrated
             # to ProxyStorage
+            print("File %s not in ProxyStorage" % name)
             return SendFileStorage()._open(name, mode)
 
     def save(self, name, content, max_length=None,
