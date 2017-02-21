@@ -146,12 +146,17 @@ class ProxyStorage(ProxyStorageBase):
         except MetaBackendObjectDoesNotExist:
             # fall back
             print("%s is not in MetaBackend, so it is fall backed" % name)
-            #print(name)
-            return name
+            s = SendFileStorage()
+            path = s.path(name)
+            if os.path.isfile(path):
+                return path
+            else:
+                print("%s is also not in UserImageStorage!!" % name)
+                return name
 
-    def is_temp_image(self, name):
+    def is_temp_image(self, path):
         # type: (Text) -> bool
-        return self.meta_backend.get(path=name)['original_storage_name'] == "temp"
+        return self.meta_backend.get(path=path)['original_storage_name'] == "temp"
 
 
 class UserImageStorage(MultipleOriginalStoragesMixin, ProxyStorage):

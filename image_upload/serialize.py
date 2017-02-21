@@ -93,21 +93,24 @@ def serialize(request, instance, file_attr='image'):
     try:
         size = 0
         try:
-            assert os.path.isfile(obj.path)
-            size = instance.image.size
+            #assert os.path.isfile(obj.file.name)
+            print("1---------------")
+            print(instance.image.name)
+            size = instance.image.file.size
+            print("2---------------")
         except Exception as e:
             print(type(e), str(e))
             from proxy_storage.meta_backends.base import \
                 MetaBackendObjectDoesNotExist
-            if isinstance(e, (MetaBackendObjectDoesNotExist, AssertionError)):
-                from image_upload.views import get_rel_and_full_path
-                rp, fp = get_rel_and_full_path(instance.image.file.name)
-                from image_upload.storages import UserImageStorage
-                storage = UserImageStorage()
-                size = storage.size(fp)
-
+            if isinstance(e, MetaBackendObjectDoesNotExist):
+                from image_upload.storages import SendFileStorage
+                storage = SendFileStorage()
+                size = storage.size(instance.image)
+        print("1---------------")
         obj_name = obj.name
-        img_type = mimetypes.guess_type(obj.path)[0] or 'image/png'
+        img_type = mimetypes.guess_type(obj.name)[0] or 'image/png'
+        print(img_type)
+        print("2---------------")
     except Exception as e:
         print(type(e), str(e))
         obj_name = None
@@ -180,6 +183,8 @@ def serialize(request, instance, file_attr='image'):
         timestr_short = "%s (%s)" % (
                 timestr_short,
                 modified_time_short)
+
+    print("here------------")
 
     return {
         'url': instance.get_absolute_url(),

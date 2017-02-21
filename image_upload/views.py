@@ -259,7 +259,8 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
                 #     pk_list.append(q.pk)
                 else:
                     print("------alert-------")
-                    print("%s not in %s" % (repr(q), a))
+                    # raise ValueError("%s not in %s" % (repr(q), x))
+                    print("%s not in %s" % (repr(q), x))
                     # print("------------------")
                     will_save_new_data = False
                     pk_list = []
@@ -283,7 +284,7 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
 
                     print(img.image.path, "image saved path")
                     print(full_path, "this is the full path")
-                    original_storage_path = img.image.path
+                    original_storage_path = img.image.name
                     print(original_storage_path, "this is the relative path")
                     saved = True
 
@@ -363,11 +364,10 @@ def flow_page_image_download(pctx, flow_session_id, creator_id,
                              download_id, file_name):
     request = pctx.request
     download_object = get_object_or_404(FlowPageImage, pk=download_id)
-    print(download_object.image.path, "download_path")
+    # print(download_object.image.path, "download_path")
 
-    #print("-----------download-view------------:", download_object.image.path)
-
-    print(download_object.image.path, "download_path")
+    if storage.is_temp_image(download_object.image.file.name):
+        return _non_auth_download(request, download_object)
 
     privilege = False
     # whether the user is allowed to view the private image
@@ -411,10 +411,19 @@ def _auth_download(request, download_object, privilege=False):
         from django.core.exceptions import PermissionDenied
         print("denied")
         raise PermissionDenied(_("may not view other people's resource"))
-    # print(download_object.image.path, "download_path within auth_download view")
-    # rp, fp = get_rel_and_full_path(download_object.image.path)
-    # print(fp, "-----------------------final-------------view")
 
+    return sendfile(request, download_object.image.path)
+
+
+@login_required
+def _non_auth_download(request, download_object):
+    if (not request.user == download_object.creator
+        and not request.user.is_staff):
+        from django.core.exceptions import PermissionDenied
+        print("denied")
+        raise PermissionDenied(_("may not view other people's resource"))
+
+    from sendfile.backends.development import sendfile
     return sendfile(request, download_object.image.path)
 
 # }}}
@@ -618,3 +627,167 @@ def get_rel_and_full_path(path, root=None):
         rel_path = os.path.relpath(full_path, root)
     return (rel_path.lstrip("/"), full_path)
 
+
+def migrate_to_meta_backend():
+    """
+    This is used to migrate FlowPageImage to ProxyStorage
+    """
+    all_images_qs = FlowPageImage.objects.all()
+    i = 0
+    for img in all_images_qs:
+        i += 1
+        print("%s/%s" % (i, len(all_images_qs)))
+        try:
+            full_path = img.image.file.name
+        except FileNotFoundError:
+            continue
+        except:
+            if img.pk in [1965,1966, 1967]:
+                continue
+            print(img.pk)
+            raise
+
+        try:
+            if storage.is_temp_image(img.image.file.name):
+                continue
+        except:
+            pass
+
+        if not os.path.isfile(full_path):
+            raise ValueError(
+                "FlowPageImage %s (%s) does't have a"
+                " valid path %s " % (img, img.pk, full_path))
+
+        # print(img.image.path, "image saved path")
+        # print(full_path, "this is the full path")
+        original_storage_path = str(img.image)
+        try:
+            assert original_storage_path != full_path
+        except:
+            if "course_imgs/" in full_path:
+                continue
+            if original_storage_path.startswith("/srv/www/relate/protected/"):
+                original_storage_path = original_storage_path.replace("/srv/www/relate/protected/", "")
+            else:
+                print("Full_path:", full_path)
+                print("Relative_path:", original_storage_path)
+                raise ValueError(
+                    "FlowPageImage %s (%s) does't have a"
+                    " valid path %s" % (img, img.pk, full_path))
+
+
+        try:
+            assert original_storage_path in full_path
+        except:
+            print("Full_path:", full_path)
+            print("Relative_path:", original_storage_path)
+
+            raise ValueError(
+                "FlowPageImage %s (%s) does't have a"
+                " valid path %s" % (img, img.pk, full_path))
+
+        exist = storage.meta_backend.exists(path=full_path)
+        if exist:
+            obj = storage.meta_backend.get(path=full_path)
+            obj.update(
+                {
+                    "original_name": full_path,
+                    "path": full_path,
+                    "original_storage_path": original_storage_path,
+                    'original_storage_name': "sendfile"
+                }
+            )
+        else:
+            data = storage.get_data_for_meta_backend_save(
+                original_name=full_path,
+                path=full_path,
+                content=img.image,
+                original_storage_path=original_storage_path,
+            )
+            data.update({
+                'original_storage_name': "sendfile"
+            })
+
+            storage.meta_backend.create(data=data)
+
+
+def migrate_answer_data():
+    """
+    This is used to migrate answer_data to meet ProxyStorage
+    """
+    from course.models import FlowPageData
+    from course.flow import get_prev_answer_visits_qset
+    data = FlowPageData.objects.filter(
+        flow_session__course__identifier__in=["OR2016BA", "OR2016IE"]
+    ).order_by("pk")
+    i = 0
+    for d in data:
+        i += 1
+        print("%s/%s" % (i, len(data)))
+        all = list(get_prev_answer_visits_qset(d))
+        if not len(all):
+            continue
+        for answer_visit in all:
+            answer_data = answer_visit.answer
+            # print(answer_data)
+
+            if not answer_data:
+                continue
+
+            if isinstance(answer_data, dict):
+                continue
+
+            print(answer_data)
+            print(answer_visit.id)
+
+            if not "<QuerySet" in answer_data:
+                print("passed------------------------")
+                continue
+
+            pk_list = []
+            fpd = FlowPageData.objects.get(
+                flow_session=d.flow_session_id, ordinal=d.ordinal)
+
+            if not fpd:
+                continue
+
+            qs = (FlowPageImage.objects.filter(
+                flow_session=fpd.flow_session_id,
+                image_page_id=fpd.page_id)
+                  .order_by("order", "pk"))
+
+            if not qs:
+                continue
+
+            will_save_new_data = True
+            for q in qs:
+                x = json.loads(answer_data)
+                # print(repr(q), "repr")
+                # print(x, "a")
+                p = str(repr(q)).split(" ")[1]
+                if p in x:
+                    pk_list.append(q.pk)
+                    print("--added--")
+                # elif os.path.split(q.image.name)[-1] in a:
+                #     pk_list.append(q.pk)
+                else:
+                    print("------alert-------")
+                    print("%s not in %s" % (p, x))
+                    # print("------------------")
+                    will_save_new_data = False
+                    pk_list = []
+                    break
+
+            if not pk_list:
+                continue
+
+            if not will_save_new_data:
+                continue
+            else:
+                # print("old_answer:", answer_data)
+                new_answer_data = {"answer": pk_list}
+                # print("new_answer_data:", new_answer_data)
+                # print(answer_visit.id)
+                answer_visit.answer = new_answer_data
+                answer_visit.save()
+                # return
