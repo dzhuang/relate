@@ -148,7 +148,7 @@ class ImageDeleteView(LoginRequiredMixin, ImageOperationMixin, DeleteView):
             from django.core.exceptions import PermissionDenied
             raise PermissionDenied(_("may not delete other people's image"))
         else:
-            if storage.is_temp_image(self.object.image.path):
+            if storage.is_temp_image(self.object.image.file.name):
                 self.object.delete()
                 response = http.JsonResponse(True, safe=False)
             else:
@@ -275,7 +275,7 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
 
                 for img_pk in pk_list:
                     img = FlowPageImage.objects.get(pk=img_pk)
-                    full_path = img.image.file.path
+                    full_path = img.image.file.name
                     if not os.path.isfile(full_path):
                         raise ValueError(
                             "FlowPageImage %s (%s) does't have a"

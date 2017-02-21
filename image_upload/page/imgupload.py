@@ -504,16 +504,17 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         saved_qs = qs.filter(pk__in=data)
 
         for img in saved_qs:
-            if storage.is_temp_image(img.image.path) and img.pk in data:
+            assert isinstance(img, FlowPageImage)
+            if storage.is_temp_image(img.image.file.name) and img.pk in data:
                 name = storage.meta_backend.get(
-                    path=img.image.path)['original_storage_path']
+                    path=img.image.file.name)['original_storage_path']
                 new_img_name = storage.save(
                     name=name,
                     content=img.image,
                     using="sendfile"
                 )
 
-                print(os.path.isfile(new_img_name))
+                assert os.path.isfile(new_img_name)
                 img.image = new_img_name
                 img.save()
 
