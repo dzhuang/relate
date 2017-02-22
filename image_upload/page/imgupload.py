@@ -145,35 +145,65 @@ class ImageUploadForm(StyledForm):
             if self.require_image_for_submission:
                 raise forms.ValidationError(_("You have not upload image(s)!"))
 
-        pk_list = []
         try:
             pk_list = [int(i.strip()) for i in pk_list_str.split(",")]
-        except:
-            pass
+        except ValueError:
+            raise forms.ValidationError(
+                string_concat(
+                    _("The form data is broken. "),
+                    _("please refresh the page and "
+                      "redo the upload and submissioin.")
+                ))
+
+        user_image_pk_qs = (
+            FlowPageImage.objects
+                .filter(course=self.page_context.course,
+                        creator=self.page_context.participation.user))
+
+        user_image_pk_list = user_image_pk_qs.values_list("pk", flat=True)
+
+        if pk_list not in user_image_pk_list:
+            raise forms.ValidationError(
+                string_concat(
+                    _("There're some image(s) which don't belong "
+                      "to you. "),
+                    _("please refresh the page and "
+                      "redo the upload and submissioin.")
+                ))
+
+        saving_image_qs = user_image_pk_qs.filter(pk__in=pk_list)
+
+        for img in saving_image_qs:
+            assert isinstance(img, FlowPageImage)
+            try:
+                if storage.is_temp_image(img.image.file.name):
+                    if not os.path.isfile(img.image.file.name):
+                        raise forms.ValidationError(
+                            string_concat(
+                                _("Some of you uploaded images just failed"),
+                                _("please refresh the page and "
+                                  "redo the upload and submission.")
+                            ))
+            except (OSError, IOError):
+                # The temp file is removed before submission, we
+                # have to fail silently.
+                raise forms.ValidationError(
+                    string_concat(
+                        _("Some of you uploaded images just failed"),
+                        _("please refresh the page and "
+                          "redo the upload and submission.")
+                    ))
+            except Exception as e:
+                raise forms.ValidationError(
+                    string_concat(
+                        _("Error"),
+                        "%(err_type)s: %(err_str)s. "
+                        % {
+                            "err_type": type(e).__name__,
+                            "err_str": str(e)}))
 
         cleaned_data["hidden_answer"] = pk_list
         return cleaned_data
-
-        flow_session_id = self.page_context.flow_session.id
-        ordinal = get_ordinal_from_page_context(self.page_context)
-        flow_owner = self.page_context.flow_session.participation.user
-
-        if self.require_image_for_submission:
-            from course.models import FlowPageData
-            fpd = FlowPageData.objects.get(
-                flow_session=flow_session_id, ordinal=ordinal)
-
-            qs = FlowPageImage.objects.filter(
-                creator=flow_owner
-            ).filter(flow_session=flow_session_id
-                     ).filter(image_page_id=fpd.page_id)
-
-            qs_iter = qs.iterator()
-
-            try:
-                next(qs_iter)
-            except StopIteration:
-                raise forms.ValidationError(_("You have not upload image(s)!"))
 
 
 class ImgUploadHumanTextFeedbackForm(HumanTextFeedbackForm):
@@ -489,60 +519,34 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
             except:
                 return data
 
-        flow_session_id = page_context.flow_session.id
-        ordinal = get_ordinal_from_page_context(page_context)
-        flow_owner = page_context.flow_session.participation.user
-        from course.models import FlowPageData
-        fpd = FlowPageData.objects.get(
-            flow_session=flow_session_id, ordinal=ordinal)
+        saving_image_qs = (
+            FlowPageImage.objects
+                .filter(creator=page_context.flow_session.participation.user,
+                        course=page_context.course,
+                        pk__in=data
+                        ))
 
-        qs = FlowPageImage.objects \
-            .filter(creator=flow_owner) \
-            .filter(flow_session=flow_session_id) \
-            .filter(image_page_id=fpd.page_id)
-
-        saved_qs = qs.filter(pk__in=data)
-
-        for img in saved_qs:
+        for img in saving_image_qs:
             assert isinstance(img, FlowPageImage)
-            if storage.is_temp_image(img.image.file.name) and img.pk in data:
-                name = storage.meta_backend.get(
-                    path=img.image.file.name)['original_storage_path']
-                new_img_name = storage.save(
-                    name=name,
-                    content=img.image,
-                    using="sendfile"
-                )
+            try:
+                if storage.is_temp_image(img.image.file.name):
+                    name = storage.meta_backend.get(
+                        path=img.image.file.name)['original_storage_path']
+                    new_img_name = storage.save(
+                        name=name,
+                        content=img.image,
+                        using="sendfile"
+                    )
 
-                assert os.path.isfile(new_img_name)
-                img.image = new_img_name
-                img.save()
+                    assert os.path.isfile(new_img_name)
+                    img.image = new_img_name
+                    img.save()
+            except (OSError, IOError) as e:
+                # The temp file is removed during handling, we
+                # have to fail silently.
+                continue
 
         return data_dict
-        # flow_session_id = page_context.flow_session.id
-        # ordinal = get_ordinal_from_page_context(page_context)
-        # flow_owner = page_context.flow_session.participation.user
-        # from course.models import FlowPageData
-        # fpd = FlowPageData.objects.get(
-        #     flow_session=flow_session_id, ordinal=ordinal)
-        #
-        # qs = FlowPageImage.objects\
-        #     .filter(creator=flow_owner)\
-        #     .filter(flow_session=flow_session_id)\
-        #     .filter(image_page_id=fpd.page_id)
-        #
-        # if not qs:
-        #     return None
-        #
-        # # id_list = []
-        # # for image in qs:
-        # #     if storage.is_temp_image(image.file.path):
-        #
-        # if len(qs) > 0:
-        #     import json
-        #     return json.dumps(repr(qs))
-        # else:
-        #     return None
 
     def normalized_bytes_answer(self, page_context, page_data, answer_data):
         if answer_data is None:
