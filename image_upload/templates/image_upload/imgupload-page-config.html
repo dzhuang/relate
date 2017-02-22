@@ -85,10 +85,10 @@ minFileSize: {{minFileSize}},
 
 {% block JS_EXTRA %}
 {{ block.super }}
-<script src="{% static "clipboard/dist/clipboard.min.js" %} "></script>
+<script src="{% static "clipboard/dist/clipboard.min.js?1" %} "></script>
 <script src="{% url 'javascript-catalog-image-upload'  %}"></script>
-<script src="{% static "cropperjs/dist/cropper.js" %} "></script>
-<script src="{% static "js/imgupload-page.js" %} "></script>
+<script src="{% static "cropperjs/dist/cropper.js?1" %} "></script>
+<script src="{% static "js/imgupload-page.js?2" %} "></script>
 {# % if IN_GRADE_PAGE % #}
 <script src="{% static "ez-plus/src/jquery.ez-plus.js" %} "></script>
 <script>
