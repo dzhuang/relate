@@ -114,8 +114,11 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 for cf in page_desc.cache_key_files:
                     if cf not in page_desc.data_files:
                         raise ValidationError(
-                            _("%s: '%s' should be listed in 'data_files'")
-                            % (location, cf))
+                            string_concat(
+                                location,
+                                ": ",
+                                _("'%s' should be listed in 'data_files'")
+                                % cf))
             if hasattr(page_desc, "excluded_cache_key_files"):
                 for cf in page_desc.excluded_cache_key_files:
                     if cf not in page_desc.data_files:

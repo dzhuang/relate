@@ -152,17 +152,17 @@ class ImageUploadForm(StyledForm):
                 string_concat(
                     _("The form data is broken. "),
                     _("please refresh the page and "
-                      "redo the upload and submissioin.")
+                      "redo the upload and submission.")
                 ))
 
         user_image_pk_qs = (
             FlowPageImage.objects
                 .filter(course=self.page_context.course,
-                        creator=self.page_context.participation.user))
+                        creator=self.page_context.flow_session.participation.user))
 
         user_image_pk_list = user_image_pk_qs.values_list("pk", flat=True)
 
-        if pk_list not in user_image_pk_list:
+        if any(i not in user_image_pk_list for i in pk_list):
             raise forms.ValidationError(
                 string_concat(
                     _("There're some image(s) which don't belong "
@@ -177,10 +177,11 @@ class ImageUploadForm(StyledForm):
             assert isinstance(img, FlowPageImage)
             try:
                 if storage.is_temp_image(img.image.file.name):
+
                     if not os.path.isfile(img.image.file.name):
                         raise forms.ValidationError(
                             string_concat(
-                                _("Some of you uploaded images just failed"),
+                                _("Some of you uploaded images just failed. "),
                                 _("please refresh the page and "
                                   "redo the upload and submission.")
                             ))
@@ -189,7 +190,7 @@ class ImageUploadForm(StyledForm):
                 # have to fail silently.
                 raise forms.ValidationError(
                     string_concat(
-                        _("Some of you uploaded images just failed"),
+                        _("Some of you uploaded images just failed. "),
                         _("please refresh the page and "
                           "redo the upload and submission.")
                     ))

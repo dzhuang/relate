@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-02-16 13:25+0800\n"
+"POT-Creation-Date: 2017-02-22 18:20+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -76,13 +76,6 @@ msgstr "图片上传"
 msgid "Creator"
 msgstr "创建者"
 
-msgid "Creation Time"
-msgstr "创建时间"
-
-#, python-format
-msgid "%(url)s uploaded by %(creator)s"
-msgstr "%(url)s(%(creator)s上传)"
-
 msgid "Course"
 msgstr "课程"
 
@@ -101,8 +94,32 @@ msgstr "与之关联的图片数据"
 msgid "Use external Image data?"
 msgstr "使用关联图片？"
 
+#, python-format
+msgid "%(url)s uploaded by %(creator)s"
+msgstr "%(url)s(%(creator)s上传)"
+
 msgid "You have not upload image(s)!"
 msgstr "您还未上传图片!"
+
+msgid "The form data is broken. "
+msgstr "表单数据损坏. "
+
+msgid "please refresh the page and redo the upload and submission."
+msgstr "请刷新页面后重新上传并提交. "
+
+msgid "There're some image(s) which don't belong to you. "
+msgstr "提交的表单中有图片不是你上传的图片. "
+
+#, fuzzy
+#| msgid "please refresh the page and redo the upload and submission."
+msgid "please refresh the page and redo the upload and submissioin."
+msgstr "请刷新页面后重新上传并提交. "
+
+msgid "Some of you uploaded images just failed. "
+msgstr "部分上传的图片失效. "
+
+msgid "Error"
+msgstr "错误"
 
 msgid "Manually set the access_rules_tag of the session, if necessary."
 msgstr "手工设置该session的access_rules_tag，如果需要的话"
@@ -239,10 +256,11 @@ msgstr ""
 msgid "The image file does not exist!"
 msgstr "该图片文件不存在！"
 
-msgid "Created at"
+
+msgid "Created at "
 msgstr "创建于"
 
-msgid "modified at"
+msgid "modified at "
 msgstr "修改于"
 
 #, python-format
@@ -381,9 +399,6 @@ msgstr "开始"
 msgid "Cancel"
 msgstr "放弃"
 
-msgid "Error"
-msgstr "错误"
-
 msgid "Edit"
 msgstr "编辑"
 
@@ -410,11 +425,12 @@ msgstr ""
 "%(review_uri)s\n"
 "\n"
 
+
 msgid ""
-"The file is too big. Please use Chrome/Firefox or mobile browser by which "
+"The image is too big. Please use Chrome/Firefox or mobile browser by which "
 "images will be cropped automatically before upload."
 msgstr ""
-"这个文件太大了. 推荐使用Chrome或Firefox浏览器，或者直接在手机浏览器上传，它们"
+"这个图片太大了. 推荐使用Chrome或Firefox浏览器，或者直接在手机浏览器上传，它们"
 "将在照片上传前自动压缩尺寸."
 
 msgid "may not delete other people's image"
