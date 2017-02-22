@@ -138,7 +138,17 @@ class ProxyStorage(ProxyStorageBase):
             # fall back
             # print("%s is not in MetaBackend, so it is fall backed" % name)
             s = SendFileStorage()
-            path = s.path(name)
+
+            path = None
+            try:
+                path = s.path(name)
+            except Exception as e:
+                from django.core.exceptions import SuspiciousFileOperation
+                if isinstance(e, SuspiciousFileOperation):
+                    # the reason may be caused by accidentally deletion of
+                    # temp storage files. Here we fail silently
+                    return name
+
             if os.path.isfile(path):
                 return path
             else:
@@ -168,8 +178,15 @@ class UserImageStorage(MultipleOriginalStoragesMixin, ProxyStorage):
         except IOError:
             # Fallback for existing images which are not migrated
             # to ProxyStorage
-            # ("File %s not in ProxyStorage" % name)
-            return SendFileStorage()._open(name, mode)
+            try:
+                return SendFileStorage()._open(name, mode)
+            except Exception as e:
+                from django.core.exceptions import SuspiciousFileOperation
+                if isinstance(e, SuspiciousFileOperation):
+                    # the reason may be caused by accidentally deletion of
+                    # temp storage files. Here we fail silently
+                    raise IOError("The file with name '%s' "
+                                  "does not exist!" % name)
 
     def save(self, name, content, max_length=None,
              original_storage_path=None, using=None):
