@@ -25,7 +25,6 @@ THE SOFTWARE.
 """
 
 import os
-from six.moves.urllib.parse import urlparse, urljoin
 
 import django.forms as forms
 from django.utils.translation import ugettext as _, string_concat
@@ -33,7 +32,7 @@ from django.template.loader import render_to_string
 from django.db import transaction
 from django.contrib import messages
 from django.core.urlresolvers import reverse, NoReverseMatch
-from django.urls import resolve
+from django.core.exceptions import ObjectDoesNotExist
 
 from relate.utils import StyledForm
 
@@ -43,10 +42,14 @@ from course.page.base import (
     markup_to_html)
 from course.validation import ValidationError
 from course.utils import (course_view, render_course_page, FlowPageContext)
-from course.constants import participation_permission as pperm
+from course.constants import (
+    participation_permission as pperm,
+    participation_status)
 
 from image_upload.storages import UserImageStorage
 from image_upload.models import FlowPageImage
+from image_upload.utils import get_ordinal_from_page_context
+from image_upload.views import is_course_staff_course_image_request
 
 from crispy_forms.layout import Layout, HTML, Submit
 
@@ -54,37 +57,12 @@ storage = UserImageStorage()
 
 # {{{  mypy
 
-from typing import Text, Any  # noqa
+from typing import Any  # noqa
 from django import http  # noqa
 if False:
     from course.utils import PageContext  # noqa
 
 # }}}
-
-
-def get_ordinal_from_page_context(page_context):
-    if page_context.in_sandbox:
-        return None
-
-    relative_url = urlparse(page_context.page_uri).path
-
-    func, args, kwargs = resolve(relative_url)
-    assert kwargs["ordinal"]
-    return kwargs["ordinal"]
-
-
-def is_course_staff_request(request, page_context):
-    course = page_context.course
-    from course.enrollment import (
-        get_participation_for_request,
-        get_participation_permissions)
-    participation = get_participation_for_request(request, course)
-    perms = get_participation_permissions(course, participation)
-
-    if (pperm.assign_grade, None) in perms:
-        return True
-
-    return False
 
 # {{{ image upload question
 
@@ -143,7 +121,8 @@ class ImageUploadForm(StyledForm):
 
         if not pk_list_str:
             if self.require_image_for_submission:
-                raise forms.ValidationError(_("You have not upload image(s)!"))
+                raise forms.ValidationError(
+                    _("You have not upload image(s)!"))
 
         try:
             pk_list = [int(i.strip()) for i in pk_list_str.split(",")]
@@ -155,53 +134,75 @@ class ImageUploadForm(StyledForm):
                       "redo the upload and submission.")
                 ))
 
-        user_image_pk_qs = (
-            FlowPageImage.objects
-                .filter(course=self.page_context.course,
-                        creator=self.page_context.flow_session.participation.user))
+        user_image_pk_qs = (FlowPageImage.objects
+            .filter(
+                course=self.page_context.course,
+                creator=self.page_context.flow_session.participation.user))
 
         user_image_pk_list = user_image_pk_qs.values_list("pk", flat=True)
 
-        if any(i not in user_image_pk_list for i in pk_list):
-            raise forms.ValidationError(
-                string_concat(
-                    _("There're some image(s) which don't belong "
-                      "to you. "),
-                    _("please refresh the page and "
-                      "redo the upload and submissioin.")
+        for i in pk_list:
+            if i not in user_image_pk_list:
+
+                # remove no-exist image objects
+                try:
+                    image_i = FlowPageImage.objects.get(pk=i)
+                except ObjectDoesNotExist:
+                    pk_list.pop(pk_list.index(i))
+                    continue
+
+                # remove image uploaded by participations not in the course
+                from course.models import Participation
+                creator_participations = list(Participation.objects.filter(
+                    user=image_i.creator,
+                    course=self.page_context.course,
+                    status=participation_status.active
                 ))
+                if len(creator_participations) == 0:
+                    pk_list.pop(pk_list.index(i))
+                    continue
 
-        saving_image_qs = user_image_pk_qs.filter(pk__in=pk_list)
+                # preserve images created by course staff
+                # i.e., course staff is allowed to upload images to
+                # the participations' flow page
+                from image_upload.views import is_course_staff_participation
+                if is_course_staff_participation(creator_participations[0]):
+                    continue
 
-        for img in saving_image_qs:
-            assert isinstance(img, FlowPageImage)
-            try:
-                if storage.is_temp_image(img.image.file.name):
-
-                    if not os.path.isfile(img.image.file.name):
-                        raise forms.ValidationError(
-                            string_concat(
-                                _("Some of you uploaded images just failed. "),
-                                _("please refresh the page and "
-                                  "redo the upload and submission.")
-                            ))
-            except (OSError, IOError):
-                # The temp file is removed before submission, we
-                # have to fail silently.
                 raise forms.ValidationError(
                     string_concat(
-                        _("Some of you uploaded images just failed. "),
+                        _("There're some image(s) which don't belong "
+                          "to this session. "),
+                        _("Please make sure you are the owner of this "
+                          "session and all images are uploaded by you. "),
                         _("please refresh the page and "
                           "redo the upload and submission.")
                     ))
-            except Exception as e:
-                raise forms.ValidationError(
-                    string_concat(
-                        _("Error"),
-                        "%(err_type)s: %(err_str)s. "
-                        % {
-                            "err_type": type(e).__name__,
-                            "err_str": str(e)}))
+
+        # validate file existance only for images uploaded by requested user
+        # whether this visit or before
+        saving_image_qs = user_image_pk_qs.filter(pk__in=pk_list)
+
+        image_path_failed = []
+        for img in saving_image_qs:
+            # try:
+            #     img.is_in_temp_storage(raise_on_oserror=True)
+            # except MetaBackendObjectDoesNotExist:
+            #     # Backward compatibility for images which are not saved
+            #     # using ProxyStorage
+            #     pass
+            if not os.path.isfile(str(img.image)):
+                image_path_failed.append(img)
+                continue
+
+        if image_path_failed:
+            raise forms.ValidationError(
+                string_concat(
+                    _("Some of you uploaded images just failed "
+                      "for unknown reasons"),
+                    (": %s.") % ", ".join([img.slug for img in image_path_failed]),
+                    _("please redo the upload and submission.")
+                ))
 
         cleaned_data["hidden_answer"] = pk_list
         return cleaned_data
@@ -474,7 +475,9 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                'course_identifier': page_context.course,
                "flow_session_id": page_context.flow_session.id,
                "ordinal": ordinal,
-               "IS_COURSE_STAFF": is_course_staff_request(request, page_context),
+               "IS_COURSE_STAFF":
+                   is_course_staff_course_image_request(
+                       request, page_context.course),
                "MAY_CHANGE_ANSWER": form.page_behavior.may_change_answer,
                "SHOW_CREATION_TIME": True,
                "ALLOW_ROTATE_TUNE": True,
@@ -507,47 +510,35 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
 
     def answer_data(self, page_context, page_data, form, files_data):
         answers = form.cleaned_data["hidden_answer"]
+
+        # this is necessary when no images are submitted
+        # for pages which do not require submission.
         if not answers:
             return None
 
         data_dict = {"answer": answers}
 
+        self.send_temp_image_to_protected(page_context, data_dict)
+
+        return data_dict
+
+    def send_temp_image_to_protected(self, page_context, data_dict):
+        # Convert submitted images which are in temp storage
+        # to sendfile storage
         data = data_dict.get("answer", [])
 
         if isinstance(data, list):
+            # ignore when loading bad formatted answer_data
+            # the data should be list containing only int
             try:
-                [int(i) for i in data]
+                data = [int(i) for i in data]
             except:
-                return data
+                return
 
-        saving_image_qs = (
-            FlowPageImage.objects
-                .filter(creator=page_context.flow_session.participation.user,
-                        course=page_context.course,
-                        pk__in=data
-                        ))
+        saving_image_qs = FlowPageImage.objects.filter(pk__in=data)
 
         for img in saving_image_qs:
-            assert isinstance(img, FlowPageImage)
-            try:
-                if storage.is_temp_image(img.image.file.name):
-                    name = storage.meta_backend.get(
-                        path=img.image.file.name)['original_storage_path']
-                    new_img_name = storage.save(
-                        name=name,
-                        content=img.image,
-                        using="sendfile"
-                    )
-
-                    assert os.path.isfile(new_img_name)
-                    img.image = new_img_name
-                    img.save()
-            except (OSError, IOError) as e:
-                # The temp file is removed during handling, we
-                # have to fail silently.
-                continue
-
-        return data_dict
+            img.save_to_protected_storage(fail_silently_on_save=False)
 
     def normalized_bytes_answer(self, page_context, page_data, answer_data):
         if answer_data is None:
@@ -571,7 +562,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
             for i, image in enumerate(image_qs):
                 image_file = image.image
                 try:
-                    if not os.path.isfile(image_file.path):
+                    if not os.path.isfile(str(image_file)):
                         continue
                 except Exception as e:
                     from django.core.exceptions import SuspiciousFileOperation
@@ -1039,7 +1030,7 @@ class ImageUploadQuestionWithAnswer(ImageUploadQuestion):
         html = super(ImageUploadQuestionWithAnswer, self).form_to_html(
             request, page_context, form, answer_data)
 
-        if is_course_staff_request(request, page_context):
+        if is_course_staff_course_image_request(request, page_context.course):
 
             from image_upload.serialize import (
                 get_image_page_data_str, get_image_admin_url)
@@ -1213,13 +1204,22 @@ def send_feed_back_email(pctx, flow_session_id, ordinal):
             from course.models import FlowPageData
             page_id = FlowPageData.objects.get(
                 flow_session=flow_session_id, ordinal=ordinal).page_id
-            from course.constants import participation_permission as pperm
-            tutor_qs = Participation.objects.filter(
+
+            ta_email_list = Participation.objects.filter(
                     course=pctx.course,
-                    # FIXME!!
-                    participations__roles__permissions__permission=pperm.assign_grade
-            )
-            tutor_email_list = [tutor.user.email for tutor in tutor_qs]
+                    roles__permissions__permission=pperm.assign_grade,
+                    roles__identifier="ta",
+            ).values_list("user__email", flat=True)
+
+            instructor_email_list = Participation.objects.filter(
+                    course=pctx.course,
+                    roles__permissions__permission=pperm.assign_grade,
+                    roles__identifier="instructor"
+            ).values_list("user__email", flat=True)
+
+            recipient_list = ta_email_list
+            if not recipient_list:
+                recipient_list = instructor_email_list
 
             review_url = reverse(
                 "relate-view_flow_page",
@@ -1228,6 +1228,8 @@ def send_feed_back_email(pctx, flow_session_id, ordinal):
                         'ordinal': ordinal
                         }
             )
+
+            from six.moves.urllib.parse import urljoin
             review_uri = urljoin(getattr(settings, "RELATE_BASE_URL"),
                                  review_url)
 
@@ -1258,7 +1260,7 @@ def send_feed_back_email(pctx, flow_session_id, ordinal):
                                     pctx.participation.user.get_full_name())},
                     body=message,
                     from_email=from_email,
-                    to=tutor_email_list,
+                    to=recipient_list,
                 )
                 msg.bcc = [student_email]
                 msg.reply_to = [student_email]

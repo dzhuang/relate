@@ -29,8 +29,10 @@ import tempfile
 
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
+from django.core.files import File
 from django.utils.deconstruct import deconstructible
 from django.utils.encoding import force_text
+from django.core.exceptions import SuspiciousFileOperation
 
 from proxy_storage.meta_backends.mongo import MongoMetaBackend
 from proxy_storage.storages.base import (
@@ -129,34 +131,29 @@ class ProxyStorage(ProxyStorageBase):
 
     def path(self, name):
         # type: (Text) -> Text
+
+        print("I am here at path method")
         from proxy_storage.meta_backends.base import MetaBackendObjectDoesNotExist
         try:
             meta_backend_obj = self.meta_backend.get(path=name)
             return self.get_original_storage(meta_backend_obj=meta_backend_obj) \
                 .path(meta_backend_obj['original_storage_path'])
         except MetaBackendObjectDoesNotExist:
-            # fall back
-            # print("%s is not in MetaBackend, so it is fall backed" % name)
+            # fall back if not found in ProxyStorage
+            # first in SendFileStorage
             s = SendFileStorage()
 
-            path = None
             try:
                 path = s.path(name)
             except Exception as e:
-                from django.core.exceptions import SuspiciousFileOperation
                 if isinstance(e, SuspiciousFileOperation):
-                    # the reason may be caused by accidentally deletion of
-                    # temp storage files. Here we fail silently
-                    return name
+                    # test whether the name is a physical valid path
+                    if os.path.isfile(name):
+                        return name
+                    print("not physical path")
+                raise e
 
-            if os.path.isfile(path):
-                return path
-            else:
-                raise OSError("%s is also not in SendFileStorage!!" % name)
-
-    def is_temp_image(self, path):
-        # type: (Text) -> bool
-        return self.meta_backend.get(path=path)['original_storage_name'] == "temp"
+            return path
 
 
 class UserImageStorage(MultipleOriginalStoragesMixin, ProxyStorage):
@@ -173,20 +170,26 @@ class UserImageStorage(MultipleOriginalStoragesMixin, ProxyStorage):
     )
 
     def open(self, name, mode='rb'):
+        print("I am here at open")
         try:
             return super(UserImageStorage, self)._open(name, mode)
         except IOError:
             # Fallback for existing images which are not migrated
             # to ProxyStorage
+            # First try to find in SendFileStorage
             try:
                 return SendFileStorage()._open(name, mode)
             except Exception as e:
-                from django.core.exceptions import SuspiciousFileOperation
                 if isinstance(e, SuspiciousFileOperation):
-                    # the reason may be caused by accidentally deletion of
-                    # temp storage files. Here we fail silently
-                    raise IOError("The file with name '%s' "
-                                  "does not exist!" % name)
+                    # Then try to using os path to determin
+                    # if the 'name' is phyiscal path
+                    if os.path.isfile(name):
+                        return File(open(name, mode))
+                    else:
+                        # the reason may be caused by accidentally deletion of
+                        # temp storage files. Here we fail silently
+                        raise IOError("The file with name '%s' "
+                                      "does not exist!" % name)
 
     def save(self, name, content, max_length=None,
              original_storage_path=None, using=None):
@@ -201,17 +204,6 @@ class UserImageStorage(MultipleOriginalStoragesMixin, ProxyStorage):
             original_storage_path=original_storage_path,
             using=using
         )
-
-    def save_to_sendfile_storage_path(self, path, content):
-        # type: (Text, Any) -> Text
-        original_storage_path = (
-            self.meta_backend.get(path=path)['original_storage_path'])
-        if not self.is_temp_image(path=path):
-            return original_storage_path
-        return self.save(
-            original_storage_path, content,
-            original_storage_path=original_storage_path,
-            using="sendfile")
 
 
 def user_flowsession_img_path(instance, file_name):
