@@ -52,7 +52,6 @@ from course.page import (  # type: ignore
     InlineMultiQuestion)
 from course.validation import ValidationError
 from course.content import get_repo_blob, get_repo_blob_data_cached
-from course.constants import participation_permission as pperm
 from course.latex.utils import file_read
 from course.page.code import (
     PythonCodeQuestion, PythonCodeQuestionWithHumanTextFeedback,
@@ -82,14 +81,6 @@ def markup_to_html(
             text,
             validate_only=warm_up_only,
             use_jinja=use_jinja)
-
-
-def is_course_staff(page_context):
-    participation = page_context.flow_session.participation
-    if participation.has_permission(pperm.assign_grade):
-        return True
-    else:
-        return False
 
 
 class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
@@ -704,7 +695,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 ),
                 "</p>"]))
 
-            if is_course_staff(page_context):
+            from image_upload.views import is_course_staff_participation
+            if is_course_staff_participation(
+                    page_context.flow_session.participation):
                 feedback_bits.append("".join([
                     "<p>",
                     _("This is the problematic code"),

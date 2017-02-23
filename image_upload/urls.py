@@ -32,7 +32,6 @@ from course.constants import COURSE_ID_REGEX
 from image_upload.views import (
     ImageCreateView, ImageDeleteView, ImageListView,
     image_crop_modal, image_crop, image_order,
-    user_image_download,
     flow_page_image_download,
     flow_page_image_problem,
     flow_page_image_key,
@@ -82,12 +81,6 @@ urlpatterns = [
         "/image/view/$",
         ImageListView.as_view(),
         name='jfu_view'),
-
-    url(r"^userfiles"
-        "/(?P<creator_id>\d+)"
-        "/(?P<download_id>\d+)/$",
-        user_image_download,
-        name='user_image_download'),
 
     url(r"^user_flow_page_images"
         "/" + COURSE_ID_REGEX +

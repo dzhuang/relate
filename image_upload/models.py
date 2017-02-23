@@ -25,6 +25,7 @@ THE SOFTWARE.
 """
 
 import six
+import os
 from django.db import models
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
@@ -46,14 +47,22 @@ from typing import Text, Optional  # noqa
 # }}}
 
 
-multiple_image_storage = UserImageStorage()
+storage = UserImageStorage()
+
+
+class FlowPageImageFileNotFoundError(OSError):
+    pass
+
+
+class TempFlowPageImageFileNotFoundError(OSError):
+    pass
 
 
 class FlowPageImage(models.Model):
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
             verbose_name=_('Creator'), on_delete=models.SET_NULL)
     image = models.ImageField(upload_to=user_flowsession_img_path,
-                              storage=multiple_image_storage,
+                              storage=storage,
                               max_length=500)
     slug = models.SlugField(max_length=256, blank=True)
     creation_time = models.DateTimeField(default=now)
@@ -69,6 +78,10 @@ class FlowPageImage(models.Model):
     flow_session = models.ForeignKey(
         "course.FlowSession", null=True, related_name="page_image_data",
         verbose_name=_('Flow session'), on_delete=models.SET_NULL)
+
+    # This is not redundant, because the permission on image
+    # should be same with page_behavior, we use this to connect
+    # to page_behavior
     image_page_id = models.CharField(max_length=200, null=True)
 
     is_image_textify = models.BooleanField(
@@ -100,6 +113,59 @@ class FlowPageImage(models.Model):
         if not self.slug:
             self.slug = self.image.name
         super(FlowPageImage, self).save(*args, **kwargs)
+
+    def is_in_temp_storage(self, raise_on_oserror=False):
+        from proxy_storage.meta_backends.base import MetaBackendObjectDoesNotExist
+        try:
+            return (
+                storage.meta_backend
+                .get(path=str(self.image))
+                ['original_storage_name'] == "temp")
+        except MetaBackendObjectDoesNotExist:
+            # The file is removed accidentally
+            if raise_on_oserror:
+                raise
+            return False
+
+    def remove_nonexist_image_object(self):
+        try:
+            if not self.is_in_temp_storage(raise_on_oserror=True):
+                return
+        except FlowPageImageFileNotFoundError:
+            self.delete()
+
+    def save_to_protected_storage(
+            self,
+            delete_temp_storage_file=False,
+            fail_silently_on_save=False):
+        if not self.is_in_temp_storage():
+            return
+        try:
+            temp_image_path = str(self.image)
+            name = storage.meta_backend.get(
+                path=temp_image_path)['original_storage_path']
+            new_img_name = storage.save(
+                name=name,
+                content=self.image,
+                using="sendfile"
+            )
+
+            self.image = new_img_name
+            self.save(update_fields=["image"])
+            if delete_temp_storage_file:
+                try:
+                    os.remove(temp_image_path)
+                except OSError:
+                    pass
+
+        except (OSError, IOError):
+            if not fail_silently_on_save:
+                raise
+
+            # The temp file is removed before/during handling, for
+            # cases when user are submitting pages,
+            # we have to fail silently.
+            return
 
     def delete(self, *args, **kwargs):
         """delete -- Remove to leave image."""

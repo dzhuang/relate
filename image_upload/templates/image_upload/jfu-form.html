@@ -217,11 +217,11 @@
                                     {{ JQ_OPEN }}=file.thumbnailUrl? 'data-gallery': ''{{ JQ_CLOSE }}
                                     id="filename{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
                                 >
-                                    {{ JQ_OPEN }}=file.name{{ JQ_CLOSE }}
+                                    {{ JQ_OPEN }}=file.name_trancated{{ JQ_CLOSE }}
                                 </a>
                             {{ JQ_OPEN }} } else { {{ JQ_CLOSE }}
                                 <span>
-                                    {{ JQ_OPEN }}=file.name{{ JQ_CLOSE }}
+                                    {{ JQ_OPEN }}=file.name_trancated{{ JQ_CLOSE }}
                                 </span>
                             {{ JQ_OPEN }} } {{ JQ_CLOSE }}
                         </p>

@@ -24,13 +24,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 from django.core.urlresolvers import reverse
-from django.utils.translation import ugettext
+from django.utils.translation import ugettext as _, string_concat
 
 from relate.utils import (
     as_local_time, format_datetime_local,
     compact_local_datetime_str)
 
-from course.views import get_now_or_fake_time
+from proxy_storage.meta_backends.base import MetaBackendObjectDoesNotExist
 
 from datetime import timedelta
 import mimetypes
@@ -41,8 +41,8 @@ import json
 from image_upload.models import FlowPageImage
 
 
-def order_name(name):
-    """order_name
+def get_truncated_name(name):
+    """get_truncated_name
     -- Limit a text to 20 chars length, if necessary strips the middle
        of the text and substitute it for an ellipsis.
 
@@ -82,7 +82,7 @@ def get_image_admin_url(image):
 
 
 def serialize(request, instance, file_attr='image'):
-    """serialize -- Serialize a Picture instance into a dict.
+    """serialize -- Serialize a FlowPageImage instance into a dict.
 
     instance -- Image instance
     file_attr -- attribute name that contains the FileField or ImageField
@@ -91,29 +91,18 @@ def serialize(request, instance, file_attr='image'):
     obj = getattr(instance, file_attr)
     error = None
     try:
-        size = 0
-        try:
-            size = instance.image.file.size
-        except Exception as e:
-            print(type(e), str(e))
-            from proxy_storage.meta_backends.base import \
-                MetaBackendObjectDoesNotExist
-            if isinstance(e, MetaBackendObjectDoesNotExist):
-                from image_upload.storages import SendFileStorage
-                storage = SendFileStorage()
-                size = storage.size(instance.image)
-        obj_name = obj.name
-        img_type = mimetypes.guess_type(obj.name)[0] or 'image/png'
-    except Exception as e:
-        obj_name = None
-        size = 0
-        img_type = None
-        if isinstance(e, (OSError, IOError)):
-            error = ugettext("The image file does not exist!")
+        size = instance.image.size
+    except MetaBackendObjectDoesNotExist:
+        from image_upload.storages import SendFileStorage
+        storage = SendFileStorage()
+        size = storage.size(instance.image)
+
+    obj_name = obj.name
+    img_type = mimetypes.guess_type(obj.name)[0] or 'image/png'
 
     # use slug by default
-    name_field = getattr(instance, 'slug', obj_name)
-    name = order_name(name_field)
+    name = getattr(instance, 'slug', obj_name)
+    name_trancated = get_truncated_name(name)
 
     delete_url = reverse('jfu_delete',
             kwargs={
@@ -142,43 +131,73 @@ def serialize(request, instance, file_attr='image'):
                 }
             )
 
+    # {{{ creation time string
+
     creation_time = format_datetime_local(
             as_local_time(instance.creation_time))
 
+    from course.views import get_now_or_fake_time
     creation_time_short = compact_local_datetime_str(
             as_local_time(instance.creation_time),
             get_now_or_fake_time(request),
             in_python=True)
 
-    timestr_title = "%s%s" % (ugettext("Created at "), creation_time)
-    timestr_short = creation_time_short
-
     show_modified_time = False
+    modified_time = None
+    modified_time_short = None
     # Only display file_last_modified time when modification is
     # within 5 minutes on creation.
     if instance.file_last_modified > (
             instance.creation_time + timedelta(minutes=5)):
         show_modified_time = True
 
-    if show_modified_time:
         modified_time = format_datetime_local(
-                as_local_time(instance.file_last_modified))
+            as_local_time(instance.file_last_modified))
 
         modified_time_short = compact_local_datetime_str(
                             as_local_time(instance.file_last_modified),
                             get_now_or_fake_time(request),
                             in_python=True)
-        timestr_title = "%s, %s %s" % (
-                timestr_title,
-                ugettext("modified at "),
-                modified_time)
-        timestr_short = "%s (%s)" % (
-                timestr_short,
-                modified_time_short)
+
+    modified_by_course_staff = False
+    if instance.creator != instance.flow_session.participation.user:
+        from course.models import Participation
+        creator_participation = None
+        try:
+            creator_participation = Participation.objects.get(
+                user=instance.creator, course=instance.course)
+        except Participation.DoesNotExist:
+            pass
+        if creator_participation:
+            from image_upload.views import is_course_staff_participation
+            modified_by_course_staff = (
+                is_course_staff_participation(creator_participation))
+
+    timestr_title = string_concat(
+        _("Created at %s") % creation_time,
+        string_concat(
+            ", ",
+            _("modified at %s") % modified_time
+        ) if show_modified_time else "",
+        string_concat(
+            " ",
+            _("by course staff.")
+        ) if modified_by_course_staff else ".",
+    )
+
+    timestr_short = string_concat(
+        creation_time_short,
+        " (%s" % modified_time_short if show_modified_time else "",
+        "*" if modified_by_course_staff else "",
+        ")" if show_modified_time else ""
+    )
+
+    # }}}
 
     return {
         'url': instance.get_absolute_url(),
         'name': name,
+        'name_trancated': name_trancated,
         'type': img_type,
         'thumbnailUrl': instance.image_thumbnail.url,
         'timestr_title': timestr_title,
