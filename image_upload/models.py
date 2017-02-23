@@ -53,7 +53,8 @@ class FlowPageImage(models.Model):
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
             verbose_name=_('Creator'), on_delete=models.SET_NULL)
     image = models.ImageField(upload_to=user_flowsession_img_path,
-                              storage=multiple_image_storage)
+                              storage=multiple_image_storage,
+                              max_length=500)
     slug = models.SlugField(max_length=256, blank=True)
     creation_time = models.DateTimeField(default=now)
     file_last_modified = models.DateTimeField(default=now)
