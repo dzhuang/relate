@@ -100,7 +100,7 @@ class FlowPageImage(models.Model):
     use_image_data = models.BooleanField(
         default=False, verbose_name=_("Use external Image data?"))
 
-    # The order of the img in a flow session page.
+    # The order of the img in a flow session page. Deprecated
     order = models.SmallIntegerField(default=0)
 
     def get_page_ordinal(self):
@@ -173,30 +173,20 @@ class FlowPageImage(models.Model):
         super(FlowPageImage, self).delete(*args, **kwargs)
 
     @models.permalink
-    def get_absolute_url(self, private=True, key=False):
+    def get_absolute_url(self):
         import os
         file_name = os.path.basename(self.image.path)
-        if private:
-            return ('flow_page_image_download', [
-                    self.course.identifier,
-                    self.flow_session_id,
-                    self.creator_id,
-                    self.pk,
-                    file_name], {}
-                    )
-        elif key is False:
-            return ('flow_page_image_problem',
-                    [self.pk, file_name], {})
-        elif key is True:
-            return ('flow_page_image_key',
-                    [self.pk, self.creator_id, file_name], {})
+        return ('flow_page_image_download', [
+                self.course.identifier,
+                self.flow_session_id,
+                self.creator_id,
+                self.pk,
+                file_name], {}
+                )
 
     def admin_image(self):
         # type: () -> Optional[Text]
-        if self.order == 0:
-            img_url = self.get_absolute_url(private=False)
-        else:
-            img_url = self.get_absolute_url(key=True)
+        img_url = self.get_absolute_url()
         if img_url:
             return ("<img src='%s' "
                     "class='img-responsive' "

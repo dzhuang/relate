@@ -148,6 +148,24 @@ class ProxyStorage(ProxyStorageBase):
                     # test whether the name is a physical valid path
                     if os.path.isfile(name):
                         return name
+                    # temp solution
+                    # from image_upload.models import FlowPageImage
+                    # ai = FlowPageImage.objects.all()
+                    # for a in ai:
+                    #     if str(a.image).startswith("/srv/www/relate"):
+                    #         name = str(a.image)
+                    #         new_name = name.replace("/srv/www/relate",
+                    #                                 "E:/git-trial/course/relate")
+                    #         import os
+                    #         if os.path.isfile(new_name):
+                    #             a.image = new_name
+                    #             a.save(update_fields=["image"])
+                    # import platform
+                    # if platform.system().lower().startswith("win"):
+                    #     if name.startswith("/srv/www/relate"):
+                    #         name = name.replace("/srv/www/relate",
+                    #                             "E:/git-trial/course/relate")
+                    #         return name
                 raise e
 
             return path

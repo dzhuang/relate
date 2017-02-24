@@ -33,11 +33,7 @@ from image_upload.views import (
     ImageCreateView, ImageDeleteView, ImageListView,
     image_crop_modal, image_crop, image_order,
     flow_page_image_download,
-    flow_page_image_problem,
-    flow_page_image_key,
 )
-
-from image_upload.page.imgupload import send_feed_back_email
 
 js_info_dict_image_upload = {
     'packages': ('image_upload',),
@@ -92,19 +88,6 @@ urlpatterns = [
         flow_page_image_download,
         name='flow_page_image_download'),
 
-    url(r"^question_img"
-        "/(?P<download_id>\d+)"
-        "/(?P<file_name>[^/]+)$",
-        flow_page_image_problem,
-        name='flow_page_image_problem'),
-
-    url(r"^key_img"
-        "/(?P<download_id>\d+)"
-        "/(?P<creator_id>\d+)"
-        "/(?P<file_name>[^/]+)$",
-        flow_page_image_key,
-        name='flow_page_image_key'),
-
     url(r"^course"
         "/" + COURSE_ID_REGEX +
         "/flow-session"
@@ -123,15 +106,6 @@ urlpatterns = [
         "/image/order",
         image_order,
         name='image_order'),
-
-    url(r"^course"
-        "/" + COURSE_ID_REGEX +
-        "/flow-session"
-        "/(?P<flow_session_id>[0-9]+|None)"
-        "/(?P<ordinal>[0-9]+|None)"
-        "/email-feedback/$",
-        send_feed_back_email,
-        name='send_feed_back_email'),
 
     url(r"^jsi18n"
         "/image_upload/$",

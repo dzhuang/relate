@@ -65,7 +65,6 @@ def get_image_page_data_str(image):
     image_data_dict = {
         'flow_pk': image.flow_session.id,
         'page_id': image.image_page_id,
-        'order_set': list((image.order,)),
     }
 
     return str(json.dumps(image_data_dict).encode("utf-8"))
@@ -205,7 +204,6 @@ def serialize(request, instance, file_attr='image'):
         'size': size,
         'error': error,
         'pk': instance.pk,
-        'order': instance.order,
         'updateUrl': update_url,
         'deleteUrl': delete_url,
         'crop_handler_url': crop_handler_url,

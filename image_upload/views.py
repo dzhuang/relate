@@ -337,24 +337,6 @@ def flow_page_image_download(pctx, flow_session_id, creator_id,
 
 
 @login_required
-def flow_page_image_problem(request, download_id, file_name):
-    # show the problem image
-    download_object = get_object_or_404(FlowPageImage, pk=download_id)
-    if download_object.order == 0:
-        privilege = True
-    else:
-        privilege = False
-    return _auth_download(request, download_object, privilege)
-
-
-@login_required
-def flow_page_image_key(request, download_id, creator_id, file_name):
-    download_object = get_object_or_404(FlowPageImage, pk=download_id)
-    privilege = True
-    return _auth_download(request, download_object, privilege)
-
-
-@login_required
 def _auth_download(request, download_object, privilege=False):
     if (not request.user == download_object.creator
         and
