@@ -544,38 +544,39 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         if answer_data is None:
             return None
 
-        flow_session_id = page_context.flow_session.id
-        ordinal = get_ordinal_from_page_context(page_context)
-        #flow_owner = page_context.flow_session.participation.user
-        from course.models import FlowPageData
-        fpd = FlowPageData.objects.get(
-            flow_session=flow_session_id, ordinal=ordinal)
+        try:
+            pk_list = answer_data.get("answer")
+        except:
+            return None
 
-        image_qs = FlowPageImage.objects.filter(
-            flow_session=flow_session_id,
-            image_page_id=fpd.page_id)
+        if not len(pk_list):
+            return None
+
+        clauses = (
+            ' '.join(['WHEN id=%s THEN %s' % (pk, i)
+                      for i, pk in enumerate(pk_list)]))
+        ordering = 'CASE %s END' % clauses
+        image_qs = FlowPageImage.objects.filter(pk__in=pk_list).extra(
+            select={'ordering': ordering}, order_by=('ordering',))
 
         if image_qs.exists():
             from image_upload.utils import InMemoryZip
             in_mem_zipfile = InMemoryZip()
             image_count = 0
-            for i, image in enumerate(image_qs):
-                image_file = image.image
+            for i, img in enumerate(image_qs):
+                if not os.path.isfile(str(img.image)):
+                    continue
+                file_name, ext = os.path.splitext(str(img.image))
+
                 try:
-                    if not os.path.isfile(str(image_file)):
-                        continue
-                except Exception as e:
-                    from django.core.exceptions import SuspiciousFileOperation
-                    if isinstance(e, SuspiciousFileOperation):
-                        continue
+                    f = open(str(img.image), 'rb')
+                except (IOError, OSError):
+                    continue
 
-                file_name, ext = os.path.splitext(image_file.path)
-
-                thefile = open(image_file.path, 'rb')
-                thefile.seek(0)
-                buf = image_file.read()
-                thefile.close()
-                in_mem_zipfile.append(str(i+1) + ext, buf)
+                f.seek(0)
+                buf = img.image.read()
+                f.close()
+                in_mem_zipfile.append(str(i + 1) + ext, buf)
                 image_count += 1
 
             if image_count:
