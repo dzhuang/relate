@@ -30,7 +30,6 @@ import django.forms as forms
 from django.utils.translation import ugettext as _, string_concat
 from django.template.loader import render_to_string
 from django.db import transaction
-from django.contrib import messages
 from django.core.urlresolvers import reverse, NoReverseMatch
 from django.core.exceptions import ObjectDoesNotExist
 
@@ -40,18 +39,15 @@ from course.page.base import (
     PageBaseWithTitle, PageBaseWithValue, PageBaseWithHumanTextFeedback,
     PageBaseWithCorrectAnswer, HumanTextFeedbackForm,
     markup_to_html)
-from course.validation import ValidationError
-from course.utils import (course_view, render_course_page, FlowPageContext)
-from course.constants import (
-    participation_permission as pperm,
-    participation_status)
+from course.utils import FlowPageContext
+from course.constants import participation_status
 
 from image_upload.storages import UserImageStorage
 from image_upload.models import FlowPageImage
 from image_upload.utils import get_ordinal_from_page_context
 from image_upload.views import is_course_staff_course_image_request
 
-from crispy_forms.layout import Layout, HTML, Submit
+from crispy_forms.layout import Layout, HTML
 
 storage = UserImageStorage()
 
