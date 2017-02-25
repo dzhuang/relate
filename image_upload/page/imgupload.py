@@ -564,13 +564,13 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
             in_mem_zipfile = InMemoryZip()
             image_count = 0
             for i, img in enumerate(image_qs):
-                if not os.path.isfile(str(img.image)):
+                if not os.path.isfile(img.image.path):
                     continue
                 file_name, ext = os.path.splitext(str(img.image))
 
                 try:
-                    f = open(str(img.image), 'rb')
-                except (IOError, OSError):
+                    f = open(img.image.path, 'rb')
+                except (IOError, OSError) as e:
                     continue
 
                 f.seek(0)
