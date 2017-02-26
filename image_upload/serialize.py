@@ -30,8 +30,6 @@ from relate.utils import (
     as_local_time, format_datetime_local,
     compact_local_datetime_str)
 
-from proxy_storage.meta_backends.base import MetaBackendObjectDoesNotExist
-
 from datetime import timedelta
 import mimetypes
 import re
@@ -89,12 +87,11 @@ def serialize(request, instance, file_attr='image'):
     """
     obj = getattr(instance, file_attr)
     error = None
+    size = 0
     try:
         size = instance.image.size
-    except MetaBackendObjectDoesNotExist:
-        from image_upload.storages import SendFileStorage
-        storage = SendFileStorage()
-        size = storage.size(instance.image)
+    except:
+        pass
 
     obj_name = obj.name
     img_type = mimetypes.guess_type(obj.name)[0] or 'image/png'

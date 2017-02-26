@@ -42,7 +42,7 @@ from course.page.base import (
 from course.utils import FlowPageContext
 from course.constants import participation_status
 
-from image_upload.storages import UserImageStorage
+from image_upload.models import UserImageStorage
 from image_upload.models import FlowPageImage
 from image_upload.utils import get_ordinal_from_page_context
 from image_upload.views import is_course_staff_course_image_request
@@ -119,6 +119,8 @@ class ImageUploadForm(StyledForm):
             if self.require_image_for_submission:
                 raise forms.ValidationError(
                     _("You have not upload image(s)!"))
+            elif len(pk_list_str) == 0:
+                return cleaned_data
 
         try:
             pk_list = [int(i.strip()) for i in pk_list_str.split(",")]
@@ -181,13 +183,8 @@ class ImageUploadForm(StyledForm):
 
         image_path_failed = []
         for img in saving_image_qs:
-            # try:
-            #     img.is_in_temp_storage(raise_on_oserror=True)
-            # except MetaBackendObjectDoesNotExist:
-            #     # Backward compatibility for images which are not saved
-            #     # using ProxyStorage
-            #     pass
-            if not os.path.isfile(str(img.image)):
+            if not os.path.isfile(img.image.path):
+                print(img.image.path, "clean")
                 image_path_failed.append(img)
                 continue
 
@@ -534,7 +531,9 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         saving_image_qs = FlowPageImage.objects.filter(pk__in=data)
 
         for img in saving_image_qs:
-            img.save_to_protected_storage(fail_silently_on_save=False)
+            img.save_to_protected_storage(
+                delete_temp_storage_file=True,
+                fail_silently_on_save=False)
 
     def normalized_bytes_answer(self, page_context, page_data, answer_data):
         if answer_data is None:

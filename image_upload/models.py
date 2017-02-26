@@ -28,11 +28,10 @@ import six
 import os
 from django.db import models
 from django.conf import settings
+from django.core.files.storage import FileSystemStorage
+from django.utils.deconstruct import deconstructible
 from django.utils.translation import ugettext_lazy as _
 from django.utils.timezone import now
-
-from image_upload.storages import (
-    user_flowsession_img_path, UserImageStorage)
 
 from imagekit.models import ImageSpecField
 from imagekit.processors import ResizeToFit
@@ -47,7 +46,33 @@ from typing import Text, Optional  # noqa
 # }}}
 
 
+@deconstructible
+class UserImageStorage(FileSystemStorage):
+    def __init__(self):
+        # type: () -> None
+        super(UserImageStorage, self).__init__(
+                location=settings.SENDFILE_ROOT)
+
+
 storage = UserImageStorage()
+
+
+def user_flowsession_img_path(instance, filename):
+    if instance.creator.get_full_name() is not None:
+        user_full_name = instance.creator.get_full_name().replace(' ', '_')
+    else:
+        user_full_name = instance.creator.pk
+
+    if instance.is_temp_image:
+        return 'user_images/{0}(user_{1})/temp/{2}'.format(
+            user_full_name,
+            instance.creator_id,
+            filename)
+
+    return 'user_images/{0}(user_{1})/{2}'.format(
+        user_full_name,
+        instance.creator_id,
+        filename)
 
 
 class FlowPageImageFileNotFoundError(OSError):
@@ -72,6 +97,11 @@ class FlowPageImage(models.Model):
         processors=[ResizeToFit(100, 100)],
         format='PNG',
         options={'quality': 50})
+
+    is_temp_image = models.BooleanField(
+        default=False, verbose_name=_("Is the image for temporary use?"),
+    )
+
     course = models.ForeignKey(
         "course.Course", null=True,
         verbose_name=_('Course'), on_delete=models.SET_NULL)
@@ -100,9 +130,6 @@ class FlowPageImage(models.Model):
     use_image_data = models.BooleanField(
         default=False, verbose_name=_("Use external Image data?"))
 
-    # The order of the img in a flow session page. Deprecated
-    order = models.SmallIntegerField(default=0)
-
     def get_page_ordinal(self):
         from course.models import FlowPageData
         fpd = FlowPageData.objects.get(
@@ -115,50 +142,34 @@ class FlowPageImage(models.Model):
         super(FlowPageImage, self).save(*args, **kwargs)
 
     def is_in_temp_storage(self, raise_on_oserror=False):
-        from proxy_storage.meta_backends.base import MetaBackendObjectDoesNotExist
-        try:
-            return (
-                storage.meta_backend
-                .get(path=str(self.image))
-                ['original_storage_name'] == "temp")
-        except MetaBackendObjectDoesNotExist:
-            # The file is removed accidentally
-            if raise_on_oserror:
-                raise
-            return False
-
-    def remove_nonexist_image_object(self):
-        try:
-            if not self.is_in_temp_storage(raise_on_oserror=True):
-                return
-        except FlowPageImageFileNotFoundError:
-            self.delete()
+        return self.is_temp_image
 
     def save_to_protected_storage(
             self,
             delete_temp_storage_file=False,
             fail_silently_on_save=False):
+
         if not self.is_in_temp_storage():
             return
+
+        temp_image_path = self.image.path
+        filename = os.path.split(self.image.name)[-1]
+        self.is_temp_image = False
+        name = user_flowsession_img_path(self, filename)
+
         try:
-            temp_image_path = str(self.image)
-            name = storage.meta_backend.get(
-                path=temp_image_path)['original_storage_path']
             new_img_name = storage.save(
                 name=name,
-                content=self.image,
-                using="sendfile"
+                content=self.image
             )
-
             self.image = new_img_name
-            self.save(update_fields=["image"])
+            self.save(update_fields=["image", "is_temp_image"])
             if delete_temp_storage_file:
                 try:
                     os.remove(temp_image_path)
                 except OSError:
                     pass
-
-        except (OSError, IOError):
+        except OSError:
             if not fail_silently_on_save:
                 raise
 

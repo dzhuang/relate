@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+# This module is deprecated.
+
 from __future__ import division
 
 __copyright__ = "Copyright (C) 2016 Dong Zhuang"

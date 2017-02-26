@@ -41,8 +41,8 @@ from course.utils import course_view, FlowPageContext, get_session_access_rule, 
 from course.constants import participation_permission as pperm
 
 from image_upload.serialize import serialize
-from image_upload.models import FlowPageImage
-from image_upload.storages import UserImageStorage
+from image_upload.models import FlowPageImage, UserImageStorage
+#from image_upload.storages import UserImageStorage
 
 from jsonview.decorators import json_view
 from jsonview.exceptions import BadRequest
@@ -51,7 +51,6 @@ import json
 from PIL import Image
 from io import BytesIO
 from sendfile import sendfile
-from proxy_storage.meta_backends.base import MetaBackendObjectDoesNotExist
 
 storage = UserImageStorage()
 
@@ -134,6 +133,7 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin,
             return self.render_json_response(file_data)
 
         self.object = form.save(commit=False)
+        self.object.is_temp_image = True
         self.object.creator = self.request.user
 
         course_identifier = self.kwargs["course_identifier"]
@@ -149,6 +149,11 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin,
         self.object.image_page_id = fpd.page_id
         self.object.course = course
         self.object.save()
+
+        print(self.object.image.path)
+        print(self.object.image.name)
+        print(str(self.object.image))
+        print(storage.path(self.object.image.name))
 
         files = [serialize(self.request, self.object, 'image')]
         data = {'files': files}
@@ -193,14 +198,10 @@ class ImageDeleteView(LoginRequiredMixin, ImageOperationMixin, DeleteView):
             from django.core.exceptions import PermissionDenied
             raise PermissionDenied(_("may not delete other people's image"))
         else:
-            try:
-                if self.object.is_in_temp_storage():
-                    self.object.delete()
-                    response = http.JsonResponse(True, safe=False)
-                else:
-                    response = http.JsonResponse(False, safe=False)
-            except MetaBackendObjectDoesNotExist:
-                # Backward compatibility, for images not using ProxyStorage
+            if self.object.is_in_temp_storage():
+                self.object.delete()
+                response = http.JsonResponse(True, safe=False)
+            else:
                 response = http.JsonResponse(False, safe=False)
 
             response['Content-Disposition'] = 'inline; filename=files.json'
@@ -311,15 +312,6 @@ def flow_page_image_download(pctx, flow_session_id, creator_id,
                              download_id, file_name):
     request = pctx.request
     download_object = get_object_or_404(FlowPageImage, pk=download_id)
-
-    try:
-        if download_object.is_in_temp_storage(raise_on_oserror=True):
-            return _non_auth_download(request, download_object)
-    except MetaBackendObjectDoesNotExist:
-        # Backward compatibility for images which are not saved
-        # using ProxyStorage, and they should be directed to
-        # authorized view.
-        pass
 
     privilege = False
 
