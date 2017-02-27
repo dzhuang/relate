@@ -61,12 +61,17 @@ def set_instance_cache(sender, instance, **kwargs):
     # stop if the object is not created.
     if instance.pk is None:
         return
+
+    # preserve file if the temp image is cropped or rotated,
+    # those file should be removed with the instances they belong to
+    if instance.is_temp_image:
+        return
     # prevent errors when loading files from fixtures
     from_fixture = 'raw' in kwargs and kwargs['raw']
     is_valid_app = sender._meta.app_label in LOCAL_APPS
     if is_valid_app and not from_fixture:
         old_instance = sender.objects.filter(pk=instance.id).first()
-        if old_instance is not None and instance.is_temp_image:
+        if old_instance is not None:
             # for each FileField, we will keep
             # the original value inside an ephemeral `cache`
             instance.files_cache = {
@@ -96,8 +101,7 @@ def handle_files_on_update(sender, instance, **kwargs):
 # }}}
 
 @receiver(pre_save, sender=FlowPageVisit)
-def send_to_sendfile_on_save(sender, instance, **kwargs):
-    print(instance.answer, "print answer")
+def send_to_sendfile_on_page_save(sender, instance, **kwargs):
     if instance.answer is None:
         return
 
@@ -130,7 +134,6 @@ def send_to_sendfile_on_save(sender, instance, **kwargs):
     )
 
     for img in saving_image_qs:
-        print(img)
         img.save_to_protected_storage(
             delete_temp_storage_file=True,
             fail_silently_on_save=True)
@@ -154,7 +157,8 @@ def delete_temp_images_on_update(sender, instance, **kwargs):
 
     delete_temp_images_from_submitted_page.delay(
         flow_session_id=instance.flow_session_id,
-        page_id=instance.page_data.page_id)
+        page_id=instance.page_data.page_id
+    )
 
 
 # vim: foldmethod=marker

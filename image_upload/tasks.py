@@ -36,7 +36,7 @@ def delete_temp_images_from_submitted_page(self, flow_session_id, page_id):
         image_page_id=page_id,
         is_temp_image=True
     )
-    if fpi_qs.count():
-        for FPI in fpi_qs:
-            if FPI.is_temp_image:
-                FPI.delete()
+    for FPI in fpi_qs:
+        FPI.refresh_from_db()
+        if FPI.is_temp_image:
+            FPI.delete()

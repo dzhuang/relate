@@ -496,8 +496,6 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
     try:
         new_instance.save()
         new_instance.refresh_from_db()
-        print(new_instance.is_temp_image, "is_temp------------------->")
-        print(new_instance.image.name, "new name-------------------->")
     except (OSError, IOError) as e:
         raise CropImageError(string_concat(
             _('There are errors, please refresh the page or try again later'),
