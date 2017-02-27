@@ -66,7 +66,7 @@ def set_instance_cache(sender, instance, **kwargs):
     is_valid_app = sender._meta.app_label in LOCAL_APPS
     if is_valid_app and not from_fixture:
         old_instance = sender.objects.filter(pk=instance.id).first()
-        if old_instance is not None:
+        if old_instance is not None and instance.is_temp_image:
             # for each FileField, we will keep
             # the original value inside an ephemeral `cache`
             instance.files_cache = {
@@ -97,6 +97,7 @@ def handle_files_on_update(sender, instance, **kwargs):
 
 @receiver(pre_save, sender=FlowPageVisit)
 def send_to_sendfile_on_save(sender, instance, **kwargs):
+    print(instance.answer, "print answer")
     if instance.answer is None:
         return
 
@@ -129,6 +130,7 @@ def send_to_sendfile_on_save(sender, instance, **kwargs):
     )
 
     for img in saving_image_qs:
+        print(img)
         img.save_to_protected_storage(
             delete_temp_storage_file=True,
             fail_silently_on_save=True)
