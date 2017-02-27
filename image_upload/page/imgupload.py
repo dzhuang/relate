@@ -184,7 +184,6 @@ class ImageUploadForm(StyledForm):
         image_path_failed = []
         for img in saving_image_qs:
             if not os.path.isfile(img.image.path):
-                print(img.image.path, "clean")
                 image_path_failed.append(img)
                 continue
 
@@ -509,31 +508,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         if not answers:
             return None
 
-        data_dict = {"answer": answers}
-
-        self._send_temp_image_to_protected(data_dict)
-
-        return data_dict
-
-    def _send_temp_image_to_protected(self, data_dict):
-        # Convert submitted images which are in temp storage
-        # to sendfile storage
-        data = data_dict.get("answer", [])
-
-        if isinstance(data, list):
-            # ignore when loading bad formatted answer_data
-            # the data should be list containing only int
-            try:
-                data = [int(i) for i in data]
-            except:
-                return
-
-        saving_image_qs = FlowPageImage.objects.filter(pk__in=data)
-
-        for img in saving_image_qs:
-            img.save_to_protected_storage(
-                delete_temp_storage_file=True,
-                fail_silently_on_save=False)
+        return {"answer": answers}
 
     def normalized_bytes_answer(self, page_context, page_data, answer_data):
         if answer_data is None:

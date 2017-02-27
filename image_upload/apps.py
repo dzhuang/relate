@@ -8,4 +8,4 @@ class ImageUploadConfig(AppConfig):
     verbose_name = _("Image upload")
 
     def ready(self):
-        import course.receivers  # noqa
+        import image_upload.receivers  # noqa

@@ -1,0 +1,158 @@
+# -*- coding: utf-8 -*-
+
+from __future__ import division
+
+__copyright__ = "Copyright (C) 2016 Dong Zhuang, Andreas Kloeckner"
+
+__license__ = """
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+"""
+
+from django.db.models import FileField
+from django.db.models.signals import post_save, pre_save
+from django.dispatch.dispatcher import receiver
+
+from course.models import FlowPageVisit
+
+from image_upload.models import FlowPageImage
+
+LOCAL_APPS = [
+    'image_upload',
+]
+
+
+from typing import List, Any  # noqa
+
+
+def delete_files(files_list):
+    # type: (List[Any]) -> None
+
+    for file_ in files_list:
+        if file_ and hasattr(file_, 'storage') and hasattr(file_, 'path'):
+            # this accounts for different file storages
+            # (e.g. when using django-storages)
+            storage_, path_ = file_.storage, file_.path
+            storage_.delete(path_)
+
+
+# {{{ Delete temp image when it is saved to sendfile storage
+
+
+@receiver(pre_save, sender=FlowPageImage)
+def set_instance_cache(sender, instance, **kwargs):
+    # type: (Any, FlowPageImage, **Any) -> None
+
+    # stop if the object is not created.
+    if instance.pk is None:
+        return
+    # prevent errors when loading files from fixtures
+    from_fixture = 'raw' in kwargs and kwargs['raw']
+    is_valid_app = sender._meta.app_label in LOCAL_APPS
+    if is_valid_app and not from_fixture:
+        old_instance = sender.objects.filter(pk=instance.id).first()
+        if old_instance is not None:
+            # for each FileField, we will keep
+            # the original value inside an ephemeral `cache`
+            instance.files_cache = {
+                field_.name: getattr(old_instance, field_.name, None)
+                for field_ in sender._meta.fields
+                if isinstance(field_, FileField)
+            }
+
+
+@receiver(post_save, sender=FlowPageImage)
+def handle_files_on_update(sender, instance, **kwargs):
+    # type: (Any, FlowPageImage, **Any) -> None
+    if hasattr(instance, 'files_cache') and instance.files_cache:
+        deletables = []
+        for field_name in instance.files_cache:
+            old_file_value = instance.files_cache[field_name]
+            new_file_value = getattr(instance, field_name, None)
+            # only delete the files that have changed
+            if old_file_value and old_file_value != new_file_value:
+                deletables.append(old_file_value)
+        delete_files(deletables)
+        instance.files_cache = {
+            field_name: getattr(instance, field_name, None)
+            for field_name in instance.files_cache}
+
+
+# }}}
+
+@receiver(pre_save, sender=FlowPageVisit)
+def send_to_sendfile_on_save(sender, instance, **kwargs):
+    if instance.answer is None:
+        return
+
+    if not isinstance(instance.answer, dict):
+        return
+
+    data = instance.answer.get("answer", [])
+
+    if not isinstance(data, list):
+        return
+
+    # ignore when loading bad formatted answer_data
+    # the data should be list containing only int
+    try:
+        data = [int(i) for i in data]
+    except:
+        return
+
+    from course.latex.utils import get_all_indirect_subclasses
+    from image_upload.page.imgupload import ImageUploadQuestion
+    all_subclass_name = [
+        cls.__name__
+        for cls in get_all_indirect_subclasses(ImageUploadQuestion)]
+
+    if instance.page_data.page_type not in all_subclass_name:
+        return
+
+    saving_image_qs = FlowPageImage.objects.filter(
+        pk__in=data, is_temp_image=True
+    )
+
+    for img in saving_image_qs:
+        img.save_to_protected_storage(
+            delete_temp_storage_file=True,
+            fail_silently_on_save=True)
+
+
+@receiver(post_save, sender=FlowPageVisit)
+def delete_temp_images_on_update(sender, instance, **kwargs):
+    if instance.answer is None:
+        return
+
+    from course.latex.utils import get_all_indirect_subclasses
+    from image_upload.page.imgupload import ImageUploadQuestion
+    all_subclass_name = [
+        cls.__name__
+        for cls in get_all_indirect_subclasses(ImageUploadQuestion)]
+
+    if instance.page_data.page_type not in all_subclass_name:
+        return
+
+    from image_upload.tasks import delete_temp_images_from_submitted_page
+
+    delete_temp_images_from_submitted_page.delay(
+        flow_session_id=instance.flow_session_id,
+        page_id=instance.page_data.page_id)
+
+
+# vim: foldmethod=marker

@@ -150,11 +150,6 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin,
         self.object.course = course
         self.object.save()
 
-        print(self.object.image.path)
-        print(self.object.image.name)
-        print(str(self.object.image))
-        print(storage.path(self.object.image.name))
-
         files = [serialize(self.request, self.object, 'image')]
         data = {'files': files}
         return self.render_json_response(data)
@@ -420,9 +415,6 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
     except FlowPageImage.DoesNotExist:
         raise CropImageError(_('Please upload the image first.'))
 
-    print("time", crop_instance.creation_time)
-    print("last_modified", crop_instance.file_last_modified)
-
     image_orig_path = crop_instance.image.path
     if not image_orig_path:
         raise CropImageError(
@@ -467,11 +459,11 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
     new_image_io = BytesIO()
     new_image.save(new_image_io, format=image_format)
 
-    from copy import deepcopy
-    new_instance = deepcopy(crop_instance)
-
+    new_instance = crop_instance
     new_instance.pk = None
     new_instance.creator = request.user
+
+    new_instance.is_temp_image = True
     new_instance.image.save(
         name=crop_instance.slug,
         content=ContentFile(new_image_io.getvalue()),
@@ -479,7 +471,6 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
     )
 
     new_image_last_modified = crop_instance.creation_time
-    print(new_image_last_modified, crop_instance.creation_time)
 
     from relate.utils import as_local_time, local_now
     import datetime

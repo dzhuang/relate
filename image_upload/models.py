@@ -152,10 +152,11 @@ class FlowPageImage(models.Model):
         if not self.is_in_temp_storage():
             return
 
-        temp_image_path = self.image.path
+        # temp_image_path = self.image.path
         filename = os.path.split(self.image.name)[-1]
         self.is_temp_image = False
         name = user_flowsession_img_path(self, filename)
+        print(name)
 
         try:
             new_img_name = storage.save(
@@ -163,13 +164,16 @@ class FlowPageImage(models.Model):
                 content=self.image
             )
             self.image = new_img_name
+            #self.save(update_fields=["image", "is_temp_image"])
             self.save(update_fields=["image", "is_temp_image"])
-            if delete_temp_storage_file:
-                try:
-                    os.remove(temp_image_path)
-                except OSError:
-                    pass
+            self.refresh_from_db()
+            # if delete_temp_storage_file:
+            #     try:
+            #         os.remove(temp_image_path)
+            #     except OSError:
+            #         pass
         except OSError:
+            raise
             if not fail_silently_on_save:
                 raise
 
