@@ -7,9 +7,9 @@
     <![endif]-->
 </div>
 <div class="modal-body">
-    {% if file %}
+    {% if image %}
     <div class="img-container">
-        <img id="image" src="{{ file.get_absolute_url }}" alt="Picture{{file.id}}" id="target{{file.id}}">
+        <img id="image" src="{{ image.get_absolute_url }}" alt="Picture{{image.id}}" id="target{{image.id}}">
     </div>
     <div class="preview_container">
         <div id="preview"></div>
@@ -29,7 +29,7 @@
             {{ error_message }}
         </div>
         {% endif %}
-        {% if file %}
+        {% if image %}
         <div id="crp-result"></div>
         <button type="button" class="btn btn-primary btn-crp-rtt" data-step="-90">
               <i class="fa fa-rotate-left"></i>
@@ -51,7 +51,7 @@
         {% endif %}
     <iframe id="crp-iframe" name="crp-iframe" style="display: none;"></iframe>
     <form id="crp-form"
-          action="{% url 'image_crop' file.course.identifier file.flow_session_id file.get_page_ordinal file.id %}"
+          action="{% url 'image_crop' image.course.identifier image.flow_session_id image.get_page_ordinal image.id %}"
           method="post"
           target="crp-iframe"
           style="display: none;">

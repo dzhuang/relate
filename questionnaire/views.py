@@ -116,7 +116,6 @@ class SingleQuestionView(CourseViewMixin, FormView):
         try:
             answer = Answer.objects.get(user=self.request.user, question__pk=pk)
             exist_answer['question_{0}'.format(pk)] = answer.answer
-            print(answer.answer)
         except Answer.DoesNotExist:
             pass
         kwargs.update(initial=exist_answer)
@@ -154,7 +153,6 @@ class TakeQuestionnaire(FormView):
                 answer = Answer.objects.get(
                     user=self.request.user, question=question)
                 exist_answer['question_{0}'.format(question.pk)] = answer.answer
-                print(answer.answer)
             except Answer.DoesNotExist:
                 pass
         kwargs.update(initial=exist_answer)

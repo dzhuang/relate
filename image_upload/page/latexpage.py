@@ -52,7 +52,6 @@ from course.page import (  # type: ignore
     InlineMultiQuestion)
 from course.validation import ValidationError
 from course.content import get_repo_blob, get_repo_blob_data_cached
-from course.constants import participation_permission as pperm
 from course.latex.utils import file_read
 from course.page.code import (
     PythonCodeQuestion, PythonCodeQuestionWithHumanTextFeedback,
@@ -84,14 +83,6 @@ def markup_to_html(
             use_jinja=use_jinja)
 
 
-def is_course_staff(page_context):
-    participation = page_context.flow_session.participation
-    if participation.has_permission(pperm.assign_grade):
-        return True
-    else:
-        return False
-
-
 class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                           PageBaseWithCorrectAnswer):
     grading_sort_by_page_data = True
@@ -114,8 +105,11 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 for cf in page_desc.cache_key_files:
                     if cf not in page_desc.data_files:
                         raise ValidationError(
-                            _("%s: '%s' should be listed in 'data_files'")
-                            % (location, cf))
+                            string_concat(
+                                location,
+                                ": ",
+                                _("'%s' should be listed in 'data_files'")
+                                % cf))
             if hasattr(page_desc, "excluded_cache_key_files"):
                 for cf in page_desc.excluded_cache_key_files:
                     if cf not in page_desc.data_files:
@@ -570,7 +564,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     run_timeout=self.docker_run_timeout)
         except:
             from traceback import format_exc
-            print("".join(format_exc()))
             response_dict = {
                     "result": "uncaught_error",
                     "message": "Error connecting to container",
@@ -702,7 +695,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 ),
                 "</p>"]))
 
-            if is_course_staff(page_context):
+            from image_upload.views import is_course_staff_participation
+            if is_course_staff_participation(
+                    page_context.flow_session.participation):
                 feedback_bits.append("".join([
                     "<p>",
                     _("This is the problematic code"),

@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+# This module is deprecated.
+
 from __future__ import division
 
 __copyright__ = "Copyright (C) 2016 Dong Zhuang"
@@ -29,9 +31,10 @@ import tempfile
 
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
-from django.utils._os import safe_join
+from django.core.files import File
 from django.utils.deconstruct import deconstructible
 from django.utils.encoding import force_text
+from django.core.exceptions import SuspiciousFileOperation
 
 from proxy_storage.meta_backends.mongo import MongoMetaBackend
 from proxy_storage.storages.base import (
@@ -73,7 +76,7 @@ def get_mongo_db(database=None):
     uri = getattr(settings, "RELATE_MONGO_META_DATABASE_URI", None)
     if uri:
         args.append(uri)
-    client = MongoClient(*args)
+    client = MongoClient(*args, connect=False)
     db = client[database]
     return db
 
@@ -120,18 +123,13 @@ class ProxyStorage(ProxyStorageBase):
             ).path(path)
         except NotImplementedError:
             pass
-        return safe_join('/', os.path.normpath(path)).lstrip('/')
+        return os.path.normpath(path)
 
     def size(self, name):
         # type: (Text) -> Union[int, float]
         meta_backend_obj = self.meta_backend.get(path=name)
         return self.get_original_storage(meta_backend_obj=meta_backend_obj)\
             .size(meta_backend_obj['path'])
-
-    # def url(self, name):
-    #     meta_backend_obj = self.meta_backend.get(path=name)
-    #     return self.get_original_storage(meta_backend_obj=meta_backend_obj)\
-    #         .url(meta_backend_obj['original_storage_path'])
 
     def path(self, name):
         # type: (Text) -> Text
@@ -141,25 +139,73 @@ class ProxyStorage(ProxyStorageBase):
             return self.get_original_storage(meta_backend_obj=meta_backend_obj) \
                 .path(meta_backend_obj['original_storage_path'])
         except MetaBackendObjectDoesNotExist:
-            # fall back
-            print("fall backed")
-            return name
+            # fall back if not found in ProxyStorage
+            # first in SendFileStorage
+            s = SendFileStorage()
 
-    def is_temp_image(self, path):
-        # type: (Text) -> bool
-        return self.meta_backend.get(path=path)['original_storage_name'] == "temp"
+            try:
+                path = s.path(name)
+            except Exception as e:
+                if isinstance(e, SuspiciousFileOperation):
+                    # test whether the name is a physical valid path
+                    if os.path.isfile(name):
+                        return name
+                    # temp solution
+                    # from image_upload.models import FlowPageImage
+                    # ai = FlowPageImage.objects.all()
+                    # for a in ai:
+                    #     if str(a.image).startswith("/srv/www/relate"):
+                    #         name = str(a.image)
+                    #         new_name = name.replace("/srv/www/relate",
+                    #                                 "E:/git-trial/course/relate")
+                    #         import os
+                    #         if os.path.isfile(new_name):
+                    #             a.image = new_name
+                    #             a.save(update_fields=["image"])
+                    # import platform
+                    # if platform.system().lower().startswith("win"):
+                    #     if name.startswith("/srv/www/relate"):
+                    #         name = name.replace("/srv/www/relate",
+                    #                             "E:/git-trial/course/relate")
+                    #         return name
+                raise e
+
+            return path
 
 
 class UserImageStorage(MultipleOriginalStoragesMixin, ProxyStorage):
     #http://chibisov.github.io/django-proxy-storage/docs/
     original_storages = (
-        ('temp', FileSystemStorage(location=temp_image_storage_location)),
+        ('temp', FileSystemStorage(
+            location=temp_image_storage_location,
+        )),
         ('sendfile', SendFileStorage()),
     )
     meta_backend = MongoMetaBackend(
         database=get_mongo_db(),
         collection='meta_backend_collection'
     )
+
+    def open(self, name, mode='rb'):
+        try:
+            return super(UserImageStorage, self)._open(name, mode)
+        except IOError:
+            # Fallback for existing images which are not migrated
+            # to ProxyStorage
+            # First try to find in SendFileStorage
+            try:
+                return SendFileStorage()._open(name, mode)
+            except Exception as e:
+                if isinstance(e, SuspiciousFileOperation):
+                    # Then try to using os path to determin
+                    # if the 'name' is phyiscal path
+                    if os.path.isfile(name):
+                        return File(open(name, mode))
+                    else:
+                        # the reason may be caused by accidentally deletion of
+                        # temp storage files. Here we fail silently
+                        raise IOError("The file with name '%s' "
+                                      "does not exist!" % name)
 
     def save(self, name, content, max_length=None,
              original_storage_path=None, using=None):
@@ -174,17 +220,6 @@ class UserImageStorage(MultipleOriginalStoragesMixin, ProxyStorage):
             original_storage_path=original_storage_path,
             using=using
         )
-
-    def save_to_sendfile_storage_path(self, path, content):
-        # type: (Text, Any) -> Text
-        original_storage_path = (
-            self.meta_backend.get(path=path)['original_storage_path'])
-        if not self.is_temp_image(path=path):
-            return original_storage_path
-        return self.save(
-            original_storage_path, content,
-            original_storage_path=original_storage_path,
-            using="sendfile")
 
 
 def user_flowsession_img_path(instance, file_name):

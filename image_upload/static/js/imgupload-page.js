@@ -332,6 +332,8 @@ window.addEventListener('DOMContentLoaded', function () {
                     $("#filename" + clicked_row_id).prop("id", "filename" + new_img.pk).prop('href', new_img.url);
                     $("#filetime" + clicked_row_id).prop("id", "filetime" + new_img.pk).prop('title', new_img.timestr_title).html(new_img.timestr_short);
                     $("#filesize" + clicked_row_id).prop("id", "filesize" + new_img.pk).html(formatFileSize(new_img.size));
+                    $("#updateurl" + clicked_row_id).prop("id", "updateurl" + new_img.pk).prop('href', new_img.updateUrl);
+                    $("#deleteurl" + clicked_row_id).prop("id", "deleteurl" + new_img.pk).prop('href', new_img.deleteUrl);
                     cropper.replace(new_img.url);
                     crpMsg(true, gettext('Done!'));
                     setTimeout(function () {

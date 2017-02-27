@@ -28,7 +28,7 @@
                         {% endcomment %}
                             {% block FILE_INPUT %}
                                 {# The file input for the upload form. #}
-                                <input type="file" name="file" multiple 
+                                <input type="file" name="image" multiple
                                     {% if accepted_mime_types %}
                                         accept='{{ accepted_mime_types|join:"," }}'
                                     {% endif %}
@@ -175,7 +175,7 @@
                 data-order=
                     '{
                         "pk":{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }},
-                        "old_ord":{{ JQ_OPEN }}=file.order{{ JQ_CLOSE }},
+                        "old_ord":{{ JQ_OPEN }}=i{{ JQ_CLOSE }},
                         "new_ord":""
                         }'>
 
@@ -217,11 +217,11 @@
                                     {{ JQ_OPEN }}=file.thumbnailUrl? 'data-gallery': ''{{ JQ_CLOSE }}
                                     id="filename{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
                                 >
-                                    {{ JQ_OPEN }}=file.name{{ JQ_CLOSE }}
+                                    {{ JQ_OPEN }}=file.name_trancated{{ JQ_CLOSE }}
                                 </a>
                             {{ JQ_OPEN }} } else { {{ JQ_CLOSE }}
                                 <span>
-                                    {{ JQ_OPEN }}=file.name{{ JQ_CLOSE }}
+                                    {{ JQ_OPEN }}=file.name_trancated{{ JQ_CLOSE }}
                                 </span>
                             {{ JQ_OPEN }} } {{ JQ_CLOSE }}
                         </p>
@@ -319,6 +319,7 @@
                             <a 
                                 class="btn btn-success btn-edit-image"
                                 data-toggle="modal"
+                                id="updateurl{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
                                 href="{{ JQ_OPEN }}=file.updateUrl{{ JQ_CLOSE }}"
                                 data-target="#modal"
                             >
@@ -330,6 +331,7 @@
                         {% block JS_DOWNLOAD_TEMPLATE_DELETE %}
                             <button
                                 class="btn btn-danger delete"
+                                id="deleteurl{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
                                 data-type="{{ JQ_OPEN }}=file.deleteType{{ JQ_CLOSE }}"
                                 data-data='{ "csrfmiddlewaretoken" : "{{ csrf_token }}" }'
                                 data-url="{{ JQ_OPEN }}=file.deleteUrl{{ JQ_CLOSE }}"

@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-02-16 13:25+0800\n"
+"POT-Creation-Date: 2017-02-24 16:06+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -76,13 +76,6 @@ msgstr "图片上传"
 msgid "Creator"
 msgstr "创建者"
 
-msgid "Creation Time"
-msgstr "创建时间"
-
-#, python-format
-msgid "%(url)s uploaded by %(creator)s"
-msgstr "%(url)s(%(creator)s上传)"
-
 msgid "Course"
 msgstr "课程"
 
@@ -101,8 +94,32 @@ msgstr "与之关联的图片数据"
 msgid "Use external Image data?"
 msgstr "使用关联图片？"
 
+#, python-format
+msgid "%(url)s uploaded by %(creator)s"
+msgstr "%(url)s(%(creator)s上传)"
+
 msgid "You have not upload image(s)!"
 msgstr "您还未上传图片!"
+
+msgid "The form data is broken. "
+msgstr "表单数据损坏. "
+
+msgid "please refresh the page and redo the upload and submission."
+msgstr "请刷新页面后重新上传并提交. "
+
+msgid "There're some image(s) which don't belong to this session. "
+msgstr "提交的表单中有图片不属于这个session. "
+
+msgid ""
+"Please make sure you are the owner of this session and all images are "
+"uploaded by you. "
+msgstr "请确定你是本session的所有者而且所有的图片是你上传的."
+
+msgid "Some of you uploaded images just failed for unknown reasons"
+msgstr "部分上传的图片因未知原因失效. "
+
+msgid "please redo the upload and submission."
+msgstr "请重新上传并提交. "
 
 msgid "Manually set the access_rules_tag of the session, if necessary."
 msgstr "手工设置该session的access_rules_tag，如果需要的话"
@@ -150,7 +167,7 @@ msgstr ""
 
 msgid ""
 "attribute \"exclude_grade_percentage_lower_than\" should between 0 and 1"
-msgstr ""
+msgstr "\"exclude_grade_percentage_lower_than\"属性应该设在0与1之间"
 
 msgid "Send Email"
 msgstr "发送邮件"
@@ -191,7 +208,7 @@ msgstr "至少要输入20个以上的字符才允许提交."
 
 #, python-format
 msgid "'%s' should be listed in 'data_files'"
-msgstr ""
+msgstr "'%s'应该放在'data_files'中"
 
 #, python-format
 msgid "LaTex page failed in user %(user)s's session"
@@ -236,14 +253,16 @@ msgstr "你的代码生成了以下的图形"
 msgid "Figure"
 msgstr ""
 
-msgid "The image file does not exist!"
-msgstr "该图片文件不存在！"
+#, python-format
+msgid "Created at %s"
+msgstr "创建于%s"
 
-msgid "Created at"
-msgstr "创建于"
+#, python-format
+msgid "modified at %s"
+msgstr "修改于%s"
 
-msgid "modified at"
-msgstr "修改于"
+msgid "by course staff."
+msgstr "by 课务人员"
 
 #, python-format
 msgid ""
@@ -311,7 +330,7 @@ msgid "Close"
 msgstr "关闭"
 
 msgid "View in grade page"
-msgstr ""
+msgstr "在评分界面中查看"
 
 msgid "View previous"
 msgstr "上一个"
@@ -411,10 +430,10 @@ msgstr ""
 "\n"
 
 msgid ""
-"The file is too big. Please use Chrome/Firefox or mobile browser by which "
+"The image is too big. Please use Chrome/Firefox or mobile browser by which "
 "images will be cropped automatically before upload."
 msgstr ""
-"这个文件太大了. 推荐使用Chrome或Firefox浏览器，或者直接在手机浏览器上传，它们"
+"这个图片太大了. 推荐使用Chrome或Firefox浏览器，或者直接在手机浏览器上传，它们"
 "将在照片上传前自动压缩尺寸."
 
 msgid "may not delete other people's image"

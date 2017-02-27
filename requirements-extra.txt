@@ -40,8 +40,8 @@ django-qiniu-storage
 # For redis, requiring redis-server
 django-redis
 
-# For image upload with different storage
-django-proxy-storage
+# For mongodb
+django-proxy-storage  # deprecated, should be removed after migrations
 pymongo
 
 # questionnair

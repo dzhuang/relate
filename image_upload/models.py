@@ -25,13 +25,13 @@ THE SOFTWARE.
 """
 
 import six
+import os
 from django.db import models
 from django.conf import settings
+from django.core.files.storage import FileSystemStorage
+from django.utils.deconstruct import deconstructible
 from django.utils.translation import ugettext_lazy as _
 from django.utils.timezone import now
-
-from image_upload.storages import (
-    user_flowsession_img_path, UserImageStorage)
 
 from imagekit.models import ImageSpecField
 from imagekit.processors import ResizeToFit
@@ -46,28 +46,72 @@ from typing import Text, Optional  # noqa
 # }}}
 
 
-multiple_image_storage = UserImageStorage()
+@deconstructible
+class UserImageStorage(FileSystemStorage):
+    def __init__(self):
+        # type: () -> None
+        super(UserImageStorage, self).__init__(
+                location=settings.SENDFILE_ROOT)
+
+
+storage = UserImageStorage()
+
+
+def user_flowsession_img_path(instance, filename):
+    if instance.creator.get_full_name() is not None:
+        user_full_name = instance.creator.get_full_name().replace(' ', '_')
+    else:
+        user_full_name = instance.creator.pk
+
+    if instance.is_temp_image:
+        return 'user_images/{0}(user_{1})/temp/{2}'.format(
+            user_full_name,
+            instance.creator_id,
+            filename)
+
+    return 'user_images/{0}(user_{1})/{2}'.format(
+        user_full_name,
+        instance.creator_id,
+        filename)
+
+
+class FlowPageImageFileNotFoundError(OSError):
+    pass
+
+
+class TempFlowPageImageFileNotFoundError(OSError):
+    pass
 
 
 class FlowPageImage(models.Model):
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
             verbose_name=_('Creator'), on_delete=models.SET_NULL)
-    file = models.ImageField(upload_to=user_flowsession_img_path,
-                             storage=multiple_image_storage)
+    image = models.ImageField(upload_to=user_flowsession_img_path,
+                              storage=storage,
+                              max_length=500)
     slug = models.SlugField(max_length=256, blank=True)
     creation_time = models.DateTimeField(default=now)
     file_last_modified = models.DateTimeField(default=now)
-    file_thumbnail = ImageSpecField(
-        source='file',
+    image_thumbnail = ImageSpecField(
+        source='image',
         processors=[ResizeToFit(100, 100)],
         format='PNG',
         options={'quality': 50})
+
+    is_temp_image = models.BooleanField(
+        default=False, verbose_name=_("Is the image for temporary use?"),
+    )
+
     course = models.ForeignKey(
         "course.Course", null=True,
         verbose_name=_('Course'), on_delete=models.SET_NULL)
     flow_session = models.ForeignKey(
         "course.FlowSession", null=True, related_name="page_image_data",
         verbose_name=_('Flow session'), on_delete=models.SET_NULL)
+
+    # This is not redundant, because the permission on image
+    # should be same with page_behavior, we use this to connect
+    # to page_behavior
     image_page_id = models.CharField(max_length=200, null=True)
 
     is_image_textify = models.BooleanField(
@@ -86,9 +130,6 @@ class FlowPageImage(models.Model):
     use_image_data = models.BooleanField(
         default=False, verbose_name=_("Use external Image data?"))
 
-    # The order of the img in a flow session page.
-    order = models.SmallIntegerField(default=0)
-
     def get_page_ordinal(self):
         from course.models import FlowPageData
         fpd = FlowPageData.objects.get(
@@ -97,39 +138,62 @@ class FlowPageImage(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = self.file.name
+            self.slug = self.image.name
         super(FlowPageImage, self).save(*args, **kwargs)
 
+    def is_in_temp_storage(self, raise_on_oserror=False):
+        return self.is_temp_image
+
+    def save_to_protected_storage(
+            self,
+            delete_temp_storage_file=False,
+            fail_silently_on_save=False):
+
+        if not self.is_in_temp_storage():
+            return
+
+        # temp_image_path = self.image.path
+        filename = os.path.split(self.image.name)[-1]
+        self.is_temp_image = False
+        name = user_flowsession_img_path(self, filename)
+
+        try:
+            new_img_name = storage.save(
+                name=name,
+                content=self.image
+            )
+            self.image = new_img_name
+            self.save(update_fields=["image", "is_temp_image"])
+        except OSError:
+            raise
+            # if not fail_silently_on_save:
+            #     raise
+            #
+            # # The temp file is removed before/during handling, for
+            # # cases when user are submitting pages,
+            # # we have to fail silently.
+            # return
+
     def delete(self, *args, **kwargs):
-        """delete -- Remove to leave file."""
-        self.file.delete(False)
+        """delete -- Remove to leave image."""
+        self.image.delete(False)
         super(FlowPageImage, self).delete(*args, **kwargs)
 
     @models.permalink
-    def get_absolute_url(self, private=True, key=False):
+    def get_absolute_url(self):
         import os
-        file_name = os.path.basename(self.file.path)
-        if private:
-            return ('flow_page_image_download', [
-                    self.course.identifier,
-                    self.flow_session_id,
-                    self.creator_id,
-                    self.pk,
-                    file_name], {}
-                    )
-        elif key is False:
-            return ('flow_page_image_problem',
-                    [self.pk, file_name], {})
-        elif key is True:
-            return ('flow_page_image_key',
-                    [self.pk, self.creator_id, file_name], {})
+        file_name = os.path.basename(self.image.path)
+        return ('flow_page_image_download', [
+                self.course.identifier,
+                self.flow_session_id,
+                self.creator_id,
+                self.pk,
+                file_name], {}
+                )
 
     def admin_image(self):
         # type: () -> Optional[Text]
-        if self.order == 0:
-            img_url = self.get_absolute_url(private=False)
-        else:
-            img_url = self.get_absolute_url(key=True)
+        img_url = self.get_absolute_url()
         if img_url:
             return ("<img src='%s' "
                     "class='img-responsive' "

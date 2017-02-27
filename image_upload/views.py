@@ -24,8 +24,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-import os
-
 from django.shortcuts import get_object_or_404
 from django.conf import settings
 from django import forms, http
@@ -34,17 +32,17 @@ from django.contrib.auth.decorators import login_required
 from django.core.files.base import ContentFile
 from django.views.generic import (
         CreateView, DeleteView, ListView)
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.utils.translation import ugettext_lazy as _, string_concat, ugettext
 from django.db import transaction
 
-from course.models import Course, FlowPageData, FlowSession
-from course.utils import course_view
+from course.utils import course_view, FlowPageContext, get_session_access_rule, \
+    get_session_grading_rule, CoursePageContext
+from course.constants import participation_permission as pperm
 
 from image_upload.serialize import serialize
-from image_upload.utils import get_page_image_behavior, ImageOperationMixin
-from image_upload.models import FlowPageImage
-from image_upload.storages import UserImageStorage
+from image_upload.models import FlowPageImage, UserImageStorage
+#from image_upload.storages import UserImageStorage
 
 from jsonview.decorators import json_view
 from jsonview.exceptions import BadRequest
@@ -53,27 +51,57 @@ import json
 from PIL import Image
 from io import BytesIO
 from sendfile import sendfile
-from pymongo.errors import DuplicateKeyError
 
 storage = UserImageStorage()
 
+# Define the permssion required for course staff to edit/upload/delete
+# images uploaded by participants
+COURSE_STAFF_IMAGE_PERMISSION = (
+    (pperm.assign_grade, None),
+)
 
-def is_course_staff(pctx):
-    request = pctx.request
-    course = pctx.course
 
+def is_course_staff_participation(participation):
     from course.enrollment import (
-        get_participation_for_request,
         get_participation_permissions)
+    perms = get_participation_permissions(
+        participation.course, participation)
 
-    participation = get_participation_for_request(request, course)
-
-    perms = get_participation_permissions(course, participation)
-    from course.constants import participation_permission as pperm
-    if (pperm.assign_grade, None) in perms:
+    if all(perm in perms for perm in COURSE_STAFF_IMAGE_PERMISSION):
         return True
 
     return False
+
+
+def is_course_staff_course_image_request(request, course):
+    from course.enrollment import get_participation_for_request
+    participation = get_participation_for_request(request, course)
+    return is_course_staff_participation(participation)
+
+
+class ImageOperationMixin(UserPassesTestMixin):
+    # Mixin for determin if user can upload/delete/edit image
+    raise_exception = True
+
+    def test_func(self):
+        from course.models import Course
+        course_identifier = self.kwargs['course_identifier']
+        course = Course.objects.get(identifier=course_identifier)
+        if course:
+            if is_course_staff_course_image_request(self.request, course):
+                return True
+
+        request = self.request
+        flow_session_id = self.kwargs['flow_session_id']
+        ordinal = self.kwargs['ordinal']
+
+        pctx = CoursePageContext(request, course_identifier)
+
+        try:
+            return get_page_image_behavior(
+                pctx, flow_session_id, ordinal).may_change_answer
+        except ValueError:
+            return True
 
 
 class ImageCreateView(LoginRequiredMixin, ImageOperationMixin,
@@ -82,22 +110,20 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin,
     # http://stackoverflow.com/a/13944206/3437454
     content_type = 'text/plain'
     model = FlowPageImage
-    fields = ("file", "slug")
+    fields = ("image", "slug")
 
     def form_valid(self, form):
-        file = form.cleaned_data.get('file')
-        from django.conf import settings
-
+        image = form.cleaned_data.get('image')
         max_allowed_jfu_size = getattr(
             settings, "RELATE_JFU_MAX_IMAGE_SIZE", 2) * 1024**2
 
-        if file._size > max_allowed_jfu_size:
+        if image._size > max_allowed_jfu_size:
             file_data = {
                     "files": [{
                         "name": form.cleaned_data.get('slug'),
-                        "size": file._size,
+                        "size": image._size,
                         "error": ugettext(
-                            "The file is too big. Please use "
+                            "The image is too big. Please use "
                             "Chrome/Firefox or mobile browser by "
                             "which images will be cropped "
                             "automatically before upload.")
@@ -107,20 +133,24 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin,
             return self.render_json_response(file_data)
 
         self.object = form.save(commit=False)
+        self.object.is_temp_image = True
         self.object.creator = self.request.user
 
         course_identifier = self.kwargs["course_identifier"]
+
+        from course.models import Course
         course = get_object_or_404(Course, identifier=course_identifier)
         flow_session_id = self.kwargs["flow_session_id"]
         ordinal = self.kwargs["ordinal"]
 
+        from course.models import FlowPageData
         fpd = FlowPageData.objects.get(flow_session=flow_session_id, ordinal=ordinal)
         self.object.flow_session_id = flow_session_id
         self.object.image_page_id = fpd.page_id
         self.object.course = course
         self.object.save()
 
-        files = [serialize(self.request, self.object, 'file')]
+        files = [serialize(self.request, self.object, 'image')]
         data = {'files': files}
         return self.render_json_response(data)
 
@@ -132,7 +162,7 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin,
 class ImageItemForm(forms.ModelForm):
     class Meta:
         model = FlowPageImage
-        fields = ("file",)
+        fields = ("image",)
 
 
 class ImageDeleteView(LoginRequiredMixin, ImageOperationMixin, DeleteView):
@@ -140,15 +170,35 @@ class ImageDeleteView(LoginRequiredMixin, ImageOperationMixin, DeleteView):
 
     def delete(self, request, *args, **kwargs):
         self.object = self.get_object()
-        if self.request.user != self.object.creator:
+
+        if self.request.user == self.object.creator:
+            may_delete = True
+        elif self.request.user == self.object.flow_session.participation.user:
+            may_delete = True
+        else:
+            may_delete = False
+
+            # Course staff may delete user images
+            if is_course_staff_course_image_request(
+                    self.request, self.object.course):
+                may_delete = True
+            else:
+                # User may delete image uploaded by course staff
+                if (self.object.flow_session.id == self.kwargs['flow_session_id']
+                    and
+                        is_course_staff_participation(self.object.participation)):
+                    may_delete = True
+
+        if not may_delete:
             from django.core.exceptions import PermissionDenied
             raise PermissionDenied(_("may not delete other people's image"))
         else:
-            if storage.is_temp_image(self.object.file.path):
+            if self.object.is_in_temp_storage():
                 self.object.delete()
                 response = http.JsonResponse(True, safe=False)
             else:
                 response = http.JsonResponse(False, safe=False)
+
             response['Content-Disposition'] = 'inline; filename=files.json'
             response['Content-Type'] = 'text/plain'
             return response
@@ -161,6 +211,8 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
 
     def get_queryset(self):
         flow_session_id = self.kwargs["flow_session_id"]
+
+        from course.models import FlowSession
         flow_session = get_object_or_404(FlowSession, id=int(flow_session_id))
         ordinal = self.kwargs["ordinal"]
         course_identifier = self.kwargs["course_identifier"]
@@ -194,14 +246,13 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
         if prev_answer_visits and prev_visit_id is not None:
             answer_visit = prev_answer_visits[0]
 
-            for ivisit, pvisit in enumerate(prev_answer_visits):
+            for pvisit in prev_answer_visits:
                 if pvisit.id == prev_visit_id:
                     answer_visit = pvisit
                     break
 
         elif prev_answer_visits:
             answer_visit = prev_answer_visits[0]
-            print(answer_visit)
 
         else:
             answer_visit = None
@@ -212,73 +263,14 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
             return None
 
         answer_data = answer_visit.answer
-        pk_list = []
+
         if not answer_data:
             return None
+
         if not isinstance(answer_data, dict):
-            fpd = None
-            try:
-                fpd = FlowPageData.objects.get(
-                    flow_session=flow_session_id, ordinal=ordinal)
-            except ValueError:
+            return None
 
-                # in sandbox
-                if flow_session_id == "None" or ordinal == "None":
-                    return None
-
-            if not fpd:
-                return None
-
-            qs = (FlowPageImage.objects.filter(
-                flow_session=flow_session_id,
-                image_page_id=fpd.page_id)
-                  .order_by("order", "pk"))
-            if not qs:
-                return None
-
-            will_save_new_data = True
-            for q in qs:
-                a = json.loads(answer_data)
-                if repr(q) in a:
-                    pk_list.append(q.pk)
-                elif os.path.split(q.file.name)[-1] in a:
-                    pk_list.append(q.pk)
-                else:
-                    will_save_new_data = False
-                    break
-
-            if not will_save_new_data:
-                return None
-            else:
-                protected_root = getattr(settings, "SENDFILE_ROOT")
-                new_answer_data = {"answer": pk_list}
-                for img_pk in pk_list:
-                    img = FlowPageImage.objects.get(pk=img_pk)
-                    full_path = img.file.name
-                    original_storage_path = os.path.relpath(
-                        full_path, protected_root)
-                    data = storage.get_data_for_meta_backend_save(
-                        original_name=original_storage_path,
-                        path=full_path,
-                        content=img.file,
-                        original_storage_path=original_storage_path,
-                    )
-                    data.update({
-                        'original_storage_name': "sendfile"
-                    })
-                    saved = True
-                    try:
-                        storage.meta_backend.create(data=data)
-                    except DuplicateKeyError:
-                        saved = False
-                        pass
-
-                    if not saved:
-                        answer_visit.answer = new_answer_data
-                        answer_visit.save()
-
-        if not pk_list:
-            pk_list = answer_data.get("answer", None)
+        pk_list = answer_data.get("answer", None)
         if not pk_list:
             return None
 
@@ -296,7 +288,7 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
     def render_to_response(self, context, **response_kwargs):
         queryset = self.get_queryset()
         if queryset:
-            files = [serialize(self.request, p, 'file')
+            files = [serialize(self.request, p, 'image')
                     for p in self.get_queryset()]
             data = {'files': files}
         else:
@@ -308,12 +300,6 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
 
 # {{{ sendfile
 
-@login_required
-def user_image_download(request, creator_id, download_id):
-    # refer to the following method to allow staff download
-    download_object = get_object_or_404(Image, pk=download_id)
-    return _auth_download(request, download_object)
-
 
 @login_required
 @course_view
@@ -323,38 +309,43 @@ def flow_page_image_download(pctx, flow_session_id, creator_id,
     download_object = get_object_or_404(FlowPageImage, pk=download_id)
 
     privilege = False
+
     # whether the user is allowed to view the private image
-    from course.constants import participation_permission as pperm
-    if pctx.has_permission(pperm.assign_grade):
+    # First, course staff are allow to view participants image.
+    if is_course_staff_course_image_request(pctx.request, pctx.course):
         privilege = True
 
-    return _auth_download(request, download_object, privilege)
+    # Participants are allowed to view images in their pages, even uploaded
+    # by course staffs
+    elif pctx.request.user == download_object.flow_session.participation.user:
+        return sendfile(request, download_object.image.path)
 
-
-@login_required
-def flow_page_image_problem(request, download_id, file_name):
-    # show the problem image
-    download_object = get_object_or_404(FlowPageImage, pk=download_id)
-    if download_object.order == 0:
-        privilege = True
-    else:
-        privilege = False
-    return _auth_download(request, download_object, privilege)
-
-
-@login_required
-def flow_page_image_key(request, download_id, creator_id, file_name):
-    download_object = get_object_or_404(FlowPageImage, pk=download_id)
-    privilege = True
     return _auth_download(request, download_object, privilege)
 
 
 @login_required
 def _auth_download(request, download_object, privilege=False):
-    if not request.user == download_object.creator or not privilege:
+    if (not request.user == download_object.creator
+        and
+            not request.user.is_staff
+        or
+            not privilege):
         from django.core.exceptions import PermissionDenied
         raise PermissionDenied(_("may not view other people's resource"))
-    return sendfile(request, download_object.file.path)
+
+    return sendfile(request, download_object.image.path)
+
+
+@login_required
+def _non_auth_download(request, download_object):
+    if (not request.user == download_object.creator
+        and
+            not request.user.is_staff):
+        from django.core.exceptions import PermissionDenied
+        raise PermissionDenied(_("may not view other people's resource"))
+
+    from sendfile.backends.development import sendfile
+    return sendfile(request, download_object.image.path)
 
 # }}}
 
@@ -371,7 +362,7 @@ def image_crop_modal(pctx, flow_session_id, ordinal, pk):
     request = pctx.request
     error_message = None
     try:
-        file = FlowPageImage.objects.get(id=pk)
+        image = FlowPageImage.objects.get(id=pk)
     except FlowPageImage.DoesNotExist:
         error_message = (
             string_concat(_('File not found.'),
@@ -379,24 +370,25 @@ def image_crop_modal(pctx, flow_session_id, ordinal, pk):
         return render(
             request,
             'image_upload/cropper-modal.html',
-            {'file': None,
+            {'image': None,
              'error_message': error_message,
              'STAFF_EDIT_WARNNING': False,
              'owner': None
              })
-    course_staff_status = is_course_staff(pctx)
+    course_staff_status = is_course_staff_course_image_request(
+        pctx.request, pctx.course)
     staff_edit_warnning = False
     if (course_staff_status
         and
-                request.user != file.creator):
+                request.user != image.creator):
         staff_edit_warnning = True
     return render(
         request,
         'image_upload/cropper-modal.html',
-        {'file': file,
+        {'image': image,
          'error_message': error_message,
          'STAFF_EDIT_WARNNING': staff_edit_warnning,
-         'owner': file.creator
+         'owner': image.creator
          })
 
 
@@ -412,7 +404,8 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
     except ValueError:
         may_change_answer = True
 
-    course_staff_status = is_course_staff(pctx)
+    course_staff_status = (
+        is_course_staff_course_image_request(pctx.request, pctx.course))
     request = pctx.request
 
     if not (may_change_answer or course_staff_status):
@@ -422,7 +415,7 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
     except FlowPageImage.DoesNotExist:
         raise CropImageError(_('Please upload the image first.'))
 
-    image_orig_path = crop_instance.file.path
+    image_orig_path = crop_instance.image.path
     if not image_orig_path:
         raise CropImageError(
             string_concat(_('File not found.'),
@@ -463,39 +456,46 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
     if new_image.mode != "RGB":
         new_image = new_image.convert("RGB")
 
-    from relate.utils import as_local_time, local_now
-    import datetime
-
-    new_image_file_last_modified = crop_instance.creation_time
-    if not course_staff_status:
-        if local_now() > as_local_time(
-                        crop_instance.creation_time + datetime.timedelta(minutes=5)):
-            new_image_file_last_modified = local_now()
-
     new_image_io = BytesIO()
     new_image.save(new_image_io, format=image_format)
 
-    new_instance = FlowPageImage()
-    new_instance.creator = crop_instance.creator
-    new_instance.file.save(
+    new_instance = crop_instance
+    new_instance.pk = None
+    new_instance.creator = request.user
+
+    new_instance.is_temp_image = True
+    new_instance.image.save(
         name=crop_instance.slug,
         content=ContentFile(new_image_io.getvalue()),
         save=False
     )
 
-    new_instance.slug = crop_instance.slug
-    new_instance.creation_time = crop_instance.creation_time
-    new_instance.file_last_modified = new_image_file_last_modified
-    new_instance.course = crop_instance.course
-    new_instance.flow_session = crop_instance.flow_session
-    new_instance.image_page_id = crop_instance.image_page_id
-    new_instance.is_image_textify = crop_instance.is_image_textify
-    new_instance.image_text = crop_instance.image_text
-    new_instance.image_data = crop_instance.image_data
-    new_instance.use_image_data = crop_instance.use_image_data
+    new_image_last_modified = crop_instance.creation_time
+
+    from relate.utils import as_local_time, local_now
+    import datetime
+    if local_now() > as_local_time(
+                    crop_instance.creation_time
+                    + datetime.timedelta(minutes=5)):
+        new_image_last_modified = local_now()
+    new_instance.file_last_modified = new_image_last_modified
+
+    # the other attribute of the new image doen't have to be the same
+    # with the original one.
+    if (crop_instance.course != pctx.course
+        or
+                int(crop_instance.flow_session_id) != int(flow_session_id)):
+        from course.models import FlowPageData
+        fpd = FlowPageData.objects.get(flow_session=flow_session_id, ordinal=ordinal)
+        new_instance.flow_session_id = flow_session_id
+        new_instance.image_page_id = fpd.page_id
+        new_instance.course = pctx.course
+        new_instance.creation_time = local_now()
+        new_instance.file_last_modified = local_now()
 
     try:
         new_instance.save()
+        new_instance.refresh_from_db()
     except (OSError, IOError) as e:
         raise CropImageError(string_concat(
             _('There are errors, please refresh the page or try again later'),
@@ -504,7 +504,7 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
     finally:
         new_image.close()
 
-    response_file = serialize(request, new_instance, 'file')
+    response_file = serialize(request, new_instance, 'image')
     data = {'file': response_file}
     return data
 
@@ -527,7 +527,8 @@ def image_order(pctx, flow_session_id, ordinal):
     except ValueError:
         may_change_answer = True
 
-    course_staff_status = is_course_staff(pctx)
+    course_staff_status = (
+        is_course_staff_course_image_request(pctx.request, pctx.course))
     if not (may_change_answer or course_staff_status):
         raise ImgTableOrderError(_('Not allowd to modify answer.'))
     request = pctx.request
@@ -541,3 +542,89 @@ def image_order(pctx, flow_session_id, ordinal):
     response = {'message': ugettext('Done')}
 
     return response
+
+
+def get_page_image_behavior(pctx, flow_session_id, ordinal):
+    if ordinal == "None" and flow_session_id == "None":
+        from course.page.base import PageBehavior
+        return PageBehavior(
+            show_correctness=True,
+            show_answer=True,
+            may_change_answer=True,
+        )
+
+    from course.flow import (
+        get_page_behavior, get_and_check_flow_session,
+        get_prev_answer_visits_qset)
+
+    request = pctx.request
+
+    ordinal = int(ordinal)
+
+    flow_session_id = int(flow_session_id)
+    flow_session = get_and_check_flow_session(pctx, flow_session_id)
+    flow_id = flow_session.flow_id
+
+    fpctx = FlowPageContext(pctx.repo, pctx.course, flow_id, ordinal,
+            participation=pctx.participation,
+            flow_session=flow_session,
+            request=pctx.request)
+
+    from course.views import get_now_or_fake_time
+
+    now_datetime = get_now_or_fake_time(request)
+    access_rule = get_session_access_rule(
+            flow_session, fpctx.flow_desc, now_datetime,
+            facilities=pctx.request.relate_facilities)
+
+    grading_rule = get_session_grading_rule(
+            flow_session, fpctx.flow_desc, now_datetime)
+    generates_grade = (
+            grading_rule.grade_identifier is not None
+            and
+            grading_rule.generates_grade)
+
+    del grading_rule
+
+    permissions = fpctx.page.get_modified_permissions_for_page(
+            access_rule.permissions)
+
+    prev_answer_visits = list(
+            get_prev_answer_visits_qset(fpctx.page_data))
+
+    # {{{ fish out previous answer_visit
+
+    prev_visit_id = pctx.request.GET.get("visit_id")
+    if prev_visit_id is not None:
+        prev_visit_id = int(prev_visit_id)
+
+    if prev_answer_visits and prev_visit_id is not None:
+        answer_visit = prev_answer_visits[0]
+
+        for ivisit, pvisit in enumerate(prev_answer_visits):
+            if pvisit.id == prev_visit_id:
+                answer_visit = pvisit
+                break
+
+    elif prev_answer_visits:
+        answer_visit = prev_answer_visits[0]
+
+    else:
+        answer_visit = None
+
+    # }}}
+
+    if answer_visit is not None:
+        answer_was_graded = answer_visit.is_submitted_answer
+    else:
+        answer_was_graded = False
+
+    page_behavior = get_page_behavior(
+            page=fpctx.page,
+            permissions=permissions,
+            session_in_progress=flow_session.in_progress,
+            answer_was_graded=answer_was_graded,
+            generates_grade=generates_grade,
+            is_unenrolled_session=flow_session.participation is None)
+
+    return page_behavior

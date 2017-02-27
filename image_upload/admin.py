@@ -188,6 +188,8 @@ class ParticipationTagFilter(admin.SimpleListFilter):
         return (('no_tag', _('no tag')),) + tag_tuple
 
     def queryset(self, request, queryset):
+        if not self.tag_tuple:
+            return None
         has_tag_list = [tag for (tag, _) in self.tag_tuple]
         if self.value() in has_tag_list:
             return queryset.filter(
@@ -260,7 +262,6 @@ class FlowPageImageAdmin(admin.ModelAdmin):
         "image_page_id",
         'is_image_textify',
         'use_image_data',
-        'order',
         HasImageTextFilter,
         AccessRuleTagFilter,
         ParticipationTagFilter,
@@ -273,7 +274,6 @@ class FlowPageImageAdmin(admin.ModelAdmin):
         'is_image_textify',
         'has_image_text',
         'use_image_data',
-        'order',
         'creator',
         'get_full_name',
         'creation_time',

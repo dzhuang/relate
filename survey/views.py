@@ -160,7 +160,6 @@ class DisplaySurveyForm(forms.Form):
     def save(self, user):
         for index, question in enumerate(self.questionnaire.questions()):
             answer_text = self.cleaned_data['question_{0}'.format(question.pk)]
-            print(answer_text)
             if answer_text:
                 try:
                     answer_save = Psqa.objects.get(
@@ -204,8 +203,6 @@ class UpdateQuestionnaireView(SurveyMixin, UpdateView, CourseViewMixin):
         context['display_questions'] =\
             DisplayQuestionsForm(questionnaire_pk=self.kwargs['pk'])
 
-        formset = context['question_formset']
-        print(len(formset))
         return context
 
 
