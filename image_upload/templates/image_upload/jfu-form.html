@@ -30,7 +30,7 @@
                                 {# The file input for the upload form. #}
                                 <input type="file" name="image" multiple
                                     {% if accepted_mime_types %}
-                                        accept='{{ accepted_mime_types|join:"," }}'
+                                        accept='{{ accepted_mime_types|join:", " }}'
                                     {% endif %}
                                 >
                             {% endblock %}{# //FILE_INPUT #}
