@@ -39,6 +39,8 @@ LOCAL_APPS = [
 
 from typing import List, Any  # noqa
 
+# {{{ Delete temp image when it is saved to sendfile storage
+
 
 def delete_files(files_list):
     # type: (List[Any]) -> None
@@ -49,9 +51,6 @@ def delete_files(files_list):
             # (e.g. when using django-storages)
             storage_, path_ = file_.storage, file_.path
             storage_.delete(path_)
-
-
-# {{{ Delete temp image when it is saved to sendfile storage
 
 
 @receiver(pre_save, sender=FlowPageImage)
@@ -97,8 +96,10 @@ def handle_files_on_update(sender, instance, **kwargs):
             field_name: getattr(instance, field_name, None)
             for field_name in instance.files_cache}
 
-
 # }}}
+
+
+# {{{ Save submiitted temp image objs to sendfild and remove unused temp objs
 
 @receiver(pre_save, sender=FlowPageVisit)
 def send_to_sendfile_on_page_save(sender, instance, **kwargs):
@@ -140,7 +141,7 @@ def send_to_sendfile_on_page_save(sender, instance, **kwargs):
 
 
 @receiver(post_save, sender=FlowPageVisit)
-def delete_temp_images_on_update(sender, instance, **kwargs):
+def delete_temp_images_on_flowpage_answer_update(sender, instance, **kwargs):
     if instance.answer is None:
         return
 
@@ -153,12 +154,16 @@ def delete_temp_images_on_update(sender, instance, **kwargs):
     if instance.page_data.page_type not in all_subclass_name:
         return
 
-    from image_upload.tasks import delete_temp_images_from_submitted_page
-
-    delete_temp_images_from_submitted_page.delay(
+    fpi_qs = FlowPageImage.objects.filter(
         flow_session_id=instance.flow_session_id,
-        page_id=instance.page_data.page_id
+        image_page_id=instance.page_data.page_id,
+        is_temp_image=True
     )
+    for FPI in fpi_qs:
+        FPI.refresh_from_db()
+        if FPI.is_temp_image:
+            FPI.delete()
 
+# }}}
 
 # vim: foldmethod=marker
