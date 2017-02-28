@@ -22,6 +22,15 @@ function watch(targetElement, triggerFunction) {
 function table_changed() {
     'use strict';
     var imgCount = $('.timestr').length;
+    var inProcess = $("#img-presentation-table").find("button.btn.btn-warning.cancel").length;
+
+    if (document.getElementById("submit-id-submit") !== null) {
+        if (inProcess > 0) {
+            document.getElementById("submit-id-submit").disabled = true;
+        } else {
+            document.getElementById("submit-id-submit").disabled = false;
+        }
+    }
     if (imgCount > 1) {
         if ($(".btn-srt-tbl-cfm").hasClass("hidden")) {
             $(".btn-srt-tbl").removeClass("hidden");
