@@ -24,6 +24,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+import os
 from django.shortcuts import get_object_or_404
 from django.conf import settings
 from django import forms, http
@@ -42,7 +43,6 @@ from course.constants import participation_permission as pperm
 
 from image_upload.serialize import serialize
 from image_upload.models import FlowPageImage, UserImageStorage
-#from image_upload.storages import UserImageStorage
 
 from jsonview.decorators import json_view
 from jsonview.exceptions import BadRequest
@@ -465,7 +465,7 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
 
     new_instance.is_temp_image = True
     new_instance.image.save(
-        name=crop_instance.slug,
+        name=get_sendfile_storage_available_name(crop_instance),
         content=ContentFile(new_image_io.getvalue()),
         save=False
     )
@@ -495,7 +495,6 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
 
     try:
         new_instance.save()
-        new_instance.refresh_from_db()
     except (OSError, IOError) as e:
         raise CropImageError(string_concat(
             _('There are errors, please refresh the page or try again later'),
@@ -628,3 +627,16 @@ def get_page_image_behavior(pctx, flow_session_id, ordinal):
             is_unenrolled_session=flow_session.participation is None)
 
     return page_behavior
+
+
+def get_sendfile_storage_available_name(img):
+    # this is used by django-imagekit to generate
+    # new name when /temp dir is empty, avoiding use name
+    # already in use
+    original_source_name = (
+        img.image.name
+        .replace(os.path.basename(img.image.name), img.slug)
+        .replace("\\", "/")
+        .replace("/temp/", "/"))
+    new_name = storage.get_available_name(original_source_name)
+    return os.path.split(new_name)[-1]
