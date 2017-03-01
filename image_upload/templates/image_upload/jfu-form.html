@@ -30,7 +30,7 @@
                                 {# The file input for the upload form. #}
                                 <input type="file" name="image" multiple
                                     {% if accepted_mime_types %}
-                                        accept='{{ accepted_mime_types|join:", " }}'
+                                        accept='{{ accepted_mime_types|join:", " }} capture=camera'
                                     {% endif %}
                                 >
                             {% endblock %}{# //FILE_INPUT #}
@@ -104,6 +104,7 @@
     <table role="presentation" class="table table-striped" id="img-presentation-table">
         <tbody class="files"></tbody>
     </table>
+    <div class="fileupload-download-processing"></div>
 {% endblock %}{# //UPLOAD_FORM_LISTING #}
 
 {% block UPLOAD_FORM_EXTRA %} {% endblock %}
@@ -181,15 +182,15 @@
 
                 {% block JS_DOWNLOAD_TEMPLATE_PREVIEW %}
                     <td>
-                        <span class="preview">
+                        <span class="preview processing">
                             {{ JQ_OPEN }} if (file.thumbnailUrl) { {{ JQ_CLOSE }}
-                                <a 
+                                <a
                                     href="{{ JQ_OPEN }}=file.url{{ JQ_CLOSE }}"
                                     title="{{ JQ_OPEN }}=file.name{{ JQ_CLOSE }}"
                                     download="{{ JQ_OPEN }}=file.name{{ JQ_CLOSE }}"
                                     id="previewid{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
                                     data-gallery>
-                                    <img class="img-responsive"
+                                    <img class="img-responsive thumbnail-loading"
                                        id="thumbnail{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
                                        {% if IN_GRADE_PAGE %}
                                         src="{{ JQ_OPEN }}=file.url{{ JQ_CLOSE }}"
@@ -198,6 +199,7 @@
                                         {% else %}
                                         src="{{ JQ_OPEN }}=file.thumbnailUrl{{ JQ_CLOSE }}"
                                         {% endif %}
+                                        onload=hideLoading(this)
                                     >
                                 </a>
                             {{ JQ_OPEN }} } {{ JQ_CLOSE }}
@@ -214,7 +216,7 @@
                                     href="{{ JQ_OPEN }}=file.url{{ JQ_CLOSE }}"
                                     title="{{ JQ_OPEN }}=file.name{{ JQ_CLOSE }}"
                                     download="{{ JQ_OPEN }}=file.name{{ JQ_CLOSE }}"
-                                    {{ JQ_OPEN }}=file.thumbnailUrl? 'data-gallery': ''{{ JQ_CLOSE }}
+                                    {{ JQ_OPEN }}=file.url? 'data-gallery': ''{{ JQ_CLOSE }}
                                     id="filename{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
                                 >
                                     {{ JQ_OPEN }}=file.name_trancated{{ JQ_CLOSE }}
