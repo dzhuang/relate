@@ -19,28 +19,15 @@ function watch(targetElement, triggerFunction) {
     }, 500);
 }
 
-function table_changed() {
-    'use strict';
-    var imgCount = $('.timestr').length;
-    var inProcess = $("#img-presentation-table").find("button.btn.btn-warning.cancel").length;
-
-    if (document.getElementById("submit-id-submit") !== null) {
-        if (inProcess > 0) {
-            document.getElementById("submit-id-submit").disabled = true;
-        } else {
-            document.getElementById("submit-id-submit").disabled = false;
-        }
-    }
-    if (imgCount > 1) {
-        if ($(".btn-srt-tbl-cfm").hasClass("hidden")) {
-            $(".btn-srt-tbl").removeClass("hidden");
-        }
-    } else {
-        $(".btn-srt-tbl").addClass("hidden");
+function disable_submit_button(bool) {
+    var submit_button = document.getElementById("submit-id-submit");
+    if(submit_button !== null){
+        submit_button.disabled = bool;
     }
 }
 
-watch(document.getElementById('img-presentation-table'), table_changed);
+
+
 
 function assignOrder() {
     'use strict';
@@ -333,10 +320,11 @@ window.addEventListener('DOMContentLoaded', function () {
                 .done(function (response) {
                     var new_img = response.file;
                     if (window.location.pathname.indexOf("/grading/") === -1) {
-                        $("#thumbnail" + clicked_row_id).prop("id", "thumbnail" + new_img.pk).prop('src', new_img.thumbnailUrl);
+                        $("#thumbnail" + clicked_row_id).prop("id", "thumbnail" + new_img.pk).removeClass("hidden").prop('src', new_img.thumbnailUrl);
                     } else {
                         $("#thumbnail" + clicked_row_id).prop("id", "thumbnail" + new_img.pk).prop('src', new_img.url).prop('style', "width:40vw");
                     }
+                    $("#thumbnail" + new_img.pk).parents("span").addClass("processing");
                     $("#previewid" + clicked_row_id).prop("id", "previewid" + new_img.pk).prop('href', new_img.url);
                     $("#filename" + clicked_row_id).prop("id", "filename" + new_img.pk).prop('href', new_img.url);
                     $("#filetime" + clicked_row_id).prop("id", "filetime" + new_img.pk).prop('title', new_img.timestr_title).html(new_img.timestr_short);
@@ -395,8 +383,8 @@ function activate_change_listening()
 
   $(":file").on("change", on_input_change);
 
-  $('#fileupload').on("file_edited order_changed fileuploaddestroyed", on_input_change);
-  $('#fileupload').on("file_edited fileuploadcompleted order_changed fileuploaddestroyed", pk_changed);
+  $('#fileupload').on("file_edited order_changed fileuploaddestroyed", on_input_change)
+      .on("file_edited fileuploadcompleted order_changed fileuploaddestroyed", pk_changed);
 
   $(window).on('beforeunload',
       function()
@@ -404,6 +392,24 @@ function activate_change_listening()
         if (input_changed)
           return "{% trans 'You have unsaved changes on this page.' %}";
       });
+
+  $('#fileupload').on("fileuploadcompleted fileuploaddestroyed", function () {
+    if ($('.timestr').length > 1) {
+        if ($(".btn-srt-tbl-cfm").hasClass("hidden")) {
+            $(".btn-srt-tbl").removeClass("hidden");
+        }
+    } else {
+        $(".btn-srt-tbl").addClass("hidden");
+    }
+});
+
+  $('#fileupload').on("fileuploadadd", function () {
+      disable_submit_button(true);
+  })
+      .on("fileuploadfailed", function () {
+          var nInProcess = $("#img-presentation-table").find("button.btn.btn-warning.cancel").length;
+          disable_submit_button(nInProcess > 0);
+  });
 
   function before_submit(evt)
   {

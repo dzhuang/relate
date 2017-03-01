@@ -1,4 +1,4 @@
-{% extends 'jfu/upload_form.html' %}
+{% extends 'image_upload/upload_form.html' %}
 {% load i18n %}
 {% load static %}
 
@@ -106,9 +106,13 @@ $(document).ready(function () {
     }
 });
 
+function hideLoading(that){
+    $(".fileupload-download-processing").remove();
+    $(that).parents("span").removeClass("processing");
+}
 
-function magnify(x) {
-    $(x).ezPlus({
+function magnify(that) {
+    $(that).ezPlus({
     zoomType: 'inner',
     cursor: 'crosshair'
 });
@@ -119,3 +123,27 @@ function magnify(x) {
 
 {% block JS_UPLOAD_TEMPLATE %}{% endblock %}
 {% block JS_DOWNLOAD_TEMPLATE %}{% endblock %}
+
+{% block JS_LOAD_EXISTING_FILES %}
+    // Load existing files:
+    {% if uploaded_view_url %}
+        $('#fileupload').addClass('fileupload-processing');
+        $.ajax({
+            // Uncomment the following to send cross-domain cookies:
+            //xhrFields: {withCredentials: true},
+            //url: $('#fileupload').fileupload('option', 'url'),
+
+            url: "{{ uploaded_view_url }}",
+
+            dataType: 'json',
+            context: $('#fileupload')[0]
+        }).always(function () {
+            $(this).removeClass('fileupload-processing');
+        }).done(function (result) {
+            $(this).fileupload('option', 'done')
+                .call(this, $.Event('done'), {result: result});
+            console.log("finish loading existing files in jfu");
+            console.log(Date.now()/1000);
+        });
+    {% endif %}
+{% endblock %}
