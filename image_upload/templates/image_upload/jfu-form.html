@@ -190,16 +190,15 @@
                                     download="{{ JQ_OPEN }}=file.name{{ JQ_CLOSE }}"
                                     id="previewid{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
                                     data-gallery>
-                                    <img class="img-responsive thumbnail-loading"
+                                    <img class="img-responsive"
                                        id="thumbnail{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
                                        {% if IN_GRADE_PAGE %}
                                         src="{{ JQ_OPEN }}=file.url{{ JQ_CLOSE }}"
-                                        onmouseover="magnify(this)"
-                                        data-zoom-image="{{ JQ_OPEN }}=file.url{{ JQ_CLOSE }}"
+                                        onload="enableMagnify(this, '{{ JQ_OPEN }}=file.url{{ JQ_CLOSE }}')"
                                         {% else %}
                                         src="{{ JQ_OPEN }}=file.thumbnailUrl{{ JQ_CLOSE }}"
+                                        onload="hideLoading(this)"
                                         {% endif %}
-                                        onload=hideLoading(this)
                                     >
                                 </a>
                             {{ JQ_OPEN }} } {{ JQ_CLOSE }}
