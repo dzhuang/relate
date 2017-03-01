@@ -13,9 +13,6 @@ django-submail>=1.2.0
 ## for linux, run "apt-get install libjpeg-dev" first
 pillow
 
-# For django jquery file upload
-git+https://github.com/dzhuang/django-jfu.git
-
 # For generating thumbnail
 django-imagekit
 
