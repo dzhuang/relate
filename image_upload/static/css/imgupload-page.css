@@ -19,7 +19,8 @@
 /*}*/
 
 @media (max-width: 767px) {
-    .modal-footer > button >span {
+    .modal-footer > button >span,
+    .progress-extended{
         display: none;
     }
     h1, h2, h3, p {overflow-wrap: break-word;}
