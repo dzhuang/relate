@@ -26,7 +26,7 @@ RELATE_CUSTOM_BOWER_INSTALLED_APPS = (
     "respond",
 
     #"jquery-form",
-    "cropperjs",
+    "cropper",
 
     # https://clipboardjs.com/
     "clipboard",

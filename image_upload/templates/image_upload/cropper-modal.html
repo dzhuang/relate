@@ -31,20 +31,20 @@
         {% endif %}
         {% if image %}
         <div id="crp-result"></div>
-        <button type="button" class="btn btn-primary btn-crp-rtt" data-step="-90">
+        <button type="button" class="btn btn-primary btn-crp-rtt" data-method="rotate" data-option="-90" data-step="-90">
               <i class="fa fa-rotate-left"></i>
                 <span>90&deg;</span>
         </button>            
-        <button type="button" class="btn btn-primary btn-crp-rtt" data-step="90">
+        <button type="button" class="btn btn-primary btn-crp-rtt" data-method="rotate" data-option="90"  data-step="90">
               <i class="fa fa-rotate-right"></i>
                 <span>90&deg;</span>
         </button>
         {% if ALLOW_ROTATE_TUNE %}
-        <button type="button" class="btn btn-primary btn-crp-rtt" data-step="-0.5">
+        <button type="button" class="btn btn-primary btn-crp-rtt" data-method="rotate" data-option="-0.5" data-step="-0.5">
               <i class="fa fa-reply"></i>
                 <span>0.5&deg;</span>
         </button>            
-        <button type="button" class="btn btn-primary btn-crp-rtt" data-step="0.5">
+        <button type="button" class="btn btn-primary btn-crp-rtt" data-method="rotate" data-option="0.5"  data-step="0.5">
               <i class="fa fa-share"></i>
             <span>0.5&deg;</span>
         </button>
@@ -67,7 +67,7 @@
     <button type="button" class="btn btn-success disabled btn-crp-submit">
         <i class="fa fa-check"></i>
         <span>{% trans "Submit" %}</span></button>
-    <button type="button" class="btn btn-warning disabled btn-crp-reset">
+    <button type="button" class="btn btn-warning disabled btn-crp-reset" data-method="reset">
         <i class="fa fa-refresh"></i>
         <span>{% trans "Reset" %}</span></button>
     <button type="button" class="btn btn-primary btn-crp-preview">

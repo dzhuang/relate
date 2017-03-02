@@ -10,7 +10,22 @@
 {% if not IN_GRADE_PAGE %}
 {{ block.super }}
 {% else %}
+{#{{ block.super }}#}
 <style>
+
+.files .template-download .preview.processing {
+  display: block;
+  width: 32px;
+  height: 32px;
+  background: url("{% static "/blueimp-gallery/img/loading.gif" %}") center no-repeat;
+  background-size: contain;
+}
+
+.fileupload-download-processing {
+    height: 96px;
+  background: url("{% static "/blueimp-gallery/img/loading.gif" %}") center no-repeat;
+  background-size: 96px 96px;
+}
 
 .grading-hidden {
     display: none;
@@ -22,7 +37,7 @@
         max-width: 100%;
     }
 }
-@media (max-width: 767px) {
+@media (max-width: 768px) {
     .grading-page-student-work.container > div > div{
        padding: 0;
    }
@@ -38,7 +53,7 @@
 </style>
 {% endif %}
 <link rel="stylesheet" href="{% static "css/imgupload-page.css"  %}?rev=2.2.1 ">
-<link rel="stylesheet" href="{% static "cropperjs/dist/cropper.css" %} ">
+<link rel="stylesheet" href="{% static "cropper/dist/cropper.css" %} ">
 <noscript><link rel="stylesheet" href="{% static "css/imgupload-noscript.css" %} "></noscript>
     <!--[if lt IE 9]>
         <link rel="stylesheet" href="{% static "css/imgupload-noscript.css" %} ">
@@ -87,8 +102,8 @@ minFileSize: {{minFileSize}},
 {{ block.super }}
 <script src="{% static "clipboard/dist/clipboard.min.js" %} "></script>
 <script src="{% url 'javascript-catalog-image-upload'  %}?rev=1.0.1"></script>
-<script src="{% static "cropperjs/dist/cropper.js" %} "></script>
-<script src="{% static "js/imgupload-page.js" %}?rev=2.2.1 "></script>
+<script src="{% static "cropper/dist/cropper.js" %} "></script>
+<script src="{% static "js/imgupload-page.js" %}?rev=2.3.2 "></script>
 {# % if IN_GRADE_PAGE % #}
 <script src="{% static "ez-plus/src/jquery.ez-plus.js" %} "></script>
 <script>
@@ -107,8 +122,20 @@ $(document).ready(function () {
 });
 
 function hideLoading(that){
-    $(".fileupload-download-processing").remove();
     $(that).parents("span").removeClass("processing");
+}
+
+function printtime(s){
+    console.log(s + new Date());
+}
+
+function enableMagnify(that, fileurl){
+    hideLoading(that);
+    $(that).prop("href", fileurl)
+        .on("mouseover", function () {
+        magnify(this);
+    })
+        .prop("data-zoom-image", fileurl);
 }
 
 function magnify(that) {
@@ -139,6 +166,7 @@ function magnify(that) {
             context: $('#fileupload')[0]
         }).always(function () {
             $(this).removeClass('fileupload-processing');
+            $(".fileupload-download-processing").remove();
         }).done(function (result) {
             $(this).fileupload('option', 'done')
                 .call(this, $.Event('done'), {result: result});
