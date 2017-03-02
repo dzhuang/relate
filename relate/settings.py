@@ -112,7 +112,7 @@ AUTH_USER_MODEL = 'accounts.User'
 BOWER_COMPONENTS_ROOT = os.path.join(BASE_DIR, "components")
 
 STATICFILES_FINDERS = tuple(STATICFILES_FINDERS) + (
-    "djangobower.finders.BowerFinder",
+    # "djangobower.finders.BowerFinder",
     )
 
 BOWER_INSTALLED_APPS = (
