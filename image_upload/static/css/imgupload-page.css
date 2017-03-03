@@ -10,7 +10,6 @@
     max-width: 100%;
 }
 
-
 @media (max-width: 767px) {
     .modal-footer > button >span,
     h1, h2, h3, p {overflow-wrap: break-word;}
@@ -23,11 +22,6 @@
 
     div.progress-extended{
         display: none;
-    }
-
-    .progress{
-        max-width: 40%;
-        margin: 0px;
     }
 }
 
