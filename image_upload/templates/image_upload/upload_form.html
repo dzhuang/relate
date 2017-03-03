@@ -53,6 +53,8 @@
         <noscript>
             <input type="hidden" name="redirect" value="{{ request.path }}"> </noscript>
 
+    <div class="row">
+
         {% block UPLOAD_FORM_BUTTON_BAR %}
             <div class="row fileupload-buttonbar">
                 {# The fileupload-buttonbar contains buttons to add/delete files and start/cancel the upload #}
@@ -60,7 +62,7 @@
                 <div class="col-lg-7">
                     {# The fileinput-button span is used to style the file input field as button #}
                     {% block UPLOAD_FORM_BUTTON_BAR_ADD %}
-                        <span class="btn btn-success fileinput-button">
+                        <button class="btn btn-success fileinput-button">
                             <i class="glyphicon glyphicon-plus"></i>
                             <span>{% trans "Add files..." %}</span>
                             {% block UPLOAD_FORM_BUTTON_BAR_ADD_FILE_INPUT %}
@@ -84,7 +86,7 @@
                                     {% endblock %}{# //FILE_INPUT #}
                             {% endblock %}{# //block UPLOAD_FORM_BUTTON_BAR_ADD_FILE_INPUT #}
 
-                        </span>
+                        </button>
 
                         {% block UPLOAD_FORM_BUTTON_BAR_ADD_EXTRA %}
                         {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR_ADD_EXTRA #}
@@ -127,7 +129,12 @@
                     </div>
                 {% endblock %}
             </div>
+            {% block UPLOAD_FORM_BUTTON_BAR_ADD_EXTRA_RIGHT %}
+            {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR_ADD_EXTRA_RIGHT#}
+
         {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR #}
+
+    </div>
 
         {# The loading indicator is shown during file processing #}
         {% block UPLOAD_FORM_LINDICATOR %}
@@ -487,10 +494,12 @@
                             dataType: 'json',
                             context: $('#fileupload')[0]
                         }).always(function () {
-                            $(this).removeClass('fileupload-processing');
+                            $(this).removeClass('fileupload-processing')
+                                .trigger("fileuploadloadingexistalways");
                         }).done(function (result) {
                             $(this).fileupload('option', 'done')
                                 .call(this, $.Event('done'), {result: result});
+
                         });
                     {% endif %}
                 {% endblock %}

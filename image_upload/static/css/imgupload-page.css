@@ -10,63 +10,70 @@
     max-width: 100%;
 }
 
-/*tr:nth-child(1) > td.td-srt > a.button.btn.btn-success.up,*/
-/*tr:nth-child(1) > td.td-srt > a.button.btn.btn-success.top,*/
-/*tr:nth-child(2) > td.td-srt > a.button.btn.btn-success.top,*/
-/*tr:nth-last-child(1) > td.td-srt > a.button.btn.btn-success.down,*/
-/*{*/
-    /*display: none;*/
-/*}*/
+/* thumbnail settings for uploaded images */
+.preview img {
+    max-height:100px;
+}
+
+
+.files .template-download .preview.processing {
+    display: block;
+    width: 32px;
+    height: 32px;
+    background: url("../blueimp-gallery/img/loading.gif") center no-repeat;
+    background-size: contain;
+}
+
+.fileupload-download-processing {
+    height: 96px;
+    background: url("../blueimp-gallery/img/loading.gif") center no-repeat;
+    background-size: 96px 96px;
+}
 
 @media (max-width: 767px) {
+    .fileupload-buttonbar .delete,
     .modal-footer > button >span,
-    .progress-extended{
-        display: none;
-    }
     h1, h2, h3, p {overflow-wrap: break-word;}
-    #fileupload > table > tbody > * > td:nth-child(2) > p{
+    #fileupload > table > tbody > * > td:nth-child(2) > p,
+    #fileupload > table > tbody > * > td:nth-child(3),
+    .btn-control > span
+    {
         display: none;
     }
-    #fileupload > table > tbody > * > td:nth-child(3){
-        display: none;
-    }
-    /*#fileupload > table > tbody > * > td:nth-child(4){*/
-        /*display: none;*/
-    /*}*/
 
-    #fileupload > div.row.fileupload-buttonbar > div.col-lg-7 > * > span {
+    div.progress-extended{
         display: none;
     }
 }
 
 .latexpage-error pre {
-  background-color:#eee;
-  overflow:auto;
-  margin:0 0 1em;
-  padding:.5em 1em;
+    background-color:#eee;
+    overflow:auto;
+    margin:0 0 1em;
+    padding:.5em 1em;
 }
 
 /*pre code,*/
 /*pre .line-number {*/
-  /*!* Ukuran line-height antara teks di dalam tag <code> dan <span class="line-number"> harus sama! *!*/
-  /*font:normal normal 12px/14px "Courier New",Courier,Monospace;*/
-  /*color:black;*/
-  /*display:block;*/
+/*!* Ukuran line-height antara teks di dalam tag <code> dan <span class="line-number"> harus sama! *!*/
+/*font:normal normal 12px/14px "Courier New",Courier,Monospace;*/
+/*color:black;*/
+/*display:block;*/
 /*}*/
 
 .latexpage-error pre .line-number {
-  float:left;
-  margin:0 1em 0 -1em;
-  border-right:1px solid;
-  text-align:right;
+    float:left;
+    margin:0 1em 0 -1em;
+    border-right:1px solid;
+    text-align:right;
 }
 
 .latexpage-error pre .line-number span {
-  display:block;
-  padding:0 .5em 0 1em;
+    display:block;
+    padding:0 .5em 0 1em;
 }
 
 .latexpage-error pre .cl {
-  display:block;
-  clear:both;
+    display:block;
+    clear:both;
 }

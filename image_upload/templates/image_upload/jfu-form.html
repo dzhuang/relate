@@ -9,10 +9,10 @@
     <div class="row fileupload-buttonbar">
         {# The fileupload-buttonbar contains buttons to add/delete files and start/cancel the upload #}
 
-        <div class="col-lg-7">
+        <div class="col-xs-5 col-md-5 col-lg-5">
             {# The fileinput-button span is used to style the file input field as button #}
             {% block UPLOAD_FORM_BUTTON_BAR_ADD %}
-                <span class="btn btn-success fileinput-button">
+                <button class="btn btn-success fileinput-button btn-control">
                     <i class="glyphicon glyphicon-plus"></i>
                     <span>{% trans "Add files..." %}</span>
                     {% block UPLOAD_FORM_BUTTON_BAR_ADD_FILE_INPUT %}
@@ -36,59 +36,59 @@
                             {% endblock %}{# //FILE_INPUT #}
                     {% endblock %}{# //block UPLOAD_FORM_BUTTON_BAR_ADD_FILE_INPUT #}
 
-                </span>
+                </button>
 
                 {% block UPLOAD_FORM_BUTTON_BAR_ADD_EXTRA %}
                 {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR_ADD_EXTRA #}
             {% endblock %}{# //block UPLOAD_FORM_BUTTON_BAR_ADD #}
 
             {% block UPLOAD_FORM_BUTTON_BAR_CONTROL %}
-                <button type="submit" class="btn btn-primary start">
+                <button type="submit" class="btn btn-primary start btn-control">
                     <i class="glyphicon glyphicon-upload"></i>
                     <span>{% trans "Start upload" %}</span>
                 </button>
-                <button type="reset" class="btn btn-warning cancel">
+                <button type="reset" class="btn btn-warning cancel btn-control">
                     <i class="glyphicon glyphicon-ban-circle"></i>
                     <span>{% trans "Cancel upload" %}</span>
                 </button>
-                <button type="button" class="btn btn-danger delete">
+                <button type="button" class="btn btn-danger delete btn-control">
                     <i class="glyphicon glyphicon-trash"></i>
                     <span>{% trans "Delete" %}</span>
                 </button>
                 <input type="checkbox" class="toggle">
             {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR_CONTROL #}
-            {% if IS_COURSE_STAFF or MAY_CHANGE_ANSWER  %}
-            {% block UPLOAD_FORM_BUTTON_BAR_EXTRA %}
-                <button type="button" class="btn btn-success btn-srt-tbl hidden" style="float:right;">
-                    <i class="fa fa-sort"></i>
-                    <span>{% trans "Sort" %}</span>
-                </button>
-                <button type="button" class="btn btn-primary btn-srt-tbl-cfm hidden" style="float:right;">
-                    <i class="fa fa-sort"></i>
-                    <span>{% trans "Done" %}</span>
-                </button>
-                <span id="srt_prgrs" style="float:right; padding-right: 15px"></span>
-            {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR_EXTRA #}
-            {% endif %}
-
         </div>
 
         {% block UPLOAD_FORM_PROGRESS_BAR %}
             {# The global progress information #}
-            <div class="col-lg-5 fileupload-progress fade">
+            <div class="col-xm-4 col-md-3 col-lg-5 fileupload-progress fade">
                 {# The global progress bar #}
-                    <div 
-                        class="progress progress-striped active" 
+                    <div
+                        class="col-xm-4 col-md-3 col-lg-5 progress progress-striped active"
                         role="progressbar" 
                         aria-valuemin="0" aria-valuemax="100"
                     >
-                    <div class="progress-bar progress-bar-success" style="width:0%;">
+                    <div class="col-xm-4 col-md-3 col-lg-5 progress-bar progress-bar-success" style="width:0%;">
                     </div>
                 </div>
                 {# The extended global progress information #}
                 <div class="progress-extended">&nbsp;</div>
             </div>
         {% endblock %}
+        {% if IS_COURSE_STAFF or MAY_CHANGE_ANSWER  %}
+            {% block UPLOAD_FORM_BUTTON_BAR_EXTRA_RIGHT %}
+                <div class="col-xs-2 col-sm-2 col-lg-2" style="float:right;">
+                    <button type="button" class="btn btn-success btn-control btn-srt-tbl hidden" style="float:right;">
+                        <i class="fa fa-sort"></i>
+                        <span>{% trans "Sort" %}</span>
+                    </button>
+                    <button type="button" class="btn btn-primary btn-srt-tbl-cfm btn-control hidden" style="float:right;">
+                    <i class="fa fa-sort"></i>
+                    <span>{% trans "Done" %}</span>
+                </button>
+                <span id="srt_prgrs" style="float:right; padding-right: 15px"></span></div>
+            {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR_EXTRA_RIGHT #}
+        {% endif %}
     </div>
 {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR #}
 {% endif %}
@@ -173,13 +173,9 @@
         {{ JQ_OPEN }} for (var i=0, file; file=o.files[i]; i++) { {{ JQ_CLOSE }}
 
             <tr class="template-download fade"
-                data-order=
-                    '{
-                        "pk":{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }},
-                        "old_ord":{{ JQ_OPEN }}=i{{ JQ_CLOSE }},
-                        "new_ord":""
-                        }'>
-
+                data-order='{"pk":{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }},"old_ord":{{ JQ_OPEN }}=i{{ JQ_CLOSE }},"new_ord":""}'
+                data-file-pk="{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
+                >
                 {% block JS_DOWNLOAD_TEMPLATE_PREVIEW %}
                     <td>
                         <span class="preview processing">
@@ -317,12 +313,14 @@
                                 {{ JQ_OPEN }} } {{ JQ_CLOSE }}
                                 {% endblock %}{# block COPY_IMAGE_DATA #}
                             {% endif %}
-                            <a 
+                            <a
                                 class="btn btn-success btn-edit-image"
                                 data-toggle="modal"
                                 id="updateurl{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
+                                data-action="{{ JQ_OPEN }}=file.crop_handler_url{{ JQ_CLOSE }}"
+                                data-data='{ "csrfmiddlewaretoken" : "{{ csrf_token }}" }'
                                 href="{{ JQ_OPEN }}=file.updateUrl{{ JQ_CLOSE }}"
-                                data-target="#modal"
+                                data-target="#editPopup"
                             >
                                 <i class="fa fa-pencil"></i>
                                 <span>{% trans "Edit" %}</span>

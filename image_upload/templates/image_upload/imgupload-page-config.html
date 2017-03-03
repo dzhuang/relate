@@ -150,28 +150,3 @@ function magnify(that) {
 
 {% block JS_UPLOAD_TEMPLATE %}{% endblock %}
 {% block JS_DOWNLOAD_TEMPLATE %}{% endblock %}
-
-{% block JS_LOAD_EXISTING_FILES %}
-    // Load existing files:
-    {% if uploaded_view_url %}
-        $('#fileupload').addClass('fileupload-processing');
-        $.ajax({
-            // Uncomment the following to send cross-domain cookies:
-            //xhrFields: {withCredentials: true},
-            //url: $('#fileupload').fileupload('option', 'url'),
-
-            url: "{{ uploaded_view_url }}",
-
-            dataType: 'json',
-            context: $('#fileupload')[0]
-        }).always(function () {
-            $(this).removeClass('fileupload-processing');
-            $(".fileupload-download-processing").remove();
-        }).done(function (result) {
-            $(this).fileupload('option', 'done')
-                .call(this, $.Event('done'), {result: result});
-            console.log("finish loading existing files in jfu");
-            console.log(Date.now()/1000);
-        });
-    {% endif %}
-{% endblock %}
