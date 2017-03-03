@@ -9,7 +9,7 @@
     <div class="row fileupload-buttonbar">
         {# The fileupload-buttonbar contains buttons to add/delete files and start/cancel the upload #}
 
-        <div class="col-xs-5 col-md-5 col-lg-5">
+        <div class="col-lg-7">
             {# The fileinput-button span is used to style the file input field as button #}
             {% block UPLOAD_FORM_BUTTON_BAR_ADD %}
                 <button class="btn btn-success fileinput-button btn-control">
@@ -57,38 +57,38 @@
                 </button>
                 <input type="checkbox" class="toggle">
             {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR_CONTROL #}
+            {% if IS_COURSE_STAFF or MAY_CHANGE_ANSWER  %}
+            {% block UPLOAD_FORM_BUTTON_BAR_EXTRA %}
+                <button type="button" class="btn btn-success btn-control btn-srt-tbl hidden" style="float:right;">
+                    <i class="fa fa-sort"></i>
+                    <span>{% trans "Sort" %}</span>
+                </button>
+                <button type="button" class="btn btn-primary btn-control btn-srt-tbl-cfm hidden" style="float:right;">
+                    <i class="fa fa-sort"></i>
+                    <span>{% trans "Done" %}</span>
+                </button>
+                <span id="srt_prgrs" style="float:right; padding-right: 15px"></span>
+            {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR_EXTRA #}
+            {% endif %}
+
         </div>
 
         {% block UPLOAD_FORM_PROGRESS_BAR %}
             {# The global progress information #}
-            <div class="col-xm-4 col-md-3 col-lg-5 fileupload-progress fade">
+            <div class="col-lg-5 fileupload-progress fade">
                 {# The global progress bar #}
                     <div
-                        class="col-xm-4 col-md-3 col-lg-5 progress progress-striped active"
-                        role="progressbar" 
+                        class="progress progress-striped active"
+                        role="progressbar"
                         aria-valuemin="0" aria-valuemax="100"
                     >
-                    <div class="col-xm-4 col-md-3 col-lg-5 progress-bar progress-bar-success" style="width:0%;">
-                    </div>
+                    <div class="progress-bar progress-bar-success" style="width:0%;">
+                </div>
                 </div>
                 {# The extended global progress information #}
                 <div class="progress-extended">&nbsp;</div>
             </div>
         {% endblock %}
-        {% if IS_COURSE_STAFF or MAY_CHANGE_ANSWER  %}
-            {% block UPLOAD_FORM_BUTTON_BAR_EXTRA_RIGHT %}
-                <div class="col-xs-2 col-sm-2 col-lg-2" style="float:right;">
-                    <button type="button" class="btn btn-success btn-control btn-srt-tbl hidden" style="float:right;">
-                        <i class="fa fa-sort"></i>
-                        <span>{% trans "Sort" %}</span>
-                    </button>
-                    <button type="button" class="btn btn-primary btn-srt-tbl-cfm btn-control hidden" style="float:right;">
-                    <i class="fa fa-sort"></i>
-                    <span>{% trans "Done" %}</span>
-                </button>
-                <span id="srt_prgrs" style="float:right; padding-right: 15px"></span></div>
-            {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR_EXTRA_RIGHT #}
-        {% endif %}
     </div>
 {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR #}
 {% endif %}

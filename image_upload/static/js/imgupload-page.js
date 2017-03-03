@@ -173,8 +173,6 @@ window.addEventListener('DOMContentLoaded', function () {
     $('body').on('shown.bs.modal', function () {
         $(".relate-save-button").addClass('disabled');
         $image = $("#image");
-
-        // $image = document.querySelector("#image");
         $('.img-container img').css('max-height', $(window).height() * 0.8);
         $image.cropper({
             checkOrientation: false,
@@ -293,9 +291,7 @@ window.addEventListener('DOMContentLoaded', function () {
             $(".modal-footer > button").addClass("disabled");
             jqxhr = $.ajax({
                 method: "POST",
-                // url: $('#crp-form').attr("action"),
                 url: $image.attr("data-ajax-url"),
-                // data: $('#crp-form').serialize()
                 data: JSON.stringify(result),
                 beforeSend: function(xhr, settings) {
                     xhr.setRequestHeader("X-CSRFToken", get_cookie('csrftoken'));

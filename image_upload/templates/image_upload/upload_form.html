@@ -36,7 +36,7 @@
     {% endblock %}
 
     {% block CSS_EXTRA %}
-        <link rel="stylesheet" href="{{ STATIC_URL }}css/jquery_file_upload_extra.css?rev=2.3.1">
+        <link rel="stylesheet" href="{{ STATIC_URL }}css/jquery_file_upload_extra.css?rev=2.3.3">
     {% endblock %}
 
 {% endblock %}
@@ -52,8 +52,6 @@
         {# Redirect browsers with JavaScript disabled to the origin page #}
         <noscript>
             <input type="hidden" name="redirect" value="{{ request.path }}"> </noscript>
-
-    <div class="row">
 
         {% block UPLOAD_FORM_BUTTON_BAR %}
             <div class="row fileupload-buttonbar">
@@ -129,12 +127,7 @@
                     </div>
                 {% endblock %}
             </div>
-            {% block UPLOAD_FORM_BUTTON_BAR_ADD_EXTRA_RIGHT %}
-            {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR_ADD_EXTRA_RIGHT#}
-
         {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR #}
-
-    </div>
 
         {# The loading indicator is shown during file processing #}
         {% block UPLOAD_FORM_LINDICATOR %}
@@ -499,7 +492,6 @@
                         }).done(function (result) {
                             $(this).fileupload('option', 'done')
                                 .call(this, $.Event('done'), {result: result});
-
                         });
                     {% endif %}
                 {% endblock %}

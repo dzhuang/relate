@@ -440,17 +440,6 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
             _('There are errors, please refresh the page '
               'or try again later'))
 
-    # try:
-    #     x = int(float(request.POST['x']))
-    #     y = int(float(request.POST['y']))
-    #     width = int(float(request.POST['width']))
-    #     height = int(float(request.POST['height']))
-    #     rotate = int(float(request.POST['rotate']))
-    # except:
-    #     raise CropImageError(
-    #         _('There are errors, please refresh the page '
-    #           'or try again later'))
-
     try:
         new_image = Image.open(image_orig_path)
     except IOError:
