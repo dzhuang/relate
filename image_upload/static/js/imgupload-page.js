@@ -8,16 +8,7 @@ $(document).ready(function () {
     var input_changed = false;
 });
 
-function watch(targetElement, triggerFunction) {
-    'use strict';
-    var html = targetElement.innerHTML;
-    setInterval(function () {
-        if (html !== targetElement.innerHTML) {
-            triggerFunction();
-            html = targetElement.innerHTML;
-        }
-    }, 500);
-}
+var console_debug;
 
 function disable_submit_button(bool) {
     var submit_button = document.getElementById("submit-id-submit");
@@ -29,7 +20,7 @@ function disable_submit_button(bool) {
 function assignOrder() {
     'use strict';
     var idx = 0;
-    $('#fileupload > table > tbody > tr').each(function () {
+    $('#fileupload').children("table tbody tr").each(function () {
         $(this).data("order").new_ord = idx;
         idx = idx + 1;
     });
@@ -64,9 +55,9 @@ $('.btn-srt-tbl').on('click', function () {
         ).show();
         chg_data = [];
         $('#fileupload > table > tbody > tr').each(function () {
-                chg_data.push($(this).data('order'));
+            chg_data.push($(this).data('order'));
         });
-        
+
         if (chg_data.length > 0) {
             jqxhr = $.ajax({
                 method: "POST",
@@ -160,12 +151,10 @@ $('.btn-srt-tbl-cfm').on('click', function () {
 });
 
 var clicked_row;
-var clicked_row_id;
+var target_image_pk;
 $('#fileupload').on("click", ".btn-edit-image", function () {
     'use strict';
-    clicked_row = $(event.target).closest('tr');
-    clicked_row_id = $(clicked_row).find('[id*=thumbnail]').prop("id").replace("thumbnail","");
-    console.log(clicked_row_id);
+    target_image_pk = $(event.target).closest('tr').attr('data-file-pk');
 });
 
 var all_pks;
@@ -180,16 +169,10 @@ window.addEventListener('DOMContentLoaded', function () {
         .css('overflow-y', 'auto')
         .css('max-height', $(window).height() * 0.9)
         .css('margin', 0).css('border', 0);
-    var $image, dataX, dataY, dataHeight, dataWidth, dataRotate, contData;
+    var $image, contData, result;
     $('body').on('shown.bs.modal', function () {
         $(".relate-save-button").addClass('disabled');
         $image = $("#image");
-        // $image = document.querySelector("#image");
-        dataX = document.getElementById('dataX');
-        dataY = document.getElementById('dataY');
-        dataHeight = document.getElementById('dataHeight');
-        dataWidth = document.getElementById('dataWidth');
-        dataRotate = document.getElementById('dataRotate');
         $('.img-container img').css('max-height', $(window).height() * 0.8);
         $image.cropper({
             checkOrientation: false,
@@ -201,17 +184,15 @@ window.addEventListener('DOMContentLoaded', function () {
             minContainerheight: $(window).height() * 0.8,
             ready: function(data){
                 $image.cropper('setContainerData', contData);
+                // $('.btn-crp-rtt').removeClass("disabled");
+                // $('.btn-crp-preview').removeClass("disabled");
             },
             cropstart: function (data) {
                 $('.btn-crp-submit').removeClass("disabled");
                 $('.btn-crp-reset').removeClass("disabled");
             },
             crop: function (data) {
-                dataX.value = Math.round(data.x);
-                dataY.value = Math.round(data.y);
-                dataHeight.value = Math.round(data.height);
-                dataWidth.value = Math.round(data.width);
-                dataRotate.value = Math.round(data.rotate);
+                result = data;
             },
             rotate: function(data) {
 
@@ -308,40 +289,32 @@ window.addEventListener('DOMContentLoaded', function () {
             var x, y, width, height, rotate, jqxhr, msg;
             $(this).addClass("disabled");
             $(".modal-footer > button").addClass("disabled");
-            x = $('#dataX').val();
-            y = $('#dataY').val();
-            width = $('#dataWidth').val();
-            height = $('#dataHeight').val();
-            rotate = $('#dataRotate').val();
-
-            if (x === "" || y === "" || width === "" || height === "" || rotate === "") {
-                $(this).removeClass("disabled");
-                return false;
-            }
-
             jqxhr = $.ajax({
                 method: "POST",
-                url: $('#crp-form').attr("action"),
-                data: $('#crp-form').serialize()
+                url: $image.attr("data-ajax-url"),
+                data: JSON.stringify(result),
+                beforeSend: function(xhr, settings) {
+                    xhr.setRequestHeader("X-CSRFToken", get_cookie('csrftoken'));
+                }
             })
                 .done(function (response) {
                     var new_img = response.file;
                     if (window.location.pathname.indexOf("/grading/") === -1) {
-                        $("#thumbnail" + clicked_row_id).prop("id", "thumbnail" + new_img.pk).removeClass("hidden").prop('src', new_img.thumbnailUrl);
+                        $("#thumbnail" + target_image_pk).prop("id", "thumbnail" + new_img.pk).removeClass("hidden").prop('src', new_img.thumbnailUrl);
                     } else {
-                        $("#thumbnail" + clicked_row_id).prop("id", "thumbnail" + new_img.pk).prop('src', new_img.url).prop('style', "width:40vw");
+                        $("#thumbnail" + target_image_pk).prop("id", "thumbnail" + new_img.pk).prop('src', new_img.url).prop('style', "width:40vw");
                     }
                     $("#thumbnail" + new_img.pk).parents("span").addClass("processing");
-                    $("#previewid" + clicked_row_id).prop("id", "previewid" + new_img.pk).prop('href', new_img.url);
-                    $("#filename" + clicked_row_id).prop("id", "filename" + new_img.pk).prop('href', new_img.url);
-                    $("#filetime" + clicked_row_id).prop("id", "filetime" + new_img.pk).prop('title', new_img.timestr_title).html(new_img.timestr_short);
-                    $("#filesize" + clicked_row_id).prop("id", "filesize" + new_img.pk).html(formatFileSize(new_img.size));
-                    $("#updateurl" + clicked_row_id).prop("id", "updateurl" + new_img.pk).prop('href', new_img.updateUrl);
-                    $("#deleteurl" + clicked_row_id).prop("id", "deleteurl" + new_img.pk).prop('href', new_img.deleteUrl);
+                    $("#previewid" + target_image_pk).prop("id", "previewid" + new_img.pk).prop('href', new_img.url);
+                    $("#filename" + target_image_pk).prop("id", "filename" + new_img.pk).prop('href', new_img.url);
+                    $("#filetime" + target_image_pk).prop("id", "filetime" + new_img.pk).prop('title', new_img.timestr_title).html(new_img.timestr_short);
+                    $("#filesize" + target_image_pk).prop("id", "filesize" + new_img.pk).html(formatFileSize(new_img.size));
+                    $("#updateurl" + target_image_pk).prop("id", "updateurl" + new_img.pk).prop('href', new_img.updateUrl);
+                    $("#deleteurl" + target_image_pk).prop("id", "deleteurl" + new_img.pk).prop('href', new_img.deleteUrl);
                     $image.cropper('replace', new_img.url);
                     crpMsg(true, gettext('Done!'));
                     setTimeout(function () {
-                        $('#modal').modal('hide');
+                        $('#editPopup').modal('hide');
                     }, 2000);
                     $('#fileupload').trigger("file_edited");
                 })
@@ -350,7 +323,7 @@ window.addEventListener('DOMContentLoaded', function () {
                     crpMsg(false, msg);
                     //console.log(response);
                     setTimeout(function () {
-                        $('#modal').modal('hide');
+                        $('#editPopup').modal('hide');
                     }, 2000);
                 });
             return false;
@@ -364,11 +337,11 @@ window.addEventListener('DOMContentLoaded', function () {
 
     })
         .on('hidden.bs.modal', '.modal', function () {
-        $(".relate-save-button").removeClass('disabled');
-        $('.img-container').html("");
-        $(this).removeData('bs.modal');
-        $image.cropper('destroy');
-    });
+            $(".relate-save-button").removeClass('disabled');
+            $('.img-container').html("");
+            $(this).removeData('bs.modal');
+            $image.cropper('destroy');
+        });
 
 });
 
@@ -381,67 +354,69 @@ function activate_change_listening() {
         $("#id_hidden_answer").prop("value", all_pks);
     }
 
-  function on_input_change(evt) {
+    function on_input_change(evt) {
         input_changed = true;
     }
 
-  $(":file").on("change", on_input_change);
+    $(":file").on("change", on_input_change);
 
-  $(window).on('beforeunload',
-      function() {
-        if (input_changed)
-          return "{% trans 'You have unsaved changes on this page.' %}";
-      });
-
-  $('#fileupload')
-      .on("file_edited order_changed fileuploaddestroyed", on_input_change)
-      .on("file_edited fileuploadcompleted order_changed fileuploaddestroyed", pk_changed)
-      .on("fileuploadcompleted fileuploaddestroyed", function () {
-          if ($('.timestr').length > 1) {
-              if ($(".btn-srt-tbl-cfm").hasClass("hidden")) {
-                  $(".btn-srt-tbl").removeClass("hidden");
-              }
-          } else {
-              $(".btn-srt-tbl").addClass("hidden");
-          }
-      })
-      .on("fileuploadadd", function (e, data) {
-          disable_submit_button(true);
-          console.log(data);
-          // debug_files=data;
-
-      })
-      .on("fileuploadfailed fileuploadcompleted fileuploaddestroyed", function () {
-          var nInProcess = $("#img-presentation-table").find("button.btn.btn-warning.cancel").length;
-          disable_submit_button(nInProcess > 0);
-      })
-      .on('fileuploadprocessstart', function () {
-          console.log('processstart');
-      })
-      .on('fileuploadprocessdone', function (e, data) {
-        console.log('processdone', data.files[data.index].name);
-        debug_data = data;
-        debug_files = data.files[data.index];
-      });
-
-  function before_submit(evt) {
-      input_changed = false;
-
-    // We can't simply set "disabled" on the submitting button here.
-    // Otherwise the browser will simply remove that button from the POST
-    // data.
-
-    $(".relate-save-button").each(
-        function()
-        {
-          var clone = $(this).clone();
-          $(clone).attr("disabled", "1");
-          $(this).after(clone);
-          $(this).hide();
+    $(window).on('beforeunload',
+        function() {
+            if (input_changed)
+                return "{% trans 'You have unsaved changes on this page.' %}";
         });
-  }
 
-  $(".relate-interaction-container form").on("submit", before_submit);
+    $('#fileupload')
+        .on("fileuploadloadingexistalways", function() {
+            $(".fileupload-download-processing").remove();})
+        .on("file_edited order_changed fileuploaddestroyed", on_input_change)
+        .on("file_edited fileuploadcompleted order_changed fileuploaddestroyed", pk_changed)
+        .on("fileuploadcompleted fileuploaddestroyed", function () {
+            if ($('.timestr').length > 1) {
+                if ($(".btn-srt-tbl-cfm").hasClass("hidden")) {
+                    $(".btn-srt-tbl").removeClass("hidden");
+                }
+            } else {
+                $(".btn-srt-tbl").addClass("hidden");
+            }
+        })
+        .on("fileuploadadd", function (e, data) {
+            disable_submit_button(true);
+            console.log(data);
+            // debug_files=data;
+
+        })
+        .on("fileuploadfailed fileuploadcompleted fileuploaddestroyed", function () {
+            var nInProcess = $("#img-presentation-table").find("button.btn.btn-warning.cancel").length;
+            disable_submit_button(nInProcess > 0);
+        })
+        .on('fileuploadprocessstart', function () {
+            console.log('processstart');
+        })
+        .on('fileuploadprocessdone', function (e, data) {
+            console.log('processdone', data.files[data.index].name);
+            debug_data = data;
+            debug_files = data.files[data.index];
+        });
+
+    function before_submit(evt) {
+        input_changed = false;
+
+        // We can't simply set "disabled" on the submitting button here.
+        // Otherwise the browser will simply remove that button from the POST
+        // data.
+
+        $(".relate-save-button").each(
+            function()
+            {
+                var clone = $(this).clone();
+                $(clone).attr("disabled", "1");
+                $(this).after(clone);
+                $(this).hide();
+            });
+    }
+
+    $(".relate-interaction-container form").on("submit", before_submit);
 }
 
 $(document).ready(activate_change_listening);

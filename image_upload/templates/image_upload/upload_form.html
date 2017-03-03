@@ -36,7 +36,7 @@
     {% endblock %}
 
     {% block CSS_EXTRA %}
-        <link rel="stylesheet" href="{{ STATIC_URL }}css/jquery_file_upload_extra.css?rev=2.3.1">
+        <link rel="stylesheet" href="{{ STATIC_URL }}css/jquery_file_upload_extra.css?rev=2.3.3">
     {% endblock %}
 
 {% endblock %}
@@ -60,7 +60,7 @@
                 <div class="col-lg-7">
                     {# The fileinput-button span is used to style the file input field as button #}
                     {% block UPLOAD_FORM_BUTTON_BAR_ADD %}
-                        <span class="btn btn-success fileinput-button">
+                        <button class="btn btn-success fileinput-button">
                             <i class="glyphicon glyphicon-plus"></i>
                             <span>{% trans "Add files..." %}</span>
                             {% block UPLOAD_FORM_BUTTON_BAR_ADD_FILE_INPUT %}
@@ -84,7 +84,7 @@
                                     {% endblock %}{# //FILE_INPUT #}
                             {% endblock %}{# //block UPLOAD_FORM_BUTTON_BAR_ADD_FILE_INPUT #}
 
-                        </span>
+                        </button>
 
                         {% block UPLOAD_FORM_BUTTON_BAR_ADD_EXTRA %}
                         {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR_ADD_EXTRA #}
@@ -487,7 +487,8 @@
                             dataType: 'json',
                             context: $('#fileupload')[0]
                         }).always(function () {
-                            $(this).removeClass('fileupload-processing');
+                            $(this).removeClass('fileupload-processing')
+                                .trigger("fileuploadloadingexistalways");
                         }).done(function (result) {
                             $(this).fileupload('option', 'done')
                                 .call(this, $.Event('done'), {result: result});
