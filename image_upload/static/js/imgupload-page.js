@@ -6,6 +6,36 @@ $(document).ready(function () {
     // $('#past-submission_dropdown').addClass('hidden');
     new Clipboard('.btn-data-copy');
     var input_changed = false;
+
+    // {{{ detect forward and backward
+    // https://gist.github.com/sstephenson/739659
+    // Failed for modal
+    // var detectBackOrForward = function(onBack, onForward) {
+    //   var hashHistory = [window.location.hash];
+    //   var historyLength = window.history.length;
+    //
+    //   return function() {
+    //     var hash = window.location.hash, length = window.history.length;
+    //     if (hashHistory.length && historyLength == length) {
+    //       if (hashHistory[hashHistory.length - 2] == hash) {
+    //         hashHistory = hashHistory.slice(0, -1);
+    //         onBack();
+    //       } else {
+    //         hashHistory.push(hash);
+    //         onForward();
+    //       }
+    //     } else {
+    //       hashHistory.push(hash);
+    //       historyLength = length;
+    //     }
+    //   }
+    // };
+
+    // window.addEventListener("hashchange", detectBackOrForward(
+    //   function() { console.log("back"); $(this).trigger("navigateBack"); },
+    //   function() { console.log("forward"); $(this).trigger("navigateForward");  }
+    // ));
+    // }}}
 });
 
 var console_debug;
@@ -15,6 +45,10 @@ function disable_submit_button(bool) {
     if(submit_button !== null){
         submit_button.disabled = bool;
     }
+}
+
+function getWidthQueryMatch() {
+    return window.matchMedia("(max-width: 1023px)").matches;
 }
 
 function assignOrder() {
@@ -157,6 +191,15 @@ $('#fileupload').on("click", ".btn-edit-image", function () {
     target_image_pk = $(event.target).closest('tr').attr('data-file-pk');
 });
 
+// close gallery using back button
+$('#blueimp-gallery').on('open', function (e) {
+    if(getWidthQueryMatch()){window.history.pushState('forward', null, '#slides');}
+})
+    .on('close', function (e) {
+        if(location.hash=='#slides' && getWidthQueryMatch())window.history.back();
+});
+
+
 var all_pks;
 
 function imageReady() {
@@ -292,7 +335,7 @@ window.addEventListener('DOMContentLoaded', function () {
             jqxhr = $.ajax({
                 method: "POST",
                 url: $image.attr("data-ajax-url"),
-                data: JSON.stringify(result),
+                data: JSON.stringify(result, ['x', 'y', 'height', 'width', 'rotate']),
                 beforeSend: function(xhr, settings) {
                     xhr.setRequestHeader("X-CSRFToken", get_cookie('csrftoken'));
                 }
@@ -341,8 +384,29 @@ window.addEventListener('DOMContentLoaded', function () {
             $('.img-container').html("");
             $(this).removeData('bs.modal');
             $image.cropper('destroy');
+            // window.history.back();
         });
 
+    // Enable back button to close modal and blueimp gallery
+    // http://stackoverflow.com/a/40364619/3437454
+    $('#editPopup').on('show.bs.modal', function (e) {
+        if(getWidthQueryMatch())window.history.pushState('forward', null, '#edit');
+    })
+        .on('hide.bs.modal', function (e) {
+            if(location.hash=='#edit' && getWidthQueryMatch())window.history.back();
+        });
+
+    $(window).on('popstate', function (event) {  //pressed back button
+        if(event.state!==null && getWidthQueryMatch())
+        {
+            var gallery = $('#blueimp-gallery').data('gallery');
+            if(gallery){gallery.close();}
+            else{
+                $('.modal').modal('hide');
+                console.log("called!");
+            }
+        }
+    });
 });
 
 
