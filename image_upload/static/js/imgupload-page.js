@@ -205,12 +205,6 @@ var all_pks;
 // http://stackoverflow.com/a/8645155/3437454
 // function loadImage(src)
 
-function loadImage(src, callback) {
-    var image = new Image();
-    image.onload = callback;
-    image.src = src;
-}
-
 window.addEventListener('DOMContentLoaded', function () {
     'use strict';
     $('.modal .modal-body')
@@ -219,13 +213,13 @@ window.addEventListener('DOMContentLoaded', function () {
         .css('margin', 0).css('border', 0);
     var $image, contData, result;
     $('body').on('shown.bs.modal', function () {
-        console.log("modal opened");
         $(".relate-save-button").addClass('disabled');
         $image = $("#image");
 
-        loadImage($image.attr("src"), function(){
-            $('.img-container img').css('max-height', $(window).height() * 0.8);
-            $image.cropper({
+        $image.one("ready", function(){
+            console.log("image_ready");
+        })
+            .cropper({
                 checkOrientation: false,
                 autoCrop: true,
                 autoCropArea: 1,
@@ -250,7 +244,6 @@ window.addEventListener('DOMContentLoaded', function () {
 
                 }
             });
-        });
 
         function crpMsg(success, msg) {
             var e = $("#crp-result");
