@@ -202,8 +202,13 @@ $('#blueimp-gallery').on('open', function (e) {
 
 var all_pks;
 
-function imageReady() {
-    console.log(Date.now(), "image ready");
+// http://stackoverflow.com/a/8645155/3437454
+// function loadImage(src)
+
+function loadImage(src, callback) {
+    var image = new Image();
+    image.onload = callback;
+    image.src = src;
 }
 
 window.addEventListener('DOMContentLoaded', function () {
@@ -214,32 +219,37 @@ window.addEventListener('DOMContentLoaded', function () {
         .css('margin', 0).css('border', 0);
     var $image, contData, result;
     $('body').on('shown.bs.modal', function () {
+        console.log("modal opened");
         $(".relate-save-button").addClass('disabled');
         $image = $("#image");
-        $('.img-container img').css('max-height', $(window).height() * 0.8);
-        $image.cropper({
-            checkOrientation: false,
-            autoCrop: true,
-            autoCropArea: 1,
-            strict: true,
-            movable: false,
-            zoomable: false,
-            minContainerheight: $(window).height() * 0.8,
-            ready: function(data){
-                $image.cropper('setContainerData', contData);
-                // $('.btn-crp-rtt').removeClass("disabled");
-                // $('.btn-crp-preview').removeClass("disabled");
-            },
-            cropstart: function (data) {
-                $('.btn-crp-submit').removeClass("disabled");
-                $('.btn-crp-reset').removeClass("disabled");
-            },
-            crop: function (data) {
-                result = data;
-            },
-            rotate: function(data) {
 
-            }
+        loadImage($image.attr("src"), function(){
+            $('.img-container img').css('max-height', $(window).height() * 0.8);
+            $image.cropper({
+                checkOrientation: false,
+                autoCrop: true,
+                autoCropArea: 1,
+                strict: true,
+                movable: false,
+                zoomable: false,
+                minContainerheight: $(window).height() * 0.8,
+                ready: function(data){
+                    $image.cropper('setContainerData', contData);
+                    console.log("cropper ready!");
+                    // $('.btn-crp-rtt').removeClass("disabled");
+                    // $('.btn-crp-preview').removeClass("disabled");
+                },
+                cropstart: function (data) {
+                    $('.btn-crp-submit').removeClass("disabled");
+                    $('.btn-crp-reset').removeClass("disabled");
+                },
+                crop: function (data) {
+                    result = data;
+                },
+                rotate: function(data) {
+
+                }
+            });
         });
 
         function crpMsg(success, msg) {
