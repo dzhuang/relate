@@ -214,12 +214,10 @@ window.addEventListener('DOMContentLoaded', function () {
     var $image, contData, result;
     $('body').on('shown.bs.modal', function () {
         $(".relate-save-button").addClass('disabled');
+        var image = new Image();
         $image = $("#image");
-
-        $image.one("ready", function(){
-            console.log("image_ready");
-        })
-            .cropper({
+        $(image).on('load', function() {
+            $image.cropper({
                 checkOrientation: false,
                 autoCrop: true,
                 autoCropArea: 1,
@@ -227,7 +225,7 @@ window.addEventListener('DOMContentLoaded', function () {
                 movable: false,
                 zoomable: false,
                 minContainerheight: $(window).height() * 0.8,
-                ready: function(data){
+                ready: function (data) {
                     $image.cropper('setContainerData', contData);
                     console.log("cropper ready!");
                     // $('.btn-crp-rtt').removeClass("disabled");
@@ -240,10 +238,13 @@ window.addEventListener('DOMContentLoaded', function () {
                 crop: function (data) {
                     result = data;
                 },
-                rotate: function(data) {
+                rotate: function (data) {
 
                 }
             });
+        });
+
+        image.src = $image.attr("src");
 
         function crpMsg(success, msg) {
             var e = $("#crp-result");
