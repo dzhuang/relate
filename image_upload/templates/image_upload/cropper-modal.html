@@ -9,7 +9,7 @@
 <div class="modal-body">
     {% if image %}
         <div class="img-container">
-            <img id="image" src="{{ image.get_absolute_url }}" alt="Picture{{image.id}}" id="target{{image.id}}" data-ajax-url="{% url 'image_crop' image.course.identifier image.flow_session_id image.get_page_ordinal image.id %}">
+            <img id="image" src="{{ image.get_absolute_url }}" alt="Picture{{image.id}}" onload="imageReady()" id="target{{image.id}}" data-ajax-url="{% url 'image_crop' image.course.identifier image.flow_session_id image.get_page_ordinal image.id %}">
         </div>
         <div class="preview_container">
             <div id="preview"></div>
