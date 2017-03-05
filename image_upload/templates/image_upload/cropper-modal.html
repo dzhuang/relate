@@ -33,20 +33,20 @@
         <div id="crp-result"></div>
         <button type="button" class="btn btn-primary btn-control btn-crp-rtt" data-method="rotate" data-option="-90" data-step="-90">
             <i class="fa fa-rotate-left"></i>
-            90&deg;
+            <span>90&deg;</span>
         </button>
         <button type="button" class="btn btn-primary btn-control btn-crp-rtt" data-method="rotate" data-option="90"  data-step="90">
             <i class="fa fa-rotate-right"></i>
-            90&deg
+            <span>90&deg;</span>
         </button>
         {% if ALLOW_ROTATE_TUNE %}
             <button type="button" class="btn btn-primary btn-control btn-crp-rtt" data-method="rotate" data-option="-0.5" data-step="-0.5">
                 <i class="fa fa-reply"></i>
-                0.5&deg
+                <span>0.5&deg;</span>
             </button>
             <button type="button" class="btn btn-primary btn-control btn-crp-rtt" data-method="rotate" data-option="0.5"  data-step="0.5">
                 <i class="fa fa-share"></i>
-                0.5&deg
+                <span>0.5&deg;</span>
             </button>
         {% endif %}
         <button type="button" class="btn btn-success btn-control disabled btn-crp-submit" data-token={{ csrf_token }}>
