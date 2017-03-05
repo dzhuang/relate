@@ -206,6 +206,9 @@ function imageReady() {
     console.log(Date.now(), "image ready");
 }
 
+// http://stackoverflow.com/a/8645155/3437454
+// function loadImage(src)
+
 window.addEventListener('DOMContentLoaded', function () {
     'use strict';
     $('.modal .modal-body')
@@ -214,6 +217,7 @@ window.addEventListener('DOMContentLoaded', function () {
         .css('margin', 0).css('border', 0);
     var $image, contData, result;
     $('body').on('shown.bs.modal', function () {
+        console.log("modal opened");
         $(".relate-save-button").addClass('disabled');
         $image = $("#image");
         $('.img-container img').css('max-height', $(window).height() * 0.8);
@@ -227,6 +231,7 @@ window.addEventListener('DOMContentLoaded', function () {
             minContainerheight: $(window).height() * 0.8,
             ready: function(data){
                 $image.cropper('setContainerData', contData);
+                console.log("cropper ready!");
                 // $('.btn-crp-rtt').removeClass("disabled");
                 // $('.btn-crp-preview').removeClass("disabled");
             },

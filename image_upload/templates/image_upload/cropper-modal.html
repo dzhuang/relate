@@ -9,7 +9,7 @@
 <div class="modal-body">
     {% if image %}
         <div class="img-container">
-            <img id="image" src="{{ image.get_absolute_url }}" alt="Picture{{image.id}}" id="target{{image.id}}" data-ajax-url="{% url 'image_crop' image.course.identifier image.flow_session_id image.get_page_ordinal image.id %}">
+            <img id="image" src="{{ image.get_absolute_url }}" alt="Picture{{image.id}}" onload="imageReady()" id="target{{image.id}}" data-ajax-url="{% url 'image_crop' image.course.identifier image.flow_session_id image.get_page_ordinal image.id %}">
         </div>
         <div class="preview_container">
             <div id="preview"></div>
@@ -33,20 +33,20 @@
         <div id="crp-result"></div>
         <button type="button" class="btn btn-primary btn-control btn-crp-rtt" data-method="rotate" data-option="-90" data-step="-90">
             <i class="fa fa-rotate-left"></i>
-            90&deg;
+            <span>90&deg;</span>
         </button>
         <button type="button" class="btn btn-primary btn-control btn-crp-rtt" data-method="rotate" data-option="90"  data-step="90">
             <i class="fa fa-rotate-right"></i>
-            90&deg
+            <span>90&deg;</span>
         </button>
         {% if ALLOW_ROTATE_TUNE %}
             <button type="button" class="btn btn-primary btn-control btn-crp-rtt" data-method="rotate" data-option="-0.5" data-step="-0.5">
                 <i class="fa fa-reply"></i>
-                0.5&deg
+                <span>0.5&deg;</span>
             </button>
             <button type="button" class="btn btn-primary btn-control btn-crp-rtt" data-method="rotate" data-option="0.5"  data-step="0.5">
                 <i class="fa fa-share"></i>
-                0.5&deg
+                <span>0.5&deg;</span>
             </button>
         {% endif %}
         <button type="button" class="btn btn-success btn-control disabled btn-crp-submit" data-token={{ csrf_token }}>
