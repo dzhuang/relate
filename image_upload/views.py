@@ -356,6 +356,42 @@ class CropImageError(BadRequest):
     pass
 
 
+@login_required
+@course_view
+def image_crop_modal(pctx, flow_session_id, ordinal, pk):
+    request = pctx.request
+    error_message = None
+    try:
+        image = FlowPageImage.objects.get(id=pk)
+    except FlowPageImage.DoesNotExist:
+        error_message = (
+            string_concat(_('File not found.'),
+                          _('Please upload the image first.')))
+        return render(
+            request,
+            'image_upload/cropper-modal.html',
+            {'image': None,
+             'error_message': error_message,
+             'STAFF_EDIT_WARNNING': False,
+             'owner': None
+             })
+    course_staff_status = is_course_staff_course_image_request(
+        pctx.request, pctx.course)
+    staff_edit_warnning = False
+    if (course_staff_status
+        and
+                request.user != image.creator):
+        staff_edit_warnning = True
+    return render(
+        request,
+        'image_upload/cropper-modal.html',
+        {'image': image,
+         'error_message': error_message,
+         'STAFF_EDIT_WARNNING': staff_edit_warnning,
+         'owner': image.creator
+         })
+
+
 @json_view
 @login_required
 @transaction.atomic
