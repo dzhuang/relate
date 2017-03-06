@@ -115,6 +115,7 @@ STATICFILES_FINDERS = tuple(STATICFILES_FINDERS) + (
     "djangobower.finders.BowerFinder",
     )
 
+
 BOWER_INSTALLED_APPS = (
     # "bootstrap#3.3.4",
     # "fontawesome#4.4.0",
