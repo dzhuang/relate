@@ -2,7 +2,7 @@ $(document).ready(function () {
     'use strict';
     $(".relate-save-button").each(function () {
         $(this).attr("formaction", window.location.pathname).detach().appendTo('#real-submit-div');
-    }).on("click", function(){
+    }).on("click", function () {
         var all_pks = [];
         $("#img-presentation-table").find('tr').each(function () {
             all_pks.push($(this).attr("data-file-pk"));
@@ -13,31 +13,34 @@ $(document).ready(function () {
                 + all_pks +
                 '"></div>');
         });
-
         $("#id_hidden_answer").prop("value", all_pks);
-        console.log(all_pks);
     });
-    var controlElement = $("#img-presentation-table").find(".btn-control" || "checkbox");
+
     new Clipboard('.btn-data-copy');
     var input_changed = false;
-    $('#img-presentation-table').find("tbody")
-        .sortable(
-            {delay: 500,
-                scrollSpeed: 40,
-                scrollSensitivity: 10,
-                helper: "clone",
-                activate:function(){
-                    $(controlElement).addClass("hidden");
-                    $('.imageSortableRow').removeClass("hidden");
-                },
-                deactivate: function(){
-                    $(controlElement).removeClass("hidden");
-                    $('.imageSortableRow').addClass("hidden");
-                }
-            });
+    $('#img-presentation-table')
+        .find("tbody").sortable(
+        {
+            delay: 500,
+            handle: ".imageSortableHandle",
+            scrollSpeed: 40,
+            scrollSensitivity: 10,
+            helper: "clone",
+            axis: "y",
+            opacity: 0.9,
+            cursor: "move",
+            // cursorAt: { bottom: 0},
+            activate: function () {
+                // $(controlElement).addClass("hidden");
+                // $('.imageSortableHandle').removeClass("hidden");
+            },
+            deactivate: function () {
+                // $(controlElement).removeClass("hidden");
+                // $('.imageSortableHandle').addClass("hidden");
+            }
+        });
 });
 
-var console_debug;
 
 function disable_submit_button(bool) {
     var submit_button = document.getElementById("submit-id-submit");
@@ -50,152 +53,28 @@ function getWidthQueryMatch() {
     return window.matchMedia("(max-width: 1023px)").matches;
 }
 
-function assignOrder() {
-    'use strict';
-    var idx = 0;
-    $('#fileupload').children("table tbody tr").each(function () {
-        $(this).data("order").new_ord = idx;
-        idx = idx + 1;
-    });
-    $('.btn-srt').each(function () {
-        $(this).removeClass("hidden");
-    });
-    $('tr:nth-child(1) > td.td-srt > .up').addClass("hidden");
-    $('tr:nth-child(1) > td.td-srt > .top').addClass("hidden");
-    $('tr:nth-child(2) > td.td-srt > .top').addClass("hidden");
-    $('tr:nth-last-child(1) > td.td-srt > .down').addClass("hidden");
+
+function formatFileSize(bytes) {
+    if (typeof bytes !== 'number') {
+        return '';
+    }
+    if (bytes >= 1000000000) {
+        return (bytes / 1000000000).toFixed(2) + ' GB';
+    }
+    if (bytes >= 1000000) {
+        return (bytes / 1000000).toFixed(2) + ' MB';
+    }
+    return (bytes / 1000).toFixed(2) + ' KB';
 }
 
-$('.btn-srt-tbl').on('click', function () {
-    'use strict';
-    var $up, $down, len, row1, row2, $top, chg_data, jqxhr;
-    $(this).addClass('hidden');
-    $('#fileupload > .fileupload-buttonbar > div > *').not('.btn-srt-tbl-cfm').not('.btn-srt-tbl').addClass('disabled');
-    $('.btn-srt-tbl-cfm').removeClass('hidden');
-    $('.td-dl').each(function () {
-        $(this).addClass('hidden');
-    });
-    $('.td-srt').each(function () {
-        $(this).removeClass('hidden');
-    });
-
-    assignOrder();
-
-    function send_data() {
-        $(".relate-save-button").addClass('disabled');
-        $('#srt_prgrs').html(
-            '<img src="/static/images/busy.gif" %}" alt="Busy indicator">'
-        ).show();
-        chg_data = [];
-        $('#fileupload').find('tr').each(function () {
-            chg_data.push($(this).data('order'));
-        });
-
-        if (chg_data.length > 0) {
-            jqxhr = $.ajax({
-                method: "POST",
-                url: $('#ord-form').attr("action"),
-                data: $('#ord-form').serialize() + "&chg_data=" + JSON.stringify(chg_data)
-            })
-                .done(function (response) {
-                    console.log("ok");
-                    $('#fileupload > table > tbody > tr').each(function () {
-                        $(this).data('order').new_ord = $(this).data('order').old_ord;
-                        $('[class*=btn-srt]').removeClass('disabled');
-                        $(".relate-save-button").removeClass('disabled');
-                    });
-                    $('#srt_prgrs').html(response.message);
-                    $('#fileupload').trigger("order_changed");
-                    window.setTimeout(function () {
-                        $('#srt_prgrs').fadeOut();
-                    }, 3000);
-                })
-                .fail(function (response) {
-                    console.log(response);
-                    $('#srt_prgrs').html(gettext('Failed!') + " " + response.responseJSON.message);
-                    window.setTimeout(function () {
-                        $('#srt_prgrs').fadeOut();
-                    }, 3000);
-                });
-            return false;
-        } else {
-            $('#fileupload > table > tbody > tr').each(function () {
-                console.log("unchanged??");
-                $(this).data('order').new_ord = $(this).data('order').old_ord;
-                $('[class*=btn-srt]').removeClass('disabled');
-                $(".relate-save-button").removeClass('disabled');
-            });
-        }
-
-    }
-
-    $up = $(".up");
-    $up.click(function () {
-        $('[class*=btn-srt]').addClass('disabled');
-        var $tr = $(this).parents("tr");
-        if ($tr.index() !== 0) {
-            row1 = $tr;
-            row2 = $tr.prev();
-            $tr.prev().before($tr);
-            $up = $(".up");
-            assignOrder();
-            send_data();
-
-        }
-    });
-    $down = $(".down");
-    len = $down.length;
-    $down.click(function () {
-        $('[class*=btn-srt]').addClass('disabled');
-        var $tr = $(this).parents("tr");
-        if ($tr.index() !== len - 1) {
-            $tr.next().after($tr);
-            $down = $(".down");
-            assignOrder();
-            send_data();
-        }
-    });
-    $top = $(".top");
-    $top.click(function () {
-        $('[class*=btn-srt]').addClass('disabled');
-        var $tr = $(this).parents("tr");
-        if ($tr.index() !== 0 && $tr.index() !== 1) {
-            $(".table").prepend($tr);
-            $tr.css("color", "#f60");
-            $top = $(".top");
-            assignOrder();
-            send_data();
-        }
-    });
-});
-
-$('.btn-srt-tbl-cfm').on('click', function () {
-    'use strict';
-    $(this).addClass('hidden');
-    $('.btn-srt-tbl').removeClass('hidden');
-    $('.td-dl').each(function () {
-        $(this).removeClass('hidden');
-    });
-
-    $('.td-srt').each(function () {
-        $(this).addClass('hidden');
-    });
-    $('#fileupload > .fileupload-buttonbar > div > *').not('.btn-srt-tbl-cfm').not('.btn-srt-tbl').removeClass('disabled');
-});
-
-// var clicked_row;
-// var target_image_pk;
-// $('#fileupload').on("click", ".btn-edit-image", function () {
-//     'use strict';
-//     target_image_pk = $(event.target).closest('tr').attr('data-file-pk');
-// });
 
 // close gallery using back button
-$('#blueimp-gallery').on('open', function (e) {
-    if (getWidthQueryMatch()) {
-        window.history.pushState('forward', null, '#slides');
-    }
-})
+$('#blueimp-gallery')
+    .on('open', function (e) {
+        if (getWidthQueryMatch()) {
+            window.history.pushState('forward', null, '#slides');
+        }
+    })
     .on('close', function (e) {
         if (location.hash == '#slides' && getWidthQueryMatch()) window.history.back();
     });
@@ -203,8 +82,10 @@ $('#blueimp-gallery').on('open', function (e) {
 
 window.addEventListener('DOMContentLoaded', function () {
     'use strict';
-    var $image, contData, result, ajax_url, target_image_pk;
-    var $updatedTableRow, $updatedPreview, $updatedThumbnail, $updatedFilename, $updatedFileSize, $updatedFileTime, $updatedDeleteUrl, $editTarget;
+
+    var $image, contData, result, ajax_url, target_image_pk, scrollPos;
+    var $updatedTableRow, $updatedPreview, $updatedThumbnail, $updatedFilename,
+        $updatedFileSize, $updatedFileTime, $updatedDeleteUrl, $editTarget;
 
     $('#editPopup').on('show.bs.modal', function (e) {
         $editTarget = $(e.relatedTarget);
@@ -222,6 +103,16 @@ window.addEventListener('DOMContentLoaded', function () {
         $updatedFileTime = $("#filetime" + target_image_pk);
         $updatedDeleteUrl = $("#deleteurl" + target_image_pk);
         ajax_url = $editTarget.attr("data-action");
+
+        // prevent background scrolling
+        // http://stackoverflow.com/a/34754029/3437454
+        scrollPos = $('body').scrollTop();
+        $('body').css({
+            overflow: 'hidden',
+            position: 'fixed',
+            top : -scrollPos
+        });
+
     })
         .on('shown.bs.modal', function () {
             $(".relate-save-button").addClass('disabled');
@@ -234,12 +125,9 @@ window.addEventListener('DOMContentLoaded', function () {
                 movable: false,
                 zoomable: false,
                 minContainerheight: $(window).height() * 0.8,
-                built: function () {
-                    $(".btn-crp-rtt").removeClass("disabled");
-                },
                 ready: function (data) {
                     $image.cropper('setContainerData', contData);
-
+                    $(".btn-crp-rtt").removeClass("disabled");
                 },
                 cropstart: function (data) {
                     $('.btn-crp-submit').removeClass("disabled");
@@ -304,19 +192,6 @@ window.addEventListener('DOMContentLoaded', function () {
                 $('.btn-crp-reset').removeClass("disabled");
             }
 
-            function formatFileSize(bytes) {
-                if (typeof bytes !== 'number') {
-                    return '';
-                }
-                if (bytes >= 1000000000) {
-                    return (bytes / 1000000000).toFixed(2) + ' GB';
-                }
-                if (bytes >= 1000000) {
-                    return (bytes / 1000000).toFixed(2) + ' MB';
-                }
-                return (bytes / 1000).toFixed(2) + ' KB';
-            }
-
             $(".btn-crp-rtt").click(function () {
                 rtt($(this).data("option"));
             });
@@ -340,13 +215,12 @@ window.addEventListener('DOMContentLoaded', function () {
             });
 
             $('.btn-crp-submit').click(function () {
-                var x, y, width, height, rotate, jqxhr, msg;
                 $(this).addClass("disabled");
                 $(".modal-footer > button").addClass("disabled");
-                jqxhr = $.ajax({
+                var jqxhr = $.ajax({
                     method: "POST",
                     url: ajax_url,
-                    data: JSON.stringify(result, ['x', 'y', 'height', 'width', 'rotate']),
+                    data: JSON.stringify($image.cropper("getData")),
                     beforeSend: function (xhr, settings) {
                         xhr.setRequestHeader("X-CSRFToken", $editTarget.attr("data-data"));
                     }
@@ -375,7 +249,7 @@ window.addEventListener('DOMContentLoaded', function () {
                         $('#fileupload').trigger("file_edited");
                     })
                     .fail(function (response) {
-                        msg = gettext('Failed!') + " " + response.responseJSON.message;
+                        var msg = gettext('Failed!') + " " + response.responseJSON.message;
                         crpMsg(false, msg);
                         //console.log(response);
                         setTimeout(function () {
@@ -395,16 +269,20 @@ window.addEventListener('DOMContentLoaded', function () {
         .on('hidden.bs.modal', function () {
             $(".relate-save-button").removeClass('disabled');
             $image.cropper('destroy');
-            console.log("destroyed");
-        });
-
-    // Enable back button to close modal and blueimp gallery
-    // http://stackoverflow.com/a/40364619/3437454
-    $('#editPopup').on('show.bs.modal', function (e) {
-        if (getWidthQueryMatch()) window.history.pushState('forward', null, '#edit');
-    })
+        })
+        .on('show.bs.modal', function (e) {
+            // Enable back button to close modal and blueimp gallery
+            // http://stackoverflow.com/a/40364619/3437454
+            if (getWidthQueryMatch()) window.history.pushState('forward', null, '#edit');
+            })
         .on('hide.bs.modal', function (e) {
             if (location.hash == '#edit' && getWidthQueryMatch()) window.history.back();
+
+            $('body').css({
+                overflow: '',
+                position: '',
+                top: ''
+            }).scrollTop(scrollPos);
         });
 
     $(window).on('popstate', function (event) {  //pressed back button
@@ -425,14 +303,6 @@ window.addEventListener('DOMContentLoaded', function () {
 function activate_change_listening() {
     var input_changed = false;
 
-    // function pk_changed(evt) {
-    //     var all_pks = [];
-    //     $("#img-presentation-table").find('tr').each(function () {
-    //         all_pks.push($(this).attr("data-file-pk"));
-    //     });
-    //     $("#id_hidden_answer").prop("value", all_pks);
-    // }
-
     function on_input_change(evt) {
         input_changed = true;
     }
@@ -451,8 +321,7 @@ function activate_change_listening() {
         .on("fileuploadloadingexistalways", function () {
             $(".fileupload-download-processing").remove();
         })
-        .on("file_edited order_changed fileuploaddestroyed", on_input_change)
-        // .on("file_edited fileuploadcompleted order_changed fileuploaddestroyed", pk_changed)
+        .on("file_edited fileuploaddestroyed", on_input_change)
         .on("fileuploadcompleted fileuploaddestroyed", function () {
             if ($('.timestr').length > 1) {
                 if ($(".btn-srt-tbl-cfm").hasClass("hidden")) {

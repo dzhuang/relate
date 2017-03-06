@@ -57,19 +57,8 @@
                 </button>
                 <input type="checkbox" class="toggle">
             {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR_CONTROL #}
-            {% if IS_COURSE_STAFF or MAY_CHANGE_ANSWER  %}
             {% block UPLOAD_FORM_BUTTON_BAR_EXTRA %}
-                <button type="button" class="btn btn-success btn-control btn-srt-tbl hidden" style="float:right;">
-                    <i class="fa fa-sort"></i>
-                    <span>{% trans "Sort" %}</span>
-                </button>
-                <button type="button" class="btn btn-primary btn-control btn-srt-tbl-cfm hidden" style="float:right;">
-                    <i class="fa fa-sort"></i>
-                    <span>{% trans "Done" %}</span>
-                </button>
-                <span id="srt_prgrs" style="float:right; padding-right: 15px"></span>
             {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR_EXTRA #}
-            {% endif %}
 
         </div>
 
@@ -173,11 +162,10 @@
         {{ JQ_OPEN }} for (var i=0, file; file=o.files[i]; i++) { {{ JQ_CLOSE }}
 
             <tr class="template-download fade"
-                data-order='{"pk":{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }},"old_ord":{{ JQ_OPEN }}=i{{ JQ_CLOSE }},"new_ord":""}'
                 data-file-pk="{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
                 >
                 {% block JS_DOWNLOAD_TEMPLATE_PREVIEW %}
-                    <td>
+                    <td class="col-lg-2 col-sm-3 col-xs-3">
                         <span class="preview processing">
                             {{ JQ_OPEN }} if (file.thumbnailUrl) { {{ JQ_CLOSE }}
                                 <a
@@ -204,7 +192,7 @@
 
                 {% block JS_DOWNLOAD_TEMPLATE_DOWNLOAD %}
 {#                    {% if not IN_GRADE_PAGE %}#}
-                    <td class="grading-hidden">
+                    <td class="col-lg-2 grading-hidden">
                         <p class="name">
                             {{ JQ_OPEN }} if (file.url) { {{ JQ_CLOSE }}
                                 <a 
@@ -242,7 +230,7 @@
                 {% if SHOW_CREATION_TIME %}
 {#                    {% if not IN_GRADE_PAGE %}#}
                     {% block JS_DOWNLOAD_TEMPLATE_TIME %}
-                        <td class="td-dl grading-hidden">
+                        <td class="col-lg-3 td-dl grading-hidden">
                             <span
                                 class="timestr"
                                 id="filetime{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
@@ -253,35 +241,11 @@
                         </td>
                     {% endblock %}{# block JS_DOWNLOAD_TEMPLATE_TIME #}
 {#                    {% endif %}#}
-                {% endif %}
-                    {% if IS_COURSE_STAFF or MAY_CHANGE_ANSWER %}
-                    {% block JS_DOWNLOAD_SORT %}
-                        <td class="td-srt hidden">
-                            <a
-                                class="button btn btn-success btn-srt up"
-                                id="sort-up{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
-                            >
-                                <i class="fa fa-arrow-up"></i>
-                            </a>
-                            <a
-                                class="button btn btn-success btn-srt down"
-                                id="sort-down{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
-                            >
-                                <i class="fa fa-arrow-down"></i>
-                            </a>
-                            <a
-                                class="button btn btn-success btn-srt top"
-                                id="sort-down{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
-                            >
-                                <i class="fa fa-step-forward fa-rotate-270"></i>
-                            </a>
-                        </td>
-                    {% endblock %}{# block JS_DOWNLOAD_SORT #}
                     {% endif %}
 
                 {% block JS_DOWNLOAD_TEMPLATE_FSIZE %}
 {#                    {% if not IN_GRADE_PAGE %}#}
-                    <td class="td-dl grading-hidden">
+                    <td class="col-lg-1 col-sm-1 col-xs-1 td-dl grading-hidden">
                         <span
                             class="size"
                             id="filesize{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
@@ -290,7 +254,7 @@
 {#                    {% endif %}#}
                 {% endblock %}{# //JS_DOWNLOAD_TEMPLATE_FSIZE #}
 
-                <td class="td-dl">
+                <td class="td-dl col-lg-3 col-sm-4 col-xs-4">
                         {{ JQ_OPEN }} if (file.deleteUrl) { {{ JQ_CLOSE }}
                         {% if IS_COURSE_STAFF or MAY_CHANGE_ANSWER %}
                         {% block JS_DOWNLOAD_TEMPLATE_EDIT %}
@@ -351,7 +315,9 @@
                         {% endblock %}{# //block JS_DOWNLOAD_TEMPLATE_DELETE #}
                         {{ JQ_OPEN }} } {{ JQ_CLOSE }}
                 </td>
-                <td class="imageSortableRow hidden" style=" vertical-align: middle;"><i class="fa fa-sort fa-3" aria-hidden="true"></i></td>
+                {% if IS_COURSE_STAFF or MAY_CHANGE_ANSWER %}
+                <td class="imageSortableHandle col-lg-2 col-sm-2 col-xs-2" style=" vertical-align: middle;"><span title="{% trans 'Drag to order' %}"><i class="fa fa-sort fa-3" aria-hidden="true"></i></span></td>
+                {% endif %}
             </tr>
         {{ JQ_OPEN }} } {{ JQ_CLOSE }}
     </script>

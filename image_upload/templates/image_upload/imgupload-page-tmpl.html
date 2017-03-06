@@ -60,18 +60,6 @@
     </div>
 </div><!-- /.modal -->
 
-<div>
-    <iframe id="ord-iframe" name="ord-iframe" style="display: none;"></iframe>
-    <form id="ord-form"
-          action="{% url 'image_order' course_identifier=course_identifier flow_session_id=flow_session_id ordinal=ordinal %}"
-          method="post"
-          target="ord-iframe"
-            {# style="display: none;" #}
-    >
-        {% csrf_token %}
-    </form>
-</div>
-
 
 <div>
     <form class="form-horizontal" method="post">
