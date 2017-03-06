@@ -2,40 +2,39 @@ $(document).ready(function () {
     'use strict';
     $(".relate-save-button").each(function () {
         $(this).attr("formaction", window.location.pathname).detach().appendTo('#real-submit-div');
+    }).on("click", function(){
+        var all_pks = [];
+        $("#img-presentation-table").find('tr').each(function () {
+            all_pks.push($(this).attr("data-file-pk"));
+            $("#div_id_hidden_answer").html(
+                '<div class="controls">' +
+                '<input type="hidden"' +
+                ' id="id_hidden_answer" name="hidden_answer" type="text" value="'
+                + all_pks +
+                '"></div>');
+        });
+
+        $("#id_hidden_answer").prop("value", all_pks);
+        console.log(all_pks);
     });
-    // $('#past-submission_dropdown').addClass('hidden');
+    var controlElement = $("#img-presentation-table").find(".btn-control" || "checkbox");
     new Clipboard('.btn-data-copy');
     var input_changed = false;
-
-    // {{{ detect forward and backward
-    // https://gist.github.com/sstephenson/739659
-    // Failed for modal
-    // var detectBackOrForward = function(onBack, onForward) {
-    //   var hashHistory = [window.location.hash];
-    //   var historyLength = window.history.length;
-    //
-    //   return function() {
-    //     var hash = window.location.hash, length = window.history.length;
-    //     if (hashHistory.length && historyLength == length) {
-    //       if (hashHistory[hashHistory.length - 2] == hash) {
-    //         hashHistory = hashHistory.slice(0, -1);
-    //         onBack();
-    //       } else {
-    //         hashHistory.push(hash);
-    //         onForward();
-    //       }
-    //     } else {
-    //       hashHistory.push(hash);
-    //       historyLength = length;
-    //     }
-    //   }
-    // };
-
-    // window.addEventListener("hashchange", detectBackOrForward(
-    //   function() { console.log("back"); $(this).trigger("navigateBack"); },
-    //   function() { console.log("forward"); $(this).trigger("navigateForward");  }
-    // ));
-    // }}}
+    $('#img-presentation-table').find("tbody")
+        .sortable(
+            {delay: 500,
+                scrollSpeed: 40,
+                scrollSensitivity: 10,
+                helper: "clone",
+                activate:function(){
+                    $(controlElement).addClass("hidden");
+                    $('.imageSortableRow').removeClass("hidden");
+                },
+                deactivate: function(){
+                    $(controlElement).removeClass("hidden");
+                    $('.imageSortableRow').addClass("hidden");
+                }
+            });
 });
 
 var console_debug;
@@ -88,7 +87,7 @@ $('.btn-srt-tbl').on('click', function () {
             '<img src="/static/images/busy.gif" %}" alt="Busy indicator">'
         ).show();
         chg_data = [];
-        $('#fileupload > table > tbody > tr').each(function () {
+        $('#fileupload').find('tr').each(function () {
             chg_data.push($(this).data('order'));
         });
 
@@ -184,12 +183,12 @@ $('.btn-srt-tbl-cfm').on('click', function () {
     $('#fileupload > .fileupload-buttonbar > div > *').not('.btn-srt-tbl-cfm').not('.btn-srt-tbl').removeClass('disabled');
 });
 
-var clicked_row;
-var target_image_pk;
-$('#fileupload').on("click", ".btn-edit-image", function () {
-    'use strict';
-    target_image_pk = $(event.target).closest('tr').attr('data-file-pk');
-});
+// var clicked_row;
+// var target_image_pk;
+// $('#fileupload').on("click", ".btn-edit-image", function () {
+//     'use strict';
+//     target_image_pk = $(event.target).closest('tr').attr('data-file-pk');
+// });
 
 // close gallery using back button
 $('#blueimp-gallery').on('open', function (e) {
@@ -202,27 +201,27 @@ $('#blueimp-gallery').on('open', function (e) {
     });
 
 
-var all_pks;
-
-// http://stackoverflow.com/a/8645155/3437454
-// function loadImage(src)
-
 window.addEventListener('DOMContentLoaded', function () {
     'use strict';
-    // $('.modal .modal-body')
-    //     .css('overflow-y', 'auto')
-    //     .css('max-height', $(window).height() * 0.9)
-    //     .css('margin', 0).css('border', 0);
-    var $image, contData, result, ajax_url;
+    var $image, contData, result, ajax_url, target_image_pk;
+    var $updatedTableRow, $updatedPreview, $updatedThumbnail, $updatedFilename, $updatedFileSize, $updatedFileTime, $updatedDeleteUrl, $editTarget;
 
     $('#editPopup').on('show.bs.modal', function (e) {
-        var image_src = $(e.relatedTarget).attr('data-src');
-        console.log(e.relatedTarget);
-        console.log("change src");
+        $editTarget = $(e.relatedTarget);
+        var target_image_pk = $editTarget.attr('data-pk');
+        var image_src = $editTarget.attr('data-src');
+
         $image = $("#image");
-        ajax_url = $(e.relatedTarget).attr("data-action");
-        console.log(ajax_url);
         $image.attr("src", image_src);
+
+        $updatedTableRow = $editTarget.parents("tr");
+        $updatedPreview = $("#previewid" + target_image_pk);
+        $updatedThumbnail = $("#thumbnail" + target_image_pk);
+        $updatedFilename = $("#filename" + target_image_pk);
+        $updatedFileSize = $("#filesize" + target_image_pk);
+        $updatedFileTime = $("#filetime" + target_image_pk);
+        $updatedDeleteUrl = $("#deleteurl" + target_image_pk);
+        ajax_url = $editTarget.attr("data-action");
     })
         .on('shown.bs.modal', function () {
             $(".relate-save-button").addClass('disabled');
@@ -236,7 +235,7 @@ window.addEventListener('DOMContentLoaded', function () {
                 zoomable: false,
                 minContainerheight: $(window).height() * 0.8,
                 built: function () {
-                    // $(".btn-crp-rtt").removeClass("disabled");
+                    $(".btn-crp-rtt").removeClass("disabled");
                 },
                 ready: function (data) {
                     $image.cropper('setContainerData', contData);
@@ -349,22 +348,25 @@ window.addEventListener('DOMContentLoaded', function () {
                     url: ajax_url,
                     data: JSON.stringify(result, ['x', 'y', 'height', 'width', 'rotate']),
                     beforeSend: function (xhr, settings) {
-                        xhr.setRequestHeader("X-CSRFToken", get_cookie('csrftoken'));
+                        xhr.setRequestHeader("X-CSRFToken", $editTarget.attr("data-data"));
                     }
                 })
                     .done(function (response) {
                         var new_img = response.file;
+                        $updatedThumbnail.prop("id", "thumbnail" + new_img.pk).parents("span").addClass("processing");
                         if (window.location.pathname.indexOf("/grading/") === -1) {
-                            $("#thumbnail" + target_image_pk).prop("id", "thumbnail" + new_img.pk).removeClass("hidden").prop('src', new_img.thumbnailUrl);
+                            $updatedThumbnail.removeClass("hidden").prop('src', new_img.thumbnailUrl);
                         } else {
-                            $("#thumbnail" + target_image_pk).prop("id", "thumbnail" + new_img.pk).prop('src', new_img.url).prop('style', "width:40vw");
+                            $updatedThumbnail.prop('src', new_img.url).prop('style', "width:40vw");
                         }
-                        $("#thumbnail" + new_img.pk).parents("span").addClass("processing");
-                        $("#previewid" + target_image_pk).prop("id", "previewid" + new_img.pk).prop('href', new_img.url);
-                        $("#filename" + target_image_pk).prop("id", "filename" + new_img.pk).prop('href', new_img.url);
-                        $("#filetime" + target_image_pk).prop("id", "filetime" + new_img.pk).prop('title', new_img.timestr_title).html(new_img.timestr_short);
-                        $("#filesize" + target_image_pk).prop("id", "filesize" + new_img.pk).html(formatFileSize(new_img.size));
-                        $("#deleteurl" + target_image_pk).prop("id", "deleteurl" + new_img.pk).prop('href', new_img.deleteUrl);
+                        $updatedTableRow.attr("data-file-pk", new_img.pk);
+                        $updatedPreview.prop("id", "previewid" + new_img.pk).prop('href', new_img.url);
+                        $updatedFilename.prop("id", "filename" + new_img.pk).prop('href', new_img.url);
+                        $updatedFileTime.prop("id", "filetime" + new_img.pk).prop('title', new_img.timestr_title).html(new_img.timestr_short);
+                        $updatedFileSize.prop("id", "filesize" + new_img.pk).html(formatFileSize(new_img.size));
+                        $updatedDeleteUrl.prop("id", "deleteurl" + new_img.pk).attr('data-url', new_img.deleteUrl);
+                        $editTarget.attr("data-src", new_img.url).attr("data-action", new_img.crop_handler_url);
+
                         $image.cropper('replace', new_img.url);
                         crpMsg(true, gettext('Done!'));
                         setTimeout(function () {
@@ -423,13 +425,13 @@ window.addEventListener('DOMContentLoaded', function () {
 function activate_change_listening() {
     var input_changed = false;
 
-    function pk_changed(evt) {
-        all_pks = [];
-        $("#img-presentation-table").find('[id*=thumbnail]').each(function () {
-            all_pks.push(this.id.replace("thumbnail", ""));
-        });
-        $("#id_hidden_answer").prop("value", all_pks);
-    }
+    // function pk_changed(evt) {
+    //     var all_pks = [];
+    //     $("#img-presentation-table").find('tr').each(function () {
+    //         all_pks.push($(this).attr("data-file-pk"));
+    //     });
+    //     $("#id_hidden_answer").prop("value", all_pks);
+    // }
 
     function on_input_change(evt) {
         input_changed = true;
@@ -443,12 +445,14 @@ function activate_change_listening() {
                 return "{% trans 'You have unsaved changes on this page.' %}";
         });
 
+    $('#img-presentation-table').children("tbody").on("sortchange", on_input_change);
+
     $('#fileupload')
         .on("fileuploadloadingexistalways", function () {
             $(".fileupload-download-processing").remove();
         })
         .on("file_edited order_changed fileuploaddestroyed", on_input_change)
-        .on("file_edited fileuploadcompleted order_changed fileuploaddestroyed", pk_changed)
+        // .on("file_edited fileuploadcompleted order_changed fileuploaddestroyed", pk_changed)
         .on("fileuploadcompleted fileuploaddestroyed", function () {
             if ($('.timestr').length > 1) {
                 if ($(".btn-srt-tbl-cfm").hasClass("hidden")) {
