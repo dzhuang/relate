@@ -109,15 +109,6 @@ def serialize(request, instance, file_attr='image'):
                 }
         )
 
-    update_url = reverse('jfu_update',
-            kwargs={
-                'course_identifier': instance.course.identifier,
-                'flow_session_id': instance.flow_session_id,
-                'ordinal': instance.get_page_ordinal(),
-                'pk': instance.pk,
-                }
-            )
-
     crop_handler_url = reverse('image_crop',
             kwargs={
                 'course_identifier': instance.course.identifier,
@@ -201,7 +192,6 @@ def serialize(request, instance, file_attr='image'):
         'size': size,
         'error': error,
         'pk': instance.pk,
-        'updateUrl': update_url,
         'deleteUrl': delete_url,
         'crop_handler_url': crop_handler_url,
         'imageAdminUrl': get_image_admin_url(instance),

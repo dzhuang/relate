@@ -317,10 +317,10 @@
                             <a
                                 class="btn btn-success btn-edit-image"
                                 data-toggle="modal"
-                                id="updateurl{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
                                 data-action="{{ JQ_OPEN }}=file.crop_handler_url{{ JQ_CLOSE }}"
+                                data-src="{{ JQ_OPEN }}=file.url{{ JQ_CLOSE }}"
                                 data-data='{ "csrfmiddlewaretoken" : "{{ csrf_token }}" }'
-                                href="{{ JQ_OPEN }}=file.updateUrl{{ JQ_CLOSE }}"
+{#                                href="{{ JQ_OPEN }}=file.updateUrl{{ JQ_CLOSE }}"#}
                                 data-target="#editPopup"
                             >
                                 <i class="fa fa-pencil"></i>
