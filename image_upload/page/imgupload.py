@@ -472,7 +472,10 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                        request, page_context.course),
                "MAY_CHANGE_ANSWER": form.page_behavior.may_change_answer,
                "SHOW_CREATION_TIME": True,
-               "ALLOW_ROTATE_TUNE": True,
+
+               # This is not implemented
+               # "ALLOW_ROTATE_TUNE": True,
+
                "IN_GRADE_PAGE": in_grading_page,
 
                "imageMaxWidth": self.imageMaxWidth,
