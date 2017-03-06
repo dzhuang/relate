@@ -52,9 +52,9 @@
 }
 </style>
 {% endif %}
-<link rel="stylesheet" href="{% static "css/imgupload-page.css"  %}?rev=2.3.9 ">
+<link rel="stylesheet" href="{% static "css/imgupload-page.css"  %}?rev=2.3.10 ">
 <link rel="stylesheet" href="{% static "cropper/dist/cropper.min.css" %}?rev=3.0.0-beta ">
-<noscript><link rel="stylesheet" href="{% static "css/imgupload-noscript.css" %}?rev=2.3.5 "></noscript>
+<noscript><link rel="stylesheet" href="{% static "css/imgupload-noscript.css" %}"></noscript>
     <!--[if lt IE 9]>
         <link rel="stylesheet" href="{% static "css/imgupload-noscript.css" %} ">
     <![endif]-->
@@ -104,7 +104,7 @@ minFileSize: {{minFileSize}},
 <script src="{% static "clipboard/dist/clipboard.min.js" %} "></script>
 <script src="{% url 'javascript-catalog-image-upload'  %}?rev=1.0.1"></script>
 <script src="{% static "cropper/dist/cropper.min.js" %}?rev=3.0.0-beta "></script>
-<script src="{% static "js/imgupload-page.js" %}?rev=2.3.9 "></script>
+<script src="{% static "js/imgupload-page.js" %}?rev=2.3.10 "></script>
 {# % if IN_GRADE_PAGE % #}
 <script src="{% static "ez-plus/src/jquery.ez-plus.js" %} "></script>
 <script>
