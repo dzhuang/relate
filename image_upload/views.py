@@ -356,42 +356,6 @@ class CropImageError(BadRequest):
     pass
 
 
-@login_required
-@course_view
-def image_crop_modal(pctx, flow_session_id, ordinal, pk):
-    request = pctx.request
-    error_message = None
-    try:
-        image = FlowPageImage.objects.get(id=pk)
-    except FlowPageImage.DoesNotExist:
-        error_message = (
-            string_concat(_('File not found.'),
-                          _('Please upload the image first.')))
-        return render(
-            request,
-            'image_upload/cropper-modal.html',
-            {'image': None,
-             'error_message': error_message,
-             'STAFF_EDIT_WARNNING': False,
-             'owner': None
-             })
-    course_staff_status = is_course_staff_course_image_request(
-        pctx.request, pctx.course)
-    staff_edit_warnning = False
-    if (course_staff_status
-        and
-                request.user != image.creator):
-        staff_edit_warnning = True
-    return render(
-        request,
-        'image_upload/cropper-modal.html',
-        {'image': image,
-         'error_message': error_message,
-         'STAFF_EDIT_WARNNING': staff_edit_warnning,
-         'owner': image.creator
-         })
-
-
 @json_view
 @login_required
 @transaction.atomic
@@ -514,35 +478,6 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
 
 class ImgTableOrderError(BadRequest):
     pass
-
-
-@json_view
-@login_required
-@transaction.atomic
-@course_view
-def image_order(pctx, flow_session_id, ordinal):
-    try:
-        page_image_behavior = get_page_image_behavior(
-            pctx, flow_session_id, ordinal)
-        may_change_answer = page_image_behavior.may_change_answer
-    except ValueError:
-        may_change_answer = True
-
-    course_staff_status = (
-        is_course_staff_course_image_request(pctx.request, pctx.course))
-    if not (may_change_answer or course_staff_status):
-        raise ImgTableOrderError(_('Not allowd to modify answer.'))
-    request = pctx.request
-
-    if not request.POST:
-        return {}
-
-    if not request.is_ajax():
-        raise ImgTableOrderError(_('Only Ajax Post is allowed.'))
-
-    response = {'message': ugettext('Done')}
-
-    return response
 
 
 def get_page_image_behavior(pctx, flow_session_id, ordinal):
