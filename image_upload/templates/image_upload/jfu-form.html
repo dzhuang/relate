@@ -186,7 +186,7 @@
                                     download="{{ JQ_OPEN }}=file.name{{ JQ_CLOSE }}"
                                     id="previewid{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
                                     data-gallery>
-                                    <img class="img-responsive thumbnail-loading"
+                                    <img class="img-responsive"
                                        id="thumbnail{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
                                        {% if IN_GRADE_PAGE %}
                                         src="{{ JQ_OPEN }}=file.url{{ JQ_CLOSE }}"
@@ -195,7 +195,6 @@
                                         src="{{ JQ_OPEN }}=file.thumbnailUrl{{ JQ_CLOSE }}"
                                         onload="hideLoading(this)"
                                         {% endif %}
-                                        onload=hideLoading(this)
                                     >
                                 </a>
                             {{ JQ_OPEN }} } {{ JQ_CLOSE }}
@@ -315,12 +314,13 @@
                                 {% endblock %}{# block COPY_IMAGE_DATA #}
                             {% endif %}
                             <a
-                                class="btn btn-success btn-edit-image"
+                                class="btn btn-success btn-edit-image btn-control"
                                 data-toggle="modal"
-                                id="updateurl{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
                                 data-action="{{ JQ_OPEN }}=file.crop_handler_url{{ JQ_CLOSE }}"
-                                data-data='{ "csrfmiddlewaretoken" : "{{ csrf_token }}" }'
-                                href="{{ JQ_OPEN }}=file.updateUrl{{ JQ_CLOSE }}"
+                                data-src="{{ JQ_OPEN }}=file.url{{ JQ_CLOSE }}"
+                                data-pk="{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
+                                data-data="{{ csrf_token }}"
+{#                                href="{{ JQ_OPEN }}=file.updateUrl{{ JQ_CLOSE }}"#}
                                 data-target="#editPopup"
                             >
                                 <i class="fa fa-pencil"></i>
@@ -330,7 +330,7 @@
                         {% endif %}
                         {% block JS_DOWNLOAD_TEMPLATE_DELETE %}
                             <button
-                                class="btn btn-danger delete"
+                                class="btn btn-danger delete btn-control"
                                 id="deleteurl{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
                                 data-type="{{ JQ_OPEN }}=file.deleteType{{ JQ_CLOSE }}"
                                 data-data='{ "csrfmiddlewaretoken" : "{{ csrf_token }}" }'
@@ -351,7 +351,7 @@
                         {% endblock %}{# //block JS_DOWNLOAD_TEMPLATE_DELETE #}
                         {{ JQ_OPEN }} } {{ JQ_CLOSE }}
                 </td>
-
+                <td class="imageSortableRow hidden" style=" vertical-align: middle;"><i class="fa fa-sort fa-3" aria-hidden="true"></i></td>
             </tr>
         {{ JQ_OPEN }} } {{ JQ_CLOSE }}
     </script>
