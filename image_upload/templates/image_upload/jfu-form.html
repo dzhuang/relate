@@ -9,7 +9,7 @@
     <div class="row fileupload-buttonbar">
         {# The fileupload-buttonbar contains buttons to add/delete files and start/cancel the upload #}
 
-        <div class="col-lg-7">
+        <div class="col-lg-7 col-sm-6 col-xs-6 ">
             {# The fileinput-button span is used to style the file input field as button #}
             {% block UPLOAD_FORM_BUTTON_BAR_ADD %}
                 <button class="btn btn-success fileinput-button btn-control">
@@ -43,19 +43,19 @@
             {% endblock %}{# //block UPLOAD_FORM_BUTTON_BAR_ADD #}
 
             {% block UPLOAD_FORM_BUTTON_BAR_CONTROL %}
-                <button type="submit" class="btn btn-primary start btn-control">
-                    <i class="glyphicon glyphicon-upload"></i>
+                <button type="submit" class="btn btn-primary start btn-control" disabled>
+                    <i class="glyphicon glyphicon-upload" disabled></i>
                     <span>{% trans "Start upload" %}</span>
                 </button>
-                <button type="reset" class="btn btn-warning cancel btn-control">
+                <button type="reset" class="btn btn-warning cancel btn-control" disabled>
                     <i class="glyphicon glyphicon-ban-circle"></i>
                     <span>{% trans "Cancel upload" %}</span>
                 </button>
-                <button type="button" class="btn btn-danger delete btn-control">
+                <button type="button" class="btn btn-danger delete btn-control" disabled>
                     <i class="glyphicon glyphicon-trash"></i>
                     <span>{% trans "Delete" %}</span>
                 </button>
-                <input type="checkbox" class="toggle">
+                <input type="checkbox" class="toggle hidden-sm hidden-xs">
             {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR_CONTROL #}
             {% block UPLOAD_FORM_BUTTON_BAR_EXTRA %}
             {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR_EXTRA #}
@@ -64,7 +64,7 @@
 
         {% block UPLOAD_FORM_PROGRESS_BAR %}
             {# The global progress information #}
-            <div class="col-lg-5 fileupload-progress fade">
+            <div class="col-lg-5 col-sm-6 col-xs-6 fileupload-progress fade">
                 {# The global progress bar #}
                     <div
                         class="progress progress-striped active"
@@ -85,7 +85,6 @@
 {# The loading indicator is shown during file processing #}
 {% block UPLOAD_FORM_LINDICATOR %}
     <div class="fileupload-loading"></div>
-    <br>
 {% endblock %}{# //UPLOAD_FORM_LINDICATOR #}
 
 {% block UPLOAD_FORM_LISTING %}
@@ -113,12 +112,17 @@
                 {% block JS_UPLOAD_TEMPLATE_UPLOAD %}
                     <td>
                         <p class="name">{{ JQ_OPEN }}=file.name{{ JQ_CLOSE }}</p>
+                        <p class="size hidden-lg hidden-md">Processing...</p>
+                        <div class="progress progress-striped active hidden-lg hidden-md" role="progressbar"
+                            aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                            <div class="progress-bar progress-bar-success hidden-lg hidden-md" style="width:0%;"></div>
+                        </div>
                         <strong class="error text-danger"></strong>
                     </td>
                 {% endblock %}{# //JS_UPLOAD_TEMPLATE_UPLOAD #}
 
                 {% block JS_UPLOAD_TEMPLATE_PROGRESSBAR %}
-                    <td>
+                    <td class="hidden-sm hidden-xs">
                         <p class="size">Processing...</p>
                         <div class="progress progress-striped active" role="progressbar"
                             aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
@@ -191,8 +195,7 @@
                 {% endblock %}{# //JS_DOWNLOAD_TEMPLATE_PREVIEW #}
 
                 {% block JS_DOWNLOAD_TEMPLATE_DOWNLOAD %}
-{#                    {% if not IN_GRADE_PAGE %}#}
-                    <td class="col-lg-2 grading-hidden">
+                    <td class="col-lg-2 hidden-sm hidden-xs grading-hidden">
                         <p class="name">
                             {{ JQ_OPEN }} if (file.url) { {{ JQ_CLOSE }}
                                 <a 
@@ -224,13 +227,20 @@
                             {{ JQ_OPEN }} } {{ JQ_CLOSE }}
                         {% endblock %}{# //block JS_DOWNLOAD_TEMPLATE_ERROR #}
                     </td>
-{#                    {% endif %}#}
+                    <td class="hidden-lg hidden-md fileUploadCompactInfo grading-hidden">
+                        <p style="width: 30vw;">{{ JQ_OPEN }}=file.name_trancated{{ JQ_CLOSE }}
+                                <span onclick="$('#moreinfo{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}').toggle(); return false;">...</span></p>
+                            <div style="display: none;" id="moreinfo{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}">
+                                <p style="width: 30vw;">{{ JQ_OPEN }}=file.timestr_short{{ JQ_CLOSE }}</p><p style="width: 30vw;">{{ JQ_OPEN }}=o.formatFileSize(file.size){{ JQ_CLOSE }}</p>
+                            </div>
+                    </td>
+
                 {% endblock %}{# block JS_DOWNLOAD_TEMPLATE_DOWNLOAD #}
 
                 {% if SHOW_CREATION_TIME %}
 {#                    {% if not IN_GRADE_PAGE %}#}
                     {% block JS_DOWNLOAD_TEMPLATE_TIME %}
-                        <td class="col-lg-3 td-dl grading-hidden">
+                        <td class="col-lg-3 hidden-sm hidden-xs td-dl grading-hidden">
                             <span
                                 class="timestr"
                                 id="filetime{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
@@ -245,7 +255,7 @@
 
                 {% block JS_DOWNLOAD_TEMPLATE_FSIZE %}
 {#                    {% if not IN_GRADE_PAGE %}#}
-                    <td class="col-lg-1 col-sm-1 col-xs-1 td-dl grading-hidden">
+                    <td class="col-lg-1 hidden-sm hidden-xs td-dl grading-hidden">
                         <span
                             class="size"
                             id="filesize{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
@@ -284,7 +294,6 @@
                                 data-src="{{ JQ_OPEN }}=file.url{{ JQ_CLOSE }}"
                                 data-pk="{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
                                 data-data="{{ csrf_token }}"
-{#                                href="{{ JQ_OPEN }}=file.updateUrl{{ JQ_CLOSE }}"#}
                                 data-target="#editPopup"
                             >
                                 <i class="fa fa-pencil"></i>
@@ -316,7 +325,7 @@
                         {{ JQ_OPEN }} } {{ JQ_CLOSE }}
                 </td>
                 {% if IS_COURSE_STAFF or MAY_CHANGE_ANSWER %}
-                <td class="imageSortableHandle col-lg-2 col-sm-2 col-xs-2" style=" vertical-align: middle;"><span title="{% trans 'Drag to order' %}"><i class="fa fa-sort fa-3" aria-hidden="true"></i></span></td>
+                <td class="imageSortableHandle col-lg-2 col-sm-1 col-xs-1 hidden" style=" vertical-align: middle;"><span title="{% trans 'Drag to order' %}"><i class="fa fa-sort fa-3" aria-hidden="true"></i></span></td>
                 {% endif %}
             </tr>
         {{ JQ_OPEN }} } {{ JQ_CLOSE }}

@@ -49,10 +49,25 @@ function disable_submit_button(bool) {
     }
 }
 
-function getWidthQueryMatch() {
+function disable_fileupload_control_button(bool) {
+    var buttonbar = $('.fileupload-buttonbar');
+    var start_button = $(buttonbar).find('.start')[0];
+    var cancel_button =  $(buttonbar).find('.cancel')[0];
+    if (start_button !== null) {
+        start_button.disabled = bool;
+    }
+    if (cancel_button !== null) {
+        cancel_button.disabled = bool;
+    }
+}
+
+function getWidthQueryMatch_md_sm_xs() {
     return window.matchMedia("(max-width: 1023px)").matches;
 }
 
+function getWidthQueryMatch_sm_xs() {
+    return window.matchMedia("(max-width: 767px)").matches;
+}
 
 function formatFileSize(bytes) {
     if (typeof bytes !== 'number') {
@@ -67,16 +82,41 @@ function formatFileSize(bytes) {
     return (bytes / 1000).toFixed(2) + ' KB';
 }
 
+function generateImageMobileDescription(row_element) {
+    var shortInfo = row_element.find(".name").text();
+    var file_pk = row_element.data("file-pk");
+    var file_size = row_element.find(".size").text();
+    var file_time = row_element.find(".timestr").text();
+    // var detailedInfo = file_time + "(" + file_size +")";
+    row_element.children(".fileUploadCompactInfo").html(
+        '<p style="width: 30vw;">'
+        + shortInfo
+        + '<span '
+        + 'onclick=\"$(\'#moreinfo' + file_pk  + '\').toggle(); return false;"'
+        + '>...</span>'
+        + '</p>'
+        + '<div style="display: none;"'
+        + ' id="moreinfo' + file_pk
+        + '\">'
+        + '<p style="width: 30vw;">'
+        +  file_time
+        + '</p>'
+        + '<p style="width: 30vw;">'
+        +  file_size
+        + '</p>'
+        + '</div>'
+    );
+}
 
 // close gallery using back button
 $('#blueimp-gallery')
     .on('open', function (e) {
-        if (getWidthQueryMatch()) {
+        if (getWidthQueryMatch_md_sm_xs()) {
             window.history.pushState('forward', null, '#slides');
         }
     })
     .on('close', function (e) {
-        if (location.hash == '#slides' && getWidthQueryMatch()) window.history.back();
+        if (location.hash == '#slides' && getWidthQueryMatch_md_sm_xs()) window.history.back();
     });
 
 
@@ -88,13 +128,19 @@ window.addEventListener('DOMContentLoaded', function () {
         $updatedFileSize, $updatedFileTime, $updatedDeleteUrl, $editTarget;
 
     $('#editPopup').on('show.bs.modal', function (e) {
+
+         $(this).find('.modal-body').css({
+              width:'auto', //probably not needed
+              height:'auto', //probably not needed
+              'max-height':'100%'
+       });
+
         $editTarget = $(e.relatedTarget);
         var target_image_pk = $editTarget.attr('data-pk');
         var image_src = $editTarget.attr('data-src');
 
         $image = $("#image");
         $image.attr("src", image_src);
-
         $updatedTableRow = $editTarget.parents("tr");
         $updatedPreview = $("#previewid" + target_image_pk);
         $updatedThumbnail = $("#thumbnail" + target_image_pk);
@@ -240,6 +286,7 @@ window.addEventListener('DOMContentLoaded', function () {
                         $updatedFileSize.prop("id", "filesize" + new_img.pk).html(formatFileSize(new_img.size));
                         $updatedDeleteUrl.prop("id", "deleteurl" + new_img.pk).attr('data-url', new_img.deleteUrl);
                         $editTarget.attr("data-src", new_img.url).attr("data-action", new_img.crop_handler_url);
+                        generateImageMobileDescription($updatedTableRow);
 
                         $image.cropper('replace', new_img.url);
                         crpMsg(true, gettext('Done!'));
@@ -251,7 +298,6 @@ window.addEventListener('DOMContentLoaded', function () {
                     .fail(function (response) {
                         var msg = gettext('Failed!') + " " + response.responseJSON.message;
                         crpMsg(false, msg);
-                        //console.log(response);
                         setTimeout(function () {
                             $('#editPopup').modal('hide');
                         }, 2000);
@@ -273,10 +319,10 @@ window.addEventListener('DOMContentLoaded', function () {
         .on('show.bs.modal', function (e) {
             // Enable back button to close modal and blueimp gallery
             // http://stackoverflow.com/a/40364619/3437454
-            if (getWidthQueryMatch()) window.history.pushState('forward', null, '#edit');
+            if (getWidthQueryMatch_md_sm_xs()) window.history.pushState('forward', null, '#edit');
             })
         .on('hide.bs.modal', function (e) {
-            if (location.hash == '#edit' && getWidthQueryMatch()) window.history.back();
+            if (location.hash == '#edit' && getWidthQueryMatch_md_sm_xs()) window.history.back();
 
             $('body').css({
                 overflow: '',
@@ -286,14 +332,13 @@ window.addEventListener('DOMContentLoaded', function () {
         });
 
     $(window).on('popstate', function (event) {  //pressed back button
-        if (event.state !== null && getWidthQueryMatch()) {
+        if (event.state !== null && getWidthQueryMatch_md_sm_xs()) {
             var gallery = $('#blueimp-gallery').data('gallery');
             if (gallery) {
                 gallery.close();
             }
             else {
                 $('.modal').modal('hide');
-                console.log("called!");
             }
         }
     });
@@ -303,12 +348,13 @@ window.addEventListener('DOMContentLoaded', function () {
 function activate_change_listening() {
     var input_changed = false;
 
+    var bulkdeletebutton;
+
     function on_input_change(evt) {
         input_changed = true;
     }
 
     $(":file").on("change", on_input_change);
-
     $(window).on('beforeunload',
         function () {
             if (input_changed)
@@ -323,32 +369,60 @@ function activate_change_listening() {
         })
         .on("file_edited fileuploaddestroyed", on_input_change)
         .on("fileuploadcompleted fileuploaddestroyed", function () {
-            if ($('.timestr').length > 1) {
-                if ($(".btn-srt-tbl-cfm").hasClass("hidden")) {
-                    $(".btn-srt-tbl").removeClass("hidden");
-                }
+            if ($('.template-download').length > 1) {
+                $('.imageSortableHandle').removeClass("hidden");
             } else {
-                $(".btn-srt-tbl").addClass("hidden");
+                $('.imageSortableHandle').addClass("hidden");
             }
         })
         .on("fileuploadadd", function (e, data) {
             disable_submit_button(true);
-            console.log(data);
-            // debug_files=data;
-
+            disable_fileupload_control_button(false);
+        })
+        .on("fileuploadadded", function (e, data) {
+            // disable_fileupload_control_button(false);
+        })
+        .on("fileuploadcompleted", function (e, data) {
+            if(getWidthQueryMatch_sm_xs()){
+                $(this).find("canvas").each(function(){
+                    updateCanvasCss(this);
+                });
+            }
         })
         .on("fileuploadfailed fileuploadcompleted fileuploaddestroyed", function () {
-            var nInProcess = $("#img-presentation-table").find("button.btn.btn-warning.cancel").length;
-            disable_submit_button(nInProcess > 0);
+            var queue_length = $('.template-upload').length;
+            disable_submit_button(queue_length > 0);
+            disable_fileupload_control_button(queue_length === 0);
         })
         .on('fileuploadprocessstart', function () {
-            console.log('processstart');
+            // console.log('processstart');
         })
-        .on('fileuploadprocessdone', function (e, data) {
-            console.log('processdone', data.files[data.index].name);
-            debug_data = data;
-            debug_files = data.files[data.index];
+        .on('fileuploadprocessalways', function (e, data) {
+            var el = data.files[data.index].preview;
+            if(getWidthQueryMatch_sm_xs()){updateCanvasCss(el);}
         });
+
+        $('body').on('change','#fileupload input[type="checkbox"]',function(e){
+            // e.preventDefault();
+            // e.stopPropagation();
+            if(!getWidthQueryMatch_sm_xs()){
+                bulkdeletebutton = $('.fileupload-buttonbar').find('.delete')[0];
+                if (bulkdeletebutton != null){
+                    bulkdeletebutton.disabled = $("#fileupload").find("[type='checkbox']:checked").length === 0;}
+            }
+        });
+
+        function updateCanvasCss(element) {
+            var parent_width, new_height;
+            parent_width = $(element).parents("td").width();
+            if (parent_width == null){
+                setTimeout(function(){updateCanvasCss(element)}, 50);
+            }
+            else{
+                new_height = parent_width * (element.height/element.width);
+                $(element).css({"width": "100%", "height": new_height});
+            }
+        }
 
     function before_submit(evt) {
         input_changed = false;

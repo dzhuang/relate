@@ -425,6 +425,7 @@
             {% endcomment %}
 
             {% block JS_INIT %}
+                var $fileupload = $('#fileupload');
 
                 {% comment %}
                     In order to support both CSRF tokens and extra form inputs,
@@ -435,12 +436,12 @@
                     handling Django view.
                 {% endcomment %}
 
-                var formData = $('#fileupload').serializeArray();
+                var formData = $fileupload.serializeArray();
                 formData.push(
                 { name: "csrfmiddlewaretoken", value: "{{ csrf_token }}" }
                 );
 
-                $('#fileupload').fileupload({
+                $fileupload.fileupload({
 
                 formData: formData,
 
@@ -476,7 +477,9 @@
                 {% block JS_LOAD_EXISTING_FILES %}
                     // Load existing files:
                     {% if uploaded_view_url %}
-                        $('#fileupload').addClass('fileupload-processing');
+                        if($fileupload === undefined || $fileupload === null)
+                            {$fileupload = $('#fileupload');}
+                        $fileupload.addClass('fileupload-processing');
                         $.ajax({
                             // Uncomment the following to send cross-domain cookies:
                             //xhrFields: {withCredentials: true},
@@ -485,7 +488,7 @@
                             url: "{{ uploaded_view_url }}",
 
                             dataType: 'json',
-                            context: $('#fileupload')[0]
+                            context: $fileupload[0]
                         }).always(function () {
                             $(this).removeClass('fileupload-processing')
                                 .trigger("fileuploadloadingexistalways");
