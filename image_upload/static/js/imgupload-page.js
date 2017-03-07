@@ -61,6 +61,22 @@ function disable_fileupload_control_button(bool) {
     }
 }
 
+function toggle_fileupload_control_delete() {
+    if(!getWidthQueryMatch_sm_xs()){
+        var bulkdeletebutton = $('.fileupload-buttonbar').find('.delete')[0];
+        if (bulkdeletebutton != null){
+            bulkdeletebutton.disabled = $("#fileupload").find("[type='checkbox']:checked").length === 0;}
+    }
+}
+
+function disable_fileupload_control_delete_checkbox(bool) {
+    if(!getWidthQueryMatch_sm_xs()){
+        var $checkbox = $(".fileupload-buttonbar").find("input[type='checkbox']")[0];
+        if(bool){$checkbox.checked = false;}
+        $checkbox.disabled = bool;
+    }
+}
+
 function getWidthQueryMatch_md_sm_xs() {
     return window.matchMedia("(max-width: 1023px)").matches;
 }
@@ -349,8 +365,6 @@ window.addEventListener('DOMContentLoaded', function () {
 function activate_change_listening() {
     var input_changed = false;
 
-    var bulkdeletebutton;
-
     function on_input_change(evt) {
         input_changed = true;
     }
@@ -370,7 +384,9 @@ function activate_change_listening() {
         })
         .on("file_edited fileuploaddestroyed", on_input_change)
         .on("fileuploadcompleted fileuploaddestroyed", function () {
-            if ($('.template-download').length > 1) {
+            var n_exist_file = $('.template-download').length;
+            disable_fileupload_control_delete_checkbox(n_exist_file === 0);
+            if (n_exist_file > 1) {
                 $('.imageSortableHandle').removeClass("hidden");
             } else {
                 $('.imageSortableHandle').addClass("hidden");
@@ -390,6 +406,7 @@ function activate_change_listening() {
                 });
             }
         })
+        .on("fileuploaddestroyed", toggle_fileupload_control_delete)
         .on("fileuploadfailed fileuploadcompleted fileuploaddestroyed", function () {
             var queue_length = $('.template-upload').length;
             disable_submit_button(queue_length > 0);
@@ -406,11 +423,7 @@ function activate_change_listening() {
         $('body').on('change','#fileupload input[type="checkbox"]',function(e){
             // e.preventDefault();
             // e.stopPropagation();
-            if(!getWidthQueryMatch_sm_xs()){
-                bulkdeletebutton = $('.fileupload-buttonbar').find('.delete')[0];
-                if (bulkdeletebutton != null){
-                    bulkdeletebutton.disabled = $("#fileupload").find("[type='checkbox']:checked").length === 0;}
-            }
+            toggle_fileupload_control_delete();
         });
 
         function updateCanvasCss(element) {
