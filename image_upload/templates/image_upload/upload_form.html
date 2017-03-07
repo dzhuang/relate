@@ -477,7 +477,7 @@
                 {% block JS_LOAD_EXISTING_FILES %}
                     // Load existing files:
                     {% if uploaded_view_url %}
-                        if($fileupload === undefined || $fileupload === null)
+                        if(!$fileupload)
                             {$fileupload = $('#fileupload');}
                         $fileupload.addClass('fileupload-processing');
                         $.ajax({

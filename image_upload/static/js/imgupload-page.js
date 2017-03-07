@@ -44,7 +44,7 @@ $(document).ready(function () {
 
 function disable_submit_button(bool) {
     var submit_button = document.getElementById("submit-id-submit");
-    if (submit_button !== null) {
+    if (submit_button) {
         submit_button.disabled = bool;
     }
 }
@@ -53,10 +53,10 @@ function disable_fileupload_control_button(bool) {
     var buttonbar = $('.fileupload-buttonbar');
     var start_button = $(buttonbar).find('.start')[0];
     var cancel_button =  $(buttonbar).find('.cancel')[0];
-    if (start_button !== null) {
+    if (start_button) {
         start_button.disabled = bool;
     }
-    if (cancel_button !== null) {
+    if (cancel_button) {
         cancel_button.disabled = bool;
     }
 }
@@ -64,7 +64,7 @@ function disable_fileupload_control_button(bool) {
 function toggle_fileupload_control_delete() {
     if(!getWidthQueryMatch_sm_xs()){
         var bulkdeletebutton = $('.fileupload-buttonbar').find('.delete')[0];
-        if (bulkdeletebutton != null){
+        if (bulkdeletebutton){
             bulkdeletebutton.disabled = $("#fileupload").find("[type='checkbox']:checked").length === 0;}
     }
 }
@@ -138,6 +138,9 @@ $('#blueimp-gallery')
 
 window.addEventListener('DOMContentLoaded', function () {
     'use strict';
+
+    var modal_html = $('#editPopup').html();
+    console.log("modal loaded.");
 
     var $image, contData, result, ajax_url, target_image_pk, scrollPos;
     var $updatedTableRow, $updatedPreview, $updatedThumbnail, $updatedFilename,
@@ -301,7 +304,7 @@ window.addEventListener('DOMContentLoaded', function () {
                         $updatedFileTime.prop("id", "filetime" + new_img.pk).prop('title', new_img.timestr_title).html(new_img.timestr_short);
                         $updatedFileSize.prop("id", "filesize" + new_img.pk).html(formatFileSize(new_img.size));
                         $updatedDeleteUrl.prop("id", "deleteurl" + new_img.pk).attr('data-url', new_img.deleteUrl);
-                        $editTarget.attr("data-src", new_img.url).attr("data-action", new_img.crop_handler_url);
+                        $editTarget.attr("data-src", new_img.url).attr("data-action", new_img.crop_handler_url).attr("data-pk", new_img.pk);
                         generateImageMobileDescription($updatedTableRow);
 
                         $image.cropper('replace', new_img.url);
@@ -331,6 +334,7 @@ window.addEventListener('DOMContentLoaded', function () {
         .on('hidden.bs.modal', function () {
             $(".relate-save-button").removeClass('disabled');
             $image.cropper('destroy');
+            $(this).html(modal_html);
             $('#preview').addClass("hidden").html("");
         })
         .on('show.bs.modal', function (e) {
@@ -339,7 +343,7 @@ window.addEventListener('DOMContentLoaded', function () {
             if (getWidthQueryMatch_md_sm_xs()) window.history.pushState('forward', null, '#edit');
             })
         .on('hide.bs.modal', function (e) {
-            if (location.hash == '#edit' && getWidthQueryMatch_md_sm_xs()) window.history.back();
+            if (location.hash === '#edit' && getWidthQueryMatch_md_sm_xs()) window.history.back();
 
             $('body').css({
                 overflow: '',
@@ -349,7 +353,7 @@ window.addEventListener('DOMContentLoaded', function () {
         });
 
     $(window).on('popstate', function (event) {  //pressed back button
-        if (event.state !== null && getWidthQueryMatch_md_sm_xs()) {
+        if (event.state && getWidthQueryMatch_md_sm_xs()) {
             var gallery = $('#blueimp-gallery').data('gallery');
             if (gallery) {
                 gallery.close();
@@ -429,7 +433,7 @@ function activate_change_listening() {
         function updateCanvasCss(element) {
             var parent_width, new_height;
             parent_width = $(element).parents("td").width();
-            if (parent_width == null){
+            if (!parent_width){
                 setTimeout(function(){updateCanvasCss(element)}, 50);
             }
             else{
