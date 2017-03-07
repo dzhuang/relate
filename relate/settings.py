@@ -58,11 +58,15 @@ INSTALLED_APPS = (
 
     "accounts",
     "course",
-    ) + local_settings.get("RELATE_CUSTOM_INSTALLED_APPS", ())
+)
 
-INSTALLED_APPS = INSTALLED_APPS + ("django.contrib.staticfiles",)
+if local_settings.get("RELATE_CUSTOM_INSTALLED_APPS", False):  # type: ignore
+    INSTALLED_APPS = INSTALLED_APPS + local_settings["RELATE_CUSTOM_INSTALLED_APPS"]  # type: ignore # noqa
 
-if local_settings.get("RELATE_SIGN_IN_BY_SAML2_ENABLED", False):
+if not local_settings.get("RELATE_STATIC_CDN_ENABLED", False):  # type: ignore
+    INSTALLED_APPS = INSTALLED_APPS + ("django.contrib.staticfiles",)  # type: ignore # noqa
+
+if local_settings.get("RELATE_SIGN_IN_BY_SAML2_ENABLED", False):  # type: ignore
     INSTALLED_APPS = INSTALLED_APPS + ("djangosaml2",)  # type: ignore
 
 # }}}
@@ -112,9 +116,8 @@ AUTH_USER_MODEL = 'accounts.User'
 BOWER_COMPONENTS_ROOT = os.path.join(BASE_DIR, "components")
 
 STATICFILES_FINDERS = tuple(STATICFILES_FINDERS) + (
-    #"djangobower.finders.BowerFinder",
+    "djangobower.finders.BowerFinder",
     )
-
 
 BOWER_INSTALLED_APPS = (
     "bootstrap#3.3.4",
