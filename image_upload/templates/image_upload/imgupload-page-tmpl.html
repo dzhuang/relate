@@ -48,9 +48,11 @@
                     <button type="button" class="btn btn-warning disabled btn-crp-reset" data-method="reset">
                         <i class="fa fa-refresh"></i>
                         <span>{% trans "Reset" %}</span></button>
-                    <button type="button" class="btn btn-primary btn-crp-preview">
-                        <i class="fa fa-eye"></i>
-                        <span>{% trans "Preview" %}</span></button>
+                    {% comment There are bug %}
+                            <button type="button" class="btn btn-primary btn-crp-preview">
+                                <i class="fa fa-eye"></i>
+                                <span>{% trans "Preview" %}</span></button>
+                    {% endcomment %}
                 <button type="button" class="btn btn-danger" data-dismiss="modal">
                     <i class="fa fa-remove"></i>
                     <span>{% trans "Close" %}</span>

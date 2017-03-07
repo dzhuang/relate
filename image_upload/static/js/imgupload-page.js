@@ -315,6 +315,7 @@ window.addEventListener('DOMContentLoaded', function () {
         .on('hidden.bs.modal', function () {
             $(".relate-save-button").removeClass('disabled');
             $image.cropper('destroy');
+            $('#preview').addClass("hidden").html("");
         })
         .on('show.bs.modal', function (e) {
             // Enable back button to close modal and blueimp gallery
