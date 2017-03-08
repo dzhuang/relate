@@ -104,6 +104,51 @@
     previewMaxHeight: {{ previewMaxHeight }},
     maxFileSize: {{ maxFileSize }},
     minFileSize: {{ minFileSize }},
+    existingloaded: function(e, data){
+{#        console.log("loadexisting done!");#}
+        var that = this;
+{#        console.log(this);#}
+        $(this).trigger('existingloaded', data);
+
+{#        var that2 = $(this).data('blueimp-fileupload') ||#}
+{#                            $(this).data('fileupload');#}
+{##}
+{#        numberOfFiles = that2.options.getNumberOfFiles();#}
+{#        console.log(numberOfFiles);#}
+    },
+{#    done: function(e,data){#}
+{#        console.log(data);#}
+{#        console.log(this);#}
+{#        var that = this;#}
+{#        var that2 = $(this).data('blueimp-fileupload') ||#}
+{#                            $(this).data('fileupload');#}
+{#        console.log(that2);#}
+{#        console.log(that2.options.getNumberOfFiles());#}
+{#        console.log(that2.options.filesContainer);#}
+{#        console.log($(this).options.filesContainer);#}
+{##}
+{#        console.log($.blueimp.fileupload.prototype.options.getNumberOfFiles.call($(that)));#}
+{#        console.log($(this).fileupload("options", "getNumberOfFiles").call());#}
+{#        $.blueimp.fileupload.prototype.options.done.call(that, e, data);#}
+{#    },#}
+    finished: function(e,data){
+{#        console.log("finished");#}
+{#        console.log(data);#}
+{#        console.log(this);#}
+        var that = this;
+        var that2 = $(this).data('blueimp-fileupload') ||
+                            $(this).data('fileupload');
+{#        console.log(that2);#}
+{#        console.log(that2.options.getNumberOfFiles());#}
+{#        console.log(that2.options.filesContainer);#}
+{#        console.log($(this).options.filesContainer);#}
+
+{#        console.log($.blueimp.fileupload.prototype.options.getNumberOfFiles.call($(that)));#}
+{#        console.log($(this).fileupload("options", "getNumberOfFiles").call());#}
+{#        $.blueimp.fileupload.prototype.options.finished.call(that, e, data);#}
+    },
+
+{#        $.blueimp.fileupload.prototype.options.done.call(that, e, data);#}
 {% endblock %}
 
 
@@ -261,34 +306,36 @@
             'use strict';
 
             var modal_html = $('#editPopup').html();
-            console.log("modal loaded.");
+{#            console.log("modal loaded.");#}
+
+{#            $(".btn-edit-image").attr("click","showModal");#}
 
             var $image, contData, result, ajax_url, target_image_pk, scrollPos;
             var $updatedTableRow, $updatedPreview, $updatedThumbnail, $updatedFilename,
                 $updatedFileSize, $updatedFileTime, $updatedDeleteUrl, $editTarget;
 
-            $('#editPopup').on('show.bs.modal', function (e) {
+            $('#editPopup')
+                .on('show.bs.modal', function (e) {
+                    $(this).find('.modal-body').css({
+                        width: 'auto', //probably not needed
+                        height: 'auto', //probably not needed
+                        'max-height': '100%'
+                    });
 
-                $(this).find('.modal-body').css({
-                    width: 'auto', //probably not needed
-                    height: 'auto', //probably not needed
-                    'max-height': '100%'
-                });
+                    $editTarget = $(e.relatedTarget);
+                    var target_image_pk = $editTarget.attr('data-pk');
+                    var image_src = $editTarget.attr('data-src');
 
-                $editTarget = $(e.relatedTarget);
-                var target_image_pk = $editTarget.attr('data-pk');
-                var image_src = $editTarget.attr('data-src');
-
-                $image = $("#image");
-                $image.attr("src", image_src);
-                $updatedTableRow = $editTarget.parents("tr");
-                $updatedPreview = $("#previewid" + target_image_pk);
-                $updatedThumbnail = $("#thumbnail" + target_image_pk);
-                $updatedFilename = $("#filename" + target_image_pk);
-                $updatedFileSize = $("#filesize" + target_image_pk);
-                $updatedFileTime = $("#filetime" + target_image_pk);
-                $updatedDeleteUrl = $("#deleteurl" + target_image_pk);
-                ajax_url = $editTarget.attr("data-action");
+                    $image = $("#image");
+                    $image.attr("src", image_src);
+                    $updatedTableRow = $editTarget.parents("tr");
+                    $updatedPreview = $("#previewid" + target_image_pk);
+                    $updatedThumbnail = $("#thumbnail" + target_image_pk);
+                    $updatedFilename = $("#filename" + target_image_pk);
+                    $updatedFileSize = $("#filesize" + target_image_pk);
+                    $updatedFileTime = $("#filetime" + target_image_pk);
+                    $updatedDeleteUrl = $("#deleteurl" + target_image_pk);
+                    ajax_url = $editTarget.attr("data-action");
 
             })
                 .on('shown.bs.modal', function () {
@@ -404,6 +451,21 @@
                         })
                             .done(function (response) {
                                 var new_img = response.file;
+                                console.log(new_img);
+                                var that = $("#fileupload").data('blueimp-fileupload'),
+                                    getFilesFromResponse = that.options.getFilesFromResponse,
+                                    downloadTemplate = that.options.downloadTemplate;
+
+
+                                var the_file = getFilesFromResponse(new_img);
+                                console.log(the_file); // failed
+                                console.log("---------------------------");
+{#                                console.log(downloadTemplate);#}
+                                var new_img_obj = $.parseJSON({"abc": "new_img"});
+                                console.log(new_img_obj);
+{#                                var template = downloadTemplate([new_img]);#}
+{#                                console.log(template);#}
+
                                 $updatedThumbnail.prop("id", "thumbnail" + new_img.pk).parents("span").addClass("processing");
                                 if (window.location.pathname.indexOf("/grading/") === -1) {
                                     $updatedThumbnail.removeClass("hidden").prop('src', new_img.thumbnailUrl);
@@ -420,6 +482,11 @@
                                 generateImageMobileDescription($updatedTableRow);
 
                                 $image.cropper('replace', new_img.url);
+
+
+
+
+
                                 crpMsg(true, gettext('Done!'));
                                 setTimeout(function () {
                                     $('#editPopup').modal('hide');
@@ -489,8 +556,12 @@
             $('#img-presentation-table').children("tbody").on("sortchange", on_input_change);
 
             $('#fileupload')
-                .on("fileuploadloadingexistalways", function () {
+                .on("existingloaded", function (){
+                    // need triggers
                     $(".fileupload-download-processing").remove();
+                })
+                .on("fileuploadloadingexistalways", function () {
+{#                    $(".fileupload-download-processing").remove();#}
                 })
                 .on("file_edited fileuploaddestroyed", on_input_change)
                 .on("fileuploadcompleted fileuploaddestroyed", function () {
@@ -616,6 +687,11 @@
         }
     </script>
     {# % endif % #}
+
+    <script>
+{#    $.blueimp.fileupload.prototype.options.done.call(that, e, data);#}
+{#    static/blueimp-file-upload/js/jquery.fileupload-ui.js:188#}
+    </script>
 {% endblock %}
 
 {% block JS_UPLOAD_TEMPLATE %}{% endblock %}

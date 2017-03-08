@@ -287,8 +287,9 @@
                                 {{ JQ_OPEN }} } {{ JQ_CLOSE }}
                                 {% endblock %}{# block COPY_IMAGE_DATA #}
                             {% endif %}
-                            <a
+                            <button
                                 class="btn btn-success btn-edit-image btn-control"
+                                type="button"
                                 data-toggle="modal"
                                 data-action="{{ JQ_OPEN }}=file.crop_handler_url{{ JQ_CLOSE }}"
                                 data-src="{{ JQ_OPEN }}=file.url{{ JQ_CLOSE }}"
@@ -298,7 +299,7 @@
                             >
                                 <i class="fa fa-pencil"></i>
                                 <span>{% trans "Edit" %}</span>
-                            </a>
+                            </button>
                         {% endblock %}{# //block JS_DOWNLOAD_TEMPLATE_EDIT #}
                         {% endif %}
                         {% block JS_DOWNLOAD_TEMPLATE_DELETE %}

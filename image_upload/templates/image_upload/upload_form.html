@@ -480,6 +480,7 @@
                         if(!$fileupload)
                             {$fileupload = $('#fileupload');}
                         $fileupload.addClass('fileupload-processing');
+                        console.log($fileupload[0]);
                         $.ajax({
                             // Uncomment the following to send cross-domain cookies:
                             //xhrFields: {withCredentials: true},
@@ -489,9 +490,10 @@
 
                             dataType: 'json',
                             context: $fileupload[0]
-                        }).always(function () {
+                        }).always(function (result) {
                             $(this).removeClass('fileupload-processing')
-                                .trigger("fileuploadloadingexistalways");
+                                .fileupload('option', 'existingloaded')
+                                .call(this, $.Event('existingloaded'), {result: result});
                         }).done(function (result) {
                             $(this).fileupload('option', 'done')
                                 .call(this, $.Event('done'), {result: result});
