@@ -76,7 +76,7 @@
                                 {% endcomment %}
                                     {% block FILE_INPUT %}
                                         {# The file input for the upload form. #}
-                                        <input type="file" name="file" multiple
+                                        <input type="file" name="files[]" multiple
                                             {% if accepted_mime_types %}
                                                 accept='{{ accepted_mime_types|join:"," }}'
                                             {% endif %}
@@ -477,10 +477,7 @@
                 {% block JS_LOAD_EXISTING_FILES %}
                     // Load existing files:
                     {% if uploaded_view_url %}
-                        if(!$fileupload)
-                            {$fileupload = $('#fileupload');}
                         $fileupload.addClass('fileupload-processing');
-                        console.log($fileupload[0]);
                         $.ajax({
                             // Uncomment the following to send cross-domain cookies:
                             //xhrFields: {withCredentials: true},

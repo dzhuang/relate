@@ -2,6 +2,9 @@
 {% load i18n %}
 {% load static %}
 
+{# example https://github.com/jansarmir/jQuery-File-Upload/blob/d3538f41161f63eb8b5c15c3e1e848f5081044af/basic-plus-cropper.html #}
+
+
 {% block CSS_BOOTSTRAP %}{# BOOTSTRAP css (Override to keep it empty) #}{% endblock %}
 {% block JS_JQUERY %}{#jQuery (Override to keep it empty) {% endcomment #}{% endblock %}
 {% block CSS_HTML5_SHIM %}{# IE 9 lt already supported (Override to keep it empty)#}{% endblock %}
@@ -83,6 +86,7 @@
 {% block JS_OPTS %}
     imageMaxWidth: {{ imageMaxWidth }},
     imageMaxHeight: {{ imageMaxHeight }},
+    paramName: 'image',
     loadImageFileTypes: /^image\/(gif|jpeg|png|svg\+xml)$/,
     sequentialUploads: true,
     disableImageResize: /Android(?!.*Chrome)|Opera/
