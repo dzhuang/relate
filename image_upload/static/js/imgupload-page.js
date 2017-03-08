@@ -169,15 +169,6 @@ window.addEventListener('DOMContentLoaded', function () {
         $updatedDeleteUrl = $("#deleteurl" + target_image_pk);
         ajax_url = $editTarget.attr("data-action");
 
-        // prevent background scrolling
-        // http://stackoverflow.com/a/34754029/3437454
-        scrollPos = $('body').scrollTop();
-        $('body').css({
-            overflow: 'hidden',
-            position: 'fixed',
-            top : -scrollPos
-        });
-
     })
         .on('shown.bs.modal', function () {
             $(".relate-save-button").addClass('disabled');
@@ -344,16 +335,10 @@ window.addEventListener('DOMContentLoaded', function () {
             })
         .on('hide.bs.modal', function (e) {
             if (location.hash === '#edit' && getWidthQueryMatch_md_sm_xs()) window.history.back();
-
-            $('body').css({
-                overflow: '',
-                position: '',
-                top: ''
-            }).scrollTop(scrollPos);
         });
 
     $(window).on('popstate', function (event) {  //pressed back button
-        if (event.state && getWidthQueryMatch_md_sm_xs()) {
+        if (event.state !== null && getWidthQueryMatch_md_sm_xs()) {
             var gallery = $('#blueimp-gallery').data('gallery');
             if (gallery) {
                 gallery.close();
