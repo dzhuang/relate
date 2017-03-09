@@ -41,19 +41,19 @@
             {% endblock %}{# //block UPLOAD_FORM_BUTTON_BAR_ADD #}
 
             {% block UPLOAD_FORM_BUTTON_BAR_CONTROL %}
-                <button type="submit" class="btn btn-primary start" disabled>
+                <button type="submit" class="btn btn-primary start" style="display:none">
                     <i class="glyphicon glyphicon-upload"></i>
                     <span>{% trans "Start upload" %}</span>
                 </button>
-                <button type="reset" class="btn btn-warning cancel" disabled>
+                <button type="reset" class="btn btn-warning cancel" style="display:none">
                     <i class="glyphicon glyphicon-ban-circle"></i>
                     <span>{% trans "Cancel upload" %}</span>
                 </button>
-                <button type="button" class="btn btn-danger delete" disabled>
+                <button type="button" class="btn btn-danger delete" style="display:none">
                     <i class="glyphicon glyphicon-trash"></i>
                     <span>{% trans "Delete" %}</span>
                 </button>
-                <input type="checkbox" class="toggle hidden-sm hidden-xs">
+                <input type="checkbox" class="toggle hidden-sm hidden-xs" style="display:none">
             {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR_CONTROL #}
             {% block UPLOAD_FORM_BUTTON_BAR_EXTRA %}
             {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR_EXTRA #}

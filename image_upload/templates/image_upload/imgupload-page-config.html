@@ -14,54 +14,35 @@
         {{ block.super }}
     {% else %}
         {#{{ block.super }}#}
-        <style>
-
-            .files .template-download .preview.processing {
-                display: block;
-                width: 32px;
-                height: 32px;
-                background: url("{% static "/blueimp-gallery/img/loading.gif" %}") center no-repeat;
-                background-size: contain;
-            }
-
-            .fileupload-loading {
-                height: 96px;
-                background: url("{% static "/blueimp-gallery/img/loading.gif" %}") center no-repeat;
-                background-size: 96px 96px;
-            }
-
-            .grading-hidden {
-                display: none;
-                padding: 0;
-            }
-
-            @media (min-width: 768px) {
-                .preview img {
-                    max-width: 100%;
-                }
-            }
-
-            @media (max-width: 767px) {
-                .grading-page-student-work.container > div > div {
-                    padding: 0;
-                }
-
-                h1, h2, h3, p {
-                    overflow-wrap: break-word;
-                }
-
-                .preview img {
-                    max-width: calc(100% + 54px);
-                }
-
-                .fileupload-buttonbar .delete {
-                    display: none;
-                }
-            }
-        </style>
+{#        <style>#}
+{##}
+{#            @media (min-width: 768px) {#}
+{#                .preview img {#}
+{#                    max-width: 100%;#}
+{#                }#}
+{#            }#}
+{##}
+{#            @media (max-width: 767px) {#}
+{#                .grading-page-student-work.container > div > div {#}
+{#                    padding: 0;#}
+{#                }#}
+{##}
+{#                h1, h2, h3, p {#}
+{#                    overflow-wrap: break-word;#}
+{#                }#}
+{##}
+{#                .preview img {#}
+{#                    max-width: calc(100% + 54px);#}
+{#                }#}
+{##}
+{#                .fileupload-buttonbar .delete {#}
+{#                    display: none;#}
+{#                }#}
+{#            }#}
+{#        </style>#}
     {% endif %}
-    <link rel="stylesheet" href="{% static "css/jquery_file_upload_extra.css" %}?rev=2.3.3">
-    <link rel="stylesheet" href="{% static "css/imgupload-page-min.css"  %}?rev=2.3.12">
+    <link rel="stylesheet" href="{% static "css/jquery_fileupload_extra.css" %}?rev=2.3.3">
+    <link rel="stylesheet" href="{% static "css/imgupload-page.css"  %}?rev=2.3.12">
     <link rel="stylesheet" href="{% static "cropper/dist/cropper.min.css" %}?rev=3.0.0-beta ">
     <noscript><link rel="stylesheet" href="{% static "css/imgupload-noscript.css" %}"></noscript>
     <!--[if lt IE 9]>
@@ -169,7 +150,7 @@
         $(document).ready(function () {
             'use strict';
             $(".relate-save-button").each(function () {
-                $(this).attr("formaction", window.location.pathname).detach().appendTo('#real-submit-div');
+                $(this).attr("formaction", window.location.pathname).detach().appendTo('#actual-submit-div');
             }).on("click", function () {
                 var all_pks = [];
                 $("#fileupload").fileupload("option", "filesContainer")
@@ -182,32 +163,21 @@
                     .find("div")
                     .html('<input type="hidden" id="id_hidden_answer" name="hidden_answer" type="text"/>')
                     .find("input")
-                    .prop("value", all_pks);
+                    .prop("value", get_all_pks());
                 });
 
             new Clipboard('.btn-data-copy');
-            var input_changed = false;
-            $("#fileupload").fileupload("option", "filesContainer")
-                .sortable({
-                    delay: 500,
-                    handle: ".imageSortableHandle",
-                    scrollSpeed: 40,
-                    scrollSensitivity: 10,
-                    helper: "clone",
-                    axis: "y",
-                    opacity: 0.9,
-                    cursor: "move",
-                    // cursorAt: { bottom: 0},
-                    activate: function () {
-                        // $(controlElement).addClass("hidden");
-                        // $('.imageSortableHandle').removeClass("hidden");
-                    },
-                    deactivate: function () {
-                        // $(controlElement).removeClass("hidden");
-                        // $('.imageSortableHandle').addClass("hidden");
-                    }
-                });
         });
+
+        function get_all_pks(){
+                var all_pks = [];
+                $("#fileupload").fileupload("option", "filesContainer")
+                    .children().not('.processing')
+                    .each(function(){
+                        all_pks.push($(this).attr("data-file-pk"));
+                    });
+                return all_pks;
+            }
 
 
         function disable_submit_button(bool) {
@@ -217,30 +187,39 @@
             }
         }
 
-        function disable_fileupload_control_button(bool) {
+        function hide_fileupload_control_button(bool) {
             var buttonbar = $('.fileupload-buttonbar');
-            var start_button = $(buttonbar).find('.start')[0];
-            var cancel_button = $(buttonbar).find('.cancel')[0];
+            var start_button = $(buttonbar).find('.start');
+            var cancel_button = $(buttonbar).find('.cancel');
             if (start_button) {
+                $(start_button).css("display", bool?"none":"");
                 start_button.disabled = bool;
             }
             if (cancel_button) {
+                $(cancel_button).css("display", bool?"none":"");
                 cancel_button.disabled = bool;
             }
         }
 
         function toggle_fileupload_control_delete() {
+            if ( window.location.pathname.indexOf("/grading/") !== -1){return}
             if (!getWidthQueryMatch_sm_xs()) {
                 var bulkdeletebutton = $('.fileupload-buttonbar').find('.delete')[0];
+                var checkbox = $(".fileupload-buttonbar").find(".toggle")[0];
                 if (bulkdeletebutton) {
-                    bulkdeletebutton.disabled = $("#fileupload").find("[type='checkbox']:checked").length === 0;
+                    var disabledBool = $("#fileupload").find(".toggle:checked").length === 0;
+                    var displayBool = $("#fileupload").fileupload("option", "filesContainer").children()
+                            .not('.processing').length === 0;
+                    $(bulkdeletebutton).css("display", displayBool?"none":"");
+                    $(checkbox).css("display", displayBool?"none":"");
+                    bulkdeletebutton.disabled = disabledBool;
                 }
             }
         }
 
         function disable_fileupload_control_delete_checkbox(bool) {
             if (!getWidthQueryMatch_sm_xs()) {
-                var $checkbox = $(".fileupload-buttonbar").find("input[type='checkbox']")[0];
+                var $checkbox = $(".fileupload-buttonbar").find(".toggle");
                 if ($checkbox){
                     if (bool) {
                         $checkbox.checked = false;
@@ -273,9 +252,7 @@
             'use strict';
 
             var modal_html = $('#editPopup').html();
-
             var $editTarget;
-
             var $image, contData, result;
 
             $('#editPopup')
@@ -469,9 +446,57 @@
         function activate_change_listening() {
             var input_changed = false;
 
-            function on_input_change(evt) {
-                input_changed = true;
+            var starting_pk;
+
+            var sortableChangeCausal = true;
+            function on_input_change(evt, data) {
+                console.log(evt);
+                if(!sortableChangeCausal){
+                    input_changed = true;
+                    return
+                }
+                if(!data || evt.type !== "sortstop"){
+                    input_changed = true;
+                    sortableChangeCausal = false;
+                    return
+                }
+                input_changed = JSON.stringify(data) !== JSON.stringify(starting_pk);
             }
+
+            $("#fileupload").fileupload("option", "filesContainer")
+                .sortable({
+                    delay: 500,
+                    handle: ".imageSortableHandle",
+                    scrollSpeed: 40,
+{#                    scrollSensitivity: 0,#}
+                    helper: "clone",
+                    axis: "y",
+                    opacity: 0.9,
+                    cursor: "move",
+                    // cursorAt: { bottom: 0},
+                    activate: function () {
+                        // $(controlElement).addClass("hidden");
+                        // $('.imageSortableHandle').removeClass("hidden");
+                    },
+                    deactivate: function () {
+                        // $(controlElement).removeClass("hidden");
+                        // $('.imageSortableHandle').addClass("hidden");
+                    },
+                    start: function(e, ui){
+                    },
+                    stop: function(e, ui) {
+                        if ( window.location.pathname.indexOf("/grading/") === -1)
+                        {on_input_change(e, get_all_pks());}
+                    }
+                });
+
+                var all_pks = [];
+                $("#fileupload").fileupload("option", "filesContainer")
+                    .children().not('.processing')
+                    .each(function(){
+                        all_pks.push($(this).attr("data-file-pk"));
+                    });
+
 
             $(":file").on("change", on_input_change);
             $(window).on('beforeunload',
@@ -482,9 +507,8 @@
 
             $('#img-presentation-table').children("tbody").on("sortchange", on_input_change);
 
-            $('#fileupload')
-                .on("existingloaded", function (){
-                    // need triggers
+            $('#fileupload').on("fileuploadexistingloaded", function(){
+                    $(".fileupload-loading").remove();
                 })
                 .on("fileuploadloadingexistalways", function () {
 {#                    $(".fileupload-loading").remove();#}
@@ -493,6 +517,8 @@
                 .on("fileuploadcompleted fileuploaddestroyed", function () {
                     var n_exist_file = $('.template-download').length;
                     disable_fileupload_control_delete_checkbox(n_exist_file === 0);
+                    toggle_fileupload_control_delete();
+                    if(!starting_pk){starting_pk = get_all_pks();}
                     if (n_exist_file > 1) {
                         $('.imageSortableHandle').removeClass("hidden");
                     } else {
@@ -501,26 +527,30 @@
                 })
                 .on("fileuploadadd", function (e, data) {
                     disable_submit_button(true);
-                    disable_fileupload_control_button(false);
+                    hide_fileupload_control_button(false);
                 })
                 .on("fileuploadadded", function (e, data) {
-                    // disable_fileupload_control_button(false);
+                    // hide_fileupload_control_button(false);
                 })
                 .on("fileuploadcompleted", function (e, data) {
-                    if($(".fileupload-loading").length){
-                        console.log("removing");
-                        $(".fileupload-loading").remove();}
                     if (getWidthQueryMatch_sm_xs()) {
                         $(this).find("canvas").each(function () {
                             updateCanvasCss(this);
                         });
                     }
                 })
-                .on("fileuploaddestroyed", toggle_fileupload_control_delete)
+                .on("fileuploaddestroyed", function (e, data){
+                    toggle_fileupload_control_delete();
+                    if (getWidthQueryMatch_sm_xs()) {
+                        $(this).find("canvas").each(function () {
+                            updateCanvasCss(this);
+                        });
+                    }
+                })
                 .on("fileuploadfailed fileuploadcompleted fileuploaddestroyed", function () {
                     var queue_length = $('.template-upload').length;
                     disable_submit_button(queue_length > 0);
-                    disable_fileupload_control_button(queue_length === 0);
+                    hide_fileupload_control_button(queue_length === 0);
                 })
                 .on('fileuploadprocessstart', function () {
                     // console.log('processstart');
@@ -602,18 +632,16 @@
         function enableMagnify(that, fileurl) {
             hideLoading(that);
             $(that).prop("href", fileurl)
-                .on("mouseover", function () {
-                    magnify(this);
+                .on("mouseover", function (e) {
+                    $(this).ezPlus({
+                        zoomType: 'inner',
+                        cursor: 'crosshair',
+                        touchEnabled: true
+                    });
                 })
                 .prop("data-zoom-image", fileurl);
         }
 
-        function magnify(that) {
-            $(that).ezPlus({
-                zoomType: 'inner',
-                cursor: 'crosshair'
-            });
-        }
     </script>
     {# % endif % #}
 

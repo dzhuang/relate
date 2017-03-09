@@ -2,15 +2,20 @@
 {% load i18n %}
 
 {% block UPLOAD_FORM_BUTTON_BAR %}
-    {% if MAY_CHANGE_ANSWER %}
-        {{ block.super }}
-    {% elif IS_COURSE_STAFF %}
+    {% if IN_GRADE_PAGE %}
+    {% elif MAY_CHANGE_ANSWER or IS_COURSE_STAFF %}
         {{ block.super }}
     {% endif %}
 {% endblock %}
 
 {% block JS_DOWNLOAD_TEMPLATE_PREVIEW %}
-    <td class="col-lg-2 col-sm-3 col-xs-3">
+    <td
+            {% if IN_GRADE_PAGE %}
+                style="padding-right: 0"
+            {% else %}
+                class="col-lg-2 col-sm-3 col-xs-3"
+            {% endif %}
+    >
         <span class="preview processing">
             {{ JQ_OPEN }} if (file.thumbnailUrl) { {{ JQ_CLOSE }}
                 <a
@@ -18,11 +23,13 @@
                         title="{{ JQ_OPEN }}=file.name{{ JQ_CLOSE }}"
                         download="{{ JQ_OPEN }}=file.name{{ JQ_CLOSE }}"
                         data-gallery>
-                        <img class="img-responsive"
+                        <img
                                 {% if IN_GRADE_PAGE %}
                              src="{{ JQ_OPEN }}=file.url{{ JQ_CLOSE }}"
+                             style="width:40vw;max-height:100%; padding-right:0"
                              onload="enableMagnify(this, '{{ JQ_OPEN }}=file.url{{ JQ_CLOSE }}')"
                                 {% else %}
+                             class="img-responsive"
                              src="{{ JQ_OPEN }}=file.thumbnailUrl{{ JQ_CLOSE }}"
                              onload="hideLoading(this)"
                                 {% endif %}
@@ -60,46 +67,69 @@
     {% endif %}
 {% endblock %}{# //JS_DOWNLOAD_TEMPLATE_FSIZE #}
 
-{% block JS_DOWNLOAD_TEMPLATE_CONTROL_BUTTONS_EXTRA %}
-    {% if IS_COURSE_STAFF or MAY_CHANGE_ANSWER %}
-    {% if IS_COURSE_STAFF and SHOW_COPY_IMAGE_DATA %}
-        {% block COPY_IMAGE_DATA %}
-            {# 只有在设计问题时才有用 #}
-            {{ JQ_OPEN }} if (file.image_data_dict) { {{ JQ_CLOSE }}
-            <a class="btn-data-copy"
-               data-clipboard-text="{{ JQ_OPEN }}=file.image_data_dict{{ JQ_CLOSE }}"
-            >
-                <i class="fa fa-clipboard" aria-hidden="true"></i></a>
-            {{ JQ_OPEN }} } {{ JQ_CLOSE }}
-            {{ JQ_OPEN }} if (file.imageAdminUrl) { {{ JQ_CLOSE }}
-            <a
-                    href={{ JQ_OPEN }}=file.imageAdminUrl{{ JQ_CLOSE }}
-                    target='_blank'
-            >
-                <i class="fa fa-user"></i></a>
-            {{ JQ_OPEN }} } {{ JQ_CLOSE }}
-        {% endblock %}{# //COPY_IMAGE_DATA #}
-    {% endif %}
-    <button
-            class="btn btn-success btn-edit-image btn-control"
-            type="button"
-            data-toggle="modal"
-            data-action="{{ JQ_OPEN }}=file.crop_handler_url{{ JQ_CLOSE }}"
-            data-src="{{ JQ_OPEN }}=file.url{{ JQ_CLOSE }}"
-            data-pk="{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
-            data-data="{{ csrf_token }}"
-            data-target="#editPopup"
+{% block JS_DOWNLOAD_TEMPLATE_CONTROL_BUTTONS %}
+    <td
+            {% if not IN_GRADE_PAGE %}
+                class="col-lg-3 col-sm-4 col-xs-4"
+            {% else %}
+                style="padding-left:0;padding-right:0;"
+            {% endif %}
     >
-        <i class="fa fa-pencil"></i>
-        <span>{% trans "Edit" %}</span>
-    </button>
+    {% if IS_COURSE_STAFF or MAY_CHANGE_ANSWER %}
+        {% block COPY_IMAGE_DATA %}
+            {% if IS_COURSE_STAFF and SHOW_COPY_IMAGE_DATA %}
+                {# 只有在设计问题时才有用 #}
+                {{ JQ_OPEN }} if (file.image_data_dict) { {{ JQ_CLOSE }}
+                <a class="btn-data-copy"
+                   data-clipboard-text="{{ JQ_OPEN }}=file.image_data_dict{{ JQ_CLOSE }}"
+                >
+                    <i class="fa fa-clipboard" aria-hidden="true"></i></a>
+                {{ JQ_OPEN }} } {{ JQ_CLOSE }}
+                {{ JQ_OPEN }} if (file.imageAdminUrl) { {{ JQ_CLOSE }}
+                <a
+                        href={{ JQ_OPEN }}=file.imageAdminUrl{{ JQ_CLOSE }}
+                        target='_blank'
+                >
+                    <i class="fa fa-user"></i></a>
+                {{ JQ_OPEN }} } {{ JQ_CLOSE }}
+            {% endif %}
+        {% endblock %}{# //COPY_IMAGE_DATA #}
+        <button
+                class="btn btn-success btn-edit-image btn-control"
+                type="button"
+                data-toggle="modal"
+                data-action="{{ JQ_OPEN }}=file.crop_handler_url{{ JQ_CLOSE }}"
+                data-src="{{ JQ_OPEN }}=file.url{{ JQ_CLOSE }}"
+                data-pk="{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
+                data-data="{{ csrf_token }}"
+                data-target="#editPopup"
+                {% if IN_GRADE_PAGE %}
+{#                    style="padding-left: 0;"#}
+                {% endif %}
+        >
+            <i class="fa fa-pencil"></i>
+            {% if not IN_GRADE_PAGE %}
+                <span>{% trans "Edit" %}</span>
+            {% endif %}
+        </button>
     {% endif %}
-{% endblock %}{# //JS_DOWNLOAD_TEMPLATE_CONTROL_BUTTONS_EXTRA #}
+    {% block JS_DOWNLOAD_TEMPLATE_CONTROL_BUTTONS_DELETE %}
+        {% if IN_GRADE_PAGE %}
+        {% elif IS_COURSE_STAFF or MAY_CHANGE_ANSWER %}
+            {{ block.super }}
+        {% endif %}
+    {% endblock %}
+{% endblock %}{# // JS_DOWNLOAD_TEMPLATE_CONTROL_BUTTONS #}
 
 {% block JS_DOWNLOAD_TEMPLATE_EXTRA_COLUMN %}
     {% if IS_COURSE_STAFF or MAY_CHANGE_ANSWER %}
-        <td class="imageSortableHandle col-lg-2 col-sm-1 col-xs-1 hidden"
-            style=" vertical-align: middle;">
+        <td class="imageSortableHandle hidden
+        {% if not IN_GRADE_PAGE %}
+            col-lg-2 col-sm-1 col-xs-1" style="vertical-align: middle;"
+         {% else %}
+              "  style=" vertical-align: middle;padding-left:0;padding-right:0;position: relative;left:-20px"
+         {% endif %}
+            >
                 <span title="{% trans 'Drag to order' %}">
                     <i class="fa fa-sort fa-3" aria-hidden="true"></i>
                 </span>

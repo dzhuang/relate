@@ -1,7 +1,7 @@
 $(document).ready(function () {
     'use strict';
     $(".relate-save-button").each(function () {
-        $(this).attr("formaction", window.location.pathname).detach().appendTo('#real-submit-div');
+        $(this).attr("formaction", window.location.pathname).detach().appendTo('#actual-submit-div');
     }).on("click", function () {
         var all_pks = [];
         $("#img-presentation-table").find('tr').each(function () {
@@ -369,7 +369,7 @@ function activate_change_listening() {
 
     $('#fileupload')
         .on("fileuploadloadingexistalways", function () {
-            $(".fileupload-download-processing").remove();
+            $(".fileupload-loading").remove();
         })
         .on("file_edited fileuploaddestroyed", on_input_change)
         .on("fileuploadcompleted fileuploaddestroyed", function () {

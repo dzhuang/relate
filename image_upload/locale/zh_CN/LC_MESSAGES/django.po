@@ -305,7 +305,7 @@ msgid "Add files..."
 msgstr "添加<span class='hidden-xs hidden-sm'>文件</span>..."
 
 msgid "Start upload"
-msgstr "<span class='hidden-xs'><span class='hidden-xs hidden-sm'>开始</span>上传</span>"
+msgstr "<span class='hidden-xs hidden-sm'>开始</span>上传"
 
 msgid "Cancel upload"
 msgstr "取消<span class='hidden-xs hidden-sm'>上传</span>"

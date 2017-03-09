@@ -11,7 +11,6 @@
     /*max-height: 100%;*/
 }
 
-
 .modal-body {
     position: relative;
     overflow-y: auto;
@@ -19,19 +18,20 @@
     padding: 15px;
 }
 
-
 @media screen and (max-width: 767px) {
-    h1, h2, h3, p {overflow-wrap: break-word;}
-    .modal-footer > button >span,    .btn-control > span
-    {
+    h1, h2, h3, p {
+        overflow-wrap: break-word;
+    }
+
+    .modal-footer > button > span{
         display: none;
     }
 
-    div.progress-extended{
+    div.progress-extended {
         display: none;
     }
 
-    #editPopup{
+    #editPopup {
         max-width: 100vw;
         max-height: 90vh;
     }
@@ -54,19 +54,17 @@
         padding: 15px;
     }
 
-
-    .fileUploadCompactInfo > p{
+    .fileUploadCompactInfo > p {
         overflow-wrap: break-word;
     }
 }
 
 
-
 .latexpage-error pre {
-    background-color:#eee;
-    overflow:auto;
-    margin:0 0 1em;
-    padding:.5em 1em;
+    background-color: #eee;
+    overflow: auto;
+    margin: 0 0 1em;
+    padding: .5em 1em;
 }
 
 /*pre code,*/
@@ -78,18 +76,18 @@
 /*}*/
 
 .latexpage-error pre .line-number {
-    float:left;
-    margin:0 1em 0 -1em;
-    border-right:1px solid;
-    text-align:right;
+    float: left;
+    margin: 0 1em 0 -1em;
+    border-right: 1px solid;
+    text-align: right;
 }
 
 .latexpage-error pre .line-number span {
-    display:block;
-    padding:0 .5em 0 1em;
+    display: block;
+    padding: 0 .5em 0 1em;
 }
 
 .latexpage-error pre .cl {
-    display:block;
-    clear:both;
+    display: block;
+    clear: both;
 }

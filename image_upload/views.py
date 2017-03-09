@@ -150,8 +150,17 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin,
         self.object.course = course
         self.object.save()
 
-        files = [serialize(self.request, self.object, 'image')]
-        data = {'files': files}
+        try:
+            files = [serialize(self.request, self.object, 'image')]
+            data = {'files': files}
+        except IOError:
+            return self.render_json_response(
+                {"success": False,
+                 "error": ugettext(
+                     "Sorry, the image is corrupted during "
+                     "handling. That should be solved by "
+                     "a re-uploading.")})
+
         return self.render_json_response(data)
 
     def form_invalid(self, form):
@@ -469,7 +478,15 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
     finally:
         new_image.close()
 
-    response_file = serialize(request, new_instance, 'image')
+    try:
+        response_file = serialize(request, new_instance, 'image')
+    except IOError:
+        CropImageError(string_concat(
+            _("Error"), ": ",
+            _("Sorry, the image is corrupted during "
+              "handling. That should be solved by "
+              "a re-uploading."))
+        )
     data = {'file': response_file}
     return data
 
