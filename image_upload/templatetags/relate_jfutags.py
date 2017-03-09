@@ -8,7 +8,7 @@ register = Library()
 @register.simple_tag(takes_context=True)
 def jfu(
         context,
-        template_name='image_upload/upload_form.html',
+        template_name='image_upload/upload-form-wrapper.html',
         upload_handler_name='jfu_upload',
         uploaded_view_name='jfu_view',
         *args, **kwargs

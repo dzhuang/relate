@@ -1,4 +1,4 @@
-{% extends 'image_upload/upload_form.html' %}
+{% extends 'image_upload/upload-form-wrapper.html' %}
 {% load i18n %}
 {% load static %}
 
@@ -24,7 +24,7 @@
                 background-size: contain;
             }
 
-            .fileupload-download-processing {
+            .fileupload-loading {
                 height: 96px;
                 background: url("{% static "/blueimp-gallery/img/loading.gif" %}") center no-repeat;
                 background-size: 96px 96px;
@@ -60,6 +60,7 @@
             }
         </style>
     {% endif %}
+    <link rel="stylesheet" href="{% static "css/jquery_file_upload_extra.css" %}?rev=2.3.3">
     <link rel="stylesheet" href="{% static "css/imgupload-page-min.css"  %}?rev=2.3.12">
     <link rel="stylesheet" href="{% static "cropper/dist/cropper.min.css" %}?rev=3.0.0-beta ">
     <noscript><link rel="stylesheet" href="{% static "css/imgupload-noscript.css" %}"></noscript>
@@ -171,23 +172,23 @@
                 $(this).attr("formaction", window.location.pathname).detach().appendTo('#real-submit-div');
             }).on("click", function () {
                 var all_pks = [];
-                $("#img-presentation-table").find('tr').each(function () {
-                    all_pks.push($(this).attr("data-file-pk"));
-                    $("#div_id_hidden_answer").html(
-                        '<div class="controls">' +
-                        '<input type="hidden"' +
-                        ' id="id_hidden_answer" name="hidden_answer" type="text" value="'
-                        + all_pks +
-                        '"></div>');
+                $("#fileupload").fileupload("option", "filesContainer")
+                    .children().not('.processing')
+                    .each(function(){
+                        all_pks.push($(this).attr("data-file-pk"));
+                    });
+                $("#div_id_hidden_answer")
+                    .html('<div class="controls"/>')
+                    .find("div")
+                    .html('<input type="hidden" id="id_hidden_answer" name="hidden_answer" type="text"/>')
+                    .find("input")
+                    .prop("value", all_pks);
                 });
-                $("#id_hidden_answer").prop("value", all_pks);
-            });
 
             new Clipboard('.btn-data-copy');
             var input_changed = false;
-            $('#img-presentation-table')
-                .find("tbody").sortable(
-                {
+            $("#fileupload").fileupload("option", "filesContainer")
+                .sortable({
                     delay: 500,
                     handle: ".imageSortableHandle",
                     scrollSpeed: 40,
@@ -240,10 +241,11 @@
         function disable_fileupload_control_delete_checkbox(bool) {
             if (!getWidthQueryMatch_sm_xs()) {
                 var $checkbox = $(".fileupload-buttonbar").find("input[type='checkbox']")[0];
-                if (bool) {
-                    $checkbox.checked = false;
-                }
-                $checkbox.disabled = bool;
+                if ($checkbox){
+                    if (bool) {
+                        $checkbox.checked = false;
+                    }
+                    $checkbox.disabled = bool;}
             }
         }
 
@@ -253,45 +255,6 @@
 
         function getWidthQueryMatch_sm_xs() {
             return window.matchMedia("(max-width: 767px)").matches;
-        }
-
-        function formatFileSize(bytes) {
-            if (typeof bytes !== 'number') {
-                return '';
-            }
-            if (bytes >= 1000000000) {
-                return (bytes / 1000000000).toFixed(2) + ' GB';
-            }
-            if (bytes >= 1000000) {
-                return (bytes / 1000000).toFixed(2) + ' MB';
-            }
-            return (bytes / 1000).toFixed(2) + ' KB';
-        }
-
-        function generateImageMobileDescription(row_element) {
-            var shortInfo = row_element.find(".name").text();
-            var file_pk = row_element.data("file-pk");
-            var file_size = row_element.find(".size").text();
-            var file_time = row_element.find(".timestr").text();
-            // var detailedInfo = file_time + "(" + file_size +")";
-            row_element.children(".fileUploadCompactInfo").html(
-                '<p style="width: 30vw;">'
-                + shortInfo
-                + '<span '
-                + 'onclick=\"$(\'#moreinfo' + file_pk + '\').toggle(); return false;"'
-                + '>...</span>'
-                + '</p>'
-                + '<div style="display: none;"'
-                + ' id="moreinfo' + file_pk
-                + '\">'
-                + '<p style="width: 30vw;">'
-                + file_time
-                + '</p>'
-                + '<p style="width: 30vw;">'
-                + file_size
-                + '</p>'
-                + '</div>'
-            );
         }
 
         // close gallery using back button
@@ -310,16 +273,14 @@
             'use strict';
 
             var modal_html = $('#editPopup').html();
-{#            console.log("modal loaded.");#}
 
-{#            $(".btn-edit-image").attr("click","showModal");#}
+            var $editTarget;
 
-            var $image, contData, result, ajax_url, target_image_pk, scrollPos;
-            var $updatedTableRow, $updatedPreview, $updatedThumbnail, $updatedFilename,
-                $updatedFileSize, $updatedFileTime, $updatedDeleteUrl, $editTarget;
+            var $image, contData, result;
 
             $('#editPopup')
                 .on('show.bs.modal', function (e) {
+{#                    console.log(e.)#}
                     $(this).find('.modal-body').css({
                         width: 'auto', //probably not needed
                         height: 'auto', //probably not needed
@@ -327,20 +288,11 @@
                     });
 
                     $editTarget = $(e.relatedTarget);
-                    var target_image_pk = $editTarget.attr('data-pk');
+
                     var image_src = $editTarget.attr('data-src');
 
                     $image = $("#image");
                     $image.attr("src", image_src);
-                    $updatedTableRow = $editTarget.parents("tr");
-                    $updatedPreview = $("#previewid" + target_image_pk);
-                    $updatedThumbnail = $("#thumbnail" + target_image_pk);
-                    $updatedFilename = $("#filename" + target_image_pk);
-                    $updatedFileSize = $("#filesize" + target_image_pk);
-                    $updatedFileTime = $("#filetime" + target_image_pk);
-                    $updatedDeleteUrl = $("#deleteurl" + target_image_pk);
-                    ajax_url = $editTarget.attr("data-action");
-
             })
                 .on('shown.bs.modal', function () {
                     $(".relate-save-button").addClass('disabled');
@@ -447,49 +399,20 @@
                         $(".modal-footer > button").addClass("disabled");
                         var jqxhr = $.ajax({
                             method: "POST",
-                            url: ajax_url,
+                            url: $editTarget.attr("data-action"),
                             data: JSON.stringify($image.cropper("getData")),
                             beforeSend: function (xhr, settings) {
                                 xhr.setRequestHeader("X-CSRFToken", $editTarget.attr("data-data"));
                             }
                         })
                             .done(function (response) {
-                                var new_img = response.file;
-                                console.log(new_img);
-                                var that = $("#fileupload").data('blueimp-fileupload'),
-                                    getFilesFromResponse = that.options.getFilesFromResponse,
-                                    downloadTemplate = that.options.downloadTemplate;
-
-
-                                var the_file = getFilesFromResponse(new_img);
-                                console.log(the_file); // failed
-                                console.log("---------------------------");
-{#                                console.log(downloadTemplate);#}
-                                var new_img_obj = $.parseJSON({"abc": "new_img"});
-                                console.log(new_img_obj);
-{#                                var template = downloadTemplate([new_img]);#}
-{#                                console.log(template);#}
-
-                                $updatedThumbnail.prop("id", "thumbnail" + new_img.pk).parents("span").addClass("processing");
-                                if (window.location.pathname.indexOf("/grading/") === -1) {
-                                    $updatedThumbnail.removeClass("hidden").prop('src', new_img.thumbnailUrl);
-                                } else {
-                                    $updatedThumbnail.prop('src', new_img.url).prop('style', "width:40vw");
-                                }
-                                $updatedTableRow.attr("data-file-pk", new_img.pk);
-                                $updatedPreview.prop("id", "previewid" + new_img.pk).prop('href', new_img.url);
-                                $updatedFilename.prop("id", "filename" + new_img.pk).prop('href', new_img.url);
-                                $updatedFileTime.prop("id", "filetime" + new_img.pk).prop('title', new_img.timestr_title).html(new_img.timestr_short);
-                                $updatedFileSize.prop("id", "filesize" + new_img.pk).html(formatFileSize(new_img.size));
-                                $updatedDeleteUrl.prop("id", "deleteurl" + new_img.pk).attr('data-url', new_img.deleteUrl);
-                                $editTarget.attr("data-src", new_img.url).attr("data-action", new_img.crop_handler_url).attr("data-pk", new_img.pk);
-                                generateImageMobileDescription($updatedTableRow);
-
-                                $image.cropper('replace', new_img.url);
-
-
-
-
+                                $("#fileupload").fileupload('option', 'done')
+                                    .call($("#fileupload"),
+                                        $.Event('done'),
+                                        {
+                                            result: {files:[response.file]},
+                                            context: $editTarget.closest(".template-download")
+                                        });
 
                                 crpMsg(true, gettext('Done!'));
                                 setTimeout(function () {
@@ -562,10 +485,9 @@
             $('#fileupload')
                 .on("existingloaded", function (){
                     // need triggers
-                    $(".fileupload-download-processing").remove();
                 })
                 .on("fileuploadloadingexistalways", function () {
-{#                    $(".fileupload-download-processing").remove();#}
+{#                    $(".fileupload-loading").remove();#}
                 })
                 .on("file_edited fileuploaddestroyed", on_input_change)
                 .on("fileuploadcompleted fileuploaddestroyed", function () {
@@ -585,6 +507,9 @@
                     // disable_fileupload_control_button(false);
                 })
                 .on("fileuploadcompleted", function (e, data) {
+                    if($(".fileupload-loading").length){
+                        console.log("removing");
+                        $(".fileupload-loading").remove();}
                     if (getWidthQueryMatch_sm_xs()) {
                         $(this).find("canvas").each(function () {
                             updateCanvasCss(this);

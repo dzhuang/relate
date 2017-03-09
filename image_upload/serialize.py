@@ -98,7 +98,7 @@ def serialize(request, instance, file_attr='image'):
 
     # use slug by default
     name = getattr(instance, 'slug', obj_name)
-    name_trancated = get_truncated_name(name)
+    name_truncated = get_truncated_name(name)
 
     delete_url = reverse('jfu_delete',
             kwargs={
@@ -184,7 +184,7 @@ def serialize(request, instance, file_attr='image'):
     return {
         'url': instance.get_absolute_url(),
         'name': name,
-        'name_trancated': name_trancated,
+        'name_truncated': name_truncated,
         'type': img_type,
         'thumbnailUrl': instance.image_thumbnail.url,
         'timestr_title': timestr_title,

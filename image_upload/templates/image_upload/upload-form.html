@@ -1,0 +1,279 @@
+{% load i18n %}
+{# Redirect browsers with JavaScript disabled to the origin page #}
+<noscript>
+    <input type="hidden" name="redirect" value="{{ request.path }}"></noscript>
+
+{% block UPLOAD_FORM_BUTTON_BAR %}
+    <div class="row fileupload-buttonbar">
+        {# The fileupload-buttonbar contains buttons to add/delete files and start/cancel the upload #}
+
+        <div class="col-lg-7 col-sm-6 col-xs-6">
+            {# The fileinput-button span is used to style the file input field as button #}
+            {% block UPLOAD_FORM_BUTTON_BAR_ADD %}
+                <span class="btn btn-success fileinput-button">
+                    <i class="glyphicon glyphicon-plus"></i>
+                    <span>{% trans "Add files..." %}</span>
+                    {% block UPLOAD_FORM_BUTTON_BAR_ADD_FILE_INPUT %}
+                        {% comment %}
+                            UPLOAD_FORM_BUTTON_BAR_ADD_FILE_INPUT and FILE_INPUT
+                            control the same block.
+
+                            FILE_INPUT is the original and shorter block name that has
+                            been kept to function as a convenient alias as well as to
+                            allow backward-compatibility with dependent projects.
+
+                            Note: Only one should be overriden in the inheriting templates.
+                        {% endcomment %}
+                            {% block FILE_INPUT %}
+                                {# The file input for the upload form. #}
+                                <input type="file" name="files[]" multiple
+                                    {% if accepted_mime_types %}
+                                        accept='{{ accepted_mime_types|join:"," }}'
+                                    {% endif %}
+                                >
+                            {% endblock %}{# //FILE_INPUT #}
+                    {% endblock %}{# //block UPLOAD_FORM_BUTTON_BAR_ADD_FILE_INPUT #}
+
+                </span>
+
+                {% block UPLOAD_FORM_BUTTON_BAR_ADD_EXTRA %}
+                {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR_ADD_EXTRA #}
+            {% endblock %}{# //block UPLOAD_FORM_BUTTON_BAR_ADD #}
+
+            {% block UPLOAD_FORM_BUTTON_BAR_CONTROL %}
+                <button type="submit" class="btn btn-primary start" disabled>
+                    <i class="glyphicon glyphicon-upload"></i>
+                    <span>{% trans "Start upload" %}</span>
+                </button>
+                <button type="reset" class="btn btn-warning cancel" disabled>
+                    <i class="glyphicon glyphicon-ban-circle"></i>
+                    <span>{% trans "Cancel upload" %}</span>
+                </button>
+                <button type="button" class="btn btn-danger delete" disabled>
+                    <i class="glyphicon glyphicon-trash"></i>
+                    <span>{% trans "Delete" %}</span>
+                </button>
+                <input type="checkbox" class="toggle hidden-sm hidden-xs">
+            {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR_CONTROL #}
+            {% block UPLOAD_FORM_BUTTON_BAR_EXTRA %}
+            {% endblock %}{# //UPLOAD_FORM_BUTTON_BAR_EXTRA #}
+
+        </div>
+
+        {% block UPLOAD_FORM_PROGRESS_BAR %}
+            {# The global progress information #}
+            <div class="col-lg-5 col-sm-6 col-xs-6 fileupload-progress fade">
+                {# The global progress bar #}
+                    <div
+                        class="progress progress-striped active"
+                        role="progressbar"
+                        aria-valuemin="0" aria-valuemax="100"
+                    >
+                    <div class="progress-bar progress-bar-success"
+                         style="width:0%;">
+                    </div>
+                </div>
+                {# The extended global progress information #}
+                <div class="progress-extended">&nbsp;</div>
+            </div>
+        {% endblock %}
+    </div>
+{% endblock %}{# //UPLOAD_FORM_BUTTON_BAR #}
+
+{# The loading indicator is shown during file processing #}
+{% block UPLOAD_FORM_LINDICATOR %}
+    <div class="fileupload-loading"></div>
+{% endblock %}{# //UPLOAD_FORM_LINDICATOR #}
+
+{% block UPLOAD_FORM_LISTING %}
+    {# The table listing the files available for upload/download #}
+    <table role="presentation" class="table table-striped">
+        <tbody class="files"></tbody>
+    </table>
+{% endblock %}{# //UPLOAD_FORM_LISTING #}
+
+{% block UPLOAD_FORM_EXTRA %} {% endblock %}
+
+{% block JS_TEMPLATES %}
+    {# The template to display files available for upload #}
+
+    {% block JS_UPLOAD_TEMPLATE %}
+        <script id="template-upload" type="text/x-tmpl">
+            {{ JQ_OPEN }} for (var i=0, file; file=o.files[i]; i++) { {{ JQ_CLOSE }}
+
+                <tr class="template-upload fade">
+
+                    {% block JS_UPLOAD_TEMPLATE_PREVIEW %}
+                        <td>
+                            <span class="preview"></span>
+                        </td>
+                    {% endblock %}{# // JS_UPLOAD_TEMPLATE_PREVIEW #}
+
+                    {% block JS_UPLOAD_TEMPLATE_UPLOAD %}
+                        <td>
+                            <p class="name">{{ JQ_OPEN }}=file.name{{ JQ_CLOSE }}</p>
+                            <p class="size hidden-lg hidden-md">{% trans "Processing" %}...</p>
+                            <div class="progress progress-striped active hidden-lg hidden-md" role="progressbar"
+                                aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                                <div class="progress-bar progress-bar-success hidden-lg hidden-md" style="width:0%;"></div>
+                            </div>
+                            <strong class="error text-danger"></strong>
+                        </td>
+                    {% endblock %}{# //JS_UPLOAD_TEMPLATE_UPLOAD #}
+
+                    {% block JS_UPLOAD_TEMPLATE_PROGRESSBAR %}
+                        <td class="hidden-sm hidden-xs">
+                            <p class="size">{% trans "Processing" %}...</p>
+                            <div class="progress progress-striped active" role="progressbar"
+                                aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                                <div class="progress-bar progress-bar-success" style="width:0%;"></div>
+                            </div>
+                        </td>
+                    {% endblock %}{# //JS_UPLOAD_TEMPLATE_PROGRESSBAR #}
+
+                    {% block JS_UPLOAD_TEMPLATE_CONTROLS %}
+                        <td>
+                            {% block JS_UPLOAD_TEMPLATE_START %}
+                                {{ JQ_OPEN }} if (!i && !o.options.autoUpload) { {{ JQ_CLOSE }}
+                                    <button class="btn btn-primary start" disabled>
+                                        <i class="glyphicon glyphicon-upload"></i>
+                                        <span>{% trans "Start" %}</span>
+                                    </button>
+                                {{ JQ_OPEN }} } {{ JQ_CLOSE }}
+                            {% endblock %}{# //block JS_UPLOAD_TEMPLATE_START #}
+
+                            {% block JS_UPLOAD_TEMPLATE_CANCEL %}
+                                {{ JQ_OPEN }} if (!i) { {{ JQ_CLOSE }}
+                                    <button class="btn btn-warning cancel">
+                                        <i class="glyphicon glyphicon-ban-circle"></i>
+                                        <span>{% trans "Cancel" %}</span>
+                                    </button>
+                                {{ JQ_OPEN }} } {{ JQ_CLOSE }}
+                            {% endblock %}{# //JS_UPLOAD_TEMPLATE_CANCEL #}
+                        </td>
+                    {% endblock %}{# //JS_UPLOAD_TEMPLATE_CONTROLS #}
+
+                </tr>
+
+            {{ JQ_OPEN }} } {{ JQ_CLOSE }}
+        </script>
+    {% endblock %}{# //JS_UPLOAD_TEMPLATE #}
+
+
+    {% block JS_DOWNLOAD_TEMPLATE %}
+        {# The template to display files available for download #}
+        <script id="template-download" type="text/x-tmpl">
+            {{ JQ_OPEN }} for (var i=0, file; file=o.files[i]; i++) { {{ JQ_CLOSE }}
+
+                <tr class="template-download fade"
+                    data-file-pk="{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
+                    >
+
+                    {% block JS_DOWNLOAD_TEMPLATE_PREVIEW %}
+                        <td class="col-lg-2 col-sm-3 col-xs-3">
+                            <span class="preview processing">
+                                {{ JQ_OPEN }} if (file.thumbnailUrl) { {{ JQ_CLOSE }}
+                                    <a
+                                        href="{{ JQ_OPEN }}=file.url{{ JQ_CLOSE }}"
+                                        title="{{ JQ_OPEN }}=file.name{{ JQ_CLOSE }}"
+                                        download="{{ JQ_OPEN }}=file.name{{ JQ_CLOSE }}"
+                                        data-gallery>
+                                        <img class="img-responsive"
+                                            src="{{ JQ_OPEN }}=file.thumbnailUrl{{ JQ_CLOSE }}"
+                                        >
+                                    </a>
+                                {{ JQ_OPEN }} } {{ JQ_CLOSE }}
+                            </span>
+                        </td>
+                    {% endblock %}{# //JS_DOWNLOAD_TEMPLATE_PREVIEW #}
+
+                    {% block JS_DOWNLOAD_TEMPLATE_DOWNLOAD %}
+                        {% block JS_DOWNLOAD_TEMPLATE_DOWNLOAD_FILENAME %}
+                        <td class="col-lg-2 hidden-sm hidden-xs">
+                            <p class="name">
+                                {{ JQ_OPEN }} if (file.url) { {{ JQ_CLOSE }}
+                                    <a
+                                        href="{{ JQ_OPEN }}=file.url{{ JQ_CLOSE }}"
+                                        title="{{ JQ_OPEN }}=file.name{{ JQ_CLOSE }}"
+                                        download="{{ JQ_OPEN }}=file.name{{ JQ_CLOSE }}"
+                                        {{ JQ_OPEN }}=file.thumbnailUrl?'data-gallery':''{{ JQ_CLOSE }}>
+                                        {{ JQ_OPEN }}=file.name_truncated?file.name_truncated:file.name{{ JQ_CLOSE }}
+                                    </a>
+                                {{ JQ_OPEN }} } else { {{ JQ_CLOSE }}
+                                    <span title="{{ JQ_OPEN }}=file.name{{ JQ_CLOSE }}">
+                                        {{ JQ_OPEN }}=file.name_truncated?file.name_truncated:file.name{{ JQ_CLOSE }}
+                                    </span>
+                                {{ JQ_OPEN }} } {{ JQ_CLOSE }}
+                            </p>
+
+                            {% block JS_DOWNLOAD_TEMPLATE_ERROR %}
+                                {{ JQ_OPEN }} if (file.error) { {{ JQ_CLOSE }}
+                                    <div>
+                                        <span class="label label-danger">
+                                            {% trans "Error" %}
+                                        </span>
+                                        {{ JQ_OPEN }}=file.error{{ JQ_CLOSE }}
+                                    </div>
+                                {{ JQ_OPEN }} } {{ JQ_CLOSE }}
+                            {% endblock %}{# //block JS_DOWNLOAD_TEMPLATE_ERROR #}
+                        </td>
+                        {% endblock %}{# JS_DOWNLOAD_TEMPLATE_DOWNLOAD_FILENAME #}
+                        {% block JS_DOWNLOAD_TEMPLATE_DOWNLOAD_MOBILE_VIEW %}
+                        <td class="hidden-lg hidden-md fileUploadCompactInfo">
+                            <p style="width: 30vw;">{{ JQ_OPEN }}=file.name_truncated{{ JQ_CLOSE }}
+                                    <span onclick="$('#moreinfo{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}').toggle(); return false;">...</span></p>
+                                <div style="display: none;" id="moreinfo{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}">
+                                <p style="width: 30vw;">{{ JQ_OPEN }}=file.timestr_short{{ JQ_CLOSE }}</p>
+                                <p style="width: 30vw;">{{ JQ_OPEN }}=o.formatFileSize(file.size){{ JQ_CLOSE }}</p>
+                                </div>
+                        </td>
+                        {% endblock %} {# //JS_DOWNLOAD_TEMPLATE_DOWNLOAD_MOBILE_VIEW #}
+                    {% endblock %}{# //JS_DOWNLOAD_TEMPLATE_DOWNLOAD #}
+
+                    {% block JS_DOWNLOAD_TEMPLATE_EXTRA_INFO_COLUMN %}
+                    {% endblock %}{# //JS_DOWNLOAD_TEMPLATE_EXTRA_INFO_COLUMN #}
+
+
+                    {% block JS_DOWNLOAD_TEMPLATE_FSIZE %}
+                        <td class="col-lg-1 hidden-sm hidden-xs">
+                            <span
+                                class="size"
+                            >{{ JQ_OPEN }}=o.formatFileSize(file.size){{ JQ_CLOSE }}</span>
+                        </td>
+                    {% endblock %}{# //JS_DOWNLOAD_TEMPLATE_FSIZE #}
+
+                    {% block JS_DOWNLOAD_TEMPLATE_CONTROL_BUTTONS %}
+                        <td class="col-lg-3 col-sm-4 col-xs-4">
+                        {% block JS_DOWNLOAD_TEMPLATE_CONTROL_BUTTONS_EXTRA %}
+                        {% endblock %}{# //JS_DOWNLOAD_TEMPLATE_CONTROL_BUTTONS_EXTRA #}
+                        {% block JS_DOWNLOAD_TEMPLATE_CONTROL_BUTTONS_DELETE %}
+                            {{ JQ_OPEN }} if (file.deleteUrl) { {{ JQ_CLOSE }}
+                                <button
+                                    class="btn btn-danger delete"
+                                    data-type="{{ JQ_OPEN }}=file.deleteType{{ JQ_CLOSE }}"
+                                    data-data='{ "csrfmiddlewaretoken" : "{{ csrf_token }}" }'
+                                    data-url="{{ JQ_OPEN }}=file.deleteUrl{{ JQ_CLOSE }}"
+                                    {{ JQ_OPEN }} if (file.deleteWithCredentials) { {{ JQ_CLOSE }}
+                                        data-xhr-fields='{"withCredentials":true}'
+                                    {{ JQ_OPEN }} } {{ JQ_CLOSE }}
+                                >
+                                    <i class="glyphicon glyphicon-trash"></i>
+                                    <span>{% trans "Delete" %}</span>
+                                </button>
+                                <input type="checkbox" name="delete" value="1" class="toggle">
+                            {{ JQ_OPEN }} } else { {{ JQ_CLOSE }}
+                                <button class="btn btn-warning cancel">
+                                    <i class="glyphicon glyphicon-ban-circle"></i>
+                                    <span>{% trans "Cancel" %}</span>
+                                </button>
+                            {{ JQ_OPEN }} } {{ JQ_CLOSE }}
+                            {% endblock %}{# //block JS_DOWNLOAD_TEMPLATE_CONTROL_BUTTONS_DELETE #}
+                        </td>
+                    {% endblock %}{# // JS_DOWNLOAD_TEMPLATE_CONTROL_BUTTONS #}
+                    {% block JS_DOWNLOAD_TEMPLATE_EXTRA_COLUMN %}
+                    {% endblock %}{# //JS_DOWNLOAD_TEMPLATE_EXTRA_COLUMN #}
+                </tr>
+            {{ JQ_OPEN }} } {{ JQ_CLOSE }}
+        </script>
+    {% endblock %}{# //JS_DOWNLOAD_TEMPLATE #}
+{% endblock %}{# //JS_TEMPLATES #}

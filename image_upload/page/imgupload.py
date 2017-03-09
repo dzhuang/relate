@@ -84,13 +84,13 @@ class ImageUploadForm(StyledForm):
         jfu_button_control = ""
 
         if not self.page_behavior.may_change_answer:
-            jfu_button_control = (
+            jfu_button_control = (""
                 # "{% block UPLOAD_FORM_BUTTON_BAR %}{% endblock %}"
-                "{% block UPLOAD_FORM_BUTTON_BAR_ADD %}{% endblock %}"
-                "{% block UPLOAD_FORM_BUTTON_BAR_CONTROL %}{% endblock %}"
-                "{% block UPLOAD_FORM_PROGRESS_BAR %}{% endblock %}"
-                "{% block JS_UPLOAD_TEMPLATE_CONTROLS %}{% endblock %}"
-                "{% block JS_DOWNLOAD_TEMPLATE_DELETE %}{% endblock %}"
+                # "{% block UPLOAD_FORM_BUTTON_BAR_ADD %}{% endblock %}"
+                # "{% block UPLOAD_FORM_BUTTON_BAR_CONTROL %}{% endblock %}"
+                # "{% block UPLOAD_FORM_PROGRESS_BAR %}{% endblock %}"
+                # "{% block JS_UPLOAD_TEMPLATE_CONTROLS %}{% endblock %}"
+                # "{% block JS_DOWNLOAD_TEMPLATE_DELETE %}{% endblock %}"
             )
 
         self.helper.form_id = "fileupload"
