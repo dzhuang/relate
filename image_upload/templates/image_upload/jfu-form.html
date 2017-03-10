@@ -10,9 +10,7 @@
 
 {% block JS_DOWNLOAD_TEMPLATE_PREVIEW %}
     <td
-            {% if IN_GRADE_PAGE %}
-                style="padding-right: 0"
-            {% else %}
+            {% if not IN_GRADE_PAGE %}
                 class="col-lg-2 col-sm-3 col-xs-3"
             {% endif %}
     >
@@ -23,15 +21,13 @@
                         title="{{ JQ_OPEN }}=file.name{{ JQ_CLOSE }}"
                         download="{{ JQ_OPEN }}=file.name{{ JQ_CLOSE }}"
                         data-gallery>
-                        <img
+                        <img class="img-responsive"
                                 {% if IN_GRADE_PAGE %}
                              src="{{ JQ_OPEN }}=file.url{{ JQ_CLOSE }}"
-                             style="width:40vw;max-height:100%; padding-right:0"
-                             onload="enableMagnify(this, '{{ JQ_OPEN }}=file.url{{ JQ_CLOSE }}')"
+                             onmouseover="magnify(this)"
+                             data-zoom-image="{{ JQ_OPEN }}=file.url{{ JQ_CLOSE }}"
                                 {% else %}
-                             class="img-responsive"
                              src="{{ JQ_OPEN }}=file.thumbnailUrl{{ JQ_CLOSE }}"
-                             onload="hideLoading(this)"
                                 {% endif %}
                         >
                 </a>
@@ -72,7 +68,6 @@
             {% if not IN_GRADE_PAGE %}
                 class="col-lg-3 col-sm-4 col-xs-4"
             {% else %}
-                style="padding-left:0;padding-right:0;"
             {% endif %}
     >
     {% if IS_COURSE_STAFF or MAY_CHANGE_ANSWER %}
@@ -104,7 +99,7 @@
                 data-data="{{ csrf_token }}"
                 data-target="#editPopup"
                 {% if IN_GRADE_PAGE %}
-{#                    style="padding-left: 0;"#}
+                    style="z-index: 5000;"
                 {% endif %}
         >
             <i class="fa fa-pencil"></i>
@@ -125,10 +120,9 @@
     {% if IS_COURSE_STAFF or MAY_CHANGE_ANSWER %}
         <td class="imageSortableHandle hidden
         {% if not IN_GRADE_PAGE %}
-            col-lg-2 col-sm-1 col-xs-1" style="vertical-align: middle;"
-         {% else %}
-              "  style=" vertical-align: middle;padding-left:0;padding-right:0;position: relative;left:-20px"
-         {% endif %}
+            col-lg-2 col-sm-1 col-xs-1
+         {% endif %}"
+             style="vertical-align: middle;"
             >
                 <span title="{% trans 'Drag to order' %}">
                     <i class="fa fa-sort fa-3" aria-hidden="true"></i>

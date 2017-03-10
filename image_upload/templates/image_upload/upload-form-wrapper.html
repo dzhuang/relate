@@ -210,8 +210,8 @@
                             dataType: 'json',
                             context: $('#fileupload')[0]
                         }).always(function () {
-                            $(this).removeClass('fileupload-processing')
-                                .trigger("fileuploadexistingloaded");
+                            $(this).removeClass('fileupload-processing');
+                            $(".fileupload-loading").addClass("hidden");
                         }).done(function (result) {
                             console.log(this, $(this));
                             $(this).fileupload('option', 'done')

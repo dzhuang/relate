@@ -9,39 +9,47 @@
 {% block JS_JQUERY %}{#jQuery (Override to keep it empty) {% endcomment #}{% endblock %}
 {% block CSS_HTML5_SHIM %}{# IE 9 lt already supported (Override to keep it empty)#}{% endblock %}
 
+{% block CSS_JQUERY_FILE_UPLOAD_UI %}
+    {# CSS to style the file input field as button and adjust the Bootstrap progress bars #}
+    {#  CUSTOMIZED VERSION  #}
+     <link rel="stylesheet" href="{% static "css/jquery.fileupload-ui-learningwhat.css" %}?rev=2.3.3">
+    {# CSS adjustments for browsers with JavaScript disabled #}
+    <noscript><link rel="stylesheet" href="{{ STATIC_URL }}blueimp-file-upload/css/jquery.fileupload-noscript.css"></noscript>
+    <noscript><link rel="stylesheet" href="{{ STATIC_URL }}blueimp-file-upload/css/jquery.fileupload-ui-noscript.css"> </noscript>
+{% endblock %}
+
 {% block CSS_EXTRA %}
     {% if not IN_GRADE_PAGE %}
         {{ block.super }}
+        <link rel="stylesheet" href="{% static "css/jquery.fileupload-ui-learningwhat.css" %}?rev=2.3.3">
     {% else %}
+        <style>
+            @media (min-width: 768px) {
+                .preview img {
+                    max-width: calc(50vw - 162px);
+                }
+                #fileupload tbody > * > td:nth-child(1),
+                #fileupload tbody > * > td:nth-child(2)
+                {
+                    padding: 0;
+                }
+            }
+            @media (max-width: 767px) {
+                .preview img {
+                    max-width: calc(100% + 54px);
+                }
+                .fileupload-buttonbar .delete
+                {
+                    display: none;
+                }
+            }
+            #fileupload table {
+                margin: 0
+            }
+        </style>
         {#{{ block.super }}#}
-{#        <style>#}
-{##}
-{#            @media (min-width: 768px) {#}
-{#                .preview img {#}
-{#                    max-width: 100%;#}
-{#                }#}
-{#            }#}
-{##}
-{#            @media (max-width: 767px) {#}
-{#                .grading-page-student-work.container > div > div {#}
-{#                    padding: 0;#}
-{#                }#}
-{##}
-{#                h1, h2, h3, p {#}
-{#                    overflow-wrap: break-word;#}
-{#                }#}
-{##}
-{#                .preview img {#}
-{#                    max-width: calc(100% + 54px);#}
-{#                }#}
-{##}
-{#                .fileupload-buttonbar .delete {#}
-{#                    display: none;#}
-{#                }#}
-{#            }#}
-{#        </style>#}
+
     {% endif %}
-    <link rel="stylesheet" href="{% static "css/jquery_fileupload_extra.css" %}?rev=2.3.3">
     <link rel="stylesheet" href="{% static "css/imgupload-page.css"  %}?rev=2.3.12">
     <link rel="stylesheet" href="{% static "cropper/dist/cropper.min.css" %}?rev=3.0.0-beta ">
     <noscript><link rel="stylesheet" href="{% static "css/imgupload-noscript.css" %}"></noscript>
@@ -508,10 +516,9 @@
             $('#img-presentation-table').children("tbody").on("sortchange", on_input_change);
 
             $('#fileupload').on("fileuploadexistingloaded", function(){
-                    $(".fileupload-loading").remove();
+
                 })
                 .on("fileuploadloadingexistalways", function () {
-{#                    $(".fileupload-loading").remove();#}
                 })
                 .on("file_edited fileuploaddestroyed", on_input_change)
                 .on("fileuploadcompleted fileuploaddestroyed", function () {
@@ -533,19 +540,9 @@
                     // hide_fileupload_control_button(false);
                 })
                 .on("fileuploadcompleted", function (e, data) {
-                    if (getWidthQueryMatch_sm_xs()) {
-                        $(this).find("canvas").each(function () {
-                            updateCanvasCss(this);
-                        });
-                    }
                 })
                 .on("fileuploaddestroyed", function (e, data){
                     toggle_fileupload_control_delete();
-                    if (getWidthQueryMatch_sm_xs()) {
-                        $(this).find("canvas").each(function () {
-                            updateCanvasCss(this);
-                        });
-                    }
                 })
                 .on("fileuploadfailed fileuploadcompleted fileuploaddestroyed", function () {
                     var queue_length = $('.template-upload').length;
@@ -556,10 +553,6 @@
                     // console.log('processstart');
                 })
                 .on('fileuploadprocessalways', function (e, data) {
-                    var el = data.files[data.index].preview;
-                    if (getWidthQueryMatch_sm_xs()) {
-                        updateCanvasCss(el);
-                    }
                 });
 
             $('body').on('change', '#fileupload input[type="checkbox"]', function (e) {
@@ -567,20 +560,6 @@
                 // e.stopPropagation();
                 toggle_fileupload_control_delete();
             });
-
-            function updateCanvasCss(element) {
-                var parent_width, new_height;
-                parent_width = $(element).parents("td").width();
-                if (!parent_width) {
-                    setTimeout(function () {
-                        updateCanvasCss(element)
-                    }, 50);
-                }
-                else {
-                    new_height = parent_width * (element.height / element.width);
-                    $(element).css({"width": "100%", "height": new_height});
-                }
-            }
 
             function before_submit(evt) {
                 input_changed = false;
@@ -608,6 +587,12 @@
     <script src="{% static "ez-plus/src/jquery.ez-plus.js" %} "></script>
     <script>
 
+        function magnify(x) {
+            $(x).ezPlus({
+            zoomType: 'inner',
+            cursor: 'crosshair'});
+        };
+
         $(document).ready(function () {
             var pre = $('.latexpage-error pre'),
                 pl = pre.length;
@@ -621,25 +606,8 @@
             }
         });
 
-        function hideLoading(that) {
-            $(that).parents("span").removeClass("processing");
-        }
-
         function printtime(s) {
             console.log(s + new Date());
-        }
-
-        function enableMagnify(that, fileurl) {
-            hideLoading(that);
-            $(that).prop("href", fileurl)
-                .on("mouseover", function (e) {
-                    $(this).ezPlus({
-                        zoomType: 'inner',
-                        cursor: 'crosshair',
-                        touchEnabled: true
-                    });
-                })
-                .prop("data-zoom-image", fileurl);
         }
 
     </script>
