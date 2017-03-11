@@ -160,65 +160,64 @@
 
                 var formData = $('#fileupload').serializeArray();
                 formData.push(
-                { name: "csrfmiddlewaretoken", value: "{{ csrf_token }}" }
-                );
+                    { name: "csrfmiddlewaretoken", value: "{{ csrf_token }}" }
+                    );
 
                 $('#fileupload').fileupload({
+                    formData: formData,
 
-                formData: formData,
+                    {% block JS_OPTS %}
+                        imageMaxWidth: 900,
+                        imageMaxHeight: 900,
+                        loadImageFileTypes: /^image\/(gif|jpeg|png|svg\+xml)$/,
+                        sequentialUploads: true,
+                        disableImageResize: /Android(?!.*Chrome)|Opera/
+                            .test(window.navigator && navigator.userAgent),
 
-                {% block JS_OPTS %}
-                    imageMaxWidth: 900,
-                    imageMaxHeight: 900,
-                    loadImageFileTypes: /^image\/(gif|jpeg|png|svg\+xml)$/,
-                    sequentialUploads: true,
-                    disableImageResize: /Android(?!.*Chrome)|Opera/
-                        .test(window.navigator && navigator.userAgent),
-
-                    imageCrop: false, // Force cropped images
-                    acceptFileTypes: /(\.|\/)(png|gif|jpe?g)$/i,
-                    messages: {
-                                    acceptFileTypes: 'File type not allowed'
-                                },
-                    imageOrientation: true
-                {% endblock %}
+                        imageCrop: false, // Force cropped images
+                        acceptFileTypes: /(\.|\/)(png|gif|jpe?g)$/i,
+                        messages: {
+                                        acceptFileTypes: 'File type not allowed'
+                                    },
+                        imageOrientation: true
+                    {% endblock %}
                 });
 
-                {% block JS_CROSS_DOMAIN %}
-                    // Enable iframe cross-domain access via redirect option:
-                    //    $('#fileupload').fileupload(
-                    //        'option',
-                    //        'redirect',
-                    //        window.location.href.replace(
-                    //            /\/[^\/]*$/,
-                    //            '/cors/result.html?%s'
-                    //        )
-                    //    );
-                {% endblock %}
+                    {% block JS_CROSS_DOMAIN %}
+                        // Enable iframe cross-domain access via redirect option:
+                        //    $('#fileupload').fileupload(
+                        //        'option',
+                        //        'redirect',
+                        //        window.location.href.replace(
+                        //            /\/[^\/]*$/,
+                        //            '/cors/result.html?%s'
+                        //        )
+                        //    );
+                    {% endblock %}
 
-                {% block JS_LOAD_EXISTING_FILES %}
-                    // Load existing files:
-                    {% if uploaded_view_url %}
-                        $('#fileupload').addClass('fileupload-processing');
-                        $.ajax({
-                            // Uncomment the following to send cross-domain cookies:
-                            //xhrFields: {withCredentials: true},
-                            //url: $('#fileupload').fileupload('option', 'url'),
+                    {% block JS_LOAD_EXISTING_FILES %}
+                        // Load existing files:
+                        {% if uploaded_view_url %}
+                            $('#fileupload').addClass('fileupload-processing');
+                            $.ajax({
+                                // Uncomment the following to send cross-domain cookies:
+                                //xhrFields: {withCredentials: true},
+                                //url: $('#fileupload').fileupload('option', 'url'),
 
-                            url: "{{ uploaded_view_url }}",
+                                url: "{{ uploaded_view_url }}",
 
-                            dataType: 'json',
-                            context: $('#fileupload')[0]
-                        }).always(function () {
-                            $(this).removeClass('fileupload-processing');
-                            $(".fileupload-loading").addClass("hidden");
-                        }).done(function (result) {
-                            console.log(this, $(this));
-                            $(this).fileupload('option', 'done')
-                                .call(this, $.Event('done'), {result: result});
-                        });
-                    {% endif %}
-                {% endblock %}
+                                dataType: 'json',
+                                context: $('#fileupload')[0]
+                            }).always(function () {
+                                $(this).removeClass('fileupload-processing');
+                                $(".fileupload-loading").addClass("hidden");
+                            }).done(function (result) {
+                                console.log(this, $(this));
+                                $(this).fileupload('option', 'done')
+                                    .call(this, $.Event('done'), {result: result});
+                            });
+                        {% endif %}
+                    {% endblock %}
             {% endblock %}
         });
     </script>
