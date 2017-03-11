@@ -33,7 +33,7 @@
 
 <!-- CSS to style Cropper plugin -->
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
-<link rel="stylesheet" href="http://fengyuanchen.github.io/cropper/css/cropper.min.css">
+<link rel="stylesheet" href="http://fengyuanchen.github.io/cropper/css/cropper.css">
 
 <!-- CSS adjustments for browsers with JavaScript disabled -->
 <noscript><link rel="stylesheet" href="css/jquery.fileupload-noscript.css"></noscript>
@@ -288,7 +288,7 @@
 <script src="js/jquery.fileupload-ui.js"></script>
 
 <!-- The Cropper plugin -->
-<script src="http://fengyuanchen.github.io/cropper/js/cropper.min.js"></script>
+<script src="http://fengyuanchen.github.io/cropper/js/cropper.js"></script>
 
 <!-- The main application script -->
 <script>
@@ -301,6 +301,10 @@ $(function () {
         //xhrFields: {withCredentials: true},
         url: 'server/php/'
     });
+
+    console.log($.type($FU));
+    console.log($FU);
+    console.log($("#fileupload"));
 
     // Enable iframe cross-domain access via redirect option:
     $('#fileupload').fileupload(

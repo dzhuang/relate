@@ -8,6 +8,16 @@
     {% endif %}
 {% endblock %}
 
+{% block JS_UPLOAD_TEMPLATE_CONTROLS %}
+    <td>
+        {{ JQ_OPEN }} if (!i) { {{ JQ_CLOSE }}
+        <button class="btn btn-info edit" disabled><span
+                class="glyphicon glyphicon-edit"></span> {% trans "Edit" %}</button>
+        {{ JQ_OPEN }} } {{ JQ_CLOSE }}
+    </td>
+    {{ block.super }}
+{% endblock %}
+
 {% block JS_DOWNLOAD_TEMPLATE_PREVIEW %}
     <td
             {% if not IN_GRADE_PAGE %}
