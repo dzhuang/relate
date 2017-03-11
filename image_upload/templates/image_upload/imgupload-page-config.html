@@ -158,91 +158,64 @@
         $(document).ready(function () {
             'use strict';
             $(".relate-save-button").each(function () {
-                $(this).attr("formaction", window.location.pathname).detach().appendTo('#actual-submit-div');
+                $(this)
+                    .attr("formaction", window.location.pathname)
+                    .detach()
+                    .appendTo('#actual-submit-div');
             }).on("click", function () {
-                var all_pks = [];
-                $("#fileupload").fileupload("option", "filesContainer")
-                    .children().not('.processing')
-                    .each(function(){
-                        all_pks.push($(this).attr("data-file-pk"));
-                    });
                 $("#div_id_hidden_answer")
                     .html('<div class="controls"/>')
                     .find("div")
                     .html('<input type="hidden" id="id_hidden_answer" name="hidden_answer" type="text"/>')
                     .find("input")
-                    .prop("value", get_all_pks());
+                    .prop("value", get_all_pks($("#fileupload")));
                 });
-
             new Clipboard('.btn-data-copy');
         });
 
-        function get_all_pks(){
-                var all_pks = [];
-                $("#fileupload").fileupload("option", "filesContainer")
-                    .children().not('.processing')
-                    .each(function(){
-                        all_pks.push($(this).attr("data-file-pk"));
-                    });
-                return all_pks;
-            }
-
+        function get_all_pks(that){
+            var all_pks = [];
+            $(that).fileupload("option", "filesContainer")
+                .children().not('.processing')
+                .each(function(){
+                    all_pks.push($(this).attr("data-file-pk"));
+                });
+            return all_pks;
+        }
 
         function disable_submit_button(bool) {
-            var submit_button = document.getElementById("submit-id-submit");
-            if (submit_button) {
-                submit_button.disabled = bool;
-            }
+            $(".relate-save-button").prop("disabled", bool);
         }
 
-        function hide_fileupload_control_button(bool) {
-            var buttonbar = $('.fileupload-buttonbar');
-            var start_button = $(buttonbar).find('.start');
-            var cancel_button = $(buttonbar).find('.cancel');
-            if (start_button) {
-                $(start_button).css("display", bool?"none":"");
-                start_button.disabled = bool;
+        function hide_fileupload_control_button(that, bool) {
+            $(that).find('.fileupload-buttonbar')
+                .find('.start, .cancel')
+                .css("display", bool?"none":"")
+                .prop("disabled", bool);
             }
-            if (cancel_button) {
-                $(cancel_button).css("display", bool?"none":"");
-                cancel_button.disabled = bool;
-            }
+
+        function toggle_fileupload_control_delete(that) {
+            var buttonBar = $(that).find('.fileupload-buttonbar'),
+                deletebutton = buttonBar.find('.delete'),
+                toggle = buttonBar.find(".toggle"),
+                disabledBool = !$(that).find(".toggle:checked").length,
+                displayBool = !$(that).fileupload("option", "filesContainer").children()
+                        .not('.processing').length;
+            $(deletebutton).css("display", displayBool?"none":"").prop("disabled", disabledBool);
+            $(toggle).css("display", displayBool?"none":"");
         }
 
-        function toggle_fileupload_control_delete() {
-            if ( window.location.pathname.indexOf("/grading/") !== -1){return}
-            if (!getWidthQueryMatch_sm_xs()) {
-                var bulkdeletebutton = $('.fileupload-buttonbar').find('.delete')[0];
-                var checkbox = $(".fileupload-buttonbar").find(".toggle")[0];
-                if (bulkdeletebutton) {
-                    var disabledBool = $("#fileupload").find(".toggle:checked").length === 0;
-                    var displayBool = $("#fileupload").fileupload("option", "filesContainer").children()
-                            .not('.processing').length === 0;
-                    $(bulkdeletebutton).css("display", displayBool?"none":"");
-                    $(checkbox).css("display", displayBool?"none":"");
-                    bulkdeletebutton.disabled = disabledBool;
-                }
-            }
-        }
-
-        function disable_fileupload_control_delete_checkbox(bool) {
-            if (!getWidthQueryMatch_sm_xs()) {
-                var $checkbox = $(".fileupload-buttonbar").find(".toggle");
-                if ($checkbox){
-                    if (bool) {
-                        $checkbox.checked = false;
-                    }
-                    $checkbox.disabled = bool;}
-            }
+        function disable_fileupload_control_delete_toggle(bool, that) {
+            $(that).find(".fileupload-buttonbar").find(".toggle").prop("disabled", bool);
         }
 
         function getWidthQueryMatch_md_sm_xs() {
             return window.matchMedia("(max-width: 1023px)").matches;
         }
 
-        function getWidthQueryMatch_sm_xs() {
-            return window.matchMedia("(max-width: 767px)").matches;
-        }
+{#        function getWidthQueryMatch_sm_xs() {#}
+{#            return window.matchMedia("(max-width: 767px)").matches;#}
+{#        }#}
 
         // close gallery using back button
         $('#blueimp-gallery')
@@ -391,8 +364,9 @@
                             }
                         })
                             .done(function (response) {
-                                $("#fileupload").fileupload('option', 'done')
-                                    .call($("#fileupload"),
+                                var that = $("#fileupload");
+                                that.fileupload('option', 'done')
+                                    .call(that,
                                         $.Event('done'),
                                         {
                                             result: {files:[response.file]},
@@ -403,7 +377,7 @@
                                 setTimeout(function () {
                                     $('#editPopup').modal('hide');
                                 }, 2000);
-                                $('#fileupload').trigger("file_edited");
+                                that.trigger("file_edited");
                             })
                             .fail(function (response) {
                                 var msg = gettext('Failed!') + " " + response.responseJSON.message;
@@ -458,7 +432,6 @@
 
             var sortableChangeCausal = true;
             function on_input_change(evt, data) {
-                console.log(evt);
                 if(!sortableChangeCausal){
                     input_changed = true;
                     return
@@ -494,7 +467,7 @@
                     },
                     stop: function(e, ui) {
                         if ( window.location.pathname.indexOf("/grading/") === -1)
-                        {on_input_change(e, get_all_pks());}
+                        {on_input_change(e, get_all_pks($("#fileupload")));}
                     }
                 });
 
@@ -504,7 +477,6 @@
                     .each(function(){
                         all_pks.push($(this).attr("data-file-pk"));
                     });
-
 
             $(":file").on("change", on_input_change);
             $(window).on('beforeunload',
@@ -522,19 +494,21 @@
                 })
                 .on("file_edited fileuploaddestroyed", on_input_change)
                 .on("fileuploadcompleted fileuploaddestroyed", function () {
-                    var n_exist_file = $('.template-download').length;
-                    disable_fileupload_control_delete_checkbox(n_exist_file === 0);
-                    toggle_fileupload_control_delete();
-                    if(!starting_pk){starting_pk = get_all_pks();}
-                    if (n_exist_file > 1) {
-                        $('.imageSortableHandle').removeClass("hidden");
+                    var downloadPkArray = get_all_pks($(this)),
+                        n_downloadPk = downloadPkArray.length;
+                    disable_fileupload_control_delete_toggle(!n_downloadPk, $(this));
+                    toggle_fileupload_control_delete($(this));
+                    if(!starting_pk){
+                        starting_pk = get_all_pks($("#fileupload"));}
+                    if (n_downloadPk > 1) {
+                        $(this).find('.imageSortableHandle').removeClass("hidden");
                     } else {
-                        $('.imageSortableHandle').addClass("hidden");
+                        $(this).find('.imageSortableHandle').addClass("hidden");
                     }
                 })
                 .on("fileuploadadd", function (e, data) {
                     disable_submit_button(true);
-                    hide_fileupload_control_button(false);
+                    hide_fileupload_control_button($(this), false);
                 })
                 .on("fileuploadadded", function (e, data) {
                     // hide_fileupload_control_button(false);
@@ -542,12 +516,13 @@
                 .on("fileuploadcompleted", function (e, data) {
                 })
                 .on("fileuploaddestroyed", function (e, data){
-                    toggle_fileupload_control_delete();
+                    toggle_fileupload_control_delete($(this));
                 })
                 .on("fileuploadfailed fileuploadcompleted fileuploaddestroyed", function () {
-                    var queue_length = $('.template-upload').length;
+                    var queue_length = $(this).find('.template-upload').length;
                     disable_submit_button(queue_length > 0);
-                    hide_fileupload_control_button(queue_length === 0);
+                    hide_fileupload_control_button($(this), !queue_length);
+                    toggle_fileupload_control_delete($(this));
                 })
                 .on('fileuploadprocessstart', function () {
                     // console.log('processstart');
@@ -556,9 +531,9 @@
                 });
 
             $('body').on('change', '#fileupload input[type="checkbox"]', function (e) {
-                // e.preventDefault();
-                // e.stopPropagation();
-                toggle_fileupload_control_delete();
+                e.preventDefault();
+                e.stopPropagation();
+{#                toggle_fileupload_control_delete($(this));#}
             });
 
             function before_submit(evt) {
