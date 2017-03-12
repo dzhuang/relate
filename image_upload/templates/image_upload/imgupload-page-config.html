@@ -111,51 +111,10 @@
     previewMaxHeight: {{ previewMaxHeight }},
     maxFileSize: {{ maxFileSize }},
     minFileSize: {{ minFileSize }},
-    existingloaded: function(e, data){
-    {#        console.log("loadexisting done!");#}
-    var that = this;
-    {#        console.log(this);#}
-    $(this).trigger('existingloaded', data);
-
-    {#        var that2 = $(this).data('blueimp-fileupload') ||#}
-    {#                            $(this).data('fileupload');#}
-    {##}
-    {#        numberOfFiles = that2.options.getNumberOfFiles();#}
-    {#        console.log(numberOfFiles);#}
-    },
-    {#    done: function(e,data){#}
-    {#        console.log(data);#}
-    {#        console.log(this);#}
-    {#        var that = this;#}
-    {#        var that2 = $(this).data('blueimp-fileupload') ||#}
-    {#                            $(this).data('fileupload');#}
-    {#        console.log(that2);#}
-    {#        console.log(that2.options.getNumberOfFiles());#}
-    {#        console.log(that2.options.filesContainer);#}
-    {#        console.log($(this).options.filesContainer);#}
-    {##}
-    {#        console.log($.blueimp.fileupload.prototype.options.getNumberOfFiles.call($(that)));#}
-    {#        console.log($(this).fileupload("options", "getNumberOfFiles").call());#}
-    {#        $.blueimp.fileupload.prototype.options.done.call(that, e, data);#}
-    {#    },#}
-    finished: function(e,data){
-    {#        console.log("finished");#}
-    {#        console.log(data);#}
-    {#        console.log(this);#}
-    var that = this;
-    var that2 = $(this).data('blueimp-fileupload') ||
-    $(this).data('fileupload');
-    {#        console.log(that2);#}
-    {#        console.log(that2.options.getNumberOfFiles());#}
-    {#        console.log(that2.options.filesContainer);#}
-    {#        console.log($(this).options.filesContainer);#}
-
-    {#        console.log($.blueimp.fileupload.prototype.options.getNumberOfFiles.call($(that)));#}
-    {#        console.log($(this).fileupload("options", "getNumberOfFiles").call());#}
-    {#        $.blueimp.fileupload.prototype.options.finished.call(that, e, data);#}
-    },
-
-    {#        $.blueimp.fileupload.prototype.options.done.call(that, e, data);#}
+{#    existingloaded: function(e, data){#}
+{#        var that = this;#}
+{#        $(this).trigger('existingloaded', data);#}
+{#    }#}
 {% endblock %}
 
 
@@ -172,19 +131,58 @@
         {# extra modal #}
         (function ($, window, document, undefined) {
             'use strict';
+
+            $.widget(
+                'blueimp.fileupload', $.blueimp.fileupload, {
+
+                    options: {
+                        uploadEditModalId: "upload-modal",
+                        uploadEditModalImgId: "upload-image",
+                        downloadEditModalId: "editPopup",
+                        downloadEditModalImgId: "image"
+                    },
+
+                    _initEventHandlers: function () {
+                        this._super();
+                        this._on(this.options.filesContainer, {
+                            'click .btn-edit-download-image': this._editDownloadHandler,
+                            'click .btn-upload-image': this._editUploadHandler
+                        });
+                    },
+
+                    _editDownloadHandler: function (e) {
+                        e.preventDefault();
+                        var button = $(e.currentTarget),
+                            template = button.closest('.template-download'),
+                            data = template.data('data');
+                        var $downloadImg = $("#" + this.options.downloadEditModalImgId);
+                        $downloadImg.attr('src', button.data("src"));
+                        var $downloadModal = $("#" + this.options.downloadEditModalId);
+                        $downloadModal.modal("show", $(button));
+                    },
+                    _editUploadHandler: function (e) {
+                        e.preventDefault();
+{#                        var button = $(e.currentTarget),#}
+{#                            template = button.closest('.template-upload'),#}
+{#                            data = template.data('data');#}
+{#                        // button.prop('disabled', true);#}
+{#                        if (data && data.submit) {#}
+{#                            data.submit();#}
+{#                        }#}
+                    }
+                }
+            );
+
+
             var $modal = $('#upload-modal');
-            var $targetImage = $('#upload-image');
+            var $localImage = $('#upload-image');
             $("#fileupload")
                 .bind('fileuploadadded', function (that, data) {
-                    console.log(that, data, data.context);
                     if (data.insertAfter && data.insertAfter.length) {
                         $(data.context).insertAfter(data.insertAfter);
                     } else if (data.insertBefore && data.insertBefore.length) {
                         $(data.context).insertBefore(data.insertBefore);
                     }
-
-                    console.log(data, data.context);
-
                     if (!data.files) {
                         return;
                     }
@@ -202,8 +200,8 @@
                     var $btn = $(data.context).find('.btn.edit');
                     $btn.prop('disabled', false);
                     $btn.on('click', function (e) {
-                        $targetImage.prop('src', loadImage.createObjectURL(orig));
-                        $targetImage.processCroppedCanvas = function (result) {
+                        $localImage.prop('src', loadImage.createObjectURL(orig));
+                        $localImage.processCroppedCanvas = function (result) {
                             $(data.context).find('.btn.cancel').click();
                             result.toBlob(function (blob) {
                                 blob.name = mod.name;
@@ -212,19 +210,16 @@
                                     insertAfter: $(data.context).prev(),
                                     insertBefore: $(data.context).next()
                                 });
-                            }, 'image/jpeg');
+                            }, orig.type);
                         };
                         $modal.modal('show');
                         return false;
                     });
-                })
-                .bind("fileuploaddone", function (that, data) {
-
                 });
 
             var aspectRatio = NaN;
             $modal.on('shown.bs.modal', function () {
-                $targetImage.cropper({
+                $localImage.cropper({
                     autoCropArea: 1.0,
                     movable: true,
                     zoomable: true,
@@ -233,14 +228,14 @@
                     aspectRatio: aspectRatio
                 });
             }).on('hidden.bs.modal', function () {
-                $targetImage.cropper('destroy');
+                $localImage.cropper('destroy');
             });
             $modal.find('.cropper-btns').on(
                 'click',
                 '[data-method]',
                 function () {
                     var data = $.extend({}, $(this).data()); // Clone
-                    var result = $targetImage.cropper(data.method, data.option,
+                    var result = $localImage.cropper(data.method, data.option,
                         data.secondOption);
 
                     switch (data.method) {
@@ -249,36 +244,38 @@
                             $(this).data('option', -data.option);
                             break;
                         case 'getCroppedCanvas':
-                            if (result && $targetImage.processCroppedCanvas) {
-                                $targetImage.processCroppedCanvas(result);
+                            if (result && $localImage.processCroppedCanvas) {
+                                $localImage.processCroppedCanvas(result);
                             }
                             break;
                     }
                 });
 
             {# extra modal #}
+            var $image = $('#image');
+            var $editTarget = $('#editPopup');
+            var $downloadEditTriggerButton;
 
-            window.addEventListener('DOMContentLoaded', function () {
-                'use strict';
+                var originModalHtml;
+                var contData, result;
 
-{#                var modal_html = $('#editPopup').html();#}
-                var $editTarget;
-                var $image, contData, result;
-
-{#                $('#editPopup').find('.cropper-btns').on("click", function(){#}
-{#                    console.log("clicked");#}
-{#                });#}
-
-
-                $('#editPopup').find('.cropper-btns').on(
+                $editTarget.find('.cropper-btns').on(
                     'click',
                     '[data-method]',
                     function () {
                         var data = $.extend({}, $(this).data()); // Clone
+                        if(data.method === "rotate"){
+                            var contData = $image.cropper('getContainerData');
+                            $image.cropper('setCropBoxData', {
+                                width: 2,
+                                height: 2,
+                                top: (contData.height / 2) - 1,
+                                left: (contData.width / 2) - 1
+                            });
+                        }
+
                         var result = $image.cropper(data.method, data.option,
                         data.secondOption);
-
-                        console.log(data.method);
 
                         switch (data.method) {
                             case 'scaleX':
@@ -286,49 +283,50 @@
                                 $(this).data('option', -data.option);
                                 break;
                             case 'reset':
-                                $(this).addClass("disabled");
+                                $(this).siblings(".btn-crp-submit")
+                                    .andSelf().addClass("disabled");
                                 break;
-                            case 'getCroppedCanvas':
-{#                                if (result && $image.processCroppedCanvas) {#}
-{#                                    $image.processCroppedCanvas(result);#}
-{#                                }#}
+                            case 'rotate':
                                 if(result){
-                                    $(this).addClass("hidden");
-                                    $('#editPopup')
-                                        .find('.cropper-container').addClass("hidden")
-                                        .find('.cropper-btns').find('.resume').removeClass("hidden");
-                                    $('#preview').removeClass("hidden").html(result);
-                                    $(this).addClass("hidden");
+                                    var canvData = $image.cropper('getCanvasData');
+                                    var newWidth = canvData.width * (contData.height / canvData.height);
+
+                                    if (newWidth >= contData.width) {
+                                        var newHeight = canvData.height * (contData.width / canvData.width);
+                                        var newCanvData = {
+                                            height: newHeight,
+                                            width: contData.width,
+                                            top: (contData.height - newHeight) / 2,
+                                            left: 0
+                                        };
+                                    } else {
+                                        newCanvData = {
+                                            height: contData.height,
+                                            width: newWidth,
+                                            top: 0,
+                                            left: (contData.width - newWidth) / 2
+                                        };
+                                    }
+                                    $image.cropper('setCanvasData', newCanvData);
+                                    $image.cropper('setCropBoxData', newCanvData);
+                                    $('.btn-crp-submit').removeClass("disabled");
+                                    $('.btn-crp-reset').removeClass("disabled");
                                 }
-                                break;
-                            case 'resume':
-                                $('#preview').addClass("hidden").html("");
-                                $('#editPopup')
-                                    .find('.cropper-container').removeClass("hidden")
-                                    .find('.cropper-btns').find('.preview').removeClass("hidden");
-                                $(this).addClass("hidden");
                                 break;
                     }
                 });
 
-                $('#editPopup')
+                $editTarget
                     .on('show.bs.modal', function (e) {
                         $(this).find('.modal-body').css({
                             width: 'auto', //probably not needed
                             height: 'auto', //probably not needed
                             'max-height': '100%'
                         });
-
-                        $editTarget = $(e.relatedTarget);
-
-                        var image_src = $editTarget.attr('data-src');
-
-                        $image = $("#image");
-                        $image.attr("src", image_src);
+                        $downloadEditTriggerButton = e.relatedTarget;
                     })
                     .on('shown.bs.modal', function () {
                         $(".relate-save-button").addClass('disabled');
-
                         $image.cropper({
                             checkOrientation: false,
                             autoCrop: true,
@@ -337,19 +335,24 @@
                             movable: false,
                             zoomable: false,
                             minContainerheight: $(window).height() * 0.8,
-                            ready: function (data) {
+                            ready: function (e) {
+                                console.log("ready");
+{#                                console.log(e);#}
+                                $editTarget.find(".rotate-cropper-btns .btn").removeClass("disabled");
                                 $image.cropper('setContainerData', contData);
-                                $(".btn-crp-rtt").removeClass("disabled");
                             },
-                            cropstart: function (data) {
+                            cropstart: function (e) {
+                            },
+                            crop: function (e) {
+                                result = e;
+                            },
+                            cropend: function (e) {
                                 $('.btn-crp-submit').removeClass("disabled");
                                 $('.btn-crp-reset').removeClass("disabled");
                             },
-                            crop: function (data) {
-                                result = data;
-                            },
-                            rotate: function (data) {
-
+                            rotate: function (e) {
+                                $('.btn-crp-submit').removeClass("disabled");
+                                $('.btn-crp-reset').removeClass("disabled");
                             }
                         });
 
@@ -365,76 +368,17 @@
                             }, 3000);
                         }
 
-                        function rtt(angle) {
-                            var canvData, newWidth, newHeight, newCanvData;
-                            contData = $image.cropper('getContainerData');
-                            $image.cropper('setCropBoxData', {
-                                width: 2,
-                                height: 2,
-                                top: (contData.height / 2) - 1,
-                                left: (contData.width / 2) - 1
-                            });
-
-                            $image.cropper('rotate', angle);
-
-                            canvData = $image.cropper('getCanvasData');
-                            newWidth = canvData.width * (contData.height / canvData.height);
-
-                            if (newWidth >= contData.width) {
-                                newHeight = canvData.height * (contData.width / canvData.width);
-                                newCanvData = {
-                                    height: newHeight,
-                                    width: contData.width,
-                                    top: (contData.height - newHeight) / 2,
-                                    left: 0
-                                };
-                            } else {
-                                newCanvData = {
-                                    height: contData.height,
-                                    width: newWidth,
-                                    top: 0,
-                                    left: (contData.width - newWidth) / 2
-                                };
-                            }
-
-                            $image.cropper('setCanvasData', newCanvData);
-                            $image.cropper('setCropBoxData', newCanvData);
-
-                            $('.btn-crp-submit').removeClass("disabled");
-                            $('.btn-crp-reset').removeClass("disabled");
-                        }
-
-                        $(".btn-crp-rtt").click(function () {
-                            rtt($(this).data("option"));
-                        });
-
-{#                        $('.btn-crp-preview').click(function () {#}
-{#                            var toggle = $('.cropper-container').hasClass("hidden"),#}
-{#                                result = $image.cropper('getCroppedCanvas');#}
-{#                            if (!toggle) {#}
-{#                                $('.cropper-container').addClass("hidden");#}
-{#                                $('#preview').removeClass("hidden").html(result);#}
-{#                                $(this).html("<i class='fa fa-pencil'></i> <span>" + gettext('Edit') + "</span>");#}
-{#                                $(".btn-crp-rtt").addClass("hidden");#}
-{#                                $(".btn-crp-reset").addClass("hidden");#}
-{#                            } else {#}
-{#                                $('.cropper-container').removeClass("hidden");#}
-{#                                $('#preview').addClass("hidden").html("");#}
-{#                                $(this).html("<i class='fa fa-eye'></i> <span>" + gettext('Preview') + "</span>");#}
-{#                                $(".btn-crp-rtt").removeClass("hidden");#}
-{#                                $(".btn-crp-reset").removeClass("hidden");#}
-{#                            }#}
-{#                        });#}
-
                         $('.btn-crp-submit').click(function () {
-                            $(this).addClass("disabled");
+                            var $button = $(this);
+                            $button.addClass("disabled");
+                            console.log($button.action);
                             $(".modal-footer > button").addClass("disabled");
                             var jqxhr = $.ajax({
                                 method: "POST",
-                                url: $editTarget.attr("data-action"),
+                                url: $downloadEditTriggerButton.data("action"),
                                 data: JSON.stringify($image.cropper("getData")),
-                                beforeSend: function (xhr, settings) {
-                                    xhr.setRequestHeader("X-CSRFToken", $editTarget.attr("data-data"));
+                                beforeSend: function(xhr, settings) {
+                                    xhr.setRequestHeader("X-CSRFToken", $downloadEditTriggerButton.data("data"));
                                 }
                             })
                                 .done(function (response) {
@@ -444,12 +388,12 @@
                                             $.Event('done'),
                                             {
                                                 result: {files: [response.file]},
-                                                context: $editTarget.closest(".template-download")
+                                                context: $downloadEditTriggerButton.closest(".template-download")
                                             });
 
                                     crpMsg(true, gettext('Done!'));
                                     setTimeout(function () {
-                                        $('#editPopup').modal('hide');
+                                        $editTarget.modal('hide');
                                     }, 2000);
                                     that.trigger("file_edited");
                                 })
@@ -457,24 +401,27 @@
                                     var msg = gettext('Failed!') + " " + response.responseJSON.message;
                                     crpMsg(false, msg);
                                     setTimeout(function () {
-                                        $('#editPopup').modal('hide');
+                                        $editTarget.modal('hide');
                                     }, 2000);
                                 });
                             return false;
                         });
 
-{#                        $('.btn-crp-reset').click(function () {#}
-{#                            $image.cropper('reset');#}
-{#                            $('.btn-crp-submit').addClass("disabled");#}
-{#                            $('.btn-crp-reset').addClass("disabled");#}
-{#                        });#}
-
                     })
                     .on('hidden.bs.modal', function () {
                         $(".relate-save-button").removeClass('disabled');
+
                         $image.cropper('destroy');
-{#                        $(this).html(modal_html);#}
-                        $('#preview').addClass("hidden").html("");
+
+{#                        http://stackoverflow.com/a/18459248/3437454#}
+                        console.log($(this));
+                        $(this)
+                            .find('.cropper-btns').addClass("disabled")
+                            .end()
+                            .find('.btn-crp-submit').addClass("disabled")
+                            .end()
+                            .find('.btn-crp-reset').addClass("disabled")
+                            .end();
                     })
                     .on('show.bs.modal', function (e) {
                         // Enable back button to close modal and blueimp gallery
@@ -496,7 +443,7 @@
                         }
                     }
                 });
-            });
+{#            });#}
         })(jQuery, window, document);
 
         $(document).ready(function () {
@@ -714,7 +661,6 @@
                 cursor: 'crosshair'
             });
         }
-        ;
 
         $(document).ready(function () {
             var pre = $('.latexpage-error pre'),
@@ -730,7 +676,7 @@
         });
 
         function printtime(s) {
-            console.log(s + new Date());
+{#            console.log(s + new Date());#}
         }
 
     </script>

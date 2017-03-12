@@ -212,7 +212,7 @@
                                 $(this).removeClass('fileupload-processing');
                                 $(".fileupload-loading").addClass("hidden");
                             }).done(function (result) {
-                                console.log(this, $(this));
+{#                                console.log(this, $(this));#}
                                 $(this).fileupload('option', 'done')
                                     .call(this, $.Event('done'), {result: result});
                             });
