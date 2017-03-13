@@ -131,14 +131,12 @@
         (function ($, window, document, undefined) {
             'use strict';
 
-            var originalAdd = $.blueimp.fileupload.prototype.options.add;
-
             $.widget(
                 'blueimp.fileupload', $.blueimp.fileupload, {
 
                     options: {
-                        uploadEditModalId: "#upload-modal",
-                        uploadEditModalImgId: "#upload-image",
+                        uploadEditModalId: "#editPopup",
+                        uploadEditModalImgId: "#image",
                         downloadEditModalSelector: "#editPopup",
                         downloadEditModalImgSelector: "#image",
                         cropResultMessageBoxSelector: "#crp-result",
@@ -166,8 +164,10 @@
                                 }
                             });
                             if (!orig) {return;}
-                            var $btn = $(data.context).find('.btn.edit');
+                            var $btn = $(data.context).find('.btn-edit-upload-image');
                             $btn.prop('disabled', false);
+                            var template = $btn.closest('.template-upload,.template-download');
+                            console.log(template);
                             $btn.on('click', function () {
                                 $localImage.prop('src', loadImage.createObjectURL(orig));
                                 $localImage.processCroppedCanvas = function (result) {
@@ -182,7 +182,7 @@
                                             });
                                     }, orig.type);
                                 };
-                                $modal.modal('show', $localImage);
+                                $modal.modal('show', [$localImage, template]);
                                 return false;
                             });
                           }
@@ -192,7 +192,7 @@
                         this._super();
                         this._on(this.options.filesContainer, {
                             'click .btn-edit-download-image': this._editDownloadHandler,
-                            'click .btn-upload-image': this._editUploadHandler
+                            'click .btn-edit-upload-image': this._editUploadHandler
                         });
                     },
 
@@ -203,9 +203,7 @@
                             options = this.options,
                             $fileupload = this.element;
 
-                        var template = $button.closest(".template-download", ".template-upload");
-                        console.log(template);
-
+                        var template = $button.closest('.template-upload,.template-download');
                         var $downloadModal = $(options.downloadEditModalSelector);
 
                         var $downloadImg = $(options.downloadEditModalImgSelector);
@@ -246,11 +244,39 @@
                             return false;
                         };
 
-                        $downloadModal.modal("show", $downloadImg);
+                        $downloadImg.rotateCanvas = function (){
+                            var contData = $downloadImg.cropper('getContainerData');
+                            var canvData = $downloadImg.cropper('getCanvasData');
+                            var newWidth = canvData.width * (contData.height / canvData.height);
+
+                            if (newWidth >= contData.width) {
+                                var newHeight = canvData.height * (contData.width / canvData.width);
+                                var newCanvData = {
+                                    height: newHeight,
+                                    width: contData.width,
+                                    top: (contData.height - newHeight) / 2,
+                                    left: 0
+                                };
+                            } else {
+                                newCanvData = {
+                                    height: contData.height,
+                                    width: newWidth,
+                                    top: 0,
+                                    left: (contData.width - newWidth) / 2
+                                };
+                            }
+                            $downloadImg.cropper('setCanvasData', newCanvData);
+                            $downloadImg.cropper('setCropBoxData', newCanvData);
+                            $('.btn-crp-submit').removeClass("disabled");
+                            $('.btn-crp-reset').removeClass("disabled");
+                        };
+
+                        $downloadModal.modal('show', [$downloadImg, template]);
                     },
 
                     _editUploadHandler: function (e) {
                         e.preventDefault();
+                        console.log("clicked");
                         {#                        var button = $(e.currentTarget),#}
                         {#                            template = button.closest('.template-upload'),#}
                         {#                            data = template.data('data');#}
@@ -278,7 +304,7 @@
                     movable: true,
                     zoomable: true,
                     rotatable: true,
-                    scalable: true,
+                    scalable: true
                 });
             }).on('hidden.bs.modal', function () {
                 $localImage.cropper('destroy');
@@ -288,6 +314,7 @@
                 '[data-method]',
                 function () {
                     var data = $.extend({}, $(this).data()); // Clone
+                    console.log(data.method,"here");
                     var result = $localImage.cropper(data.method, data.option,
                         data.secondOption);
 
@@ -305,12 +332,18 @@
                 });
 
             var $image;
+            var editContext;
             var $editTarget = $('#editPopup');
-            var contData, result;
+{#            var result;#}
 
             $editTarget
                 .on('show.bs.modal', function (e) {
-                    $image = e.relatedTarget;
+                    $image = e.relatedTarget[0];
+                    var editContextRow = e.relatedTarget[1][0];
+                    console.log($(editContextRow).element);
+                    var inDownloadContext = $(editContextRow).attr("class").indexOf("template-download") !== -1;
+                    editContext = inDownloadContext?"download":"upload";
+                    console.log(editContext);
                     $(this).find('.modal-body').css({
                         width: 'auto', //probably not needed
                         height: 'auto', //probably not needed
@@ -330,86 +363,19 @@
                         ready: function (e) {
                             console.log("ready");
                             $editTarget.find(".rotate-cropper-btns .btn").removeClass("disabled");
-                            $image.cropper('setContainerData', contData);
+{#                            $image.cropper('setContainerData', contData);#}
                         },
                         cropstart: function (e) {
                         },
                         crop: function (e) {
-                            result = e;
+{#                            result = e;#}
                         },
                         cropend: function (e) {
                             $('.btn-crp-submit').removeClass("disabled");
                             $('.btn-crp-reset').removeClass("disabled");
                         },
-                        rotate: function (e) {
-                            $('.btn-crp-submit').removeClass("disabled");
-                            $('.btn-crp-reset').removeClass("disabled");
-                        }
                     });
 
-            $editTarget.find('.cropper-btns').on(
-                'click',
-                '[data-method]',
-                function () {
-                    var data = $.extend({}, $(this).data()); // Clone
-                    if(data.method === "rotate"){
-                        var contData = $image.cropper('getContainerData');
-                        $image.cropper('setCropBoxData', {
-                            width: 2,
-                            height: 2,
-                            top: (contData.height / 2) - 1,
-                            left: (contData.width / 2) - 1
-                        });
-                    }
-
-                    result = $image.cropper(data.method, data.option,
-                    data.secondOption);
-
-                    switch (data.method) {
-                        case 'scaleX':
-                        case 'scaleY':
-                            $(this).data('option', -data.option);
-                            break;
-                        case 'reset':
-                            $(this).siblings(".btn-crp-submit")
-                            .andSelf().addClass("disabled");
-                            break;
-                        case 'getData':
-                            console.log($image);
-                            console.log(result,$image.submitData);
-                            if (result && $image.submitData) {
-                                $image.submitData(result);
-                            }
-                            break;
-                        case 'rotate':
-                            if(result){
-                                var canvData = $image.cropper('getCanvasData');
-                                var newWidth = canvData.width * (contData.height / canvData.height);
-
-                                if (newWidth >= contData.width) {
-                                    var newHeight = canvData.height * (contData.width / canvData.width);
-                                    var newCanvData = {
-                                        height: newHeight,
-                                        width: contData.width,
-                                        top: (contData.height - newHeight) / 2,
-                                        left: 0
-                                    };
-                                } else {
-                                    newCanvData = {
-                                        height: contData.height,
-                                        width: newWidth,
-                                        top: 0,
-                                        left: (contData.width - newWidth) / 2
-                                    };
-                                }
-                                $image.cropper('setCanvasData', newCanvData);
-                                $image.cropper('setCropBoxData', newCanvData);
-                                $('.btn-crp-submit').removeClass("disabled");
-                                $('.btn-crp-reset').removeClass("disabled");
-                            }
-                            break;
-                    }
-                });
 
                     })
                     .on('hidden.bs.modal', function () {
@@ -417,11 +383,7 @@
 
                         $image.cropper('destroy');
                         $(this)
-                            .find('.cropper-btns').addClass("disabled")
-                            .end()
-                            .find('.btn-crp-submit').addClass("disabled")
-                            .end()
-                            .find('.btn-crp-reset').addClass("disabled")
+                            .find('.cropper-btns .btn').addClass("disabled")
                             .end();
                     })
                     .on('show.bs.modal', function (e) {
@@ -432,6 +394,53 @@
                     .on('hide.bs.modal', function (e) {
                         if (location.hash === '#edit' && getWidthQueryMatch_md_sm_xs()) window.history.back();
                     });
+
+            $editTarget.find('.cropper-btns').on(
+                        'click',
+                        '[data-method]',
+                        function () {
+                            var data = $.extend({}, $(this).data()); // Clone
+                            if(data.method === "rotate"){
+                                var contData = $image.cropper('getContainerData');
+                                $image.cropper('setCropBoxData', {
+                                    width: 2,
+                                    height: 2,
+                                    top: (contData.height / 2) - 1,
+                                    left: (contData.width / 2) - 1
+                                });
+                                contData = null;
+                            }
+                            else if(data.method === "commit"){
+                                if(editContext == "download")
+                                {data.method = "getData";}
+                                else{data.method = "getCroppedCanvas"}
+                            }
+
+                            var result = $image.cropper(data.method, data.option,
+                            data.secondOption);
+
+                            switch (data.method) {
+                                case 'scaleX':
+                                case 'scaleY':
+                                    $(this).data('option', -data.option);
+                                    break;
+                                case 'reset':
+                                    $(this).siblings(".btn-crp-submit")
+                                    .andSelf().addClass("disabled");
+                                    break;
+                                case 'getData':
+                                    if (result && $image.submitData) {
+                                        $image.submitData(result);
+                                    }
+                                    break;
+                                case 'rotate':
+                                    if(result && $image.rotateCanvas){
+                                        $image.rotateCanvas();
+                                    }
+                                    break;
+                            }
+                        });
+
             });
 
         $(document).ready(function () {
