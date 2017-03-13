@@ -471,7 +471,8 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
     try:
         new_instance.save()
     except (OSError, IOError) as e:
-        raise CropImageError(string_concat(
+        raise BadRequest(string_concat(
+            _("Error"), ": ",
             _('There are errors, please refresh the page or try again later'),
             "--%s:%s." % (type(e).__name__, str(e))
         ))
@@ -481,13 +482,13 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
     try:
         response_file = serialize(request, new_instance, 'image')
     except IOError:
-        CropImageError(string_concat(
+        raise BadRequest(string_concat(
             _("Error"), ": ",
             _("Sorry, the image is corrupted during "
               "handling. That should be solved by "
               "a re-uploading."))
         )
-    data = {'file': response_file}
+    data = {'message':'Done!', 'file': response_file}
     return data
 
 # }}}

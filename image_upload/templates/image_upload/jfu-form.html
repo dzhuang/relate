@@ -226,7 +226,8 @@
                             </button>
                         {% endif %}
                         <button type="button"
-                                class="btn btn-success disabled btn-crp-submit">
+                                class="btn btn-success disabled btn-crp-submit"
+                                data-method="getData">
                             <i class="fa fa-check"></i>
                             <span>{% trans "Submit" %}</span></button>
                         <button type="button"
@@ -234,13 +235,13 @@
                                 data-method="reset">
                             <i class="fa fa-refresh"></i>
                             <span>{% trans "Reset" %}</span></button>
-                        <div class="btn-group">
-                            <button type="button" class="btn btn-danger"
-                                    data-dismiss="modal">
-                                <i class="fa fa-remove"></i>
-                                <span>{% trans "Close" %}</span>
-                            </button>
-                        </div>
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-danger"
+                                data-dismiss="modal">
+                            <i class="fa fa-remove"></i>
+                            <span>{% trans "Close" %}</span>
+                        </button>
                     </div>
                 </div>
             </div>
