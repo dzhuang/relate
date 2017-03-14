@@ -18,7 +18,7 @@
                     if (data.replaceChild && data.replaceChild.length) {
                         var $modal = $(options.EditModalSelector);
                         $(data.context).replaceAll(data.replaceChild);
-                        $modal.modal('hide');
+                        that._trigger("replaced", e, data);
                     }
                     if (!data.files) {
                         return;
@@ -75,6 +75,7 @@
                     $editImg.prop('src', loadImage.createObjectURL(orig));
                     $editImg.processCroppedCanvas = function (result) {
                         var messageBox = $(options.cropResultMessageBoxSelector);
+                        $editModal.modal('hide');
                         $fileupload.find(options.cropControlButtonDivSelector + " .btn").prop("disabled", true);
                         result.toBlob(function (blob) {
                             blob.name = mod.name;
@@ -129,8 +130,9 @@
                 }
 
                 $editImg.rotateCanvas = function () {
-                    var contData = $editImg.cropper('getContainerData');
-                    var canvData = $editImg.cropper('getCanvasData');
+                    var $this = $(this);
+                    var contData = $this.cropper('getContainerData');
+                    var canvData = $this.cropper('getCanvasData');
                     var newWidth = canvData.width * (contData.height / canvData.height);
 
                     if (newWidth >= contData.width) {
@@ -149,8 +151,8 @@
                             left: (contData.width - newWidth) / 2
                         };
                     }
-                    $editImg.cropper('setCanvasData', newCanvData);
-                    $editImg.cropper('setCropBoxData', newCanvData);
+                    $this.cropper('setCanvasData', newCanvData);
+                    $this.cropper('setCropBoxData', newCanvData);
                     $fileupload.find(options.cropControlButtonDivSelector + " .btn").prop("disabled", false);
                 };
 
@@ -419,6 +421,9 @@ function activate_change_listening() {
             var queue_length = $(this).find('.template-upload').length;
             disable_submit_button(queue_length > 0);
             hide_fileupload_control_button($(this), !queue_length);
+            hide_fileupload_sortable_handle($(this));
+        })
+        .on("fileuploadreplaced", function (e, data) {
             hide_fileupload_sortable_handle($(this));
         });
 

@@ -12,7 +12,7 @@
     {# CSS to style the file input field as button and adjust the Bootstrap progress bars #}
     {#  CUSTOMIZED VERSION  #}
     <link rel="stylesheet"
-          href="{% static "css/jquery.fileupload-ui-learningwhat.css" %}?rev=2.3.3">
+          href="{% static "css/jquery.fileupload-ui-learningwhat.css" %}?rev=2.4.3">
     {# CSS adjustments for browsers with JavaScript disabled #}
     <noscript>
         <link rel="stylesheet"
@@ -28,7 +28,7 @@
     {% if not IN_GRADE_PAGE %}
         {{ block.super }}
         <link rel="stylesheet"
-              href="{% static "css/jquery.fileupload-ui-learningwhat.css" %}?rev=2.3.3">
+              href="{% static "css/jquery.fileupload-ui-learningwhat.css" %}?rev=2.4.3">
     {% else %}
         <style>
             @media (min-width: 768px) {
@@ -57,7 +57,7 @@
         {#{{ block.super }}#}
 
     {% endif %}
-    <link rel="stylesheet" href="{% static "css/imgupload-page.css" %}?rev=2.3.12">
+    <link rel="stylesheet" href="{% static "css/imgupload-page.css" %}?rev=2.4.0">
     <link rel="stylesheet"
           href="{% static "cropper/dist/cropper.min.css" %}?rev=3.0.0-beta ">
     <noscript>
@@ -117,7 +117,7 @@
     <script src="{% static "clipboard/dist/clipboard.min.js" %} "></script>
     <script src="{% url 'javascript-catalog-image-upload' %}?rev=1.0.1"></script>
     <script src="{% static "cropper/dist/cropper.min.js" %}?rev=3.0.0-beta "></script>
-    <script src="{% static "js/imgupload-page.min.js" %}?rev=2.3.13 "></script>
+    <script src="{% static "js/imgupload-page.js" %}?rev=2.4.0 "></script>
 
 {#    <script>#}
 {#        // deprecated #}

@@ -24,6 +24,7 @@
   float: right;
   display: none;
 }
+/*.files .template-download .preview.processing,*/
 .fileupload-processing .fileupload-process,
 .files .processing .preview {
   display: block;
@@ -63,7 +64,6 @@
       padding-right: 0;
   }
 }
-
 
 @media (max-width: 767px) {
     #fileupload .btn > span {
