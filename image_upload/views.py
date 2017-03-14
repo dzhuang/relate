@@ -382,23 +382,23 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
     request = pctx.request
 
     if not (may_change_answer or course_staff_status):
-        raise CropImageError(_('Not allowd to modify answer.'))
+        raise CropImageError(ugettext('Not allowd to modify answer.'))
     try:
         crop_instance = FlowPageImage.objects.get(pk=pk)
     except FlowPageImage.DoesNotExist:
-        raise CropImageError(_('Please upload the image first.'))
+        raise CropImageError(ugettext('Please upload the image first.'))
 
     image_orig_path = crop_instance.image.path
     if not image_orig_path:
         raise CropImageError(
-            string_concat(_('File not found.'),
-                          _('Please upload the image first.')))
+            string_concat(ugettext('File not found.'),
+                          ugettext('Please upload the image first.')))
 
     if not request.POST:
         return {}
 
     if not request.is_ajax():
-        raise CropImageError(_('Only Ajax Post is allowed.'))
+        raise CropImageError(ugettext('Only Ajax Post is allowed.'))
 
     json_data = json.loads(request.body.decode("utf-8"))
 
@@ -410,14 +410,14 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
         rotate = int(float(json_data['rotate']))
     except KeyError:
         raise CropImageError(
-            _('There are errors, please refresh the page '
+            ugettext('There are errors, please refresh the page '
               'or try again later'))
 
     try:
         new_image = Image.open(image_orig_path)
     except IOError:
         raise CropImageError(
-            _('There are errors，please re-upload the image'))
+            ugettext('There are errors，please re-upload the image'))
     image_format = new_image.format
 
     if rotate != 0:
@@ -472,8 +472,8 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
         new_instance.save()
     except (OSError, IOError) as e:
         raise BadRequest(string_concat(
-            _("Error"), ": ",
-            _('There are errors, please refresh the page or try again later'),
+            ugettext("Error"), ": ",
+            ugettext('There are errors, please refresh the page or try again later'),
             "--%s:%s." % (type(e).__name__, str(e))
         ))
     finally:
@@ -483,12 +483,12 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
         response_file = serialize(request, new_instance, 'image')
     except IOError:
         raise BadRequest(string_concat(
-            _("Error"), ": ",
-            _("Sorry, the image is corrupted during "
+            ugettext("Error"), ": ",
+            ugettext("Sorry, the image is corrupted during "
               "handling. That should be solved by "
               "a re-uploading."))
         )
-    data = {'message':'Done!', 'file': response_file}
+    data = {'message':ugettext('Done!'), 'file': response_file}
     return data
 
 # }}}
