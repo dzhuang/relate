@@ -9,7 +9,7 @@
 {% endblock %}
 
 {% block JS_UPLOAD_TEMPLATE_CONTROLS %}
-    <td>
+    <td  class="hidden-sm hidden-xs">
         {{ JQ_OPEN }} if (!i) { {{ JQ_CLOSE }}
         <button class="btn btn-info edit" disabled type="button">
             <i class="glyphicon glyphicon-edit"></i>
@@ -20,10 +20,34 @@
     {{ block.super }}
 {% endblock %}
 
+{% block JS_UPLOAD_TEMPLATE_EXTRA_COLUMN %}
+    <td  class="hidden-lg hidden-md col-sm-1 col-xs-1">
+        {{ JQ_OPEN }} if (!i) { {{ JQ_CLOSE }}
+        <button class="btn btn-info edit" disabled type="button">
+            <i class="glyphicon glyphicon-edit"></i>
+            <span>{% trans "Edit" %}</span>
+        </button>
+        {{ JQ_OPEN }} } {{ JQ_CLOSE }}
+    </td>
+    {% if IS_COURSE_STAFF or MAY_CHANGE_ANSWER %}
+        <td class="imageSortableHandle hidden
+        {% if not IN_GRADE_PAGE %}
+            col-lg-2 col-sm-1 col-xs-1
+         {% endif %}"
+             style="vertical-align: middle;"
+            >
+                <span title="{% trans 'Drag to order' %}">
+                    <i class="fa fa-sort fa-3" aria-hidden="true"></i>
+                </span>
+        </td>
+    {% endif %}
+{% endblock %}{# //JS_UPLOAD_TEMPLATE_EXTRA_COLUMN #}
+
 {% block JS_DOWNLOAD_TEMPLATE_PREVIEW %}
     <td
             {% if not IN_GRADE_PAGE %}
                 class="col-lg-2 col-sm-3 col-xs-3"
+                style="width:29.166666655%"
             {% endif %}
     >
         <span class="preview processing">
@@ -56,7 +80,7 @@
 
 {% block JS_DOWNLOAD_TEMPLATE_EXTRA_INFO_COLUMN %}
     {% if SHOW_CREATION_TIME and not IN_GRADE_PAGE %}
-        <td class="col-lg-3 hidden-sm hidden-xs td-dl grading-hidden">
+        <td class="col-lg-3 hidden-sm hidden-xs">
             <span
                     class="timestr"
                     id="filetime{{ JQ_OPEN }}=file.pk{{ JQ_CLOSE }}"
@@ -78,7 +102,8 @@
 {% block JS_DOWNLOAD_TEMPLATE_CONTROL_BUTTONS %}
     <td
             {% if not IN_GRADE_PAGE %}
-                class="col-lg-3 col-sm-4 col-xs-4"
+                class="col-lg-3 col-sm-3 col-xs-"
+                style="width:29.166666655%"
             {% else %}
             {% endif %}
     >

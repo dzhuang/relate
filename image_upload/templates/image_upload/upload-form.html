@@ -153,6 +153,9 @@
                         </td>
                     {% endblock %}{# //JS_UPLOAD_TEMPLATE_CONTROLS #}
 
+                    {% block JS_UPLOAD_TEMPLATE_EXTRA_COLUMN %}
+                    {% endblock %}{# //JS_UPLOAD_TEMPLATE_EXTRA_COLUMN #}
+
                 </tr>
 
             {{ JQ_OPEN }} } {{ JQ_CLOSE }}
@@ -243,7 +246,7 @@
                     {% endblock %}{# //JS_DOWNLOAD_TEMPLATE_FSIZE #}
 
                     {% block JS_DOWNLOAD_TEMPLATE_CONTROL_BUTTONS %}
-                        <td class="col-lg-3 col-sm-4 col-xs-4">
+                        <td class="col-lg-3 col-sm-3 col-xs-3">
                         {% block JS_DOWNLOAD_TEMPLATE_CONTROL_BUTTONS_EXTRA %}
                         {% endblock %}{# //JS_DOWNLOAD_TEMPLATE_CONTROL_BUTTONS_EXTRA #}
                         {% block JS_DOWNLOAD_TEMPLATE_CONTROL_BUTTONS_DELETE %}

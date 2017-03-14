@@ -56,6 +56,12 @@
   .files canvas {
     max-width: 100%;
   }
+  #fileupload tbody .template-download td:nth-child(6),
+  #fileupload tbody .template-upload td:nth-child(5),
+  #fileupload tbody .template-upload td:nth-child(6){
+      padding-left: 0;
+      padding-right: 0;
+  }
 }
 
 
