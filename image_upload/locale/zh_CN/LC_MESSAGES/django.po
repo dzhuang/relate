@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-03-15 01:14+0800\n"
+"POT-Creation-Date: 2017-03-15 22:37+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -387,7 +387,6 @@ msgstr "发生错误，请刷新页面或稍后重试"
 msgid "There are errors，please re-upload the image"
 msgstr "发生错误，请重新上传图片"
 
-#, fuzzy
 msgid "Done!"
 msgstr "完成!"
 

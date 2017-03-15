@@ -1,100 +1,99 @@
 /* https://jsfiddle.net/yoshi6jp/BVV5T/ */
 
 .modal-dialog {
-  position: relative;
-  width: auto;
-  max-width: 600px;
-  margin: 10px;
+    position: relative;
+    width: auto;
+    max-width: 600px;
+    margin: 10px;
 }
+
 .modal-sm {
-  max-width: 300px;
+    max-width: 300px;
 }
+
 .modal-lg {
-  max-width: 900px;
+    max-width: 900px;
 }
+
 @media (min-width: 768px) {
-  .modal-dialog {
-    margin: 30px auto;
-  }
+    .modal-dialog {
+        margin: 30px auto;
+    }
 }
+
 @media (min-width: 320px) {
-  .modal-sm {
-    margin-right: auto;
-    margin-left: auto;
-  }
+    .modal-sm {
+        margin-right: auto;
+        margin-left: auto;
+    }
 }
+
 @media (min-width: 620px) {
-  .modal-dialog {
-    margin-right: auto;
-    margin-left: auto;
-  }
-  .modal-lg {
-    margin-right: 10px;
-    margin-left: 10px;
-  }
+    .modal-dialog {
+        margin-right: auto;
+        margin-left: auto;
+    }
+
+    .modal-lg {
+        margin-right: 10px;
+        margin-left: 10px;
+    }
 }
+
 @media (min-width: 920px) {
-  .modal-lg {
-    margin-right: auto;
-    margin-left: auto;
-  }
+    .modal-lg {
+        margin-right: auto;
+        margin-left: auto;
+    }
 }
 
 /*---------------------------*/
 
-.img-container,
-.preview_container {
+#editModal .modal-lg .img-container,
+#editModal .preview_container {
     width: 100%;
-    max-height: 500px;
+    max-height: 600px;
     margin: 0;
 }
 
-.img-container img,
-.preview_container canvas {
+#editModal .img-container img,
+#editModal .preview_container canvas {
     max-width: 100%;
     /*max-height: 100%;*/
 }
 
-.modal-body {
+#editModal .modal-lg .modal-body {
     position: relative;
     overflow-y: auto;
-    max-height: 500px;
+    max-height: 630px;
     padding: 15px;
 }
 
 @media screen and (max-width: 767px) {
-    h1, h2, h3, p {
-        overflow-wrap: break-word;
-    }
-
-    .modal-footer > button > span{
+    #editModal .modal-footer > button > span {
         display: none;
     }
 
-    div.progress-extended {
-        display: none;
-    }
-
-    #editPopup {
+    #editModal {
         max-width: 100vw;
-        max-height: 90vh;
+        max-height: 100vh;
     }
 
     .relate-interaction-container {
         padding: 0;
     }
 
-    .img-container,
-    .preview_container {
+    #editModal .img-container,
+    #editModal .preview_container {
         width: 100%;
-        max-height: 70vh;
+        height: 100%;
         margin: 0;
     }
 
-    .modal-body {
+    #editModal .modal-body {
         position: relative;
         overflow-y: auto;
-        max-height: 90vh;
+        height: 95vw;
         padding: 15px;
     }
 
@@ -103,6 +102,16 @@
     }
 }
 
+@media screen and (max-width: 767px) and (orientation: landscape) {
+
+    #editModal .modal-body {
+        position: relative;
+        overflow-y: auto;
+        height: calc(95vh - 65px);
+        padding: 15px;
+    }
+
+}
 
 .latexpage-error pre {
     background-color: #eee;

@@ -190,9 +190,10 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <div id="crp-result"></div>
-                <div class="btns">
-                    <div class="btn-group cropper-btns">
+                <div class="row">
+                    <div class="col-lg-2 col-md-2 col-sm-3 col-xs-3" id="crop-message" style="padding-top: 6px;padding-bottom: 6px;margin-bottom: 0; margin-left: 20px"></div>
+                    <div class="col-lg-8 col-md-10 col-sm-9 col-xs-9" style="float: right">
+                        <div class="btn-group cropper-btns">
                         <div class="btn-group cropper-rotate-btns">
                             <button type="button" class="btn btn-primary" disabled
                                     data-method="rotate" data-option="-90">
@@ -232,12 +233,13 @@
                             <span>{% trans "Reset" %}</span></button>
                         </div>
                     </div>
-                    <div class="btn-group">
-                        <button type="button" class="btn btn-danger"
-                                data-dismiss="modal">
-                            <i class="fa fa-remove"></i>
-                            <span>{% trans "Close" %}</span>
-                        </button>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-danger"
+                                    data-dismiss="modal">
+                                <i class="fa fa-remove"></i>
+                                <span>{% trans "Close" %}</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

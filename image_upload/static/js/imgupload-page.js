@@ -1,3 +1,10 @@
+var EditModalSelector = "#editModal",
+    EditModalImgSelector = "#image",
+    cropResultMessageBoxSelector = "#crop-message",
+    cropControlButtonDivSelector = ".cropper-btns",
+    cropControlStatusBtnSelector = '.cropper-status-btns .btn';
+    cropControlRotateBtnSelector = '.cropper-rotate-btns .btn';
+
 (function ($, window, document, undefined) {
     'use strict';
 
@@ -5,10 +12,10 @@
         'blueimp.fileupload', $.blueimp.fileupload, {
 
             options: {
-                EditModalSelector: "#editModal",
-                EditModalImgSelector: "#image",
-                cropResultMessageBoxSelector: "#crp-result",
-                cropControlButtonDivSelector: ".cropper-btns",
+                EditModalSelector: EditModalSelector,
+                EditModalImgSelector: EditModalImgSelector,
+                cropResultMessageBoxSelector: cropResultMessageBoxSelector,
+                cropControlButtonDivSelector: cropControlButtonDivSelector,
 
                 added: function (e, data) {
                     var $this = $(this),
@@ -39,8 +46,21 @@
 
             _initEventHandlers: function () {
                 this._super();
-                this._on(this.options.filesContainer, {
+                var filesContainer = this.options.filesContainer;
+                this._on(filesContainer, {
                     'click .edit': this._editHandler
+                });
+                var that = this;
+                this._on(that.element, {
+                    'change .toggle': function (e) {
+                        var toggleBox = this.element.find('.toggle');
+                        that.element.find('.fileupload-buttonbar')
+                            .find('.delete')
+                            .prop(
+                                'disabled',
+                                !toggleBox.is(':checked')
+                            );
+                    }
                 });
             },
 
@@ -76,20 +96,18 @@
                     $editImg.processCroppedCanvas = function (result) {
                         $editModal.modal('hide');
                         // var messageBox = $(options.cropResultMessageBoxSelector);
-                        $fileupload.find(options.cropControlButtonDivSelector + " .btn").prop("disabled", true);
+                        $(options.cropControlButtonDivSelector).find(".btn").prop("disabled", true)
                         template.find(".btn").prop("disabled", true);
                         result.toBlob(function (blob) {
                             blob.name = mod.name;
-                            $fileupload.fileupload(
-                                'option', {"maxNumberOfFiles": options.maxNumberOfFiles + 1});
+                            options.maxNumberOfFiles ++;
                             $fileupload.fileupload(
                                 'add', {
                                     files: [blob],
                                     replaceChild: $(data.context)
                                 }
                             );
-                            $fileupload.fileupload(
-                                'option', {"maxNumberOfFiles": options.maxNumberOfFiles - 1});
+                            options.maxNumberOfFiles --;
                         }, orig.type);
                     };
                 }
@@ -98,6 +116,8 @@
                     $editImg.attr('src', $button.data("src"));
                     $editImg.submitData = function (result) {
                         var messageBox = $(options.cropResultMessageBoxSelector);
+                        $(options.cropControlButtonDivSelector).find(".btn").prop("disabled", true);
+                        $editImg.cropper('disable');
                         var jqxhr = $.ajax({
                             method: "POST",
                             url: $button.data("action"),
@@ -107,12 +127,6 @@
                             }
                         })
                             .always(function () {
-                                window.setTimeout(function () {
-                                    messageBox.removeClass().html("");
-                                }, 3000);
-                                setTimeout(function () {
-                                    $editModal.modal('hide');
-                                }, 3000);
                             })
                             .done(function (response) {
                                 options.done.call($fileupload,
@@ -121,10 +135,14 @@
                                         result: {files: [response.file]},
                                         context: $button.closest(".template-download")
                                     });
-                                messageBox.addClass('alert alert-success').html(response.message);
+                                messageBox.html("<span class='alert alert-success'>" + response.message +"</span>");
+                                $editModal.data("new", false);
+                                    setTimeout(function () {
+                                        if(!$editModal.data("new")){$editModal.modal('hide')}
+                                    }, 3000);
                             })
                             .fail(function (response) {
-                                messageBox.addClass('alert alert-danger').html(response.responseJSON.message);
+                                messageBox.html("<span class='alert alert-danger'>" + response.responseJSON.message + "</span>");
                             });
                         return false;
                     };
@@ -152,9 +170,8 @@
                             left: (contData.width - newWidth) / 2
                         };
                     }
-                    $this.cropper('setCanvasData', newCanvData);
-                    $this.cropper('setCropBoxData', newCanvData);
-                    $fileupload.find(options.cropControlButtonDivSelector + " .btn").prop("disabled", false);
+                    $this.cropper('setCanvasData', newCanvData).cropper('setCropBoxData', newCanvData);
+                    $(options.cropControlButtonDivSelector).find(".btn").prop("disabled", false);
                 };
 
                 $editModal.modal('show', [$editImg, editType]);
@@ -168,19 +185,16 @@ $(function () {
     "use strict";
     var $image;
     var editType;
-    var $editModal = $('#editModal');
+    var $editModal = $(EditModalSelector);
+    var croppStartingData;
 
     $editModal
         .on('show.bs.modal', function (e) {
             $image = e.relatedTarget[0];
             editType = e.relatedTarget[1];
-            $(this).find('.modal-body').css({
-                width: 'auto', //probably not needed
-                height: 'auto', //probably not needed
-                'max-height': '100%'
-            });
         })
         .on('shown.bs.modal', function () {
+            $(this).data('new', true);
             $(".relate-save-button").addClass('disabled');
             $image.cropper({
                 viewMode: 1,
@@ -192,25 +206,34 @@ $(function () {
                 zoomable: false,
                 minContainerheight: $(window).height() * 0.8,
                 ready: function (e) {
-                    $editModal.find(".cropper-rotate-btns .btn").prop("disabled", false);
+                    croppStartingData = $image.cropper("getData", "true");
+                    $editModal.find(cropControlRotateBtnSelector).prop("disabled", false);
                 },
                 cropstart: function (e) {
                 },
                 crop: function (e) {
                 },
                 cropend: function (e) {
-                    $editModal.find('.cropper-status-btns .btn').prop("disabled", false);
+                    var currentData = $image.cropper("getData", "true");
+                    var cropNotChanged = JSON.stringify(croppStartingData) === JSON.stringify(currentData);
+                    $editModal.find(cropControlStatusBtnSelector).prop("disabled", cropNotChanged);
                 }
             });
 
         })
         .on('hidden.bs.modal', function () {
             $(".relate-save-button").removeClass('disabled');
-
             $image.cropper('destroy');
             $(this)
-                .find('.cropper-btns .btn').prop("disabled", true)
-                .end();
+                .attr("data-new", false)
+                .find(cropControlButtonDivSelector)
+                .find('.btn')
+                .prop("disabled", true)
+                .end().end()
+                .find(cropResultMessageBoxSelector)
+                .empty()
+                .end()
+                .active = false;
         })
         .on('show.bs.modal', function (e) {
             // Enable back button to close modal and blueimp gallery
@@ -223,7 +246,7 @@ $(function () {
                 window.history.back();
         });
 
-    $editModal.find('.cropper-btns').on(
+    $editModal.find(cropControlButtonDivSelector).on(
         'click',
         '[data-method]',
         function () {
@@ -241,6 +264,7 @@ $(function () {
             else if (data.method === "commit") {
                 if (editType === "download") {
                     data.method = "getData";
+                    data.option = "true";
                 }
                 else if (editType === "upload") {
                     data.method = "getCroppedCanvas";
@@ -256,7 +280,7 @@ $(function () {
                     $(this).data('option', -data.option);
                     break;
                 case 'reset':
-                    $editModal.find('.cropper-status-btns .btn').prop("disabled", true);
+                    $editModal.find(cropControlStatusBtnSelector).prop("disabled", true);
                     break;
                 case 'getData':
                     if (result && $image.submitData) {
@@ -274,6 +298,12 @@ $(function () {
                     }
                     break;
             }
+
+            var currentData = $image.cropper("getData", "true");
+
+            if (JSON.stringify(croppStartingData) === JSON.stringify(currentData))
+            {$editModal.find(cropControlStatusBtnSelector).prop("disabled", true);}
+
         });
 
 });
@@ -427,10 +457,6 @@ function activate_change_listening() {
         .on("fileuploadreplaced", function (e, data) {
             hide_fileupload_sortable_handle($(this));
         });
-
-    $('body').on('change', '#fileupload input[type="checkbox"]', function (e) {
-        toggle_fileupload_control_delete($fileupload);
-    });
 
     function before_submit(evt) {
         input_changed = false;
