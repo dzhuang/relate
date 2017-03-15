@@ -80,3 +80,8 @@
     background: url("../blueimp-gallery/img/loading.gif") center no-repeat;
     background-size: 96px 96px;
 }
+
+.td-hidden
+{
+  display: none !important;
+}

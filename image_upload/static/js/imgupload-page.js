@@ -302,9 +302,9 @@ function hide_fileupload_control_button(that, bool) {
 function hide_fileupload_sortable_handle(that) {
     if ($(that).fileupload("option", "filesContainer")
             .children().length > 1) {
-        $(that).find('.imageSortableHandle').removeClass("hidden");
+        $(that).find('.imageSortableHandle').removeClass("td-hidden");
     } else {
-        $(that).find('.imageSortableHandle').addClass("hidden");
+        $(that).find('.imageSortableHandle').addClass("td-hidden");
     }
 }
 
@@ -372,7 +372,7 @@ function activate_change_listening() {
                     on_input_change(e, get_all_pks($fileupload));
                 }
             }
-        });
+        }).disableSelection();
 
     var starting_pk;
     var sortableChangeCausal = true;

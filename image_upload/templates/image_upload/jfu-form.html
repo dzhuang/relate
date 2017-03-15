@@ -30,7 +30,7 @@
         {{ JQ_OPEN }} } {{ JQ_CLOSE }}
     </td>
     {% if IS_COURSE_STAFF or MAY_CHANGE_ANSWER %}
-        <td class="imageSortableHandle hidden
+        <td class="imageSortableHandle td-hidden
         {% if not IN_GRADE_PAGE %}
             col-lg-2 col-md-2 col-sm-1 col-xs-1
          {% endif %}"
@@ -156,7 +156,7 @@
 
 {% block JS_DOWNLOAD_TEMPLATE_EXTRA_COLUMN %}
     {% if IS_COURSE_STAFF or MAY_CHANGE_ANSWER %}
-        <td class="imageSortableHandle hidden
+        <td class="imageSortableHandle td-hidden
         {% if not IN_GRADE_PAGE %}
             col-lg-2 col-md-2 col-sm-1 col-xs-1
          {% endif %}"
