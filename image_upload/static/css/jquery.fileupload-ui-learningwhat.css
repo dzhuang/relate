@@ -24,7 +24,7 @@
   float: right;
   display: none;
 }
-/*.files .template-download .preview.processing,*/
+.files .template-download .preview.processing,
 .fileupload-processing .fileupload-process,
 .files .processing .preview {
   display: block;

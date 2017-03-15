@@ -65,6 +65,7 @@
                                 {% else %}
                              src="{{ JQ_OPEN }}=file.thumbnailUrl{{ JQ_CLOSE }}"
                                 {% endif %}
+                             onload="$(this).parents('span').removeClass('processing');"
                         >
                 </a>
             {{ JQ_OPEN }} } {{ JQ_CLOSE }}

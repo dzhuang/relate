@@ -74,9 +74,10 @@
 
                     $editImg.prop('src', loadImage.createObjectURL(orig));
                     $editImg.processCroppedCanvas = function (result) {
-                        var messageBox = $(options.cropResultMessageBoxSelector);
                         $editModal.modal('hide');
+                        // var messageBox = $(options.cropResultMessageBoxSelector);
                         $fileupload.find(options.cropControlButtonDivSelector + " .btn").prop("disabled", true);
+                        template.find(".btn").prop("disabled", true);
                         result.toBlob(function (blob) {
                             blob.name = mod.name;
                             $fileupload.fileupload(
