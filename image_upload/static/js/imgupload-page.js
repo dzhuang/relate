@@ -384,7 +384,7 @@ $(window).on('popstate', function (event) {  //pressed back button
     }
 });
 
-function activate_change_listening() {
+function activate_change_listening2() {
     var input_changed = false;
     var $fileupload = $("#fileupload");
 
@@ -492,4 +492,6 @@ $(document).ready(function () {
             .find("input")
             .prop("value", get_all_pks($("#fileupload")));
     });
+
+    activate_change_listening2();
 });
