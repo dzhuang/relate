@@ -71,6 +71,13 @@
         padding-left: 0;
         padding-right: 0;
     }
+
+    #fileupload tbody .template-download td:nth-child(1),
+    #fileupload tbody .template-upload td:nth-child(1)
+        /* , #fileupload tbody .template-upload td:nth-child(6) */
+    {
+        width:29.166666655%;
+    }
 }
 
 @media (max-width: 767px) {

@@ -8,6 +8,8 @@ var EditModalSelector = "#editModal",
 (function ($, window, document, undefined) {
     'use strict';
 
+    var originalAdded = $.blueimp.fileupload.prototype.options.added;
+
     $.widget(
         'blueimp.fileupload', $.blueimp.fileupload, {
 
@@ -18,30 +20,64 @@ var EditModalSelector = "#editModal",
                 cropControlButtonDivSelector: cropControlButtonDivSelector,
 
                 added: function (e, data) {
+                    if (e.isDefaultPrevented()) {
+                        return false;
+                    }
+
+                    var $this = $(this),
+                        that = $this.data('blueimp-fileupload') ||
+                            $this.data('fileupload');
+                    if (!data.files) return false;
+                    if (data.replaceChild && data.replaceChild.length){
+                        if (that._trigger('replace', e, data) !== false)
+                        {delete data.replaceChild;}
+                    }
+                    $(data.context).find('.edit').prop('disabled', false);
+                    if ($.isFunction( originalAdded )){
+                        originalAdded.call(this, e, data);
+                    }
+                    that._hide_fileupload_sortable_handle();
+                },
+
+                replace: function (e, data) {
+                    if (e.isDefaultPrevented()) {
+                        return false;
+                    }
                     var $this = $(this),
                         that = $this.data('blueimp-fileupload') ||
                             $this.data('fileupload'),
                         options = that.options;
-                    if (data.replaceChild && data.replaceChild.length) {
-                        var $modal = $(options.EditModalSelector);
-                        $(data.context).replaceAll(data.replaceChild);
-                        that._trigger("replaced", e, data);
+
+                    var $modal = $(options.EditModalSelector);
+                    $(data.context).replaceAll(data.replaceChild);
+                    // e.preventDefault();
+                    // that._trigger("added", e, data);
+                },
+
+                completed: function (e, data) {
+                    if (e.isDefaultPrevented()) {
+                        return false;
                     }
-                    if (!data.files) {
-                        return;
+                    ($(this).data('blueimp-fileupload') || $(this).data('fileupload'))
+                        ._hide_fileupload_sortable_handle();
+                },
+
+                failed: function (e, data) {
+                    if (e.isDefaultPrevented()) {
+                        return false;
                     }
-                    var orig, mod = data.files[0];
-                    $.each(data.originalFiles, function (i, v) {
-                        if (v.name === mod.name) {
-                            orig = v;
-                            return true;
-                        }
-                    });
-                    if (!orig) {
-                        return;
+                    ($(this).data('blueimp-fileupload') || $(this).data('fileupload'))
+                        ._hide_fileupload_sortable_handle();
+                },
+
+                destroyed: function (e, data) {
+                    if (e.isDefaultPrevented()) {
+                        return false;
                     }
-                    $(data.context).find('.edit').prop('disabled', false);
-                }
+                    ($(this).data('blueimp-fileupload') || $(this).data('fileupload'))
+                        ._hide_fileupload_sortable_handle();
+                },
+
             },
 
             _initEventHandlers: function () {
@@ -62,6 +98,17 @@ var EditModalSelector = "#editModal",
                             );
                     }
                 });
+            },
+
+            _hide_fileupload_sortable_handle: function() {
+                var $this = $(this),
+                    options = this.options,
+                    filesContainer = this.options.filesContainer;
+                    if (filesContainer.children().length > 1) {
+                        filesContainer.find('.imageSortableHandle').removeClass("td-hidden");
+                    } else {
+                       filesContainer.find('.imageSortableHandle').addClass("td-hidden");
+                    }
             },
 
             _editHandler: function (e) {
@@ -329,14 +376,14 @@ function hide_fileupload_control_button(that, bool) {
         .prop("disabled", bool);
 }
 
-function hide_fileupload_sortable_handle(that) {
-    if ($(that).fileupload("option", "filesContainer")
-            .children().length > 1) {
-        $(that).find('.imageSortableHandle').removeClass("td-hidden");
-    } else {
-        $(that).find('.imageSortableHandle').addClass("td-hidden");
-    }
-}
+// function hide_fileupload_sortable_handle(that) {
+//     if ($(that).fileupload("option", "filesContainer")
+//             .children().length > 1) {
+//         $(that).find('.imageSortableHandle').removeClass("td-hidden");
+//     } else {
+//         $(that).find('.imageSortableHandle').addClass("td-hidden");
+//     }
+// }
 
 function toggle_fileupload_control_delete(that) {
     var buttonBar = $(that).find('.fileupload-buttonbar'),
@@ -435,7 +482,7 @@ function activate_change_listening2() {
         })
         .on("fileuploadadded", function (e, data) {
             on_input_change();
-            hide_fileupload_sortable_handle($(this));
+            // hide_fileupload_sortable_handle($(this));
         })
         .on("fileuploadcompleted fileuploaddestroyed", function () {
             var n_downloadPk = get_all_pks($(this)).length;
@@ -452,10 +499,7 @@ function activate_change_listening2() {
             var queue_length = $(this).find('.template-upload').length;
             disable_submit_button(queue_length > 0);
             hide_fileupload_control_button($(this), !queue_length);
-            hide_fileupload_sortable_handle($(this));
-        })
-        .on("fileuploadreplaced", function (e, data) {
-            hide_fileupload_sortable_handle($(this));
+            // hide_fileupload_sortable_handle($(this));
         });
 
     function before_submit(evt) {

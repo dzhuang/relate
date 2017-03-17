@@ -173,7 +173,7 @@
                     >
 
                     {% block JS_DOWNLOAD_TEMPLATE_PREVIEW %}
-                        <td class="col-lg-2 col-sm-3 col-xs-3">
+                        <td class="col-lg-1">
                             <span class="preview processing">
                                 {{ JQ_OPEN }} if (file.thumbnailUrl) { {{ JQ_CLOSE }}
                                     <a
@@ -192,7 +192,7 @@
 
                     {% block JS_DOWNLOAD_TEMPLATE_DOWNLOAD %}
                         {% block JS_DOWNLOAD_TEMPLATE_DOWNLOAD_FILENAME %}
-                        <td class="col-lg-2 hidden-sm hidden-xs">
+                        <td class="col-lg-3 hidden-sm hidden-xs">
                             <p class="name">
                                 {{ JQ_OPEN }} if (file.url) { {{ JQ_CLOSE }}
                                     <a
@@ -246,7 +246,7 @@
                     {% endblock %}{# //JS_DOWNLOAD_TEMPLATE_FSIZE #}
 
                     {% block JS_DOWNLOAD_TEMPLATE_CONTROL_BUTTONS %}
-                        <td class="col-lg-3 col-sm-3 col-xs-3">
+                        <td class="col-lg-1">
                         {% block JS_DOWNLOAD_TEMPLATE_CONTROL_BUTTONS_EXTRA %}
                         {% endblock %}{# //JS_DOWNLOAD_TEMPLATE_CONTROL_BUTTONS_EXTRA #}
                         {% block JS_DOWNLOAD_TEMPLATE_CONTROL_BUTTONS_DELETE %}

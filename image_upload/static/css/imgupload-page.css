@@ -100,6 +100,16 @@
     .fileUploadCompactInfo > p {
         overflow-wrap: break-word;
     }
+    }
+
+
+    [class*=" fa-sort"] {
+        display: inline-block;
+        width: 100%;
+    }
+    td i {
+        text-align:center;
+    }
 }
 
 @media screen and (max-width: 767px) and (orientation: landscape) {
