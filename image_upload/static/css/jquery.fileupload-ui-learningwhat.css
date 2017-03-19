@@ -71,13 +71,6 @@
         padding-left: 0;
         padding-right: 0;
     }
-
-    #fileupload tbody .template-download td:nth-child(1),
-    #fileupload tbody .template-upload td:nth-child(1)
-        /* , #fileupload tbody .template-upload td:nth-child(6) */
-    {
-        width:29.166666655%;
-    }
 }
 
 @media (max-width: 767px) {
@@ -100,8 +93,4 @@
     height: 96px;
     background: url("../blueimp-gallery/img/loading.gif") center no-repeat;
     background-size: 96px 96px;
-}
-
-.td-hidden {
-    display: none !important;
 }

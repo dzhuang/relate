@@ -132,24 +132,28 @@
                     {% endblock %}{# //JS_UPLOAD_TEMPLATE_PROGRESSBAR #}
 
                     {% block JS_UPLOAD_TEMPLATE_CONTROLS %}
-                        <td>
-                            {% block JS_UPLOAD_TEMPLATE_START %}
-                                {{ JQ_OPEN }} if (!i && !o.options.autoUpload) { {{ JQ_CLOSE }}
-                                    <button class="btn btn-primary start" disabled>
-                                        <i class="glyphicon glyphicon-upload"></i>
-                                        <span>{% trans "Start" %}</span>
-                                    </button>
-                                {{ JQ_OPEN }} } {{ JQ_CLOSE }}
-                            {% endblock %}{# //block JS_UPLOAD_TEMPLATE_START #}
+                        <td style="white-space:nowrap; display:inline-block">
+                            {% block JS_UPLOAD_TEMPLATE_CONTROLS_EXTRALINE %}
+                            {% endblock %}
+                            <div>
+                                {% block JS_UPLOAD_TEMPLATE_START %}
+                                    {{ JQ_OPEN }} if (!i && !o.options.autoUpload) { {{ JQ_CLOSE }}
+                                        <button class="btn btn-primary start" disabled>
+                                            <i class="glyphicon glyphicon-upload"></i>
+                                            <span>{% trans "Start" %}</span>
+                                        </button>
+                                    {{ JQ_OPEN }} } {{ JQ_CLOSE }}
+                                {% endblock %}{# //block JS_UPLOAD_TEMPLATE_START #}
 
-                            {% block JS_UPLOAD_TEMPLATE_CANCEL %}
-                                {{ JQ_OPEN }} if (!i) { {{ JQ_CLOSE }}
-                                    <button class="btn btn-warning cancel">
-                                        <i class="glyphicon glyphicon-ban-circle"></i>
-                                        <span>{% trans "Cancel" %}</span>
-                                    </button>
-                                {{ JQ_OPEN }} } {{ JQ_CLOSE }}
-                            {% endblock %}{# //JS_UPLOAD_TEMPLATE_CANCEL #}
+                                {% block JS_UPLOAD_TEMPLATE_CANCEL %}
+                                    {{ JQ_OPEN }} if (!i) { {{ JQ_CLOSE }}
+                                        <button class="btn btn-warning cancel">
+                                            <i class="glyphicon glyphicon-ban-circle"></i>
+                                            <span>{% trans "Cancel" %}</span>
+                                        </button>
+                                    {{ JQ_OPEN }} } {{ JQ_CLOSE }}
+                                {% endblock %}{# //JS_UPLOAD_TEMPLATE_CANCEL #}
+                            </div>
                         </td>
                     {% endblock %}{# //JS_UPLOAD_TEMPLATE_CONTROLS #}
 
@@ -173,7 +177,7 @@
                     >
 
                     {% block JS_DOWNLOAD_TEMPLATE_PREVIEW %}
-                        <td class="col-lg-1">
+                        <td class="col-lg-2">
                             <span class="preview processing">
                                 {{ JQ_OPEN }} if (file.thumbnailUrl) { {{ JQ_CLOSE }}
                                     <a
@@ -246,31 +250,33 @@
                     {% endblock %}{# //JS_DOWNLOAD_TEMPLATE_FSIZE #}
 
                     {% block JS_DOWNLOAD_TEMPLATE_CONTROL_BUTTONS %}
-                        <td class="col-lg-1">
+                        <td>
                         {% block JS_DOWNLOAD_TEMPLATE_CONTROL_BUTTONS_EXTRA %}
                         {% endblock %}{# //JS_DOWNLOAD_TEMPLATE_CONTROL_BUTTONS_EXTRA #}
-                        {% block JS_DOWNLOAD_TEMPLATE_CONTROL_BUTTONS_DELETE %}
-                            {{ JQ_OPEN }} if (file.deleteUrl) { {{ JQ_CLOSE }}
-                                <button
-                                    class="btn btn-danger delete"
-                                    data-type="{{ JQ_OPEN }}=file.deleteType{{ JQ_CLOSE }}"
-                                    data-data='{ "csrfmiddlewaretoken" : "{{ csrf_token }}" }'
-                                    data-url="{{ JQ_OPEN }}=file.deleteUrl{{ JQ_CLOSE }}"
-                                    {{ JQ_OPEN }} if (file.deleteWithCredentials) { {{ JQ_CLOSE }}
-                                        data-xhr-fields='{"withCredentials":true}'
-                                    {{ JQ_OPEN }} } {{ JQ_CLOSE }}
-                                >
-                                    <i class="glyphicon glyphicon-trash"></i>
-                                    <span>{% trans "Delete" %}</span>
-                                </button>
-                                <input type="checkbox" name="delete" value="1" class="toggle">
-                            {{ JQ_OPEN }} } else { {{ JQ_CLOSE }}
-                                <button class="btn btn-warning cancel">
-                                    <i class="glyphicon glyphicon-ban-circle"></i>
-                                    <span>{% trans "Cancel" %}</span>
-                                </button>
-                            {{ JQ_OPEN }} } {{ JQ_CLOSE }}
+                        <div style="white-space:nowrap;">
+                            {% block JS_DOWNLOAD_TEMPLATE_CONTROL_BUTTONS_DELETE %}
+                                {{ JQ_OPEN }} if (file.deleteUrl) { {{ JQ_CLOSE }}
+                                    <button
+                                        class="btn btn-danger delete"
+                                        data-type="{{ JQ_OPEN }}=file.deleteType{{ JQ_CLOSE }}"
+                                        data-data='{ "csrfmiddlewaretoken" : "{{ csrf_token }}" }'
+                                        data-url="{{ JQ_OPEN }}=file.deleteUrl{{ JQ_CLOSE }}"
+                                        {{ JQ_OPEN }} if (file.deleteWithCredentials) { {{ JQ_CLOSE }}
+                                            data-xhr-fields='{"withCredentials":true}'
+                                        {{ JQ_OPEN }} } {{ JQ_CLOSE }}
+                                    >
+                                        <i class="glyphicon glyphicon-trash"></i>
+                                        <span>{% trans "Delete" %}</span>
+                                    </button>
+                                    <input type="checkbox" name="delete" value="1" class="toggle">
+                                {{ JQ_OPEN }} } else { {{ JQ_CLOSE }}
+                                    <button class="btn btn-warning cancel">
+                                        <i class="glyphicon glyphicon-ban-circle"></i>
+                                        <span>{% trans "Cancel" %}</span>
+                                    </button>
+                                {{ JQ_OPEN }} } {{ JQ_CLOSE }}
                             {% endblock %}{# //block JS_DOWNLOAD_TEMPLATE_CONTROL_BUTTONS_DELETE #}
+                            </div>
                         </td>
                     {% endblock %}{# // JS_DOWNLOAD_TEMPLATE_CONTROL_BUTTONS #}
                     {% block JS_DOWNLOAD_TEMPLATE_EXTRA_COLUMN %}

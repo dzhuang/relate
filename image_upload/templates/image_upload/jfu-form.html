@@ -20,19 +20,22 @@
     {{ block.super }}
 {% endblock %}
 
-{% block JS_UPLOAD_TEMPLATE_EXTRA_COLUMN %}
-    <td  class="hidden-lg hidden-md col-sm-1 col-xs-1">
+{% block JS_UPLOAD_TEMPLATE_CONTROLS_EXTRALINE %}
+    <div class="hidden-lg hidden-md" style="margin-bottom: 4px">
         {{ JQ_OPEN }} if (!i) { {{ JQ_CLOSE }}
         <button class="btn btn-info edit" disabled type="button">
             <i class="glyphicon glyphicon-edit"></i>
             <span>{% trans "Edit" %}</span>
         </button>
         {{ JQ_OPEN }} } {{ JQ_CLOSE }}
-    </td>
+    </div>
+{% endblock %}
+
+{% block JS_UPLOAD_TEMPLATE_EXTRA_COLUMN %}
     {% if IS_COURSE_STAFF or MAY_CHANGE_ANSWER %}
-        <td class="imageSortableHandle td-hidden
+        <td class="imageSortableHandle hidden
         {% if not IN_GRADE_PAGE %}
-            col-lg-2 col-md-2 col-sm-1 col-xs-1
+            col-lg-1 col-md-1 col-sm-1 col-xs-1
          {% endif %}"
              style="vertical-align: middle;text-align: center"
             >
@@ -46,7 +49,7 @@
 {% block JS_DOWNLOAD_TEMPLATE_PREVIEW %}
     <td
             {% if not IN_GRADE_PAGE %}
-                class="col-lg-1"
+                class="col-lg-2"
             {% endif %}
     >
         <span class="preview processing">
@@ -102,8 +105,7 @@
 {% block JS_DOWNLOAD_TEMPLATE_CONTROL_BUTTONS %}
     <td
             {% if not IN_GRADE_PAGE %}
-                class="col-lg-3 col-sm-3 col-xs-3"
-                style="width:29.166666655%"
+                style="white-space:nowrap;"
             {% else %}
             {% endif %}
     >
@@ -155,9 +157,9 @@
 
 {% block JS_DOWNLOAD_TEMPLATE_EXTRA_COLUMN %}
     {% if IS_COURSE_STAFF or MAY_CHANGE_ANSWER %}
-        <td class="imageSortableHandle td-hidden
+        <td class="imageSortableHandle hidden
         {% if not IN_GRADE_PAGE %}
-            col-lg-2 col-md-2 col-sm-1 col-xs-1
+            col-lg-1 col-md-1 col-sm-1 col-xs-1
          {% endif %}"
              style="vertical-align: middle;text-align: center"
             >
@@ -189,7 +191,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <div id="crop-message" style="padding: 0; margin-bottom: 0; margin-left: 0; float: left;"></div>
+                <div id="cropper-message" style="padding: 0; margin-bottom: 0; margin-left: 0; float: left;"></div>
                 <div class="row">
                     <div class="col-lg-8 col-md-10 col-sm-9 col-xs-9" style="float: right">
                         <div class="btn-group cropper-btns">
