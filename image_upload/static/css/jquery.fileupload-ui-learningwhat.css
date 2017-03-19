@@ -27,7 +27,7 @@
     display: none;
 }
 
-.files .template-download .preview.processing,
+.files .template-download .preview.loading,
 .fileupload-processing .fileupload-process,
 .files .processing .preview {
     display: block;
@@ -93,8 +93,4 @@
     height: 96px;
     background: url("../blueimp-gallery/img/loading.gif") center no-repeat;
     background-size: 96px 96px;
-}
-
-.td-hidden {
-    display: none !important;
 }

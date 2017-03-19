@@ -33,7 +33,7 @@
 
 {% block JS_UPLOAD_TEMPLATE_EXTRA_COLUMN %}
     {% if IS_COURSE_STAFF or MAY_CHANGE_ANSWER %}
-        <td class="imageSortableHandle td-hidden
+        <td class="sortableHandle hidden
         {% if not IN_GRADE_PAGE %}
             col-lg-1 col-md-1 col-sm-1 col-xs-1
          {% endif %}"
@@ -52,7 +52,7 @@
                 class="col-lg-2"
             {% endif %}
     >
-        <span class="preview processing">
+        <span class="preview loading">
             {{ JQ_OPEN }} if (file.thumbnailUrl) { {{ JQ_CLOSE }}
                 <a
                         href="{{ JQ_OPEN }}=file.url{{ JQ_CLOSE }}"
@@ -67,7 +67,7 @@
                                 {% else %}
                              src="{{ JQ_OPEN }}=file.thumbnailUrl{{ JQ_CLOSE }}"
                                 {% endif %}
-                             onload="$(this).parents('span').removeClass('processing');"
+                             onload="$(this).parents('span').removeClass('loading');"
                         >
                 </a>
             {{ JQ_OPEN }} } {{ JQ_CLOSE }}
@@ -157,7 +157,7 @@
 
 {% block JS_DOWNLOAD_TEMPLATE_EXTRA_COLUMN %}
     {% if IS_COURSE_STAFF or MAY_CHANGE_ANSWER %}
-        <td class="imageSortableHandle td-hidden
+        <td class="sortableHandle hidden
         {% if not IN_GRADE_PAGE %}
             col-lg-1 col-md-1 col-sm-1 col-xs-1
          {% endif %}"
@@ -187,11 +187,11 @@
             </div>
             <div class="modal-body">
                 <div class="img-container">
-                    <img class="img-responsive" id="image" src="" alt="" data-ajax-url="">
+                    <img class="img-responsive" id="modalImage" src="" alt="" data-ajax-url="">
                 </div>
             </div>
             <div class="modal-footer">
-                <div id="crop-message" style="padding: 0; margin-bottom: 0; margin-left: 0; float: left;"></div>
+                <div id="cropper-message" style="padding: 0; margin-bottom: 0; margin-left: 0; float: left;"></div>
                 <div class="row">
                     <div class="col-lg-8 col-md-10 col-sm-9 col-xs-9" style="float: right">
                         <div class="btn-group cropper-btns">
