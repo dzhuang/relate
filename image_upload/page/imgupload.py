@@ -393,72 +393,77 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
 
     def form_to_html(self, request, page_context, form, answer_data):
 
-        ordinal = get_ordinal_from_page_context(page_context)
-
-        prev_visit_id = request.GET.get("visit_id", None)
-        if prev_visit_id is not None:
-            try:
-                prev_visit_id = int(prev_visit_id)
-            except ValueError:
-                from django.core.exceptions import SuspiciousOperation
-                raise SuspiciousOperation("non-integer passed for 'visit_id'")
-
-        from course.flow import get_prev_answer_visits_qset
-        fpctx = FlowPageContext(
-            repo=page_context.repo,
-            course=page_context.course,
-            flow_id=page_context.flow_session.flow_id,
-            ordinal=int(ordinal),
-            flow_session=page_context.flow_session,
-            participation=page_context.flow_session.participation,
-            request=request
-        )
-
-        prev_answer_visits = list(
-                get_prev_answer_visits_qset(fpctx.page_data))
-
-        # {{{ fish out previous answer_visit
-
-        if prev_answer_visits and prev_visit_id is not None:
-            answer_visit = prev_answer_visits[0]
-
-            for ivisit, pvisit in enumerate(prev_answer_visits):
-                if pvisit.id == prev_visit_id:
-                    answer_visit = pvisit
-                    break
-
-            prev_visit_id = answer_visit.id
-
-        elif prev_answer_visits:
-            answer_visit = prev_answer_visits[0]
-            prev_visit_id = answer_visit.id
-
-        else:
-            answer_visit = None
-
-        # }}}
-
-        if answer_visit is not None:
-            answer_data = answer_visit.answer
-
-        request_path = request.get_full_path()
+        ordinal = None
         in_grading_page = False
+        prev_visit_id = None
 
-        try:
-            grading_page_uri = reverse(
-                "relate-grade_flow_page",
-                args=(
-                    page_context.course.identifier,
-                    page_context.flow_session.id,
-                    ordinal)
+        if not page_context.in_sandbox:
+            ordinal = get_ordinal_from_page_context(page_context)
+
+            prev_visit_id = request.GET.get("visit_id", None)
+            if prev_visit_id is not None:
+                try:
+                    prev_visit_id = int(prev_visit_id)
+                except ValueError:
+                    from django.core.exceptions import SuspiciousOperation
+                    raise SuspiciousOperation("non-integer passed for 'visit_id'")
+
+            from course.flow import get_prev_answer_visits_qset
+            fpctx = FlowPageContext(
+                repo=page_context.repo,
+                course=page_context.course,
+                flow_id=page_context.flow_session.flow_id,
+                ordinal=int(ordinal),
+                flow_session=page_context.flow_session,
+                participation=page_context.flow_session.participation,
+                request=request
             )
 
-            in_grading_page = grading_page_uri == request_path
-        except NoReverseMatch:
-            if page_context.in_sandbox:
-                pass
+            prev_answer_visits = list(
+                    get_prev_answer_visits_qset(fpctx.page_data))
+
+            # {{{ fish out previous answer_visit
+
+            if prev_answer_visits and prev_visit_id is not None:
+                answer_visit = prev_answer_visits[0]
+
+                for ivisit, pvisit in enumerate(prev_answer_visits):
+                    if pvisit.id == prev_visit_id:
+                        answer_visit = pvisit
+                        break
+
+                prev_visit_id = answer_visit.id
+
+            elif prev_answer_visits:
+                answer_visit = prev_answer_visits[0]
+                prev_visit_id = answer_visit.id
+
             else:
-                raise
+                answer_visit = None
+
+            # }}}
+
+            if answer_visit is not None:
+                answer_data = answer_visit.answer
+
+            request_path = request.get_full_path()
+            in_grading_page = False
+
+            try:
+                grading_page_uri = reverse(
+                    "relate-grade_flow_page",
+                    args=(
+                        page_context.course.identifier,
+                        page_context.flow_session.id,
+                        ordinal)
+                )
+
+                in_grading_page = grading_page_uri == request_path
+            except NoReverseMatch:
+                if page_context.in_sandbox:
+                    pass
+                else:
+                    raise
 
         ctx = {"form": form,
                "JQ_OPEN": '{%',

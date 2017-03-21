@@ -222,7 +222,11 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
         flow_session_id = self.kwargs["flow_session_id"]
 
         from course.models import FlowSession
-        flow_session = get_object_or_404(FlowSession, id=int(flow_session_id))
+        try:
+            flow_session = get_object_or_404(FlowSession, id=int(flow_session_id))
+        except ValueError:
+            # in sandbox
+            return None
         ordinal = self.kwargs["ordinal"]
         course_identifier = self.kwargs["course_identifier"]
         from course.utils import CoursePageContext
