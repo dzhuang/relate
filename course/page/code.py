@@ -1121,6 +1121,10 @@ class PythonCodeQuestionWithHumanTextFeedback(
                 and grade_data["grade_percent"] is not None):
             correctness = grade_data["grade_percent"] / 100
             percentage = correctness * 100
+        elif (self.human_feedback_percentage == 0
+                and code_feedback.correctness is not None):
+            correctness = code_feedback.correctness
+            percentage = correctness * 100
 
         human_feedback_text = None
 
@@ -1159,3 +1163,5 @@ class PythonCodeQuestionWithHumanTextFeedback(
                 bulk_feedback=code_feedback.bulk_feedback)
 
 # }}}
+
+# vim: foldmethod=marker

@@ -63,7 +63,7 @@ from course.content import get_flow_desc, get_course_commit_sha
 
 # {{{ for mypy
 
-from typing import cast, Tuple, Text, Optional, Any, Iterable  # noqa
+from typing import cast, Tuple, Text, Optional, Any, Iterable, List  # noqa
 from course.utils import CoursePageContext, FlowSessionAccessRule  # noqa
 from course.content import FlowDesc  # noqa
 from course.models import Course, FlowPageVisitGrade  # noqa

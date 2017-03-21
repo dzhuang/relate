@@ -86,7 +86,7 @@ from relate.utils import retry_transaction_decorator
 
 # {{{ mypy
 
-from typing import Any, Optional, Iterable, Tuple, Text  # noqa
+from typing import Any, Optional, Iterable, Tuple, Text, List  # noqa
 import datetime  # noqa
 from course.models import (  # noqa
         Course,
@@ -439,6 +439,7 @@ def start_flow(
         user=user,
         active_git_commit_sha=course_commit_sha.decode(),
         flow_id=flow_id,
+        start_time=now_datetime,
         in_progress=True,
         expiration_mode=exp_mode,
         access_rules_tag=session_start_rule.tag_session)
