@@ -29,6 +29,7 @@ from io import BytesIO
 import pickle
 from hashlib import md5
 import os
+from bson.objectid import ObjectId
 
 # {{{ mypy
 from typing import Text, Any  # noqa
@@ -73,7 +74,7 @@ def get_latex_page_mongo_collection(name=None, database=None):
     if not name:
         name = getattr(
             settings, "RELATE_LATEX_PAGE_COLLECTION_NAME",
-            "relate-latex-page")
+            "relate_latex_page")
     collection = db[name]
     return collection
 
@@ -420,7 +421,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         if cache_key is None:
             mongo_result = LATEX_PAGE_MONGO_COLLECTION.find_one(
-                {"key": page_key}
+                {"_id": ObjectId(page_key)}
             )
             if mongo_result:
                 result = mongo_result["source"].decode("utf-8")

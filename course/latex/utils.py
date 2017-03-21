@@ -419,7 +419,7 @@ def get_mongo_db(database=None):
     if not database:
         database = getattr(
             settings, "RELATE_MONGODB_NAME",
-            "relate-mongodb")
+            "relate_mongodb")
     args = []
     uri = getattr(settings, "RELATE_MONGO_URI", None)
     if uri:
