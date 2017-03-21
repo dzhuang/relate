@@ -2,6 +2,8 @@
 
 from __future__ import division
 
+from course.latex.utils import get_mongo_db
+
 __copyright__ = "Copyright (C) 2016 Dong Zhuang, Andreas Kloeckner"
 
 __license__ = """
@@ -30,7 +32,6 @@ import sys
 import shutil
 import re
 from hashlib import md5
-from atomicwrites import atomic_write
 
 from django.core.checks import Critical
 from django.core.management.base import CommandError
@@ -39,13 +40,39 @@ from django.utils.encoding import DEFAULT_LOCALE_ENCODING
 from django.utils.translation import ugettext as _, string_concat
 from django.conf import settings
 
+from relate.utils import local_now
+
 from .utils import (
     popen_wrapper, get_basename_or_md5,
     file_read, file_write, get_abstract_latex_log)
 
 # mypy
+from typing import Text, Optional, Any, List  # noqa
 
-from typing import Text, Optional, Any, Tuple, List, Union  # noqa
+
+def get_latex_datauri_mongo_collection(name=None, database=None):
+    db = get_mongo_db(database)
+    if not name:
+        name = getattr(
+            settings, "RELATE_LATEX_DATAURI_MONGO_COLLECTION_NAME",
+            "relate-latex-datauri")
+    collection = db[name]
+    return collection
+
+
+def get_latex_error_mongo_collection(name=None, database=None):
+    db = get_mongo_db(database)
+    if not name:
+        name = getattr(
+            settings, "RELATE_LATEX_ERROR_MONGO_COLLECTION_NAME",
+            "relate-latex-error")
+    collection = db[name]
+    return collection
+
+
+DATAURI_MONGO_COLLECTION = get_latex_datauri_mongo_collection()
+LATEX_ERROR_MONGO_COLLECTION = get_latex_error_mongo_collection()
+
 
 # {{{ latex compiler classes and image converter classes
 
@@ -379,19 +406,16 @@ class Tex2ImgBase(object):
         self.compiled_ext = ".%s" % self.compiler.output_format\
             .replace(".", "").lower()
 
-        # Where the latex compilation error log
-        # will finally be saved.
-        self.errlog_saving_path = os.path.join(
-            output_dir,
-            "%s_%s.log" % (self.basename, self.compiler.cmd)
+        self.datauri_basename = (
+            "%s_%s_%s_datauri" % (self.basename,
+                          self.compiler.cmd,
+                          self.image_format)
         )
 
         # Where the generated image datauri is supposed to be saved.
         self.datauri_saving_path = os.path.join(
             output_dir,
-            "%s_%s_%s_datauri" % (self.basename,
-                          self.compiler.cmd,
-                          self.image_format)
+            self.datauri_basename
         )
 
         self.error_tex_source_path = os.path.join(
@@ -453,9 +477,20 @@ class Tex2ImgBase(object):
             try:
                 log = get_abstract_latex_log(log)
 
-                # avoid race condition
-                with atomic_write(self.errlog_saving_path, mode="wb") as f:
-                    f.write(log)
+                err_key = ("latex_err:%s:%s"
+                           % (self.compiler.cmd, self.basename))
+
+                LATEX_ERROR_MONGO_COLLECTION.update_one(
+                    {"key": err_key},
+                    {"$setOnInsert":
+                         {"key": err_key,
+                          "errorlog": log.encode('utf-8'),
+                          "source": self.tex_source.encode('utf-8'),
+                          "creation_time": local_now()
+                          }},
+                    upsert=True,
+                )
+
             except:
                 raise
             finally:
@@ -516,12 +551,6 @@ class Tex2ImgBase(object):
         try:
             datauri = get_image_datauri(image_path)
 
-            if datauri:
-                # avoid race condition
-                if not os.path.isfile(self.datauri_saving_path):
-                    with atomic_write(self.datauri_saving_path, mode="wb") as f:
-                        f.write(datauri.encode("utf-8"))
-
         except OSError:
             raise RuntimeError(error)
         finally:
@@ -538,6 +567,8 @@ class Tex2ImgBase(object):
         :return: None if no error log find.
         """
         err_result = None
+        err_key = ("latex_err:%s:%s"
+                         % (self.compiler.cmd, self.basename))
 
         try:
             import django.core.cache as cache
@@ -545,8 +576,7 @@ class Tex2ImgBase(object):
             err_cache_key = None
         else:
             def_cache = cache.caches["latex"]
-            err_cache_key = ("latex_err:%s:%s"
-                             % (self.compiler.cmd, self.basename))
+            err_cache_key = err_key
             # Memcache is apparently limited to 250 characters.
             if len(err_cache_key) < 240:
                 if not force_regenerate:
@@ -554,22 +584,24 @@ class Tex2ImgBase(object):
                 else:
                     def_cache.delete(err_cache_key)
             if err_result is not None:
-                if not isinstance(err_result, six.text_type):
-                    err_result = six.text_type(err_result)
+                LATEX_ERROR_MONGO_COLLECTION.update_one(
+                    {"key": err_key},
+                    {"$setOnInsert":
+                         {"key": err_key,
+                          "errorlog": err_result.encode('utf-8'),
+                          "source": self.tex_source.encode('utf-8'),
+                          "creation_time": local_now()
+                          }},
+                    upsert=True,
+                )
 
         if err_result is None:
             # read the saved err_log if it exists
-            if os.path.isfile(self.errlog_saving_path):
-                if not force_regenerate:
-                    err_result = file_read(self.errlog_saving_path).decode("utf-8")
-                    if not isinstance(err_result, six.text_type):
-                        err_result = six.text_type(err_result)
-                else:
-                    try:
-                        os.remove(self.errlog_saving_path)
-                    except:
-                        pass
-                    return None
+            mongo_result = LATEX_ERROR_MONGO_COLLECTION.find_one(
+                {"key": err_key}
+            )
+            if mongo_result:
+                err_result = mongo_result["errorlog"].decode("utf-8")
 
         if err_result:
             if err_cache_key:
@@ -579,13 +611,16 @@ class Tex2ImgBase(object):
                         settings, "RELATE_CACHE_MAX_BYTES", 0):
                         def_cache.add(err_cache_key, err_result)
 
-            # regenerate cache error
-            if not os.path.isfile(self.error_tex_source_path):
-                with atomic_write(self.error_tex_source_path, mode="wb") as f:
-                    f.write(self.tex_source)
-            if not os.path.isfile(self.errlog_saving_path):
-                with atomic_write(self.errlog_saving_path, mode="wb") as f:
-                    f.write(err_result)
+            LATEX_ERROR_MONGO_COLLECTION.update_one(
+                {"key": err_key},
+                {"$setOnInsert":
+                     {"key": err_key,
+                      "errorlog": err_result.encode('utf-8'),
+                      "source": self.tex_source.encode('utf-8'),
+                      "creation_time": local_now()
+                      }},
+                upsert=True,
+            )
 
             from django.utils.html import escape
             raise ValueError(
@@ -620,6 +655,17 @@ class Tex2ImgBase(object):
                 from django.utils.html import escape
                 raise ValueError(
                     "<pre>%s</pre>" % escape(err_result).strip())
+        
+        # we make the key so that it can be used when cache is not configured
+        # and it can be used by mongo
+        uri_key = (
+            "latex2img:%s:%s" % (
+                self.compiler.cmd,
+                md5(
+                    self.datauri_basename.encode("utf-8")
+                ).hexdigest()
+            )
+        )
 
         try:
             import django.core.cache as cache
@@ -627,50 +673,78 @@ class Tex2ImgBase(object):
             uri_cache_key = None
         else:
             def_cache = cache.caches["latex"]
-            uri_cache_key = (
-                "latex2img:%s:%s" % (
-                    self.compiler.cmd,
-                    md5(
-                        self.datauri_saving_path.encode("utf-8")
-                    ).hexdigest()
-                )
-            )
+            uri_cache_key = uri_key
 
             if not result:
+                print("no result when cache key is generated")
                 # Memcache is apparently limited to 250 characters.
                 if len(uri_cache_key) < 240:
                     result = def_cache.get(uri_cache_key)
                     if result:
+                        print("yes, get result from cache")
                         if not isinstance(result, six.text_type):
                             result = six.text_type(result)
-                        if not os.path.isfile(self.datauri_saving_path):
-                            with atomic_write(
-                                    self.datauri_saving_path,
-                                    mode="wb") as f:
-                                f.write(result)
+
+                        DATAURI_MONGO_COLLECTION.update_one(
+                            {"key": uri_key},
+                            {"$setOnInsert":
+                                 {"key": uri_key,
+                                  "datauri": result.encode('utf-8'),
+                                  "creation_time": local_now()
+                                  }},
+                            upsert=True,
+                        )
+
                         return result
 
         # Neighter regenerated nor cached,
         # then read or generate the datauri
         if not result:
-            if os.path.isfile(self.datauri_saving_path):
-                result = file_read(self.datauri_saving_path).decode("utf-8")
-                if not isinstance(result, six.text_type):
-                    result = six.text_type(result)
-            if not result:
-                # possible empty string, remove the file
-                try:
+            print("no result")
+            mongo_result = DATAURI_MONGO_COLLECTION.find_one(
+                {"key": uri_key}
+            )
+            if mongo_result:
+                print("loaded mongo result")
+                result = mongo_result["datauri"].decode("utf-8")
+            else:
+                print("loaded from file")
+                if os.path.isfile(self.datauri_saving_path):
+                    result = file_read(self.datauri_saving_path).decode("utf-8")
                     os.remove(self.datauri_saving_path)
-                except:
-                    pass
+                    if not isinstance(result, six.text_type):
+                        result = six.text_type(result)
+
+                    DATAURI_MONGO_COLLECTION.update_one(
+                        {"key": uri_key},
+                        {"$setOnInsert":
+                             {"key": uri_key,
+                              "datauri": result.encode('utf-8'),
+                              "creation_time": local_now()
+                              }},
+                        upsert=True,
+                    )
+                if not result:
+                    # possible empty string, remove the file
+                    try:
+                        os.remove(self.datauri_saving_path)
+                    except:
+                        pass
 
         if not result:
+            print("converting")
             result = self.get_converted_image_datauri()
             if not isinstance(result, six.text_type):
                 result = six.text_type(result)
-            if not os.path.isfile(self.datauri_saving_path):
-                with atomic_write(self.datauri_saving_path, mode="wb") as f:
-                    f.write(result)
+            DATAURI_MONGO_COLLECTION.update_one(
+                {"key": uri_key},
+                {"$setOnInsert":
+                     {"key": uri_key,
+                      "datauri": result.encode('utf-8'),
+                      "creation_time": local_now()
+                      }},
+                upsert=True,
+            )
 
         assert result
 

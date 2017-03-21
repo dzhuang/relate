@@ -37,6 +37,9 @@ from django.core.files import File
 from django.core.management.base import CommandError
 from django.utils.encoding import (
     DEFAULT_LOCALE_ENCODING, force_text)
+from django.conf import settings
+
+from pymongo import MongoClient
 
 
 # {{{ mypy
@@ -410,5 +413,19 @@ def replace_latex_space_seperator(s):
 
     return s
 
+
+def get_mongo_db(database=None):
+    # type: (Optional[Text]) -> MongoClient
+    if not database:
+        database = getattr(
+            settings, "RELATE_MONGODB_NAME",
+            "relate-mongodb")
+    args = []
+    uri = getattr(settings, "RELATE_MONGO_URI", None)
+    if uri:
+        args.append(uri)
+    client = MongoClient(*args, connect=False)
+    db = client[database]
+    return db
 
 # vim: foldmethod=marker

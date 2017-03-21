@@ -43,6 +43,8 @@ from django.core.exceptions import ObjectDoesNotExist, ImproperlyConfigured
 from django.conf import settings
 from django.utils.html import escape
 
+from relate.utils import local_now
+
 from course.content import markup_to_html as mth
 from course.page.base import (
     PageBaseWithTitle, PageBaseWithValue,
@@ -52,7 +54,7 @@ from course.page import (  # type: ignore
     InlineMultiQuestion)
 from course.validation import ValidationError
 from course.content import get_repo_blob, get_repo_blob_data_cached
-from course.latex.utils import file_read
+from course.latex.utils import file_read, get_mongo_db
 from course.page.code import (
     PythonCodeQuestion, PythonCodeQuestionWithHumanTextFeedback,
     request_python_run_with_retries)
@@ -64,6 +66,19 @@ from atomicwrites import atomic_write
 CACHE_VERSION = "V0"
 
 MAX_JINJIA_RETRY = 3
+
+
+def get_latex_page_mongo_collection(name=None, database=None):
+    db = get_mongo_db(database)
+    if not name:
+        name = getattr(
+            settings, "RELATE_LATEX_PAGE_COLLECTION_NAME",
+            "relate-latex-page")
+    collection = db[name]
+    return collection
+
+
+LATEX_PAGE_MONGO_COLLECTION = get_latex_page_mongo_collection()
 
 
 def markup_to_html(
@@ -335,7 +350,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
     def get_cached_result(self, page_context,
                           page_data, part="", test_key_existance=False):
         #assert part in ["question", "answer"]
-        will_save_file_local = True
+        will_save_file_local = False
 
         # if page_context.in_sandbox:
         #     will_save_file_local = True
@@ -345,37 +360,49 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         #key_making_string = ""
         saved_file_path = None
+
+        try:
+            key_making_string_md5 = page_data["key_making_string_md5"]
+        except KeyError:
+            updated_page_data = self.update_page_data(page_context, page_data)
+            key_making_string_md5 = (
+                updated_page_data["key_making_string_md5"])
+
+        # To be used as saving name of the latex page
+        saved_file_name = (
+            "%s_%s" % (
+                md5(key_making_string_md5.encode("utf-8")).hexdigest(),
+                CACHE_VERSION))
+
+        saved_file_path = os.path.join(
+            self.page_saving_folder,
+            "%s_%s" % (saved_file_name, part))
+
+        page_key = ("latexpage:%s:%s:%s"
+                     % (CACHE_VERSION,
+                        key_making_string_md5,
+                        part))
+
         try:
             import django.core.cache as cache
         except ImproperlyConfigured:
             cache_key = None
         else:
-            try:
-                key_making_string_md5 = page_data["key_making_string_md5"]
-            except KeyError:
-                updated_page_data = self.update_page_data(page_context, page_data)
-                key_making_string_md5 = (
-                    updated_page_data["key_making_string_md5"])
-
-            # To be used as saving name of the latex page
-            saved_file_name = (
-                "%s_%s" % (
-                    md5(key_making_string_md5.encode("utf-8")).hexdigest(),
-                    CACHE_VERSION))
-
-            saved_file_path = os.path.join(
-                    self.page_saving_folder,
-                    "%s_%s" % (saved_file_name, part))
-
-            cache_key = ("latexpage:%s:%s:%s"
-                         % (CACHE_VERSION,
-                            key_making_string_md5,
-                            part))
+            cache_key = page_key
 
             def_cache = cache.caches["latex"]
             result = def_cache.get(cache_key)
             if result is not None:
                 assert isinstance(result, six.text_type)
+                LATEX_PAGE_MONGO_COLLECTION.update_one(
+                    {"key": page_key},
+                    {"$setOnInsert":
+                         {"key": page_key,
+                          "source": result.encode('utf-8'),
+                          "creation_time": local_now()
+                          }},
+                    upsert=True,
+                )
                 if will_save_file_local:
                     if not os.path.isfile(saved_file_path):
                         try:
@@ -392,14 +419,31 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         success = False
 
         if cache_key is None:
-            if saved_file_path:
-                if os.path.isfile(saved_file_path):
-                    try:
-                        result = file_read(saved_file_path).decode("utf-8")
-                    except:
-                        pass
-                    if result is not None:
-                        success = True
+            mongo_result = LATEX_PAGE_MONGO_COLLECTION.find_one(
+                {"key": page_key}
+            )
+            if mongo_result:
+                result = mongo_result["source"].decode("utf-8")
+                success = True
+            else:
+                if saved_file_path:
+                    if os.path.isfile(saved_file_path):
+                        try:
+                            result = file_read(saved_file_path).decode("utf-8")
+                            os.remove(saved_file_path)
+                        except:
+                            pass
+                if result is not None:
+                    LATEX_PAGE_MONGO_COLLECTION.update_one(
+                        {"key": page_key},
+                        {"$setOnInsert":
+                             {"key": page_key,
+                              "source": result.encode('utf-8'),
+                              "creation_time": local_now()
+                              }},
+                        upsert=True,
+                    )
+                    success = True
 
             if result is None:
                 try:
@@ -420,6 +464,15 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     result = result.decode("utf-8")
 
                 if success and result is not None:
+                    LATEX_PAGE_MONGO_COLLECTION.update_one(
+                        {"key": page_key},
+                        {"$setOnInsert":
+                             {"key": page_key,
+                              "source": result.encode('utf-8'),
+                              "creation_time": local_now()
+                              }},
+                        upsert=True,
+                    )
                     if saved_file_path and will_save_file_local:
                         if not os.path.isfile(saved_file_path):
                             try:
@@ -435,9 +488,19 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             if os.path.isfile(saved_file_path):
                 try:
                     result = file_read(saved_file_path).decode("utf-8")
+                    os.remove(saved_file_path)
                 except OSError:
                     pass
                 if result is not None:
+                    LATEX_PAGE_MONGO_COLLECTION.update_one(
+                        {"key": page_key},
+                        {"$setOnInsert":
+                             {"key": page_key,
+                              "source": result.encode('utf-8'),
+                              "creation_time": local_now()
+                              }},
+                        upsert=True,
+                    )
                     success = True
 
         if result is not None:
@@ -476,6 +539,15 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             def_cache.add(cache_key, result)
 
         if success and result is not None:
+            LATEX_PAGE_MONGO_COLLECTION.update_one(
+                {"key": page_key},
+                {"$setOnInsert":
+                     {"key": page_key,
+                      "source": result.encode('utf-8'),
+                      "creation_time": local_now()
+                      }},
+                upsert=True,
+            )
             if saved_file_path and will_save_file_local:
                 if not os.path.isfile(saved_file_path):
                     try:
