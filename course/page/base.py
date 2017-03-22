@@ -412,7 +412,7 @@ class PageBase(object):
         This happens when course repo is updated. It is useful when page_data is
         generated using materials in repo.
         """
-        return page_data
+        return False, page_data
 
     def title(self, page_context, page_data):
         # type: (PageContext, Dict) -> str

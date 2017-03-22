@@ -32,7 +32,7 @@ import os
 from bson.objectid import ObjectId
 
 # {{{ mypy
-from typing import Text, Any  # noqa
+from typing import Text, Callable  # noqa
 if False:
     from course.utils import PageContext  # noqa
 
@@ -87,6 +87,7 @@ def markup_to_html(
         text,  # type: Text
         warm_up_only=False,  # type: bool
         use_jinja=True,  # type: bool
+        reverse_func=None,  # type: Callable
         ):
     # type: (...) -> Text
 
@@ -96,7 +97,8 @@ def markup_to_html(
             page_context.commit_sha,
             text,
             validate_only=warm_up_only,
-            use_jinja=use_jinja)
+            use_jinja=use_jinja,
+            reverse_func=reverse_func)
 
 
 class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
@@ -209,6 +211,12 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
     def update_page_data(self, page_context, page_data):
         question_data = page_data.get("question_data", None)
+        commit_sha = page_context.commit_sha.decode()
+
+        # This won't happen
+        if commit_sha in page_data:
+            return False, None
+
         key_making_string = ""
         if self.cache_key_files:
             for cfile in self.cache_key_files:
@@ -225,13 +233,16 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             for cattr in self.cache_key_attrs:
                 key_making_string += getattr(self.page_desc, cattr)
 
+        template_string = key_making_string
+
         if question_data:
             key_making_string += question_data
 
         page_data["key_making_string_md5"] = (
             md5(key_making_string.encode("utf-8")).hexdigest())
+        page_data[commit_sha] = template_string
 
-        return page_data
+        return True, page_data
 
     def generate_question_data_key_making_string(
             self, page_context, selected_data_bytes):
@@ -254,10 +265,12 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             for cattr in self.cache_key_attrs:
                 key_making_string += getattr(self.page_desc, cattr)
 
+        template_string = key_making_string
+
         if question_data:
             key_making_string += question_data
 
-        return question_data, key_making_string
+        return question_data, template_string, key_making_string
 
     def initialize_page_data(self, page_context):
         if not hasattr(self.page_desc, "random_question_data_file"):
@@ -289,6 +302,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         from random import choice
 
         question_data = None
+        template_string = None
         key_making_string = None
 
         for i in range(len(all_data)):
@@ -299,18 +313,14 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             selected_data_bytes = BytesIO()
             pickle.dump(random_data, selected_data_bytes)
 
-            question_data, key_making_string = (
+            # question_data is the original data
+            # template_string is the string independent of data
+            # key_making_string is going to be deprecated, which is now used
+            # by referring cache key
+            question_data, template_string, key_making_string = (
                 self.generate_question_data_key_making_string(
                     page_context, selected_data_bytes)
             )
-
-            # For debuging errors using page_data
-            # if question_data == "KGRwMApTJ3By...":
-            #     #print key_making_string
-            #
-            #     print "here---------------------"
-            #
-            #     print md5(key_making_string).hexdigest()
 
             # this is used to let sandbox do the warm up job for
             # sequentially ordered data(not random)
@@ -338,12 +348,13 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             random_data = choice(all_data)
             selected_data_bytes = BytesIO()
             pickle.dump(random_data, selected_data_bytes)
-            question_data, key_making_string = (
+            question_data, template_string, key_making_string = (
                 self.generate_question_data_key_making_string(
                     page_context, selected_data_bytes)
             )
 
         return {"question_data": question_data,
+                page_context.commit_sha.decode(): template_string,
                 "key_making_string_md5":
                     md5(key_making_string.encode("utf-8")).hexdigest()
                 }
