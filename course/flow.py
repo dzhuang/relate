@@ -2659,24 +2659,20 @@ def finish_flow_session_view(pctx, flow_session_id):
             if (grading_rule.grade_identifier
                     and flow_session.participation is not None):
                 from course.models import get_flow_grading_opportunity
-                review_uri = (
-                    reverse("relate-view_single_grade",
-                            args=(
-                                pctx.course.identifier,
-                                flow_session.participation.id,
-                                get_flow_grading_opportunity(
-                                    pctx.course,
-                                    flow_session.flow_id,
-                                    fctx.flow_desc,
-                                    grading_rule.grade_identifier,
-                                    grading_rule.grade_aggregation_strategy).id))
-                )
+                review_uri = reverse("relate-view_single_grade",
+                        args=(
+                            pctx.course.identifier,
+                            flow_session.participation.id,
+                            get_flow_grading_opportunity(
+                                pctx.course, flow_session.flow_id, fctx.flow_desc,
+                                grading_rule.grade_identifier,
+                                grading_rule.grade_aggregation_strategy).id))
             else:
                 review_uri = reverse("relate-view_flow_page",
-                                     args=(
-                                         pctx.course.identifier,
-                                         flow_session.id,
-                                         0))
+                        args=(
+                            pctx.course.identifier,
+                            flow_session.id,
+                            0))
 
             if (hasattr(fctx.flow_desc, "notify_on_submit")
                     and fctx.flow_desc.notify_on_submit):
@@ -2720,19 +2716,19 @@ def finish_flow_session_view(pctx, flow_session_id):
                     "course": fctx.course,
                     "flow_session": flow_session,
                     "review_uri": pctx.request.build_absolute_uri(review_uri)
-                })
+                    })
 
                 from django.core.mail import EmailMessage
                 msg = EmailMessage(
-                    string_concat("[%(identifier)s:%(flow_id)s] ",
-                                  _("Submission by %(participation)s"))
-                    % {'participation': flow_session.participation,
-                       'identifier': fctx.course.identifier,
-                       'flow_id': flow_session.flow_id},
-                    message,
-                    getattr(settings, "NOTIFICATION_EMAIL_FROM",
+                        string_concat("[%(identifier)s:%(flow_id)s] ",
+                            _("Submission by %(participation)s"))
+                        % {'participation': flow_session.participation,
+                            'identifier': fctx.course.identifier,
+                            'flow_id': flow_session.flow_id},
+                        message,
+                        getattr(settings, "NOTIFICATION_EMAIL_FROM",
                             settings.ROBOT_EMAIL_FROM),
-                    recipient_list)
+                        recipient_list)
                 msg.bcc = [fctx.course.notify_email]
 
                 from relate.utils import get_outbound_mail_connection
@@ -2741,6 +2737,8 @@ def finish_flow_session_view(pctx, flow_session_id):
                     if hasattr(settings, "NOTIFICATION_EMAIL_FROM")
                     else get_outbound_mail_connection("robot"))
                 msg.send()
+
+        # }}}
 
         if is_interactive_flow:
             if flow_permission.cannot_see_flow_result in access_rule.permissions:
