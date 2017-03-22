@@ -56,7 +56,7 @@ def get_latex_datauri_mongo_collection(name=None, database=None):
     if not name:
         name = getattr(
             settings, "RELATE_LATEX_DATAURI_MONGO_COLLECTION_NAME",
-            "relate_latex_datauri")
+            "relate-latex-datauri")
     collection = db[name]
     return collection
 
@@ -66,7 +66,7 @@ def get_latex_error_mongo_collection(name=None, database=None):
     if not name:
         name = getattr(
             settings, "RELATE_LATEX_ERROR_MONGO_COLLECTION_NAME",
-            "relate_latex_error")
+            "relate-latex-error")
     collection = db[name]
     return collection
 
@@ -599,7 +599,7 @@ class Tex2ImgBase(object):
         if err_result is None:
             # read the saved err_log if it exists
             mongo_result = LATEX_ERROR_MONGO_COLLECTION.find_one(
-                {"_id": ObjectId(err_key)}
+                {"key": err_key}
             )
             if mongo_result:
                 err_result = mongo_result["errorlog"].decode("utf-8")
@@ -703,7 +703,7 @@ class Tex2ImgBase(object):
         if not result:
             print("no result")
             mongo_result = DATAURI_MONGO_COLLECTION.find_one(
-                {"_id": ObjectId(uri_key)}
+                {"key": uri_key}
             )
             if mongo_result:
                 print("loaded mongo result")

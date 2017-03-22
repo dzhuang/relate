@@ -74,7 +74,7 @@ def get_latex_page_mongo_collection(name=None, database=None):
     if not name:
         name = getattr(
             settings, "RELATE_LATEX_PAGE_COLLECTION_NAME",
-            "relate_latex_page")
+            "relate-latex-page")
     collection = db[name]
     return collection
 
@@ -421,7 +421,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         if cache_key is None:
             mongo_result = LATEX_PAGE_MONGO_COLLECTION.find_one(
-                {"_id": ObjectId(page_key)}
+                {"key": page_key}
             )
             if mongo_result:
                 result = mongo_result["source"].decode("utf-8")
