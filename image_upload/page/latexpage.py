@@ -488,10 +488,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 if page_result:
                     result = page_result
                     success = True
-<<<<<<< HEAD
-=======
-                    print("reading from page collection!!")
->>>>>>> 89d6896da8fd98ef0809bbf781850915ecd27e3d
+                    print("-----------reading from page collection!-----------")
                 else:
                     raise RuntimeError(
                         "Page result %s null in Mongo with key %s"
