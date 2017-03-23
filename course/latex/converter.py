@@ -60,7 +60,7 @@ def get_latex_datauri_mongo_collection(name=None, db=DB, index_name="key"):
             "relate_latex_datauri")
     collection = db[name]
     if index_name:
-        collection.ensure_index(index_name)
+        collection.ensure_index(index_name, unique=True)
     return collection
 
 
@@ -71,7 +71,7 @@ def get_latex_error_mongo_collection(name=None, db=DB, index_name="key"):
             "relate_latex_error")
     collection = db[name]
     if index_name:
-        collection.ensure_index(index_name)
+        collection.ensure_index(index_name, unique=True)
     return collection
 
 
