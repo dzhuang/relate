@@ -51,9 +51,9 @@ from .utils import (
 # mypy
 from typing import Text, Optional, Any, List  # noqa
 
+DB = get_mongo_db()
 
-def get_latex_datauri_mongo_collection(name=None, database=None, index_name="key"):
-    db = get_mongo_db(database)
+def get_latex_datauri_mongo_collection(name=None, db=DB, index_name="key"):
     if not name:
         name = getattr(
             settings, "RELATE_LATEX_DATAURI_MONGO_COLLECTION_NAME",
@@ -64,8 +64,7 @@ def get_latex_datauri_mongo_collection(name=None, database=None, index_name="key
     return collection
 
 
-def get_latex_error_mongo_collection(name=None, database=None, index_name="key"):
-    db = get_mongo_db(database)
+def get_latex_error_mongo_collection(name=None, db=DB, index_name="key"):
     if not name:
         name = getattr(
             settings, "RELATE_LATEX_ERROR_MONGO_COLLECTION_NAME",
@@ -657,6 +656,7 @@ class Tex2ImgBase(object):
                 ).hexdigest()
             )
         )
+        print(self.datauri_basename)
 
         try:
             import django.core.cache as cache

@@ -53,10 +53,8 @@ def migrate_to_mongo(output_dir):
     for f in os.listdir(output_dir):
         n += 1
         if f.endswith("_datauri"):
-            result = file_read(os.path.join(output_dir, f))
+            result = file_read(os.path.join(output_dir, f)).decode("utf-8")
             os.remove(os.path.join(output_dir, f))
-            if not isinstance(result, six.text_type):
-                result = six.text_type(result)
             cmd = "pdflatex"
             if "lualatex" in f:
                 cmd = "lualatex"
