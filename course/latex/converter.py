@@ -51,28 +51,32 @@ from .utils import (
 from typing import Text, Optional, Any, List  # noqa
 
 
-def get_latex_datauri_mongo_collection(name=None, database=None):
+def get_latex_datauri_mongo_collection(name=None, database=None, index_name=None):
     db = get_mongo_db(database)
     if not name:
         name = getattr(
             settings, "RELATE_LATEX_DATAURI_MONGO_COLLECTION_NAME",
             "relate-latex-datauri")
     collection = db[name]
+    if index_name and index_name not in collection.index_information():
+        collection.create_index(index_name)
     return collection
 
 
-def get_latex_error_mongo_collection(name=None, database=None):
+def get_latex_error_mongo_collection(name=None, database=None, index_name=None):
     db = get_mongo_db(database)
     if not name:
         name = getattr(
             settings, "RELATE_LATEX_ERROR_MONGO_COLLECTION_NAME",
             "relate-latex-error")
     collection = db[name]
+    if index_name and index_name not in collection.index_information():
+        collection.create_index(index_name)
     return collection
 
 
-DATAURI_MONGO_COLLECTION = get_latex_datauri_mongo_collection()
-LATEX_ERROR_MONGO_COLLECTION = get_latex_error_mongo_collection()
+DATAURI_MONGO_COLLECTION = get_latex_datauri_mongo_collection(index_name="key")
+LATEX_ERROR_MONGO_COLLECTION = get_latex_error_mongo_collection(index_name="key")
 
 
 # {{{ latex compiler classes and image converter classes
@@ -413,12 +417,6 @@ class Tex2ImgBase(object):
                           self.image_format)
         )
 
-        # Where the generated image datauri is supposed to be saved.
-        self.datauri_saving_path = os.path.join(
-            output_dir,
-            self.datauri_basename
-        )
-
         self.error_tex_source_path = os.path.join(
             output_dir,
             "%s_%s.tex" % (self.basename,
@@ -481,6 +479,17 @@ class Tex2ImgBase(object):
                 err_key = ("latex_err:%s:%s"
                            % (self.compiler.cmd, self.basename))
 
+                try:
+                    import django.core.cache as cache
+                except ImproperlyConfigured:
+                    err_cache_key = None
+                else:
+                    def_cache = cache.caches["latex"]
+                    err_cache_key = err_key
+
+                if not isinstance(log, six.text_type):
+                    log = six.text_type(log)
+
                 LATEX_ERROR_MONGO_COLLECTION.update_one(
                     {"key": err_key},
                     {"$setOnInsert":
@@ -491,6 +500,12 @@ class Tex2ImgBase(object):
                           }},
                     upsert=True,
                 )
+
+                if err_cache_key:
+                    assert isinstance(log, six.text_type)
+                    if len(log) <= getattr(
+                            settings, "RELATE_CACHE_MAX_BYTES", 0):
+                        def_cache.add(err_cache_key, log)
 
             except:
                 raise
@@ -563,7 +578,7 @@ class Tex2ImgBase(object):
         # type: (Optional[bool]) -> Optional[Text]
         """
         If the problematic latex source is not modified, check
-        wheter there is error log both in cache and output_dir.
+        whether there is error log both in cache or mongo.
         If it exists, raise the error.
         :return: None if no error log find.
         """
@@ -584,17 +599,11 @@ class Tex2ImgBase(object):
                     err_result = def_cache.get(err_cache_key)
                 else:
                     def_cache.delete(err_cache_key)
+                    LATEX_ERROR_MONGO_COLLECTION.delete_one({"key": err_key})
             if err_result is not None:
-                LATEX_ERROR_MONGO_COLLECTION.update_one(
-                    {"key": err_key},
-                    {"$setOnInsert":
-                         {"key": err_key,
-                          "errorlog": err_result.encode('utf-8'),
-                          "source": self.tex_source.encode('utf-8'),
-                          "creation_time": local_now()
-                          }},
-                    upsert=True,
-                )
+                from django.utils.html import escape
+                raise ValueError(
+                    "<pre>%s</pre>" % escape(err_result).strip())
 
         if err_result is None:
             # read the saved err_log if it exists
@@ -606,28 +615,16 @@ class Tex2ImgBase(object):
 
         if err_result:
             if err_cache_key:
-                assert isinstance(err_result, six.text_type),\
-                    err_cache_key
+                assert isinstance(err_result, six.text_type)
                 if len(err_result) <= getattr(
                         settings, "RELATE_CACHE_MAX_BYTES", 0):
                         def_cache.add(err_cache_key, err_result)
-
-            LATEX_ERROR_MONGO_COLLECTION.update_one(
-                {"key": err_key},
-                {"$setOnInsert":
-                     {"key": err_key,
-                      "errorlog": err_result.encode('utf-8'),
-                      "source": self.tex_source.encode('utf-8'),
-                      "creation_time": local_now()
-                      }},
-                upsert=True,
-            )
 
             from django.utils.html import escape
             raise ValueError(
                 "<pre>%s</pre>" % escape(err_result).strip())
 
-        return err_result
+        return None
 
     def get_data_uri_cached(self, force_regenerate=False):
         # type: (Optional[bool]) -> Text
@@ -638,14 +635,10 @@ class Tex2ImgBase(object):
         :return: string, data uri of the coverted image.
         """
         result = None
+
         if force_regenerate:
             # first remove cached error results and files
             self.get_compile_err_cached(force_regenerate)
-            if os.path.isfile(self.datauri_saving_path):
-                try:
-                    os.remove(self.datauri_saving_path)
-                except:
-                    pass
             result = self.get_converted_image_datauri()
             if not isinstance(result, six.text_type):
                 result = six.text_type(result)
@@ -676,62 +669,29 @@ class Tex2ImgBase(object):
             def_cache = cache.caches["latex"]
             uri_cache_key = uri_key
 
-            if not result:
-                print("no result when cache key is generated")
+            if force_regenerate:
+                def_cache.delete(uri_cache_key)
+                DATAURI_MONGO_COLLECTION.delete_one({"key": uri_key})
+            elif not result:
                 # Memcache is apparently limited to 250 characters.
                 if len(uri_cache_key) < 240:
                     result = def_cache.get(uri_cache_key)
                     if result:
-                        print("yes, get result from cache")
                         if not isinstance(result, six.text_type):
                             result = six.text_type(result)
-
-                        DATAURI_MONGO_COLLECTION.update_one(
-                            {"key": uri_key},
-                            {"$setOnInsert":
-                                 {"key": uri_key,
-                                  "datauri": result.encode('utf-8'),
-                                  "creation_time": local_now()
-                                  }},
-                            upsert=True,
-                        )
-
                         return result
 
         # Neighter regenerated nor cached,
-        # then read or generate the datauri
+        # then read from mongo
         if not result:
-            print("no result")
             mongo_result = DATAURI_MONGO_COLLECTION.find_one(
                 {"key": uri_key}
             )
             if mongo_result:
-                print("loaded mongo result")
+                print("image loaded from mongo result")
                 result = mongo_result["datauri"].decode("utf-8")
-            else:
-                print("loaded from file")
-                if os.path.isfile(self.datauri_saving_path):
-                    result = file_read(self.datauri_saving_path).decode("utf-8")
-                    os.remove(self.datauri_saving_path)
-                    if not isinstance(result, six.text_type):
-                        result = six.text_type(result)
 
-                    DATAURI_MONGO_COLLECTION.update_one(
-                        {"key": uri_key},
-                        {"$setOnInsert":
-                             {"key": uri_key,
-                              "datauri": result.encode('utf-8'),
-                              "creation_time": local_now()
-                              }},
-                        upsert=True,
-                    )
-                if not result:
-                    # possible empty string, remove the file
-                    try:
-                        os.remove(self.datauri_saving_path)
-                    except:
-                        pass
-
+        # Not found in mongo, regenerate it
         if not result:
             print("converting")
             result = self.get_converted_image_datauri()

@@ -69,17 +69,19 @@ CACHE_VERSION = "V0"
 MAX_JINJIA_RETRY = 3
 
 
-def get_latex_page_mongo_collection(name=None, database=None):
+def get_latex_page_mongo_collection(name=None, database=None, index_name=None):
     db = get_mongo_db(database)
     if not name:
         name = getattr(
             settings, "RELATE_LATEX_PAGE_COLLECTION_NAME",
             "relate-latex-page")
     collection = db[name]
+    if index_name and index_name not in collection.index_information():
+        collection.create_index(index_name)
     return collection
 
 
-LATEX_PAGE_MONGO_COLLECTION = get_latex_page_mongo_collection()
+LATEX_PAGE_MONGO_COLLECTION = get_latex_page_mongo_collection(index_name="key")
 
 
 def markup_to_html(
@@ -190,13 +192,14 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         return super(LatexRandomQuestionBase, self).required_attrs() + (
             ("data_files", (list, str)),
             ("random_question_data_file", str),
-            ("question_process_code", str),
         )
 
     def allowed_attrs(self):
         return super(LatexRandomQuestionBase, self).allowed_attrs() + (
             ("background_code", str),
+            ("question_process_code", str),
             ("answer_process_code", str),
+            ("full_process_code", str),
             ("docker_timeout", (int, float)),
             ("excluded_cache_key_files", list),
             ("cache_key_files", list),
@@ -204,6 +207,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             ("use_question_data_file_as_cache", bool),
             ("warm_up_by_sandbox", bool),
             ("will_receive_grade", bool),
+            ("answer_explanation_process_code", str),
         )
 
     def is_answer_gradable(self):
@@ -240,7 +244,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         page_data["key_making_string_md5"] = (
             md5(key_making_string.encode("utf-8")).hexdigest())
-        page_data[commit_sha] = template_string
+        page_data[commit_sha] = md5(template_string.encode("utf-8")).hexdigest()
 
         return True, page_data
 
@@ -332,7 +336,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                              md5(key_making_string.encode()).hexdigest()
                          }
 
-            for part in ["answer", "question", "blank",
+            for part in ["full", "answer", "question", "blank",
                          "blank_answer", "answer_explanation"]:
                 try:
                     key_exist, result = self.get_cached_result(
@@ -344,6 +348,10 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 except KeyError:
                     continue
 
+                # if we have full code, then other is not necessary
+                if part == "full":
+                    break
+
         if page_context.in_sandbox and warm_up_by_sandbox:
             random_data = choice(all_data)
             selected_data_bytes = BytesIO()
@@ -354,7 +362,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             )
 
         return {"question_data": question_data,
-                page_context.commit_sha.decode(): template_string,
+                page_context.commit_sha.decode():
+                    md5(template_string.encode("utf-8")).hexdigest(),
                 "key_making_string_md5":
                     md5(key_making_string.encode("utf-8")).hexdigest()
                 }
@@ -376,7 +385,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         try:
             key_making_string_md5 = page_data["key_making_string_md5"]
         except KeyError:
-            updated_page_data = self.update_page_data(page_context, page_data)
+            _, updated_page_data = self.update_page_data(page_context, page_data)
             key_making_string_md5 = (
                 updated_page_data["key_making_string_md5"])
 
@@ -443,6 +452,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                         try:
                             result = file_read(saved_file_path).decode("utf-8")
                             os.remove(saved_file_path)
+                            print("!!Removed page file %s!!" % saved_file_path)
                         except:
                             pass
                 if result is not None:
@@ -501,6 +511,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 try:
                     result = file_read(saved_file_path).decode("utf-8")
                     os.remove(saved_file_path)
+                    print("!!Removed page file %s!!" % saved_file_path)
+
                 except OSError:
                     pass
                 if result is not None:
@@ -828,6 +840,25 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             fig_lines.append("</dl>")
 
         if success:
+            # > 1 because there will be execution time
+            if hasattr(response, "feedback") and len(response.feedback) > 1:
+                b = {}
+                if len(response.feedback) > 1:
+                    print(type(response.feedback[0]))
+                    a = response.feedback[0]
+                    # if isinstance(response.feedback[1], dict):
+                    #     print(response.feedback[1].items())
+                    try:
+                        import json
+                        b = json.loads(a)
+                        # print(type(b))
+                        # print("result", b['answer_explanation'])
+                    except:
+                        raise
+
+                # if hasattr(response, "stdout") and response.stdout:
+                #     print(response.stdout)
+                return success, "this is the result" + b.get('answer_explanation', "")
             if hasattr(response, "stdout") and response.stdout:
                 return success, response.stdout
         else:
@@ -950,11 +981,6 @@ class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestio
         return super(LatexRandomCodeInlineMultiQuestion, self).required_attrs() + (
             ("blank_process_code", str),
             ("blank_answer_process_code", str)
-        )
-
-    def allowed_attrs(self):
-        return super(LatexRandomCodeInlineMultiQuestion, self).allowed_attrs() + (
-            ("answer_explanation_process_code", str),
         )
 
     def grade(self, page_context, page_data, answer_data, grade_data):
