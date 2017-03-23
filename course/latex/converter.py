@@ -56,7 +56,7 @@ def get_latex_datauri_mongo_collection(name=None, database=None, index_name=None
     if not name:
         name = getattr(
             settings, "RELATE_LATEX_DATAURI_MONGO_COLLECTION_NAME",
-            "relate-latex-datauri")
+            "relate_latex_datauri")
     collection = db[name]
     if index_name and index_name not in collection.index_information():
         collection.create_index(index_name)
@@ -68,7 +68,7 @@ def get_latex_error_mongo_collection(name=None, database=None, index_name=None):
     if not name:
         name = getattr(
             settings, "RELATE_LATEX_ERROR_MONGO_COLLECTION_NAME",
-            "relate-latex-error")
+            "relate_latex_error")
     collection = db[name]
     if index_name and index_name not in collection.index_information():
         collection.create_index(index_name)
