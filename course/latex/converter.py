@@ -32,6 +32,7 @@ import sys
 import shutil
 import re
 from hashlib import md5
+from pymongo.errors import OperationFailure
 from bson.objectid import ObjectId
 
 from django.core.checks import Critical
@@ -58,8 +59,11 @@ def get_latex_datauri_mongo_collection(name=None, database=None, index_name=None
             settings, "RELATE_LATEX_DATAURI_MONGO_COLLECTION_NAME",
             "relate_latex_datauri")
     collection = db[name]
-    if index_name and index_name not in collection.index_information():
-        collection.create_index(index_name)
+    try:
+        if index_name and index_name not in collection.index_information():
+            collection.ensure_index(index_name)
+    except OperationFailure:
+        pass
     return collection
 
 
@@ -70,8 +74,11 @@ def get_latex_error_mongo_collection(name=None, database=None, index_name=None):
             settings, "RELATE_LATEX_ERROR_MONGO_COLLECTION_NAME",
             "relate_latex_error")
     collection = db[name]
-    if index_name and index_name not in collection.index_information():
-        collection.create_index(index_name)
+    try:
+        if index_name and index_name not in collection.index_information():
+            collection.ensure_index(index_name)
+    except OperationFailure:
+        pass
     return collection
 
 
