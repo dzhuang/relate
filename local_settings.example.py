@@ -293,11 +293,6 @@ RELATE_EDITABLE_INST_ID_BEFORE_VERIFICATION = True
 #RELATE_DVISVGM_BIN_DIR = "/path/to/dvisvgm/bin/"
 #RELATE_DVIPNG_BIN_DIR = "/path/to/dvipng/bin/"
 
-# The full path of the directory where images converted
-# (from latex source) are saved. If not set, the default
-# path is a subfolder named "latex_image" in MEDIA_ROOT.
-# RELATE_LATEX_IMAGE_SAVING_FOLDER_PATH = ""
-
 # image, especially svg have large file size, files with size
 # exceed the following won't be cached.
 RELATE_IMAGE_CACHE_MAX_BYTES = 65536

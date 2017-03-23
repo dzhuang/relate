@@ -43,39 +43,6 @@ from typing import Text, Any, Optional  # noqa
 
 # }}}
 
-def migrate_to_mongo(output_dir):
-    import os
-    from .utils import file_read
-    from .converter import get_latex_datauri_mongo_collection
-    from hashlib import md5
-    from relate.utils import local_now
-    n = 0
-    for f in os.listdir(output_dir):
-        n += 1
-        if f.endswith("_datauri"):
-            result = file_read(os.path.join(output_dir, f)).decode("utf-8")
-            os.remove(os.path.join(output_dir, f))
-            cmd = "pdflatex"
-            if "lualatex" in f:
-                cmd = "lualatex"
-            uri_key = (
-                "latex2img:%s:%s" % (
-                    cmd,
-                    md5(
-                        f.encode("utf-8")
-                    ).hexdigest()
-                )
-            )
-            get_latex_datauri_mongo_collection().update_one(
-                {"key": uri_key},
-                {"$setOnInsert":
-                     {"key": uri_key,
-                      "datauri": result.encode('utf-8'),
-                      "creation_time": local_now()
-                      }},
-                upsert=True,
-            )
-
 
 def tex_to_img_tag(tex_source, *args, **kwargs):
     # type: (Text, *Any, **Any) -> Optional[Text]
@@ -88,10 +55,6 @@ def tex_to_img_tag(tex_source, *args, **kwargs):
     image_format = kwargs.get("image_format", "")
     if not image_format:
         raise ValueError(_("'image_format' must be specified."))
-
-    output_dir = kwargs.get("output_dir")
-
-    migrate_to_mongo(output_dir)
 
     tex_filename = kwargs.get("tex_filename", None)
     tex_preamble = kwargs.get("tex_preamble", "")
@@ -148,7 +111,6 @@ def tex_to_img_tag(tex_source, *args, **kwargs):
     latex2img = tex2img_class(
         tex_source=texdoc.as_latex(),
         tex_filename=tex_filename,
-        output_dir=output_dir
         )
 
     return (

@@ -361,14 +361,12 @@ class Tex2ImgBase(object):
         """
         raise NotImplementedError()
 
-    def __init__(self, tex_source, tex_filename, output_dir):
+    def __init__(self, tex_source, tex_filename):
         # type: (...) -> None
         """
         :param tex_source: Required, a string representing the
         full tex source code.
         :param tex_filename: Optional, a string
-        :param output_dir: Required, a string of the path where
-        the images and error logs will be saved.
         """
 
         if tex_source:
@@ -379,21 +377,6 @@ class Tex2ImgBase(object):
             )
         assert isinstance(tex_source, six.text_type)
         self.tex_source = tex_source
-
-        if output_dir:
-            output_dir = output_dir.strip()
-        if not output_dir:
-            raise ValueError(
-                _("Param output_dir must be specified"))
-        else:
-            try:
-                if (not os.path.exists(output_dir)
-                        or not os.path.isdir(output_dir)):
-                    os.makedirs(output_dir)
-            except Exception:
-                raise ValueError(
-                    _("Param output_dir '%s' is not a valid path")
-                    % output_dir)
 
         self.working_dir = None
 
@@ -413,13 +396,6 @@ class Tex2ImgBase(object):
                           self.image_format)
         )
 
-        self.error_tex_source_path = os.path.join(
-            output_dir,
-            "%s_%s.tex" % (self.basename,
-                          self.compiler.cmd,
-                           )
-        )
-
     def get_compiler_cmdline(self, tex_path):
         # type: (Text) -> List[Text]
         return self.compiler.get_latexmk_subpro_cmdline(tex_path)
@@ -437,8 +413,7 @@ class Tex2ImgBase(object):
     def get_compiled_file(self):
         # type: () -> Optional[Text]
         """
-        Compile latex source. If failed, error log will copied
-        to ``output_dir``.
+        Compile latex source.
         :return: string, the path of the compiled file if succeeded.
         """
         from tempfile import mkdtemp
@@ -525,8 +500,7 @@ class Tex2ImgBase(object):
     def get_converted_image_datauri(self):
         # type: () -> Optional[Text]
         """
-        Convert compiled file into image. If succeeded, the image
-        will be copied to ``output_dir``.
+        Convert compiled file into image.
         :return: string, the datauri
         """
         compiled_file_path = self.get_compiled_file()
@@ -656,8 +630,6 @@ class Tex2ImgBase(object):
                 ).hexdigest()
             )
         )
-        print(self.datauri_basename)
-
         try:
             import django.core.cache as cache
         except ImproperlyConfigured:
@@ -685,12 +657,12 @@ class Tex2ImgBase(object):
                 {"key": uri_key}
             )
             if mongo_result:
-                print("image loaded from mongo result")
                 result = mongo_result["datauri"].decode("utf-8")
+                if not isinstance(result, six.text_type):
+                    result = six.text_type(result)
 
         # Not found in mongo, regenerate it
         if not result:
-            print("converting")
             result = self.get_converted_image_datauri()
             if not isinstance(result, six.text_type):
                 result = six.text_type(result)
