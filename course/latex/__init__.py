@@ -46,14 +46,13 @@ from typing import Text, Any, Optional  # noqa
 def migrate_to_mongo(output_dir):
     import os
     from .utils import file_read
-    from .converter import LATEX_ERROR_MONGO_COLLECTION, DATAURI_MONGO_COLLECTION
+    from .converter import get_latex_datauri_mongo_collection
     from hashlib import md5
     from relate.utils import local_now
     n = 0
     for f in os.listdir(output_dir):
         n += 1
         if f.endswith("_datauri"):
-            # print(os.path.join(output_dir, f))
             result = file_read(os.path.join(output_dir, f))
             os.remove(os.path.join(output_dir, f))
             if not isinstance(result, six.text_type):
@@ -69,7 +68,7 @@ def migrate_to_mongo(output_dir):
                     ).hexdigest()
                 )
             )
-            DATAURI_MONGO_COLLECTION.update_one(
+            get_latex_datauri_mongo_collection().update_one(
                 {"key": uri_key},
                 {"$setOnInsert":
                      {"key": uri_key,

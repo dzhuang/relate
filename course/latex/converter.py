@@ -52,38 +52,28 @@ from .utils import (
 from typing import Text, Optional, Any, List  # noqa
 
 
-def get_latex_datauri_mongo_collection(name=None, database=None, index_name=None):
+def get_latex_datauri_mongo_collection(name=None, database=None, index_name="key"):
     db = get_mongo_db(database)
     if not name:
         name = getattr(
             settings, "RELATE_LATEX_DATAURI_MONGO_COLLECTION_NAME",
             "relate_latex_datauri")
     collection = db[name]
-    try:
-        if index_name and index_name not in collection.index_information():
-            collection.ensure_index(index_name)
-    except OperationFailure:
-        pass
+    if index_name:
+        collection.ensure_index(index_name)
     return collection
 
 
-def get_latex_error_mongo_collection(name=None, database=None, index_name=None):
+def get_latex_error_mongo_collection(name=None, database=None, index_name="key"):
     db = get_mongo_db(database)
     if not name:
         name = getattr(
             settings, "RELATE_LATEX_ERROR_MONGO_COLLECTION_NAME",
             "relate_latex_error")
     collection = db[name]
-    try:
-        if index_name and index_name not in collection.index_information():
-            collection.ensure_index(index_name)
-    except OperationFailure:
-        pass
+    if index_name:
+        collection.ensure_index(index_name)
     return collection
-
-
-DATAURI_MONGO_COLLECTION = get_latex_datauri_mongo_collection(index_name="key")
-LATEX_ERROR_MONGO_COLLECTION = get_latex_error_mongo_collection(index_name="key")
 
 
 # {{{ latex compiler classes and image converter classes
@@ -497,7 +487,7 @@ class Tex2ImgBase(object):
                 if not isinstance(log, six.text_type):
                     log = six.text_type(log)
 
-                LATEX_ERROR_MONGO_COLLECTION.update_one(
+                get_latex_error_mongo_collection().update_one(
                     {"key": err_key},
                     {"$setOnInsert":
                          {"key": err_key,
@@ -606,7 +596,7 @@ class Tex2ImgBase(object):
                     err_result = def_cache.get(err_cache_key)
                 else:
                     def_cache.delete(err_cache_key)
-                    LATEX_ERROR_MONGO_COLLECTION.delete_one({"key": err_key})
+                    get_latex_error_mongo_collection().delete_one({"key": err_key})
             if err_result is not None:
                 from django.utils.html import escape
                 raise ValueError(
@@ -614,7 +604,7 @@ class Tex2ImgBase(object):
 
         if err_result is None:
             # read the saved err_log if it exists
-            mongo_result = LATEX_ERROR_MONGO_COLLECTION.find_one(
+            mongo_result = get_latex_error_mongo_collection().find_one(
                 {"key": err_key}
             )
             if mongo_result:
@@ -678,7 +668,7 @@ class Tex2ImgBase(object):
 
             if force_regenerate:
                 def_cache.delete(uri_cache_key)
-                DATAURI_MONGO_COLLECTION.delete_one({"key": uri_key})
+                get_latex_datauri_mongo_collection().delete_one({"key": uri_key})
             elif not result:
                 # Memcache is apparently limited to 250 characters.
                 if len(uri_cache_key) < 240:
@@ -691,7 +681,7 @@ class Tex2ImgBase(object):
         # Neighter regenerated nor cached,
         # then read from mongo
         if not result:
-            mongo_result = DATAURI_MONGO_COLLECTION.find_one(
+            mongo_result = get_latex_datauri_mongo_collection().find_one(
                 {"key": uri_key}
             )
             if mongo_result:
@@ -704,7 +694,7 @@ class Tex2ImgBase(object):
             result = self.get_converted_image_datauri()
             if not isinstance(result, six.text_type):
                 result = six.text_type(result)
-            DATAURI_MONGO_COLLECTION.update_one(
+            get_latex_datauri_mongo_collection().update_one(
                 {"key": uri_key},
                 {"$setOnInsert":
                      {"key": uri_key,

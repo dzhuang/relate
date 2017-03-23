@@ -69,7 +69,7 @@ CACHE_VERSION = "V0"
 MAX_JINJIA_RETRY = 3
 
 
-def get_latex_page_mongo_collection(name=None, database=None, index_name=None):
+def get_latex_page_mongo_collection(name=None, database=None, index_name="key"):
     db = get_mongo_db(database)
     if not name:
         name = getattr(
@@ -83,9 +83,6 @@ def get_latex_page_mongo_collection(name=None, database=None, index_name=None):
     except OperationFailure:
         pass
     return collection
-
-
-LATEX_PAGE_MONGO_COLLECTION = get_latex_page_mongo_collection(index_name="key")
 
 
 def markup_to_html(
@@ -419,7 +416,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             result = def_cache.get(cache_key)
             if result is not None:
                 assert isinstance(result, six.text_type)
-                LATEX_PAGE_MONGO_COLLECTION.update_one(
+                get_latex_page_mongo_collection().update_one(
                     {"key": page_key},
                     {"$setOnInsert":
                          {"key": page_key,
@@ -444,7 +441,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         success = False
 
         if cache_key is None:
-            mongo_result = LATEX_PAGE_MONGO_COLLECTION.find_one(
+            mongo_result = get_latex_page_mongo_collection().find_one(
                 {"key": page_key}
             )
             if mongo_result:
@@ -460,7 +457,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                         except:
                             pass
                 if result is not None:
-                    LATEX_PAGE_MONGO_COLLECTION.update_one(
+                    get_latex_page_mongo_collection().update_one(
                         {"key": page_key},
                         {"$setOnInsert":
                              {"key": page_key,
@@ -490,7 +487,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     result = result.decode("utf-8")
 
                 if success and result is not None:
-                    LATEX_PAGE_MONGO_COLLECTION.update_one(
+                    get_latex_page_mongo_collection().update_one(
                         {"key": page_key},
                         {"$setOnInsert":
                              {"key": page_key,
@@ -520,7 +517,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 except OSError:
                     pass
                 if result is not None:
-                    LATEX_PAGE_MONGO_COLLECTION.update_one(
+                    get_latex_page_mongo_collection().update_one(
                         {"key": page_key},
                         {"$setOnInsert":
                              {"key": page_key,
@@ -567,7 +564,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             def_cache.add(cache_key, result)
 
         if success and result is not None:
-            LATEX_PAGE_MONGO_COLLECTION.update_one(
+            get_latex_page_mongo_collection().update_one(
                 {"key": page_key},
                 {"$setOnInsert":
                      {"key": page_key,
