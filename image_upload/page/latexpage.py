@@ -65,12 +65,11 @@ from image_upload.page.imgupload import ImageUploadQuestion
 from atomicwrites import atomic_write
 
 CACHE_VERSION = "V0"
-
 MAX_JINJIA_RETRY = 3
+DB = get_mongo_db()
 
 
-def get_latex_page_mongo_collection(name=None, database=None, index_name="key"):
-    db = get_mongo_db(database)
+def get_latex_page_mongo_collection(name=None, db=DB, index_name="key"):
     if not name:
         name = getattr(
             settings, "RELATE_LATEX_PAGE_COLLECTION_NAME",
@@ -79,7 +78,21 @@ def get_latex_page_mongo_collection(name=None, database=None, index_name="key"):
     from pymongo.errors import OperationFailure
     try:
         if index_name and index_name not in collection.index_information():
-            collection.ensure_index(index_name)
+            collection.ensure_index(index_name, unique=True)
+    except OperationFailure:
+        pass
+    return collection
+
+def get_latex_page_part_mongo_collection(name=None, db=DB, index_name="key"):
+    if not name:
+        name = getattr(
+            settings, "RELATE_LATEX_PAGE_PART_COLLECTION_NAME",
+            "relate_latex_page_part")
+    collection = db[name]
+    from pymongo.errors import OperationFailure
+    try:
+        if index_name and index_name not in collection.index_information():
+            collection.ensure_index(index_name, unique=True)
     except OperationFailure:
         pass
     return collection
@@ -400,38 +413,23 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             self.page_saving_folder,
             "%s_%s" % (saved_file_name, part))
 
-        page_key = ("latexpage:%s:%s:%s"
+        page_key = ("latexpage:%s:%s"
                      % (CACHE_VERSION,
-                        key_making_string_md5,
-                        part))
+                        key_making_string_md5))
+
+        part_key = ("%s:%s" % (page_key, part))
 
         try:
             import django.core.cache as cache
         except ImproperlyConfigured:
             cache_key = None
         else:
-            cache_key = page_key
+            cache_key = part_key
 
             def_cache = cache.caches["latex"]
             result = def_cache.get(cache_key)
             if result is not None:
                 assert isinstance(result, six.text_type)
-                get_latex_page_mongo_collection().update_one(
-                    {"key": page_key},
-                    {"$setOnInsert":
-                         {"key": page_key,
-                          "source": result.encode('utf-8'),
-                          "creation_time": local_now()
-                          }},
-                    upsert=True,
-                )
-                if will_save_file_local:
-                    if not os.path.isfile(saved_file_path):
-                        try:
-                            with atomic_write(saved_file_path, mode="wb") as f:
-                                f.write(result)
-                        except OSError:
-                            pass
                 if test_key_existance:
                     return True, result
                 return True, result
@@ -440,94 +438,104 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         result = None
         success = False
 
-        if cache_key is None:
-            mongo_result = get_latex_page_mongo_collection().find_one(
-                {"key": page_key}
-            )
-            if mongo_result:
-                result = mongo_result["source"].decode("utf-8")
-                success = True
-            else:
-                if saved_file_path:
-                    if os.path.isfile(saved_file_path):
-                        try:
-                            result = file_read(saved_file_path).decode("utf-8")
-                            os.remove(saved_file_path)
-                            print("!!Removed page file %s!!" % saved_file_path)
-                        except:
-                            pass
-                if result is not None:
-                    get_latex_page_mongo_collection().update_one(
-                        {"key": page_key},
-                        {"$setOnInsert":
-                             {"key": page_key,
-                              "source": result.encode('utf-8'),
-                              "creation_time": local_now()
-                              }},
-                        upsert=True,
-                    )
-                    success = True
-
-            if result is None:
-                try:
-                    success, result = self.jinja_runpy(
-                        page_context,
-                        page_data["question_data"],
-                        "%s_process_code" % part,
-                        common_code_name="background_code")
-                except TypeError:
-                    return False, result
-                    # May raise an "'NoneType' object is not iterable" error
-                    # jinja_runpy error may write a broken saved file??
-                    # if saved_file_path:
-                    #     if os.path.isfile(saved_file_path):
-                    #         os.remove(saved_file_path)
-
-                if isinstance(result, six.binary_type):
-                    result = result.decode("utf-8")
-
-                if success and result is not None:
-                    get_latex_page_mongo_collection().update_one(
-                        {"key": page_key},
-                        {"$setOnInsert":
-                             {"key": page_key,
-                              "source": result.encode('utf-8'),
-                              "creation_time": local_now()
-                              }},
-                        upsert=True,
-                    )
-                    if saved_file_path and will_save_file_local:
-                        if not os.path.isfile(saved_file_path):
-                            try:
-                                with atomic_write(saved_file_path, mode="wb") as f:
-                                    f.write(result.decode('utf-8'))
-                            except OSError:
-                                pass
-
-            return success, result
-
-        def_cache = cache.caches["latex"]
-        if saved_file_path:
-            if os.path.isfile(saved_file_path):
-                try:
+        # read from part collection
+        mongo_page_part_result = get_latex_page_part_mongo_collection().find_one(
+            {"key": part_key}
+        )
+        if mongo_page_part_result:
+            part_result = mongo_page_part_result["source"].decode("utf-8")
+            if part_result:
+                result = mongo_page_part_result["source"].decode("utf-8")
+                get_latex_page_part_mongo_collection().remove({"key": part_key})
+                print('part key %s removed' % part_key)
+                if os.path.isfile(saved_file_path):
                     result = file_read(saved_file_path).decode("utf-8")
                     os.remove(saved_file_path)
                     print("!!Removed page file %s!!" % saved_file_path)
+            else:
+                raise RuntimeError("Page part result %s null in Mongo with key %s" % (
+                    part, page_key))
+        else:
+            if saved_file_path:
+                if os.path.isfile(saved_file_path):
+                    try:
+                        result = file_read(saved_file_path).decode("utf-8")
+                        os.remove(saved_file_path)
+                        print("!!Removed page file %s!!" % saved_file_path)
+                    except:
+                        pass
 
-                except OSError:
-                    pass
-                if result is not None:
-                    get_latex_page_mongo_collection().update_one(
-                        {"key": page_key},
-                        {"$setOnInsert":
-                             {"key": page_key,
-                              "source": result.encode('utf-8'),
-                              "creation_time": local_now()
-                              }},
-                        upsert=True,
-                    )
+        if result is not None:
+            # mongo_entry = get_latex_page_mongo_collection().find(
+            #     {"key": page_key, part: {"$exists": False}})
+            get_latex_page_mongo_collection().update_one(
+                    {"key": page_key, part: {"$exists": False}},
+                    {"$setOnInsert":
+                         {"key": page_key,
+                          "creation_time": local_now()
+                          },
+                     "$set": {part: result.encode('utf-8')}},
+                    upsert=True,
+                )
+            success = True
+        else:
+            # read from page collection
+            mongo_page_result = get_latex_page_mongo_collection().find_one(
+                {"key": page_key, part: {"$exists": True}}
+            )
+            if mongo_page_result:
+                page_result = mongo_page_result[part].decode("utf-8")
+                if page_result:
+                    result = page_result
                     success = True
+                else:
+                    raise RuntimeError(
+                        "Page result %s null in Mongo with key %s"
+                        % (part, page_key))
 
+        if result is None:
+            try:
+                success, result = self.jinja_runpy(
+                    page_context,
+                    page_data["question_data"],
+                    "%s_process_code" % part,
+                    common_code_name="background_code")
+                print("----------converted------------")
+            except TypeError:
+                return False, result
+                # May raise an "'NoneType' object is not iterable" error
+                # jinja_runpy error may write a broken saved file??
+                # if saved_file_path:
+                #     if os.path.isfile(saved_file_path):
+                #         os.remove(saved_file_path)
+
+            if isinstance(result, six.binary_type):
+                result = result.decode("utf-8")
+
+            if success and result is not None:
+                # mongo_entry = get_latex_page_mongo_collection().find(
+                #     {"key": page_key, part: {"$exists": False}})
+                get_latex_page_mongo_collection().update_one(
+                    {"key": page_key, part: {"$exists": False}},
+                    {"$setOnInsert":
+                         {"key": page_key,
+                          "creation_time": local_now()
+                          },
+                     "$set": {part: result.encode('utf-8')}},
+                    upsert=True,
+                )
+                if saved_file_path and will_save_file_local:
+                    if not os.path.isfile(saved_file_path):
+                        try:
+                            with atomic_write(saved_file_path, mode="wb") as f:
+                                f.write(result.decode('utf-8'))
+                        except OSError:
+                            pass
+
+        if cache_key is None:
+            return success, result
+
+        def_cache = cache.caches["latex"]
         if result is not None:
             assert isinstance(result, six.text_type), cache_key
             if (success
@@ -564,13 +572,15 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             def_cache.add(cache_key, result)
 
         if success and result is not None:
+            # mongo_entry = get_latex_page_mongo_collection().find(
+            #     {"key": page_key, part: {"$exists": False}})
             get_latex_page_mongo_collection().update_one(
-                {"key": page_key},
+                {"key": page_key, part: {"$exists": False}},
                 {"$setOnInsert":
                      {"key": page_key,
-                      "source": result.encode('utf-8'),
                       "creation_time": local_now()
-                      }},
+                      },
+                 "$set": {part: result.encode('utf-8')}},
                 upsert=True,
             )
             if saved_file_path and will_save_file_local:
