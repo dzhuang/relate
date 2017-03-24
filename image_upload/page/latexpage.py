@@ -28,7 +28,9 @@ import six
 from io import BytesIO
 import pickle
 from hashlib import md5
+from base64 import b64encode
 import os
+from pymongo.errors import DuplicateKeyError
 from bson.objectid import ObjectId
 
 # {{{ mypy
@@ -75,12 +77,8 @@ def get_latex_page_mongo_collection(name=None, db=DB, index_name="key"):
             settings, "RELATE_LATEX_PAGE_COLLECTION_NAME",
             "relate_latex_page")
     collection = db[name]
-    from pymongo.errors import OperationFailure
-    try:
-        if index_name and index_name not in collection.index_information():
-            collection.ensure_index(index_name, unique=True)
-    except OperationFailure:
-        pass
+    if index_name:
+        collection.ensure_index(index_name, unique=True)
     return collection
 
 def get_latex_page_part_mongo_collection(name=None, db=DB, index_name="key"):
@@ -89,12 +87,19 @@ def get_latex_page_part_mongo_collection(name=None, db=DB, index_name="key"):
             settings, "RELATE_LATEX_PAGE_PART_COLLECTION_NAME",
             "relate_latex_page_part")
     collection = db[name]
-    from pymongo.errors import OperationFailure
-    try:
-        if index_name and index_name not in collection.index_information():
-            collection.ensure_index(index_name, unique=True)
-    except OperationFailure:
-        pass
+    if index_name:
+        collection.ensure_index(index_name, unique=True)
+    return collection
+
+
+def get_latex_page_commitsha_template_pair_collection(name=None, db=DB, index_name="template_hash"):
+    if not name:
+        name = getattr(
+            settings, "RELATE_LATEX_PAGE_COMMITSHA_TEMPLATE_PAIR_COLLECTION",
+            "relate_latex_page_commitsha_template_pair")
+    collection = db[name]
+    if index_name:
+        collection.ensure_index(index_name, unique=True)
     return collection
 
 
@@ -168,7 +173,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             if not os.path.isdir(self.page_saving_folder):
                 os.makedirs(self.page_saving_folder)
 
-        self.docker_run_timeout = getattr(page_desc, "docker_timeout", 2)
+        self.docker_run_timeout = getattr(page_desc, "docker_timeout", 5)
 
         # These files/attrs are used to generate rendered body and correct answer
 
@@ -201,6 +206,35 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     self.cache_key_attrs.append(attr)
 
         self.will_receive_grade = getattr(page_desc, "will_receive_grade", True)
+        self.updated_full_desc = None
+
+    def make_form(
+            self,
+            page_context,  # type: PageContext
+            page_data,  # type: Any
+            answer_data,  # type: Any
+            page_behavior,  # type: Any
+            ):
+        self.updated_full_desc = (
+            self.get_full_desc_from_full_process(page_context, page_data))
+        return super(LatexRandomQuestionBase, self).make_form(
+            page_context, page_data, answer_data, page_behavior
+        )
+
+    def get_full_desc_from_full_process(self, page_context, page_data):
+        full_desc = {}
+        try:
+            for i in range(MAX_JINJIA_RETRY):
+                success, full_desc_tmp = self.get_cached_result(
+                    page_context, page_data, part="full")
+                if success:
+                    full_desc = full_desc_tmp
+                    assert isinstance(full_desc, dict)
+                    break
+        except KeyError:
+            pass
+
+        return full_desc
 
     def required_attrs(self):
         return super(LatexRandomQuestionBase, self).required_attrs() + (
@@ -229,38 +263,148 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
     def update_page_data(self, page_context, page_data):
         question_data = page_data.get("question_data", None)
+        page_data_template_hash = page_data.get("template_hash", None)
+        if page_data_template_hash == "None":
+            page_data_template_hash = None
+        page_data_id = page_data.get("template_hash_id", None)
+        if page_data_id == "None":
+            page_data_id = None
+
+        if not (page_data_template_hash and page_data_id):
+            new_page_data = self.initialize_page_data(page_context)
+            return True, new_page_data
+
         commit_sha = page_context.commit_sha.decode()
+        exist_entry = get_latex_page_commitsha_template_pair_collection().find_one(
+            {"_id": ObjectId(page_data_id)})
 
-        # This won't happen
-        if commit_sha in page_data:
-            return False, None
+        # mongo data is broken
+        if not exist_entry:
+            new_template_hash = self.generate_template_hash(page_context)
+            new_id = self.get_template_hash_id(commit_sha, new_template_hash)
+            new_key_making_string_md5 = self.get_key_making_string_md5_hash(
+                new_template_hash, question_data)
+            return True, {"question_data": question_data,
+                          "template_hash": new_template_hash,
+                          "template_hash_id": str(new_id),
+                          "key_making_string_md5": new_key_making_string_md5
+                          }
 
-        key_making_string = ""
+        # mongo data found
+        else:
+            # hash found in the entry
+            match_template_hash = exist_entry.get(commit_sha, None)
+
+            # hash not found in the entry, but there's a redirect "(commit_sha)_next"
+            # which give the ObjectId of the new template hash which don't match the
+            # one in the page_data
+            match_template_hash_redirect_id = exist_entry.get("%s_next" % commit_sha, None)
+
+            # that above two don't coexist
+            assert not (match_template_hash and match_template_hash_redirect_id)
+
+            if match_template_hash:
+                if match_template_hash == page_data_template_hash:
+                    return False, {}
+                else:
+                    # the template_hash don't belong to this entry
+                    # so we generate a redirect field "(commit_sha)_next",
+                    # for the new template_hash, with that new entry's id
+                    # in the field
+                    new_template_hash = self.generate_template_hash(page_context)
+                    new_key_making_string_md5 = self.get_key_making_string_md5_hash(
+                        new_template_hash, question_data)
+                    new_id = self.get_template_hash_id(commit_sha, new_template_hash)
+                    get_latex_page_commitsha_template_pair_collection().update(
+                        {"_id": ObjectId(page_data_id),
+                         commit_sha: {"$exists": False},
+                         "%s_next" % commit_sha: {"$exists": False}},
+                        {"$set": {"%s_next" % commit_sha: str(new_id)}}
+                    )
+                    return True, {"question_data": question_data,
+                                  "template_hash": new_template_hash,
+                                  "template_hash_id": str(new_id),
+                                  "key_making_string_md5": new_key_making_string_md5
+                                  }
+
+            if match_template_hash_redirect_id:
+                redirect_entry = get_latex_page_commitsha_template_pair_collection().find_one(
+                    {"_id": ObjectId(match_template_hash_redirect_id)})
+
+                # the entry is broken
+                if not redirect_entry:
+                    new_template_hash = self.generate_template_hash(page_context)
+                    new_id = self.get_template_hash_id(commit_sha, new_template_hash)
+
+                    # the entry is broken, so we need to update where the source
+                    # who told us to redirect here
+                    get_latex_page_commitsha_template_pair_collection().update(
+                        {"_id": ObjectId(page_data_id),
+                         commit_sha: {"$exists": False},
+                        "%s_next" % commit_sha: {"$exists": True}},
+                        {"$set": {"%s_next" % commit_sha: str(new_id)}}
+                    )
+                    new_key_making_string_md5 = self.get_key_making_string_md5_hash(
+                        new_template_hash, question_data)
+                    return True, {"question_data": question_data,
+                                  "template_hash": new_template_hash,
+                                  "template_hash_id": str(new_id),
+                                  "key_making_string_md5": new_key_making_string_md5
+                                  }
+                # the entry exists
+                else:
+                    new_template_hash = redirect_entry.get(commit_sha, None)
+                    if new_template_hash:
+                        new_key_making_string_md5 = self.get_key_making_string_md5_hash(
+                            new_template_hash, question_data)
+                        return True, {"question_data": question_data,
+                                      "template_hash": new_template_hash,
+                                      "template_hash_id": match_template_hash_redirect_id,
+                                      "key_making_string_md5": new_key_making_string_md5
+                                      }
+
+            assert not (match_template_hash or match_template_hash_redirect_id)
+            # Neither match_template_hash nor match_template_hash_redirect_id
+            new_template_hash = self.generate_template_hash(page_context)
+            if new_template_hash == page_data_template_hash:
+                get_latex_page_commitsha_template_pair_collection().update(
+                    {"_id": ObjectId(page_data_id),
+                     commit_sha: {"$exists": False}},
+                    {"$set": {commit_sha: page_data_template_hash}}
+                )
+                return False, {}
+            else:
+                new_id = self.get_template_hash_id(commit_sha, new_template_hash)
+                get_latex_page_commitsha_template_pair_collection().update(
+                    {"_id": ObjectId(page_data_id),
+                     commit_sha: {"$exists": False}},
+                    {"$set": {"%s_next" % commit_sha: str(new_id)}}
+                )
+                new_key_making_string_md5 = self.get_key_making_string_md5_hash(
+                    new_template_hash, question_data)
+                return True, {"question_data": question_data,
+                        "template_hash": new_template_hash,
+                        "template_hash_id": str(new_id),
+                        "key_making_string_md5": new_key_making_string_md5
+                        }
+
+
+    def generate_template_hash(self, page_context):
+        from base64 import b64encode
+        template_string = ""
         if self.cache_key_files:
             for cfile in self.cache_key_files:
-                # try:
-                    cfile_data = get_repo_blob_data_cached(
-                        page_context.repo,
-                        cfile,
-                        page_context.commit_sha)
-                    key_making_string += cfile_data.decode("utf-8")
-                # except UnicodeDecodeError:
-                #     pass
+                cfile_data = get_repo_blob_data_cached(
+                    page_context.repo,
+                    cfile,
+                    page_context.commit_sha)
+                template_string += cfile_data.decode("utf-8")
 
         if self.cache_key_attrs:
             for cattr in self.cache_key_attrs:
-                key_making_string += getattr(self.page_desc, cattr)
+                template_string += getattr(self.page_desc, cattr)
 
-        template_string = key_making_string
-
-        if question_data:
-            key_making_string += question_data
-
-        page_data["key_making_string_md5"] = (
-            md5(key_making_string.encode("utf-8")).hexdigest())
-        page_data[commit_sha] = md5(template_string.encode("utf-8")).hexdigest()
-
-        return True, page_data
+        return md5(template_string.encode("utf-8")).hexdigest()
 
     def generate_question_data_key_making_string(
             self, page_context, selected_data_bytes):
@@ -290,10 +434,17 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         return question_data, template_string, key_making_string
 
+    def get_key_making_string_md5_hash(self, template_hash, question_data):
+        key_making_string = template_hash
+        if question_data:
+            key_making_string += question_data
+        return md5(key_making_string.encode("utf-8")).hexdigest()
+
     def initialize_page_data(self, page_context):
         if not hasattr(self.page_desc, "random_question_data_file"):
             return {}
 
+        commit_sha = page_context.commit_sha.decode()
         warm_up_by_sandbox = getattr(
             self.page_desc, "warm_up_by_sandbox", False)
 
@@ -320,8 +471,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         from random import choice
 
         question_data = None
-        template_string = None
-        key_making_string = None
+        template_hash = None
+        key_making_string_md5 = None
 
         for i in range(len(all_data)):
             if not page_context.in_sandbox or not warm_up_by_sandbox:
@@ -335,20 +486,24 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             # template_string is the string independent of data
             # key_making_string is going to be deprecated, which is now used
             # by referring cache key
-            question_data, template_string, key_making_string = (
-                self.generate_question_data_key_making_string(
-                    page_context, selected_data_bytes)
-            )
+            question_data = b64encode(selected_data_bytes.getvalue()).decode()
+            template_hash = self.generate_template_hash(page_context)
+            key_making_string_md5 = self.get_key_making_string_md5_hash(
+                    template_hash,question_data)
+            # question_data, template_string, key_making_string = (
+            #     self.generate_question_data_key_making_string(
+            #         page_context, selected_data_bytes)
+            # )
 
             # this is used to let sandbox do the warm up job for
             # sequentially ordered data(not random)
             if not page_context.in_sandbox or not warm_up_by_sandbox:
                 break
 
-            page_data = {"question_data": question_data,
-                         "key_making_string_md5":
-                             md5(key_making_string.encode()).hexdigest()
-                         }
+            page_data = {
+                "question_data": question_data,
+                "key_making_string_md5": key_making_string_md5
+            }
 
             for part in ["full", "answer", "question", "blank",
                          "blank_answer", "answer_explanation"]:
@@ -366,21 +521,60 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 if part == "full":
                     break
 
-        if page_context.in_sandbox and warm_up_by_sandbox:
-            random_data = choice(all_data)
-            selected_data_bytes = BytesIO()
-            pickle.dump(random_data, selected_data_bytes)
-            question_data, template_string, key_making_string = (
-                self.generate_question_data_key_making_string(
-                    page_context, selected_data_bytes)
-            )
+        # if page_context.in_sandbox and warm_up_by_sandbox:
+        #     random_data = choice(all_data)
+        #     selected_data_bytes = BytesIO()
+        #     pickle.dump(random_data, selected_data_bytes)
+        #     question_data = b64encode(selected_data_bytes.getvalue()).decode()
+        #     template_hash = self.generate_template_hash(page_context)
+        #     key_making_string = "%s%s" % (question_data, template_hash)
+            # key_making_string_md5 = md5(key_making_string.encode()).hexdigest()
+            # question_data, template_string, key_making_string = (
+            #     self.generate_question_data_key_making_string(
+            #         page_context, selected_data_bytes)
+            # )
+
+        # exist_mongo_entry = (
+        #     get_latex_page_commitsha_template_pair_collection().find_one(
+        #         {"template_hash": template_hash}))
+        # if exist_mongo_entry:
+
+        _id = self.get_template_hash_id(commit_sha, template_hash)
 
         return {"question_data": question_data,
-                page_context.commit_sha.decode():
-                    md5(template_string.encode("utf-8")).hexdigest(),
-                "key_making_string_md5":
-                    md5(key_making_string.encode("utf-8")).hexdigest()
+                "template_hash": template_hash,
+                "template_hash_id": _id,
+                "key_making_string_md5": key_making_string_md5
                 }
+
+    def get_template_hash_id(self, commit_sha, template_hash):
+        info = get_latex_page_commitsha_template_pair_collection().find_one(
+            {commit_sha: template_hash})
+        _id = None
+        if info:
+            _id = str(info.get("_id"))
+        else:
+            try:
+                info = get_latex_page_commitsha_template_pair_collection().update_one(
+                    {"template_hash": template_hash},
+                    {"$setOnInsert":
+                         {"template_hash": template_hash,
+                          "creation_time": local_now()
+                          },
+                     "$set": {commit_sha: template_hash}},
+                    upsert=True,
+                )
+                if info.upserted_id:
+                    _id = str(info.upserted_id)
+            except DuplicateKeyError:
+                pass
+            if not _id:
+                info = get_latex_page_commitsha_template_pair_collection().find_one(
+                    {commit_sha: template_hash})
+                assert info
+                _id = str(info.get("_id"))
+        assert (_id)
+        return _id
 
     def get_cached_result(self, page_context,
                           page_data, part="", test_key_existance=False):
@@ -429,7 +623,10 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             def_cache = cache.caches["latex"]
             result = def_cache.get(cache_key)
             if result is not None:
-                assert isinstance(result, six.text_type)
+                if part == "full":
+                    assert isinstance(result, dict)
+                else:
+                    assert isinstance(result, six.text_type)
                 if test_key_existance:
                     return True, result
                 return True, result
@@ -447,11 +644,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             if part_result:
                 result = mongo_page_part_result["source"].decode("utf-8")
                 get_latex_page_part_mongo_collection().remove({"key": part_key})
-                print('part key %s removed' % part_key)
                 if os.path.isfile(saved_file_path):
                     result = file_read(saved_file_path).decode("utf-8")
                     os.remove(saved_file_path)
-                    print("!!Removed page file %s!!" % saved_file_path)
             else:
                 raise RuntimeError("Page part result %s null in Mongo with key %s" % (
                     part, page_key))
@@ -461,22 +656,22 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     try:
                         result = file_read(saved_file_path).decode("utf-8")
                         os.remove(saved_file_path)
-                        print("!!Removed page file %s!!" % saved_file_path)
                     except:
                         pass
 
         if result is not None:
-            # mongo_entry = get_latex_page_mongo_collection().find(
-            #     {"key": page_key, part: {"$exists": False}})
-            get_latex_page_mongo_collection().update_one(
-                    {"key": page_key, part: {"$exists": False}},
-                    {"$setOnInsert":
-                         {"key": page_key,
-                          "creation_time": local_now()
-                          },
-                     "$set": {part: result.encode('utf-8')}},
-                    upsert=True,
-                )
+            try:
+                get_latex_page_mongo_collection().update_one(
+                        {"key": page_key, part: {"$exists": False}},
+                        {"$setOnInsert":
+                             {"key": page_key,
+                              "creation_time": local_now()
+                              },
+                         "$set": {part: result.encode('utf-8')}},
+                        upsert=True,
+                    )
+            except DuplicateKeyError:
+                pass
             success = True
         else:
             # read from page collection
@@ -484,11 +679,13 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 {"key": page_key, part: {"$exists": True}}
             )
             if mongo_page_result:
-                page_result = mongo_page_result[part].decode("utf-8")
+                if part == "full":
+                    page_result = mongo_page_result[part]
+                else:
+                    page_result = mongo_page_result[part].decode("utf-8")
                 if page_result:
                     result = page_result
                     success = True
-                    print("-----------reading from page collection!-----------")
                 else:
                     raise RuntimeError(
                         "Page result %s null in Mongo with key %s"
@@ -501,43 +698,77 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     page_data["question_data"],
                     "%s_process_code" % part,
                     common_code_name="background_code")
-                print("----------converted------------")
+                if success:
+                    print("----------converted------------")
+                else:
+                    print("-----------failed--------------", result)
             except TypeError:
                 return False, result
-                # May raise an "'NoneType' object is not iterable" error
-                # jinja_runpy error may write a broken saved file??
-                # if saved_file_path:
-                #     if os.path.isfile(saved_file_path):
-                #         os.remove(saved_file_path)
 
             if isinstance(result, six.binary_type):
                 result = result.decode("utf-8")
 
             if success and result is not None:
-                # mongo_entry = get_latex_page_mongo_collection().find(
-                #     {"key": page_key, part: {"$exists": False}})
-                get_latex_page_mongo_collection().update_one(
-                    {"key": page_key, part: {"$exists": False}},
-                    {"$setOnInsert":
-                         {"key": page_key,
-                          "creation_time": local_now()
-                          },
-                     "$set": {part: result.encode('utf-8')}},
-                    upsert=True,
-                )
-                if saved_file_path and will_save_file_local:
-                    if not os.path.isfile(saved_file_path):
-                        try:
-                            with atomic_write(saved_file_path, mode="wb") as f:
-                                f.write(result.decode('utf-8'))
-                        except OSError:
-                            pass
+                print("saved after converting")
+
+                if part == "full":
+                    to_set = dict(
+                        (pt, result[pt].encode('utf-8'))
+                        for pt in result.keys())
+                    to_set.update({"full": result})
+                    try:
+                        get_latex_page_mongo_collection().update_one(
+                            {"key": page_key, part: {"$exists": False}},
+                            {"$setOnInsert":
+                                 {"key": page_key,
+                                  "creation_time": local_now()
+                                  },
+                             "$set": to_set},
+                            upsert=True,
+                        )
+                    except DuplicateKeyError:
+                        pass
+
+                else:
+                    try:
+                        get_latex_page_mongo_collection().update_one(
+                            {"key": page_key, part: {"$exists": False}},
+                            {"$setOnInsert":
+                                 {"key": page_key,
+                                  "creation_time": local_now()
+                                  },
+                             "$set": {part: result.encode('utf-8')}},
+                            upsert=True,
+                        )
+                    except DuplicateKeyError:
+                        pass
+                    if saved_file_path and will_save_file_local:
+                        if not os.path.isfile(saved_file_path):
+                            try:
+                                with atomic_write(saved_file_path, mode="wb") as f:
+                                    f.write(result.decode('utf-8'))
+                            except OSError:
+                                pass
 
         if cache_key is None:
             return success, result
 
+        assert result
+
         def_cache = cache.caches["latex"]
-        if result is not None:
+        if isinstance(result, dict):
+            for pt, v in result.items():
+                if not isinstance(v, six.text_type):
+                    v = six.text_type(v)
+                    part_key = "%s:%s" % (page_key, pt)
+                    if (len(v) <= (
+                        getattr(settings, "RELATE_CACHE_MAX_BYTES", 0))):
+                        def_cache.add(part_key, v)
+            part_key = "%s:%s" % (page_key, "full")
+            if (len(result) <= (
+                    getattr(settings, "RELATE_CACHE_MAX_BYTES", 0))):
+                def_cache.add(part_key, result)
+        else:
             assert isinstance(result, six.text_type), cache_key
             if (success
                 and len(result) <= (
@@ -545,54 +776,55 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 if def_cache.get(cache_key) is None:
                     def_cache.delete(cache_key)
                 def_cache.add(cache_key, result)
-            return True, result
-
-        try:
-            success, result = self.jinja_runpy(
-                page_context,
-                page_data["question_data"],
-                "%s_process_code" % part,
-                common_code_name="background_code")
-        except TypeError:
-            return False, result
-            # May raise an "'NoneType' object is not iterable" error
-            # jinja_runpy error may write a broken saved file??
-            # if saved_file_path:
-            #     if os.path.isfile(saved_file_path):
-            #         os.remove(saved_file_path)
-
-        if isinstance(result, six.binary_type):
-            result = result.decode("utf-8")
-
-        if (success
-            and
-                    len(result) <= (
-                        getattr(settings, "RELATE_CACHE_MAX_BYTES", 0))):
-            if def_cache.get(cache_key) is None:
-                def_cache.delete(cache_key)
-            def_cache.add(cache_key, result)
-
-        if success and result is not None:
-            # mongo_entry = get_latex_page_mongo_collection().find(
-            #     {"key": page_key, part: {"$exists": False}})
-            get_latex_page_mongo_collection().update_one(
-                {"key": page_key, part: {"$exists": False}},
-                {"$setOnInsert":
-                     {"key": page_key,
-                      "creation_time": local_now()
-                      },
-                 "$set": {part: result.encode('utf-8')}},
-                upsert=True,
-            )
-            if saved_file_path and will_save_file_local:
-                if not os.path.isfile(saved_file_path):
-                    try:
-                        with atomic_write(saved_file_path, mode="wb") as f:
-                            f.write(result.encode("utf-8"))
-                    except OSError:
-                        pass
-
         return success, result
+
+        # try:
+        #     success, result = self.jinja_runpy(
+        #         page_context,
+        #         page_data["question_data"],
+        #         "%s_process_code" % part,
+        #         common_code_name="background_code")
+        # except TypeError:
+        #     return False, result
+        #     # May raise an "'NoneType' object is not iterable" error
+        #     # jinja_runpy error may write a broken saved file??
+        #     # if saved_file_path:
+        #     #     if os.path.isfile(saved_file_path):
+        #     #         os.remove(saved_file_path)
+
+        # if isinstance(result, six.binary_type):
+        #     result = result.decode("utf-8")
+        #
+        # if (success
+        #     and
+        #             len(result) <= (
+        #                 getattr(settings, "RELATE_CACHE_MAX_BYTES", 0))):
+        #     if def_cache.get(cache_key) is None:
+        #         def_cache.delete(cache_key)
+        #     def_cache.add(cache_key, result)
+
+        # if success and result is not None:
+        #     try:
+        #         get_latex_page_mongo_collection().update_one(
+        #             {"key": page_key, part: {"$exists": False}},
+        #             {"$setOnInsert":
+        #                  {"key": page_key,
+        #                   "creation_time": local_now()
+        #                   },
+        #              "$set": {part: result.encode('utf-8')}},
+        #             upsert=True,
+        #         )
+        #     except DuplicateKeyError:
+        #         pass
+        #     if saved_file_path and will_save_file_local:
+        #         if not os.path.isfile(saved_file_path):
+        #             try:
+        #                 with atomic_write(saved_file_path, mode="wb") as f:
+        #                     f.write(result.encode("utf-8"))
+        #             except OSError:
+        #                 pass
+        #
+        # return success, result
 
     def body(self, page_context, page_data):
         if page_context.in_sandbox or page_data is None:
@@ -601,31 +833,36 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         question_str = ""
         success = False
         question_str_tmp = ""
-        for i in range(MAX_JINJIA_RETRY):
-            success, question_str_tmp = self.get_cached_result(
-                    page_context, page_data, part="question")
-            if success:
-                question_str = question_str_tmp
-                break
-
-        if not success:
-            if page_context.in_sandbox:
-                question_str = question_str_tmp
-
         answer_str = ""
-        if page_context.in_sandbox:
-            # generate correct answer at the same time
-            if hasattr(self.page_desc, "answer_process_code"):
-                for i in range(MAX_JINJIA_RETRY):
-                    success, answer_str_tmp = self.get_cached_result(
-                                       page_context, page_data, part="answer")
-                    if success:
-                        # markup_to_html(
-                        #     page_context, answer_str_tmp, warm_up_only=True)
-                        break
 
-                    if page_context.in_sandbox:
-                        answer_str = markup_to_html(page_context, answer_str)
+        if self.updated_full_desc:
+            question_str = self.updated_full_desc.get("question", "")
+            answer_str = self.updated_full_desc.get("answer", "")
+        else:
+            for i in range(MAX_JINJIA_RETRY):
+                success, question_str_tmp = self.get_cached_result(
+                        page_context, page_data, part="question")
+                if success:
+                    question_str = question_str_tmp
+                    break
+
+            if not success:
+                if page_context.in_sandbox:
+                    question_str = question_str_tmp
+
+            if page_context.in_sandbox:
+                # generate correct answer at the same time
+                if hasattr(self.page_desc, "answer_process_code"):
+                    for i in range(MAX_JINJIA_RETRY):
+                        success, answer_str_tmp = self.get_cached_result(
+                                           page_context, page_data, part="answer")
+                        if success:
+                            # markup_to_html(
+                            #     page_context, answer_str_tmp, warm_up_only=True)
+                            break
+
+                        if page_context.in_sandbox:
+                            answer_str = markup_to_html(page_context, answer_str)
 
         return super(LatexRandomQuestionBase, self).body(page_context, page_data)\
                + markup_to_html(page_context, question_str) + answer_str
@@ -853,25 +1090,22 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         if success:
             # > 1 because there will be execution time
-            if hasattr(response, "feedback") and len(response.feedback) > 1:
-                b = {}
-                if len(response.feedback) > 1:
-                    print(type(response.feedback[0]))
-                    a = response.feedback[0]
-                    # if isinstance(response.feedback[1], dict):
-                    #     print(response.feedback[1].items())
-                    try:
-                        import json
-                        b = json.loads(a)
-                        # print(type(b))
-                        # print("result", b['answer_explanation'])
-                    except:
-                        raise
+            if (code_name == "full_process_code"
+                and
+                    hasattr(response, "feedback")
+                and
+                        len(response.feedback) > 1):
 
-                # if hasattr(response, "stdout") and response.stdout:
-                #     print(response.stdout)
-                return success, "this is the result" + b.get('answer_explanation', "")
-            if hasattr(response, "stdout") and response.stdout:
+                try:
+                    import json
+                    result_dict = json.loads(response.feedback[0])
+                except:
+                    raise
+
+                assert result_dict
+                return success, result_dict
+
+            elif hasattr(response, "stdout") and response.stdout:
                 return success, response.stdout
         else:
             return (success,
@@ -883,7 +1117,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
     def correct_answer(self, page_context, page_data, answer_data, grade_data):
         CA_PATTERN = string_concat(_("A correct answer is"), ": %s.")  # noqa
         answer_str = ""
-        if hasattr(self.page_desc, "answer_process_code"):
+        if self.updated_full_desc:
+            answer_str = self.updated_full_desc.get("answer", "")
+        elif hasattr(self.page_desc, "answer_process_code"):
             answer_str = ""
             for i in range(MAX_JINJIA_RETRY):
                 success, answer_str_tmp = self.get_cached_result(
@@ -922,35 +1158,58 @@ class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestio
     def update_page_desc(self, page_context, page_data):
         from course.page.inline import WRAPPED_NAME_RE, NAME_RE
 
-        success = False
-        question_str = ""
-        for i in range(MAX_JINJIA_RETRY):
-            success, question_str_tmp = self.get_cached_result(
-                page_context, page_data, part="blank")
-            if success:
-                question_str = question_str_tmp
-                break
+        blank_str = ""
+        blank_answers_str = ""
+        answer_explanation_str = ""
 
-        if success:
-            question = markup_to_html(page_context, question_str)
+        if self.updated_full_desc:
+            blank_str = self.updated_full_desc.get("blank")
+            blank_answers_str = self.updated_full_desc.get("blank_answer")
+            answer_explanation_str = self.updated_full_desc.get("answer_explanation")
         else:
-            raise RuntimeError(question_str_tmp)
+            success = False
+            for i in range(MAX_JINJIA_RETRY):
+                success, blank_str_tmp = self.get_cached_result(
+                    page_context, page_data, part="blank")
+                if success:
+                    blank_str = blank_str_tmp
+                    break
 
-        success = False
-        answers_str = ""
-        for i in range(MAX_JINJIA_RETRY):
-            success, answer_str_tmp = self.get_cached_result(
-                page_context, page_data, part="blank_answer")
-            if success:
-                answers_str = answer_str_tmp
-                break
+            if not success:
+                raise RuntimeError(blank_str_tmp)
 
-        if not success:
-            raise RuntimeError(answer_str_tmp)
+            success = False
+            for i in range(MAX_JINJIA_RETRY):
+                success, blank_answer_str_tmp = self.get_cached_result(
+                    page_context, page_data, part="blank_answer")
+                if success:
+                    blank_answers_str = blank_answer_str_tmp
+                    break
+
+            if not success:
+                raise RuntimeError(blank_answer_str_tmp)
+
+            if hasattr(self.page_desc, "answer_explanation_process_code"):
+                success = False
+                answer_explanation_str = ""
+                for i in range(MAX_JINJIA_RETRY):
+                    success, answer_explanation_tmp = self.get_cached_result(
+                        page_context, page_data, part="answer_explanation")
+                    if success:
+                        answer_explanation_str = answer_explanation_tmp
+                        break
+
+                if not success:
+                    raise RuntimeError(answer_explanation_tmp)
+
+        question = markup_to_html(page_context, blank_str)
+
+        if answer_explanation_str:
+            self.page_desc.answer_explanation = answer_explanation_str
 
         from relate.utils import dict_to_struct
         import yaml
-        answers = dict_to_struct(yaml.load(answers_str))
+        answers = dict_to_struct(yaml.load(blank_answers_str))
         self.page_desc.question = question
         self.page_desc.answers = answers
         self.embedded_wrapped_name_list = WRAPPED_NAME_RE.findall(
@@ -969,28 +1228,13 @@ class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestio
 
         self.answer_instance_list = answer_instance_list
 
-        success = False
-        if hasattr(self.page_desc, "answer_explanation_process_code"):
-            answer_explanation_str = ""
-            for i in range(MAX_JINJIA_RETRY):
-                success, answer_explanation_tmp = self.get_cached_result(
-                    page_context, page_data, part="answer_explanation")
-                if success:
-                    answer_explanation_str = answer_explanation_tmp
-                    break
-
-            if success:
-                self.page_desc.answer_explanation = answer_explanation_str
-            else:
-                raise RuntimeError(answer_explanation_tmp)
-
     def get_question(self, page_context, page_data):
         self.update_page_desc(page_context, page_data)
         return super(LatexRandomCodeInlineMultiQuestion, self)\
             .get_question(page_context, page_data)
 
-    def required_attrs(self):
-        return super(LatexRandomCodeInlineMultiQuestion, self).required_attrs() + (
+    def allowed_attrs(self):
+        return super(LatexRandomCodeInlineMultiQuestion, self).allowed_attrs() + (
             ("blank_process_code", str),
             ("blank_answer_process_code", str)
         )
