@@ -835,6 +835,11 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         question_str_tmp = ""
         answer_str = ""
 
+        # this is for sandbox
+        if not self.updated_full_desc:
+            self.updated_full_desc = (
+                self.get_full_desc_from_full_process(page_context, page_data))
+
         if self.updated_full_desc:
             question_str = self.updated_full_desc.get("question", "")
             answer_str = self.updated_full_desc.get("answer", "")
