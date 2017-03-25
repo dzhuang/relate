@@ -34,7 +34,11 @@ from django.contrib.admin import widgets
 from django.urls import resolve
 
 import zipfile
+import re
 
+JINJA_TEX_TEMPLATE_COMMENT_RE = re.compile("\\\\#{[^}\n]*}")
+JINJA_TEX_TEMPLATE_LINE_COMMENT_RE = re.compile("%#.*")
+JINJA_TEX_TEMPLATE_INBLOCK_LATEX_CALL_RE =  re.compile("{%\s*call\s*latex[^}]*}((?:.|\n)*?){%\s*endcall")
 
 # extracted from course.flow
 
@@ -148,3 +152,31 @@ def get_ordinal_from_page_context(page_context):
     func, args, kwargs = resolve(relative_url)
     assert kwargs["ordinal"]
     return kwargs["ordinal"]
+
+
+def minify_python_script(source):
+    from pyminifier import token_utils, minification
+    from optparse import Values
+    options = Values()
+    options.tabs = False
+    tokens = token_utils.listified_tokenizer(source)
+    return minification.minify(tokens, options)
+
+
+# {{{ strip comments from template, not that this is different
+#     with course.latex.utils.strip_comments
+
+def strip_template_comments(source):
+    from course.latex.utils import strip_spaces
+    source = strip_spaces(source, allow_single_empty_line=True)
+    source = re.sub(JINJA_TEX_TEMPLATE_COMMENT_RE, "", source)
+    source = re.sub(JINJA_TEX_TEMPLATE_LINE_COMMENT_RE, "", source)
+
+    in_block_tex_list = JINJA_TEX_TEMPLATE_INBLOCK_LATEX_CALL_RE.findall(source)
+    if in_block_tex_list:
+        from course.latex.utils import strip_comments
+        for b in in_block_tex_list:
+            source = source.replace(b,strip_comments(b))
+
+    return source
+# }}}

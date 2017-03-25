@@ -134,6 +134,13 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             os.path.join(settings.MEDIA_ROOT, "latex_page"))
 
         if vctx is not None and hasattr(page_desc, "data_files"):
+            if not hasattr(page_desc, "full_process_code"):
+                vctx.add_warning(
+                    location,
+                    _("%s not using attribute "
+                      "'full_process_code' is deprecated.")
+                    % self.__class__.__name__
+                )
             if hasattr(page_desc, "random_question_data_file"):
                 if page_desc.random_question_data_file not in page_desc.data_files:
                     raise ValidationError(
@@ -195,6 +202,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         self.cache_key_attrs = getattr(page_desc, "cache_key_attrs", [])
         if not self.cache_key_attrs:
             for attr in [
+                "full_process_code",
                 "background_code",
                 "question_process_code",
                 "answer_process_code",
@@ -207,6 +215,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         self.will_receive_grade = getattr(page_desc, "will_receive_grade", True)
         self.updated_full_desc = None
+        self.get_updated_full_desc_error = None
 
     def make_form(
             self,
@@ -215,14 +224,21 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             answer_data,  # type: Any
             page_behavior,  # type: Any
             ):
-        self.updated_full_desc = (
-            self.get_full_desc_from_full_process(page_context, page_data))
+
+        if hasattr(self.page_desc, "full_process_code"):
+            success, result = self.get_full_desc_from_full_process(page_context, page_data)
+            if success:
+                self.updated_full_desc = result
+            else:
+                self.get_updated_full_desc_error = result
         return super(LatexRandomQuestionBase, self).make_form(
             page_context, page_data, answer_data, page_behavior
         )
 
     def get_full_desc_from_full_process(self, page_context, page_data):
         full_desc = {}
+        full_desc_tmp = ""
+        success = False
         try:
             for i in range(MAX_JINJIA_RETRY):
                 success, full_desc_tmp = self.get_cached_result(
@@ -234,7 +250,10 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         except KeyError:
             pass
 
-        return full_desc
+        if success:
+            return success, full_desc
+        else:
+            return success, full_desc_tmp
 
     def required_attrs(self):
         return super(LatexRandomQuestionBase, self).required_attrs() + (
@@ -390,19 +409,30 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
 
     def generate_template_hash(self, page_context):
-        from base64 import b64encode
+        from image_upload.utils import (
+            minify_python_script, strip_template_comments)
         template_string = ""
         if self.cache_key_files:
             for cfile in self.cache_key_files:
                 cfile_data = get_repo_blob_data_cached(
                     page_context.repo,
                     cfile,
-                    page_context.commit_sha)
-                template_string += cfile_data.decode("utf-8")
+                    page_context.commit_sha).decode("utf-8")
+                if cfile.endswith(".py"):
+                    cfile_data = minify_python_script(cfile_data)
+                elif cfile.endswith(".tex"):
+                    cfile_data = strip_template_comments(cfile_data)
+                template_string += cfile_data
 
         if self.cache_key_attrs:
             for cattr in self.cache_key_attrs:
-                template_string += getattr(self.page_desc, cattr)
+                cattr_string = getattr(self.page_desc, cattr).strip()
+                if (cattr.endswith("_code")
+                    and not cattr_string.startswith("{")
+                    # this is to avoid imported jinja macro in the attribute
+                    ):
+                    cattr_string = minify_python_script(cattr_string)
+                template_string += cattr_string
 
         return md5(template_string.encode("utf-8")).hexdigest()
 
@@ -510,7 +540,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 try:
                     key_exist, result = self.get_cached_result(
                             page_context, page_data, part=part,
-                            test_key_existance=True)
+                            warm_up_only=True)
                     if key_exist:
                         markup_to_html(page_context, result, warm_up_only=True)
                         continue
@@ -577,8 +607,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         return _id
 
     def get_cached_result(self, page_context,
-                          page_data, part="", test_key_existance=False):
-        #assert part in ["question", "answer"]
+                          page_data, part="", warm_up_only=False):
         will_save_file_local = False
 
         # if page_context.in_sandbox:
@@ -627,7 +656,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     assert isinstance(result, dict)
                 else:
                     assert isinstance(result, six.text_type)
-                if test_key_existance:
+                if warm_up_only:
                     return True, result
                 return True, result
 
@@ -693,11 +722,14 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         if result is None:
             try:
+                runpy_kwargs = {}
+                if part != "full":
+                    runpy_kwargs["common_code_name"] = "background_code"
                 success, result = self.jinja_runpy(
                     page_context,
                     page_data["question_data"],
                     "%s_process_code" % part,
-                    common_code_name="background_code")
+                    **runpy_kwargs)
                 if success:
                     print("----------converted------------")
                 else:
@@ -778,54 +810,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 def_cache.add(cache_key, result)
         return success, result
 
-        # try:
-        #     success, result = self.jinja_runpy(
-        #         page_context,
-        #         page_data["question_data"],
-        #         "%s_process_code" % part,
-        #         common_code_name="background_code")
-        # except TypeError:
-        #     return False, result
-        #     # May raise an "'NoneType' object is not iterable" error
-        #     # jinja_runpy error may write a broken saved file??
-        #     # if saved_file_path:
-        #     #     if os.path.isfile(saved_file_path):
-        #     #         os.remove(saved_file_path)
-
-        # if isinstance(result, six.binary_type):
-        #     result = result.decode("utf-8")
-        #
-        # if (success
-        #     and
-        #             len(result) <= (
-        #                 getattr(settings, "RELATE_CACHE_MAX_BYTES", 0))):
-        #     if def_cache.get(cache_key) is None:
-        #         def_cache.delete(cache_key)
-        #     def_cache.add(cache_key, result)
-
-        # if success and result is not None:
-        #     try:
-        #         get_latex_page_mongo_collection().update_one(
-        #             {"key": page_key, part: {"$exists": False}},
-        #             {"$setOnInsert":
-        #                  {"key": page_key,
-        #                   "creation_time": local_now()
-        #                   },
-        #              "$set": {part: result.encode('utf-8')}},
-        #             upsert=True,
-        #         )
-        #     except DuplicateKeyError:
-        #         pass
-        #     if saved_file_path and will_save_file_local:
-        #         if not os.path.isfile(saved_file_path):
-        #             try:
-        #                 with atomic_write(saved_file_path, mode="wb") as f:
-        #                     f.write(result.encode("utf-8"))
-        #             except OSError:
-        #                 pass
-        #
-        # return success, result
-
     def body(self, page_context, page_data):
         if page_context.in_sandbox or page_data is None:
             page_data = self.initialize_page_data(page_context)
@@ -837,12 +821,19 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         # this is for sandbox
         if not self.updated_full_desc:
-            self.updated_full_desc = (
-                self.get_full_desc_from_full_process(page_context, page_data))
+            if hasattr(self.page_desc, "full_process_code"):
+                success, result = self.get_full_desc_from_full_process(page_context,
+                                                                       page_data)
+                if success:
+                    self.updated_full_desc = result
+                else:
+                    self.get_updated_full_desc_error = result
 
         if self.updated_full_desc:
             question_str = self.updated_full_desc.get("question", "")
             answer_str = self.updated_full_desc.get("answer", "")
+        elif self.get_updated_full_desc_error:
+            question_str = answer_str = self.get_updated_full_desc_error
         else:
             for i in range(MAX_JINJIA_RETRY):
                 success, question_str_tmp = self.get_cached_result(
@@ -890,11 +881,12 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         run_jinja_req["user_code"] = ""
 
         transfer_attr_to("setup_code", from_name=code_name)
-        if common_code_name:
+        assert run_jinja_req["setup_code"]
+        if common_code_name and getattr(self.page_desc, common_code_name, ""):
             run_jinja_req["setup_code"] = (
-                getattr(self.page_desc, common_code_name)
-                +
-                u"\n" + run_jinja_req["setup_code"])
+                u"%s\n%s" % (
+                    getattr(self.page_desc, common_code_name, ""),
+                    run_jinja_req["setup_code"]))
 
         if hasattr(self.page_desc, "data_files"):
             run_jinja_req["data_files"] = {}
@@ -1124,6 +1116,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         answer_str = ""
         if self.updated_full_desc:
             answer_str = self.updated_full_desc.get("answer", "")
+        elif self.get_updated_full_desc_error:
+            answer_str = self.get_updated_full_desc_error
         elif hasattr(self.page_desc, "answer_process_code"):
             answer_str = ""
             for i in range(MAX_JINJIA_RETRY):
@@ -1171,6 +1165,8 @@ class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestio
             blank_str = self.updated_full_desc.get("blank")
             blank_answers_str = self.updated_full_desc.get("blank_answer")
             answer_explanation_str = self.updated_full_desc.get("answer_explanation")
+        elif self.get_updated_full_desc_error:
+            blank_str = blank_answers_str = answer_explanation_str = self.get_updated_full_desc_error
         else:
             success = False
             for i in range(MAX_JINJIA_RETRY):

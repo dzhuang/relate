@@ -62,3 +62,6 @@ atomicwrites
 
 # questionnaire
 #git+https://git.oschina.net/dzhuang/django_questionnaire.git
+
+# for minify python script
+pyminifier
