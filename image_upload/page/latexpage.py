@@ -46,7 +46,7 @@ from django.core.exceptions import ObjectDoesNotExist, ImproperlyConfigured
 from django.conf import settings
 from django.utils.html import escape
 
-from relate.utils import local_now
+from relate.utils import local_now, Struct, struct_to_dict
 
 from course.content import markup_to_html as mth
 from course.page.base import (
@@ -134,13 +134,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             os.path.join(settings.MEDIA_ROOT, "latex_page"))
 
         if vctx is not None and hasattr(page_desc, "data_files"):
-            if not hasattr(page_desc, "full_process_code"):
-                vctx.add_warning(
-                    location,
-                    _("%s not using attribute "
-                      "'full_process_code' is deprecated.")
-                    % self.__class__.__name__
-                )
             if hasattr(page_desc, "random_question_data_file"):
                 if page_desc.random_question_data_file not in page_desc.data_files:
                     raise ValidationError(
@@ -171,6 +164,33 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 except ObjectDoesNotExist:
                     raise ValidationError("%s: data file '%s' not found"
                             % (location, data_file))
+            if not hasattr(page_desc, "runpy_file"):
+                if self.__class__.__name__ != "LatexRandomCodeQuestion":
+                    vctx.add_warning(
+                        location,
+                        _("%s not using attribute "
+                          "'runpy_file' is for debug only, it should not "
+                          "be used in production.")
+                        % self.__class__.__name__
+                    )
+            else:
+                try:
+                    runpy_file = get_repo_blob_data_cached(
+                        vctx.repo, page_desc.runpy_file,
+                        vctx.commit_sha)
+                    compile(runpy_file, '<runpy file>', 'exec')
+                    del runpy_file
+                except SyntaxError:
+                    raise ValidationError(
+                        "%s: " % location,
+                        _("'%s' is not a valide Python script file.")
+                        % page_desc.runpy_file)
+                if page_desc.runpy_file not in page_desc.data_files:
+                    raise ValidationError(
+                        "%s: " % location,
+                        string_concat(_("'%s' should be listed in 'data_files'"))
+                        % page_desc.runpy_file)
+
             if hasattr(page_desc, "cache_key_attrs"):
                 for attr in page_desc.cache_key_attrs:
                     if not hasattr(page_desc, attr):
@@ -200,9 +220,13 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 [f for f in self.cache_key_files
                  if f != page_desc.random_question_data_file])
         self.cache_key_attrs = getattr(page_desc, "cache_key_attrs", [])
+
+        self.runpy_context = {}
+        if getattr(page_desc, "runpy_context", None):
+            self.runpy_context = struct_to_dict(page_desc.runpy_context)
+
         if not self.cache_key_attrs:
             for attr in [
-                "full_process_code",
                 "background_code",
                 "question_process_code",
                 "answer_process_code",
@@ -216,6 +240,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         self.will_receive_grade = getattr(page_desc, "will_receive_grade", True)
         self.updated_full_desc = None
         self.get_updated_full_desc_error = None
+        self.update_page_desc_error = None
 
     def make_form(
             self,
@@ -225,12 +250,15 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             page_behavior,  # type: Any
             ):
 
-        if hasattr(self.page_desc, "full_process_code"):
+        if hasattr(self.page_desc, "full_process_code") or hasattr(self.page_desc, "runpy_file"):
             success, result = self.get_full_desc_from_full_process(page_context, page_data)
             if success:
                 self.updated_full_desc = result
             else:
                 self.get_updated_full_desc_error = result
+                return None
+        if self.update_page_desc_error:
+            return None
         return super(LatexRandomQuestionBase, self).make_form(
             page_context, page_data, answer_data, page_behavior
         )
@@ -264,6 +292,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
     def allowed_attrs(self):
         return super(LatexRandomQuestionBase, self).allowed_attrs() + (
             ("background_code", str),
+            ('runpy_file', str),
+            ('runpy_context', Struct),
             ("question_process_code", str),
             ("answer_process_code", str),
             ("full_process_code", str),
@@ -407,7 +437,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                         "key_making_string_md5": new_key_making_string_md5
                         }
 
-
     def generate_template_hash(self, page_context):
         from image_upload.utils import (
             minify_python_script, strip_template_comments)
@@ -426,7 +455,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         if self.cache_key_attrs:
             for cattr in self.cache_key_attrs:
-                cattr_string = getattr(self.page_desc, cattr).strip()
+                cattr_string = repr(getattr(self.page_desc, cattr)).strip()
                 if (cattr.endswith("_code")
                     and not cattr_string.startswith("{")
                     # this is to avoid imported jinja macro in the attribute
@@ -434,11 +463,13 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     cattr_string = minify_python_script(cattr_string)
                 template_string += cattr_string
 
+        if self.runpy_context:
+            template_string += repr(self.runpy_context)
+
         return md5(template_string.encode("utf-8")).hexdigest()
 
     def generate_question_data_key_making_string(
             self, page_context, selected_data_bytes):
-        from base64 import b64encode
         question_data = b64encode(selected_data_bytes.getvalue()).decode()
 
         key_making_string = ""
@@ -456,6 +487,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         if self.cache_key_attrs:
             for cattr in self.cache_key_attrs:
                 key_making_string += getattr(self.page_desc, cattr)
+
+        if self.runpy_context:
+            key_making_string += repr(self.runpy_context)
 
         template_string = key_making_string
 
@@ -519,7 +553,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             question_data = b64encode(selected_data_bytes.getvalue()).decode()
             template_hash = self.generate_template_hash(page_context)
             key_making_string_md5 = self.get_key_making_string_md5_hash(
-                    template_hash,question_data)
+                    template_hash, question_data)
             # question_data, template_string, key_making_string = (
             #     self.generate_question_data_key_making_string(
             #         page_context, selected_data_bytes)
@@ -542,7 +576,13 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                             page_context, page_data, part=part,
                             warm_up_only=True)
                     if key_exist:
-                        markup_to_html(page_context, result, warm_up_only=True)
+                        # when result is full or by run_py
+                        if isinstance(result, dict):
+                            for k ,v in result.items():
+                                markup_to_html(page_context, v,
+                                               warm_up_only=True)
+                        else:
+                            markup_to_html(page_context, result, warm_up_only=True)
                         continue
                 except KeyError:
                     continue
@@ -550,24 +590,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 # if we have full code, then other is not necessary
                 if part == "full":
                     break
-
-        # if page_context.in_sandbox and warm_up_by_sandbox:
-        #     random_data = choice(all_data)
-        #     selected_data_bytes = BytesIO()
-        #     pickle.dump(random_data, selected_data_bytes)
-        #     question_data = b64encode(selected_data_bytes.getvalue()).decode()
-        #     template_hash = self.generate_template_hash(page_context)
-        #     key_making_string = "%s%s" % (question_data, template_hash)
-            # key_making_string_md5 = md5(key_making_string.encode()).hexdigest()
-            # question_data, template_string, key_making_string = (
-            #     self.generate_question_data_key_making_string(
-            #         page_context, selected_data_bytes)
-            # )
-
-        # exist_mongo_entry = (
-        #     get_latex_page_commitsha_template_pair_collection().find_one(
-        #         {"template_hash": template_hash}))
-        # if exist_mongo_entry:
 
         _id = self.get_template_hash_id(commit_sha, template_hash)
 
@@ -723,7 +745,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         if result is None:
             try:
                 runpy_kwargs = {}
-                if part != "full":
+                if (not hasattr(self.page_desc, "runpy_file")
+                    or part != "full"):
                     runpy_kwargs["common_code_name"] = "background_code"
                 success, result = self.jinja_runpy(
                     page_context,
@@ -732,8 +755,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     **runpy_kwargs)
                 if success:
                     print("----------converted------------")
-                else:
-                    print("-----------failed--------------", result)
             except TypeError:
                 return False, result
 
@@ -741,8 +762,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 result = result.decode("utf-8")
 
             if success and result is not None:
-                print("saved after converting")
-
                 if part == "full":
                     to_set = dict(
                         (pt, result[pt].encode('utf-8'))
@@ -811,30 +830,33 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         return success, result
 
     def body(self, page_context, page_data):
+        if self.get_updated_full_desc_error:
+            return markup_to_html(page_context, self.get_updated_full_desc_error)
+        if self.update_page_desc_error:
+            return markup_to_html(page_context, self.update_page_desc_error)
         if page_context.in_sandbox or page_data is None:
             page_data = self.initialize_page_data(page_context)
 
-        question_str = ""
-        success = False
-        question_str_tmp = ""
-        answer_str = ""
-
         # this is for sandbox
-        if not self.updated_full_desc:
-            if hasattr(self.page_desc, "full_process_code"):
-                success, result = self.get_full_desc_from_full_process(page_context,
-                                                                       page_data)
-                if success:
-                    self.updated_full_desc = result
-                else:
-                    self.get_updated_full_desc_error = result
+        if page_context.in_sandbox:
+            if not self.updated_full_desc:
+                if hasattr(self.page_desc, "full_process_code") or hasattr(self.page_desc, "runpy_file"):
+                    success, result = self.get_full_desc_from_full_process(page_context,
+                                                                           page_data)
+                    if success:
+                        self.updated_full_desc = result
+                    else:
+                        return markup_to_html(page_context, result)
 
         if self.updated_full_desc:
             question_str = self.updated_full_desc.get("question", "")
-            answer_str = self.updated_full_desc.get("answer", "")
         elif self.get_updated_full_desc_error:
-            question_str = answer_str = self.get_updated_full_desc_error
+            return markup_to_html(page_context, self.get_updated_full_desc_error)
         else:
+            question_str = ""
+            success = False
+            question_str_tmp = ""
+            answer_str = ""
             for i in range(MAX_JINJIA_RETRY):
                 success, question_str_tmp = self.get_cached_result(
                         page_context, page_data, part="question")
@@ -861,7 +883,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                             answer_str = markup_to_html(page_context, answer_str)
 
         return super(LatexRandomQuestionBase, self).body(page_context, page_data)\
-               + markup_to_html(page_context, question_str) + answer_str
+               + markup_to_html(page_context, question_str)
 
     def jinja_runpy(
             self, page_context, question_data, code_name, common_code_name=""):
@@ -873,7 +895,15 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         def transfer_attr_to(name, from_name=None):
             if from_name:
-                if hasattr(self.page_desc, from_name):
+                if (from_name == "full_process_code"
+                    and
+                        hasattr(self.page_desc, "runpy_file")):
+                    run_jinja_req[name] = (
+                        "runpy_context = %s\n" % repr(self.runpy_context))
+                    run_jinja_req[name] += (
+                        "exec(data_files['%s'].decode('utf-8'))"
+                        % self.page_desc.runpy_file)
+                elif hasattr(self.page_desc, from_name):
                     run_jinja_req[name] = getattr(self.page_desc, from_name)
             elif hasattr(self.page_desc, name):
                 run_jinja_req[name] = getattr(self.page_desc, name)
@@ -892,7 +922,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             run_jinja_req["data_files"] = {}
 
             for data_file in self.page_desc.data_files:
-                from base64 import b64encode
                 run_jinja_req["data_files"][data_file] = \
                         b64encode(
                                 get_repo_blob_data_cached(
@@ -1112,12 +1141,13 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         # }}}
 
     def correct_answer(self, page_context, page_data, answer_data, grade_data):
+        if self.get_updated_full_desc_error:
+            return markup_to_html(page_context, self.get_updated_full_desc_error)
+
         CA_PATTERN = string_concat(_("A correct answer is"), ": %s.")  # noqa
         answer_str = ""
         if self.updated_full_desc:
             answer_str = self.updated_full_desc.get("answer", "")
-        elif self.get_updated_full_desc_error:
-            answer_str = self.get_updated_full_desc_error
         elif hasattr(self.page_desc, "answer_process_code"):
             answer_str = ""
             for i in range(MAX_JINJIA_RETRY):
@@ -1155,6 +1185,9 @@ class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestio
     need_update_page_desc = True
 
     def update_page_desc(self, page_context, page_data):
+        if self.get_updated_full_desc_error:
+            return
+
         from course.page.inline import WRAPPED_NAME_RE, NAME_RE
 
         blank_str = ""
@@ -1165,8 +1198,6 @@ class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestio
             blank_str = self.updated_full_desc.get("blank")
             blank_answers_str = self.updated_full_desc.get("blank_answer")
             answer_explanation_str = self.updated_full_desc.get("answer_explanation")
-        elif self.get_updated_full_desc_error:
-            blank_str = blank_answers_str = answer_explanation_str = self.get_updated_full_desc_error
         else:
             success = False
             for i in range(MAX_JINJIA_RETRY):
@@ -1203,35 +1234,56 @@ class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestio
                 if not success:
                     raise RuntimeError(answer_explanation_tmp)
 
-        question = markup_to_html(page_context, blank_str)
-
         if answer_explanation_str:
             self.page_desc.answer_explanation = answer_explanation_str
 
-        from relate.utils import dict_to_struct
-        import yaml
-        answers = dict_to_struct(yaml.load(blank_answers_str))
-        self.page_desc.question = question
-        self.page_desc.answers = answers
-        self.embedded_wrapped_name_list = WRAPPED_NAME_RE.findall(
-                self.page_desc.question)
-        self.embedded_name_list = NAME_RE.findall(self.page_desc.question)
-        answer_instance_list = []
+        if not self.get_updated_full_desc_error:
+            try:
+                question = markup_to_html(page_context, blank_str)
+                from relate.utils import dict_to_struct
+                import yaml
+                answers = dict_to_struct(yaml.load(blank_answers_str))
+                self.page_desc.question = question
+                self.page_desc.answers = answers
+                self.embedded_wrapped_name_list = WRAPPED_NAME_RE.findall(
+                        self.page_desc.question)
+                self.embedded_name_list = NAME_RE.findall(self.page_desc.question)
+                answer_instance_list = []
 
-        for idx, name in enumerate(self.embedded_name_list):
-            answers_desc = getattr(self.page_desc.answers, name)
+                for idx, name in enumerate(self.embedded_name_list):
+                    answers_desc = getattr(self.page_desc.answers, name)
 
-            from course.page.inline import parse_question
+                    from course.page.inline import parse_question
+                    from course.validation import validate_flow_page, \
+                        ValidationContext
+                    vctx = ValidationContext(
+                        repo=page_context.repo,
+                        commit_sha=page_context.commit_sha)
 
-            parsed_answer = parse_question(
-                    None, None, name, answers_desc)
-            answer_instance_list.append(parsed_answer)
+                    parsed_answer = parse_question(
+                            vctx, "<runpy error>", name, answers_desc)
+                    answer_instance_list.append(parsed_answer)
 
-        self.answer_instance_list = answer_instance_list
+                self.answer_instance_list = answer_instance_list
+            except Exception as e:
+                from yaml.scanner import ScannerError
+                if isinstance(e, ScannerError):
+                    from traceback import format_exc
+                    self.update_page_desc_error = string_concat(
+                        "<p class='latexpage-error alert alert-danger'><strong>",
+                        _("Error: "),
+                        _("The template failed to render, the log follows:"),
+                        "</strong></p>",
+                        "<div class='latexpage-error alert alert-danger'><pre>%s</pre></div>"
+                        % (
+                            "".join(format_exc())))
+                else:
+                    raise
 
     def get_question(self, page_context, page_data):
+        # template error is supposed to be raised here
         self.update_page_desc(page_context, page_data)
-        return super(LatexRandomCodeInlineMultiQuestion, self)\
+        return super(LatexRandomCodeInlineMultiQuestion, self) \
             .get_question(page_context, page_data)
 
     def allowed_attrs(self):
