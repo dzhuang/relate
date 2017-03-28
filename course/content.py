@@ -927,7 +927,12 @@ def markup_to_html(
                  "no image will be generated."))
 
         def jinja_tex_to_img_tag(caller, *args, **kwargs):
-            return tex_to_img_tag(caller(), *args, **kwargs)
+            try:
+                return tex_to_img_tag(caller(), *args, **kwargs)
+            except Exception as e:
+                return (
+                    "<pre><div class='alert alert-danger'>Error: %s: %s</div></pre>"
+                    % (type(e).__name__, str(e)))
 
         template = env.from_string(text)
         latex2image_enabled = getattr(
