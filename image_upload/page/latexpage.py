@@ -535,8 +535,10 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         from random import choice
 
         question_data = None
-        template_hash = None
         key_making_string_md5 = None
+
+        # template_string is the string independent of data
+        template_hash = self.generate_template_hash(page_context)
 
         for i in range(len(all_data)):
             if not page_context.in_sandbox or not warm_up_by_sandbox:
@@ -547,11 +549,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             pickle.dump(random_data, selected_data_bytes)
 
             # question_data is the original data
-            # template_string is the string independent of data
             # key_making_string is going to be deprecated, which is now used
             # by referring cache key
             question_data = b64encode(selected_data_bytes.getvalue()).decode()
-            template_hash = self.generate_template_hash(page_context)
             key_making_string_md5 = self.get_key_making_string_md5_hash(
                     template_hash, question_data)
             # question_data, template_string, key_making_string = (
@@ -566,6 +566,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
             page_data = {
                 "question_data": question_data,
+                "template_hash": template_hash,
                 "key_making_string_md5": key_making_string_md5
             }
 
@@ -583,13 +584,13 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                                                warm_up_only=True)
                         else:
                             markup_to_html(page_context, result, warm_up_only=True)
-                        continue
+
+                        # if we have full code, then other is not necessary
+                        if part == "full":
+                            break
+
                 except KeyError:
                     continue
-
-                # if we have full code, then other is not necessary
-                if part == "full":
-                    break
 
         _id = self.get_template_hash_id(commit_sha, template_hash)
 
