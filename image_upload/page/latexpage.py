@@ -129,10 +129,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
     def __init__(self, vctx, location, page_desc):
         super(LatexRandomQuestionBase, self).__init__(vctx, location, page_desc)
 
-        self.page_saving_folder = getattr(
-            settings, "RELATE_LATEX_PAGE_SAVING_FOLDER_PATH",
-            os.path.join(settings.MEDIA_ROOT, "latex_page"))
-
         if vctx is not None and hasattr(page_desc, "data_files"):
             if hasattr(page_desc, "random_question_data_file"):
                 if page_desc.random_question_data_file not in page_desc.data_files:
@@ -196,9 +192,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     if not hasattr(page_desc, attr):
                         raise ValidationError("%s: attribute '%s' not found"
                                               % (location, attr))
-
-            if not os.path.isdir(self.page_saving_folder):
-                os.makedirs(self.page_saving_folder)
 
         self.docker_run_timeout = getattr(page_desc, "docker_timeout", 5)
 
@@ -632,16 +625,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
     def get_cached_result(self, page_context,
                           page_data, part="", warm_up_only=False):
-        will_save_file_local = False
-
-        # if page_context.in_sandbox:
-        #     will_save_file_local = True
-
-        # if not getattr(page_data, "question_data", None):
-        #     page_data = self.initialize_page_data(page_context)
-
-        #key_making_string = ""
-        saved_file_path = None
 
         try:
             key_making_string_md5 = page_data["key_making_string_md5"]
@@ -649,16 +632,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             _, updated_page_data = self.update_page_data(page_context, page_data)
             key_making_string_md5 = (
                 updated_page_data["key_making_string_md5"])
-
-        # To be used as saving name of the latex page
-        saved_file_name = (
-            "%s_%s" % (
-                md5(key_making_string_md5.encode("utf-8")).hexdigest(),
-                CACHE_VERSION))
-
-        saved_file_path = os.path.join(
-            self.page_saving_folder,
-            "%s_%s" % (saved_file_name, part))
 
         page_key = ("latexpage:%s:%s"
                      % (CACHE_VERSION,
@@ -697,20 +670,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             if part_result:
                 result = mongo_page_part_result["source"].decode("utf-8")
                 get_latex_page_part_mongo_collection().remove({"key": part_key})
-                if os.path.isfile(saved_file_path):
-                    result = file_read(saved_file_path).decode("utf-8")
-                    os.remove(saved_file_path)
             else:
                 raise RuntimeError("Page part result %s null in Mongo with key %s" % (
                     part, page_key))
-        else:
-            if saved_file_path:
-                if os.path.isfile(saved_file_path):
-                    try:
-                        result = file_read(saved_file_path).decode("utf-8")
-                        os.remove(saved_file_path)
-                    except:
-                        pass
 
         if result is not None:
             try:
@@ -755,8 +717,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     page_data["question_data"],
                     "%s_process_code" % part,
                     **runpy_kwargs)
-                if success:
-                    print("----------converted------------")
             except TypeError:
                 return False, result
 
@@ -795,13 +755,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                         )
                     except DuplicateKeyError:
                         pass
-                    if saved_file_path and will_save_file_local:
-                        if not os.path.isfile(saved_file_path):
-                            try:
-                                with atomic_write(saved_file_path, mode="wb") as f:
-                                    f.write(result.decode('utf-8'))
-                            except OSError:
-                                pass
 
         if cache_key is None:
             return success, result
