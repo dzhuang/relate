@@ -509,8 +509,10 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             return {}
 
         commit_sha = page_context.commit_sha.decode()
-        warm_up_by_sandbox = getattr(
-            self.page_desc, "warm_up_by_sandbox", False)
+        warm_up_by_sandbox = False
+        if page_context.in_sandbox:
+            warm_up_by_sandbox = getattr(
+                self.page_desc, "warm_up_by_sandbox", True)
 
         # get random question_data
         repo_bytes_data = get_repo_blob_data_cached(
@@ -539,6 +541,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         # template_string is the string independent of data
         template_hash = self.generate_template_hash(page_context)
+        _id = self.get_template_hash_id(commit_sha, template_hash)
 
         for i in range(len(all_data)):
             if not page_context.in_sandbox or not warm_up_by_sandbox:
@@ -561,7 +564,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
             # this is used to let sandbox do the warm up job for
             # sequentially ordered data(not random)
-            if not page_context.in_sandbox or not warm_up_by_sandbox:
+            if not page_context.in_sandbox:
                 break
 
             page_data = {
@@ -591,8 +594,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
                 except KeyError:
                     continue
-
-        _id = self.get_template_hash_id(commit_sha, template_hash)
 
         return {"question_data": question_data,
                 "template_hash": template_hash,
