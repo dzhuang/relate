@@ -457,7 +457,11 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 template_string += cattr_string
 
         if self.runpy_context:
-            template_string += repr(self.runpy_context)
+            # runpy_context is a dict, which may have different repr
+            sorted_runpy_context_str = repr(sorted(
+                list((k, self.runpy_context[k]) for k in self.runpy_context.keys()),
+                key=lambda x: x[1]))
+            template_string += sorted_runpy_context_str
 
         return md5(template_string.encode("utf-8")).hexdigest()
 
