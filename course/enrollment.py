@@ -583,7 +583,12 @@ class BulkPreapprovalsFormCsv(StyledForm):
 
     def clean(self):
         data = super(BulkPreapprovalsFormCsv, self).clean()
-        file_contents = data.get("file")
+        f = data.get("file")
+        f.seek(0)
+        f_data = f.read().decode("utf-8", errors="replace")
+
+        from six import StringIO
+        file_contents = StringIO(f_data)
         if file_contents:
             column_idx_list = [
                 data["inst_id_column"],
@@ -642,14 +647,17 @@ def create_preapprovals_csv(pctx):
             name_updated_count = 0
 
             roles = form.cleaned_data["roles"]
-            file_contents = request.FILES["file"]
+            f = request.FILES["file"]
+            f.seek(0)
+            data = f.read().decode("utf-8", errors="replace")
             inst_id_column = form.cleaned_data["inst_id_column"]
             header_count = form.cleaned_data["csv_header_count"]
             provided_name_column = form.cleaned_data["provided_name_column"]
             remove_nonexist = form.cleaned_data["remove_nonexist"]
 
+            from six import StringIO
             total_count, csv_valid_data, error_lines = csv_to_preapproval(
-                file_contents, inst_id_column, provided_name_column, header_count)
+                StringIO(data), inst_id_column, provided_name_column, header_count)
 
             if csv_valid_data:
                 for l in csv_valid_data:
