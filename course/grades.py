@@ -159,6 +159,7 @@ def view_participant_grades(pctx, participation_id=None):
 
     grade_table = []
     may_view_result = []
+    zipped_grade_info = []
     for opp in grading_opps:
         if not is_privileged_view:
             if not (opp.shown_in_grade_book
