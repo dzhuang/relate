@@ -306,17 +306,28 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
     def update_page_data(self, page_context, page_data):
         question_data = page_data.get("question_data", None)
         page_data_template_hash = page_data.get("template_hash", None)
+        key_making_string_md5 = page_data.get("key_making_string_md5", None)
         if page_data_template_hash == "None":
             page_data_template_hash = None
         page_data_id = page_data.get("template_hash_id", None)
         if page_data_id == "None":
             page_data_id = None
 
-        if not (page_data_template_hash and page_data_id):
+        if not question_data:
             new_page_data = self.initialize_page_data(page_context)
             return True, new_page_data
 
         commit_sha = page_context.commit_sha.decode()
+        if not (page_data_template_hash and page_data_id):
+            amend_template_hash = self.generate_template_hash(page_context)
+            new_id = self.get_template_hash_id(commit_sha, amend_template_hash)
+            new_key_making_string_md5 = self.get_key_making_string_md5_hash(
+                amend_template_hash, question_data)
+            return True, {"template_hash": amend_template_hash,
+                          "template_hash_id": str(new_id),
+                          "key_making_string_md5": new_key_making_string_md5
+                          }
+
         exist_entry = get_latex_page_commitsha_template_pair_collection().find_one(
             {"_id": ObjectId(page_data_id)})
 
@@ -326,8 +337,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             new_id = self.get_template_hash_id(commit_sha, new_template_hash)
             new_key_making_string_md5 = self.get_key_making_string_md5_hash(
                 new_template_hash, question_data)
-            return True, {"question_data": question_data,
-                          "template_hash": new_template_hash,
+            return True, {"template_hash": new_template_hash,
                           "template_hash_id": str(new_id),
                           "key_making_string_md5": new_key_making_string_md5
                           }
@@ -363,8 +373,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                          "%s_next" % commit_sha: {"$exists": False}},
                         {"$set": {"%s_next" % commit_sha: str(new_id)}}
                     )
-                    return True, {"question_data": question_data,
-                                  "template_hash": new_template_hash,
+                    return True, {"template_hash": new_template_hash,
                                   "template_hash_id": str(new_id),
                                   "key_making_string_md5": new_key_making_string_md5
                                   }
@@ -388,8 +397,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     )
                     new_key_making_string_md5 = self.get_key_making_string_md5_hash(
                         new_template_hash, question_data)
-                    return True, {"question_data": question_data,
-                                  "template_hash": new_template_hash,
+                    return True, {"template_hash": new_template_hash,
                                   "template_hash_id": str(new_id),
                                   "key_making_string_md5": new_key_making_string_md5
                                   }
@@ -399,8 +407,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     if new_template_hash:
                         new_key_making_string_md5 = self.get_key_making_string_md5_hash(
                             new_template_hash, question_data)
-                        return True, {"question_data": question_data,
-                                      "template_hash": new_template_hash,
+                        return True, {"template_hash": new_template_hash,
                                       "template_hash_id": match_template_hash_redirect_id,
                                       "key_making_string_md5": new_key_making_string_md5
                                       }
@@ -424,8 +431,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 )
                 new_key_making_string_md5 = self.get_key_making_string_md5_hash(
                     new_template_hash, question_data)
-                return True, {"question_data": question_data,
-                        "template_hash": new_template_hash,
+                return True, {"template_hash": new_template_hash,
                         "template_hash_id": str(new_id),
                         "key_making_string_md5": new_key_making_string_md5
                         }
@@ -460,7 +466,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             # runpy_context is a dict, which may have different repr
             sorted_runpy_context_str = repr(sorted(
                 list((k, self.runpy_context[k]) for k in self.runpy_context.keys()),
-                key=lambda x: x[1]))
+                key=lambda x: x[0]))
             template_string += sorted_runpy_context_str
 
         return md5(template_string.encode("utf-8")).hexdigest()
@@ -1266,16 +1272,20 @@ class LatexRandomCodeQuestionWithHumanTextFeedback(
 class LatexRandomMultipleChoiceQuestion(LatexRandomQuestion, MultipleChoiceQuestion):
 
     def initialize_page_data(self, page_context):
+        page_data = {}
         m_page_data = MultipleChoiceQuestion.initialize_page_data(self, page_context)
         l_page_data = LatexRandomQuestion.initialize_page_data(self, page_context)
-        page_data = dict(m_page_data, **l_page_data)
+        page_data.update(m_page_data)
+        page_data.update(l_page_data)
         return page_data
 
 
 class LatexRandomChoiceQuestion(LatexRandomQuestion, ChoiceQuestion):
 
     def initialize_page_data(self, page_context):
+        page_data = {}
         m_page_data = ChoiceQuestion.initialize_page_data(self, page_context)
         l_page_data = LatexRandomQuestion.initialize_page_data(self, page_context)
-        page_data = dict(m_page_data, **l_page_data)
+        page_data.update(m_page_data)
+        page_data.update(l_page_data)
         return page_data
