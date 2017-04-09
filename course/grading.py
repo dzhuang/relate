@@ -64,12 +64,13 @@ from course.constants import (
 
 # {{{ for mypy
 
-from typing import Text, Any, Optional, List, Dict, Union  # noqa
-from course.models import (  # noqa
-        GradingOpportunity)
-from course.utils import (  # noqa
-        CoursePageContext)
-import datetime  # noqa
+if False:
+    from typing import Text, Any, Optional, Dict, Union  # noqa
+    from course.models import (  # noqa
+            GradingOpportunity)
+    from course.utils import (  # noqa
+            CoursePageContext)
+    import datetime  # noqa
 
 # }}}
 

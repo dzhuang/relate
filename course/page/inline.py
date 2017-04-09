@@ -646,9 +646,10 @@ class InlineMultiQuestion(TextQuestionBase, PageBaseWithValue):
         super(InlineMultiQuestion, self).__init__(
                 vctx, location, page_desc)
 
-        self.embedded_wrapped_name_list = WRAPPED_NAME_RE.findall(
-                page_desc.question)
-        self.embedded_name_list = NAME_RE.findall(page_desc.question)
+        expanded_question = page_desc.question
+
+        self.embedded_wrapped_name_list = WRAPPED_NAME_RE.findall(expanded_question)
+        self.embedded_name_list = NAME_RE.findall(expanded_question)
 
         answer_instance_list = []
 

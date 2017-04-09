@@ -44,6 +44,8 @@ from django.utils import translation
 from django.conf import settings
 from django.urls import reverse
 
+from crispy_forms.helper import FormHelper
+
 from relate.utils import (
         StyledForm, local_now, as_local_time,
         format_datetime_local, compact_local_datetime_str)
@@ -86,25 +88,26 @@ from relate.utils import retry_transaction_decorator
 
 # {{{ mypy
 
-from typing import Any, Optional, Iterable, Tuple, Text, List  # noqa
-import datetime  # noqa
-from course.models import (  # noqa
-        Course,
-        Participation
-        )
-from course.utils import (  # noqa
-        CoursePageContext,
-        FlowSessionStartRule,
-        )
-from course.content import (  # noqa
-        FlowDesc,
-        )
-from course.page.base import (  # noqa
-        PageBase,
-        PageBehavior,
-        AnswerFeedback
-        )
-from relate.utils import Repo_ish  # noqa
+if False:
+    from typing import Any, Optional, Iterable, Tuple, Text, List  # noqa
+    import datetime  # noqa
+    from course.models import (  # noqa
+            Course,
+            Participation
+            )
+    from course.utils import (  # noqa
+            CoursePageContext,
+            FlowSessionStartRule,
+            )
+    from course.content import (  # noqa
+            FlowDesc,
+            )
+    from course.page.base import (  # noqa
+            PageBase,
+            PageBehavior,
+            AnswerFeedback
+            )
+    from relate.utils import Repo_ish  # noqa
 
 # }}}
 
@@ -1171,32 +1174,60 @@ def grade_flow_session(
     return grade_info
 
 
+def unsubmit_page(prev_answer_visit, now_datetime):
+    # type: (FlowPageVisit, datetime.datetime) -> None
+
+    prev_answer_visit.id = None
+    prev_answer_visit.visit_time = now_datetime
+    prev_answer_visit.remote_address = None
+    prev_answer_visit.user = None
+    prev_answer_visit.is_synthetic = True
+
+    assert prev_answer_visit.is_submitted_answer
+    prev_answer_visit.is_submitted_answer = False
+
+    prev_answer_visit.save()
+
+
 def reopen_session(
-        session, force=False, suppress_log=False):
-    # type: (FlowSession, bool, bool) -> None
+        now_datetime,  # type: datetime.datetime
+        session,  # type: FlowSession
+        force=False,  # type: bool
+        suppress_log=False,  # type: bool
+        unsubmit_pages=False,  # type: bool
+        ):
+    # type: (...) -> None
 
-    if session.in_progress:
-        raise RuntimeError(
-                _("Cannot reopen a session that's already in progress"))
-    if session.participation is None:
-        raise RuntimeError(
-                _("Cannot reopen anonymous sessions"))
+    with transaction.atomic():
+        if session.in_progress:
+            raise RuntimeError(
+                    _("Cannot reopen a session that's already in progress"))
+        if session.participation is None:
+            raise RuntimeError(
+                    _("Cannot reopen anonymous sessions"))
 
-    session.in_progress = True
-    session.points = None
-    session.max_points = None
+        session.in_progress = True
+        session.points = None
+        session.max_points = None
 
-    if not suppress_log:
-        session.append_comment(
-                _("Session reopened at %(now)s, previous completion time "
-                "was '%(complete_time)s'.") % {
-                    'now': format_datetime_local(local_now()),
-                    'complete_time': format_datetime_local(
-                        as_local_time(session.completion_time))
-                    })
+        if not suppress_log:
+            session.append_comment(
+                    _("Session reopened at %(now)s, previous completion time "
+                    "was '%(complete_time)s'.") % {
+                        'now': format_datetime_local(now_datetime),
+                        'complete_time': format_datetime_local(
+                            as_local_time(session.completion_time))
+                        })
 
-    session.completion_time = None
-    session.save()
+        session.completion_time = None
+        session.save()
+
+        if unsubmit_pages:
+            answer_visits = assemble_answer_visits(session)
+
+            for visit in answer_visits:
+                if visit is not None:
+                    unsubmit_page(visit, now_datetime)
 
 
 def finish_flow_session_standalone(
@@ -1281,14 +1312,15 @@ def regrade_session(
     else:
         prev_completion_time = session.completion_time
 
+        now_datetime = local_now()
         with transaction.atomic():
             session.append_comment(
                     _("Session regraded at %(time)s.") % {
-                        'time': format_datetime_local(local_now())
+                        'time': format_datetime_local(now_datetime)
                         })
             session.save()
 
-            reopen_session(session, force=True, suppress_log=True)
+            reopen_session(now_datetime, session, force=True, suppress_log=True)
             finish_flow_session_standalone(
                     repo, course, session, force_regrade=True,
                     now_datetime=prev_completion_time,
@@ -1311,13 +1343,14 @@ def recalculate_session_grade(repo, course, session):
             respect_preview=False)
 
     with transaction.atomic():
+        now_datetime = local_now()
         session.append_comment(
                 _("Session grade recomputed at %(time)s.") % {
-                    'time': format_datetime_local(local_now())
+                    'time': format_datetime_local(now_datetime)
                     })
         session.save()
 
-        reopen_session(session, force=True, suppress_log=True)
+        reopen_session(now_datetime, session, force=True, suppress_log=True)
         finish_flow_session_standalone(
                 repo, course, session, force_regrade=False,
                 now_datetime=prev_completion_time,
@@ -1633,15 +1666,21 @@ def get_page_behavior(
     # type: (...) -> PageBehavior
     show_correctness = False
 
-    if page.expects_answer() and answer_was_graded:
-        show_correctness = flow_permission.see_correctness in permissions
+    if page.expects_answer():
+        if answer_was_graded:
+            show_correctness = flow_permission.see_correctness in permissions
 
-        show_answer = flow_permission.see_answer_after_submission in permissions
+            show_answer = flow_permission.see_answer_after_submission in permissions
 
-    elif page.expects_answer() and not answer_was_graded:
-        # Don't show answer yet
-        show_answer = (
-                flow_permission.see_answer_before_submission in permissions)
+            if session_in_progress:
+                # Don't reveal the answer if they can still change their mind
+                show_answer = (show_answer and
+                        flow_permission.change_answer not in permissions)
+
+        else:
+            # Don't show answer yet
+            show_answer = (
+                    flow_permission.see_answer_before_submission in permissions)
     else:
         show_answer = (
                 flow_permission.see_answer_before_submission in permissions
@@ -2109,6 +2148,7 @@ def view_flow_page(pctx, flow_session_id, ordinal):
         "show_answer": page_behavior.show_answer,
         "may_send_email_about_flow_page":
             may_send_email_about_flow_page(permissions),
+        "expects_answer": fpctx.page.expects_answer(),
 
         "session_minutes": session_minutes,
         "time_factor": time_factor,
@@ -2874,6 +2914,81 @@ def regrade_flows_view(pctx):
         "form_description": _("Regrade not-for-credit Flow Sessions"),
     })
 
+
+# }}}
+
+
+# {{{ view: unsubmit flow page
+
+class UnsubmitFlowPageForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        self.helper = FormHelper()
+        super(UnsubmitFlowPageForm, self).__init__(*args, **kwargs)
+
+        self.helper.add_input(Submit("submit", _("Re-allow changes")))
+        self.helper.add_input(Submit("cancel", _("Cancel")))
+
+
+@course_view
+def view_unsubmit_flow_page(pctx, flow_session_id, ordinal):
+    # type: (CoursePageContext, int, int) -> http.HttpResponse
+
+    request = pctx.request
+    now_datetime = get_now_or_fake_time(request)
+
+    ordinal = int(ordinal)
+
+    flow_session_id = int(flow_session_id)
+    try:
+        flow_session = (FlowSession.objects
+                .select_related("participation")
+                .get(id=flow_session_id))
+    except ObjectDoesNotExist:
+        raise http.Http404()
+
+    if flow_session.course.pk != pctx.course.pk:
+        raise http.Http404()
+
+    adjust_flow_session_page_data(pctx.repo, flow_session, pctx.course.identifier,
+            respect_preview=True)
+
+    # {{{ permission checking
+
+    if flow_session is None:
+        raise SuspiciousOperation("no flow session found")
+
+    if pctx.participation is None:
+        raise http.Http403()
+
+    if flow_session.course.pk != pctx.participation.course.pk:
+        raise http.Http403()
+
+    if not pctx.has_permission(pperm.reopen_flow_session):
+        raise http.Http403()
+
+    # }}}
+
+    page_data = get_object_or_404(
+            FlowPageData, flow_session=flow_session, ordinal=ordinal)
+    visit = get_prev_answer_visit(page_data)
+
+    if request.method == 'POST':
+        form = UnsubmitFlowPageForm(request.POST)
+        if form.is_valid():
+            if "submit" in request.POST:
+                unsubmit_page(visit, now_datetime)
+                messages.add_message(request, messages.INFO,
+                        _("Flow page changes reallowed. "))
+
+            return redirect("relate-view_flow_page",
+                pctx.course.identifier, flow_session_id, ordinal)
+    else:
+        form = UnsubmitFlowPageForm()
+
+    return render_course_page(pctx, "course/generic-course-form.html", {
+        "form_description": _("Re-allow Changes to Flow Page"),
+        "form": form
+        })
 
 # }}}
 

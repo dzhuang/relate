@@ -24,6 +24,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+from typing import cast, Union
 
 from django.conf import settings
 from django.utils.translation import ugettext as _
@@ -58,11 +59,10 @@ else:
 
 # {{{ mypy
 
-from typing import (  # noqa
-        cast, Union, Any, List, Tuple, Optional, Callable, Text, Dict)
-
 if False:
     # for mypy
+    from typing import (  # noqa
+        Any, List, Tuple, Optional, Callable, Text, Dict)
     from course.models import Course, Participation  # noqa
     import dulwich  # noqa
     from course.validation import ValidationContext  # noqa
@@ -786,7 +786,7 @@ class LinkFixerTreeprocessor(Treeprocessor):
     def process_tag(self, tag_name, attrs):
         changed_attrs = {}
 
-        if tag_name == "table":
+        if tag_name == "table" and attrs.get("bootstrap") != "no":
             changed_attrs["class"] = "table table-condensed"
 
         if tag_name in ["a", "link"] and "href" in attrs:
@@ -861,6 +861,34 @@ def remove_prefix(prefix, s):
 JINJA_PREFIX = "[JINJA]"
 
 
+def expand_markup(
+        course,  # type: Optional[Course]
+        repo,  # type: Repo_ish
+        commit_sha,  # type: bytes
+        text,  # type: Text
+        use_jinja=True,  # type: bool
+        jinja_env={},  # type: Dict
+        ):
+    # type: (...) -> Text
+
+    if not isinstance(text, six.text_type):
+        text = six.text_type(text)
+
+    # {{{ process through Jinja
+
+    if use_jinja:
+        from jinja2 import Environment, StrictUndefined
+        env = Environment(
+                loader=GitTemplateLoader(repo, commit_sha),
+                undefined=StrictUndefined)
+        template = env.from_string(text)
+        text = template.render(**jinja_env)
+
+    # }}}
+
+    return text
+
+
 def markup_to_html(
         course,  # type: Optional[Course]
         repo,  # type: Repo_ish
@@ -872,11 +900,6 @@ def markup_to_html(
         jinja_env=None,  # type: Optional[Dict[Text, Any]]
         ):
     # type: (...) -> Text
-
-    if reverse_func is None:
-        from django.urls import reverse
-        reverse_func = reverse
-
     if course is not None and not jinja_env:
         try:
             import django.core.cache as cache
@@ -899,10 +922,12 @@ def markup_to_html(
     else:
         cache_key = None
 
-    if not isinstance(text, six.text_type):
-        text = six.text_type(text)
+    text = expand_markup(
+            course, repo, commit_sha, text, use_jinja=use_jinja, jinja_env=jinja_env)
 
-    # {{{ process through Jinja
+    if reverse_func is None:
+        from django.urls import reverse
+        reverse_func = reverse
 
     if use_jinja:
         from jinja2 import Environment, StrictUndefined
@@ -1135,7 +1160,11 @@ def parse_date_spec(
         return localize_if_needed(
                 datetime.datetime.combine(datespec, datetime.time.min))
 
-    datespec_str = cast(Text, datespec).strip()
+    try:
+        from typing import Text
+    except ImportError:
+        Text = None  # noqa
+    datespec_str = cast(Text, datespec).strip()  # type: ignore
 
     # {{{ parse postprocessors
 
