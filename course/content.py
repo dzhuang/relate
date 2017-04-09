@@ -882,60 +882,8 @@ def expand_markup(
                 loader=GitTemplateLoader(repo, commit_sha),
                 undefined=StrictUndefined)
         template = env.from_string(text)
-        text = template.render(**jinja_env)
 
-    # }}}
-
-    return text
-
-
-def markup_to_html(
-        course,  # type: Optional[Course]
-        repo,  # type: Repo_ish
-        commit_sha,  # type: bytes
-        text,  # type: Text
-        reverse_func=None,  # type: Callable
-        validate_only=False,  # type: bool
-        use_jinja=True,  # type: bool
-        jinja_env=None,  # type: Optional[Dict[Text, Any]]
-        ):
-    # type: (...) -> Text
-    if course is not None and not jinja_env:
-        try:
-            import django.core.cache as cache
-        except ImproperlyConfigured:
-            cache_key = None
-        else:
-            import hashlib
-            cache_key = ("markup:v6:%s:%d:%s:%s"
-                    % (CACHE_KEY_ROOT, course.id, str(commit_sha),
-                        hashlib.md5(text.encode("utf-8")).hexdigest()))
-
-            def_cache = cache.caches["default"]
-            result = def_cache.get(cache_key)
-            if result is not None:
-                assert isinstance(result, six.text_type)
-                return result
-
-        if text.lstrip().startswith(JINJA_PREFIX):
-            text = remove_prefix(JINJA_PREFIX, text.lstrip())
-    else:
-        cache_key = None
-
-    text = expand_markup(
-            course, repo, commit_sha, text, use_jinja=use_jinja, jinja_env=jinja_env)
-
-    if reverse_func is None:
-        from django.urls import reverse
-        reverse_func = reverse
-
-    if use_jinja:
-        from jinja2 import Environment, StrictUndefined
         from relate.utils import as_local_time
-        env = Environment(
-                loader=GitTemplateLoader(repo, commit_sha),
-                undefined=StrictUndefined)
-
         def parse_date_spec_jinja(datespec):
             return as_local_time(parse_date_spec(course, datespec))
 
@@ -985,8 +933,52 @@ def markup_to_html(
                     _("RELATE_LATEX_TO_IMAGE_ENABLED is set to False, "
                       "no image will be generated."))
             text = template.render(**kwargs)
+        # }}}
 
     # }}}
+
+    return text
+
+
+def markup_to_html(
+        course,  # type: Optional[Course]
+        repo,  # type: Repo_ish
+        commit_sha,  # type: bytes
+        text,  # type: Text
+        reverse_func=None,  # type: Callable
+        validate_only=False,  # type: bool
+        use_jinja=True,  # type: bool
+        jinja_env=None,  # type: Optional[Dict[Text, Any]]
+        ):
+    # type: (...) -> Text
+    if course is not None and not jinja_env:
+        try:
+            import django.core.cache as cache
+        except ImproperlyConfigured:
+            cache_key = None
+        else:
+            import hashlib
+            cache_key = ("markup:v6:%s:%d:%s:%s"
+                    % (CACHE_KEY_ROOT, course.id, str(commit_sha),
+                        hashlib.md5(text.encode("utf-8")).hexdigest()))
+
+            def_cache = cache.caches["default"]
+            result = def_cache.get(cache_key)
+            if result is not None:
+                assert isinstance(result, six.text_type)
+                return result
+
+        if text.lstrip().startswith(JINJA_PREFIX):
+            text = remove_prefix(JINJA_PREFIX, text.lstrip())
+    else:
+        cache_key = None
+
+    text = expand_markup(
+            course, repo, commit_sha, text, use_jinja=use_jinja, jinja_env=jinja_env)
+
+    if reverse_func is None:
+        from django.urls import reverse
+        reverse_func = reverse
 
     if validate_only:
         return ""
