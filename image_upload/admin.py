@@ -23,8 +23,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-from typing import Any  # noqa
-
 from django.contrib import admin
 from django.contrib.admin.options import IncorrectLookupParameters
 from django.template.response import SimpleTemplateResponse
@@ -46,6 +44,9 @@ from image_upload.models import FlowPageImage
 from image_upload.utils import AdminMarkdownWidget
 
 from markdownx.widgets import AdminMarkdownxWidget
+
+if False:
+    from typing import Any  # noqa
 
 
 class FPIWidget(AdminMarkdownxWidget):

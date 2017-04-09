@@ -39,7 +39,8 @@ DEFAULT_IMG_HTML_CLASS = "img-responsive"
 
 # {{{ mypy
 
-from typing import Text, Any, Optional  # noqa
+if False:
+    from typing import Text, Any, Optional  # noqa
 
 # }}}
 

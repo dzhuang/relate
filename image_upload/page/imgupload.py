@@ -53,9 +53,9 @@ storage = UserImageStorage()
 
 # {{{  mypy
 
-from typing import Any  # noqa
-from django import http  # noqa
 if False:
+    from typing import Any  # noqa
+    from django import http  # noqa
     from course.utils import PageContext  # noqa
 
 # }}}

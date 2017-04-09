@@ -34,8 +34,8 @@ from pymongo.errors import DuplicateKeyError
 from bson.objectid import ObjectId
 
 # {{{ mypy
-from typing import Text, Callable  # noqa
 if False:
+    from typing import Text, Callable  # noqa
     from course.utils import PageContext  # noqa
 
 # }}}

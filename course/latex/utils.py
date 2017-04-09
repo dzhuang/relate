@@ -44,9 +44,8 @@ from pymongo import MongoClient
 
 # {{{ mypy
 
-from typing import Any, Text, List, Tuple, Optional  # noqa
-
 if False:
+    from typing import Any, Text, List, Tuple, Optional  # noqa
     from course.latex.converter import CommandBase  # noqa
 
 # }}}

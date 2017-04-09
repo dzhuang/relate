@@ -30,7 +30,8 @@ from django.utils.translation import ugettext as _
 
 from .utils import strip_comments, strip_spaces
 
-from typing import Text, Any, Optional  # noqa
+if False:
+    from typing import Text, Any, Optional  # noqa
 
 
 class TexDocParseError(Exception):

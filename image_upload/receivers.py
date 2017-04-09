@@ -37,7 +37,8 @@ LOCAL_APPS = [
 ]
 
 
-from typing import List, Any  # noqa
+if False:
+    from typing import List, Any  # noqa
 
 # {{{ Delete temp image when it is saved to sendfile storage
 

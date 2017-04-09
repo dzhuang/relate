@@ -49,7 +49,8 @@ from .utils import (
     file_read, file_write, get_abstract_latex_log)
 
 # mypy
-from typing import Text, Optional, Any, List  # noqa
+if False:
+    from typing import Text, Optional, Any, List  # noqa
 
 DB = get_mongo_db()
 

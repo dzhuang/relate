@@ -40,8 +40,8 @@ from jsonfield import JSONField
 
 # {{{ mypy
 
-from typing import Text, Optional  # noqa
-
+if False:
+    from typing import Text, Optional  # noqa
 
 # }}}
 
