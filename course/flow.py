@@ -63,6 +63,7 @@ from course.constants import (
         flow_session_interaction_kind
         )
 from course.models import (
+        Participation,
         FlowSession, FlowPageData, FlowPageVisit,
         FlowPageVisitGrade,
         get_feedback_for_grade,
@@ -91,10 +92,7 @@ from relate.utils import retry_transaction_decorator
 if False:
     from typing import Any, Optional, Iterable, Tuple, Text, List  # noqa
     import datetime  # noqa
-    from course.models import (  # noqa
-            Course,
-            Participation
-            )
+    from course.models import Course  # noqa
     from course.utils import (  # noqa
             CoursePageContext,
             FlowSessionStartRule,
