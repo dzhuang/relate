@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-02-16 13:24+0800\n"
+"POT-Creation-Date: 2017-04-10 00:34+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -984,7 +984,7 @@ msgid "File"
 msgstr "文件"
 
 msgid "Remove users that do not included in the csv file"
-msgstr ""
+msgstr "删除不大该csv文件中的用户"
 
 msgid "Institutional ID + fullname"
 msgstr "学号 + 全名"
@@ -1007,7 +1007,7 @@ msgstr "全名列序"
 
 #, python-format
 msgid "%(n_remove)d nonexisting preapprovals deleted, "
-msgstr ""
+msgstr "%(n_remove)d个不存在的预批准被删除, "
 
 #, python-format
 msgid ""
@@ -1231,7 +1231,7 @@ msgid "Exam ticket has expired."
 msgstr "测验ticket已经过期. "
 
 msgid "Ticket is valid."
-msgstr "ticket无效."
+msgstr "ticket有效."
 
 msgid "This is typically your full email address."
 msgstr "通常是你的完整电子邮件. "
@@ -1498,6 +1498,18 @@ msgstr ""
 msgid "Regrade not-for-credit Flow Sessions"
 msgstr "为不计入成绩的flow session重新评分"
 
+msgid "Re-allow changes"
+msgstr "重新允许修改回答"
+
+msgid "Cancel"
+msgstr "放弃"
+
+msgid "Flow page changes reallowed. "
+msgstr "flow页面的回答变更已重新批准"
+
+msgid "Re-allow Changes to Flow Page"
+msgstr "重新允许修改flow页面的回答"
+
 msgid "must be enrolled to view grades"
 msgstr "必须加入课程才能查看成绩"
 
@@ -1548,6 +1560,9 @@ msgstr "无效操作"
 
 msgid "Set access rules tag"
 msgstr "设置访问规则tag"
+
+msgid "Re-allow changes to already-submitted questions"
+msgstr "重新批准修改已回答问题的回答"
 
 msgid "Comment"
 msgstr "评论"
@@ -1847,13 +1862,6 @@ msgid "\"html_class_extra\" must be a string or a list"
 msgstr ""
 
 msgid "Param 'tex_source' can not be an empty string"
-msgstr ""
-
-msgid "Param output_dir must be specified"
-msgstr "必须设定output_dir参数"
-
-#, python-format
-msgid "Param output_dir '%s' is not a valid path"
 msgstr ""
 
 #, python-format
@@ -2646,10 +2654,10 @@ msgid "Active"
 msgstr "正常"
 
 msgid "Currently active, i.e. may be used to log in via an exam ticket"
-msgstr "当前正常，即，可以用于登录测验"
+msgstr "当前正常，即，可以使用测验ticket登陆"
 
 msgid "Listed"
-msgstr "已列出"
+msgstr "列出"
 
 msgid "Shown in the list of current exams"
 msgstr "在当前的测验列表中显示"
@@ -2677,17 +2685,17 @@ msgid "Exam ticket state"
 msgstr "测验ticket的状态"
 
 msgid "End valid period"
-msgstr "结束有效期"
+msgstr "终止有效时段"
 
 msgid ""
 "If not blank, date and time at which this exam ticket starts being valid/"
 "usable"
-msgstr "如果非空，此为该测验ticket开始 生效/可使用 的日期和时间."
+msgstr "如果非空，表示该测验ticket开始 有效/可使用的日期和时间"
 
 msgid ""
 "If not blank, date and time at which this exam ticket stops being valid/"
 "usable"
-msgstr "如果非空，此为该测验ticket结束 生效/可使用 的日期和时间."
+msgstr "如果非空，表示该测验ticket结束 有效/可使用的日期和时间"
 
 msgid "If not blank, this exam ticket may only be used in the given facility"
 msgstr "如果非空，该测验ticket只能在指定的教学设施内使用."
@@ -2859,6 +2867,9 @@ msgstr "需要至少1个参考答案，找到%(n_correct)d个"
 msgid "ChoiceQuestion does not allow any choices marked 'disregard'"
 msgstr ""
 
+msgid "ChoiceQuestion does not allow any choices marked 'always_correct'"
+msgstr "ChoiceQuestion不允许任何选项被设为'always_correct'"
+
 msgid "A correct answer is"
 msgstr "参考答案"
 
@@ -2889,6 +2900,9 @@ msgstr ""
 
 msgid "The correct answer is"
 msgstr "正确答案"
+
+msgid "Additional acceptable options are"
+msgstr "其它允许的选项是"
 
 msgid ""
 "code question does not explicitly allow multiple submission. Either add "
@@ -3463,15 +3477,15 @@ msgstr "转到课程活动"
 msgid "There are some interactive activities going on right now."
 msgstr "目前正在进行一些互动活动. "
 
-msgid "You're not currently signed in."
-msgstr "您还未登录. "
-
 msgid "This course is only visible to course staff at the moment."
 msgstr "本课程目前只对课务人员显示. "
 
 msgctxt "change the visibility of a course"
 msgid "Change"
 msgstr "修改"
+
+msgid "You're not currently signed in."
+msgstr "您还未登录. "
 
 msgid "Enroll"
 msgstr "加入课程"
@@ -3667,9 +3681,6 @@ msgstr "确定：提交所有回答并结束本session"
 msgid "Are you sure you will submit this session with questions unanswered?"
 msgstr "您是否坚持在(部分)问题未回答的前提下仍提交此session?"
 
-msgid "Cancel"
-msgstr "放弃"
-
 #. Translators: student should confirm to start another session.
 msgid "I am sure"
 msgstr "我确认"
@@ -3697,6 +3708,12 @@ msgstr ""
 "%(review_uri)s\n"
 "\n"
 
+msgid "Viewing session for partipant"
+msgstr "正在查看session的学员为: "
+
+msgid "(unspecified participant)"
+msgstr "(未确定的参与者)"
+
 msgctxt "Previous page/item in a flow"
 msgid "Previous page"
 msgstr "上一页"
@@ -3720,6 +3737,9 @@ msgstr "回到Flow起始页面"
 msgid "View in grading interface"
 msgstr "在评分界面中查看"
 
+msgid "Re-allow changes to page"
+msgstr "重新允许修改回答"
+
 msgid "Submission history for this page"
 msgstr "本页面的提交历史"
 
@@ -3732,8 +3752,9 @@ msgstr "(已提交的)"
 msgid "Go to end"
 msgstr "跳转至最末"
 
-msgid "Submit assignment"
-msgstr "提交作业"
+#, python-format
+msgid "Submit %(flow_title)s"
+msgstr "提交%(flow_title)s"
 
 msgid "Finish"
 msgstr "结束"
@@ -4904,11 +4925,11 @@ msgstr "更新对课程内容的修订"
 msgid "course page is currently hidden"
 msgstr "课程页面当前被隐藏. "
 
-msgid "Enrollment has expired. "
-msgstr "申请加入该课程的期限已过. "
-
 msgid "This course has ended. "
 msgstr "该课程已经结束. "
+
+msgid "Enrollment has expired. "
+msgstr "申请加入该课程的期限已过. "
 
 msgid "Access to this course has been closed for non-participants."
 msgstr "非学员无法访问该课程."
@@ -4942,8 +4963,8 @@ msgstr "设定"
 msgid "Unset"
 msgstr "恢复正常"
 
-msgid "only staff may set fake time"
-msgstr "只有课务人员可以设置虚拟时间"
+msgid "may not set fake time"
+msgstr "不允许设置虚拟时间"
 
 msgid "Set fake time"
 msgstr "设置虚拟时间"
@@ -4969,9 +4990,6 @@ msgid ""
 "Add a page header to every page rendered while pretending to be in a "
 "facility, as a reminder that this pretending is in progress."
 msgstr "为所有虚拟教学设备的页面添加header，以提示目前正在虚拟过程中."
-
-msgid "only staff may set fake facility"
-msgstr "只有课务人员可以设置虚拟教学设施"
 
 msgid "Pretend to be in Facilities"
 msgstr "假装置身于教学设施中"

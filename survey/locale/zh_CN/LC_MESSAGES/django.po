@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-02-16 13:25+0800\n"
+"POT-Creation-Date: 2017-04-10 00:34+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -35,7 +35,6 @@ msgstr "课程统计"
 msgid "Course Statistics Surveys"
 msgstr "课程统计"
 
-#. Translators: For GradingOpportunity
 #, python-format
 msgid ""
 "Survey '(%(title)s)' for %(course)s using %(questionnare_title)s created at %"
