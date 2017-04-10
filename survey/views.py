@@ -301,7 +301,10 @@ def view_single_survey_book(pctx, survey_pk):
         (participation, question) = entry
         return (participation.user.institutional_id,)
 
-    survey_table = sorted(zip(participations, survey_table), key=sort_key)
+    survey_table = sorted(zip(participations, survey_table),
+                          key=lambda x: float('inf')
+                          if x[0].user.institutional_id is None
+                          else float(x[0].user.institutional_id))
 
     return render_course_page(pctx, "survey/survey_book.html", {
         "survey_table": survey_table,
