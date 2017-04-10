@@ -866,6 +866,7 @@ def expand_markup(
         repo,  # type: Repo_ish
         commit_sha,  # type: bytes
         text,  # type: Text
+        validate_only=False,  # type: bool
         use_jinja=True,  # type: bool
         jinja_env={},  # type: Dict
         ):
@@ -904,7 +905,8 @@ def expand_markup(
                 return tex_to_img_tag(caller(), *args, **kwargs)
             except Exception as e:
                 raise ValueError(
-                    "<pre><div class='alert alert-danger'>Error: %s: %s</div></pre>"
+                    u"<pre><div class='alert alert-danger'>"
+                    u"Error: %s: %s</div></pre>"
                     % (type(e).__name__, str(e)))
 
         template = env.from_string(text)
@@ -948,7 +950,7 @@ def markup_to_html(
         reverse_func=None,  # type: Callable
         validate_only=False,  # type: bool
         use_jinja=True,  # type: bool
-        jinja_env=None,  # type: Optional[Dict[Text, Any]]
+        jinja_env={},  # type: Dict
         ):
     # type: (...) -> Text
     if course is not None and not jinja_env:
@@ -974,7 +976,8 @@ def markup_to_html(
         cache_key = None
 
     text = expand_markup(
-            course, repo, commit_sha, text, use_jinja=use_jinja, jinja_env=jinja_env)
+            course, repo, commit_sha, text, validate_only=validate_only,
+            use_jinja=use_jinja, jinja_env=jinja_env)
 
     if reverse_func is None:
         from django.urls import reverse

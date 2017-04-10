@@ -2,8 +2,6 @@
 
 from __future__ import division
 
-from course.latex.utils import get_mongo_db
-
 __copyright__ = "Copyright (C) 2016 Dong Zhuang, Andreas Kloeckner"
 
 __license__ = """
@@ -32,8 +30,6 @@ import sys
 import shutil
 import re
 from hashlib import md5
-from pymongo.errors import OperationFailure
-from bson.objectid import ObjectId
 
 from django.core.checks import Critical
 from django.core.management.base import CommandError
@@ -44,6 +40,8 @@ from django.conf import settings
 
 from relate.utils import local_now
 
+from course.latex.utils import get_mongo_db
+
 from .utils import (
     popen_wrapper, get_basename_or_md5,
     file_read, file_write, get_abstract_latex_log)
@@ -53,6 +51,7 @@ if False:
     from typing import Text, Optional, Any, List  # noqa
 
 DB = get_mongo_db()
+
 
 def get_latex_datauri_mongo_collection(name=None, db=DB, index_name="key"):
     if not name:
@@ -620,7 +619,7 @@ class Tex2ImgBase(object):
                 from django.utils.html import escape
                 raise ValueError(
                     "<pre>%s</pre>" % escape(err_result).strip())
-        
+
         # we make the key so that it can be used when cache is not configured
         # and it can be used by mongo
         uri_key = (
