@@ -882,7 +882,6 @@ def expand_markup(
         env = Environment(
                 loader=GitTemplateLoader(repo, commit_sha),
                 undefined=StrictUndefined)
-        template = env.from_string(text)
 
         from relate.utils import as_local_time
         def parse_date_spec_jinja(datespec):
@@ -890,9 +889,13 @@ def expand_markup(
 
         env.globals["parse_date_spec"] = parse_date_spec_jinja
 
-        # {{{ tex2img
+        template = env.from_string(text)
+        kwargs = {}
+        if jinja_env:
+            kwargs.update(jinja_env)
 
-        from course.latex import tex_to_img_tag
+
+        # {{{ tex2img
 
         def latex_not_enabled_warning(caller, *args, **kwargs):
             return (
@@ -902,6 +905,7 @@ def expand_markup(
 
         def jinja_tex_to_img_tag(caller, *args, **kwargs):
             try:
+                from course.latex import tex_to_img_tag
                 return tex_to_img_tag(caller(), *args, **kwargs)
             except Exception as e:
                 raise ValueError(
@@ -909,24 +913,11 @@ def expand_markup(
                     u"Error: %s: %s</div></pre>"
                     % (type(e).__name__, str(e)))
 
-        template = env.from_string(text)
         latex2image_enabled = getattr(
             settings, "RELATE_LATEX_TO_IMAGE_ENABLED", False)
 
-        kwargs = {}
-        if jinja_env:
-            kwargs.update(jinja_env)
-
         if latex2image_enabled:
-            try:
-                env.globals["latex"] = jinja_tex_to_img_tag
-                text = template.render(**kwargs)
-            except:
-                if validate_only:
-                    raise
-                else:
-                    # fail silently
-                    text = template.render(**kwargs)
+            env.globals["latex"] = jinja_tex_to_img_tag
         else:
             if not validate_only:
                 env.globals["latex"] = latex_not_enabled_warning
@@ -934,8 +925,9 @@ def expand_markup(
                 raise ImproperlyConfigured(
                     _("RELATE_LATEX_TO_IMAGE_ENABLED is set to False, "
                       "no image will be generated."))
-            text = template.render(**kwargs)
         # }}}
+
+        text = template.render(**kwargs)
 
     # }}}
 
