@@ -367,18 +367,24 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
         if other_flow_session.pk == flow_session.pk:
             if i > 0:
                 prev_flow_session_id = all_flow_sessions[i-1].id
-                flow_page_data_i = FlowPageData.objects.get(
-                    flow_session__id=prev_flow_session_id,
-                    group_id=group_id,
-                    page_id=page_id)
-                prev_flow_session_ordinal = flow_page_data_i.ordinal
+                try:
+                    flow_page_data_i = FlowPageData.objects.get(
+                        flow_session__id=prev_flow_session_id,
+                        group_id=group_id,
+                        page_id=page_id)
+                    prev_flow_session_ordinal = flow_page_data_i.ordinal
+                except ObjectDoesNotExist:
+                    prev_flow_session_ordinal = page_ordinal
             if i + 1 < len(all_flow_sessions):
                 next_flow_session_id = all_flow_sessions[i+1].id
-                flow_page_data_i = FlowPageData.objects.get(
-                    flow_session__id=next_flow_session_id,
-                    group_id=group_id,
-                    page_id=page_id)
-                next_flow_session_ordinal = flow_page_data_i.ordinal
+                try:
+                    flow_page_data_i = FlowPageData.objects.get(
+                        flow_session__id=next_flow_session_id,
+                        group_id=group_id,
+                        page_id=page_id)
+                    next_flow_session_ordinal = flow_page_data_i.ordinal
+                except ObjectDoesNotExist:
+                    next_flow_session_ordinal = page_ordinal
 
     # }}}
 
