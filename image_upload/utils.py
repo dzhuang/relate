@@ -38,7 +38,12 @@ import re
 
 JINJA_TEX_TEMPLATE_COMMENT_RE = re.compile("\\\\#{[^}\n]*}")
 JINJA_TEX_TEMPLATE_LINE_COMMENT_RE = re.compile("%#.*")
-JINJA_TEX_TEMPLATE_INBLOCK_LATEX_CALL_RE =  re.compile("{%\s*call\s*latex[^}]*}((?:.|\n)*?){%\s*endcall")
+JINJA_TEX_TEMPLATE_INBLOCK_LATEX_CALL_RE = (
+    re.compile("{%\s*call\s*latex[^}]*}((?:.|\n)*?){%\s*endcall"))
+
+if False:
+    from typing import Text, Any  # noqa
+    from course.utils import PageContext  # noqa
 
 # extracted from course.flow
 
@@ -144,17 +149,21 @@ class InMemoryZip(object):
 
 
 def get_ordinal_from_page_context(page_context):
+    # type: (PageContext) -> Any
     if page_context.in_sandbox:
         return None
 
-    relative_url = urlparse(page_context.page_uri).path
+    if not page_context.page_uri:
+        return None
 
+    relative_url = urlparse(page_context.page_uri).path
     func, args, kwargs = resolve(relative_url)
     assert kwargs["ordinal"]
     return kwargs["ordinal"]
 
 
 def minify_python_script(source):
+    # type: (Text) -> Text
     from pyminifier import token_utils, minification
     from optparse import Values
     options = Values()
@@ -167,6 +176,7 @@ def minify_python_script(source):
 #     with course.latex.utils.strip_comments
 
 def strip_template_comments(source):
+    # type: (Text) -> Text
     from course.latex.utils import strip_spaces
     source = strip_spaces(source, allow_single_empty_line=True)
     source = re.sub(JINJA_TEX_TEMPLATE_COMMENT_RE, "", source)
@@ -176,7 +186,7 @@ def strip_template_comments(source):
     if in_block_tex_list:
         from course.latex.utils import strip_comments
         for b in in_block_tex_list:
-            source = source.replace(b,strip_comments(b))
+            source = source.replace(b, strip_comments(b))
 
     return source
 # }}}

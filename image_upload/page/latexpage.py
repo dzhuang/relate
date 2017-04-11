@@ -29,15 +29,15 @@ from io import BytesIO
 import pickle
 from hashlib import md5
 from base64 import b64encode
-import os
 from pymongo.errors import DuplicateKeyError
 from bson.objectid import ObjectId
 
 # {{{ mypy
 if False:
-    from typing import Text, Callable  # noqa
+    from typing import Text, Callable, Any, Dict, Tuple, Union, Optional  # noqa
     from course.utils import PageContext  # noqa
-
+    from pymongo import MongoClient  # noqa
+    from pymongo.collection import Collection  # noqa
 # }}}
 
 
@@ -57,14 +57,12 @@ from course.page import (  # type: ignore
     InlineMultiQuestion)
 from course.validation import ValidationError
 from course.content import get_repo_blob, get_repo_blob_data_cached
-from course.latex.utils import file_read, get_mongo_db
+from course.latex.utils import get_mongo_db
 from course.page.code import (
     PythonCodeQuestion, PythonCodeQuestionWithHumanTextFeedback,
     request_python_run_with_retries)
 
 from image_upload.page.imgupload import ImageUploadQuestion
-
-from atomicwrites import atomic_write
 
 CACHE_VERSION = "V0"
 MAX_JINJIA_RETRY = 3
@@ -72,6 +70,7 @@ DB = get_mongo_db()
 
 
 def get_latex_page_mongo_collection(name=None, db=DB, index_name="key"):
+    # type: (Optional[Text], Optional[MongoClient], Optional[Text]) -> Collection
     if not name:
         name = getattr(
             settings, "RELATE_LATEX_PAGE_COLLECTION_NAME",
@@ -81,7 +80,9 @@ def get_latex_page_mongo_collection(name=None, db=DB, index_name="key"):
         collection.ensure_index(index_name, unique=True)
     return collection
 
+
 def get_latex_page_part_mongo_collection(name=None, db=DB, index_name="key"):
+    # type: (Optional[Text], Optional[MongoClient], Optional[Text]) -> Collection
     if not name:
         name = getattr(
             settings, "RELATE_LATEX_PAGE_PART_COLLECTION_NAME",
@@ -92,7 +93,9 @@ def get_latex_page_part_mongo_collection(name=None, db=DB, index_name="key"):
     return collection
 
 
-def get_latex_page_commitsha_template_pair_collection(name=None, db=DB, index_name="template_hash"):
+def get_latex_page_commitsha_template_pair_collection(
+        name=None, db=DB, index_name="template_hash"):
+    # type: (Optional[Text], Optional[MongoClient], Optional[Text]) -> Collection
     if not name:
         name = getattr(
             settings, "RELATE_LATEX_PAGE_COMMITSHA_TEMPLATE_PAIR_COLLECTION",
@@ -243,8 +246,12 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             page_behavior,  # type: Any
             ):
 
-        if hasattr(self.page_desc, "full_process_code") or hasattr(self.page_desc, "runpy_file"):
-            success, result = self.get_full_desc_from_full_process(page_context, page_data)
+        if (hasattr(self.page_desc, "full_process_code")
+            or
+                hasattr(self.page_desc, "runpy_file")):
+            success, result = (
+                self.get_full_desc_from_full_process(
+                    page_context, page_data))
             if success:
                 self.updated_full_desc = result
             else:
@@ -257,24 +264,21 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         )
 
     def get_full_desc_from_full_process(self, page_context, page_data):
-        full_desc = {}
-        full_desc_tmp = ""
-        success = False
+        # type: (PageContext, Dict) -> Tuple[bool, Union[Dict, Text]]
+        success = False  # type: bool
+        result = None  # type: Any
+
         try:
             for i in range(MAX_JINJIA_RETRY):
-                success, full_desc_tmp = self.get_cached_result(
+                success, result = self.get_cached_result(
                     page_context, page_data, part="full")
                 if success:
-                    full_desc = full_desc_tmp
-                    assert isinstance(full_desc, dict)
+                    assert isinstance(result, dict)
                     break
         except KeyError:
             pass
 
-        if success:
-            return success, full_desc
-        else:
-            return success, full_desc_tmp
+        return success, result
 
     def required_attrs(self):
         return super(LatexRandomQuestionBase, self).required_attrs() + (
@@ -304,9 +308,10 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         return self.will_receive_grade
 
     def update_page_data(self, page_context, page_data):
+        # type: (PageContext, Dict) -> Tuple[bool, Dict]
         question_data = page_data.get("question_data", None)
         page_data_template_hash = page_data.get("template_hash", None)
-        key_making_string_md5 = page_data.get("key_making_string_md5", None)
+        key_making_string_md5 = page_data.get("key_making_string_md5", None)  # noqa
         if page_data_template_hash == "None":
             page_data_template_hash = None
         page_data_id = page_data.get("template_hash_id", None)
@@ -350,7 +355,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             # hash not found in the entry, but there's a redirect "(commit_sha)_next"
             # which give the ObjectId of the new template hash which don't match the
             # one in the page_data
-            match_template_hash_redirect_id = exist_entry.get("%s_next" % commit_sha, None)
+            match_template_hash_redirect_id = exist_entry.get(
+                "%s_next" % commit_sha, None)
 
             # that above two don't coexist
             assert not (match_template_hash and match_template_hash_redirect_id)
@@ -379,8 +385,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                                   }
 
             if match_template_hash_redirect_id:
-                redirect_entry = get_latex_page_commitsha_template_pair_collection().find_one(
-                    {"_id": ObjectId(match_template_hash_redirect_id)})
+                redirect_entry = (
+                    get_latex_page_commitsha_template_pair_collection().find_one(
+                        {"_id": ObjectId(match_template_hash_redirect_id)}))
 
                 # the entry is broken
                 if not redirect_entry:
@@ -405,12 +412,14 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 else:
                     new_template_hash = redirect_entry.get(commit_sha, None)
                     if new_template_hash:
-                        new_key_making_string_md5 = self.get_key_making_string_md5_hash(
-                            new_template_hash, question_data)
-                        return True, {"template_hash": new_template_hash,
-                                      "template_hash_id": match_template_hash_redirect_id,
-                                      "key_making_string_md5": new_key_making_string_md5
-                                      }
+                        new_key_making_string_md5 = (
+                            self.get_key_making_string_md5_hash(
+                                new_template_hash, question_data))
+                        return True, {
+                            "template_hash": new_template_hash,
+                            "template_hash_id": match_template_hash_redirect_id,
+                            "key_making_string_md5": new_key_making_string_md5
+                        }
 
             assert not (match_template_hash or match_template_hash_redirect_id)
             # Neither match_template_hash nor match_template_hash_redirect_id
@@ -432,11 +441,12 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 new_key_making_string_md5 = self.get_key_making_string_md5_hash(
                     new_template_hash, question_data)
                 return True, {"template_hash": new_template_hash,
-                        "template_hash_id": str(new_id),
-                        "key_making_string_md5": new_key_making_string_md5
-                        }
+                              "template_hash_id": str(new_id),
+                              "key_making_string_md5": new_key_making_string_md5
+                              }
 
     def generate_template_hash(self, page_context):
+        # type: (PageContext) -> Text
         from image_upload.utils import (
             minify_python_script, strip_template_comments)
         template_string = ""
@@ -456,9 +466,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             for cattr in self.cache_key_attrs:
                 cattr_string = repr(getattr(self.page_desc, cattr)).strip()
                 if (cattr.endswith("_code")
-                    and not cattr_string.startswith("{")
-                    # this is to avoid imported jinja macro in the attribute
-                    ):
+                    and
+                        # this is to avoid imported jinja macro in the attribute
+                        not cattr_string.startswith("{")):
                     cattr_string = minify_python_script(cattr_string)
                 template_string += cattr_string
 
@@ -502,12 +512,14 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         return question_data, template_string, key_making_string
 
     def get_key_making_string_md5_hash(self, template_hash, question_data):
+        # type: (Text, Text) -> Text
         key_making_string = template_hash
         if question_data:
             key_making_string += question_data
         return md5(key_making_string.encode("utf-8")).hexdigest()
 
     def initialize_page_data(self, page_context):
+        # type: (PageContext) -> Dict
         if not hasattr(self.page_desc, "random_question_data_file"):
             return {}
 
@@ -585,7 +597,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     if key_exist:
                         # when result is full or by run_py
                         if isinstance(result, dict):
-                            for k ,v in result.items():
+                            for k, v in result.items():
                                 markup_to_html(page_context, v,
                                                warm_up_only=True)
                         else:
@@ -605,6 +617,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 }
 
     def get_template_hash_id(self, commit_sha, template_hash):
+        # type: (Text, Text) -> Text
         info = get_latex_page_commitsha_template_pair_collection().find_one(
             {commit_sha: template_hash})
         _id = None
@@ -612,15 +625,16 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             _id = str(info.get("_id"))
         else:
             try:
-                info = get_latex_page_commitsha_template_pair_collection().update_one(
-                    {"template_hash": template_hash},
-                    {"$setOnInsert":
-                         {"template_hash": template_hash,
-                          "creation_time": local_now()
-                          },
-                     "$set": {commit_sha: template_hash}},
-                    upsert=True,
-                )
+                info = (
+                    get_latex_page_commitsha_template_pair_collection().update_one(
+                        {"template_hash": template_hash},
+                        {"$setOnInsert":
+                             {"template_hash": template_hash,
+                              "creation_time": local_now()
+                              },
+                         "$set": {commit_sha: template_hash}},
+                        upsert=True,
+                    ))
                 if info.upserted_id:
                     _id = str(info.upserted_id)
             except DuplicateKeyError:
@@ -635,6 +649,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
     def get_cached_result(self, page_context,
                           page_data, part="", warm_up_only=False):
+        # type: (PageContext, Dict, Optional[Text], Optional[bool]) -> Tuple[bool, Union[Text, Dict]]  # noqa
 
         try:
             key_making_string_md5 = page_data["key_making_string_md5"]
@@ -681,20 +696,21 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 result = mongo_page_part_result["source"].decode("utf-8")
                 get_latex_page_part_mongo_collection().remove({"key": part_key})
             else:
-                raise RuntimeError("Page part result %s null in Mongo with key %s" % (
-                    part, page_key))
+                raise RuntimeError(
+                    "Page part result %s null in Mongo with key %s"
+                    % (part, page_key))
 
         if result is not None:
             try:
                 get_latex_page_mongo_collection().update_one(
-                        {"key": page_key, part: {"$exists": False}},
-                        {"$setOnInsert":
-                             {"key": page_key,
-                              "creation_time": local_now()
-                              },
-                         "$set": {part: result.encode('utf-8')}},
-                        upsert=True,
-                    )
+                    {"key": page_key, part: {"$exists": False}},
+                    {"$setOnInsert":
+                         {"key": page_key,
+                          "creation_time": local_now()
+                          },
+                     "$set": {part: result.encode('utf-8')}},
+                    upsert=True,
+                )
             except DuplicateKeyError:
                 pass
             success = True
@@ -720,7 +736,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             try:
                 runpy_kwargs = {}
                 if (not hasattr(self.page_desc, "runpy_file")
-                    or part != "full"):
+                    or
+                            part != "full"):
                     runpy_kwargs["common_code_name"] = "background_code"
                 success, result = self.jinja_runpy(
                     page_context,
@@ -778,7 +795,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     v = six.text_type(v)
                     part_key = "%s:%s" % (page_key, pt)
                     if (len(v) <= (
-                        getattr(settings, "RELATE_CACHE_MAX_BYTES", 0))):
+                            getattr(settings, "RELATE_CACHE_MAX_BYTES", 0))):
                         def_cache.add(part_key, v)
             part_key = "%s:%s" % (page_key, "full")
             if (len(result) <= (
@@ -805,9 +822,12 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         # this is for sandbox
         if page_context.in_sandbox:
             if not self.updated_full_desc:
-                if hasattr(self.page_desc, "full_process_code") or hasattr(self.page_desc, "runpy_file"):
-                    success, result = self.get_full_desc_from_full_process(page_context,
-                                                                           page_data)
+                if (hasattr(self.page_desc, "full_process_code")
+                    or
+                        hasattr(self.page_desc, "runpy_file")):
+                    success, result = (
+                        self.get_full_desc_from_full_process(
+                            page_context, page_data))
                     if success:
                         self.updated_full_desc = result
                     else:
@@ -1219,8 +1239,7 @@ class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestio
                     answers_desc = getattr(self.page_desc.answers, name)
 
                     from course.page.inline import parse_question
-                    from course.validation import validate_flow_page, \
-                        ValidationContext
+                    from course.validation import ValidationContext
                     vctx = ValidationContext(
                         repo=page_context.repo,
                         commit_sha=page_context.commit_sha)
@@ -1239,7 +1258,8 @@ class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestio
                         _("Error: "),
                         _("The template failed to render, the log follows:"),
                         "</strong></p>",
-                        "<div class='latexpage-error alert alert-danger'><pre>%s</pre></div>"
+                        "<div class='latexpage-error alert alert-danger'>"
+                        "<pre>%s</pre></div>"
                         % (
                             "".join(format_exc())))
                 else:
@@ -1272,7 +1292,8 @@ class LatexRandomCodeQuestionWithHumanTextFeedback(
 class LatexRandomMultipleChoiceQuestion(LatexRandomQuestion, MultipleChoiceQuestion):
 
     def initialize_page_data(self, page_context):
-        page_data = {}
+        # type: (PageContext) -> Dict
+        page_data = {}  # type: Dict
         m_page_data = MultipleChoiceQuestion.initialize_page_data(self, page_context)
         l_page_data = LatexRandomQuestion.initialize_page_data(self, page_context)
         page_data.update(m_page_data)

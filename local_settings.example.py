@@ -42,7 +42,6 @@ RELATE_CUSTOM_BOWER_INSTALLED_APPS = (
 RELATE_CUSTOM_INSTALLED_APPS = (
     'django.contrib.sites',
     'image_upload',
-    "jfu",
     'imagekit',
     "djcelery_email",
     "survey",

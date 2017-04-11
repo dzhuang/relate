@@ -28,7 +28,6 @@ import os
 from django.shortcuts import get_object_or_404
 from django.conf import settings
 from django import forms, http
-from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.core.files.base import ContentFile
 from django.views.generic import (
@@ -492,7 +491,7 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
               "handling. That should be solved by "
               "a re-uploading."))
         )
-    data = {'message':ugettext('Done!'), 'file': response_file}
+    data = {'message': ugettext('Done!'), 'file': response_file}
     return data
 
 # }}}

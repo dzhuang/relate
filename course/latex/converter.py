@@ -34,6 +34,7 @@ from hashlib import md5
 from django.core.checks import Critical
 from django.core.management.base import CommandError
 from django.core.exceptions import ImproperlyConfigured
+from django.utils.html import escape
 from django.utils.encoding import DEFAULT_LOCALE_ENCODING
 from django.utils.translation import ugettext as _, string_concat
 from django.conf import settings
@@ -49,11 +50,14 @@ from .utils import (
 # mypy
 if False:
     from typing import Text, Optional, Any, List  # noqa
+    from pymongo import MongoClient  # noqa
+    from pymongo.collection import Collection  # noqa
 
 DB = get_mongo_db()
 
 
 def get_latex_datauri_mongo_collection(name=None, db=DB, index_name="key"):
+    # type: (Optional[Text], Optional[MongoClient], Optional[Text]) -> Collection
     if not name:
         name = getattr(
             settings, "RELATE_LATEX_DATAURI_MONGO_COLLECTION_NAME",
@@ -65,6 +69,7 @@ def get_latex_datauri_mongo_collection(name=None, db=DB, index_name="key"):
 
 
 def get_latex_error_mongo_collection(name=None, db=DB, index_name="key"):
+    # type: (Optional[Text], Optional[MongoClient], Optional[Text]) -> Collection
     if not name:
         name = getattr(
             settings, "RELATE_LATEX_ERROR_MONGO_COLLECTION_NAME",
@@ -482,7 +487,6 @@ class Tex2ImgBase(object):
                 raise
             finally:
                 self._remove_working_dir()
-                from django.utils.html import escape
                 raise ValueError(
                     "<pre>%s</pre>" % escape(log).strip())
 
@@ -571,7 +575,6 @@ class Tex2ImgBase(object):
                     def_cache.delete(err_cache_key)
                     get_latex_error_mongo_collection().delete_one({"key": err_key})
             if err_result is not None:
-                from django.utils.html import escape
                 raise ValueError(
                     "<pre>%s</pre>" % escape(err_result).strip())
 
@@ -590,7 +593,6 @@ class Tex2ImgBase(object):
                         settings, "RELATE_CACHE_MAX_BYTES", 0):
                         def_cache.add(err_cache_key, err_result)
 
-            from django.utils.html import escape
             raise ValueError(
                 "<pre>%s</pre>" % escape(err_result).strip())
 
@@ -616,7 +618,6 @@ class Tex2ImgBase(object):
         if not result:
             err_result = self.get_compile_err_cached(force_regenerate)
             if err_result:
-                from django.utils.html import escape
                 raise ValueError(
                     "<pre>%s</pre>" % escape(err_result).strip())
 

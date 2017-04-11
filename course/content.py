@@ -884,6 +884,7 @@ def expand_markup(
                 undefined=StrictUndefined)
 
         from relate.utils import as_local_time
+
         def parse_date_spec_jinja(datespec):
             return as_local_time(parse_date_spec(course, datespec))
 
@@ -893,7 +894,6 @@ def expand_markup(
         kwargs = {}
         if jinja_env:
             kwargs.update(jinja_env)
-
 
         # {{{ tex2img
 
@@ -1354,7 +1354,7 @@ def get_processed_page_chunks(
         roles,  # type: List[Text]
         now_datetime,  # type: datetime.datetime
         facilities,  # type: frozenset[Text]
-        jinja_env=None,  # type: Optional[Dict[Text, Any]]
+        jinja_env={},  # type: Dict
         ):
     # type: (...) -> List[ChunkDesc]
     for chunk in page_desc.chunks:

@@ -65,7 +65,7 @@ from course.constants import (
 # {{{ for mypy
 
 if False:
-    from typing import Text, Any, Optional, Dict, Union  # noqa
+    from typing import Text, Any, Optional, Dict, Union, List  # noqa
     from course.models import (  # noqa
             GradingOpportunity)
     from course.utils import (  # noqa
@@ -269,7 +269,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
         list(set(all_flow_sessions) - set(page_graded_flow_session_list)))
     ungraded_fs_list = sorted(page_ungraded_flow_session_list,
                       key=lambda x: (
-                          x.participation.user.get_full_name()
+                          str(x.participation.user.get_full_name())
                       ))
 
     adjusted_list = graded_fs_list + ungraded_fs_list
