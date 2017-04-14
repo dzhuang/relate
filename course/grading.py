@@ -41,6 +41,7 @@ from relate.utils import retry_transaction_decorator
 
 
 from course.models import (
+        Participation,
         FlowSession, FlowPageVisitGrade, FlowPageData,
         get_flow_grading_opportunity,
         get_feedback_for_grade,
@@ -267,22 +268,42 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
     page_ungraded_flow_session_list = (
         list(set(all_flow_sessions) - set(page_graded_flow_session_list)))
-    ungraded_fs_list = sorted(page_ungraded_flow_session_list,
-                      key=lambda x: (
-                          str(x.participation.user.get_full_name())
-                      ))
+
+    grader_participation = (
+        Participation.objects.get(
+            course=pctx.course,
+            user=pctx.request.user
+        ))
+
+    may_view_participant_full_profile = not grader_participation.has_permission(
+            pperm.view_participant_masked_profile)
+
+    if may_view_participant_full_profile:
+        ungraded_fs_list = sorted(page_ungraded_flow_session_list,
+                          key=lambda x: (
+                              str(x.participation.user.get_full_name())
+                          ))
+    else:
+        ungraded_fs_list = sorted(page_ungraded_flow_session_list,
+                          key=lambda x: (
+                              str(x.participation.user.get_masked_profile())
+                          ))
 
     adjusted_list = graded_fs_list + ungraded_fs_list
 
     all_flow_sessions_json = []  # type: List[Any]
 
     for idx, flow_session_idx in enumerate(adjusted_list):
+        if may_view_participant_full_profile:
+            user_fullname = flow_session_idx.participation.user.get_full_name()
+        else:
+            user_fullname = flow_session_idx.participation.user.get_masked_profile()
+
         text = string_concat(
             "%(user_fullname)s",
             " ", _("started at %(start_time)s"),
         ) % {
-                   "user_fullname": (
-                       flow_session_idx.participation.user.get_full_name()),
+                   "user_fullname": user_fullname,
                    "start_time": compact_local_datetime_str(
                        as_local_time(flow_session_idx.start_time),
                        get_now_or_fake_time(pctx.request),
