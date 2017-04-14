@@ -2,23 +2,38 @@
 
 <table class="table table-striped gradebook-participants">
   <thead>
-    <th class="datacol">{% trans "User ID" %}</th>
+    {% if not pperm.view_participant_masked_profile %}
+        <th class="datacol">{% trans "User ID" %}</th>
+    {% else %}
+        <th class="datacol">{% trans "User" %}</th>
+    {% endif %}
     {% if pperm.edit_participation %}
       <th class="datacol">{% trans "Actions" %}</th>
     {% endif %}
     <th class="datacol">{% trans "Status" %}</th>
-    <th class="datacol" title="{% trans 'Real fullname is provided by prapproval if exist. Also displays a fullname (with red font) provided by the user if both are provided while different.' %}">
-        {% trans "Name" context "real name of a user" %}</th>
+    {% if not pperm.view_participant_masked_profile %}
+        <th class="datacol">{% trans "Name" context "real name of a user" %}</th>
+    {% endif %}
     <th class="datacol">{% trans "Role" %}</th>
-    <th class="datacol">{% trans "Institutional ID" %}</th>
+    {% if not pperm.view_participant_masked_profile %}
+        <th class="datacol">{% trans "Institutional ID" %}</th>
+    {% endif %}
     <th class="datacol">{% trans "Tags" %}</th>
-    <th class="datacol">{% trans "Email" %}</th>
+    {% if not pperm.view_participant_masked_profile %}
+        <th class="datacol">{% trans "Email" %}</th>
+    {% endif %}
   </thead>
   <tbody>
     {% for participation, provided_name in participations %}
     <tr class="relate-participation-{{ participation.status }}">
       <td class="headcol"><a href="{% url "relate-view_participant_grades" course.identifier participation.id %}">
-          <span class="sensitive">{{ participation.user.username }}</span>
+          <span class="sensitive">
+              {% if not pperm.view_participant_masked_profile %}
+                {{ participation.user.username }}
+              {% else %}
+                {{ participation.user.get_masked_profile }}
+              {% endif %}
+          </span>
         </a>
       </td>
       {% if pperm.edit_participation %}
@@ -27,7 +42,8 @@
         </td>
       {% endif %}
       <td class="datacol">{% trans participation.status %}</td>
-      <td class="datacol"><span class="sensitive">
+      {% if not pperm.view_participant_masked_profile %}
+        <td class="datacol"><span class="sensitive">
           {% if participation.user.get_full_name.lower == provided_name.lower %}
             {{ participation.user.get_full_name }}
           {% else %}
@@ -37,15 +53,20 @@
                 <span style="color:red">{{ participation.user.get_full_name }}</span>
             {% endif %}
           {% endif %}</span>
-     </td>
+        </td>
+      {% endif %}
       <td class="datacol">{{ participation.get_role_desc }}</td>
-      <td class="datacol"><span class="sensitive">{{ participation.user.institutional_id }}</span></td>
+      {% if not pperm.view_participant_masked_profile %}
+        <td class="datacol"><span class="sensitive">{{ participation.user.institutional_id }}</span></td>
+      {% endif %}
       <td class="datacol">
         {% for ptag in participation.tags.all %}
           <span class="label label-default">{{ ptag.name }}</span>
         {% endfor %}
       </td>
-      <td class="datacol"><span class="sensitive">{{ participation.user.email }}</span></td>
+      {% if not pperm.view_participant_masked_profile %}
+        <td class="datacol"><span class="sensitive">{{ participation.user.email }}</span></td>
+      {% endif %}
     </tr>
     {% endfor %}
   </tbody>
