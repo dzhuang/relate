@@ -46,7 +46,7 @@ class CourseViewMixin(UserPassesTestMixin):
 @login_required
 @course_view
 def view_survey_list(pctx):
-    if not pctx.has_permission(pperm.view_gradebook):
+    if not pctx.has_permission(pperm.view_analytics):
         raise PermissionDenied(_("may not view analytics"))
 
     survey_list = list(
