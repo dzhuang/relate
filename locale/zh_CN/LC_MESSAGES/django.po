@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-04-10 00:34+0800\n"
+"POT-Creation-Date: 2017-04-14 17:38+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -24,11 +24,6 @@ msgid "username"
 msgstr "用户名"
 
 msgid "Required. 30 characters or fewer. Letters, digits and @/./+/-/_ only."
-msgstr ""
-
-msgid ""
-"Enter a valid username. This value may contain only letters, numbers and @/./"
-"+/-/_ characters."
 msgstr ""
 
 msgid "A user with that username already exists."
@@ -125,6 +120,9 @@ msgstr "用户"
 
 msgid "(blank)"
 msgstr "(空)"
+
+msgid "User"
+msgstr ""
 
 #, python-format
 msgid ""
@@ -250,9 +248,6 @@ msgstr "虚拟用户时出现错误. "
 msgid "Select user to impersonate."
 msgstr "选择您想模拟的用户. "
 
-msgid "User"
-msgstr "用户"
-
 msgid "Add impersonation header"
 msgstr "添加模拟用户header"
 
@@ -290,9 +285,6 @@ msgstr "登录"
 
 msgid "Username"
 msgstr "用户名"
-
-msgid "This value may contain only letters, numbers and @/./+/-/_ characters."
-msgstr ""
 
 msgid "Send email"
 msgstr "发送邮件"
@@ -598,12 +590,16 @@ msgid "Batch issue exam ticket"
 msgstr "批量发布测验ticket"
 
 msgctxt "Participation permission"
-msgid "View flow sessions from role "
-msgstr "查看flow session"
+msgid "View participants' masked profile only"
+msgstr "只能查看用户的脱敏信息"
+
+msgctxt "Participation permission"
+msgid "View flow sessions from role"
+msgstr "从自己的角色查看其它用户的flow session"
 
 msgctxt "Participation permission"
 msgid "View gradebook"
-msgstr "查看得分"
+msgstr "查看所有用户的成绩册"
 
 msgctxt "Participation permission"
 msgid "Edit grading opportunity"
@@ -3977,10 +3973,15 @@ msgstr "属性"
 msgid "Value"
 msgstr "值"
 
-#. Translators: the grade information "for" a participant with fullname + (username)
+#. Translators: the grade information "for" a participant
 #, python-format
 msgid "for %(full_name)s (%(username)s)"
 msgstr "%(full_name)s (%(username)s)"
+
+#. Translators: the grade information "for" a participant
+#, python-format
+msgid "for %(masked_user_profile)s"
+msgstr "%(masked_user_profile)s"
 
 msgid "Points awarded"
 msgstr "给予的分数"

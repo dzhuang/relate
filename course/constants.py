@@ -164,7 +164,7 @@ PARTICIPATION_PERMISSION_CHOICES = (
 
         (participation_permission.view_participant_masked_profile,
             pgettext_lazy("Participation permission",
-                "View participants' marksed profile only")),
+                "View participants' masked profile only")),
         (participation_permission.view_flow_sessions_from_role,
             pgettext_lazy("Participation permission",
                 "View flow sessions from role")),
