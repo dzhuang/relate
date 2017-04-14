@@ -513,6 +513,11 @@ class Participation(models.Model):
     def has_permission(self, perm, argument=None):
         return (perm, argument) in self.permissions()
 
+    def is_course_staff(self):
+        # This is used to display roles of a participation in gradebook
+        # if ths participation is instructor or TA
+        return self.has_permission(participation_permission.view_gradebook)
+
     # }}}
 
 
