@@ -161,10 +161,39 @@ class ImpersonateForm(StyledForm):
     def __init__(self, *args, **kwargs):
         # type:(*Any, **Any) -> None
 
+        impersonator = kwargs.pop("impersonator")
         super(ImpersonateForm, self).__init__(*args, **kwargs)
 
+        if impersonator.is_superuser:
+            querset = User.objects.order_by("last_name")
+        else:
+            my_participations = Participation.objects.filter(
+                user=impersonator,
+                status=participation_status.active)
+
+            my_course_list = []
+            for part in my_participations:
+                impersonable_roles = [
+                    argument
+                    for perm, argument in part.permissions()
+                    if perm == pperm.impersonate_role]
+
+                if Participation.objects.filter(
+                        course=part.course,
+                        status=participation_status.active,
+                        roles__identifier__in=impersonable_roles).count():
+                    my_course_list.append(part.course)
+
+            impersonable_user = (
+                Participation.objects.filter(
+                    course__in=my_course_list,
+                    status=participation_status.active)
+                .values_list("user__pk", flat=True))
+            querset = User.objects.filter(
+                pk__in=impersonable_user).order_by("last_name")
+
         self.fields["user"] = forms.ModelChoiceField(
-                queryset=User.objects.order_by("last_name"),
+                queryset=querset,
                 required=True,
                 help_text=_("Select user to impersonate."),
                 widget=UserSearchWidget(),
@@ -190,7 +219,7 @@ def impersonate(request):
         return redirect("relate-stop_impersonating")
 
     if request.method == 'POST':
-        form = ImpersonateForm(request.POST)
+        form = ImpersonateForm(request.POST, impersonator=request.user)
         if form.is_valid():
             impersonee = form.cleaned_data["user"]
 
@@ -206,7 +235,7 @@ def impersonate(request):
                         _("Impersonating that user is not allowed."))
 
     else:
-        form = ImpersonateForm()
+        form = ImpersonateForm(impersonator=request.user)
 
     return render(request, "generic-form.html", {
         "form_description": _("Impersonate user"),
