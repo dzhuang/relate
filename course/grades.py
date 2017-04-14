@@ -203,6 +203,7 @@ def view_participant_grades(pctx, participation_id=None):
         zipped_grade_info = zip(grade_table, may_view_result)
 
     return render_course_page(pctx, "course/gradebook-participant.html", {
+        "request_user_pk": pctx.request.user.pk,
         "zipped_grade_info": zipped_grade_info,
         "grade_participation": grade_participation,
         "grading_opportunities": grading_opps,
@@ -254,6 +255,7 @@ def view_participant_list(pctx):
             )
 
     return render_course_page(pctx, "course/gradebook-participant-list.html", {
+        "request_user_pk": pctx.request.user.pk,
         "participations": participations,
         "unregistered": unregistered,
         })
@@ -375,6 +377,7 @@ def view_gradebook(pctx):
     grade_table = sorted(zip(participations, grade_table), key=grade_key)
 
     return render_course_page(pctx, "course/gradebook.html", {
+        "request_user_pk": pctx.request.user.pk,
         "grade_table": grade_table,
         "grading_opportunities": grading_opps,
         "participations": participations,
@@ -706,6 +709,7 @@ def view_grades_by_opportunity(pctx, opp_id):
     # No need to sort here, datatables resorts anyhow.
 
     return render_course_page(pctx, "course/gradebook-by-opp.html", {
+        "request_user_pk": pctx.request.user.pk,
         "opportunity": opportunity,
         "participations": participations,
         "grade_state_change_types": grade_state_change_types,
@@ -1072,6 +1076,7 @@ def view_single_grade(pctx, participation_id, opportunity_id):
     # }}}
 
     return render_course_page(pctx, "course/gradebook-single.html", {
+        "request_user_pk": pctx.request.user.pk,
         "opportunity": opportunity,
         "avg_grade_percentage": avg_grade_percentage,
         "avg_grade_population": avg_grade_population,

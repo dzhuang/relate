@@ -28,7 +28,7 @@
               {% if not pperm.view_participant_masked_profile %}
                 {{ participation.user.username }}
               {% else %}
-                {{ participation.user.get_masked_profile }}
+                {{ participation.user.get_masked_profile }}{% if participation.user.pk == request_user_pk %}(<strong>{% trans "ME" %}</strong>){% endif %}
               {% endif %}
           </span>
         </a>

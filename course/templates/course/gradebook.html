@@ -39,6 +39,7 @@
                 {% if participation.is_course_staff %}
                     ({{ participation.get_role_desc }})
                 {% endif %}
+                {% if participation.user.pk == request_user_pk %}(<strong>{% trans "ME" %})</strong>{% endif %}
             {% endif %}
         </td>
         {% if not pperm.view_participant_masked_profile %}
@@ -49,6 +50,7 @@
             {% if participation.is_course_staff %}
               ({{ participation.get_role_desc }})
             {% endif %}
+            {% if participation.user.pk == request_user_pk %}(<strong>{% trans "ME" %})</strong>{% endif %}
         </td>
         {% endif %}
         {% for grade_info in grades reversed %}
