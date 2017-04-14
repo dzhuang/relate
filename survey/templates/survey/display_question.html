@@ -1,8 +1,14 @@
 {% extends "survey/survey_base.html" %}
 {% load i18n %}
 {% block title %}{% trans "Answer of question" %}{% endblock %}
-{% block title_in_content %}{% blocktrans trimmed with fullname=participation.user.get_full_name institutional_id=participation.user.institutional_id %}
+{% block title_in_content %}
+{% if not pperm.view_participant_masked_profile %}
+{% blocktrans trimmed with fullname=participation.user.get_full_name institutional_id=participation.user.institutional_id %}
     {{ fullname }}({{ institutional_id }}){% endblocktrans %}<a href="{% url "relate-view_survey_by_question_pk" course.identifier survey.pk question.pk %}"><i class="fa fa-level-up" aria-hidden="true"></i></a>
+{% else %}
+    {% blocktrans trimmed with user=participation.user.get_masked_profile %}
+    {{ user }}{% endblocktrans %}<a href="{% url "relate-view_survey_by_question_pk" course.identifier survey.pk question.pk %}"><i class="fa fa-level-up" aria-hidden="true"></i></a>
+{% endif %}
 {% endblock %}
 {% block title_tab %}
     {{ question.text }}

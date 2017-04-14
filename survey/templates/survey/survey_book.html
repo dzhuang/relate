@@ -14,8 +14,12 @@
 
   <table class="table table-striped gradebook ">
     <thead>
+    {% if not pperm.view_participant_masked_profile %}
       <th class="headcol">{% trans "Institutional ID" %}</th>
       <th class="datacol">{% trans "Name" context "real name of a user" %}</th>
+    {% else %}
+        <th class="datacol">{% trans "User" %}</th>
+    {% endif %}
       {% for question in survey_questions %}
       <th class="datacol"><a href="{% url "relate-view_survey_by_question_pk" course.identifier survey.pk question.pk %}">{{ question.text }}</a> <tt style="font-size:x-small">({{ question.order }})</tt></th>
       {% endfor %}
@@ -23,13 +27,27 @@
     <tbody>
       {% for participation, survey_question in survey_table %}
       <tr>
-        <td class="headcol"><a href="{% url "relate-view_single_user_survey" course.identifier survey.pk participation.id %}"><span class="sensitive">{{ participation.user.institutional_id }}</span></a></td>
-        <td class="datacol">
-          <span class="sensitive">
-            {{ participation.user.get_full_name }}
-          </span>
-          ({{ participation.get_role_desc }})
+        <td class="headcol"><a href="{% url "relate-view_single_user_survey" course.identifier survey.pk participation.id %}"><span class="sensitive">
+            {% if not pperm.view_participant_masked_profile %}
+                {{ participation.user.institutional_id }}
+            {% else %}
+                {{ participation.user.get_masked_profile }}
+                {% if participation.is_course_staff %}
+                    ({{ participation.get_role_desc }})
+                {% endif %}
+                {% if participation.user.pk == request_user_pk %}(<strong>{% trans "ME" %})</strong>{% endif %}
+            {% endif %}
+        </span></a></td>
+        {% if not pperm.view_participant_masked_profile %}
+            <td class="datacol">
+              <span class="sensitive">
+                     {{ participation.user.get_full_name }}
+              </span>
+              {% if participation.is_course_staff %}
+                 ({{ participation.get_role_desc }})
+              {% endif %}
         </td>
+        {% endif %}
         {% for survey_info in survey_question %}
           <td class="datacol">
             <a href="{% url "relate-view_single_question" course.identifier survey.pk survey_info.question.pk participation.id %}"
