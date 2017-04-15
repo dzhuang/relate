@@ -21,10 +21,12 @@
     <form class="form-horizontal" action="{{ request.path }}" method="POST">
         {% csrf_token %}
         {% include "survey/includes/displays/display_single_question.html" %}
+        {% if pperm.assign_grade %}
         <div class="right-align">
             <button id="submit_this" class="btn btn-primary relate-grading-save-button" type="submit" name="action">{% trans "Save" %}
             </button>
         </div>
+        {% endif %}
     </form>
 
     <script>
@@ -39,7 +41,7 @@
             var prev_session_url = null;
         {% endif %}
 
-
+{% if pperm.assign_grade %}
         function save_and_next_page()
     {
       window.open(next_page_url, "_blank");
@@ -80,7 +82,7 @@
     $(document).ready(function() {
         add_submit_next();
         });
-
+{% endif %}
 
     </script>
 {% endblock %}

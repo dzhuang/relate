@@ -46,7 +46,7 @@ class CourseViewMixin(UserPassesTestMixin):
 @login_required
 @course_view
 def view_survey_list(pctx):
-    if not pctx.has_permission(pperm.view_analytics):
+    if not pctx.has_permission(pperm.view_gradebook):
         raise PermissionDenied(_("may not view analytics"))
 
     survey_list = list(
@@ -431,6 +431,19 @@ class FillParticipationSurvey(FormView):
         return kwargs
 
     def form_valid(self, form):
+        filler_participations = Participation.objects.filter(
+            course=self.participation.course,
+            user=self.request.user
+        )
+        has_perm = False
+        for part in filler_participations:
+            if part.has_permission(pperm.assign_grade):
+                has_perm = True
+                break
+
+        if not has_perm:
+            raise PermissionDenied("Not allowed to save form")
+
         form.save(user=self.request.user)
         messages.add_message(self.request, messages.INFO,
                              _("The answer is saved."))
@@ -610,6 +623,19 @@ class SingleSurveyQuestionView(FormView):
         })
 
     def form_valid(self, form):
+        filler_participations = Participation.objects.filter(
+            course=self.participation.course,
+            user=self.request.user
+        )
+        has_perm = False
+        for part in filler_participations:
+            if part.has_permission(pperm.assign_grade):
+                has_perm = True
+                break
+
+        if not has_perm:
+            raise PermissionDenied("Not allowed to save form")
+
         saved = form.save(user=self.request.user)
         if not saved:
             messages.add_message(
