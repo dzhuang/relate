@@ -470,8 +470,7 @@
             + "{% trans "Submit and next session" %} &raquo;"
             + "</button>");
 
-      $(".relate-grading-form").prepend($(".form-group:last"));
-      $(".form-group:first").clone().appendTo($(".relate-grading-form"));
+      $(".relate-grading-form").prepend($(".form-group:last").clone());
 
       $(".relate-grading-save-and-next-page-button").click(save_and_next_page);
       $(".relate-grading-save-and-next-session-button").click(save_and_next_session);
