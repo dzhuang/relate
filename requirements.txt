@@ -32,7 +32,8 @@ pytz
 pyyaml
 
 # dulwich (git for Py3 support)
-dulwich>=0.14
+#dulwich>=0.14
+git+https://github.com/dzhuang/dulwich.git@17d64803ce1dc711edf354576db686ab1e5d8b90
 ecdsa
 paramiko
 
