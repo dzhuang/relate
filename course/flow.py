@@ -505,13 +505,15 @@ def get_prev_answer_visits_qset(page_data):
             .order_by("-visit_time"))
 
 
-def get_prev_answer_visit(page_data):
-    previous_answer_visits = get_prev_answer_visits_qset(page_data)
-
-    for prev_visit in previous_answer_visits[:1]:
-        return prev_visit
+def get_first_from_qset(qset):
+    for item in qset[:1]:
+        return item
 
     return None
+
+
+def get_prev_answer_visit(page_data):
+    return get_first_from_qset(get_prev_answer_visits_qset(page_data))
 
 
 def assemble_page_grades(flow_sessions):
@@ -1676,6 +1678,8 @@ def get_page_behavior(
                 show_answer = (show_answer and
                         flow_permission.change_answer not in permissions)
 
+            show_answer = show_answer or (
+                    flow_permission.see_answer_before_submission in permissions)
         else:
             # Don't show answer yet
             show_answer = (
@@ -2969,7 +2973,16 @@ def view_unsubmit_flow_page(pctx, flow_session_id, ordinal):
 
     page_data = get_object_or_404(
             FlowPageData, flow_session=flow_session, ordinal=ordinal)
-    visit = get_prev_answer_visit(page_data)
+
+    visit = get_first_from_qset(
+            get_prev_answer_visits_qset(page_data)
+            .filter(is_submitted_answer=True))
+
+    if visit is None:
+        messages.add_message(request, messages.INFO,
+                _("No prior answers found that could be un-submitted."))
+        return redirect("relate-view_flow_page",
+            pctx.course.identifier, flow_session_id, ordinal)
 
     if request.method == 'POST':
         form = UnsubmitFlowPageForm(request.POST)
