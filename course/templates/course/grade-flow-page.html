@@ -472,7 +472,8 @@
 
       $(".relate-grading-form").prepend($(".form-group:last").clone());
 
-      $(".relate-grading-form").prepend($(".form-group:last").clone());
+      {# http://stackoverflow.com/a/9549716/3437454 #}
+      $(".relate-grading-form").prepend($(".form-group:last").clone(true, true));
     }
 
     function scroll_to_answer()
