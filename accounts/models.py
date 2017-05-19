@@ -185,12 +185,7 @@ class User(AbstractBaseUser, PermissionsMixin):
                 "RELATE_USER_PROFILE_MASK_METHOD",
                 default_mask_method)
 
-        try:
-            masked_profile = mask_method(self)
-        except:
-            masked_profile = default_mask_method(self)
-
-        return str(masked_profile).strip()
+        return str(mask_method(self)).strip()
 
     def get_short_name(self):
         "Returns the short name for the user."

@@ -26,9 +26,9 @@
       <td class="headcol"><a href="{% url "relate-view_participant_grades" course.identifier participation.id %}">
           <span class="sensitive">
               {% if not pperm.view_participant_masked_profile %}
-                {{ participation.user.username }}
+                  {{ participation.user.username }}
               {% else %}
-                {{ participation.user.get_masked_profile }}{% if participation.user.pk == request_user_pk %}(<strong>{% trans "ME" %}</strong>){% endif %}
+                  {% if participation.user == user %}{% trans "Me" %}{% else %}{{ participation.user.get_masked_profile }}{% endif %}
               {% endif %}
           </span>
         </a>
@@ -56,7 +56,7 @@
   </tbody>
 </table>
 
-{% load static coursetags %}
+{% load static %}
 {% get_current_js_lang_name as LANG %}
 <script type="text/javascript">
   var tbl = $("table.gradebook-participants").dataTable({

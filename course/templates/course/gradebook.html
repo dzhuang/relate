@@ -32,14 +32,13 @@
                 {% if not pperm.view_participant_masked_profile %}
                     {{ participation.user.username }}
                 {% else %}
-                    {{ participation.user.get_masked_profile }}
+                  {%  if participation.user == user %}{% trans "Me" %}{% else %}{{ participation.user.get_masked_profile }}{% endif %}
                 {% endif %}
             </span></a>
             {% if pperm.view_participant_masked_profile %}
-                {% if participation.is_course_staff %}
+                {% if participation|has_permission:"view_gradebook" %}
                     ({{ participation.get_role_desc }})
                 {% endif %}
-                {% if participation.user.pk == request_user_pk %}(<strong>{% trans "ME" %})</strong>{% endif %}
             {% endif %}
         </td>
         {% if not pperm.view_participant_masked_profile %}
@@ -47,10 +46,9 @@
           <span class="sensitive">
             {{ participation.user.get_full_name }}
           </span>
-            {% if participation.is_course_staff %}
+            {% if participation|has_permission:"view_gradebook" %}
               ({{ participation.get_role_desc }})
             {% endif %}
-            {% if participation.user.pk == request_user_pk %}(<strong>{% trans "ME" %})</strong>{% endif %}
         </td>
         {% endif %}
         {% for grade_info in grades reversed %}
@@ -70,7 +68,7 @@
     </tbody>
   </table>
 
-  {% load static coursetags %}
+  {% load static %}
   {% get_current_js_lang_name as LANG %}
   <script type="text/javascript">
     var tbl = $("table.gradebook").dataTable({
