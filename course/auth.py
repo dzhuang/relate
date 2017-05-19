@@ -78,8 +78,8 @@ def get_pre_impersonation_user(request):
     return None
 
 
-def get_impersonable_list(impersonator):
-    # type: (User) -> List[int]
+def get_impersonable_pk_set(impersonator):
+    # type: (User) -> frozenset[int]
     if impersonator.is_superuser:
         return (User.objects
                 .exclude(pk=impersonator.pk)
@@ -89,14 +89,14 @@ def get_impersonable_list(impersonator):
         user=impersonator,
         status=participation_status.active)
 
-    imp_list = []  # type: List[int]
+    impersonable_pk_list = []  # type: List[int]
     for part in my_participations:
         # FIXME: if a TA is not allowed to view participants'
         # profile in one course, then he/she is not able to impersonate
         # any user, even in courses he/she is allow to view profiles
         # of all users.
         if part.has_permission(pperm.view_participant_masked_profile):
-            return []
+            return frozenset()
         impersonable_roles = [
             argument
             for perm, argument in part.permissions()
@@ -109,11 +109,11 @@ def get_impersonable_list(impersonator):
                      roles__identifier__in=impersonable_roles)
              .select_related("user"))
         if q.count():
-            imp_list.extend(
+            impersonable_pk_list.extend(
                 q.values_list('user__pk', flat=True)
             )
 
-    return list(set(imp_list))
+    return frozenset(impersonable_pk_list)
 
 
 class ImpersonateMiddleware(object):
@@ -134,7 +134,7 @@ class ImpersonateMiddleware(object):
             if impersonee is not None:
                 if (cast(User, impersonee).pk
                     in
-                        get_impersonable_list(cast(User, request.user))):
+                        get_impersonable_pk_set(cast(User, request.user))):
                     request.relate_impersonate_original_user = request.user
                     request.user = impersonee
                 else:
@@ -201,14 +201,17 @@ def impersonate(request):
     # type: (http.HttpRequest) -> http.HttpResponse
     if not request.user.is_authenticated:
         raise PermissionDenied()
+
+    impersonable_pk_set = get_impersonable_pk_set(cast(User, request.user))
+    if not impersonable_pk_set:
+        raise PermissionDenied()
+
     if hasattr(request, "relate_impersonate_original_user"):
         messages.add_message(request, messages.ERROR,
                 _("Already impersonating someone."))
         return redirect("relate-stop_impersonating")
 
-    imp_list = get_impersonable_list(cast(User, request.user))
-    qset = User.objects.filter(pk__in=imp_list).order_by("last_name")
-
+    qset = User.objects.filter(pk__in=impersonable_pk_set).order_by("last_name")
     if request.method == 'POST':
         form = ImpersonateForm(request.POST, impersonable_qset=qset)
         if form.is_valid():
