@@ -65,7 +65,7 @@ from relate.utils import StyledForm, StyledModelForm
 from django_select2.forms import ModelSelect2Widget
 
 if False:
-    from typing import Any, Optional, Text  # noqa
+    from typing import Any, Optional, Text, List  # noqa
 
 
 # {{{ impersonation
@@ -78,35 +78,42 @@ def get_pre_impersonation_user(request):
     return None
 
 
-def may_impersonate(impersonator, impersonee):
-    # type: (User, User) -> bool
+def get_impersonable_list(impersonator):
+    # type: (User) -> List[int]
     if impersonator.is_superuser:
-        return True
+        return (User.objects
+                .exclude(pk=impersonator.pk)
+                .values_list("pk", flat=True))
 
     my_participations = Participation.objects.filter(
-            user=impersonator,
-            status=participation_status.active)
+        user=impersonator,
+        status=participation_status.active)
 
+    imp_list = []  # type: List[int]
     for part in my_participations:
         # FIXME: if a TA is not allowed to view participants'
         # profile in one course, then he/she is not able to impersonate
         # any user, even in courses he/she is allow to view profiles
         # of all users.
         if part.has_permission(pperm.view_participant_masked_profile):
-            return False
+            return []
         impersonable_roles = [
-                argument
-                for perm, argument in part.permissions()
-                if perm == pperm.impersonate_role]
+            argument
+            for perm, argument in part.permissions()
+            if perm == pperm.impersonate_role]
 
-        if Participation.objects.filter(
-                course=part.course,
-                status=participation_status.active,
-                roles__identifier__in=impersonable_roles,
-                user=impersonee).count():
-            return True
+        q = (Participation.objects
+             .exclude(pk=impersonator.pk)
+             .filter(course=part.course,
+                     status=participation_status.active,
+                     roles__identifier__in=impersonable_roles)
+             .select_related("user"))
+        if q.count():
+            imp_list.extend(
+                q.values_list('user__pk', flat=True)
+            )
 
-    return False
+    return list(set(imp_list))
 
 
 class ImpersonateMiddleware(object):
@@ -125,7 +132,9 @@ class ImpersonateMiddleware(object):
                 pass
 
             if impersonee is not None:
-                if may_impersonate(cast(User, request.user), impersonee):
+                if (cast(User, impersonee).pk
+                    in
+                        get_impersonable_list(cast(User, request.user))):
                     request.relate_impersonate_original_user = request.user
                     request.user = impersonee
                 else:
@@ -167,39 +176,11 @@ class ImpersonateForm(StyledForm):
     def __init__(self, *args, **kwargs):
         # type:(*Any, **Any) -> None
 
-        impersonator = kwargs.pop("impersonator")
+        qset = kwargs.pop("impersonable_qset")
         super(ImpersonateForm, self).__init__(*args, **kwargs)
 
-        if impersonator.is_superuser:
-            querset = User.objects.order_by("last_name")
-        else:
-            my_participations = Participation.objects.filter(
-                user=impersonator,
-                status=participation_status.active)
-
-            my_course_list = []
-            for part in my_participations:
-                impersonable_roles = [
-                    argument
-                    for perm, argument in part.permissions()
-                    if perm == pperm.impersonate_role]
-
-                if Participation.objects.filter(
-                        course=part.course,
-                        status=participation_status.active,
-                        roles__identifier__in=impersonable_roles).count():
-                    my_course_list.append(part.course)
-
-            impersonable_user = (
-                Participation.objects.filter(
-                    course__in=my_course_list,
-                    status=participation_status.active)
-                .values_list("user__pk", flat=True))
-            querset = User.objects.filter(
-                pk__in=impersonable_user).order_by("last_name")
-
         self.fields["user"] = forms.ModelChoiceField(
-                queryset=querset,
+                queryset=qset,
                 required=True,
                 help_text=_("Select user to impersonate."),
                 widget=UserSearchWidget(),
@@ -218,18 +199,22 @@ class ImpersonateForm(StyledForm):
 
 def impersonate(request):
     # type: (http.HttpRequest) -> http.HttpResponse
-
+    if not request.user.is_authenticated:
+        raise PermissionDenied()
     if hasattr(request, "relate_impersonate_original_user"):
         messages.add_message(request, messages.ERROR,
                 _("Already impersonating someone."))
         return redirect("relate-stop_impersonating")
 
+    imp_list = get_impersonable_list(cast(User, request.user))
+    qset = User.objects.filter(pk__in=imp_list).order_by("last_name")
+
     if request.method == 'POST':
-        form = ImpersonateForm(request.POST, impersonator=request.user)
+        form = ImpersonateForm(request.POST, impersonable_qset=qset)
         if form.is_valid():
             impersonee = form.cleaned_data["user"]
 
-            if may_impersonate(cast(User, request.user), cast(User, impersonee)):
+            if cast(User, impersonee) in qset:
                 request.session['impersonate_id'] = impersonee.id
                 request.session['relate_impersonation_header'] = form.cleaned_data[
                         "add_impersonation_header"]
@@ -241,7 +226,7 @@ def impersonate(request):
                         _("Impersonating that user is not allowed."))
 
     else:
-        form = ImpersonateForm(impersonator=request.user)
+        form = ImpersonateForm(impersonable_qset=qset)
 
     return render(request, "generic-form.html", {
         "form_description": _("Impersonate user"),

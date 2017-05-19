@@ -36,7 +36,7 @@
                 {% if participation.is_course_staff %}
                     ({{ participation.get_role_desc }})
                 {% endif %}
-                {% if participation.user.pk == request_user_pk %}(<strong>{% trans "ME" %})</strong>{% endif %}
+                {% if participation.user == request.user %}(<strong>{% trans "ME" %})</strong>{% endif %}
             {% endif %}
           </span></a>
         </th>
