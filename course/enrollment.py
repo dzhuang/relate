@@ -837,7 +837,8 @@ _LEX_TABLE = [
     (_user, RE(r"username:([^ \t\n\r\f\v)]+)")),
     (_user_contains, RE(r"username-contains:([^ \t\n\r\f\v)]+)")),
     (_institutional_id, RE(r"institutional_id:([^ \t\n\r\f\v)]+)")),
-    (_institutional_id_contains, RE(r"institutional_id-contains:([^ \t\n\r\f\v)]+)")),
+    (_institutional_id_contains,
+            RE(r"institutional_id-contains:([^ \t\n\r\f\v)]+)")),
     (_tagged, RE(r"tagged:([-\w]+)")),
     (_role, RE(r"role:(\w+)")),
     (_status, RE(r"status:(\w+)")),
@@ -895,12 +896,14 @@ def parse_query(course, expr_str):
             return result
 
         elif next_tag is _institutional_id:
-            result = Q(user__institutional_id__iexact=pstate.next_match_obj().group(1))
+            result = Q(
+                user__institutional_id__iexact=pstate.next_match_obj().group(1))
             pstate.advance()
             return result
 
         elif next_tag is _institutional_id_contains:
-            result = Q(user__institutional_id__icontains=pstate.next_match_obj().group(1))
+            result = Q(
+                user__institutional_id__icontains=pstate.next_match_obj().group(1))
             pstate.advance()
             return result
 
