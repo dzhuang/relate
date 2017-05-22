@@ -836,9 +836,9 @@ _LEX_TABLE = [
     (_email_contains, RE(r"email-contains:([^ \t\n\r\f\v)]+)")),
     (_user, RE(r"username:([^ \t\n\r\f\v)]+)")),
     (_user_contains, RE(r"username-contains:([^ \t\n\r\f\v)]+)")),
-    (_institutional_id, RE(r"institutional_id:([^ \t\n\r\f\v)]+)")),
+    (_institutional_id, RE(r"institutional-id:([^ \t\n\r\f\v)]+)")),
     (_institutional_id_contains,
-            RE(r"institutional_id-contains:([^ \t\n\r\f\v)]+)")),
+            RE(r"institutional-id-contains:([^ \t\n\r\f\v)]+)")),
     (_tagged, RE(r"tagged:([-\w]+)")),
     (_role, RE(r"role:(\w+)")),
     (_status, RE(r"status:(\w+)")),
@@ -1023,8 +1023,8 @@ class ParticipationQueryForm(StyledForm):
                 "<code>email-contains:abc</code>, "
                 "<code>username:abc</code>, "
                 "<code>username-contains:abc</code>, "
-                "<code>institutional_id:2015abcd</code>, "
-                "<code>institutional_id-contains:2015</code>, "
+                "<code>institutional-id:2015abcd</code>, "
+                "<code>institutional-id-contains:2015</code>, "
                 "<code>tagged:abc</code>, "
                 "<code>role:instructor|teaching_assistant|"
                 "student|observer|auditor</code>, "
