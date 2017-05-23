@@ -206,10 +206,7 @@ def _eval_generic_conditions(
         if not ptag_set:
             return False
         if not any(ptag in rule.if_has_participation_tagged for ptag in ptag_set):
-            print("not in")
             return False
-        else:
-            print("in")
 
     if (hasattr(rule, "if_signed_in_with_matching_exam_ticket")
             and rule.if_signed_in_with_matching_exam_ticket):
@@ -281,6 +278,93 @@ def get_flow_rules(
             rules.insert(0, dict_to_struct(exc.rule))
 
     return rules
+
+# {{{ added by zd
+
+"""
+def get_flow_rules(
+        flow_desc,  # type: FlowDesc
+        kind,  # type: Text
+        participation,  # type: Optional[Participation]
+        flow_id,  # type: Text
+        now_datetime,  # type: datetime.datetime
+        consider_exceptions=True,  # type: bool
+        default_rules_desc=None  # type: Optional[List[Any]]
+        ):
+    # type: (...) -> List[Any]
+
+    if not default_rules_desc:
+        default_rules_desc = []
+
+    if (not hasattr(flow_desc, "rules")
+            or not hasattr(flow_desc.rules, kind)):
+        rules = default_rules_desc[:]
+    else:
+        rules = getattr(flow_desc.rules, kind)[:]
+
+    from course.models import FlowRuleException
+    if consider_exceptions:
+        for exc in (
+                FlowRuleException.objects
+                .filter(
+                    participation=participation,
+                    active=True,
+                    kind=kind,
+                    flow_id=flow_id)
+                # rules created first will get inserted first, and show up last
+                .order_by("creation_time")):
+
+            if exc.expiration is not None and now_datetime > exc.expiration:
+                continue
+
+            from relate.utils import dict_to_struct
+            rules.insert(0, dict_to_struct(exc.rule))
+
+    return rules
+"""
+
+def get_flow_rule_time_range_list(
+        course,  # type: Course
+        participation,  # type: Optional[Participation]
+        kind,  # type: Text
+        flow_id,  # type: Text
+        flow_desc,  # type: FlowDesc
+        now_datetime,  # type: datetime.datetime
+        consider_exceptions=True,  # type: bool
+    ):
+
+    """
+        if_completed_before = None  # type: Date_ish
+        if_started_before = None  # type: Date_ish
+        if_after = None  # type: Date_ish
+        if_before = None  # type: Date_ish
+    """
+
+    rules = get_flow_rules(
+        flow_desc,
+        kind,
+        participation,
+        flow_id,  # type: Text
+        now_datetime,  # type: datetime.datetime
+        consider_exceptions=True,  # type: bool
+        default_rules_desc=None  # type: Optional[List[Any]]
+    )
+
+    for rule in rules:
+
+        if hasattr(rule, "if_before"):
+            pass
+
+        if hasattr(rule, "if_after"):
+            pass
+
+        if hasattr(rule, "if_completed_before"):
+            pass
+
+    pass
+
+
+# }}}
 
 
 # {{{ added by zd to generate stringified rules in flow start page
@@ -400,8 +484,9 @@ def get_session_start_rule(
         facilities=None,  # type: Optional[frozenset[Text]]
         for_rollover=False,  # type: bool
         login_exam_ticket=None,  # type: Optional[ExamTicket]
+        rules_only=False,  # type: bool
         ):
-    # type: (...) -> FlowSessionStartRule
+    # type: (...) -> Union[List[Any], FlowSessionStartRule]
 
     """Return a :class:`FlowSessionStartRule` if a new session is
     permitted or *None* if no new session is allowed.
@@ -417,6 +502,10 @@ def get_session_start_rule(
                 dict_to_struct(dict(
                     may_start_new_session=True,
                     may_list_existing_sessions=False))])
+
+    if rules_only:
+        return rules
+
     # {{{ added by zd
     latest_start_datetime = None
     session_available_count = 0
@@ -511,8 +600,9 @@ def get_session_access_rule(
         now_datetime,  # type: datetime.datetime
         facilities=None,  # type: Optional[frozenset[Text]]
         login_exam_ticket=None,  # type: Optional[ExamTicket]
+        rules_only=False,  # type: bool
         ):
-    # type: (...) -> FlowSessionAccessRule
+    # type: (...) -> Union[List[Any], FlowSessionAccessRule]
     """Return a :class:`ExistingFlowSessionRule`` to describe
     how a flow may be accessed.
     """
@@ -527,6 +617,9 @@ def get_session_access_rule(
                 dict_to_struct(dict(
                     permissions=[flow_permission.view],
                     ))])  # type: List[FlowSessionAccessRuleDesc]
+
+    if rules_only:
+        return rules
 
     for rule in rules:
         if not _eval_generic_conditions(
@@ -654,9 +747,10 @@ def get_session_notify_rule(
 def get_session_grading_rule(
         session,  # type: FlowSession
         flow_desc,  # type: FlowDesc
-        now_datetime  # type: datetime.datetime
+        now_datetime,  # type: datetime.datetime
+        rules_only = False,  # type: bool
         ):
-    # type: (...) -> FlowSessionGradingRule
+    # type: (...) -> Union[List[Any], FlowSessionGradingRule]
 
     flow_desc_rules = getattr(flow_desc, "rules", None)
 
@@ -667,6 +761,9 @@ def get_session_grading_rule(
                 dict_to_struct(dict(
                     generates_grade=False,
                     ))])
+
+    if rules_only:
+        return rules
 
     from course.enrollment import get_participation_role_identifiers
     roles = get_participation_role_identifiers(session.course, session.participation)
