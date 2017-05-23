@@ -201,6 +201,16 @@ def _eval_generic_conditions(
         if all(role not in rule.if_has_role for role in roles):
             return False
 
+    if hasattr(rule, "if_has_participation_tagged"):
+        ptag_set = set(participation.tags.all().values_list("name", flat=True))
+        if not ptag_set:
+            return False
+        if not any(ptag in rule.if_has_participation_tagged for ptag in ptag_set):
+            print("not in")
+            return False
+        else:
+            print("in")
+
     if (hasattr(rule, "if_signed_in_with_matching_exam_ticket")
             and rule.if_signed_in_with_matching_exam_ticket):
         if login_exam_ticket is None:
@@ -341,6 +351,7 @@ def get_flow_rules_str(
                      },))
 
     grade_rule_str = ""
+    datetime_str = ""
 
     for rule in date_grading_tuple:
         datetime_str = compact_local_datetime_str(
