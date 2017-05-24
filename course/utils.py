@@ -201,11 +201,24 @@ def _eval_generic_conditions(
         if all(role not in rule.if_has_role for role in roles):
             return False
 
-    if hasattr(rule, "if_has_participation_tagged"):
+    participation_tags_any_set = (
+        set(getattr(rule, "if_has_participation_tags_any", [])))
+    participation_tags_all_set = (
+        set(getattr(rule, "if_has_participation_tags_all", [])))
+
+    if participation_tags_any_set or participation_tags_all_set:
+        if not participation:
+            return False
         ptag_set = set(participation.tags.all().values_list("name", flat=True))
         if not ptag_set:
             return False
-        if not any(ptag in rule.if_has_participation_tagged for ptag in ptag_set):
+        if (participation_tags_any_set
+            and
+                not participation_tags_any_set & ptag_set):
+            return False
+        if (participation_tags_all_set
+            and
+                not participation_tags_all_set <= ptag_set):
             return False
 
     if (hasattr(rule, "if_signed_in_with_matching_exam_ticket")
@@ -246,12 +259,9 @@ def get_flow_rules(
         flow_id,  # type: Text
         now_datetime,  # type: datetime.datetime
         consider_exceptions=True,  # type: bool
-        default_rules_desc=None  # type: Optional[List[Any]]
+        default_rules_desc=[]  # type: List[Any]
         ):
     # type: (...) -> List[Any]
-
-    if not default_rules_desc:
-        default_rules_desc = []
 
     if (not hasattr(flow_desc, "rules")
             or not hasattr(flow_desc.rules, kind)):

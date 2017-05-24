@@ -122,7 +122,7 @@ def validate_participationtag(vctx, location, participationtag):
         from course.models import ParticipationTag
         ptag_list = (
             ParticipationTag.objects.filter(course=vctx.course)
-                .values_list('name', flat=True))
+            .values_list('name', flat=True))
 
         if participationtag not in ptag_list:
             vctx.add_warning(location, _(
@@ -304,7 +304,8 @@ def validate_chunk_rule(vctx, location, chunk_rule):
                 ("if_before", datespec_types),
                 ("if_in_facility", str),
                 ("if_has_role", list),
-                ("if_has_participation_tagged", list),
+                ("if_has_participation_tags_any", list),
+                ("if_has_participation_tags_all", list),
 
                 ("start", datespec_types),
                 ("end", datespec_types),
@@ -323,8 +324,12 @@ def validate_chunk_rule(vctx, location, chunk_rule):
         for role in chunk_rule.if_has_role:
             validate_role(vctx, location, role)
 
-    if hasattr(chunk_rule, "if_has_participation_tagged"):
-        for ptag in chunk_rule.if_has_participation_tagged:
+    if hasattr(chunk_rule, "if_has_participation_tags_any"):
+        for ptag in chunk_rule.if_has_participation_tags_any:
+            validate_participationtag(vctx, location, ptag)
+
+    if hasattr(chunk_rule, "if_has_participation_tags_all"):
+        for ptag in chunk_rule.if_has_participation_tags_all:
             validate_participationtag(vctx, location, ptag)
 
     if hasattr(chunk_rule, "if_in_facility"):
@@ -552,7 +557,8 @@ def validate_session_start_rule(vctx, location, nrule, tags):
                 ("if_after", datespec_types),
                 ("if_before", datespec_types),
                 ("if_has_role", list),
-                ("if_has_participation_tagged", list),
+                ("if_has_participation_tags_any", list),
+                ("if_has_participation_tags_all", list),
                 ("if_in_facility", str),
                 ("if_has_in_progress_session", bool),
                 ("if_has_session_tagged", (six.string_types, type(None))),
@@ -578,8 +584,12 @@ def validate_session_start_rule(vctx, location, nrule, tags):
                     "%s, role %d" % (location, j+1),
                     role)
 
-    if hasattr(nrule, "if_has_participation_tagged"):
-        for ptag in nrule.if_has_participation_tagged:
+    if hasattr(nrule, "if_has_participation_tags_any"):
+        for ptag in nrule.if_has_participation_tags_any:
+            validate_participationtag(vctx, location, ptag)
+
+    if hasattr(nrule, "if_has_participation_tags_all"):
+        for ptag in nrule.if_has_participation_tags_all:
             validate_participationtag(vctx, location, ptag)
 
     if hasattr(nrule, "if_in_facility"):
@@ -642,7 +652,8 @@ def validate_session_access_rule(vctx, location, arule, tags):
                 ("if_before", datespec_types),
                 ("if_started_before", datespec_types),
                 ("if_has_role", list),
-                ("if_has_participation_tagged", list),
+                ("if_has_participation_tags_any", list),
+                ("if_has_participation_tags_all", list),
                 ("if_in_facility", str),
                 ("if_has_tag", (six.string_types, type(None))),
                 ("if_in_progress", bool),
@@ -668,8 +679,12 @@ def validate_session_access_rule(vctx, location, arule, tags):
                     "%s, role %d" % (location, j+1),
                     role)
 
-    if hasattr(arule, "if_has_participation_tagged"):
-        for ptag in arule.if_has_participation_tagged:
+    if hasattr(arule, "if_has_participation_tags_any"):
+        for ptag in arule.if_has_participation_tags_any:
+            validate_participationtag(vctx, location, ptag)
+
+    if hasattr(arule, "if_has_participation_tags_all"):
+        for ptag in arule.if_has_participation_tags_all:
             validate_participationtag(vctx, location, ptag)
 
     if hasattr(arule, "if_in_facility"):
@@ -729,7 +744,8 @@ def validate_session_grading_rule(
                 ],
             allowed_attrs=[
                 ("if_has_role", list),
-                ("if_has_participation_tagged", list),
+                ("if_has_participation_tags_any", list),
+                ("if_has_participation_tags_all", list),
                 ("if_has_tag", (six.string_types, type(None))),
                 ("if_started_before", datespec_types),
                 ("if_completed_before", datespec_types),
@@ -782,8 +798,12 @@ def validate_session_grading_rule(
                     role)
         has_conditionals = True
 
-    if hasattr(grule, "if_has_participation_tagged"):
-        for ptag in grule.if_has_participation_tagged:
+    if hasattr(grule, "if_has_participation_tags_any"):
+        for ptag in grule.if_has_participation_tags_any:
+            validate_participationtag(vctx, location, ptag)
+
+    if hasattr(grule, "if_has_participation_tags_all"):
+        for ptag in grule.if_has_participation_tags_all:
             validate_participationtag(vctx, location, ptag)
 
     if hasattr(grule, "if_has_tag"):
