@@ -122,7 +122,7 @@ def validate_participationtag(vctx, location, participationtag):
         from course.models import ParticipationTag
         ptag_list = (
             ParticipationTag.objects.filter(course=vctx.course)
-                .values_list('name', flat=True))
+            .values_list('name', flat=True))
 
         if participationtag not in ptag_list:
             vctx.add_warning(location, _(
