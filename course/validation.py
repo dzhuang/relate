@@ -305,6 +305,7 @@ def validate_chunk_rule(vctx, location, chunk_rule):
                 ("if_in_facility", str),
                 ("if_has_role", list),
                 ("if_has_participation_tag_any", list),
+                ("if_has_participation_tag_all", list),
 
                 ("start", datespec_types),
                 ("end", datespec_types),
@@ -325,6 +326,10 @@ def validate_chunk_rule(vctx, location, chunk_rule):
 
     if hasattr(chunk_rule, "if_has_participation_tag_any"):
         for ptag in chunk_rule.if_has_participation_tag_any:
+            validate_participationtag(vctx, location, ptag)
+
+    if hasattr(chunk_rule, "if_has_participation_tag_all"):
+        for ptag in chunk_rule.if_has_participation_tag_all:
             validate_participationtag(vctx, location, ptag)
 
     if hasattr(chunk_rule, "if_in_facility"):
@@ -582,6 +587,10 @@ def validate_session_start_rule(vctx, location, nrule, tags):
         for ptag in nrule.if_has_participation_tag_any:
             validate_participationtag(vctx, location, ptag)
 
+    if hasattr(nrule, "if_has_participation_tag_all"):
+        for ptag in nrule.if_has_participation_tag_all:
+            validate_participationtag(vctx, location, ptag)
+
     if hasattr(nrule, "if_in_facility"):
         validate_facility(vctx, location, nrule.if_in_facility)
 
@@ -670,6 +679,10 @@ def validate_session_access_rule(vctx, location, arule, tags):
 
     if hasattr(arule, "if_has_participation_tag_any"):
         for ptag in arule.if_has_participation_tag_any:
+            validate_participationtag(vctx, location, ptag)
+
+    if hasattr(arule, "if_has_participation_tag_all"):
+        for ptag in arule.if_has_participation_tag_all:
             validate_participationtag(vctx, location, ptag)
 
     if hasattr(arule, "if_in_facility"):
@@ -784,6 +797,10 @@ def validate_session_grading_rule(
 
     if hasattr(grule, "if_has_participation_tag_any"):
         for ptag in grule.if_has_participation_tag_any:
+            validate_participationtag(vctx, location, ptag)
+
+    if hasattr(grule, "if_has_participation_tag_all"):
+        for ptag in grule.if_has_participation_tag_all:
             validate_participationtag(vctx, location, ptag)
 
     if hasattr(grule, "if_has_tag"):
