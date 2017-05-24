@@ -1462,6 +1462,15 @@ def view_start_flow(pctx, flow_id):
             pctx.course, pctx.participation, flow_id,
             fctx.flow_desc, now_datetime)
 
+        from course.utils import get_flow_start_rule_time_range_list
+        time_range_list = get_flow_start_rule_time_range_list(
+            pctx.course, pctx.participation,
+            flow_id, fctx.flow_desc, now_datetime,
+            facilities=pctx.request.relate_facilities,
+            login_exam_ticket=login_exam_ticket
+        )
+        print(time_range_list)
+
         if session_start_rule.session_available_count <= 2:
             session_available_count_html = (
                     "<strong class='text-danger h4'> %s </strong>" %

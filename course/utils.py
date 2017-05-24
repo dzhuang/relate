@@ -333,45 +333,133 @@ def get_flow_rules(
     return rules
 """
 
-def get_flow_rule_time_range_list(
+def get_flow_start_rule_time_range_list(
         course,  # type: Course
         participation,  # type: Optional[Participation]
-        kind,  # type: Text
         flow_id,  # type: Text
         flow_desc,  # type: FlowDesc
         now_datetime,  # type: datetime.datetime
-        consider_exceptions=True,  # type: bool
+        facilities=None,  # type: Optional[frozenset[Text]]
+        for_rollover=False,  # type: bool
+        login_exam_ticket=None,  # type: Optional[ExamTicket]
+        rules_only=False,  # type: bool
     ):
 
     """
+            # pctx.course, pctx.participation,
+            # flow_id, fctx.flow_desc, now_datetime,
+            # facilities=pctx.request.relate_facilities,
+            # login_exam_ticket=login_exam_ticket
         if_completed_before = None  # type: Date_ish
         if_started_before = None  # type: Date_ish
         if_after = None  # type: Date_ish
         if_before = None  # type: Date_ish
+
+        course,  # type: Course
+        participation,  # type: Optional[Participation]
+        flow_id,  # type: Text
+        flow_desc,  # type: FlowDesc
+        now_datetime,  # type: datetime.datetime
+        
     """
 
-    rules = get_flow_rules(
-        flow_desc,
-        kind,
+    # rules = get_flow_rules(
+    #     flow_desc,
+    #     participation,
+    #     flow_id,  # type: Text
+    #     now_datetime,  # type: datetime.datetime
+    # )
+
+    rules = get_session_start_rule(
+        course,
         participation,
-        flow_id,  # type: Text
-        now_datetime,  # type: datetime.datetime
-        consider_exceptions=True,  # type: bool
-        default_rules_desc=None  # type: Optional[List[Any]]
+        flow_id,
+        flow_desc,
+        now_datetime,
+        rules_only=True
     )
 
-    for rule in rules:
+    assert isinstance(rules, list)
 
+    time_rule_list = []
+    for i, rule in enumerate(rules):
+        end_time = None
+        start_time = None
         if hasattr(rule, "if_before"):
-            pass
-
+            end_time = parse_date_spec(course, rule.if_before)# - datetime.timedelta(microseconds=1)
         if hasattr(rule, "if_after"):
+            start_time = parse_date_spec(course, rule.if_after)# + datetime.timedelta(microseconds=1)
+        if hasattr(rule, "if_started_before"):
             pass
-
         if hasattr(rule, "if_completed_before"):
             pass
+        if end_time or start_time:
+            time_rule_list.append((i + 1, start_time, end_time))
 
-    pass
+    def check_may_start(test_datetime):
+        start_rule = get_session_start_rule(
+            course,
+            participation,
+            flow_id,
+            flow_desc,
+            now_datetime=test_datetime,
+            facilities=facilities,
+            for_rollover=for_rollover,
+            login_exam_ticket=login_exam_ticket,
+        )
+        return start_rule.may_start_new_session
+
+    if time_rule_list:
+        may_start_time_range = []
+        n_time_rule = len(time_rule_list)
+
+        for i, start, end in time_rule_list:
+            start_p = None
+            end_p = None
+            j = len(may_start_time_range) - 1
+
+            if start:
+                test_datetime = start + datetime.timedelta(0, 0, 1)
+                may_start = check_may_start(test_datetime)
+                if may_start:
+                    start_p = start
+            if end:
+                test_datetime = end - datetime.timedelta(0, 0, 1)
+                may_start = check_may_start(test_datetime)
+                if may_start:
+                    end_p = end
+
+            if not may_start_time_range:
+                may_start_time_range.append([start_p, end_p])
+            else:
+                if start_p is None and end_p is None:
+                    # this won't happen
+                    may_start_time_range[j][0] = None
+                    may_start_time_range[j][1] = None
+                else:
+                    if start_p < may_start_time_range[j][1]:
+                        may_start_time_range[j][1] = end_p
+                    if end_p < may_start_time_range[j][0]:
+                        may_start_time_range[j][0] = start_p
+                    #     if start_p < may_start_time_range[j][0]:
+                    #         may_start_time_range[j][0] = start_p
+                    #     elif:
+                    # if end_p is None:
+                    #     may_start_time_range[j][1] = None
+                    # else:
+                    #     if end_p > may_start_time_range[j][1]:
+                    #         may_start_time_range[j][1] = end_p
+
+
+
+
+
+
+        pass
+
+        print(may_start_time_range)
+
+    return time_rule_list
 
 
 # }}}
