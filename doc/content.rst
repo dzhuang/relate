@@ -490,12 +490,12 @@ Here's an example:
 
         (Optional) A list of a subset of ``[unenrolled, ta, student, instructor]``.
 
-    .. attribute:: if_has_participation_tag_any
+    .. attribute:: if_has_participation_tags_any
 
         (Optional) A list of participation tags. Rule applies when the
         participation has at least one tag in this list.
 
-    .. attribute:: if_has_participation_tag_all
+    .. attribute:: if_has_participation_tags_all
 
         (Optional) A list of participation tags. Rule applies if only the
         participation's tags include all items in this list.
