@@ -179,16 +179,16 @@ class FlowPageImage(models.Model):
         self.image.delete(False)
         super(FlowPageImage, self).delete(*args, **kwargs)
 
-    @models.permalink
     def get_absolute_url(self):
         import os
         file_name = os.path.basename(self.image.path)
-        return ('flow_page_image_download', [
+        from django.urls import reverse
+        return reverse('flow_page_image_download', args=[
                 self.course.identifier,
                 self.flow_session_id,
                 self.creator_id,
                 self.pk,
-                file_name], {}
+                file_name]
                 )
 
     def admin_image(self):
