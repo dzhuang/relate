@@ -118,23 +118,19 @@ def validate_facility(vctx, location, facility):
 def validate_participationtag(vctx, location, participationtag):
     # type: (ValidationContext, Text, Text) -> None
 
-    from pytools import memoize_method
-
-    @memoize_method
-    def get_ptag_list(vctx):
-        # type: (ValidationContext) -> List[str]
-        from course.models import ParticipationTag
-        return list(
-            ParticipationTag.objects.filter(course=vctx.course)
-            .values_list('name', flat=True))
-
-    @memoize_method
-    def is_ptag_exists(vctx, participationtag):
-        # type: (ValidationContext, Text) -> bool
-        return participationtag in get_ptag_list(vctx)
-
     if vctx.course is not None:
-        if not is_ptag_exists(vctx, participationtag):
+        from pytools import memoize_in
+
+        @memoize_in(vctx, "available_participation_tags")
+        def get_ptag_list(vctx):
+            # type: (ValidationContext) -> List[str]
+            from course.models import ParticipationTag
+            return list(
+                ParticipationTag.objects.filter(course=vctx.course)
+                .values_list('name', flat=True))
+
+        ptag_list = get_ptag_list(vctx)
+        if participationtag not in ptag_list:
             vctx.add_warning(
                 location,
                 _(
@@ -142,7 +138,7 @@ def validate_participationtag(vctx, location, participationtag):
                     "Known participation tag names: '%(known_ptag_names)s'")
                 % {
                     "ptag_name": participationtag,
-                    "known_ptag_names": ", ".join(get_ptag_list(vctx)),
+                    "known_ptag_names": ", ".join(ptag_list),
                 })
 
 
