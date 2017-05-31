@@ -26,6 +26,7 @@ THE SOFTWARE.
 
 import six
 import datetime  # noqa
+import pytz
 
 from typing import cast
 
@@ -53,6 +54,9 @@ from course.page.base import (  # noqa
         PageBase,
         PageContext,
         )
+
+MIN_DATETIME = pytz.utc.localize(datetime.datetime.min)
+MAX_DATETIME = pytz.utc.localize(datetime.datetime.max)
 
 # {{{ mypy
 
@@ -291,49 +295,7 @@ def get_flow_rules(
 
 # {{{ added by zd
 
-"""
-def get_flow_rules(
-        flow_desc,  # type: FlowDesc
-        kind,  # type: Text
-        participation,  # type: Optional[Participation]
-        flow_id,  # type: Text
-        now_datetime,  # type: datetime.datetime
-        consider_exceptions=True,  # type: bool
-        default_rules_desc=None  # type: Optional[List[Any]]
-        ):
-    # type: (...) -> List[Any]
-
-    if not default_rules_desc:
-        default_rules_desc = []
-
-    if (not hasattr(flow_desc, "rules")
-            or not hasattr(flow_desc.rules, kind)):
-        rules = default_rules_desc[:]
-    else:
-        rules = getattr(flow_desc.rules, kind)[:]
-
-    from course.models import FlowRuleException
-    if consider_exceptions:
-        for exc in (
-                FlowRuleException.objects
-                .filter(
-                    participation=participation,
-                    active=True,
-                    kind=kind,
-                    flow_id=flow_id)
-                # rules created first will get inserted first, and show up last
-                .order_by("creation_time")):
-
-            if exc.expiration is not None and now_datetime > exc.expiration:
-                continue
-
-            from relate.utils import dict_to_struct
-            rules.insert(0, dict_to_struct(exc.rule))
-
-    return rules
-"""
-
-def get_flow_start_rule_time_range_list(
+def get_flow_may_start_desc(
         course,  # type: Course
         participation,  # type: Optional[Participation]
         flow_id,  # type: Text
@@ -344,31 +306,6 @@ def get_flow_start_rule_time_range_list(
         login_exam_ticket=None,  # type: Optional[ExamTicket]
         rules_only=False,  # type: bool
     ):
-
-    """
-            # pctx.course, pctx.participation,
-            # flow_id, fctx.flow_desc, now_datetime,
-            # facilities=pctx.request.relate_facilities,
-            # login_exam_ticket=login_exam_ticket
-        if_completed_before = None  # type: Date_ish
-        if_started_before = None  # type: Date_ish
-        if_after = None  # type: Date_ish
-        if_before = None  # type: Date_ish
-
-        course,  # type: Course
-        participation,  # type: Optional[Participation]
-        flow_id,  # type: Text
-        flow_desc,  # type: FlowDesc
-        now_datetime,  # type: datetime.datetime
-        
-    """
-
-    # rules = get_flow_rules(
-    #     flow_desc,
-    #     participation,
-    #     flow_id,  # type: Text
-    #     now_datetime,  # type: datetime.datetime
-    # )
 
     rules = get_session_start_rule(
         course,
@@ -381,20 +318,14 @@ def get_flow_start_rule_time_range_list(
 
     assert isinstance(rules, list)
 
-    time_rule_list = []
-    for i, rule in enumerate(rules):
-        end_time = None
-        start_time = None
+    time_point_set = set()
+    time_point_set.add(MIN_DATETIME)
+    for rule in rules:
         if hasattr(rule, "if_before"):
-            end_time = parse_date_spec(course, rule.if_before)# - datetime.timedelta(microseconds=1)
+            time_point_set.add(parse_date_spec(course, rule.if_before))
         if hasattr(rule, "if_after"):
-            start_time = parse_date_spec(course, rule.if_after)# + datetime.timedelta(microseconds=1)
-        if hasattr(rule, "if_started_before"):
-            pass
-        if hasattr(rule, "if_completed_before"):
-            pass
-        if end_time or start_time:
-            time_rule_list.append((i + 1, start_time, end_time))
+            time_point_set.add(parse_date_spec(course, rule.if_after))
+    time_point_list = sorted(list(time_point_set))
 
     def check_may_start(test_datetime):
         start_rule = get_session_start_rule(
@@ -409,58 +340,110 @@ def get_flow_start_rule_time_range_list(
         )
         return start_rule.may_start_new_session
 
-    if time_rule_list:
-        may_start_time_range = []
-        n_time_rule = len(time_rule_list)
+    may_start_list = []
+    for t in time_point_list:
+        test_time = t + datetime.timedelta(microseconds=1)
+        may_start = check_may_start(test_time)
+        may_start_list.append(may_start)
 
-        for i, start, end in time_rule_list:
-            start_p = None
-            end_p = None
-            j = len(may_start_time_range) - 1
+    may_start_zip = list(zip(may_start_list,time_point_list))
+    may_start_zip_merged = []
+    for i, z in enumerate(may_start_zip):
+        try:
+            if i == 0:
+                may_start_zip_merged.append(z)
+            elif z[0] != may_start_zip[i-1][0]:
+                may_start_zip_merged.append(z)
+        except IndexError:
+            may_start_zip_merged.append(z)
 
-            if start:
-                test_datetime = start + datetime.timedelta(0, 0, 1)
-                may_start = check_may_start(test_datetime)
-                if may_start:
-                    start_p = start
-            if end:
-                test_datetime = end - datetime.timedelta(0, 0, 1)
-                may_start = check_may_start(test_datetime)
-                if may_start:
-                    end_p = end
+    time_range_list = []
+    for i, z in enumerate(may_start_zip_merged):
+        if z[0] == True:
+            start = may_start_zip_merged[i][1]
+            try:
+                end = may_start_zip_merged[i + 1][1]
+            except IndexError:
+                end = MAX_DATETIME
 
-            if not may_start_time_range:
-                may_start_time_range.append([start_p, end_p])
+            rule_is_active = False
+            if start <= now_datetime <= end:
+                rule_is_active = True
+
+            time_range_list.append((start, end, rule_is_active))
+
+    trl_full_str = ""
+    if time_range_list:
+        from relate.utils import dict_to_struct, compact_local_datetime_str
+        for trl in time_range_list:
+            trl_str = ""
+            start = trl[0]
+            end = trl[1]
+            rule_is_active = trl[2]
+            if start != MIN_DATETIME and end != MAX_DATETIME:
+                trl_str += _("From %(start)s to %(end)s") % {
+                    "start": compact_local_datetime_str(start, now_datetime),
+                    "end": compact_local_datetime_str(end, now_datetime)
+                }
+            elif start == MIN_DATETIME and end != MAX_DATETIME:
+                trl_str += _("Before %(end)s") % {
+                    "end": compact_local_datetime_str(end, now_datetime)
+                }
+            elif start != MIN_DATETIME and end == MAX_DATETIME:
+                trl_str += _("After %(start)s") % {
+                    "start": compact_local_datetime_str(start, now_datetime)
+                }
             else:
-                if start_p is None and end_p is None:
-                    # this won't happen
-                    may_start_time_range[j][0] = None
-                    may_start_time_range[j][1] = None
-                else:
-                    if start_p < may_start_time_range[j][1]:
-                        may_start_time_range[j][1] = end_p
-                    if end_p < may_start_time_range[j][0]:
-                        may_start_time_range[j][0] = start_p
-                    #     if start_p < may_start_time_range[j][0]:
-                    #         may_start_time_range[j][0] = start_p
-                    #     elif:
-                    # if end_p is None:
-                    #     may_start_time_range[j][1] = None
-                    # else:
-                    #     if end_p > may_start_time_range[j][1]:
-                    #         may_start_time_range[j][1] = end_p
+                continue
+
+            if rule_is_active:
+                trl_str = "<strong class='text-danger'>%s</strong>" % trl_str
+
+            trl_full_str += "<li>%s</li>" % trl_str
+
+    if trl_full_str:
+        trl_full_str = (
+            string_concat(
+                "<li><span class='h4'>",
+                _("When sessions might start"),
+                "</span><ul>%s</ul></li>"
+            ) % trl_full_str)
+
+    return trl_full_str
 
 
+def get_flow_grading_rule_desc(
+        course,  # type: Course
+        participation,  # type: Optional[Participation]
+        flow_id,  # type: Text
+        flow_desc,  # type: FlowDesc
+        now_datetime,  # type: datetime.datetime
+        facilities=None,  # type: Optional[frozenset[Text]]
+        for_rollover=False,  # type: bool
+        login_exam_ticket=None,  # type: Optional[ExamTicket]
+        rules_only=False,  # type: bool
+    ):
 
+    flow_desc_rules = getattr(flow_desc, "rules", None)
 
+    from relate.utils import dict_to_struct
+    rules = get_flow_rules(flow_desc, flow_rule_kind.grading,
+            participation, flow_id, now_datetime,
+            default_rules_desc=[
+                dict_to_struct(dict(
+                    generates_grade=False,
+                    ))])
 
+    assert isinstance(rules, list)
 
-        pass
-
-        print(may_start_time_range)
-
-    return time_rule_list
-
+    time_point_set = set()
+    time_point_set.add(MIN_DATETIME)
+    for rule in rules:
+        if hasattr(rule, "if_before"):
+            time_point_set.add(parse_date_spec(course, rule.if_before))
+        if hasattr(rule, "if_after"):
+            time_point_set.add(parse_date_spec(course, rule.if_after))
+    time_point_list = sorted(list(time_point_set))
 
 # }}}
 

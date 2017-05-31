@@ -1462,23 +1462,26 @@ def view_start_flow(pctx, flow_id):
             pctx.course, pctx.participation, flow_id,
             fctx.flow_desc, now_datetime)
 
-        from course.utils import get_flow_start_rule_time_range_list
-        time_range_list = get_flow_start_rule_time_range_list(
+        from course.utils import get_flow_may_start_desc
+        time_range_str = get_flow_may_start_desc(
             pctx.course, pctx.participation,
             flow_id, fctx.flow_desc, now_datetime,
             facilities=pctx.request.relate_facilities,
             login_exam_ticket=login_exam_ticket
         )
-        print(time_range_list)
+
+        flow_rule_str = time_range_str + flow_rule_str
+        print(time_range_str)
+
+        session_available_count_html_class = "h4"
 
         if session_start_rule.session_available_count <= 2:
-            session_available_count_html = (
-                    "<strong class='text-danger h4'> %s </strong>" %
-                    session_start_rule.session_available_count)
-        else:
-            session_available_count_html = (
-                    "<strong class='h4'> %s </strong>" %
-                    session_start_rule.session_available_count)
+            session_available_count_html_class += " text-danger"
+
+        session_available_count_html = (
+                "<strong class='%s'> %s </strong>" %
+                (session_available_count_html_class,
+                 session_start_rule.session_available_count))
         # }}}
 
         return render_course_page(pctx, "course/flow-start.html", {
