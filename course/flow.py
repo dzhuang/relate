@@ -80,6 +80,7 @@ from course.utils import (
         get_session_grading_rule,
         get_session_notify_rule,
         get_flow_rules_str,  # added by zd
+        get_session_grading_desc,  # added by zd
         FlowSessionGradingRule,
         )
 from course.exam import get_login_exam_ticket
@@ -1462,16 +1463,22 @@ def view_start_flow(pctx, flow_id):
             pctx.course, pctx.participation, flow_id,
             fctx.flow_desc, now_datetime)
 
-        from course.utils import get_flow_may_start_desc
-        time_range_str = get_flow_may_start_desc(
+        from course.utils import get_flow_may_start_desc, get_session_grading_desc
+        start_desc = get_flow_may_start_desc(
             pctx.course, pctx.participation,
             flow_id, fctx.flow_desc, now_datetime,
             facilities=pctx.request.relate_facilities,
             login_exam_ticket=login_exam_ticket
         )
+        grading_desc = get_session_grading_desc(
+            potential_session,
+            fctx.flow_desc,
+            now_datetime,
+            generate_full_desc=True
+        )
 
-        flow_rule_str = time_range_str + flow_rule_str
-        print(time_range_str)
+        flow_rule_str = start_desc + flow_rule_str + grading_desc
+        #print(start_desc)
 
         session_available_count_html_class = "h4"
 
@@ -1845,6 +1852,7 @@ def view_flow_page(pctx, flow_session_id, ordinal):
             and
             grading_rule.generates_grade)
     # {{{ added by zd
+    test_string = get_session_grading_desc(flow_session, fpctx.flow_desc, now_datetime)
     completed_before = getattr(grading_rule, "completed_before", None)
     session_due = getattr(grading_rule, "due", None)
     credit_percent = getattr(grading_rule, "credit_percent", None)
@@ -2106,7 +2114,7 @@ def view_flow_page(pctx, flow_session_id, ordinal):
                         "completed_before": compact_local_datetime_str(
                             completed_before, now_datetime),
                         "credit_percent": credit_percent}
-                    + flow_page_warning_message_next)
+                    + flow_page_warning_message_next + test_string)
 
             if (session_due
                 and len(expiration_mode_choices) > 1
