@@ -178,6 +178,19 @@ class FlowSessionGradingRule(FlowSessionRuleBase):
         self.credit_next = credit_next
         self.is_next_final = is_next_final
 
+    def __eq__(self, other):
+        return (
+            self.generates_grade == other.generates_grade
+            and
+            self.credit_percent == other.credit_percent
+            and
+            self.max_points == other.max_points
+            and
+            self.max_points_enforced_cap == other.max_points_enforced_cap
+            and
+            self.bonus_points == other.bonus_points
+        )
+
 
 def _eval_generic_conditions(
         rule,  # type: Any
@@ -424,27 +437,19 @@ def get_flow_may_start_desc(
     return trl_full_str
 
 
-def get_flow_grading_rule_desc(
-        course,  # type: Course
-        participation,  # type: Optional[Participation]
-        flow_id,  # type: Text
+def get_session_grading_desc(
+        session,  # type: FlowSession
         flow_desc,  # type: FlowDesc
         now_datetime,  # type: datetime.datetime
-        facilities=None,  # type: Optional[frozenset[Text]]
-        for_rollover=False,  # type: bool
-        login_exam_ticket=None,  # type: Optional[ExamTicket]
-        rules_only=False,  # type: bool
+        full_desc=False,  # type: bool
     ):
 
-    flow_desc_rules = getattr(flow_desc, "rules", None)
-
-    from relate.utils import dict_to_struct
-    rules = get_flow_rules(flow_desc, flow_rule_kind.grading,
-            participation, flow_id, now_datetime,
-            default_rules_desc=[
-                dict_to_struct(dict(
-                    generates_grade=False,
-                    ))])
+    rules = get_session_grading_rule(
+        session,
+        flow_desc,
+        now_datetime,
+        rules_only=True
+    )
 
     assert isinstance(rules, list)
 
@@ -452,10 +457,175 @@ def get_flow_grading_rule_desc(
     time_point_set.add(MIN_DATETIME)
     for rule in rules:
         if hasattr(rule, "if_before"):
-            time_point_set.add(parse_date_spec(course, rule.if_before))
+            time_point_set.add(parse_date_spec(session.course, rule.if_before))
         if hasattr(rule, "if_after"):
-            time_point_set.add(parse_date_spec(course, rule.if_after))
+            time_point_set.add(parse_date_spec(session.course, rule.if_after))
+        if hasattr(rule, "if_started_before"):
+            time_point_set.add(parse_date_spec(session.course, rule.if_started_before))
+        if hasattr(rule, "if_completed_before"):
+            time_point_set.add(parse_date_spec(session.course, rule.if_completed_before))
     time_point_list = sorted(list(time_point_set))
+
+    def get_test_grading_rule(test_datetime):
+        grading_rule = get_session_grading_rule(
+            session,  # type: FlowSession
+            flow_desc,  # type: FlowDesc
+            test_datetime,  # type: datetime.datetime
+        )
+        return grading_rule
+
+    grading_rule_list = []
+    for t in time_point_list:
+        test_time = t + datetime.timedelta(microseconds=1)
+        g_rule = get_test_grading_rule(test_time)
+        grading_rule_list.append(g_rule)
+
+    g_rule_zip = list(zip(grading_rule_list,time_point_list))
+    g_rule_zip_merged = []
+    for i, z in enumerate(g_rule_zip):
+        try:
+            if i == 0:
+                g_rule_zip_merged.append(z)
+            elif z[0] != g_rule_zip[i-1][0]:
+                g_rule_zip_merged.append(z)
+        except IndexError:
+            g_rule_zip_merged.append(z)
+
+    g_rule_time_range_list = []
+    for i, z in enumerate(g_rule_zip_merged):
+        if z[0].generates_grade:
+            start = g_rule_zip_merged[i][1]
+            if now_datetime < start:
+                continue
+            try:
+                end = g_rule_zip_merged[i + 1][1]
+                next_rule = g_rule_zip_merged[i + 1][0]
+            except IndexError:
+                end = MAX_DATETIME
+                next_rule = FlowSessionGradingRule(
+                    grade_identifier=None,
+                    grade_aggregation_strategy="",
+                    completed_before=None,
+                    due=None,
+                    generates_grade=False,
+                    credit_percent=0,
+                )
+
+            rule_is_active = False
+            if start <= now_datetime <= end:
+                rule_is_active = True
+
+            g_rule_time_range_list.append(
+                (start, end, z[0], next_rule, rule_is_active))
+
+    g_rule_trl_full_str = ""
+    if g_rule_time_range_list:
+        flow_page_warning_message = ""
+        from relate.utils import dict_to_struct, compact_local_datetime_str
+        from django.utils.timesince import timeuntil
+        for trl in g_rule_time_range_list:
+            trl_str = ""
+            start = trl[0]
+            end = trl[1]
+            g_rule = trl[2]
+            next_rule = trl[3]
+            rule_is_active = trl[4]
+
+            credit_expected = None
+
+            if g_rule.credit_percent:
+                credit_expected = (
+                    _("<b>%(credit_percent)d%%</b> of your grade")
+                    % {"credit_percent": g_rule.credit_percent}
+                )
+            if g_rule.max_points:
+                max_points = g_rule.max_points
+                if g_rule.max_points_enforced_cap:
+                    max_points = min(max_points, g_rule.max_points_enforced_cap)
+                credit_expected = (
+                    _(" at most <b>%(max_points)d%</b> points")
+                    % {"max_points": max_points}
+                )
+            if g_rule.bonus_points:
+                credit_expected += (
+                    _("(including %(bonus_points)s bonus points)")
+                    % {"bonus_points": g_rule.bonus_points}
+                )
+
+            if end != MAX_DATETIME:
+                flow_page_warning_message = (
+                    string_concat(
+                        _("Your have <b>%(time_remain)s</b> (before <b>"
+                          "%(completed_before)s</b>) to submit this session to "
+                          "get %(credit_expected)s."), " ") %
+                    {
+                        "time_remain": timeuntil(end, now_datetime),
+                        "completed_before": compact_local_datetime_str(
+                            end, now_datetime),
+                        "credit_expected": credit_expected})
+            else:
+                flow_page_warning_message = (
+                    string_concat(
+                        _("Your are supposed to get <b>%(credit_percent)d%%</b> "
+                          "of your grade by submitting this session."), " ") %
+                    {
+                        "credit_percent": g_rule.credit_percent})
+
+            if (not next_rule.generates_grade
+                or
+                        next_rule.credit_percent == 0
+                or
+                        next_rule.max_points == 0
+                or
+                        next_rule.max_points_enforced_cap == 0):
+                flow_page_warning_message += (
+                    _("Session ended afterward will not receive grade.")
+                    + " ")
+            else:
+                credit_expected_next = None
+
+                if next_rule.credit_percent:
+                    credit_expected_next = (
+                        _("<b>%(credit_percent)d%%</b> of your grade")
+                        % {"credit_percent": next_rule.credit_percent}
+                    )
+                if next_rule.max_points:
+                    max_points_next = g_rule.max_points
+                    if g_rule.max_points_enforced_cap:
+                        max_points_next = min(max_points_next, g_rule.max_points_enforced_cap)
+                        credit_expected_next = (
+                        _(" at most <b>%(max_points)d%</b> points")
+                        % {"max_points": max_points_next}
+                    )
+                if next_rule.bonus_points:
+                    credit_expected_next += (
+                        _("(including %(bonus_points)s bonus points)")
+                        % {"bonus_points": next_rule.bonus_points}
+                    )
+
+                flow_page_warning_message += (
+                    string_concat(_("Session ended afterward will receive no "
+                                    "more than %(credit_expected_next)s."),
+                                  " ")
+                    % {"credit_expected_next": credit_expected_next})
+
+            if rule_is_active:
+                trl_str = (
+                    "<strong class='text-danger'>%s</strong>"
+                    % flow_page_warning_message)
+
+            g_rule_trl_full_str += "<li>%s</li>" % trl_str
+
+    if g_rule_trl_full_str and full_desc:
+        g_rule_trl_full_str = (
+            string_concat(
+                "<li><span class='h4'>",
+                _("The expected gradings if you start a new session"),
+                "</span><ul>%s</ul></li>"
+            ) % g_rule_trl_full_str)
+
+    print(g_rule_trl_full_str.encode('utf-8'))
+    return g_rule_trl_full_str
 
 # }}}
 
