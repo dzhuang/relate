@@ -487,6 +487,10 @@ def get_flow_rules_str(
             and
                 hasattr(rule, "may_start_new_session")):
             if getattr(rule, "may_start_new_session"):
+                # {{{ temp solution
+                if not _eval_participation_tags_conditions(rule, participation):
+                    continue
+                # }}}
                 latest_start_datetime = parse_date_spec(course, rule.if_before)
 
     latest_start_datetime_str = None
@@ -517,6 +521,11 @@ def get_flow_rules_str(
 
     for rule in grade_rules:
         if hasattr(rule, "if_completed_before"):
+            # {{{ temp solution
+            if hasattr(rule, "if_has_participation_tags_any"):
+                if not _eval_participation_tags_conditions(rule, participation):
+                    continue
+            # }}}
             ds = parse_date_spec(course, rule.if_completed_before)
             due = parse_date_spec(course, getattr(rule, "due", None))
             credit_percent = getattr(rule, "credit_percent", 100)
