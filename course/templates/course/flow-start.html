@@ -11,11 +11,6 @@
   {{flow_desc.description_html|safe}}
   {% endif %}
 
-  {% if flow_rule_str %}
-    <h3>{% trans "Important date/time" %} </h3>
-  {{flow_rule_str|safe}}
-  {% endif %}
-
   <form method="POST">
     {% csrf_token %}
 
@@ -94,19 +89,49 @@
       </div>
     {% endif %}
 
+    {% if human_readable_flow_may_start_desc_list or human_readable_session_grading_rule_desc_list %}
+        <div class="alert alert-info">
+    <i class="fa fa-info-circle"></i>{% trans "Important date/time" %}
+      <ul>
+      {% if human_readable_flow_may_start_desc_list %}
+          <li><span class='h5'>{% trans "Time range allowed to start new sessions" %}</span></li>
+          <ul>
+          {% for desc in human_readable_flow_may_start_desc_list %}
+          <li>{{ desc.human_readable_rule|safe }}{% if desc.is_active %} <i class="fa fa-hand-o-left" aria-hidden="true"></i>{% endif %}</li>
+          {% endfor %}
+          </ul>
+      {% endif %}
+      {% if human_readable_session_grading_rule_desc_list %}
+          <li><span class='h5'>{% trans "The submission time and grading for a new session" %}</span></li>
+          <ul>
+          {% for desc in human_readable_session_grading_rule_desc_list %}
+          <li>{{ desc.human_readable_rule|safe }}{% if desc.is_active %} <i class="fa fa-hand-o-left" aria-hidden="true"></i>{% endif %}</li>
+          {% endfor %}
+          </ul>
+      {% endif %}
+      </ul>
+        </div>
+    {% endif %}
+
     {% if may_start %}
       {% if new_session_grading_rule.grade_identifier %}
         <div class="alert alert-info">
           <i class="fa fa-info-circle"></i>
-          {% if session_available_count > 2 %}
-              {% blocktrans trimmed with count=session_available_count_html|safe %} 
+        {% with sessions_available_count|stringformat:"s" as count_str %}
+          {% if sessions_available_count > 2 %}
+              {% with "<strong class='h4'>"|add:count_str|stringformat:"s"|add:"</strong>" as count_html %}
+              {% blocktrans trimmed with count=count_html|safe %}
                 You have {{count}} chances to start a new session. 
               {% endblocktrans %}
+              {% endwith %}
           {% else %}
-              {% blocktrans trimmed with count=session_available_count_html|safe %} 
-                You have only {{count}} chances to start a new session. 
+              {% with "<strong class='h4 text-danger'>"|add:count_str|stringformat:"s"|add:"</strong>" as count_html %}
+              {% blocktrans trimmed with count=count_html|safe %}
+                You have only {{count}} chance{{ count|pluralize }} to start a new session.
               {% endblocktrans %}
+              {% endwith %}
           {% endif %}
+        {% endwith %}
           {% trans "If you start a new session, the following rules will apply:" %}
           <ul>
             {% if new_session_grading_rule.description %}
@@ -119,14 +144,14 @@
             {% if new_session_grading_rule.due %}
               <li>
                   {% blocktrans trimmed with due=new_session_grading_rule.due|compact_datetime %}
-                    Your session will be due on <b>{{ due }}</b>, if session is not ended and roll-over is not applied (through "Keep session and apply new rules" strategy) before that time.
+                    Your session will be due on <b>{{ due }}</b>.
                   {% endblocktrans %}
               </li>
             {% endif %}
             <li>
                 {% blocktrans trimmed with credit_percent=new_session_grading_rule.credit_percent|floatformat%}
                     You will receive <b>{{ credit_percent }}% credit</b>
-                    for your work, if submitted before required time.
+                    for your work.
                 {% endblocktrans %}
             </li>
             {% if past_sessions_and_properties %}

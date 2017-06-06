@@ -48,7 +48,7 @@ from crispy_forms.helper import FormHelper
 
 from relate.utils import (
         StyledForm, local_now, as_local_time,
-        format_datetime_local, compact_local_datetime_str)
+        format_datetime_local)
 from crispy_forms.layout import Submit
 from django_select2.forms import Select2Widget
 
@@ -78,9 +78,8 @@ from course.utils import (
         get_session_start_rule,
         get_session_access_rule,
         get_session_grading_rule,
-        get_session_notify_rule,
-        get_flow_rules_str,  # added by zd
-        get_session_grading_desc,  # added by zd
+        get_session_notify_rule,  # added by zd
+        get_human_readable_session_grading_rule_desc_or_list,  # added by zd
         FlowSessionGradingRule,
         )
 from course.exam import get_login_exam_ticket
@@ -1459,43 +1458,32 @@ def view_start_flow(pctx, flow_id):
                     grade_aggregation_strategy.use_earliest])
 
         # {{{ added by zd
-        flow_rule_str = get_flow_rules_str(
-            pctx.course, pctx.participation, flow_id,
-            fctx.flow_desc, now_datetime)
-
-        from course.utils import get_flow_may_start_desc, get_session_grading_desc
-        start_desc = get_flow_may_start_desc(
-            pctx.course, pctx.participation,
-            flow_id, fctx.flow_desc, now_datetime,
-            facilities=pctx.request.relate_facilities,
-            login_exam_ticket=login_exam_ticket
-        )
-        grading_desc = get_session_grading_desc(
-            potential_session,
-            fctx.flow_desc,
-            now_datetime,
-            generate_full_desc=True
-        )
-
-        flow_rule_str = start_desc + flow_rule_str + grading_desc
-        #print(start_desc)
-
-        session_available_count_html_class = "h4"
-
-        if session_start_rule.session_available_count <= 2:
-            session_available_count_html_class += " text-danger"
-
-        session_available_count_html = (
-                "<strong class='%s'> %s </strong>" %
-                (session_available_count_html_class,
-                 session_start_rule.session_available_count))
+        from course.utils import (
+            get_human_readable_flow_may_start_desc_list,
+            get_human_readable_session_grading_rule_desc_or_list)
+        human_readable_flow_may_start_desc_list = (
+            get_human_readable_flow_may_start_desc_list(
+                pctx.course, pctx.participation,
+                flow_id, fctx.flow_desc, now_datetime,
+                facilities=pctx.request.relate_facilities,
+                login_exam_ticket=login_exam_ticket
+            ))
+        human_readable_session_grading_rule_desc_list = (
+            get_human_readable_session_grading_rule_desc_or_list(
+                potential_session,
+                fctx.flow_desc,
+                now_datetime,
+                generate_grule_full_list=True
+            ))
         # }}}
 
         return render_course_page(pctx, "course/flow-start.html", {
             # {{{ added by zd
-            "flow_rule_str": flow_rule_str,
-            "session_available_count": session_start_rule.session_available_count,
-            "session_available_count_html": session_available_count_html,
+            "human_readable_flow_may_start_desc_list":
+                human_readable_flow_may_start_desc_list,
+            "human_readable_session_grading_rule_desc_list":
+                human_readable_session_grading_rule_desc_list,
+            "sessions_available_count": session_start_rule.sessions_available_count,
             # }}}
             "flow_desc": fctx.flow_desc,
             "flow_identifier": flow_id,
@@ -1852,12 +1840,10 @@ def view_flow_page(pctx, flow_session_id, ordinal):
             and
             grading_rule.generates_grade)
     # {{{ added by zd
-    test_string = get_session_grading_desc(flow_session, fpctx.flow_desc, now_datetime)
+    human_readable_session_grading_rule_desc = (
+        get_human_readable_session_grading_rule_desc_or_list(
+            flow_session, fpctx.flow_desc, now_datetime))
     completed_before = getattr(grading_rule, "completed_before", None)
-    session_due = getattr(grading_rule, "due", None)
-    credit_percent = getattr(grading_rule, "credit_percent", None)
-    credit_next = getattr(grading_rule, "credit_next", None)
-    is_next_final = getattr(grading_rule, "is_next_final", False)
     # }}}
     del grading_rule
 
@@ -2084,64 +2070,23 @@ def view_flow_page(pctx, flow_session_id, ordinal):
 
     # {{{ add by zd to sumbit info reminder in flow page
     if flow_permission.submit_answer in permissions:
-        flow_page_warning_message = ""
-        flow_page_warning_message_next = ""
-
-        if is_next_final:
-            flow_page_warning_message_next = (
-                    ugettext("Session ended afterward will not receive grade.")
-                    + " ")
-        else:
-            flow_page_warning_message_next = (
-                    string_concat(_("Session ended afterward will receive no "
-                                    "more than <b>%d%%</b> of your grade."), " ") %
-                    credit_next)
+        flow_page_time_grading_info = ""
 
         if now_datetime and completed_before:
-            from django.utils.timesince import timeuntil
-
             time_delta = completed_before - now_datetime
-            time_until = timeuntil(completed_before, now_datetime)
 
             if now_datetime < completed_before:
-                flow_page_warning_message = (
-                    string_concat(
-                        _("Your have <b>%(time_remain)s</b> (before <b>"
-                          "%(completed_before)s</b>) to submit this session to "
-                          "get <b>%(credit_percent)d%%</b> of your grade."), " ") %
-                    {
-                        "time_remain": time_until,
-                        "completed_before": compact_local_datetime_str(
-                            completed_before, now_datetime),
-                        "credit_percent": credit_percent}
-                    + flow_page_warning_message_next + test_string)
-
-            if (session_due
-                and len(expiration_mode_choices) > 1
-                and
-                    not is_next_final):
-                flow_page_warning_message += (
-                    string_concat(
-                        _("If you neither submitted this session nor applied "
-                          "'Do not submit session for grading' before <b>"
-                          "%(session_due)s</b>, your session will be "
-                          "ended later, which might also reduce your "
-                          "grade.")) % {
-                        "session_due": compact_local_datetime_str(
-                            session_due, now_datetime)
-                    })
+                flow_page_time_grading_info = human_readable_session_grading_rule_desc
 
             from datetime import timedelta
 
-            if flow_page_warning_message:
-
-                if time_delta > timedelta(hours=48):
-                    messages.add_message(request, messages.INFO,
-                                         flow_page_warning_message)
-                else:
-                    messages.add_message(request, messages.WARNING,
-                                         flow_page_warning_message,
-                                         extra_tags='danger')
+            if flow_page_time_grading_info:
+                kwargs = {}
+                if time_delta < timedelta(hours=48):
+                    kwargs["extra_tags"] = 'danger'
+                messages.add_message(request, messages.WARNING,
+                                     flow_page_time_grading_info,
+                                     **kwargs)
     #}}}
 
     args = {

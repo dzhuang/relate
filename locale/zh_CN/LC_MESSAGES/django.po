@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-04-14 17:38+0800\n"
+"POT-Creation-Date: 2017-06-06 18:37+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -1360,31 +1360,6 @@ msgid ""
 "course."
 msgstr ""
 
-msgid "Session ended afterward will not receive grade."
-msgstr "此后结束的session将没有分数."
-
-#, python-format
-msgid ""
-"Session ended afterward will receive no more than <b>%d%%</b> of your grade."
-msgstr "此后提交的session的得分不会超过总评成绩的<b>%d%%</b>."
-
-#, python-format
-msgid ""
-"Your have <b>%(time_remain)s</b> (before <b>%(completed_before)s</b>) to "
-"submit this session to get <b>%(credit_percent)d%%</b> of your grade."
-msgstr ""
-"您在<b>%(time_remain)s</b>内（即<b>%(completed_before)s</b>前）提交本"
-"session，将可以得到总评<b>%(credit_percent)d%%</b>的分数."
-
-#, python-format
-msgid ""
-"If you neither submitted this session nor applied 'Do not submit session for "
-"grading' before <b>%(session_due)s</b>, your session will be ended later, "
-"which might also reduce your grade."
-msgstr ""
-"如果您在<b>%(session_due)s</b>前既没有提交session也没有使用\"不要提交session"
-"及评分\"策略，这个session将在稍后被终止，这也将影响您的得分."
-
 msgid "could not find which button was pressed"
 msgstr "无法找到哪一个按钮被按下"
 
@@ -1451,9 +1426,15 @@ msgstr "无法结束已经结束的session"
 msgid "not permitted to end session"
 msgstr "不允许结束session"
 
+#. Translators: displayed format of Participation: some user in some
+#. course as some role
 #, python-format
-msgid "Submission by %(participation)s"
-msgstr "提交，来自%(participation)s"
+msgid "%(user)s in %(course)s as %(role)s"
+msgstr "%(user)s在课程%(course)s中(作为%(role)s)"
+
+#, python-format
+msgid "Submission by %(participation_desc)s"
+msgstr "提交，来自%(participation_desc)s"
 
 msgid ""
 "If non-empty, limit the regrading to sessions started under this access "
@@ -1499,6 +1480,9 @@ msgstr "重新允许修改回答"
 
 msgid "Cancel"
 msgstr "放弃"
+
+msgid "No prior answers found that could be un-submitted."
+msgstr "找不到可以取消提交的回答."
 
 msgid "Flow page changes reallowed. "
 msgstr "flow页面的回答变更已重新批准"
@@ -2202,12 +2186,6 @@ msgstr "标签"
 
 msgid "Notes"
 msgstr "注释"
-
-#. Translators: displayed format of Participation: some user in some
-#. course as some role
-#, python-format
-msgid "%(user)s in %(course)s as %(role)s"
-msgstr "%(user)s在课程%(course)s中(作为%(role)s)"
 
 msgid "Participation"
 msgstr "课程参与"
@@ -2928,6 +2906,11 @@ msgstr "向课管人员发送电子邮件，在邮件中包含以下的代码失
 
 msgid "The original failure message follows:"
 msgstr "错误发生时的信息如下:"
+
+msgid ""
+"It looks like you submitted code that is identical to the reference "
+"solution. This is not allowed."
+msgstr "看上去您所提交的代码与参考答案一致. 这是不被允许的."
 
 msgid ""
 "The grading code failed. Sorry about that. The staff has been informed, and "
@@ -3704,7 +3687,7 @@ msgstr ""
 "%(review_uri)s\n"
 "\n"
 
-msgid "Viewing session for partipant"
+msgid "Viewing session for participant"
 msgstr "正在查看session的学员为: "
 
 msgid "(unspecified participant)"
@@ -3829,9 +3812,6 @@ msgstr "未完成"
 msgid "finished"
 msgstr "已完成"
 
-msgid "Important date/time"
-msgstr "重要的日期/时间"
-
 msgid "Past sessions"
 msgstr "过往的session"
 
@@ -3863,12 +3843,21 @@ msgstr "继续"
 msgid "Review"
 msgstr "回顾"
 
+msgid "Important date/time"
+msgstr "重要的日期/时间"
+
+msgid "Time range allowed to start new sessions"
+msgstr "允许开始新session的时间范围"
+
+msgid "The submission time and grading for a new session"
+msgstr "新session的提交时间及评分"
+
 #, python-format
 msgid "You have %(count)s chances to start a new session."
 msgstr "您有%(count)s次开始新session的机会. "
 
-#, python-format
-msgid "You have only %(count)s chances to start a new session."
+msgid ""
+"You have only %(count)s chance%(count|pluralize)s to start a new session."
 msgstr "您只有%(count)s次开始新session的机会. "
 
 msgid "If you start a new session, the following rules will apply:"
@@ -4063,6 +4052,9 @@ msgstr ""
 "%(review_uri)s\n"
 "\n"
 
+msgid "Dear user"
+msgstr "尊敬的用户: "
+
 #, python-format
 msgid ""
 "\n"
@@ -4160,6 +4152,9 @@ msgstr "session状态"
 msgid "Session grade"
 msgstr "session得分 "
 
+msgid "Me"
+msgstr "我"
+
 msgid "Rules tag"
 msgstr "规则tag"
 
@@ -4187,6 +4182,9 @@ msgstr "我的成绩"
 
 msgid "Grades"
 msgstr "得分"
+
+msgid "ME"
+msgstr "我"
 
 msgid "Date"
 msgstr "日期"
@@ -4546,25 +4544,6 @@ msgstr "进程"
 msgid "The process failed and reported the following error:"
 msgstr "该过程进行失败，并报告了以下错误:"
 
-msgid "Latest start time"
-msgstr "最迟开始时间"
-
-#, python-format
-msgid "Session(s) must start before %s."
-msgstr "所有session必须在%s前开始."
-
-#, python-format
-msgid ""
-"If completed before %(time)s, you'll get %(credit_percent)s%% of your grade."
-msgstr "在%(time)s前提交，将得到应得分的%(credit_percent)s%%."
-
-msgid "Submission time and Grading"
-msgstr "提交时间与评分"
-
-#, python-format
-msgid "No grade will be granted for submision later than %s."
-msgstr "迟于%s提交的作业将没有成绩."
-
 msgid "grading rule determination was unable to find a grading rule"
 msgstr "无法为评分找到规则"
 
@@ -4586,6 +4565,103 @@ msgid ""
 msgstr ""
 "错误: 需导入的列中含有非ASCII字符. 请将CSV文件转换为utf8格式后再尝试导入."
 
+#, python-format
+msgid "Before %(end)s"
+msgstr "%(end)s前"
+
+#, python-format
+msgid "From <b>%(start)s</b> to <b>%(end)s</b>"
+msgstr "<b>%(start)s</b> 至 <b>%(end)s</b>."
+
+#, python-format
+msgid "After %(start)s"
+msgstr "在 %(start)s 后"
+
+#, python-format
+msgid "started before %s"
+msgstr "%s前开始的"
+
+#, python-format
+msgid "<b>%(credit_percent)d%%</b> of the grade"
+msgstr "应得分的<b>%(credit_percent)d%%</b>"
+
+msgid " at most <b>%(max_points)d%</b> points"
+msgstr "最多不超过<b>%(max_points)d%</b>分"
+
+#, python-format
+msgid "(including %(bonus_points)s bonus points)"
+msgstr "(含%(bonus_points)s分的加分)"
+
+#, python-format
+msgid ""
+"This session will <b>NOT</b> receive grade if submitted before %"
+"(completed_before)s."
+msgstr "若在%(completed_before)s前提交，本session将<b>没有</b>评分."
+
+#, python-format
+msgid ""
+"A new session%(started_before)s will <b>NOT</b> receive grade if submitted "
+"before <b>%(completed_before)s</b>."
+msgstr ""
+"在<b>%(completed_before)s</b>前提交的新session%(started_before)s将<b>没有</b>"
+"评分."
+
+#, python-format
+msgid ""
+"You have <b>%(time_remain)s</b> (before <b>%(completed_before)s</b>) to "
+"submit this session to get %(credit_expected)s."
+msgstr ""
+"您在<b>%(time_remain)s</b>内（即<b>%(completed_before)s</b>前）提交本"
+"session，将得到<b>%(credit_expected)s</b>."
+
+#, python-format
+msgid ""
+"A new session%(started_before)s will get %(credit_expected)sif submmited "
+"before <b>%(completed_before)s</b>."
+msgstr ""
+"<b>%(completed_before)s</b>前提交的新session%(started_before)s将得到<b>%"
+"(credit_expected)s</b>."
+
+msgid "This session will <b>NOT</b> receive grade."
+msgstr "这个session将<b>没有</b>评分."
+
+#, python-format
+msgid ""
+"A new session%(started_before)s will <b>NOT</b> receive grade since <b>%"
+"(start_time)s</b>."
+msgstr ""
+"<b>%(start_time)s</b>之后提交的新session%(started_before)s将<b>没有</b>评分."
+
+#, python-format
+msgid "A new session%(started_before)s will <b>NOT</b> receive grade."
+msgstr "新Session%(started_before)s将<b>没有</b>评分."
+
+#, python-format
+msgid "This session will get <b>%(credit_expected)s</b> if submitted."
+msgstr "本session如果提交将得到<b>%(credit_expected)s</b>的评分."
+
+#, python-format
+msgid ""
+"A new session%(started_before)s submitted after <b>%(start_time)s</b> will "
+"get <b>%(credit_expected)s</b>."
+msgstr ""
+"%(start_time)s</b>之后提交的新session%(started_before)s将得到<b>%"
+"(credit_expected)s</b>."
+
+#, python-format
+msgid ""
+"A new session%(started_before)s submitted will get <b>%(credit_expected)s</"
+"b>."
+msgstr "提交新session%(started_before)s将得到<b>%(credit_expected)s</b>."
+
+msgid "Afterward, this session will <b>NOT</b> receive grade."
+msgstr "之后，本Session将<b>没有</b>分数."
+
+#, python-format
+msgid ""
+"Afterward this session will receive no more than %(credit_expected_next)s."
+msgstr "之后，该session的得分不会超过%(credit_expected_next)s."
+
 msgid "invalid identifier"
 msgstr "无效的identifier"
 
@@ -4600,6 +4676,14 @@ msgid ""
 msgstr ""
 "教学设施名称无法识别: '%(fac_name)s'. 已知的教学设施名包括: '%"
 "(known_fac_names)s'"
+
+#, python-format
+msgid ""
+"Name of participation tag not recognized: '%(ptag_name)s'. Known "
+"participation tag names: '%(known_ptag_names)s'"
+msgstr ""
+"participation tag名无法识别: '%(ptag_name)s'. 已知的participation tag名包括: "
+"'%(known_ptag_names)s'"
 
 #, python-format
 msgid "attribute '%(attr)s' missing"
