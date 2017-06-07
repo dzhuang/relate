@@ -70,7 +70,9 @@ if False:
             FlowSession,
             FlowPageData,
             )
-    from course.content import FlowSessionNotifyRuleDesc  # noqa
+    # from course.content import (  # noqa
+    #     FlowSessionNotifyRuleDesc,
+    #     )
 
 # }}}
 
@@ -97,10 +99,8 @@ class FlowSessionStartRule(FlowSessionRuleBase):
             tag_session=None,  # type: Optional[Text]
             may_start_new_session=None,  # type: Optional[bool]
             may_list_existing_sessions=None,  # type: Optional[bool]
-            # {{{ added by zd
-            latest_start_datetime=None,
-            sessions_available_count=None,
-            # }}}
+
+            sessions_available_count=None,  # type: Optional[int]  # added by zd
             default_expiration_mode=None,  # type: Optional[Text]
             ):
         # type: (...) -> None
@@ -108,7 +108,6 @@ class FlowSessionStartRule(FlowSessionRuleBase):
         self.may_start_new_session = may_start_new_session
         self.may_list_existing_sessions = may_list_existing_sessions
         self.default_expiration_mode = default_expiration_mode
-        self.latest_start_datetime = latest_start_datetime
         self.sessions_available_count = sessions_available_count
 
 
@@ -318,7 +317,7 @@ def _get_session_start_rules(
         now_datetime,  # type: datetime.datetime
         participation,  # type: Optional[Participation]
         ):
-    # type: (...) -> List[FlowSessionStartRule]
+    # type: (...) -> List[Any]
     from relate.utils import dict_to_struct
     return get_flow_rules(flow_desc, flow_rule_kind.start,
                           participation, flow_id, now_datetime,
@@ -337,6 +336,7 @@ def get_session_start_rule(
         facilities=None,  # type: Optional[frozenset[Text]]
         for_rollover=False,  # type: bool
         login_exam_ticket=None,  # type: Optional[ExamTicket]
+        rules=[],  #type: List[Any]
         ):
     # type: (...) -> FlowSessionStartRule
 
@@ -347,23 +347,17 @@ def get_session_start_rule(
     if facilities is None:
         facilities = frozenset()
 
-    rules = _get_session_start_rules(flow_desc, flow_id, now_datetime, participation)
+    if not rules:
+        rules = _get_session_start_rules(
+            flow_desc, flow_id, now_datetime, participation)
 
     # {{{ added by zd
-    latest_start_datetime = None
     sessions_available_count = 0
     # }}}
 
     from course.models import FlowSession  # noqa
     for rule in rules:
 
-        # {{{ added by zd
-        if (hasattr(rule, "if_before")
-            and
-                hasattr(rule, "may_start_new_session")):
-            if getattr(rule, "may_start_new_session"):
-                latest_start_datetime = parse_date_spec(course, rule.if_before)
-        # }}}
         if not _eval_generic_conditions(rule, course, participation,
                 now_datetime, flow_id=flow_id,
                 login_exam_ticket=login_exam_ticket):
@@ -427,7 +421,6 @@ def get_session_start_rule(
                 may_list_existing_sessions=getattr(
                     rule, "may_list_existing_sessions", True),
                 # {{{ added by zd
-                latest_start_datetime=latest_start_datetime,
                 sessions_available_count=sessions_available_count,
                 # }}}
                 default_expiration_mode=getattr(
@@ -437,7 +430,7 @@ def get_session_start_rule(
     return FlowSessionStartRule(
             may_list_existing_sessions=False,
             may_start_new_session=False,
-            latest_start_datetime=latest_start_datetime)     # added by zd
+            )
 
 
 def _get_session_access_rules(
@@ -461,6 +454,7 @@ def get_session_access_rule(
         now_datetime,  # type: datetime.datetime
         facilities=None,  # type: Optional[frozenset[Text]]
         login_exam_ticket=None,  # type: Optional[ExamTicket]
+        rules=[], # type: List[Any]
         ):
     # type: (...) -> FlowSessionAccessRule
     """Return a :class:`ExistingFlowSessionRule`` to describe
@@ -470,7 +464,8 @@ def get_session_access_rule(
     if facilities is None:
         facilities = frozenset()
 
-    rules = _get_session_access_rules(session, flow_desc, now_datetime)
+    if not rules:
+        rules = _get_session_access_rules(session, flow_desc, now_datetime)
 
     for rule in rules:
         if not _eval_generic_conditions(
@@ -545,7 +540,7 @@ def _get_session_grading_rules(
         flow_desc,  # type: FlowDesc
         now_datetime,  # type: datetime.datetime
         ):
-    # type: (...) -> List[FlowSessionGradingRule]
+    # type: (...) -> List[Any]
     from relate.utils import dict_to_struct
     return get_flow_rules(flow_desc, flow_rule_kind.grading,
                           session.participation, session.flow_id, now_datetime,
@@ -559,16 +554,17 @@ def get_session_grading_rule(
         session,  # type: FlowSession
         flow_desc,  # type: FlowDesc
         now_datetime,  # type: datetime.datetime
+        rules=[],  # type: List[Any]
         ):
     # type: (...) -> Union[List[Any], FlowSessionGradingRule]
 
     flow_desc_rules = getattr(flow_desc, "rules", None)
 
-    rules = _get_session_grading_rules(session, flow_desc, now_datetime)
+    if not rules:
+        rules = _get_session_grading_rules(session, flow_desc, now_datetime)
 
     from course.enrollment import get_participation_role_identifiers
     roles = get_participation_role_identifiers(session.course, session.participation)
-    session_grading_rule = None
     if_completed_before = None
 
     for rule in rules:
@@ -1222,6 +1218,7 @@ def get_human_readable_flow_may_start_desc_list(
             facilities=facilities,
             for_rollover=for_rollover,
             login_exam_ticket=login_exam_ticket,
+            rules=rules
         )
         return start_rule.may_start_new_session
 
@@ -1347,9 +1344,10 @@ def get_human_readable_session_grading_rule_desc_or_list(
 
     def get_test_grading_rule(test_datetime):
         grading_rule = get_session_grading_rule(
-            session,  # type: FlowSession
-            flow_desc,  # type: FlowDesc
-            test_datetime,  # type: datetime.datetime
+            session=session,  # type: FlowSession
+            flow_desc=flow_desc,  # type: FlowDesc
+            now_datetime=test_datetime,  # type: datetime.datetime
+            rules=rules
         )
         return grading_rule
 
@@ -1645,7 +1643,7 @@ def get_session_notify_rule(
             default_rules_desc=[
                 dict_to_struct(dict(
                     notify=False,
-                    ))])  # type: List[FlowSessionNotifyRuleDesc]
+                    ))])  # type: List[Any]
 
     from course.enrollment import get_participation_role_identifiers
     roles = get_participation_role_identifiers(session.course, session.participation)
