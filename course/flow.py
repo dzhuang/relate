@@ -1840,9 +1840,6 @@ def view_flow_page(pctx, flow_session_id, ordinal):
             and
             grading_rule.generates_grade)
     # {{{ added by zd
-    human_readable_session_grading_rule_desc = (
-        get_human_readable_session_grading_rule_desc_or_list(
-            flow_session, fpctx.flow_desc, now_datetime))
     completed_before = getattr(grading_rule, "completed_before", None)
     # }}}
     del grading_rule
@@ -2076,6 +2073,9 @@ def view_flow_page(pctx, flow_session_id, ordinal):
             time_delta = completed_before - now_datetime
 
             if now_datetime < completed_before:
+                human_readable_session_grading_rule_desc = (
+                    get_human_readable_session_grading_rule_desc_or_list(
+                        flow_session, fpctx.flow_desc, now_datetime))
                 flow_page_time_grading_info = (
                     human_readable_session_grading_rule_desc)
 

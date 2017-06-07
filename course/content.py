@@ -1253,6 +1253,22 @@ def parse_date_spec(
     return apply_postprocs(result)
 
 
+def parse_date_spec_cached(
+        course,  # type: Optional[Course]
+        datespec,  # type: Union[Text, datetime.date, datetime.datetime]
+        location=None,  # type: Optional[Text]
+        ):
+    # type: (...)  -> datetime.datetime
+
+    from bson import json_util
+    import json
+    result = parse_date_spec(course, datespec)
+    result_str = json.dumps(result, default=json_util.default)
+    result2 = json.loads(result_str, object_hook=json_util.object_hook)
+    print(result == result2)
+    return result2
+
+
 # }}}
 
 
