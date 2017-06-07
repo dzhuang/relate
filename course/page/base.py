@@ -980,6 +980,7 @@ class PageBaseWithHumanTextFeedback(PageBase):
 
     def update_grade_data_from_grading_form_v2(self, request, page_context,
             page_data, grade_data, grading_form, files_data):
+
         if grade_data is None:
             grade_data = {}
         for k in self.grade_data_attrs:

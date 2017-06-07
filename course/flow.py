@@ -2656,26 +2656,31 @@ def finish_flow_session_view(pctx, flow_session_id):
                 fctx, flow_session, grading_rule,
                 now_datetime=now_datetime)
 
-        notify_rule = get_session_notify_rule(
-            flow_session, fctx.flow_desc, now_datetime)
+        # {{{ send notify email if requested
+        notification_list = getattr(fctx.flow_desc, "notify_on_submit", [])
+        notify_rule = None
+        if not notification_list:
+            notify_rule = get_session_notify_rule(
+                flow_session, fctx.flow_desc, now_datetime)
+            if notify_rule.may_send_notification:
+                from course.constants import (
+                    participation_permission as pperm)
+                notification_list = Participation.objects.filter(
+                    course=pctx.course,
+                    roles__permissions__permission=pperm.assign_grade,
+                    roles__identifier="ta",
+                ).values_list("user__email", flat=True)
+                if not notification_list:
+                    notification_list = Participation.objects.filter(
+                        course=pctx.course,
+                        roles__permissions__permission=pperm.assign_grade,
+                        roles__identifier="instructor"
+                    ).values_list("user__email", flat=True)
 
-        # {{{ send notify email if requested.
-
-        will_send_submit_notification = False
-        review_uri = None
-        recipient_list = None
-        extra_message = None
-
-        if ((hasattr(fctx.flow_desc, "notify_on_submit")
-             and fctx.flow_desc.notify_on_submit)
-            or
-                notify_rule.may_send_notification):
-            will_send_submit_notification = True
-
+        if notification_list:
             from course.utils import will_use_masked_profile_for_email
-            staff_email = (
-                fctx.flow_desc.notify_on_submit + [fctx.course.notify_email])
-            use_masked_profile = will_use_masked_profile_for_email(staff_email)
+            use_masked_profile = will_use_masked_profile_for_email(
+                notification_list + [fctx.course.notify_email])
 
             if (grading_rule.grade_identifier
                     and flow_session.participation is not None):
@@ -2695,46 +2700,17 @@ def finish_flow_session_view(pctx, flow_session_id):
                             flow_session.id,
                             0))
 
-            if (hasattr(fctx.flow_desc, "notify_on_submit")
-                    and fctx.flow_desc.notify_on_submit):
-                # This functionality doesn't have time rule.
-                # For notications on a time basis,
-                # use flow_permission.send_submit_notif_email instead.
-                recipient_list = fctx.flow_desc.notify_on_submit
+            message_in_notification_rule = None
+            if notify_rule:
+                if notify_rule.may_send_notification:
+                    message_in_notification_rule = getattr(
+                        notify_rule, "message", None)
 
-            # }}}
-
-            elif notify_rule.may_send_notification:
-                # {{{ send notify email if requested, in terms of flow_permission
-                # i.e., time_based
-
-                from course.constants import (
-                    participation_permission as pperm)
-
-                ta_email_list = Participation.objects.filter(
-                    course=pctx.course,
-                    roles__permissions__permission=pperm.assign_grade,
-                    roles__identifier="ta",
-                ).values_list("user__email", flat=True)
-
-                instructor_email_list = Participation.objects.filter(
-                    course=pctx.course,
-                    roles__permissions__permission=pperm.assign_grade,
-                    roles__identifier="instructor"
-                ).values_list("user__email", flat=True)
-
-                recipient_list = ta_email_list
-                if not recipient_list:
-                    recipient_list = instructor_email_list
-
-                extra_message = getattr(notify_rule, "message", None)
-
-        if will_send_submit_notification:
             with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
                 from django.template.loader import render_to_string
                 participation = flow_session.participation
                 message = render_to_string("course/submit-notify.txt", {
-                    "extra_message": extra_message,
+                    "extra_message": message_in_notification_rule,
                     "course": fctx.course,
                     "flow_session": flow_session,
                     "use_masked_profile": use_masked_profile,
@@ -2762,7 +2738,7 @@ def finish_flow_session_view(pctx, flow_session_id):
                         message,
                         getattr(settings, "NOTIFICATION_EMAIL_FROM",
                             settings.ROBOT_EMAIL_FROM),
-                        recipient_list)
+                        notification_list)
                 msg.bcc = [fctx.course.notify_email]
 
                 from relate.utils import get_outbound_mail_connection
