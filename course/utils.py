@@ -1304,7 +1304,7 @@ def get_human_readable_flow_may_start_desc_list(
                           "since <b>%s</b>.")
                         % compact_local_datetime_str(last_end, now_datetime)),
                     is_active=now_datetime > last_end,
-                    has_expired=now_datetime > last_end,
+                    has_expired=False,
                     is_dangerous=True
                 )
             )
