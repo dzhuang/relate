@@ -1132,7 +1132,7 @@ def parse_date_spec(
         vctx=None,  # type: Optional[ValidationContext]
         location=None,  # type: Optional[Text]
         ):
-    # type: (...)  -> datetime.datetime
+    # type: (...)  -> Optional[datetime.datetime]
 
     if datespec is None:
         return None
