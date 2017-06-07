@@ -407,6 +407,8 @@ class PageBase(object):
         return data
 
     def update_page_data(self, page_context, page_data):
+        # type: (PageContext, Dict) -> Tuple[bool, Dict]
+
         """
         This happens when course repo is updated. It is useful when page_data is
         generated using materials in repo.
@@ -593,7 +595,6 @@ class PageBase(object):
             grading_form,  # type: Any
             files_data  # type: Any
             ):
-        # type: (...) -> Any
         """Return an updated version of *grade_data*, which is a
         JSON-persistable object reflecting data on grading of this response.
         This will be passed to other methods as *grade_data*.
@@ -616,7 +617,6 @@ class PageBase(object):
             grading_form,  # type: Any
             files_data  # type: Any
             ):
-        # type: (...) -> Any
 
         return grade_data
 
@@ -978,17 +978,8 @@ class PageBaseWithHumanTextFeedback(PageBase):
         return HumanTextFeedbackForm(
                 human_feedback_point_value, post_data, files_data)
 
-    def update_grade_data_from_grading_form_v2(
-            self,
-            request,  # type: http.HttpRequest
-            page_context,  # type: PageContext
-            page_data,  # type: Any
-            grade_data,  # type: Any
-            grading_form,  # type: Any
-            files_data  # type: Any
-            ):
-        # type: (...) -> Any
-
+    def update_grade_data_from_grading_form_v2(self, request, page_context,
+            page_data, grade_data, grading_form, files_data):
         if grade_data is None:
             grade_data = {}
         for k in self.grade_data_attrs:
@@ -1037,7 +1028,7 @@ class PageBaseWithHumanTextFeedback(PageBase):
                 and grading_form.cleaned_data["notify_instructor"]
                 and page_context.flow_session):
             with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
-                from django.template.loader import render_to_string  # type: ignore
+                from django.template.loader import render_to_string
                 from course.utils import will_use_masked_profile_for_email
                 staff_email = [page_context.course.notify_email, request.user.email]
                 message = render_to_string("course/grade-internal-notes-notify.txt",
@@ -1053,7 +1044,7 @@ class PageBaseWithHumanTextFeedback(PageBase):
                                 will_use_masked_profile_for_email(staff_email)
                             })
 
-                from django.core.mail import EmailMessage  # type: ignore
+                from django.core.mail import EmailMessage
                 msg = EmailMessage(
                         string_concat("[%(identifier)s:%(flow_id)s] ",
                             _("Grading notes from %(ta)s"))
@@ -1069,7 +1060,7 @@ class PageBaseWithHumanTextFeedback(PageBase):
                 msg.reply_to = [request.user.email]
 
                 if hasattr(settings, "GRADER_FEEDBACK_EMAIL_FROM"):
-                    from relate.utils import get_outbound_mail_connection  # type: ignore # noqa
+                    from relate.utils import get_outbound_mail_connection
                     msg.connection = get_outbound_mail_connection("grader_feedback")
                 msg.send()
 

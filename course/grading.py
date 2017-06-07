@@ -229,9 +229,12 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
             )
         )
 
-        if (grading_rule.grade_aggregation_strategy
-            in [grade_aggregation_strategy.use_earliest,
-                grade_aggregation_strategy.use_latest]):
+        if (connection.features.can_distinct_on_fields
+            # this may cause error in DBs don't support distinct
+            and
+                    grading_rule.grade_aggregation_strategy
+                in [grade_aggregation_strategy.use_earliest,
+                    grade_aggregation_strategy.use_latest]):
             fpvg_qs = fpvg_qs.distinct(
                 "visit__flow_session__participation__user")
 

@@ -606,16 +606,8 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                 files_data, use_access_rules_tag=self.use_access_rules_tag)
 
     @transaction.atomic
-    def update_grade_data_from_grading_form_v2(
-            self,
-            request,  # type: http.HttpRequest
-            page_context,  # type: PageContext
-            page_data,  # type: Any
-            grade_data,  # type: Any
-            grading_form,  # type: Any
-            files_data  # type: Any
-            ):
-        # type: (...) -> Any
+    def update_grade_data_from_grading_form_v2(self, request, page_context,
+            page_data, grade_data, grading_form, files_data):
 
         grade_data = (super(ImageUploadQuestion, self)
             .update_grade_data_from_grading_form_v2(

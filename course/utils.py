@@ -70,9 +70,6 @@ if False:
             FlowSession,
             FlowPageData,
             )
-    # from course.content import (  # noqa
-    #     FlowSessionNotifyRuleDesc,
-    #     )
 
 # }}}
 
@@ -336,7 +333,7 @@ def get_session_start_rule(
         facilities=None,  # type: Optional[frozenset[Text]]
         for_rollover=False,  # type: bool
         login_exam_ticket=None,  # type: Optional[ExamTicket]
-        rules=[],  #type: List[Any]
+        rules=[],  # type: List[Any]
         ):
     # type: (...) -> FlowSessionStartRule
 
@@ -357,7 +354,6 @@ def get_session_start_rule(
 
     from course.models import FlowSession  # noqa
     for rule in rules:
-
         if not _eval_generic_conditions(rule, course, participation,
                 now_datetime, flow_id=flow_id,
                 login_exam_ticket=login_exam_ticket):
@@ -454,7 +450,7 @@ def get_session_access_rule(
         now_datetime,  # type: datetime.datetime
         facilities=None,  # type: Optional[frozenset[Text]]
         login_exam_ticket=None,  # type: Optional[ExamTicket]
-        rules=[], # type: List[Any]
+        rules=[],  # type: List[Any]
         ):
     # type: (...) -> FlowSessionAccessRule
     """Return a :class:`ExistingFlowSessionRule`` to describe
@@ -556,7 +552,7 @@ def get_session_grading_rule(
         now_datetime,  # type: datetime.datetime
         rules=[],  # type: List[Any]
         ):
-    # type: (...) -> Union[List[Any], FlowSessionGradingRule]
+    # type: (...) -> FlowSessionGradingRule
 
     flow_desc_rules = getattr(flow_desc, "rules", None)
 
@@ -1162,11 +1158,12 @@ def will_use_masked_profile_for_email(recipient_email):
 class HumanReadableSessionRuleBase(object):
     def __init__(
             self,
-            human_readable_rule,
-            is_active,
-            has_expired=False,
-            is_dangerous=False
+            human_readable_rule,  # type: Text
+            is_active,  # type: bool
+            has_expired=False,  # type: Optional[bool]
+            is_dangerous=False  # type: Optional[bool]
     ):
+        # type: (...) -> None
         self.human_readable_rule = human_readable_rule
         self.is_active = is_active
         self.has_expired = has_expired
@@ -1190,7 +1187,7 @@ def get_human_readable_flow_may_start_desc_list(
         facilities=None,  # type: Optional[frozenset[Text]]
         for_rollover=False,  # type: bool
         login_exam_ticket=None,  # type: Optional[ExamTicket]
-    ):
+        ):
 
     rules = _get_session_start_rules(
         flow_desc,
@@ -1209,6 +1206,7 @@ def get_human_readable_flow_may_start_desc_list(
     time_point_list = sorted(list(time_point_set))
 
     def check_may_start(test_datetime):
+        # type: (datetime.datetime) -> Optional[bool]
         start_rule = get_session_start_rule(
             course,
             participation,
@@ -1243,7 +1241,7 @@ def get_human_readable_flow_may_start_desc_list(
 
     srule_time_range_list = []
     for i, z in enumerate(may_start_time_check_list_zip_merged):
-        if z[0] == True:
+        if z[0] is True:
             start = may_start_time_check_list_zip_merged[i][1]
             try:
                 end = may_start_time_check_list_zip_merged[i + 1][1]
@@ -1257,7 +1255,7 @@ def get_human_readable_flow_may_start_desc_list(
 
     human_readable_srule_list = []
     if srule_time_range_list:
-        from relate.utils import dict_to_struct, compact_local_datetime_str
+        from relate.utils import compact_local_datetime_str
         for srule_tuple in srule_time_range_list:
             srule_str = ""
             start = srule_tuple[0]
@@ -1289,7 +1287,7 @@ def get_human_readable_flow_may_start_desc_list(
                     HumanReadableSessionStartRuleDesc(
                         human_readable_rule=srule_str,
                         is_active=rule_is_active,
-                        has_expired=now_datetime>end,
+                        has_expired=now_datetime > end,
                     )
                 )
 
@@ -1302,12 +1300,11 @@ def get_human_readable_flow_may_start_desc_list(
                         _("No new sessions are allowed to be started "
                           "since <b>%s</b>.")
                         % compact_local_datetime_str(last_end, now_datetime)),
-                    is_active=now_datetime>last_end,
-                    has_expired=now_datetime>last_end,
+                    is_active=now_datetime > last_end,
+                    has_expired=now_datetime > last_end,
                     is_dangerous=True
                 )
             )
-
 
     return human_readable_srule_list
 
@@ -1317,7 +1314,7 @@ def get_human_readable_session_grading_rule_desc_or_list(
         flow_desc,  # type: FlowDesc
         now_datetime,  # type: datetime.datetime
         generate_grule_full_list=False,  # type: bool
-    ):
+        ):
 
     rules = _get_session_grading_rules(
         session,
@@ -1343,10 +1340,11 @@ def get_human_readable_session_grading_rule_desc_or_list(
     time_point_list = sorted(list(time_point_set))
 
     def get_test_grading_rule(test_datetime):
+        # type: (datetime.datetime) -> FlowSessionGradingRule
         grading_rule = get_session_grading_rule(
-            session=session,  # type: FlowSession
-            flow_desc=flow_desc,  # type: FlowDesc
-            now_datetime=test_datetime,  # type: datetime.datetime
+            session=session,
+            flow_desc=flow_desc,
+            now_datetime=test_datetime,
             rules=rules
         )
         return grading_rule
@@ -1357,7 +1355,7 @@ def get_human_readable_session_grading_rule_desc_or_list(
         grule = get_test_grading_rule(test_time)
         grule_list.append(grule)
 
-    grule_zip = list(zip(grule_list,time_point_list))
+    grule_zip = list(zip(grule_list, time_point_list))
     grule_zip_merged = []
     for i, z in enumerate(grule_zip):
         try:
@@ -1391,8 +1389,7 @@ def get_human_readable_session_grading_rule_desc_or_list(
             rule_is_active = False
             if start <= now_datetime <= end:
                 rule_is_active = True
-            if (
-                    (not generate_grule_full_list and rule_is_active)
+            if ((not generate_grule_full_list and rule_is_active)
                 or
                     generate_grule_full_list):
                 grule_time_range_list.append(
@@ -1400,7 +1397,7 @@ def get_human_readable_session_grading_rule_desc_or_list(
 
     human_readable_grule_list = []
     if grule_time_range_list:
-        from relate.utils import dict_to_struct, compact_local_datetime_str
+        from relate.utils import compact_local_datetime_str
         from django.utils.timesince import timeuntil
         for grule_tuple in grule_time_range_list:
             start = grule_tuple[0]
@@ -1453,7 +1450,7 @@ def get_human_readable_session_grading_rule_desc_or_list(
                                   "receive grade "
                                   "if submitted before "
                                   "%(completed_before)s."), " ")
-                            %  {
+                            % {
                                 "completed_before": compact_local_datetime_str(
                                     end, now_datetime)})
                     else:
@@ -1465,7 +1462,7 @@ def get_human_readable_session_grading_rule_desc_or_list(
                                   "receive grade "
                                   "if submitted before "
                                   "<b>%(completed_before)s</b>."), " ")
-                            %  {
+                            % {
                                 "started_before": started_before,
                                 "completed_before": compact_local_datetime_str(
                                     end, now_datetime)})
@@ -1557,8 +1554,9 @@ def get_human_readable_session_grading_rule_desc_or_list(
                                 string_concat(
                                     _("A new session"
                                       "%(started_before)s submitted will get "
-                                      "<b>%(credit_expected)s</b>"
-                                      "."), " ") %
+                                      "<b>%(credit_expected)s</b>."
+                                      ),
+                                    " ") %
                                 {
                                     "started_before": started_before,
                                     "credit_expected": credit_expected})
@@ -1588,11 +1586,12 @@ def get_human_readable_session_grading_rule_desc_or_list(
                     if next_rule.max_points:
                         max_points_next = grule.max_points
                         if grule.max_points_enforced_cap:
-                            max_points_next = min(max_points_next, grule.max_points_enforced_cap)
+                            max_points_next = min(
+                                max_points_next, grule.max_points_enforced_cap)
                             credit_expected_next = (
-                            _(" at most <b>%(max_points)d%</b> points")
-                            % {"max_points": max_points_next}
-                        )
+                                _(" at most <b>%(max_points)d%</b> points")
+                                % {"max_points": max_points_next}
+                            )
                     if next_rule.bonus_points:
                         credit_expected_next += (
                             _("(including %(bonus_points)s bonus points)")
@@ -1643,7 +1642,7 @@ def get_session_notify_rule(
             default_rules_desc=[
                 dict_to_struct(dict(
                     notify=False,
-                    ))])  # type: List[Any]
+                    ))])
 
     from course.enrollment import get_participation_role_identifiers
     roles = get_participation_role_identifiers(session.course, session.participation)

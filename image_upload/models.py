@@ -180,6 +180,7 @@ class FlowPageImage(models.Model):
         super(FlowPageImage, self).delete(*args, **kwargs)
 
     def get_absolute_url(self):
+        # type: () -> Text
         import os
         file_name = os.path.basename(self.image.path)
         from django.urls import reverse

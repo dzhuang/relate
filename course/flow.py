@@ -1468,7 +1468,7 @@ def view_start_flow(pctx, flow_id):
                 facilities=pctx.request.relate_facilities,
                 login_exam_ticket=login_exam_ticket
             ))
-        human_readable_session_grading_rule_desc_list = (
+        human_readable_session_grule_desc_list = (
             get_human_readable_session_grading_rule_desc_or_list(
                 potential_session,
                 fctx.flow_desc,
@@ -1481,8 +1481,8 @@ def view_start_flow(pctx, flow_id):
             # {{{ added by zd
             "human_readable_flow_may_start_desc_list":
                 human_readable_flow_may_start_desc_list,
-            "human_readable_session_grading_rule_desc_list":
-                human_readable_session_grading_rule_desc_list,
+            "human_readable_session_grule_desc_list":
+                human_readable_session_grule_desc_list,
             "sessions_available_count": session_start_rule.sessions_available_count,
             # }}}
             "flow_desc": fctx.flow_desc,
@@ -2076,7 +2076,8 @@ def view_flow_page(pctx, flow_session_id, ordinal):
             time_delta = completed_before - now_datetime
 
             if now_datetime < completed_before:
-                flow_page_time_grading_info = human_readable_session_grading_rule_desc
+                flow_page_time_grading_info = (
+                    human_readable_session_grading_rule_desc)
 
             from datetime import timedelta
 

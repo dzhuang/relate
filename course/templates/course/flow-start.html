@@ -89,9 +89,9 @@
       </div>
     {% endif %}
 
-  {% if may_start or human_readable_flow_may_start_desc_list or human_readable_session_grading_rule_desc_list %}
+  {% if may_start or human_readable_flow_may_start_desc_list or human_readable_session_grule_desc_list %}
     <div class="alert alert-info">
-    {% if human_readable_flow_may_start_desc_list or human_readable_session_grading_rule_desc_list %}
+    {% if human_readable_flow_may_start_desc_list or human_readable_session_grule_desc_list %}
     <i class="fa fa-info-circle"></i>
         {% trans "Important date/time" %}
       <ul>
@@ -103,10 +103,10 @@
           {% endfor %}
           </ul>
       {% endif %}
-      {% if human_readable_session_grading_rule_desc_list %}
+      {% if human_readable_session_grule_desc_list %}
           <li><b>{% trans "The submission time and grading for a new session" %}</b></li>
           <ul>
-          {% for desc in human_readable_session_grading_rule_desc_list %}
+          {% for desc in human_readable_session_grule_desc_list %}
           <li{% if desc.is_dangerous %} class="text-danger"{% endif %}{% if desc.has_expired %} style="color:#77bbdc"{% endif %}>{% if desc.has_expired %}<del>{% endif %}{{ desc.human_readable_rule|safe }}{% if desc.is_active %}{% if desc.has_expired %}</del>{% endif %} <i class="fa fa-hand-o-left" aria-hidden="true"></i>{% endif %}</li>
           {% endfor %}
           </ul>
