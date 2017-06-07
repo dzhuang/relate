@@ -166,12 +166,13 @@
               </li>
             {% endif%}
           </ul>
-        </div>
       {% endif %}
     {% endif %}
+        </div>
+  {% endif %}
 
       {# {{{ start button #}
-
+    {% if may_start %}
       {% if start_may_decrease_grade %}
         <a id="pre-start-button" class="btn btn-primary">
           {% trans "Start" %} &raquo;
