@@ -1132,7 +1132,7 @@ def parse_date_spec(
         vctx=None,  # type: Optional[ValidationContext]
         location=None,  # type: Optional[Text]
         ):
-    # type: (...)  -> Optional[datetime.datetime]
+    # type: (...)  -> datetime.datetime
 
     if datespec is None:
         return None
@@ -1258,10 +1258,12 @@ def parse_date_spec_cached(
         datespec,  # type: Union[Text, datetime.date, datetime.datetime]
         location=None,  # type: Optional[Text]
         ):
-    # type: (...)  -> Optional[datetime.datetime]
+    # type: (...)  -> datetime.datetime
 
     if datespec is None:
         return None
+    if course is None:
+        return now()
     if isinstance(datespec, six.text_type):
         from six.moves.urllib.parse import quote_plus
         from course.constants import DATESPECT_CACHE_KEY_PATTERN

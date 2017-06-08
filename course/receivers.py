@@ -109,6 +109,7 @@ def may_preapprove_role(course, user):
 
 # }}}
 
+
 # {{{ Flush redis cache on event save or delete
 
 @receiver(post_delete, sender=Event)
