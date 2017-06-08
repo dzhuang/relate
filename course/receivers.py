@@ -31,7 +31,8 @@ from django.dispatch import receiver
 from accounts.models import User
 from course.models import (
         Course, Participation, participation_status,
-        ParticipationPreapproval, Event
+        ParticipationPreapproval,
+        Event, ParticipationRole
         )
 
 if False:
@@ -158,4 +159,60 @@ def flush_event_cache(course):
     return
 # }}}
 
+
+# {{{ remove role identifier cache if the participation or ParticipationRole
+#  is updated.
+
+@receiver(post_delete, sender=ParticipationRole)
+@receiver(post_delete, sender=Participation)
+def participation_and_role_post_delete_handler(sender, **kwargs):
+    # type: (Any, **Any) -> None
+
+    obj = kwargs['instance']
+    if isinstance(obj, ParticipationRole):
+        participation = None
+        course = obj.course
+    else:
+        participation = obj
+        course = obj.course
+
+    clear_participation_role_identifier_cache(course, participation)
+
+
+@receiver(post_save, sender=ParticipationRole)
+@receiver(post_save, sender=Participation)
+def participation_and_role_post_save_handler(sender, created, instance, **kwargs):
+    # type: (Any, bool, Union[ParticipationRole, Participation], **Any) -> None
+
+    if created:
+        if isinstance(instance, Participation):
+            return
+
+    if isinstance(instance, ParticipationRole):
+        course = instance.course
+        participation = None
+    else:
+        course = instance.course
+        participation = instance
+
+    clear_participation_role_identifier_cache(course, participation)
+
+
+def clear_participation_role_identifier_cache(course, participation):
+    # type: (Course, Optional[Participation]) -> None
+
+    from django.core.exceptions import ImproperlyConfigured
+    try:
+        import django.core.cache as cache
+    except ImproperlyConfigured:
+        return
+
+    def_cache = cache.caches["default"]
+
+    from course.enrollment import get_participation_role_identifiers_cache_key
+    cache_key = get_participation_role_identifiers_cache_key(course, participation)
+    def_cache.delete(cache_key)
+    return
+
+# }}}
 # vim: foldmethod=marker

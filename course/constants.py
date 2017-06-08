@@ -572,4 +572,7 @@ ATTRIBUTES_FILENAME = ".attributes.yml"
 
 DATESPECT_CACHE_KEY_PATTERN = "RELATE:DATESPECT:%(course)s:%(key)s"
 
+PARTICIPATION_ROLE_IDENTIFIER_KEY_PATTERN = (
+    "RELATE_PCPT_ROLE_IDENTIFIER:%(course)s:%(participation)s")
+
 # vim: foldmethod=marker
