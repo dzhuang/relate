@@ -1272,10 +1272,13 @@ def parse_date_spec_cached(
     else:
         cache_key = None
 
-    print(cache_key)
     try:
         import django.core.cache as cache
     except ImproperlyConfigured:
+        cache_key = None
+
+    def_cache = cache.caches["default"]
+    if not hasattr(def_cache, "delete_pattern"):
         cache_key = None
 
     if cache_key is None:
@@ -1283,12 +1286,6 @@ def parse_date_spec_cached(
         if result:
             assert isinstance(result, datetime.datetime)
         return result
-
-    # Byte string is wrapped in a tuple to force pickling because memcache's
-    # python wrapper appears to auto-decode/encode string values, thus trying
-    # to decode our byte strings. Grr.
-
-    def_cache = cache.caches["default"]
 
     from bson import json_util
     import json

@@ -136,12 +136,15 @@ def flush_event_cache(course):
     except ImproperlyConfigured:
         return
 
+    def_cache = cache.caches["default"]
+    if not hasattr(def_cache, "delete_pattern"):
+        return
+
     from course.constants import DATESPECT_CACHE_KEY_PATTERN
     cache_pattern = DATESPECT_CACHE_KEY_PATTERN % {
         "course": course.identifier,
         "key": "*"
     }
-    def_cache = cache.caches["default"]
     try:
         def_cache.delete_pattern(cache_pattern)
     except Exception as e:
