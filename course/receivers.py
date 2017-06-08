@@ -24,14 +24,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, post_delete
 from django.db import transaction
 from django.dispatch import receiver
 
 from accounts.models import User
 from course.models import (
         Course, Participation, participation_status,
-        ParticipationPreapproval,
+        ParticipationPreapproval, Event
         )
 
 if False:
@@ -107,6 +107,55 @@ def may_preapprove_role(course, user):
     else:
         return False, None
 
+# }}}
+
+
+# {{{ Flush redis cache on event save or delete
+
+@receiver(post_delete, sender=Event)
+def event_post_delete_handler(sender, **kwargs):
+    # type: (Any, **Any) -> None
+
+    event = kwargs['instance']
+    if event is not None:
+        flush_event_cache(event.course)
+
+
+@receiver(post_save, sender=Event)
+def event_post_save_handler(sender, created, instance, **kwargs):
+    # type: (Any, bool, Event, **Any) -> None
+
+    flush_event_cache(instance.course)
+
+
+def flush_event_cache(course):
+    # type: (Course) -> None
+
+    from django.core.exceptions import ImproperlyConfigured
+    try:
+        import django.core.cache as cache
+    except ImproperlyConfigured:
+        return
+
+    def_cache = cache.caches["default"]
+    if not hasattr(def_cache, "delete_pattern"):
+        return
+
+    from course.constants import DATESPECT_CACHE_KEY_PATTERN
+    cache_pattern = DATESPECT_CACHE_KEY_PATTERN % {
+        "course": course.identifier,
+        "key": "*"
+    }
+    try:
+        def_cache.delete_pattern(cache_pattern)
+    except Exception as e:
+        if isinstance(e, AttributeError):
+            raise ImproperlyConfigured(
+                "django-redis is not installed or properly configured. "
+                "'default' cache must be using django-redis cache for "
+                "Event cache.")
+        raise
+    return
 # }}}
 
 # vim: foldmethod=marker

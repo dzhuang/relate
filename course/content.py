@@ -1126,13 +1126,13 @@ DATESPEC_POSTPROCESSORS = [
         ]  # type: List[Any]
 
 
-def parse_date_spec(
+def _parse_date_spec(
         course,  # type: Optional[Course]
         datespec,  # type: Union[Text, datetime.date, datetime.datetime]
         vctx=None,  # type: Optional[ValidationContext]
         location=None,  # type: Optional[Text]
         ):
-    # type: (...)  -> Optional[datetime.datetime]
+    # type: (...)  -> datetime.datetime
 
     if datespec is None:
         return None
@@ -1253,15 +1253,21 @@ def parse_date_spec(
     return apply_postprocs(result)
 
 
-def parse_date_spec_cached(
+def parse_date_spec(
         course,  # type: Optional[Course]
         datespec,  # type: Union[Text, datetime.date, datetime.datetime]
+        vctx=None,  # type: Optional[ValidationContext]
         location=None,  # type: Optional[Text]
         ):
-    # type: (...)  -> Optional[datetime.datetime]
+    # type: (...)  -> datetime.datetime
 
     if datespec is None:
         return None
+    if course is None:
+        return now()
+    if vctx is not None:
+        return _parse_date_spec(course, datespec, vctx, location)
+
     if isinstance(datespec, six.text_type):
         from six.moves.urllib.parse import quote_plus
         from course.constants import DATESPECT_CACHE_KEY_PATTERN
@@ -1272,23 +1278,20 @@ def parse_date_spec_cached(
     else:
         cache_key = None
 
-    print(cache_key)
     try:
         import django.core.cache as cache
     except ImproperlyConfigured:
         cache_key = None
 
+    def_cache = cache.caches["default"]
+    if not hasattr(def_cache, "delete_pattern"):
+        cache_key = None
+
     if cache_key is None:
-        result = parse_date_spec(course, datespec)
+        result = _parse_date_spec(course, datespec)
         if result:
             assert isinstance(result, datetime.datetime)
         return result
-
-    # Byte string is wrapped in a tuple to force pickling because memcache's
-    # python wrapper appears to auto-decode/encode string values, thus trying
-    # to decode our byte strings. Grr.
-
-    def_cache = cache.caches["default"]
 
     from bson import json_util
     import json
@@ -1304,7 +1307,7 @@ def parse_date_spec_cached(
             assert isinstance(result, datetime.datetime)
         return result
 
-    result = parse_date_spec(course, datespec)
+    result = _parse_date_spec(course, datespec)
     result_json = json.dumps(result, default=json_util.default)
 
     if len(result_json) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):

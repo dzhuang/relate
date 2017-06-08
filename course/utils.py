@@ -41,8 +41,7 @@ from codemirror import CodeMirrorTextarea, CodeMirrorJavascript
 
 from course.content import (
         get_course_repo, get_flow_desc,
-        parse_date_spec_cached as parse_date_spec,
-        #parse_date_spec,
+        parse_date_spec,
         get_course_commit_sha)
 from course.constants import (
         flow_permission, flow_rule_kind)
