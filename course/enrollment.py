@@ -116,18 +116,68 @@ def get_participation_for_request(request, course):
 
 # {{{ get_participation_role_identifiers
 
-def get_participation_role_identifiers(course, participation):
+def _get_participation_role_identifiers(course, participation):
     # type: (Course, Optional[Participation]) -> List[Text]
 
     if participation is None:
-        return (
-                ParticipationRole.objects.filter(
-                    course=course,
-                    is_default_for_unenrolled=True)
-                .values_list("identifier", flat=True))
+        return list(
+            ParticipationRole.objects.filter(
+                course=course,
+                is_default_for_unenrolled=True)
+            .values_list("identifier", flat=True))
 
     else:
         return [r.identifier for r in participation.roles.all()]
+
+
+def get_participation_role_identifiers_cache_key(course, participation):
+    # type: (Course, Optional[Participation]) -> Text
+
+    from course.constants import PARTICIPATION_ROLE_IDENTIFIER_KEY_PATTERN
+    if not participation:
+        participation_str = "None"
+    else:
+        participation_str = str(participation.pk)
+    return (PARTICIPATION_ROLE_IDENTIFIER_KEY_PATTERN
+            % {"course": course.identifier,
+               "participation": participation_str
+               }
+            )
+
+
+def get_participation_role_identifiers(course, participation):
+    # type: (Course, Optional[Participation]) -> List[Text]
+
+    # cached version of _get_participation_role_identifiers
+    from django.core.exceptions import ImproperlyConfigured
+    try:
+        import django.core.cache as cache
+    except ImproperlyConfigured:
+        cache_key = None
+    else:
+        cache_key = get_participation_role_identifiers_cache_key(
+            course, participation)
+
+    def_cache = cache.caches["default"]
+
+    if cache_key is None:
+        result = _get_participation_role_identifiers(course, participation)
+        assert isinstance(result, list)
+        return result
+
+    if len(cache_key) < 240:
+        result = def_cache.get(cache_key)
+        if result is not None:
+            assert isinstance(result, list), cache_key
+            return result
+
+    result = _get_participation_role_identifiers(course, participation)
+    import sys
+    if sys.getsizeof(result) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
+        def_cache.add(cache_key, result, None)
+
+    assert isinstance(result, list)
+    return result
 
 # }}}
 

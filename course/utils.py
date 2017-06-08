@@ -1201,9 +1201,7 @@ def get_human_readable_flow_may_start_desc_list(
     time_point_set.add(MIN_DATETIME)
     for rule in rules:
         if hasattr(rule, "if_before"):
-            print("here")
             time_point_set.add(parse_date_spec(course, rule.if_before))
-            print("here2-----------------")
         if hasattr(rule, "if_after"):
             time_point_set.add(parse_date_spec(course, rule.if_after))
     time_point_list = sorted(list(time_point_set))
