@@ -1132,7 +1132,7 @@ def parse_date_spec(
         vctx=None,  # type: Optional[ValidationContext]
         location=None,  # type: Optional[Text]
         ):
-    # type: (...)  -> Optional[datetime.datetime]
+    # type: (...)  -> datetime.datetime
 
     if datespec is None:
         return None
@@ -1259,6 +1259,35 @@ def parse_date_spec_cached(
         location=None,  # type: Optional[Text]
         ):
     # type: (...)  -> datetime.datetime
+
+    if datespec is None:
+        return None
+    if course is None:
+        return now()
+    if isinstance(datespec, six.text_type):
+        from six.moves.urllib.parse import quote_plus
+        from course.constants import DATESPECT_CACHE_KEY_PATTERN
+        cache_key = DATESPECT_CACHE_KEY_PATTERN % {
+            "course": course.identifier,
+            "key": quote_plus(datespec)
+        }  # type: Optional[Text]
+    else:
+        cache_key = None
+
+    try:
+        import django.core.cache as cache
+    except ImproperlyConfigured:
+        cache_key = None
+
+    def_cache = cache.caches["default"]
+    if not hasattr(def_cache, "delete_pattern"):
+        cache_key = None
+
+    if cache_key is None:
+        result = parse_date_spec(course, datespec)
+        if result:
+            assert isinstance(result, datetime.datetime)
+        return result
 
     from bson import json_util
     import json
