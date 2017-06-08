@@ -239,6 +239,47 @@ def _eval_generic_session_conditions(
     return True
 
 
+def get_participation_tag_cache_key(participation):
+    # type: (Participation) -> Text
+
+    from course.constants import PARTICIPATION_TAG_KEY_PATTERN
+    return (
+        PARTICIPATION_TAG_KEY_PATTERN % {"participation": str(participation.pk)})
+
+
+def get_participation_tag_set_cached(participation):
+    # type: (Participation) -> List[Text]
+    from django.core.exceptions import ImproperlyConfigured
+    try:
+        import django.core.cache as cache
+    except ImproperlyConfigured:
+        cache_key = None
+    else:
+        cache_key = get_participation_tag_cache_key(participation)
+
+    def_cache = cache.caches["default"]
+
+    if cache_key is None:
+        result = list(set(participation.tags.all().values_list("name", flat=True)))
+        assert isinstance(result, list)
+        return result
+
+    if len(cache_key) < 240:
+        result = def_cache.get(cache_key)
+        if result is not None:
+            assert isinstance(result, list), cache_key
+            return result
+
+    result = list(set(participation.tags.all().values_list("name", flat=True)))
+    import sys
+    from django.conf import settings
+    if sys.getsizeof(result) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
+        def_cache.add(cache_key, result, None)
+
+    assert isinstance(result, list)
+    return result
+
+
 def _eval_participation_tags_conditions(
         rule,  # type: Any
         participation,  # type: Optional[Participation]
@@ -256,7 +297,7 @@ def _eval_participation_tags_conditions(
             # if_has_participation_tags_any or if_has_participation_tags_all
             # is not empty.
             return False
-        ptag_set = set(participation.tags.all().values_list("name", flat=True))
+        ptag_set = set(get_participation_tag_set_cached(participation))
         if not ptag_set:
             return False
         if (participation_tags_any_set
