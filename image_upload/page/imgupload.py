@@ -447,9 +447,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
             if answer_visit is not None:
                 answer_data = answer_visit.answer
 
-            request_path = request.get_full_path()
             in_grading_page = False
-
             try:
                 grading_page_uri = reverse(
                     "relate-grade_flow_page",
@@ -459,7 +457,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                         ordinal)
                 )
 
-                in_grading_page = grading_page_uri == request_path
+                in_grading_page = grading_page_uri == request.path
             except NoReverseMatch:
                 if page_context.in_sandbox:
                     pass

@@ -3,16 +3,8 @@
 
 {% load crispy_forms_tags %}
 
-{% block header_extra %}
-  {% load static coursetags %}
-  <link href='{% static "select2/dist/css/select2.css" %}' type="text/css" media="screen" rel="stylesheet" />
-  <script src='{% static "select2/dist/js/select2.js" %}'></script>
-  {% get_current_js_lang_name as LANG %}
-  <script type="text/javascript" src='{% static "select2/dist/js/i18n/" %}{{LANG}}.js'></script>
-{% endblock %}
-
 {% block title %}
-   {{ page_data.group_id }}/{{ page_data.page_id }} - {{ flow_identifier}} - {% trans "Grading" %} - {% trans "RELATE" %}
+  {{ page_data.group_id }}/{{ page_data.page_id }} - {{ flow_identifier}} - {% trans "Grading" %} - {% trans "RELATE" %}
 {% endblock %}
 
 {% block root_container %}
@@ -93,26 +85,39 @@
 
       {% include "base-page-top.html" %}
 
-      {# {{{ Searchable session jumps #}
-        {% if all_flow_sessions_json %}
-        {% get_current_js_lang_name as LANG %}
-        <div class="s2"> <p>{% trans "Jump to" %}: <select id="select_session"> </select> </p></div>
-            <script>
-                var data = {{all_flow_sessions_json|safe}};
-                $("#select_session").select2({
-                    width: '100%',
-                    data:data,
-                    language:"{{LANG}}"
+      {% if grading_form_html != None or select2_graded_form %}
+          <div>
+            {% if select2_graded_form %}
+              {% crispy select2_graded_form %}
+            {% endif %}
+            {% if select2_ungraded_form %}
+              {% crispy select2_ungraded_form %}
+            {% endif %}
+          </div>
+          <script>
+            function navigate_to_grading_page(e){
+              {# http://stackoverflow.com/a/33248730/3437454 #}
+              if (e.params.data.id){
+                $.ajax({
+                  url: "http://{{ request.get_host }}/select2session/{{ course.identifier }}/" + e.params.data.id
+                }).done(function (result) {
+                  if(result.uri!==window.location.pathname){
+                    window.location = result.uri;}
                 });
-                $("#select_session").on('select2:select', function(e){
-                    {# http://stackoverflow.com/a/33248730/3437454 #}
-                    {# console.log(e.params.data.grade_time) #}
-                    if (e.params.data.url){
-                    window.location = e.params.data.url;}
-                });
-            </script>
-        {% endif %}
-      {# }}} #}
+              }
+            }
+            {% if select2_graded_form %}
+              $("#id_graded_pages").on('select2:select', function(e){
+                navigate_to_grading_page(e)
+              });
+            {% endif %}
+            {% if select2_ungraded_form %}
+              $("#id_ungraded_pages").on('select2:select', function(e){
+                navigate_to_grading_page(e)
+              });
+            {% endif %}
+          </script>
+      {% endif %}
 
       {# {{{ header table #}
       <table class="table table-condensed">
@@ -181,7 +186,7 @@
                 {% endblocktrans %}
               {% endif %}
               {% with time=shown_grade.grade_time %}
-              {% trans "at" context "at (what time)" %} {{ time|compact_datetime }}
+                {% trans "at" context "at (what time)" %} {{ time|compact_datetime }}
               {% endwith %}
             {% else %}
               {% trans "(n/a)" %}
@@ -192,15 +197,23 @@
           <td>
             {% if prev_flow_session_id != None %}
               <a href="{% url "relate-grade_flow_page" course.identifier prev_flow_session_id prev_flow_session_ordinal %}"
-                 accesskey="p" class="btn btn-default" title="Alt/Cmd(+Shift+)p"><i class="fa fa-chevron-left"></i></a>
+                 accesskey="p" class="btn btn-default" title="{% trans "Previous page with the same page_id" %} Alt/Cmd(+Shift+)p"><i class="fa fa-chevron-left"></i></a>
             {% else %}
               <a href="#" class="btn btn-default disabled"><i class="fa fa-chevron-left"></i></a>
             {% endif %}
             {% if next_flow_session_id %}
               <a href="{% url "relate-grade_flow_page" course.identifier next_flow_session_id next_flow_session_ordinal %}"
-                 accesskey="n" class="btn btn-default" title="Alt/Cmd+(Shift+)n"><i class="fa fa-chevron-right"></i></a>
+                 accesskey="n" class="btn btn-default" title="{% trans "Next page with the same page_id" %} Alt/Cmd+(Shift+)n"><i class="fa fa-chevron-right"></i></a>
             {% else %}
               <a href="#" class="btn btn-default disabled"><i class="fa fa-chevron-right"></i></a>
+            {% endif %}
+            {% if grading_form_html != None %}
+              {% if next_ungraded_flow_session_id %}
+                <a href="{% url "relate-grade_flow_page" course.identifier next_ungraded_flow_session_id next_ungraded_flow_session_ordinal %}"
+                   accesskey="l" class="btn btn-default" title="{% trans "Next ungraded page with the same page_id (cyclicly)" %} Alt/Cmd+(Shift+)n"><i class="fa fa-forward"></i></a>
+              {% else %}
+                <a href="#" class="btn btn-default disabled"><i class="fa fa fa-forward"></i></a>
+              {% endif %}
             {% endif %}
             {% trans "Session" %}
           </td>
@@ -218,38 +231,6 @@
                   class="btn btn-default"><i class="fa fa-chevron-left"></i></a>
             {% else %}
               <a href="#" class="btn btn-default disabled"><i class="fa fa-chevron-left"></i></a>
-            {% endif %}
-            {% if flow_session.page_count >= 2 %}
-              <span class="dropdown">
-                <span class="btn btn-default btn-xs dropdown-toggle relate-flow-page-toc-item " id="toc-dropdown" data-toggle="dropdown"
-                  aria-haspopup="true" aria-expanded="true">
-                  <span class="caret"></span>
-                </span>
-                <ul class="dropdown-menu" aria-labelledby="toc-dropdown">
-                  {% for other_page_data, other_grade_points in grade_status_zip %}
-                  <li class="
-                      {% if other_grade_points != None %}
-                          alert-info
-                      {% else %}
-                          alert-danger
-                      {% endif %}
-                ">
-                  {% if other_page_data == page_data %}
-                      <i class="fa fa-long-arrow-right" aria-hidden="true"></i>
-                  {% else %}
-                    <a href="{% url "relate-grade_flow_page" course.identifier flow_session.id other_page_data.ordinal %}">
-                  {% endif %}
-                      {{ other_page_data.human_readable_ordinal }}: {{ other_page_data.title }}
-                        {% if other_grade_points != None %}
-                          {{ other_grade_points|floatformat:1 }}%
-                        {% endif %}
-                  {% if other_page_data == page_data %}
-                    </a>
-                  {% endif %}
-                  </li>
-                  {% endfor %}
-                </ul>
-              </span>
             {% endif %}
             {% if page_data.next_ordinal < flow_session.page_count %}
               <a href="{% url "relate-grade_flow_page" course.identifier flow_session.id page_data.next_ordinal %}"
@@ -293,17 +274,17 @@
   </div>
 
   {# {{{ grade ui #}
+  {% if grading_form_html != None %}
+    <script>
 
-  <script>
+      // http://stackoverflow.com/a/30558011
+      var SURROGATE_PAIR_REGEXP = /[\uD800-\uDBFF][\uDC00-\uDFFF]/g,
+          // Match everything outside of normal chars and " (quote character)
+          NON_ALPHANUMERIC_REGEXP = /([^\#-~| |!])/g;
 
-    // http://stackoverflow.com/a/30558011
-    var SURROGATE_PAIR_REGEXP = /[\uD800-\uDBFF][\uDC00-\uDFFF]/g,
-        // Match everything outside of normal chars and " (quote character)
-        NON_ALPHANUMERIC_REGEXP = /([^\#-~| |!])/g;
-
-    function encode_entities(value)
-    {
-      return value.
+      function encode_entities(value)
+      {
+        return value.
         replace(/&/g, '&amp;').
         replace(SURROGATE_PAIR_REGEXP, function(value) {
           var hi = value.charCodeAt(0);
@@ -315,197 +296,316 @@
         }).
         replace(/</g, '&lt;').
         replace(/>/g, '&gt;');
-    }
-
-    function truncate_text(s, length)
-    {
-      if (s.length > length)
-        return s.slice(0, length) + "...";
-      else
-        return s;
-    }
-
-    function set_grade_percent(p)
-    {
-      $("#id_grade_percent").val(p);
-    }
-
-    function set_grade_points(p)
-    {
-      $("#id_grade_points").val(p);
-    }
-
-    function set_feedback(p)
-    {
-      $("#id_feedback_text").val(p);
-    }
-
-    function get_feedback_items()
-    {
-      var items = localStorage["relate_grade_feedback_items"];
-      if (items)
-        return JSON.parse(items);
-      else
-        return [];
-    }
-
-    function add_feedback(idx)
-    {
-      var items = get_feedback_items();
-
-      var val = $("#id_feedback_text").val();
-      if (val)
-        val += "\n";
-      val += items[idx];
-      $("#id_feedback_text").val(val);
-    }
-
-    function add_feedback_item(p)
-    {
-      var item = prompt("{%trans "Enter new feedback item:" %}");
-      if (!item)
-        return;
-
-      var items = get_feedback_items();
-      items.push(item);
-      localStorage["relate_grade_feedback_items"] = JSON.stringify(items);
-
-      update_feedback_items();
-    }
-
-    function remove_feedback_item(evt)
-    {
-      evt.stopPropagation();
-
-      var id = evt.target.parentNode.id.substr("remove_fb_".length);
-      var index = parseInt(id);
-
-      var items = get_feedback_items();
-      items.splice(index, 1);
-      localStorage["relate_grade_feedback_items"] = JSON.stringify(items);
-
-      update_feedback_items();
-    }
-
-    function update_feedback_items()
-    {
-      var buttons = "";
-
-      var items = get_feedback_items();
-
-      buttons += "<p>";
-      for (var i = 0; i < items.length; ++i)
-      {
-        var fb = items[i];
-        buttons += ("<button class='btn btn-xs btn-default' type='button' "
-            + "onclick='add_feedback(" + i + ")'>"
-            + truncate_text(encode_entities(fb), 25)
-            + "</button>"
-            + " <a class='remove_fb_button' id='remove_fb_"+i+"' href='#'>"
-            +   "<i class='fa fa-times-circle'></i>"
-            + "</a> "
-            );
       }
-      buttons += "</p>";
 
-      buttons += "<p>";
-      buttons += ("<button class='btn btn-xs btn-default' type='button' "
-          + "onclick='add_feedback_item()'><i class='fa fa-plus'></i> {% trans "Add phrase" %}</button>");
-      buttons += ("<button class='btn btn-xs btn-default' type='button' "
-          + "onclick='set_feedback(\"\")'>{% trans "Clear" %}</button>");
-      buttons += "</p>";
+      function truncate_text(s, length)
+      {
+        if (s.length > length)
+          return s.slice(0, length) + "...";
+        else
+          return s;
+      }
 
-      $("#canned_feedback_items").html(buttons);
+      function set_grade_percent(p)
+      {
+        $("#id_grade_percent").val(p);
+      }
 
-      $(".remove_fb_button").click(remove_feedback_item);
-    }
+      function set_grade_points(p)
+      {
+        $("#id_grade_points").val(p);
+      }
 
-    function add_grade_ui()
-    {
-      $(".grading-page-grade-entry #div_id_feedback_text .controls textarea").each(
-          function()
-          {
-            $(this).after("<div id='canned_feedback_items'></div>");
-          });
+      function set_feedback(p)
+      {
+        $("#id_feedback_text").val(p);
+      }
 
-      update_feedback_items();
-    }
+      function get_feedback_items()
+      {
+        var items = localStorage["relate_grade_feedback_items"];
+        if (items)
+          return JSON.parse(items);
+        else
+          return [];
+      }
 
-    $(document).ready(add_grade_ui);
+      function add_feedback(idx)
+      {
+        var items = get_feedback_items();
 
-    {% if page_data.next_ordinal < flow_session.page_count %}
-      var next_page_url = "{% url "relate-grade_flow_page" course.identifier flow_session.id page_data.next_ordinal %}";
-    {% else %}
-      var next_page_url = null;
-    {% endif %}
+        var val = $("#id_feedback_text").val();
+        if (val)
+          val += "\n";
+        val += items[idx];
+        $("#id_feedback_text").val(val);
+      }
 
-    {% if next_flow_session_id %}
-      var next_session_url = "{% url "relate-grade_flow_page" course.identifier next_flow_session_id page_data.ordinal %}";
-    {% else %}
-      var next_session_url = null;
-    {% endif %}
+      function add_feedback_item(p)
+      {
+        var item = prompt("{%trans "Enter new feedback item:" %}");
+        if (!item)
+          return;
 
-    function save_and_next_page()
-    {
-      window.open(next_page_url, "_blank");
-      $("#submit-id-submit").click();
-    }
+        var items = get_feedback_items();
+        items.push(item);
+        localStorage["relate_grade_feedback_items"] = JSON.stringify(items);
 
-    function save_and_next_session()
-    {
-      window.open(next_session_url, "_blank");
-      $("#submit-id-submit").click();
-    }
+        update_feedback_items();
+      }
 
-    function add_submit_next()
-    {
-      if (next_page_url)
-        $(".grading-page-grade-entry .form-group:last .controls:last").append(
-            " <button class='btn btn-primary' id='save_next_page' type='button'>"
-            + "{% trans "Submit and next page" %} &raquo;"
-            + "</button>");
-      if (next_session_url)
-        $(".grading-page-grade-entry .form-group:last .controls:last").append(
-            " <button class='btn btn-primary' id='save_next_session' type='button'>"
-            + "{% trans "Submit and next session" %} &raquo;"
-            + "</button>");
+      function remove_feedback_item(evt)
+      {
+        evt.stopPropagation();
 
-      $("#save_next_page").click(save_and_next_page);
-      $("#save_next_session").click(save_and_next_session);
+        var id = evt.target.parentNode.id.substr("remove_fb_".length);
+        var index = parseInt(id);
 
-      {# http://stackoverflow.com/a/9549716/3437454 #}
-      $(".relate-grading-form").prepend($(".form-group:last").clone(true, true));
-    }
+        var items = get_feedback_items();
+        items.splice(index, 1);
+        localStorage["relate_grade_feedback_items"] = JSON.stringify(items);
 
-    function scroll_to_answer()
-    {
-      $('html, body > div.grading-page-student-work').animate(
-        {scrollTop: $(".relate-interaction-container")
-        .position().top}, 1000);
+        update_feedback_items();
+      }
 
-      {% if correct_answer %}
-        var item = document.getElementById("correct-answer");
-      {% else %}
-        var item = document.getElementById("rubric");
-        if(item === null){
-        var item = document.getElementById("grading-form");
+      function update_feedback_items()
+      {
+        var buttons = "";
+
+        var items = get_feedback_items();
+
+        buttons += "<p>";
+        for (var i = 0; i < items.length; ++i)
+        {
+          var fb = items[i];
+          buttons += ("<button class='btn btn-xs btn-default' type='button' "
+              + "onclick='add_feedback(" + i + ")'>"
+              + truncate_text(encode_entities(fb), 25)
+              + "</button>"
+              + " <a class='remove_fb_button' id='remove_fb_"+i+"' href='#'>"
+              +   "<i class='fa fa-times-circle'></i>"
+              + "</a> "
+          );
         }
-      {% endif %}
-      $('html, body > div.grading-page-grade-entry').animate(
-          {scrollTop: $(item)
-          .position().top}, 1000)
-    }
+        buttons += "</p>";
 
-    $(document).ready(function() {
+        buttons += "<p>";
+        buttons += ("<button class='btn btn-xs btn-default' type='button' "
+        + "onclick='add_feedback_item()'><i class='fa fa-plus'></i> {% trans "Add phrase" %}</button>");
+        buttons += ("<button class='btn btn-xs btn-default' type='button' "
+        + "onclick='set_feedback(\"\")'>{% trans "Clear" %}</button>");
+        buttons += "</p>";
+
+        $("#canned_feedback_items").html(buttons);
+
+        $(".remove_fb_button").click(remove_feedback_item);
+      }
+
+      function add_grade_ui()
+      {
+        $(".grading-page-grade-entry #div_id_feedback_text .controls textarea").each(
+            function()
+            {
+              $(this).after("<div id='canned_feedback_items'></div>");
+            });
+
+        update_feedback_items();
+      }
+
+      $(document).ready(add_grade_ui);
+
+      function parseQuery(qstring) {
+        var query = {};
+        var a = (qstring[0] === '?' ? qstring.substr(1) : qstring).split('&');
+        for (var i = 0; i < a.length; i++) {
+          var b = a[i].split('=');
+          query[decodeURIComponent(b[0])] = decodeURIComponent(b[1] || '');
+        }
+        return query;
+      }
+
+      function update_queryString_parameter(qstring, key, value) {
+        {# modified from https://stackoverflow.com/a/15023688/3437454 #}
+        var re = new RegExp("([?&])" + key + "=.*?(&|#|$)", "i");
+        var newuri;
+        if(qstring==="?"){
+          qstring = ""
+        }
+        if( value === undefined ) {
+          if (qstring.match(re)) {
+            newuri = qstring.replace(re, '$1$2')
+                .replace("?&", "?")
+                .replace("&&", "&");
+            if(newuri.endsWith("&")){
+              return newuri.slice(0, -1)
+            }
+            return newuri
+          } else {
+            return qstring;
+          }
+        } else {
+          if (qstring.match(re)) {
+            return qstring.replace(re, '$1' + key + "=" + value + '$2')
+                .replace("&&", "&");
+          } else {
+            var hash =  '';
+            if( qstring.indexOf('#') !== -1 ){
+              hash = qstring.replace(/.*#/, '#');
+              qstring = qstring.replace(/#.*/, '');
+            }
+            var separator = qstring.indexOf('?') !== -1 ? "&" : "?";
+            newuri = qstring + separator + key + "=" + value + hash;
+            return newuri.replace("&&", "&");
+          }
+        }
+      }
+
+      var browser_queryString = window.location.search.toString(),
+          queryString_skip_graded = parseQuery(browser_queryString).skip_graded !== "false",
+          updated_queryString = browser_queryString,
+          will_skip_graded = true;
+
+      {% if page_data.next_ordinal < flow_session.page_count %}
+        var next_page_url = "{% url "relate-grade_flow_page" course.identifier flow_session.id page_data.next_ordinal %}";
+      {% else %}
+        var next_page_url = null;
+      {% endif %}
+
+      {% if next_flow_session_id %}
+        var next_session_url = "{% url "relate-grade_flow_page" course.identifier next_flow_session_id next_flow_session_ordinal %}";
+      {% else %}
+        var next_session_url = null;
+      {% endif %}
+
+      {% if next_ungraded_flow_session_id %}
+        var next_ungraded_session_url = "{% url "relate-grade_flow_page" course.identifier next_ungraded_flow_session_id next_ungraded_flow_session_ordinal %}";
+      {% else %}
+        var next_ungraded_session_url = null;
+      {% endif %}
+
+      function get_updated_queryString(qstring){
+        qstring = update_queryString_parameter(qstring, "grade_id", undefined);
+        if(!will_skip_graded){
+          qstring= update_queryString_parameter(qstring, "skip_graded", false)
+        }
+        else{
+          qstring = update_queryString_parameter(qstring, "skip_graded", undefined)
+        }
+        if(qstring === "?"){
+          return ""
+        }
+        return qstring
+      }
+
+      function save_and_next_page()
+      {
+        window.open(next_page_url + updated_queryString, "_blank");
+        $("#submit-id-submit").click();
+      }
+
+      function save_and_next_session()
+      {
+        var next_url = will_skip_graded ? next_ungraded_session_url : next_session_url;
+        window.open(next_url + updated_queryString, "_blank");
+        $("#submit-id-submit").click();
+      }
+
+      function add_submit_next()
+      {
+        var $grading_formgroup_control_last = $(".grading-page-grade-entry .form-group:last .controls:last");
+        if (next_page_url)
+          $grading_formgroup_control_last.append(
+              " <button class='btn btn-primary' id='save_next_page' type='button'>"
+              + "{% trans "Submit and next page" %} &raquo;"
+              + "</button>");
+        if (next_session_url)
+          $grading_formgroup_control_last.append(
+              " <button class='btn btn-primary' id='save_next_session' type='button'>"
+              + "{% trans "Submit and next session" %} &raquo;"
+              + "</button>");
+
+        var noskip = encode_entities('<span class="fa-stack" title="') +
+            '{% trans 'Jump to the next ungraded session' %} (Off)' +
+            encode_entities('">' +
+                '<i class="fa fa-ban fa-stack-2x text-danger"></i>' +
+                '<i class="fa fa-forward fa-stack-1x"></i>' +
+                '</span>');
+
+        var skip = '<span title="{% trans "Jump to the next ungraded session" %} (On)" '
+            + 'class="fa-stack">'
+            + '<i class="fa fa-stack-2x"></i>'
+            + '<i class="fa fa-forward fa-stack-1x"></i>'
+            + '</span>';
+
+        $grading_formgroup_control_last.append(
+            ' <label type="button" id="skip_graded_button" class="btn active relate-grade-flow-page-setting-btn"'
+            + ' data-noskip-text="' + noskip +  '" '
+            + ' data-toggle="button" aria-pressed="true" autocomplete="off">'
+            + skip
+            + '</label>'
+        );
+
+        $("#skip_graded_button").on("click", function(e){
+          if($(this).hasClass('active')){
+            $(this).button('reset');
+          }
+          else{
+            $(this).button('noskip');
+          }
+          will_skip_graded = $(this).hasClass('active');
+          updated_queryString = get_updated_queryString(updated_queryString);
+          update_browser_queryString(updated_queryString);
+          console.log(updated_queryString);
+        });
+
+        $("#save_next_page").click(save_and_next_page);
+        $("#save_next_session").click(save_and_next_session);
+
+        {# http://stackoverflow.com/a/9549716/3437454 #}
+        $(".relate-grading-form").prepend($(".form-group:last").clone(true, true));
+      }
+
+      function update_browser_queryString(qstring){
+        if (history.pushState) {
+          var newurl = window.location.origin + window.location.pathname + qstring;
+          window.history.pushState({path:newurl},'',newurl);}
+      }
+
+      function scroll_to_answer()
+      {
+        $('html, body > div.grading-page-student-work').animate(
+            {scrollTop: $(".relate-interaction-container")
+                .position().top}, 1000);
+
+        {% if correct_answer %}
+          var item = document.getElementById("correct-answer");
+        {% else %}
+          var item = document.getElementById("rubric");
+          if(item === null){
+            item = document.getElementById("grading-form");
+          }
+        {% endif %}
+        $('html, body > div.grading-page-grade-entry').animate(
+            {scrollTop: $(item)
+                .position().top}, 1000)
+      }
+
+      $(document).ready(function() {
         add_submit_next();
         scroll_to_answer();
-        var percent_box = document.getElementById("id_grade_percent")
+        if(!queryString_skip_graded){
+          $("#skip_graded_button").button("noskip");
+        }
+        else{
+          $("#skip_graded_button").button("toggle");
+        }
+        var percent_box = document.getElementById("id_grade_percent");
         if (percent_box){
-        document.getElementById("id_grade_percent").tabIndex = "1";
-        document.getElementById("id_grade_points").tabIndex = "2";}
-        });
-  </script>
-
+          document.getElementById("id_grade_percent").tabIndex = "1";
+          document.getElementById("id_grade_points").tabIndex = "2";}
+      });
+    </script>
+  {% endif %}
   {# }}} #}
 
 {% endblock %}
