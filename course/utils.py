@@ -41,7 +41,9 @@ from codemirror import CodeMirrorTextarea, CodeMirrorJavascript
 
 from course.content import (
         get_course_repo, get_flow_desc,
-        parse_date_spec, get_course_commit_sha)
+        parse_date_spec_cached as parse_date_spec,
+        #parse_date_spec,
+        get_course_commit_sha)
 from course.constants import (
         flow_permission, flow_rule_kind)
 import dulwich.repo
@@ -1200,7 +1202,9 @@ def get_human_readable_flow_may_start_desc_list(
     time_point_set.add(MIN_DATETIME)
     for rule in rules:
         if hasattr(rule, "if_before"):
+            print("here")
             time_point_set.add(parse_date_spec(course, rule.if_before))
+            print("here2-----------------")
         if hasattr(rule, "if_after"):
             time_point_set.add(parse_date_spec(course, rule.if_after))
     time_point_list = sorted(list(time_point_set))

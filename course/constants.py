@@ -570,4 +570,6 @@ EXAM_TICKET_STATE_CHOICES = (
 
 ATTRIBUTES_FILENAME = ".attributes.yml"
 
+DATESPECT_CACHE_KEY_PATTERN = "RELATE:DATESPECT:%(course)s:%(key)s"
+
 # vim: foldmethod=marker
