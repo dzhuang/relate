@@ -31,8 +31,7 @@ import six
 from django.db import models
 from django.utils.timezone import now
 from django.urls import reverse
-from django.core.exceptions import (
-    ValidationError, ObjectDoesNotExist, ImproperlyConfigured)
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.utils.translation import (
         ugettext_lazy as _, pgettext_lazy, string_concat)
 from django.core.validators import RegexValidator
@@ -310,35 +309,6 @@ class Event(models.Model):
 
     if six.PY3:
         __str__ = __unicode__
-
-    def flush_event_cache(self):
-        try:
-            import django.core.cache as cache
-        except ImproperlyConfigured:
-            return
-
-        from course.constants import DATESPECT_CACHE_KEY_PATTERN
-        cache_pattern = DATESPECT_CACHE_KEY_PATTERN % {
-            "course": self.course.identifier,
-            "key": "*"
-        }
-        print(cache_pattern, "pattern----------------")
-        def_cache = cache.caches["default"]
-        print(def_cache.keys(cache_pattern))
-        def_cache.delete_pattern(cache_pattern)
-        return
-
-    def save(self, *args, **kwargs):
-        e = super(Event, self).save(*args, **kwargs)
-        print("saved!!!!!!!!!!!!!!!!!!!!!!")
-        self.flush_event_cache()
-        return e
-
-    def delete(self, *args, **kwargs):
-        ret = super(Event, self).delete(*args, **kwargs)
-        self.flush_event_cache()
-        print("deleted!!!!------------------------")
-        return ret
 
 # }}}
 
