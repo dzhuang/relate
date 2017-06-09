@@ -101,6 +101,17 @@ class FlowSessionStartRule(FlowSessionRuleBase):
         self.default_expiration_mode = default_expiration_mode
 
 
+class FlowSessionNotifyRule(FlowSessionRuleBase):
+    def __init__(
+            self,
+            may_send_notification=None,  # type: Optional[bool]
+            message=None,  # type: Optional[Text]
+            ):
+        # type: (...) -> None
+        self.may_send_notification = may_send_notification
+        self.message = message
+
+
 class FlowSessionAccessRule(FlowSessionRuleBase):
     def __init__(
             self,
@@ -271,6 +282,22 @@ def get_flow_rules(
             rules.insert(0, dict_to_struct(exc.rule))
 
     return rules
+
+
+def _get_session_start_rules(
+        flow_desc,  # type: FlowDesc
+        flow_id,  # type: Text
+        now_datetime,  # type: datetime.datetime
+        participation,  # type: Optional[Participation]
+        ):
+    # type: (...) -> List[Any]
+    from relate.utils import dict_to_struct
+    return get_flow_rules(flow_desc, flow_rule_kind.start,
+                          participation, flow_id, now_datetime,
+                          default_rules_desc=[
+                              dict_to_struct(dict(
+                                  may_start_new_session=True,
+                                  may_list_existing_sessions=False))])
 
 
 def get_session_start_rule(

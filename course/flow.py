@@ -78,6 +78,7 @@ from course.utils import (
         get_session_start_rule,
         get_session_access_rule,
         get_session_grading_rule,
+        get_session_notify_rule,
         FlowSessionGradingRule,
         )
 from course.exam import get_login_exam_ticket
@@ -2579,13 +2580,30 @@ def finish_flow_session_view(pctx, flow_session_id):
                 now_datetime=now_datetime)
 
         # {{{ send notify email if requested
+        notification_list = getattr(fctx.flow_desc, "notify_on_submit", [])
+        notify_rule = None
+        if not notification_list:
+            notify_rule = get_session_notify_rule(
+                flow_session, fctx.flow_desc, now_datetime)
+            if notify_rule.may_send_notification:
+                from course.constants import (
+                    participation_permission as pperm)
+                notification_list = Participation.objects.filter(
+                    course=pctx.course,
+                    roles__permissions__permission=pperm.assign_grade,
+                    roles__identifier="ta",
+                ).values_list("user__email", flat=True)
+                if not notification_list:
+                    notification_list = Participation.objects.filter(
+                        course=pctx.course,
+                        roles__permissions__permission=pperm.assign_grade,
+                        roles__identifier="instructor"
+                    ).values_list("user__email", flat=True)
 
-        if (hasattr(fctx.flow_desc, "notify_on_submit")
-                and fctx.flow_desc.notify_on_submit):
+        if notification_list:
             from course.utils import will_use_masked_profile_for_email
-            staff_email = (
-                fctx.flow_desc.notify_on_submit + [fctx.course.notify_email])
-            use_masked_profile = will_use_masked_profile_for_email(staff_email)
+            use_masked_profile = will_use_masked_profile_for_email(
+                notification_list + [fctx.course.notify_email])
 
             if (grading_rule.grade_identifier
                     and flow_session.participation is not None):
@@ -2605,10 +2623,17 @@ def finish_flow_session_view(pctx, flow_session_id):
                             flow_session.id,
                             0))
 
+            message_in_notification_rule = None
+            if notify_rule:
+                if notify_rule.may_send_notification:
+                    message_in_notification_rule = getattr(
+                        notify_rule, "message", None)
+
             with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
                 from django.template.loader import render_to_string
                 participation = flow_session.participation
                 message = render_to_string("course/submit-notify.txt", {
+                    "extra_message": message_in_notification_rule,
                     "course": fctx.course,
                     "flow_session": flow_session,
                     "use_masked_profile": use_masked_profile,
@@ -2636,7 +2661,7 @@ def finish_flow_session_view(pctx, flow_session_id):
                         message,
                         getattr(settings, "NOTIFICATION_EMAIL_FROM",
                             settings.ROBOT_EMAIL_FROM),
-                        fctx.flow_desc.notify_on_submit)
+                        notification_list)
                 msg.bcc = [fctx.course.notify_email]
 
                 from relate.utils import get_outbound_mail_connection

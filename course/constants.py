@@ -365,6 +365,11 @@ class flow_permission:  # noqa
 
         (Optional) If present, the participant can send interaction emails to
         course staffs for questions for each page with that permission.
+
+    .. attribute:: send_submit_notif_email
+
+        (Optional) If present, submission of the flow by the participant will
+        trigger the action of sending a notification email to course staff.
     """
     view = "view"
     end_session = "end_session"
@@ -378,7 +383,7 @@ class flow_permission:  # noqa
     see_session_time = "see_session_time"
     lock_down_as_exam_session = "lock_down_as_exam_session"
     send_email_about_flow_page = "send_email_about_flow_page"
-
+    send_submit_notif_email = "send_submit_notif_email"
 
 FLOW_PERMISSION_CHOICES = (
         (flow_permission.view,
@@ -411,7 +416,11 @@ FLOW_PERMISSION_CHOICES = (
         (flow_permission.send_email_about_flow_page,
          pgettext_lazy("Flow permission",
                        "Send emails about the flow page to course staff")),
-        )
+        (flow_permission.send_submit_notif_email,
+         pgettext_lazy("Flow permission",
+                       "Send flow submission notification email to course"
+                       "staff")),
+)
 
 # }}}
 
@@ -420,6 +429,7 @@ class flow_rule_kind:  # noqa
     start = "start"
     access = "access"
     grading = "grading"
+    notify = "notify"
 
 
 FLOW_RULE_KIND_CHOICES = (
