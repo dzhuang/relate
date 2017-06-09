@@ -119,17 +119,6 @@ class FlowSessionNotifyRule(FlowSessionRuleBase):
         self.message = message
 
 
-class FlowSessionNotifyRule(FlowSessionRuleBase):
-    def __init__(
-            self,
-            may_send_notification=None,  # type: Optional[bool]
-            message=None,  # type: Optional[Text]
-            ):
-        # type: (...) -> None
-        self.may_send_notification = may_send_notification
-        self.message = message
-
-
 class FlowSessionAccessRule(FlowSessionRuleBase):
     def __init__(
             self,
