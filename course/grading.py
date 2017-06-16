@@ -75,6 +75,79 @@ if False:
 
 # }}}
 
+from django_select2.forms import ModelSelect2Widget
+from relate.utils import StyledForm, StyledModelForm
+
+
+class GradingInfoSearchWidget(ModelSelect2Widget):
+    model = FlowPageData
+    search_fields = [
+            'flow_session__user__username__icontains',
+            'flow_session__user__first_name__icontains',
+            'flow_session__user__last_name__icontains',
+            ]
+
+    def render_options(self, *args):
+        """Render only selected options and set QuerySet from :class:`ModelChoicesIterator`."""
+        from itertools import chain
+
+        try:
+            selected_choices, = args
+        except ValueError:
+            choices, selected_choices = args
+            choices = chain(self.choices, choices)
+        else:
+            choices = self.choices
+
+        from django.utils.encoding import force_text
+        selected_choices = {force_text(v) for v in selected_choices}
+        output = ['<option></option>' if not self.is_required and not self.allow_multiple_selected else '']
+
+        from django.forms.models import ModelChoiceIterator
+        if isinstance(self.choices, ModelChoiceIterator):
+            if self.queryset is None:
+                self.queryset = self.choices.queryset
+            selected_choices = {c for c in selected_choices
+                                if c not in self.choices.field.empty_values}
+            choices = {(obj.pk, self.label_from_instance(obj))
+                       for obj in self.choices.queryset.filter(pk__in=selected_choices)}
+        else:
+            choices = {(k, v) for k, v in choices if force_text(k) in selected_choices}
+        for option_value, option_label in choices:
+            output.append(self.render_option(selected_choices, option_value, option_label))
+        return '\n'.join(output)
+
+    def label_from_instance(self, g):
+        return (
+            (
+                # Translators: information displayed when selecting
+                # userfor impersonating. Customize how the name is
+                # shown, but leave email first to retain usability
+                # of form sorted by last name.
+                "%(full_name)s (%(username)s - %(email)s)"
+                % {
+                    "full_name": g.flow_session.user.get_full_name(),
+                    "email": g.flow_session.user.email,
+                    "username": g.flow_session.user.username
+                    }))
+
+
+class GradingInfoForm(StyledForm):
+    def __init__(self, *args, **kwargs):
+        # type:(*Any, **Any) -> None
+
+        qset = kwargs.pop("grading_qset")
+        print(len(qset), "in form")
+        super(GradingInfoForm, self).__init__(*args, **kwargs)
+
+        import django.forms as forms
+        self.fields["session"] = forms.ModelChoiceField(
+                queryset=qset,
+                required=False,
+                #help_text=_("Select flow session."),
+                widget=GradingInfoSearchWidget(),
+                label=_("Grading"))
+
 
 # {{{ grading driver
 
@@ -295,6 +368,18 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     adjusted_list = graded_fs_list + ungraded_fs_list
 
     all_flow_sessions_json = []  # type: List[Any]
+
+    qset = FlowPageData.objects.filter(flow_session__pk__in=fpvg_flowsession_id_list)
+    print(len(qset))
+
+    select2_form = GradingInfoForm(grading_qset=qset)
+
+    # from django.shortcuts import render
+    #
+    # select2_html = render(pctx.request, "generic-form.html", {
+    #     "form_description": _("Impersonate user"),
+    #     "form": select2_form
+    # })
 
     for idx, flow_session_idx in enumerate(adjusted_list):
         if may_view_participant_full_profile:
@@ -651,6 +736,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 "next_flow_session_id": next_flow_session_id,
                 'next_flow_session_ordinal': next_flow_session_ordinal,
                 "all_flow_sessions_json": dumps(all_flow_sessions_json),
+                "select2_form":select2_form,
 
                 "grading_form": grading_form,
                 "grading_form_html": grading_form_html,
