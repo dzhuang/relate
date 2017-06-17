@@ -157,6 +157,10 @@ class UserSearchWidget(ModelSelect2Widget):
             'last_name__icontains',
             ]
 
+    def render_options(self, *args):
+        print("called")
+        super(UserSearchWidget,self).render_options(*args)
+
     def label_from_instance(self, u):
         return (
             (

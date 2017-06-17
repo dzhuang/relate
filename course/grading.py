@@ -146,8 +146,22 @@ class GradingInfoForm(StyledForm):
                 required=False,
                 #help_text=_("Select flow session."),
                 widget=GradingInfoSearchWidget(),
-                label=_("Grading"))
+                label=_("Jump to"))
 
+
+def get_session_grading_page_url(request, course_identifier, pagedata_pk):
+    pagedata = FlowPageData.objects.get(pk=pagedata_pk)
+
+    uri = reverse("relate-grade_flow_page",
+                  args=(
+                      course_identifier,
+                      pagedata.flow_session.id,
+                      pagedata.ordinal))
+
+    response = http.JsonResponse({
+        "uri": uri
+    })
+    return response
 
 # {{{ grading driver
 
@@ -369,7 +383,11 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
     all_flow_sessions_json = []  # type: List[Any]
 
-    qset = FlowPageData.objects.filter(flow_session__pk__in=fpvg_flowsession_id_list)
+    qset = FlowPageData.objects.filter(
+        flow_session__pk__in=fpvg_flowsession_id_list,
+        group_id=group_id,
+        page_id=page_id,
+    )
     print(len(qset))
 
     select2_form = GradingInfoForm(grading_qset=qset)

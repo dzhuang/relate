@@ -97,6 +97,32 @@
         <div class="well">
           {% crispy select2_form %}
         </div>
+          <script>
+                $("#id_session").on('select2:select', function(e){
+                    {# http://stackoverflow.com/a/33248730/3437454 #}
+                    {# console.log(e.params.data.grade_time) #}
+                    if (e.params.data.id){
+                        //console.log(e.params.data.id);
+                            $.ajax({
+                                // Uncomment the following to send cross-domain cookies:
+                                //xhrFields: {withCredentials: true},
+                                //url: $('#fileupload').fileupload('option', 'url'),
+
+                                url: "http://{{ request.get_host }}/select2session/{{ course.identifier }}/" + e.params.data.id,
+{#                            }).always(function () {#}
+{#                                $(this).removeClass('fileupload-processing');#}
+{#                                $(".fileupload-loading").remove();#}
+                            }).done(function (result) {
+                                console.log(result);
+                                window.location = result.uri;
+{#                                console.log(result.uri);#}
+{#                                $(this).fileupload('option', 'done')#}
+{#                                    .call(this, $.Event('done'), {result: result});#}
+                            });
+{#                        console.log("{{ course.identifier }}/" + e.params.data.id)#}
+                    }
+                });
+            </script>
       {% endif %}
 
       {# {{{ Searchable session jumps #}
