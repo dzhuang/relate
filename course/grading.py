@@ -330,6 +330,8 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
         fpvg_qs = fpvg_qs.filter(
             pk__in=visit_pk_list, correctness__isnull=False)
 
+        print(len(fpvg_qs))
+
         fpvg_flowsession_id_time_list = (
             list(fpvg_qs.values_list(
                 "visit__flow_session__pk",
@@ -399,6 +401,9 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     #     "form": select2_form
     # })
 
+    n_graded = 0
+    n_ungraded = 0
+
     for idx, flow_session_idx in enumerate(adjusted_list):
         if may_view_participant_full_profile:
             user_fullname = flow_session_idx.participation.user.get_full_name()
@@ -438,7 +443,9 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
             try:
                 g_idx = fpvg_flowsession_id_list.index(flow_session_idx.pk)
                 grade_time = fpvg_flowsession_time_list[g_idx]
+                n_graded += 1
             except ValueError:
+                n_ungraded += 1
                 pass
 
         if grade_time:
@@ -469,12 +476,12 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 {"id": '', "text": ''},
                 {
                     "id": '',
-                    "text": _('Ungraded (by username)'),
+                    "text": _('Ungraded (by username)') + str(n_ungraded),
                     "children": ungraded_flow_sessions_json
                 },
                 {
                     "id": '',
-                    "text": _('Graded (by grade time)'),
+                    "text": _('Graded (by grade time)') + str(n_graded),
                     "children": graded_flow_sessions_json
                 }
             ]
