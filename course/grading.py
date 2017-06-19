@@ -79,15 +79,19 @@ from django_select2.forms import ModelSelect2Widget
 from relate.utils import StyledForm, StyledModelForm
 
 
-class GradingInfoSearchWidget(ModelSelect2Widget):
-    model = FlowPageData
+class PageGradingInfoSearchWidget(ModelSelect2Widget):
+    #model = FlowPageVisitGrade
     search_fields = [
-            'flow_session__user__username__icontains',
-            'flow_session__user__first_name__icontains',
-            'flow_session__user__last_name__icontains',
+            'visit__flow_session__user__username__icontains',
+            'visit__flow_session__user__first_name__icontains',
+            'visit__flow_session__user__last_name__icontains',
             ]
 
-    def render_options(self, *args):
+    def filter_queryset(self, term, queryset=None, **dependent_fields):
+        object_list = super(PageGradingInfoSearchWidget,self).filter_queryset(term, queryset, **dependent_fields)
+        return object_list.filter(pk__in=self.queryset.values_list("pk", flat=True))
+
+    def render_optionssss(self, *args):
         """Render only selected options and set QuerySet from :class:`ModelChoicesIterator`."""
         from itertools import chain
 
@@ -105,47 +109,65 @@ class GradingInfoSearchWidget(ModelSelect2Widget):
 
         from django.forms.models import ModelChoiceIterator
         if isinstance(self.choices, ModelChoiceIterator):
+            print("here, modelchoiceIter")
             if self.queryset is None:
                 self.queryset = self.choices.queryset
+            print(len(self.choices.queryset), )
             selected_choices = {c for c in selected_choices
                                 if c not in self.choices.field.empty_values}
-            choices = {(obj.pk, self.label_from_instance(obj))
-                       for obj in self.choices.queryset.filter(pk__in=selected_choices)}
+            choices = [(obj.pk, self.label_from_instance(obj))
+                       for obj in self.choices.queryset.filter(pk__in=selected_choices)]
+            print(len(choices), "choices---------------------------")
         else:
-            choices = {(k, v) for k, v in choices if force_text(k) in selected_choices}
+            print("here else")
+            choices = [(k, v) for k, v in choices if force_text(k) in selected_choices]
+        k = 0
         for option_value, option_label in choices:
-            output.append(self.render_option(selected_choices, option_value, option_label))
+            if option_label is not None:
+                k += 1
+                output.append(self.render_option(selected_choices, option_value, option_label))
+        print(k, "kkkkkkkkkkkkkkkkkkk")
         return '\n'.join(output)
 
     def label_from_instance(self, g):
+        try:
+            print(g.pk, g.grade_time, g.visit.flow_session.user.get_full_name())
+        except:
+            pass
+        most_recent_grade = g.visit.get_most_recent_grade()
+        if most_recent_grade is None:
+            return None
+        if most_recent_grade.correctness is None:
+            return None
+
         return (
             (
                 # Translators: information displayed when selecting
                 # userfor impersonating. Customize how the name is
                 # shown, but leave email first to retain usability
                 # of form sorted by last name.
-                "%(full_name)s (%(username)s - %(email)s)"
+                "%(full_name)s (%(grader)s, %(time)s)"
                 % {
-                    "full_name": g.flow_session.user.get_full_name(),
-                    "email": g.flow_session.user.email,
-                    "username": g.flow_session.user.username
+                    "full_name": most_recent_grade.visit.flow_session.user.get_full_name(),
+                    "time": as_local_time(most_recent_grade.grade_time),
+                    "grader": most_recent_grade.grader.get_full_name() if most_recent_grade.grader is not None else ""
                     }))
 
 
-class GradingInfoForm(StyledForm):
+class PageGradingInfoForm(StyledForm):
     def __init__(self, *args, **kwargs):
         # type:(*Any, **Any) -> None
 
         qset = kwargs.pop("grading_qset")
         print(len(qset), "in form")
-        super(GradingInfoForm, self).__init__(*args, **kwargs)
+        super(PageGradingInfoForm, self).__init__(*args, **kwargs)
 
         import django.forms as forms
         self.fields["session"] = forms.ModelChoiceField(
                 queryset=qset,
                 required=False,
                 #help_text=_("Select flow session."),
-                widget=GradingInfoSearchWidget(),
+                widget=PageGradingInfoSearchWidget(),
                 label=_("Jump to"))
 
 
@@ -174,6 +196,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
     viewing_prev_grade = False
     prev_grade_id = pctx.request.GET.get("grade_id")
+    print(prev_grade_id)
     if prev_grade_id is not None:
         try:
             prev_grade_id = int(prev_grade_id)
@@ -212,11 +235,52 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
     # {{{ enable flow session zapping
 
+    all_qs = (
+
+    )
+
+    this_flow_page_data = FlowPageData.objects.get(
+        flow_session=flow_session, ordinal=page_ordinal)
+
+    page_id = this_flow_page_data.page_id
+    group_id = this_flow_page_data.group_id
+
+    all_flow_qs2 = (
+        FlowPageVisitGrade.objects.filter(
+            visit__flow_session__course=flow_session.course,
+            visit__flow_session__flow_id=flow_session.flow_id,
+            visit__page_data__group_id=group_id,
+            visit__page_data__page_id=page_id,
+            visit__flow_session__participation__isnull=False,
+            visit__flow_session__in_progress=flow_session.in_progress)
+        .order_by(
+            "visit__flow_session__participation__user",
+            "-grade_time"
+        )
+        .select_related(
+            "visit__flow_session__participation__user",
+            "visit__flow_session")
+        .distinct("visit__flow_session__participation__user")
+    )
+
+    #all_flow_qs3 = all_flow_qs2.filter(correctness__isnull=True)
+
+
     all_flow_qs = FlowSession.objects.filter(
         course=pctx.course,
         flow_id=flow_session.flow_id,
         participation__isnull=False,
         in_progress=flow_session.in_progress).select_related("user")
+
+    #print(len(all_flow_qs2), len(all_flow_qs), "here")
+
+    # for q in all_flow_qs2:
+    #     print(q.visit.flow_session.participation.user)
+    #     print(as_local_time(q.grade_time))
+
+    for q in all_flow_qs2:
+        print(q.visit.flow_session.participation.user.get_full_name())
+        print(as_local_time(q.grade_time), q.value(), q.percentage())
 
     # if pctx.role != participation_role.instructor:
     #     all_flow_qs = all_flow_qs.exclude(
@@ -240,12 +304,6 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
             all_flow_qs.distinct('participation__user__username'))
 
     all_flow_sessions = list(all_flow_qs)
-
-    this_flow_page_data = FlowPageData.objects.get(
-        flow_session=flow_session, ordinal=page_ordinal)
-
-    page_id = this_flow_page_data.page_id
-    group_id = this_flow_page_data.group_id
 
     # {{{ order pages by page_data
 
@@ -330,7 +388,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
         fpvg_qs = fpvg_qs.filter(
             pk__in=visit_pk_list, correctness__isnull=False)
 
-        print(len(fpvg_qs))
+        #print(len(fpvg_qs))
 
         fpvg_flowsession_id_time_list = (
             list(fpvg_qs.values_list(
@@ -385,14 +443,14 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
     all_flow_sessions_json = []  # type: List[Any]
 
-    qset = FlowPageData.objects.filter(
-        flow_session__pk__in=fpvg_flowsession_id_list,
-        group_id=group_id,
-        page_id=page_id,
-    )
-    print(len(qset))
+    # qset = FlowPageData.objects.filter(
+    #     flow_session__pk__in=fpvg_flowsession_id_list,
+    #     group_id=group_id,
+    #     page_id=page_id,
+    # )
+    #print(len(qset))
 
-    select2_form = GradingInfoForm(grading_qset=qset)
+    select2_form = PageGradingInfoForm(grading_qset=all_flow_qs2)
 
     # from django.shortcuts import render
     #
