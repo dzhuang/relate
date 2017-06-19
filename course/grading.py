@@ -91,43 +91,43 @@ class PageGradingInfoSearchWidget(ModelSelect2Widget):
         object_list = super(PageGradingInfoSearchWidget,self).filter_queryset(term, queryset, **dependent_fields)
         return object_list.filter(pk__in=self.queryset.values_list("pk", flat=True))
 
-    def render_optionssss(self, *args):
-        """Render only selected options and set QuerySet from :class:`ModelChoicesIterator`."""
-        from itertools import chain
-
-        try:
-            selected_choices, = args
-        except ValueError:
-            choices, selected_choices = args
-            choices = chain(self.choices, choices)
-        else:
-            choices = self.choices
-
-        from django.utils.encoding import force_text
-        selected_choices = {force_text(v) for v in selected_choices}
-        output = ['<option></option>' if not self.is_required and not self.allow_multiple_selected else '']
-
-        from django.forms.models import ModelChoiceIterator
-        if isinstance(self.choices, ModelChoiceIterator):
-            print("here, modelchoiceIter")
-            if self.queryset is None:
-                self.queryset = self.choices.queryset
-            print(len(self.choices.queryset), )
-            selected_choices = {c for c in selected_choices
-                                if c not in self.choices.field.empty_values}
-            choices = [(obj.pk, self.label_from_instance(obj))
-                       for obj in self.choices.queryset.filter(pk__in=selected_choices)]
-            print(len(choices), "choices---------------------------")
-        else:
-            print("here else")
-            choices = [(k, v) for k, v in choices if force_text(k) in selected_choices]
-        k = 0
-        for option_value, option_label in choices:
-            if option_label is not None:
-                k += 1
-                output.append(self.render_option(selected_choices, option_value, option_label))
-        print(k, "kkkkkkkkkkkkkkkkkkk")
-        return '\n'.join(output)
+    # def render_optionssss(self, *args):
+    #     """Render only selected options and set QuerySet from :class:`ModelChoicesIterator`."""
+    #     from itertools import chain
+    #
+    #     try:
+    #         selected_choices, = args
+    #     except ValueError:
+    #         choices, selected_choices = args
+    #         choices = chain(self.choices, choices)
+    #     else:
+    #         choices = self.choices
+    #
+    #     from django.utils.encoding import force_text
+    #     selected_choices = {force_text(v) for v in selected_choices}
+    #     output = ['<option></option>' if not self.is_required and not self.allow_multiple_selected else '']
+    #
+    #     from django.forms.models import ModelChoiceIterator
+    #     if isinstance(self.choices, ModelChoiceIterator):
+    #         print("here, modelchoiceIter")
+    #         if self.queryset is None:
+    #             self.queryset = self.choices.queryset
+    #         print(len(self.choices.queryset), )
+    #         selected_choices = {c for c in selected_choices
+    #                             if c not in self.choices.field.empty_values}
+    #         choices = [(obj.pk, self.label_from_instance(obj))
+    #                    for obj in self.choices.queryset.filter(pk__in=selected_choices)]
+    #         print(len(choices), "choices---------------------------")
+    #     else:
+    #         print("here else")
+    #         choices = [(k, v) for k, v in choices if force_text(k) in selected_choices]
+    #     k = 0
+    #     for option_value, option_label in choices:
+    #         if option_label is not None:
+    #             k += 1
+    #             output.append(self.render_option(selected_choices, option_value, option_label))
+    #     print(k, "kkkkkkkkkkkkkkkkkkk")
+    #     return '\n'.join(output)
 
     def label_from_instance(self, g):
         try:
@@ -443,12 +443,15 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
     all_flow_sessions_json = []  # type: List[Any]
 
-    # qset = FlowPageData.objects.filter(
-    #     flow_session__pk__in=fpvg_flowsession_id_list,
-    #     group_id=group_id,
-    #     page_id=page_id,
-    # )
-    #print(len(qset))
+    qset = FlowPageData.objects.filter(
+        flow_session__pk__in=fpvg_flowsession_id_list,
+        group_id=group_id,
+        page_id=page_id,
+#        visits__grades__correctness__isnull=True
+    )
+    for q in qset:
+        print(q.pk)
+    print(len(qset))
 
     select2_form = PageGradingInfoForm(grading_qset=all_flow_qs2)
 
