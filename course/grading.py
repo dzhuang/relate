@@ -196,7 +196,6 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
     viewing_prev_grade = False
     prev_grade_id = pctx.request.GET.get("grade_id")
-    print(prev_grade_id)
     if prev_grade_id is not None:
         try:
             prev_grade_id = int(prev_grade_id)
@@ -245,6 +244,95 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     page_id = this_flow_page_data.page_id
     group_id = this_flow_page_data.group_id
 
+    all_page_data_qs = (
+        FlowPageData.objects.filter(
+            flow_session__course=flow_session.course,
+            flow_session__flow_id=flow_session.flow_id,
+            page_id=page_id,
+            flow_session__participation__isnull=False,
+            flow_session__in_progress=flow_session.in_progress
+        )
+    )
+
+    navigate_page_data_qs = all_page_data_qs.all()
+
+    navigate_qs_order_list = ["flow_session__user__last_name"]
+    navigate_distinct_list = None
+    if connection.features.can_distinct_on_fields:
+        navigate_distinct_list = []
+
+    if (grading_rule.grade_aggregation_strategy
+        in
+            [grade_aggregation_strategy.use_earliest,
+             grade_aggregation_strategy.use_latest]):
+        if (grading_rule.grade_aggregation_strategy
+                == grade_aggregation_strategy.use_earliest):
+            navigate_qs_order_list.append('flow_session__start_time')
+        else:
+            navigate_qs_order_list.append('-flow_session__start_time')
+        if navigate_distinct_list is not None:
+            navigate_distinct_list.append('flow_session__user__last_name')
+
+    navigate_page_data_qs = navigate_page_data_qs.order_by(*navigate_qs_order_list)
+
+    if navigate_distinct_list:
+        navigate_page_data_qs.distinct(*navigate_distinct_list)
+
+    if getattr(fpctx.page, "grading_sort_by_page_data", False):
+        from json import dumps
+        flow_session_pks = list(
+            (page_data.flow_session.pk
+             for page_data in sorted(
+                list(navigate_page_data_qs),
+                key=lambda x: dumps(x.data))))
+    else:
+        flow_session_pks = list(
+            navigate_page_data_qs.values_list("flow_session", flat=True))
+    all_flow_sessions = sorted(
+        list(FlowSession.objects.filter(pk__in=flow_session_pks)),
+        key=lambda x: flow_session_pks.index(x.pk))
+
+    page_graded_session_pks = (
+        FlowPageVisitGrade.objects.filter(
+            visit__flow_session__pk__in=flow_session_pks,
+            visit__page_data__group_id=group_id,
+            visit__page_data__page_id=page_id
+        )
+        .order_by(
+            "visit__flow_session__pk",
+            "-grade_time"
+        )
+        .select_related(
+            "visit__flow_session")
+        .distinct("visit__flow_session__pk")
+        .values_list("visit__flow_session__pk", flat=True)
+    )
+#    print("graded", len(page_graded_session_pks), list(page_graded_session_pks))
+    print(page_graded_session_pks.query)
+
+
+    with connection.cursor() as c:
+        c.execute(
+            "SELECT DISTINCT course_flowpagevisit.flow_session_id "
+            "FROM course_flowpagevisitgrade "
+            "INNER JOIN course_flowpagevisit "
+            "ON course_flowpagevisitgrade.visit_id = course_flowpagevisit.id "
+            "INNER JOIN course_flowpagedata "
+            "ON course_flowpagevisit.page_data_id = course_flowpagedata.id "
+            "WHERE course_flowpagevisit.flow_session_id IN %s "
+            "AND course_flowpagedata.group_id = %s "
+            "AND course_flowpagedata.page_id = %s "
+            "ORDER BY course_flowpagevisit.flow_session_id ASC",
+            [tuple(flow_session_pks), group_id, page_id]
+        )
+        graded_session_pks = [row[0] for row in c.fetchall()]
+
+    print(list(page_graded_session_pks) == graded_session_pks)
+
+
+    # print(list(navigate_page_data_qs.values_list("flow_session__user__last_name", flat=True)))
+    # print([f.user.last_name for f in list(all_flow_sessions)])
+
     all_flow_qs2 = (
         FlowPageVisitGrade.objects.filter(
             visit__flow_session__course=flow_session.course,
@@ -278,15 +366,15 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     #     print(q.visit.flow_session.participation.user)
     #     print(as_local_time(q.grade_time))
 
-    for q in all_flow_qs2:
-        print(q.visit.flow_session.participation.user.get_full_name())
-        print(as_local_time(q.grade_time), q.value(), q.percentage())
+    # for q in all_flow_qs2:
+    #     print(q.visit.flow_session.participation.user.get_full_name())
+    #     print(as_local_time(q.grade_time), q.value(), q.percentage())
 
     # if pctx.role != participation_role.instructor:
     #     all_flow_qs = all_flow_qs.exclude(
     #         participation__role=participation_role.instructor)
 
-    flow_order_by_list = ['participation__user__username']
+    flow_order_by_list = ['participation__user__last_name']
     if (grading_rule.grade_aggregation_strategy
             == grade_aggregation_strategy.use_earliest):
         flow_order_by_list.append('start_time')
@@ -301,15 +389,15 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 grade_aggregation_strategy.use_earliest,
                 grade_aggregation_strategy.use_latest]):
         all_flow_qs = (
-            all_flow_qs.distinct('participation__user__username'))
+            all_flow_qs.distinct('participation__user__last_name'))
 
-    all_flow_sessions = list(all_flow_qs)
+    #all_flow_sessions = list(all_flow_qs)
 
     # {{{ order pages by page_data
 
-    if getattr(fpctx.page, "grading_sort_by_page_data", False):
+    if False and getattr(fpctx.page, "grading_sort_by_page_data", False):
         flow_page_data_order_list = [
-            "flow_session__participation__user__username"]
+            "flow_session__participation__user__last_name"]
         all_flow_sessions_pks = all_flow_qs.values_list('pk', flat=True)
         all_flow_session_page_data_qs = FlowPageData.objects.filter(
             flow_session__pk__in=all_flow_sessions_pks,

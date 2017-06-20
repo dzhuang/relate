@@ -927,7 +927,6 @@ class FlowPageVisit(models.Model):
             verbose_name=_('Flow session'), on_delete=models.CASCADE)
 
     page_data = models.ForeignKey(FlowPageData, db_index=True,
-            related_name="visits",
             verbose_name=_('Page data'), on_delete=models.CASCADE)
     visit_time = models.DateTimeField(default=now, db_index=True,
             verbose_name=_('Visit time'))
