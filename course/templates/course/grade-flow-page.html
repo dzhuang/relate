@@ -3,14 +3,6 @@
 
 {% load crispy_forms_tags %}
 
-{% block header_extra %}
-  {% load static coursetags %}
-  <link href='{% static "select2/dist/css/select2.css" %}' type="text/css" media="screen" rel="stylesheet" />
-  <script src='{% static "select2/dist/js/select2.js" %}'></script>
-  {% get_current_js_lang_name as LANG %}
-  <script type="text/javascript" src='{% static "select2/dist/js/i18n/" %}{{LANG}}.js'></script>
-{% endblock %}
-
 {% block title %}
    {{ page_data.group_id }}/{{ page_data.page_id }} - {{ flow_identifier}} - {% trans "Grading" %} - {% trans "RELATE" %}
 {% endblock %}
@@ -93,58 +85,39 @@
 
       {% include "base-page-top.html" %}
 
-      {% if select2_form %}
-        <div class="well">
-          {% crispy select2_form %}
+      {% if graded_select2_form or ungraded_select2_form %}
+          <div class="s2">
+          {% if graded_select2_form %}
+              {% crispy graded_select2_form %}
+          {% endif %}
+          {% if ungraded_select2_form %}
+              {% crispy ungraded_select2_form %}
+          {% endif %}
         </div>
           <script>
-                $("#id_session").on('select2:select', function(e){
-                    {# http://stackoverflow.com/a/33248730/3437454 #}
-                    {# console.log(e.params.data.grade_time) #}
-                    if (e.params.data.id){
-                        //console.log(e.params.data.id);
-                            $.ajax({
-                                // Uncomment the following to send cross-domain cookies:
-                                //xhrFields: {withCredentials: true},
-                                //url: $('#fileupload').fileupload('option', 'url'),
-
-                                url: "http://{{ request.get_host }}/select2session/{{ course.identifier }}/" + e.params.data.id,
-{#                            }).always(function () {#}
-{#                                $(this).removeClass('fileupload-processing');#}
-{#                                $(".fileupload-loading").remove();#}
-                            }).done(function (result) {
-                                console.log(result);
-                                window.location = result.uri;
-{#                                console.log(result.uri);#}
-{#                                $(this).fileupload('option', 'done')#}
-{#                                    .call(this, $.Event('done'), {result: result});#}
-                            });
-{#                        console.log("{{ course.identifier }}/" + e.params.data.id)#}
-                    }
-                });
-            </script>
+          function naviagte_to_grading_page(e){
+              {# http://stackoverflow.com/a/33248730/3437454 #}
+            if (e.params.data.id){
+                    $.ajax({
+                        url: "http://{{ request.get_host }}/select2session/{{ course.identifier }}/" + e.params.data.id,
+                    }).done(function (result) {
+                        if(result.uri!==window.location.pathname){
+                            window.location = result.uri;}
+                    });
+            }
+          }
+          {% if graded_select2_form %}
+              $("#id_graded_pages").on('select2:select', function(e){
+                  naviagte_to_grading_page(e)
+              });
+          {% endif %}
+          {% if ungraded_select2_form %}
+              $("#id_ungraded_pages").on('select2:select', function(e){
+                  naviagte_to_grading_page(e)
+              });
+          {% endif %}
+          </script>
       {% endif %}
-
-      {# {{{ Searchable session jumps #}
-        {% if all_flow_sessions_json %}
-        {% get_current_js_lang_name as LANG %}
-        <div class="s2"> <p>{% trans "Jump to" %}: <select id="select_session"> </select> </p></div>
-            <script>
-                var data = {{all_flow_sessions_json|safe}};
-                $("#select_session").select2({
-                    width: '100%',
-                    data:data,
-                    language:"{{LANG}}"
-                });
-                $("#select_session").on('select2:select', function(e){
-                    {# http://stackoverflow.com/a/33248730/3437454 #}
-                    {# console.log(e.params.data.grade_time) #}
-                    if (e.params.data.url){
-                    window.location = e.params.data.url;}
-                });
-            </script>
-        {% endif %}
-      {# }}} #}
 
       {# {{{ header table #}
       <table class="table table-condensed">

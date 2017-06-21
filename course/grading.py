@@ -29,20 +29,18 @@ from django.utils.translation import ugettext as _, string_concat
 from django.db import connection
 from django.shortcuts import (  # noqa
         get_object_or_404, redirect)
+from relate.utils import retry_transaction_decorator
 from django.contrib import messages
 from django.core.exceptions import (  # noqa
         PermissionDenied, SuspiciousOperation,
         ObjectDoesNotExist)
 from django import http
-from django.urls import reverse
 
 from relate.utils import as_local_time, compact_local_datetime_str
-from relate.utils import retry_transaction_decorator
-
 
 from course.models import (
-        Participation,
-        FlowSession, FlowPageVisitGrade, FlowPageData, FlowPageVisit,
+        Participation, FlowPageData, FlowPageVisit,
+        FlowSession, FlowPageVisitGrade,
         get_flow_grading_opportunity,
         get_feedback_for_grade,
         update_bulk_feedback)
@@ -80,7 +78,7 @@ from django_select2.forms import ModelSelect2Widget
 from relate.utils import StyledForm, StyledModelForm
 
 
-class PageGradingInfoSearchWidget(ModelSelect2Widget):
+class GradeInfoSearchWidgetBase(ModelSelect2Widget):
     model = FlowPageData
     search_fields = [
             'flow_session__user__username__icontains',
@@ -88,71 +86,86 @@ class PageGradingInfoSearchWidget(ModelSelect2Widget):
             'flow_session__user__last_name__icontains',
             ]
 
-    def __init__(self, *args, **kwargs):
-        print(kwargs)
-        for_graded = kwargs.pop("for_graded")
-        now_datetime = kwargs.pop("now_datetime")
-        super(PageGradingInfoSearchWidget,self).__init__(*args, **kwargs)
-        self.now_datetime = now_datetime
-        self.for_graded = for_graded
 
+class PageGradedInfoSearchWidget(GradeInfoSearchWidgetBase):
     def label_from_instance(self, obj):
-        if not self.for_graded:
-            return (
-                (
-                    _("%(full_name)s, started at (%(time)s)")
-                    % {
-                        "full_name": obj.flow_session.user.get_full_name(),
-                        "time": compact_local_datetime_str(
-                            as_local_time(obj.flow_session.start_time),
-                           self.now_datetime,
-                           in_python=True)
-                    }))
-
         visit = FlowPageVisit.objects.filter(
             flow_session=obj.flow_session,
-            page_data=obj
+            page_data=obj,
+            is_submitted_answer=True
         ).last()
         if not visit:
             return None
 
         most_recent_grade = visit.get_most_recent_grade()
+        from django.utils.timezone import now
+        now_datetime = as_local_time(now())
+        return (
+            _("%(full_name)s, graded at %(grade_time)s %(grader)s"
+              "(started at %(start_time)s).")
+            % {
+                "full_name": obj.flow_session.user.get_full_name(),
+                "grade_time": compact_local_datetime_str(
+                    as_local_time(most_recent_grade.grade_time),
+                    now_datetime,
+                    in_python=True
+                ),
+                "start_time": compact_local_datetime_str(
+                    as_local_time(obj.flow_session.start_time),
+                    now_datetime,
+                    in_python=True
+                ),
+                "grader": (
+                    string_concat(
+                        _("by %(grader)s") %
+                        {"grader": most_recent_grade.grader.get_full_name()},
+                        " ")
+                    if most_recent_grade.grader is not None else "")
+            })
+
+
+class PageUnGradedInfoSearchWidget(GradeInfoSearchWidgetBase):
+    def label_from_instance(self, obj):
+        from django.utils.timezone import now
+        now_datetime = as_local_time(now())
         return (
             (
-                # Translators: information displayed when selecting
-                # userfor impersonating. Customize how the name is
-                # shown, but leave email first to retain usability
-                # of form sorted by last name.
-                "%(full_name)s (%(grader)s, %(time)s)"
+                _("%(full_name)s, started at %(time)s")
                 % {
                     "full_name": obj.flow_session.user.get_full_name(),
                     "time": compact_local_datetime_str(
-                        as_local_time(most_recent_grade.grade_time),
-                        self.now_datetime,
-                        in_python=True),
-                    "grader": most_recent_grade.grader.get_full_name() if most_recent_grade.grader is not None else ""
-                    }))
+                        as_local_time(obj.flow_session.start_time),
+                        now_datetime,
+                        in_python=True
+                    ),
+                }))
 
 
 class PageGradingInfoForm(StyledForm):
-    def __init__(self, qset, for_graded, now_datetime, *args, **kwargs):
-        # type:(Any, bool, datetime.datetime, *Any, **Any) -> None
-        label = kwargs.pop("label", _("Jump to"))
+    def __init__(self, field_name, qset, widget, *args, **kwargs):
+        # type:(Any, Text, Union[PageGradedInfoSearchWidget, PageUnGradedInfoSearchWidget], *Any, **Any) -> None  # noqa
+        label = kwargs.pop("label", None)
         super(PageGradingInfoForm, self).__init__(*args, **kwargs)
 
+        self.helper.label_class = "sr-only"
+        self.helper.field_class = ""
+
         import django.forms as forms
-        self.fields["session"] = forms.ModelChoiceField(
-                queryset=qset,
-                required=False,
-                #help_text=_("Select flow session."),
-                widget=PageGradingInfoSearchWidget(
-                    for_graded=for_graded, now_datetime=now_datetime),
-                label=label)
+        select2_kwargs = {
+            "queryset": qset,
+            "required": False,
+            "widget": widget,
+        }
+        if label:
+            select2_kwargs["label"] = label.title()
+        self.fields[field_name] = forms.ModelChoiceField(
+            **select2_kwargs
+        )
 
 
 def get_session_grading_page_url(request, course_identifier, pagedata_pk):
     pagedata = FlowPageData.objects.get(pk=pagedata_pk)
-
+    from django.urls import reverse
     uri = reverse("relate-grade_flow_page",
                   args=(
                       course_identifier,
@@ -213,10 +226,6 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
     # {{{ enable flow session zapping
 
-    all_qs = (
-
-    )
-
     this_flow_page_data = FlowPageData.objects.get(
         flow_session=flow_session, ordinal=page_ordinal)
 
@@ -230,7 +239,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
             page_id=page_id,
             flow_session__participation__isnull=False,
             flow_session__in_progress=flow_session.in_progress
-        )
+        ).select_related("flow_session", "flow_session__participation")
     )
 
     navigate_pagedata_qs = all_pagedata_qs.all()
@@ -261,17 +270,14 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
     if getattr(fpctx.page, "grading_sort_by_page_data", False):
         from json import dumps
-        flow_session_pks = list(
+        all_flow_session_pks = list(
             (page_data.flow_session.pk
              for page_data in sorted(
                 list(navigate_pagedata_qs),
                 key=lambda x: dumps(x.data))))
     else:
-        flow_session_pks = list(
+        all_flow_session_pks = list(
             navigate_pagedata_qs.values_list("flow_session", flat=True))
-    all_flow_sessions = sorted(
-        list(FlowSession.objects.filter(pk__in=flow_session_pks)),
-        key=lambda x: flow_session_pks.index(x.pk))
 
     # Filter out most recent visitgrade of each page.
     # For db without distinct(*fields), raw sql is needed.
@@ -286,27 +292,40 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
             "WHERE course_flowpagevisit.flow_session_id IN %s "
             "AND course_flowpagedata.group_id = %s "
             "AND course_flowpagedata.page_id = %s "
-            "ORDER BY course_flowpagevisit.flow_session_id ASC",
-            [tuple(flow_session_pks), group_id, page_id]
+            "ORDER BY course_flowpagevisit.flow_session_id ASC, "
+            "course_flowpagevisitgrade.grade_time DESC",
+            [tuple(all_flow_session_pks), group_id, page_id]
         )
         exist_visitgrade_pks = [row[0] for row in c.fetchall()]
 
     not_null_graded_visit_pagedata_pks = (
         FlowPageVisitGrade.objects.filter(
             pk__in=exist_visitgrade_pks,
-            correctness__isnull=False
+            correctness__isnull=False,
         )
             .order_by("-grade_time")
-        .values_list("visit__page_data__pk", flat=True)
+            .values_list("visit__page_data__pk", flat=True)
     )
+
+    def get_queryset_preserving_order(name, order_list):
+        clauses = (
+            ' '.join(['WHEN %s=%s THEN %s' % (name, pk, i)
+                      for i, pk in enumerate(order_list)]))
+        ordering = 'CASE %s END' % clauses
+        return ordering
 
     graded_select2_pagedata_qs = (
         select2_pagedata_qs.filter(
             pk__in=not_null_graded_visit_pagedata_pks
-        ))
-
-    # for q in graded_select2_pagedata_qs:
-    #     print(q)
+        )
+            .extra(
+            select={
+                'ordering':
+                    get_queryset_preserving_order(
+                        "course_flowpagedata.id",
+                        not_null_graded_visit_pagedata_pks)},
+            order_by=('ordering',))
+    )
 
     ungraded_select2_pagedata_qs = (
         select2_pagedata_qs.exclude(
@@ -314,350 +333,55 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
         )
     )
 
-
-    # print(list(navigate_page_data_qs.values_list("flow_session__user__last_name", flat=True)))
-    # print([f.user.last_name for f in list(all_flow_sessions)])
-
-    all_flow_qs2 = (
-        FlowPageVisitGrade.objects.filter(
-            visit__flow_session__course=flow_session.course,
-            visit__flow_session__flow_id=flow_session.flow_id,
-            visit__page_data__group_id=group_id,
-            visit__page_data__page_id=page_id,
-            visit__flow_session__participation__isnull=False,
-            visit__flow_session__in_progress=flow_session.in_progress)
-        .order_by(
-            "visit__flow_session__participation__user",
-            "-grade_time"
-        )
-        .select_related(
-            "visit__flow_session__participation__user",
-            "visit__flow_session")
-        .distinct("visit__flow_session__participation__user")
-    )
-
-    #all_flow_qs3 = all_flow_qs2.filter(correctness__isnull=True)
-
-
-    all_flow_qs = FlowSession.objects.filter(
-        course=pctx.course,
-        flow_id=flow_session.flow_id,
-        participation__isnull=False,
-        in_progress=flow_session.in_progress).select_related("user")
-
-    #print(len(all_flow_qs2), len(all_flow_qs), "here")
-
-    # for q in all_flow_qs2:
-    #     print(q.visit.flow_session.participation.user)
-    #     print(as_local_time(q.grade_time))
-
-    # for q in all_flow_qs2:
-    #     print(q.visit.flow_session.participation.user.get_full_name())
-    #     print(as_local_time(q.grade_time), q.value(), q.percentage())
-
-    # if pctx.role != participation_role.instructor:
-    #     all_flow_qs = all_flow_qs.exclude(
-    #         participation__role=participation_role.instructor)
-
-    flow_order_by_list = ['participation__user__last_name']
-    if (grading_rule.grade_aggregation_strategy
-            == grade_aggregation_strategy.use_earliest):
-        flow_order_by_list.append('start_time')
-    elif (grading_rule.grade_aggregation_strategy
-         == grade_aggregation_strategy.use_latest):
-        flow_order_by_list.append('-start_time')
-    all_flow_qs = all_flow_qs.order_by(*flow_order_by_list)
-
-    if (connection.features.can_distinct_on_fields
-        and
-        grading_rule.grade_aggregation_strategy in [
-                grade_aggregation_strategy.use_earliest,
-                grade_aggregation_strategy.use_latest]):
-        all_flow_qs = (
-            all_flow_qs.distinct('participation__user__last_name'))
-
-    #all_flow_sessions = list(all_flow_qs)
-
-    # {{{ order pages by page_data
-
-    if False and getattr(fpctx.page, "grading_sort_by_page_data", False):
-        flow_page_data_order_list = [
-            "flow_session__participation__user__last_name"]
-        all_flow_sessions_pks = all_flow_qs.values_list('pk', flat=True)
-        all_flow_session_page_data_qs = FlowPageData.objects.filter(
-            flow_session__pk__in=all_flow_sessions_pks,
-            group_id=group_id,
-            page_id=page_id,
-        )
-
-        if (grading_rule.grade_aggregation_strategy
-                == grade_aggregation_strategy.use_earliest):
-            flow_page_data_order_list.append("-flow_session__start_time")
-        elif (grading_rule.grade_aggregation_strategy
-                  == grade_aggregation_strategy.use_latest):
-            flow_page_data_order_list.append("flow_session__start_time")
-        all_flow_session_page_data_qs = (
-            all_flow_session_page_data_qs.order_by(*flow_page_data_order_list))
-
-        if this_flow_page_data.data:
-            # for random generated question, put pages with same page_data.data
-            # closer for grading
-            all_flow_session_page_data = list(
-                all_flow_session_page_data_qs.values_list("data", flat=True))
-
-            # add index to each of the item the resulting queryset so that preserve
-            # the ordering of page with the same page_data.data when do the
-            # following sorting
-            for idx in range(len(all_flow_session_page_data)):
-                all_flow_session_page_data[idx] += str(idx)
-
-            # sorting the flowsessions according to the page_data.data
-            all_flow_session_page_data, all_flow_sessions = (
-                list(t) for t in (
-                    zip(*sorted(zip(all_flow_session_page_data, all_flow_sessions)))
-                )
-            )
-
-    # }}}
-
-    # {{{ session select2
-    graded_flow_sessions_json = []
-    ungraded_flow_sessions_json = []  # type: List[Any]
-
-    fpvg_flowsession_id_list = []  # type: List[Any]
-    fpvg_flowsession_time_list = []  # type: List[Any]
-    page_graded_flow_session_list = []  # type: List[FlowSession]
+    graded_select2_form = ungraded_select2_form = None
     if fpctx.page.expects_answer():
-        fpvg_qs = (
-            FlowPageVisitGrade.objects.filter(
-                visit__flow_session__course=pctx.course,
-                visit__flow_session__flow_id=flow_session.flow_id,
-                visit__flow_session__in_progress=False,
-                visit__page_data__group_id=group_id,
-                visit__page_data__page_id=page_id,
-
-                # exclude auto grader for non submitting problems
-                # grader__isnull=False
-            ).order_by(
-                "visit__flow_session__participation__user",
-                "-grade_time"
-            ).select_related(
-                "visit__flow_session__participation__user",
-                "visit__flow_session"
+        if graded_select2_pagedata_qs.count():
+            graded_select2_form = PageGradingInfoForm(
+                "graded_pages",
+                graded_select2_pagedata_qs,
+                PageGradedInfoSearchWidget(
+                    attrs={
+                        'data-placeholder':
+                            _("Graded pages, ordered by grade time.")}),
             )
-        )
 
-        if (connection.features.can_distinct_on_fields
-            # this may cause error in DBs don't support distinct
-            and
-                    grading_rule.grade_aggregation_strategy
-                in [grade_aggregation_strategy.use_earliest,
-                    grade_aggregation_strategy.use_latest]):
-            fpvg_qs = fpvg_qs.distinct(
-                "visit__flow_session__participation__user")
-
-        visit_pk_list = list(fpvg_qs.values_list("pk", flat=True))
-
-        fpvg_qs = fpvg_qs.filter(
-            pk__in=visit_pk_list, correctness__isnull=False)
-
-        #print(len(fpvg_qs))
-
-        fpvg_flowsession_id_time_list = (
-            list(fpvg_qs.values_list(
-                "visit__flow_session__pk",
-                "grade_time"
-            )))
-
-        fpvg_flowsession_id_time_list.sort(key=lambda xy: xy[1])
-        fpvg_flowsession_id_list = [v[0] for v in fpvg_flowsession_id_time_list]
-        page_graded_flow_session_list = (
-            [fs for fs in all_flow_sessions
-             if fs.pk in fpvg_flowsession_id_list])
-
-        fpvg_flowsession_time_list = (
-            [v[1] for v in fpvg_flowsession_id_time_list])
-
-    graded_fs_list = []  # type: List[FlowSession]
-    if page_graded_flow_session_list is not None:
-        graded_fs_list = (
-            sorted(page_graded_flow_session_list,
-                   key=lambda x: (
-                       x.pk in fpvg_flowsession_id_list,
-                       fpvg_flowsession_id_list.index(x.pk)
-                       if x.pk in fpvg_flowsession_id_list else None
-                   ),
-                   reverse=True))
-
-    page_ungraded_flow_session_list = (
-        list(set(all_flow_sessions) - set(page_graded_flow_session_list)))
-
-    grader_participation = (
-        Participation.objects.get(
-            course=pctx.course,
-            user=pctx.request.user
-        ))
-
-    may_view_participant_full_profile = not grader_participation.has_permission(
-            pperm.view_participant_masked_profile)
-
-    if may_view_participant_full_profile:
-        ungraded_fs_list = sorted(page_ungraded_flow_session_list,
-                          key=lambda x: (
-                              str(x.participation.user.get_full_name())
-                          ))
-    else:
-        ungraded_fs_list = sorted(page_ungraded_flow_session_list,
-                          key=lambda x: (
-                              str(x.participation.user.get_masked_profile())
-                          ))
-
-    adjusted_list = graded_fs_list + ungraded_fs_list
-
-    all_flow_sessions_json = []  # type: List[Any]
-
-    qset = FlowPageData.objects.filter(
-        flow_session__pk__in=fpvg_flowsession_id_list,
-        group_id=group_id,
-        page_id=page_id,
-#        visits__grades__correctness__isnull=True
-    )
-    for q in qset:
-        print(q.pk)
-    print(len(qset))
-
-    select2_form = PageGradingInfoForm(
-        graded_select2_pagedata_qs,
-        for_graded=True,
-        now_datetime=now_datetime,
-        label=_("graded")
-    )
-
-    # from django.shortcuts import render
-    #
-    # select2_html = render(pctx.request, "generic-form.html", {
-    #     "form_description": _("Impersonate user"),
-    #     "form": select2_form
-    # })
-
-    n_graded = 0
-    n_ungraded = 0
-
-    for idx, flow_session_idx in enumerate(adjusted_list):
-        if may_view_participant_full_profile:
-            user_fullname = flow_session_idx.participation.user.get_full_name()
-        else:
-            user_fullname = flow_session_idx.participation.user.get_masked_profile()
-
-        text = string_concat(
-            "%(user_fullname)s",
-            " ", _("started at %(start_time)s"),
-        ) % {
-                   "user_fullname": user_fullname,
-                   "start_time": compact_local_datetime_str(
-                       as_local_time(flow_session_idx.start_time),
-                       now_datetime,
-                       in_python=True)
-               }
-
-        try:
-            flow_page_data_idx = FlowPageData.objects.get(
-                flow_session=flow_session_idx,
-                group_id=group_id,
-                page_id=page_id)
-        except FlowPageData.DoesNotExist:
-            # Because not all page_id will be included
-            # when max_page_count is enabled.
-            continue
-
-        uri = reverse("relate-grade_flow_page",
-            args=(
-                pctx.course.identifier,
-                flow_session_idx.id,
-                flow_page_data_idx.ordinal))
-
-        grade_time = None
-
-        if fpvg_flowsession_id_list:
-            try:
-                g_idx = fpvg_flowsession_id_list.index(flow_session_idx.pk)
-                grade_time = fpvg_flowsession_time_list[g_idx]
-                n_graded += 1
-            except ValueError:
-                n_ungraded += 1
-                pass
-
-        if grade_time:
-            text += (
-                    string_concat(", ",
-                        _("graded at %(grade_time)s"), ".") %
-                    {"grade_time": compact_local_datetime_str(
-                        as_local_time(grade_time),
-                        get_now_or_fake_time(pctx.request),
-                        in_python=True)}
-                    )
-        else:
-            text += "."
-
-        flow_session_json = {
-                "id": flow_session_idx.pk,
-                "text": text,
-                "url": uri,
-                }
-
-        if grade_time:
-            graded_flow_sessions_json.append(flow_session_json)
-        else:
-            ungraded_flow_sessions_json.append(flow_session_json)
-
-        if fpctx.page.expects_answer():
-            all_flow_sessions_json = [
-                {"id": '', "text": ''},
-                {
-                    "id": '',
-                    "text": _('Ungraded (by username)') + str(n_ungraded),
-                    "children": ungraded_flow_sessions_json
-                },
-                {
-                    "id": '',
-                    "text": _('Graded (by grade time)') + str(n_graded),
-                    "children": graded_flow_sessions_json
-                }
-            ]
-        else:
-            all_flow_sessions_json = (
-                [{"id": '', "text": ''}] + ungraded_flow_sessions_json)
-
-    # }}}
-
-    # neet post/get definition and form_to_html
+        if ungraded_select2_pagedata_qs.count():
+            ungraded_select2_form = PageGradingInfoForm(
+                "ungraded_pages",
+                ungraded_select2_pagedata_qs,
+                PageUnGradedInfoSearchWidget(
+                    attrs={'data-placeholder':
+                               _("Pages ungraded or graded but not released, "
+                                 "ordered by user's first name.")}),
+            )
 
     next_flow_session_id = None
     next_flow_session_ordinal = None
     prev_flow_session_id = None
     prev_flow_session_ordinal = None
-    for i, other_flow_session in enumerate(all_flow_sessions):
-        if other_flow_session.pk == flow_session.pk:
+
+    all_flow_page_data_pk_ordinal_dict = {}
+    if getattr(fpctx.page, "grading_sort_by_page_data", False):
+        all_flow_page_data_pk_ordinal_dict = (
+            dict((k, v) for (k, v) in list(
+                FlowPageData.objects.filter(
+                    group_id=group_id,
+                    page_id=page_id)
+                .values_list("flow_session__pk", "ordinal")))
+        )
+
+    for i, other_flow_session_pk in enumerate(all_flow_session_pks):
+        if other_flow_session_pk == flow_session.pk:
             if i > 0:
-                prev_flow_session_id = all_flow_sessions[i-1].id
-                try:
-                    flow_page_data_i = FlowPageData.objects.get(
-                        flow_session__id=prev_flow_session_id,
-                        group_id=group_id,
-                        page_id=page_id)
-                    prev_flow_session_ordinal = flow_page_data_i.ordinal
-                except ObjectDoesNotExist:
-                    prev_flow_session_ordinal = page_ordinal
-            if i + 1 < len(all_flow_sessions):
-                next_flow_session_id = all_flow_sessions[i+1].id
-                try:
-                    flow_page_data_i = FlowPageData.objects.get(
-                        flow_session__id=next_flow_session_id,
-                        group_id=group_id,
-                        page_id=page_id)
-                    next_flow_session_ordinal = flow_page_data_i.ordinal
-                except ObjectDoesNotExist:
-                    next_flow_session_ordinal = page_ordinal
+                prev_flow_session_id = all_flow_session_pks[i-1]
+                prev_flow_session_ordinal = (
+                    all_flow_page_data_pk_ordinal_dict.get(
+                        prev_flow_session_id, page_ordinal))
+            if i + 1 < len(all_flow_session_pks):
+                next_flow_session_id = all_flow_session_pks[i+1]
+                next_flow_session_ordinal = (
+                    all_flow_page_data_pk_ordinal_dict.get(
+                        next_flow_session_id, page_ordinal))
 
     # }}}
 
@@ -685,7 +409,6 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
             if shown_grade is not None:
                 feedback = get_feedback_for_grade(shown_grade)
                 grade_data = shown_grade.grade_data
-                prev_grade_id = shown_grade.id
             else:
                 feedback = None
                 grade_data = None
@@ -825,9 +548,6 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
     # }}}
 
-    grading_rule = get_session_grading_rule(
-            flow_session, fpctx.flow_desc, now_datetime)
-
     if grading_rule.grade_identifier is not None:
         grading_opportunity = get_flow_grading_opportunity(
                 pctx.course, flow_session.flow_id, fpctx.flow_desc,
@@ -899,8 +619,8 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 'prev_flow_session_ordinal': prev_flow_session_ordinal,
                 "next_flow_session_id": next_flow_session_id,
                 'next_flow_session_ordinal': next_flow_session_ordinal,
-                "all_flow_sessions_json": dumps(all_flow_sessions_json),
-                "select2_form":select2_form,
+                "graded_select2_form":graded_select2_form,
+                "ungraded_select2_form": ungraded_select2_form,
 
                 "grading_form": grading_form,
                 "grading_form_html": grading_form_html,
