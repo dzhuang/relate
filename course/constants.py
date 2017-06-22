@@ -399,6 +399,7 @@ class flow_permission:  # noqa
     cannot_see_result_in_participant_grade_book =\
             "cannot_see_result_in_participant_grade_book"
 
+
 FLOW_PERMISSION_CHOICES = (
         (flow_permission.view,
             pgettext_lazy("Flow permission", "View the flow")),

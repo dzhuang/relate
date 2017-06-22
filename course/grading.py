@@ -38,7 +38,7 @@ from django import http
 
 from relate.utils import as_local_time, compact_local_datetime_str
 
-from course.models import (
+from course.models import (  # noqa
         Participation, FlowPageData, FlowPageVisit,
         FlowSession, FlowPageVisitGrade,
         get_flow_grading_opportunity,
@@ -51,7 +51,7 @@ from course.utils import (
         course_view, render_course_page,
         get_session_grading_rule,
         FlowPageContext)
-from course.flow import get_all_page_data
+from course.flow import get_all_page_data  # noqa
 from course.views import get_now_or_fake_time
 from course.page import InvalidPageData
 
@@ -75,7 +75,7 @@ if False:
 # }}}
 
 from django_select2.forms import ModelSelect2Widget
-from relate.utils import StyledForm, StyledModelForm
+from relate.utils import StyledForm
 
 
 class GradeInfoSearchWidgetBase(ModelSelect2Widget):
@@ -176,6 +176,7 @@ def get_session_grading_page_url(request, course_identifier, pagedata_pk):
         "uri": uri
     })
     return response
+
 
 # {{{ grading driver
 
@@ -377,8 +378,8 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
     # {{{ compute points_awarded
 
-    max_points = None
-    points_awarded = None
+    max_points = None  # type: Optional[Any]
+    points_awarded = None  # type: Optional[Any]
     if (fpctx.page.expects_answer()
             and fpctx.page.is_answer_gradable()):
         max_points = fpctx.page.max_points(fpctx.page_data)
@@ -411,15 +412,13 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
             group_id=group_id,
             page_id=page_id,
             flow_session__participation__isnull=False,
-            flow_session__in_progress=flow_session.in_progress
-        )
-            .select_related("flow_session")
-            .select_related("flow_session__participation")
-            .select_related("flow_session__user")
+            flow_session__in_progress=flow_session.in_progress)
+        .select_related("flow_session")
+        .select_related("flow_session__participation")
     )
 
     qs_order_by_list = ["flow_session__user"]
-    qs_distinct_list = None
+    qs_distinct_list = None  # type: Optional[Any]
     if connection.features.can_distinct_on_fields:
         qs_distinct_list = []
 
@@ -442,11 +441,16 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
     if getattr(fpctx.page, "grading_sort_by_page_data", False):
         from json import dumps
-        all_flow_session_pks = list(
-            (page_data.flow_session.pk
-             for page_data in sorted(
-                list(all_pagedata_qs),
-                key=lambda x: (dumps(x.data), x.flow_session.user.last_name, x.flow_session.pk))))
+        all_flow_session_pks = (
+            list(
+                page_data.flow_session.pk
+                for page_data in sorted(
+                    list(all_pagedata_qs), key=lambda x: (
+                        dumps(x.data),
+                        x.flow_session.user.last_name,
+                        x.flow_session.pk))
+            )
+        )
     else:
         all_flow_session_pks = list(
             all_pagedata_qs.values_list("flow_session", flat=True))
@@ -454,27 +458,6 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     select2_graded_form = select2_ungraded_form = None
 
     if fpctx.page.expects_answer():
-        # Filter out most recent visitgrade of each page.
-        # For db without distinct(*fields), raw sql is needed.
-        if True:
-            with connection.cursor() as c:
-                c.execute(
-                    "SELECT DISTINCT ON (course_flowpagevisit.flow_session_id) * "
-                    "FROM course_flowpagevisitgrade "
-                    "INNER JOIN course_flowpagevisit "
-                    "ON course_flowpagevisitgrade.visit_id = course_flowpagevisit.id "
-                    "INNER JOIN course_flowpagedata "
-                    "ON course_flowpagevisit.page_data_id = course_flowpagedata.id "
-                    "WHERE course_flowpagevisit.flow_session_id IN %s "
-                    "AND course_flowpagedata.group_id = %s "
-                    "AND course_flowpagedata.page_id = %s "
-                    "ORDER BY course_flowpagevisit.flow_session_id ASC, "
-                    "course_flowpagevisitgrade.grade_time DESC",
-                    [tuple(all_flow_session_pks), group_id, page_id]
-                )
-                exist_visitgrade_pks = [row[0] for row in c.fetchall()]
-
-        from django.db.models import Max
 
         # {{{ Filter out the latest visitgrade of given flowsessions
 
@@ -488,6 +471,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
             )
         )
 
+        from django.db.models import Max
         latest_visitgrade = exist_visitgrade_qs.values(
             "visit__flow_session_id"
         ).annotate(latest_visit=Max("pk"))
@@ -504,13 +488,13 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
         not_null_graded_visit_pagedata_pks = (
             FlowPageVisitGrade.objects.filter(
                 pk__in=exist_visitgrade_pks,
-                correctness__isnull=False,
-            )
-                .order_by("-grade_time")
-                .values_list("visit__page_data__pk", flat=True)
+                correctness__isnull=False)
+            .order_by("-grade_time")
+            .values_list("visit__page_data__pk", flat=True)
         )
 
         def get_queryset_preserving_order(name, order_list):
+            # type: (Text, List[int]) -> Text
             clauses = (
                 ' '.join(['WHEN %s=%s THEN %s' % (name, pk, i)
                           for i, pk in enumerate(order_list)]))
@@ -518,10 +502,8 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
             return ordering
 
         select2_graded_pagedata_qs = (
-            FlowPageData.objects.filter(
-                pk__in=not_null_graded_visit_pagedata_pks
-            )
-                .extra(
+            FlowPageData.objects.filter(pk__in=not_null_graded_visit_pagedata_pks)
+            .extra(
                 select={
                     'ordering':
                         get_queryset_preserving_order(
@@ -532,12 +514,8 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
         select2_ungraded_pagedata_qs = (
             FlowPageData.objects.filter(
-                pk__in=all_pagedata_qs.values_list("pk", flat=True)
-            )
-                .exclude(
-                pk__in=not_null_graded_visit_pagedata_pks
-            )
-        )
+                pk__in=all_pagedata_qs.values_list("pk", flat=True))
+            .exclude(pk__in=not_null_graded_visit_pagedata_pks))
 
         if select2_graded_pagedata_qs.count():
             select2_graded_form = PageGradingInfoForm(
@@ -589,7 +567,6 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
     # }}}
 
-
     # all_page_data = get_all_page_data(flow_session)
     # #assert all_page_data.count()
     #
@@ -625,7 +602,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     # grade_status_zip = zip(all_expect_grade_page_data, all_page_grade_points)
     grade_status_zip = None
 
-    from json import dumps
+    #from json import dumps
     return render_course_page(
             pctx,
             "course/grade-flow-page.html",
@@ -654,7 +631,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 'prev_flow_session_ordinal': prev_flow_session_ordinal,
                 "next_flow_session_id": next_flow_session_id,
                 'next_flow_session_ordinal': next_flow_session_ordinal,
-                "select2_graded_form":select2_graded_form,
+                "select2_graded_form": select2_graded_form,
                 "select2_ungraded_form": select2_ungraded_form,
 
                 "grading_form": grading_form,
