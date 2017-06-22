@@ -74,7 +74,7 @@ if local_settings.get("RELATE_SIGN_IN_BY_SAML2_ENABLED", False):  # type: ignore
 # {{{ django: middleware
 
 MIDDLEWARE = (
-    "debug_panel.middleware.DebugPanelMiddleware",
+    # "debug_panel.middleware.DebugPanelMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
