@@ -85,17 +85,17 @@
 
       {% include "base-page-top.html" %}
 
-      {% if graded_select2_form or ungraded_select2_form %}
+      {% if select2_graded_form or select2_ungraded_form %}
           <div class="s2">
-          {% if graded_select2_form %}
-              {% crispy graded_select2_form %}
+          {% if select2_graded_form %}
+              {% crispy select2_graded_form %}
           {% endif %}
-          {% if ungraded_select2_form %}
-              {% crispy ungraded_select2_form %}
+          {% if select2_ungraded_form %}
+              {% crispy select2_ungraded_form %}
           {% endif %}
         </div>
           <script>
-          function naviagte_to_grading_page(e){
+          function navigate_to_grading_page(e){
               {# http://stackoverflow.com/a/33248730/3437454 #}
             if (e.params.data.id){
                     $.ajax({
@@ -106,14 +106,14 @@
                     });
             }
           }
-          {% if graded_select2_form %}
+          {% if select2_graded_form %}
               $("#id_graded_pages").on('select2:select', function(e){
-                  naviagte_to_grading_page(e)
+                  navigate_to_grading_page(e)
               });
           {% endif %}
-          {% if ungraded_select2_form %}
+          {% if select2_ungraded_form %}
               $("#id_ungraded_pages").on('select2:select', function(e){
-                  naviagte_to_grading_page(e)
+                  navigate_to_grading_page(e)
               });
           {% endif %}
           </script>

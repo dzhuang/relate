@@ -418,12 +418,10 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
             .select_related("flow_session__user")
     )
 
-    navigate_pagedata_qs = all_pagedata_qs.all()
-
-    navigate_qs_order_list = ["flow_session__user__last_name"]
-    navigate_distinct_list = None
+    qs_order_by_list = ["flow_session__user"]
+    qs_distinct_list = None
     if connection.features.can_distinct_on_fields:
-        navigate_distinct_list = []
+        qs_distinct_list = []
 
     if (grading_rule.grade_aggregation_strategy
         in
@@ -431,52 +429,77 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
              grade_aggregation_strategy.use_latest]):
         if (grading_rule.grade_aggregation_strategy
                 == grade_aggregation_strategy.use_earliest):
-            navigate_qs_order_list.append('flow_session__start_time')
+            qs_order_by_list.append('flow_session__start_time')
         else:
-            navigate_qs_order_list.append('-flow_session__start_time')
-        if navigate_distinct_list is not None:
-            navigate_distinct_list.append('flow_session__user__last_name')
+            qs_order_by_list.append('-flow_session__start_time')
+        if qs_distinct_list is not None:
+            qs_distinct_list.insert(0, 'flow_session__user')
 
-    navigate_pagedata_qs = navigate_pagedata_qs.order_by(*navigate_qs_order_list)
+    all_pagedata_qs = all_pagedata_qs.order_by(*qs_order_by_list)
 
-    if navigate_distinct_list:
-        navigate_pagedata_qs.distinct(*navigate_distinct_list)
-
-    select2_pagedata_qs = navigate_pagedata_qs.all()
+    if qs_distinct_list:
+        all_pagedata_qs = all_pagedata_qs.distinct(*qs_distinct_list)
 
     if getattr(fpctx.page, "grading_sort_by_page_data", False):
         from json import dumps
         all_flow_session_pks = list(
             (page_data.flow_session.pk
              for page_data in sorted(
-                list(navigate_pagedata_qs),
-                key=lambda x: dumps(x.data))))
+                list(all_pagedata_qs),
+                key=lambda x: (dumps(x.data), x.flow_session.user.last_name, x.flow_session.pk))))
     else:
         all_flow_session_pks = list(
-            navigate_pagedata_qs.values_list("flow_session", flat=True))
+            all_pagedata_qs.values_list("flow_session", flat=True))
 
-
-    graded_select2_form = ungraded_select2_form = None
+    select2_graded_form = select2_ungraded_form = None
 
     if fpctx.page.expects_answer():
         # Filter out most recent visitgrade of each page.
         # For db without distinct(*fields), raw sql is needed.
-        with connection.cursor() as c:
-            c.execute(
-                "SELECT DISTINCT ON (course_flowpagevisit.flow_session_id) * "
-                "FROM course_flowpagevisitgrade "
-                "INNER JOIN course_flowpagevisit "
-                "ON course_flowpagevisitgrade.visit_id = course_flowpagevisit.id "
-                "INNER JOIN course_flowpagedata "
-                "ON course_flowpagevisit.page_data_id = course_flowpagedata.id "
-                "WHERE course_flowpagevisit.flow_session_id IN %s "
-                "AND course_flowpagedata.group_id = %s "
-                "AND course_flowpagedata.page_id = %s "
-                "ORDER BY course_flowpagevisit.flow_session_id ASC, "
-                "course_flowpagevisitgrade.grade_time DESC",
-                [tuple(all_flow_session_pks), group_id, page_id]
+        if True:
+            with connection.cursor() as c:
+                c.execute(
+                    "SELECT DISTINCT ON (course_flowpagevisit.flow_session_id) * "
+                    "FROM course_flowpagevisitgrade "
+                    "INNER JOIN course_flowpagevisit "
+                    "ON course_flowpagevisitgrade.visit_id = course_flowpagevisit.id "
+                    "INNER JOIN course_flowpagedata "
+                    "ON course_flowpagevisit.page_data_id = course_flowpagedata.id "
+                    "WHERE course_flowpagevisit.flow_session_id IN %s "
+                    "AND course_flowpagedata.group_id = %s "
+                    "AND course_flowpagedata.page_id = %s "
+                    "ORDER BY course_flowpagevisit.flow_session_id ASC, "
+                    "course_flowpagevisitgrade.grade_time DESC",
+                    [tuple(all_flow_session_pks), group_id, page_id]
+                )
+                exist_visitgrade_pks = [row[0] for row in c.fetchall()]
+
+        from django.db.models import Max
+
+        # {{{ Filter out the latest visitgrade of given flowsessions
+
+        # Ref: GROUP BY and Select MAX from each group in Django, 2 queries
+        # https: // gist.github.com / ryanpitts / 1304725  # gistcomment-1417399
+        exist_visitgrade_qs = (
+            FlowPageVisitGrade.objects.filter(
+                visit__flow_session__pk__in=all_flow_session_pks,
+                visit__page_data__group_id=group_id,
+                visit__page_data__page_id=page_id,
             )
-            exist_visitgrade_pks = [row[0] for row in c.fetchall()]
+        )
+
+        latest_visitgrade = exist_visitgrade_qs.values(
+            "visit__flow_session_id"
+        ).annotate(latest_visit=Max("pk"))
+
+        exist_visitgrade_pks = (
+            exist_visitgrade_qs.filter(
+                pk__in=latest_visitgrade.values('latest_visit'))
+            .order_by('-pk')
+            .values_list("pk", flat=True)
+        )
+
+        # }}}
 
         not_null_graded_visit_pagedata_pks = (
             FlowPageVisitGrade.objects.filter(
@@ -494,8 +517,8 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
             ordering = 'CASE %s END' % clauses
             return ordering
 
-        graded_select2_pagedata_qs = (
-            select2_pagedata_qs.filter(
+        select2_graded_pagedata_qs = (
+            FlowPageData.objects.filter(
                 pk__in=not_null_graded_visit_pagedata_pks
             )
                 .extra(
@@ -507,26 +530,29 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 order_by=('ordering',))
         )
 
-        ungraded_select2_pagedata_qs = (
-            select2_pagedata_qs.exclude(
+        select2_ungraded_pagedata_qs = (
+            FlowPageData.objects.filter(
+                pk__in=all_pagedata_qs.values_list("pk", flat=True)
+            )
+                .exclude(
                 pk__in=not_null_graded_visit_pagedata_pks
             )
         )
 
-        if graded_select2_pagedata_qs.count():
-            graded_select2_form = PageGradingInfoForm(
+        if select2_graded_pagedata_qs.count():
+            select2_graded_form = PageGradingInfoForm(
                 "graded_pages",
-                graded_select2_pagedata_qs,
+                select2_graded_pagedata_qs,
                 PageGradedInfoSearchWidget(
                     attrs={
                         'data-placeholder':
                             _("Graded pages, ordered by grade time.")}),
             )
 
-        if ungraded_select2_pagedata_qs.count():
-            ungraded_select2_form = PageGradingInfoForm(
+        if select2_ungraded_pagedata_qs.count():
+            select2_ungraded_form = PageGradingInfoForm(
                 "ungraded_pages",
-                ungraded_select2_pagedata_qs,
+                select2_ungraded_pagedata_qs,
                 PageUnGradedInfoSearchWidget(
                     attrs={'data-placeholder':
                                _("Pages ungraded or graded but not released, "
@@ -539,7 +565,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     prev_flow_session_ordinal = None
 
     # This is used to ensure prev and next session button navigate to
-    # pages with the same page_id
+    # pages with the same page_id, when shuffled.
     all_pagedata_with_same_page_id_pk_ordinal_dict = (
         dict((k, v) for (k, v) in list(
             FlowPageData.objects.filter(
@@ -628,8 +654,8 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 'prev_flow_session_ordinal': prev_flow_session_ordinal,
                 "next_flow_session_id": next_flow_session_id,
                 'next_flow_session_ordinal': next_flow_session_ordinal,
-                "graded_select2_form":graded_select2_form,
-                "ungraded_select2_form": ungraded_select2_form,
+                "select2_graded_form":select2_graded_form,
+                "select2_ungraded_form": select2_ungraded_form,
 
                 "grading_form": grading_form,
                 "grading_form_html": grading_form_html,
