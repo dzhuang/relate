@@ -1295,12 +1295,28 @@ def parse_date_spec(
 
     from bson import json_util
     import json
-    result = _parse_date_spec(course, datespec)
-    result_str = json.dumps(result, default=json_util.default)
-    result2 = json.loads(result_str, object_hook=json_util.object_hook)
-    print(result == result2)
-    return result2
 
+    result_json = None
+    # Memcache is apparently limited to 250 characters.
+    if len(cache_key) < 240:
+        result_json = def_cache.get(cache_key)
+    if result_json is not None:
+        assert isinstance(result_json, six.text_type), cache_key
+        result = json.loads(result_json, object_hook=json_util.object_hook)
+        if result:
+            assert isinstance(result, datetime.datetime)
+        return result
+
+    result = _parse_date_spec(course, datespec)
+    result_json = json.dumps(result, default=json_util.default)
+
+    if len(result_json) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
+        def_cache.add(cache_key, result_json, None)
+
+    if result:
+        assert isinstance(result, datetime.datetime)
+
+    return result
 
 # }}}
 
