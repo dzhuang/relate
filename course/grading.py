@@ -647,6 +647,45 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
     # }}}
 
+    # {{{ Warning if the page/session will not be counted in the
+    # final score of the flow.
+
+    session_not_for_grading_warning_html = None
+
+    if (grading_form
+        and qs_distinct_list
+        and
+                current_flowpagedata.pk not in all_pagedata_pks):
+
+        try:
+            available_pagedata = FlowPageData.objects.get(
+                pk__in=all_pagedata_pks,
+                flow_session__user=current_flowpagedata.flow_session.user
+            )
+        except ObjectDoesNotExist:
+            # for participants without pperm.included_in_grade_statistics
+            available_pagedata = None
+
+        if available_pagedata:
+            from django.urls import reverse
+            uri = reverse("relate-grade_flow_page",
+                          args=(
+                              pctx.course_identifier,
+                              available_pagedata.flow_session.id,
+                              available_pagedata.ordinal))
+
+            from django.utils.safestring import mark_safe
+            session_not_for_grading_warning_html = mark_safe(
+                _("This page and session will not be counted into %(user)s's "
+                  "grading of this flow%s, see %(url)s instead.")
+                % {
+                    "user": current_flowpagedata.flow_session.user,
+                    "url": "<a class='relate-grading-nav' href='%s'>%s</a>"
+                           % (uri, _("this session"))
+                }
+            )
+    # }}}
+
     return render_course_page(
             pctx,
             "course/grade-flow-page.html",
@@ -679,6 +718,8 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                     next_ungraded_flow_session_ordinal,
                 "select2_graded_form": select2_graded_form,
                 "select2_ungraded_form": select2_ungraded_form,
+                "session_not_for_grading_warning_html":
+                    session_not_for_grading_warning_html,
 
                 "grading_form": grading_form,
                 "grading_form_html": grading_form_html,
