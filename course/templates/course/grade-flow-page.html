@@ -215,7 +215,7 @@
             {% if grading_form_html != None %}
               {% if next_ungraded_flow_session_id %}
                 <a href="{% url "relate-grade_flow_page" course.identifier next_ungraded_flow_session_id next_ungraded_flow_session_ordinal %}"
-                   accesskey="l" class="btn btn-default relate-grading-nav" title="{% trans "Next ungraded page with the same page_id (cyclicly)" %} Alt/Cmd+(Shift+)n"><i class="fa fa-forward"></i></a>
+                   accesskey="l" class="btn btn-default relate-grading-nav" title="{% trans "Next ungraded page with the same page_id (cyclicly)" %} Alt/Cmd+(Shift+)l"><i class="fa fa-forward"></i></a>
               {% else %}
                 <a href="#" class="btn btn-default disabled"><i class="fa fa fa-forward"></i></a>
               {% endif %}
