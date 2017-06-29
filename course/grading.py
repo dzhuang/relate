@@ -456,24 +456,29 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     if qs_distinct_list:
         all_pagedata_qs = all_pagedata_qs.distinct(*qs_distinct_list)
 
-    if getattr(fpctx.page, "grading_sort_by_page_data", False):
-        from json import dumps
-        all_flow_session_pks = (
-            list(
-                page_data.flow_session.pk
-                for page_data in sorted(
-                    list(all_pagedata_qs), key=lambda x: (
-                        dumps(x.data),
-                        x.flow_session.user.last_name,
-                        x.flow_session.pk))
+    if all_pagedata_qs.count():
+        if getattr(fpctx.page, "grading_sort_by_page_data", False):
+            from json import dumps
+            all_flow_session_pks = (
+                list(
+                    page_data.flow_session.pk
+                    for page_data in sorted(
+                        list(all_pagedata_qs), key=lambda x: (
+                            dumps(x.data),
+                            x.flow_session.user.last_name,
+                            x.flow_session.pk))
+                )
             )
-        )
-        all_pagedata_pks = all_pagedata_qs.values_list("pk", flat=True)
+            all_pagedata_pks = all_pagedata_qs.values_list("pk", flat=True)
+        else:
+            all_flow_session_pks, all_pagedata_pks = (
+                map(list, zip(
+                    *list(all_pagedata_qs.values_list("flow_session", "pk"))))
+            )
     else:
-        all_flow_session_pks, all_pagedata_pks = (
-            map(list, zip(
-                *list(all_pagedata_qs.values_list("flow_session", "pk"))))
-        )
+        # When visiting a page which won't be included in statistics
+        all_pagedata_pks = [current_flowpagedata.pk]
+        all_flow_session_pks = [flow_session.pk]
 
     select2_graded_form = select2_ungraded_form = None
 

@@ -671,7 +671,9 @@
       }
 
       $(document).ready(function() {
+        {% if grading_form_html != None %}
         add_submit_next();
+        {% endif %}
         scroll_to_answer();
       });
   </script>
