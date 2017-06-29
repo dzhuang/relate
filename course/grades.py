@@ -1552,6 +1552,19 @@ def download_all_submissions(pctx, flow_id):
 
             submissions = {}
 
+            from six import StringIO
+            csvfile = StringIO()
+
+            if six.PY2:
+                import unicodecsv as csv
+            else:
+                import csv
+
+            fieldnames = ['full_name', 'institutional_id', 'submission']
+
+            writer = csv.writer(csvfile)
+            writer.writerow(fieldnames)
+
             for visit in visits:
                 page = page_cache.get_page(group_id, page_id,
                         pctx.course_commit_sha)
@@ -1593,6 +1606,8 @@ def download_all_submissions(pctx, flow_id):
                     submissions[key] = (
                             bytes_answer, list(visit.grades.all()))
 
+                    writer.writerow([username, institutional_id,"True"])
+
             from six import BytesIO
             from zipfile import ZipFile
             bio = BytesIO()
@@ -1625,6 +1640,7 @@ def download_all_submissions(pctx, flow_id):
                                 basename + "-feedback.txt",
                                 "\n".join(feedback_lines))
 
+                subm_zip.writestr("submit_summary.csv", csvfile.getvalue().encode("utf-8"))
                 extra_file = request.FILES.get("extra_file")
                 if extra_file is not None:
                     subm_zip.writestr(extra_file.name, extra_file.read())
