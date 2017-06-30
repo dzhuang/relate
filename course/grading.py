@@ -180,7 +180,7 @@ def get_session_grading_page_url(request, course_identifier, pagedata_pk):
     return response
 
 
-def get_participations_pks_excluded_from_grade_statistics(
+def get_participation_pks_excluded_from_grade_statistics(
         course_identifier, include_pks=None):
     # type: (Text, Optional[List[int]]) -> List[int]
     # Get pk list of participations whose grades won't be included in statistics
@@ -454,7 +454,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     else:
         excluded_pagedata_pk = current_flowpagedata.pk
         excluded_participation_pks = (
-            get_participations_pks_excluded_from_grade_statistics(
+            get_participation_pks_excluded_from_grade_statistics(
                 course_identifier=pctx.course.identifier,
                 include_pks=[flow_session.participation.pk]
             ))
