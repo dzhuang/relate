@@ -3956,7 +3956,7 @@ msgid "Past submissions/grades"
 msgstr "过往的提交记录/评分记录"
 
 msgid "Submission:"
-msgstr "权限:"
+msgstr "提交:"
 
 msgid "Grade:"
 msgstr "得分:"
