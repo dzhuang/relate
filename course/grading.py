@@ -41,6 +41,10 @@ from relate.utils import as_local_time, compact_local_datetime_str
 
 from course.models import (  # noqa
         Participation, FlowPageData, FlowPageVisit,
+from relate.utils import as_local_time, format_datetime_local
+
+from course.models import (  # noqa
+        Participation, FlowPageData, FlowPageVisit,
         FlowSession, FlowPageVisitGrade,
         get_flow_grading_opportunity,
         get_feedback_for_grade,

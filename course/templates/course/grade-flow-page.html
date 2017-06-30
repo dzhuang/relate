@@ -41,7 +41,13 @@
                 {% if pgrade.value == None %}
                   [{% trans "no grade" %}]
                 {% else %}
-                  [{{ pgrade.value}} {% trans "points" %}]
+                  [{{ pgrade.value}}
+                  {# Translators: the unit name in grading #}
+                  {% blocktrans trimmed %}
+                  point
+                  {% plural %}
+                  points
+                  {% endblocktrans %}]
                 {% endif %}
               </a></li>
               {% endfor %}
