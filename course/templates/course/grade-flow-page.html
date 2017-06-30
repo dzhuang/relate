@@ -43,7 +43,7 @@
                 {% else %}
                   [{{ pgrade.value}}
                   {# Translators: the unit name in grading #}
-                  {% blocktrans trimmed %}
+                  {% blocktrans trimmed  count counter=pgrade.value %}
                   point
                   {% plural %}
                   points
