@@ -40,7 +40,7 @@ from django import http
 from relate.utils import as_local_time, compact_local_datetime_str
 
 from course.models import (  # noqa
-        Participation, FlowPageData, FlowPageVisit,
+        Course, Participation, FlowPageData, FlowPageVisit,
         FlowSession, FlowPageVisitGrade,
         get_flow_grading_opportunity,
         get_feedback_for_grade,
@@ -166,6 +166,16 @@ class PageGradingInfoForm(StyledForm):
 
 
 def get_session_grading_page_url(request, course_identifier, pagedata_pk):
+    if not request.user.is_authenticated:
+        raise PermissionDenied()
+    course = get_object_or_404(Course, identifier=course_identifier)
+
+    from course.enrollment import get_participation_for_request
+    participation = get_participation_for_request(request, course)
+
+    if not participation.has_permission(pperm.view_gradebook):
+            raise PermissionDenied(_("may not view grade book"))
+
     pagedata = FlowPageData.objects.get(pk=pagedata_pk)
     from django.urls import reverse
     uri = reverse("relate-grade_flow_page",
