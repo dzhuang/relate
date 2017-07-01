@@ -132,14 +132,17 @@
     </thead>
     <tbody>
       {% for participation, grade_info in grade_table %}
-        {% if participation|has_permission:"included_in_grade_statistics" or request.GET.show_excluded %}
           <tr
+{#              {% if participation|has_permission:"included_in_grade_statistics" %}#}
+{#                class="excluded-grade-info hidden"#}
               {% if not grade_info.flow_session %}
                 class="danger"
               {% elif grade_info.flow_session.in_progress %}
                 {% if grade_info.flow_not_completed %}
                   class="warning"
                 {% elif grade_info.grade_state_machine.percentage == None %}
+                  class="warning"
+                {% elif grade_info.grade_state_machine.percentage == 0 %}
                   class="warning"
                 {% endif %}
               {% elif grade_info.grade_state_machine.percentage == 0 %}
@@ -207,6 +210,8 @@
                     data-order="0"
                   {% elif grade_info.grade_state_machine.percentage == None %}
                     data-order="1"
+                  {% elif grade_info.grade_state_machine.percentage == 0 %}
+                    data-order="2"
                   {% elif grade_info.grade_state_machine.percentage > 0 %}
                     data-order="3"
                   {% endif %}
@@ -249,7 +254,6 @@
                  ><span class="sensitive">{{ grade_info.grade_state_machine.stringify_state }}</span></a>
             </td>
           </tr>
-        {% endif %}
       {% endfor %}
     </tbody>
   </table>

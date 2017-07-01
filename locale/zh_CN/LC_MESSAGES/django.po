@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-06-28 09:45+0800\n"
+"POT-Creation-Date: 2017-06-30 23:30+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -3964,6 +3964,12 @@ msgstr "得分:"
 msgid "no grade"
 msgstr "无评分"
 
+#. Translators: the unit name in grading
+msgid "point"
+msgid_plural "points"
+msgstr[0] "分"
+msgstr[1] "分"
+
 msgid "Property"
 msgstr "属性"
 
@@ -3985,12 +3991,6 @@ msgstr "给予的分数"
 
 msgid "(unknown)"
 msgstr "(未知)"
-
-#. Translators: the unit name in grading
-msgid "point"
-msgid_plural "points"
-msgstr[0] "分"
-msgstr[1] "分"
 
 msgid "(n/a)"
 msgstr ""
@@ -4178,9 +4178,15 @@ msgstr "我"
 msgid "Rules tag"
 msgstr "规则tag"
 
+msgid "not started"
+msgstr "未开始"
+
 #, python-format
 msgid "%(points)s/%(max_points)s points"
 msgstr "%(points)s/%(max_points)s分"
+
+msgid "show excluded participations"
+msgstr "显示默认不显示的课程参与"
 
 msgid "Add grading opportunity"
 msgstr "添加得分机会"
