@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-06-30 23:30+0800\n"
+"POT-Creation-Date: 2017-07-12 09:14+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -1767,18 +1767,20 @@ msgstr "编辑得分机会"
 
 #, python-format
 msgid ""
-"%(full_name)s, graded at %(grade_time)s %(grader)s(started at %(start_time)"
-"s)."
+"%(full_name)s, graded at %(grade_time)s %(grader)s(flow session id '%"
+"(flow_session_pk)s' started at %(start_time)s)."
 msgstr ""
-"%(full_name)s, 已评分于 %(grade_time)s %(grader)s (开始于 %(start_time)s)."
+"%(full_name)s, 已评分于 %(grade_time)s %(grader)s (session\"%"
+"(flow_session_pk)s\" 开始于 %(start_time)s)."
 
 #, python-format
 msgid "by %(grader)s"
 msgstr "评分人：%(grader)s"
 
 #, python-format
-msgid "%(full_name)s, started at %(time)s"
-msgstr "%(full_name)s, 开始于%(time)s"
+msgid ""
+"%(full_name)s, flow session id '%(flow_session_pk)s' started at %(time)s"
+msgstr "%(full_name)s, session\"%(flow_session_pk)s\" 开始于%(time)s"
 
 msgid "Flow session not part of specified course"
 msgstr "该flow session不是选定课程的内容"
@@ -1792,11 +1794,11 @@ msgstr "不允许评分"
 msgid "Submit"
 msgstr "提交"
 
-msgid "Graded pages, ordered by last name then grade time."
+msgid "Graded pages, ordered by last name and grade time"
 msgstr "已评分页面，按评分姓氏、时间排序."
 
-msgid "Graded pages, ordered by grade time."
-msgstr "已评分页面，按评分时间排序."
+msgid "Graded pages, ordered by grade time"
+msgstr "已评分页面，按评分时间排序"
 
 msgid "Pages ungraded or graded but not released, ordered by user's last name."
 msgstr "未评分页面 或 已评分但未发布，按用户姓氏排序."
@@ -4024,6 +4026,12 @@ msgstr ""
 
 msgid "Start:"
 msgstr "开始:"
+
+msgid "Previous page in session"
+msgstr "本Session中的上一页"
+
+msgid "Next page in session"
+msgstr "本Session中的下一页"
 
 msgid "Page number"
 msgstr "Page编号"
