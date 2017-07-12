@@ -81,6 +81,7 @@ from relate.utils import StyledForm
 class GradeInfoSearchWidgetBase(ModelSelect2Widget):
     model = FlowPageData
     search_fields = [
+            'flow_session__pk__contains',
             'flow_session__user__username__icontains',
             'flow_session__user__first_name__icontains',
             'flow_session__user__last_name__icontains',
@@ -103,9 +104,15 @@ class PageGradedInfoSearchWidget(GradeInfoSearchWidgetBase):
 
         return (
             _("%(full_name)s, graded at %(grade_time)s %(grader)s"
-              "(started at %(start_time)s).")
+              "(flow session id '%(flow_session_pk)s' "
+              "started at %(start_time)s).")
             % {
-                "full_name": obj.flow_session.user.get_full_name(),
+                "full_name": (
+                    obj.flow_session.user.get_full_name()
+                    if (obj.flow_session.user.first_name
+                        and obj.flow_session.user.last_name)
+                    else obj.flow_session.user.username
+                ),
                 "grade_time": compact_local_datetime_str(
                     as_local_time(most_recent_grade.grade_time),
                     now_datetime,
@@ -116,6 +123,7 @@ class PageGradedInfoSearchWidget(GradeInfoSearchWidgetBase):
                     now_datetime,
                     in_python=True
                 ),
+                "flow_session_pk": obj.flow_session.pk,
                 "grader": (
                     string_concat(
                         _("by %(grader)s") %
@@ -132,9 +140,16 @@ class PageUnGradedInfoSearchWidget(GradeInfoSearchWidgetBase):
 
         return (
             (
-                _("%(full_name)s, started at %(time)s")
+                _("%(full_name)s, flow session id '%(flow_session_pk)s' "
+                  "started at %(time)s")
                 % {
-                    "full_name": obj.flow_session.user.get_full_name(),
+                    "full_name": (
+                        obj.flow_session.user.get_full_name()
+                        if (obj.flow_session.user.first_name
+                            and obj.flow_session.user.last_name)
+                        else obj.flow_session.user.username
+                    ),
+                    "flow_session_pk": obj.flow_session.pk,
                     "time": compact_local_datetime_str(
                         as_local_time(obj.flow_session.start_time),
                         now_datetime,
@@ -145,7 +160,7 @@ class PageUnGradedInfoSearchWidget(GradeInfoSearchWidgetBase):
 
 class PageGradingInfoForm(StyledForm):
     def __init__(self, field_name, qset, widget, *args, **kwargs):
-        # type:(Any, Text, Any, *Any, **Any) -> None
+        # type:(Text, Any, Any, *Any, **Any) -> None
         label = kwargs.pop("label", None)
         super(PageGradingInfoForm, self).__init__(*args, **kwargs)
 
@@ -554,7 +569,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                         attrs={
                             'data-placeholder':
                                 _("Graded pages, ordered by last name "
-                                  "then grade time.")}),
+                                  "and grade time")}),
                 )
 
             else:
@@ -638,7 +653,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                         PageGradedInfoSearchWidget(
                             attrs={
                                 'data-placeholder':
-                                    _("Graded pages, ordered by grade time.")}),
+                                    _("Graded pages, ordered by grade time")}),
                     )
 
                 if select2_ungraded_pagedata_qs.count():
