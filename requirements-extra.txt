@@ -44,15 +44,12 @@ pymongo
 # questionnair
 git+https://git.oschina.net/dzhuang/django-survey-formset.git
 
-# atomic copy and write
-atomicwrites
-
 # debug
-django-debug-panel
-django-debug-toolbar
+#django-debug-panel
+#django-debug-toolbar
 
 # email
-django-celery-email
+django-celery-email<2
 
 # atomic write files avoiding race condition
 atomicwrites
