@@ -697,8 +697,7 @@ def view_grades_by_opportunity(pctx, opp_id):
                     (participation, OpportunitySessionGradeInfo(
                         grade_state_machine=state_machine,
                         flow_session=fsession,
-                        flow_not_completed
-                        =flow_not_completed)))
+                        flow_not_completed=flow_not_completed)))
 
     if view_page_grades and len(grade_table) > 0 and all(
             info.flow_session is not None for _dummy1, info in grade_table):
