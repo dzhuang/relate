@@ -262,14 +262,6 @@ div.progress:hover  span.stats-percentage{
     }
 }
 
-.relate-grade-flow-page-setting-btn {
-  float: right;
-  background-color:transparent;
-  padding: 0;
-  -webkit-box-shadow: none !important;
-  box-shadow: none  !important;
-}
-
 .relate-participation-active {
 }
 .relate-participation-requested {

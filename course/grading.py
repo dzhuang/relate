@@ -24,20 +24,19 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-from itertools import chain
 
 from django.utils.translation import ugettext as _, string_concat
 from django.db import connection
 from django.shortcuts import (  # noqa
         get_object_or_404, redirect)
-from relate.utils import retry_transaction_decorator
+from relate.utils import (
+    retry_transaction_decorator, StyledForm,
+    as_local_time, format_datetime_local)
 from django.contrib import messages
 from django.core.exceptions import (  # noqa
         PermissionDenied, SuspiciousOperation,
         ObjectDoesNotExist)
 from django import http
-
-from relate.utils import as_local_time, compact_local_datetime_str
 
 from course.models import (  # noqa
         Course, Participation, FlowPageData, FlowPageVisit,
@@ -60,6 +59,7 @@ from django.utils import translation
 from course.constants import (
         participation_permission as pperm,
         )
+from django_select2.forms import ModelSelect2Widget
 
 # {{{ for mypy
 
@@ -73,9 +73,6 @@ if False:
     import datetime  # noqa
 
 # }}}
-
-from django_select2.forms import ModelSelect2Widget
-from relate.utils import StyledForm
 
 
 class GradeInfoSearchWidgetBase(ModelSelect2Widget):
@@ -103,9 +100,9 @@ class PageGradedInfoSearchWidget(GradeInfoSearchWidgetBase):
         now_datetime = as_local_time(now())
 
         return (
-            _("%(full_name)s, graded at %(grade_time)s %(grader)s"
-              "(flow session id '%(flow_session_pk)s' "
-              "started at %(start_time)s).")
+            _("%(full_name)s (%(username)s) session %(flow_session_pk)s, "
+                "graded at %(grade_time)s (%(grader)s)"
+              )
             % {
                 "full_name": (
                     obj.flow_session.user.get_full_name()
@@ -113,15 +110,9 @@ class PageGradedInfoSearchWidget(GradeInfoSearchWidgetBase):
                         and obj.flow_session.user.last_name)
                     else obj.flow_session.user.username
                 ),
-                "grade_time": compact_local_datetime_str(
-                    as_local_time(most_recent_grade.grade_time),
-                    now_datetime,
-                    in_python=True
-                ),
-                "start_time": compact_local_datetime_str(
-                    as_local_time(obj.flow_session.start_time),
-                    now_datetime,
-                    in_python=True
+                "username": obj.flow_session.user.username,
+                "grade_time": format_datetime_local(
+                    as_local_time(most_recent_grade.grade_time)
                 ),
                 "flow_session_pk": obj.flow_session.pk,
                 "grader": (
@@ -129,7 +120,7 @@ class PageGradedInfoSearchWidget(GradeInfoSearchWidgetBase):
                         _("by %(grader)s") %
                         {"grader": most_recent_grade.grader.get_full_name()},
                         " ")
-                    if most_recent_grade.grader is not None else "")
+                    if most_recent_grade.grader is not None else _("autograded"))
             })
 
 
@@ -140,8 +131,7 @@ class PageUnGradedInfoSearchWidget(GradeInfoSearchWidgetBase):
 
         return (
             (
-                _("%(full_name)s, flow session id '%(flow_session_pk)s' "
-                  "started at %(time)s")
+                _("%(full_name)s session %(flow_session_pk)s")
                 % {
                     "full_name": (
                         obj.flow_session.user.get_full_name()
@@ -150,19 +140,14 @@ class PageUnGradedInfoSearchWidget(GradeInfoSearchWidgetBase):
                         else obj.flow_session.user.username
                     ),
                     "flow_session_pk": obj.flow_session.pk,
-                    "time": compact_local_datetime_str(
-                        as_local_time(obj.flow_session.start_time),
-                        now_datetime,
-                        in_python=True
-                    ),
                 }))
 
 
-class PageGradingInfoForm(StyledForm):
+class PageGradingNaviBox(StyledForm):
     def __init__(self, field_name, qset, widget, *args, **kwargs):
         # type:(Text, Any, Any, *Any, **Any) -> None
         label = kwargs.pop("label", None)
-        super(PageGradingInfoForm, self).__init__(*args, **kwargs)
+        super(PageGradingNaviBox, self).__init__(*args, **kwargs)
 
         self.helper.label_class = "sr-only"
         self.helper.field_class = "col-lg-10"
@@ -546,7 +531,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
         all_pagedata_pks = []
         all_flow_session_pks = []
 
-    select2_graded_form = select2_ungraded_form = None
+    navigation_box_graded = navigation_box_ungraded = None
 
     not_null_graded_visit_pagedata_pks = []  # type: Iterable[int]
 
@@ -562,7 +547,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
         if current_page_expects_grade and may_view_participant_full_profile:
             if not grading_form:
-                select2_graded_form = PageGradingInfoForm(
+                navigation_box_graded = PageGradingNaviBox(
                     "graded_pages",
                     all_pagedata_qs,
                     PageGradedInfoSearchWidget(
@@ -647,7 +632,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 )
 
                 if select2_graded_pagedata_qs.count():
-                    select2_graded_form = PageGradingInfoForm(
+                    navigation_box_graded = PageGradingNaviBox(
                         "graded_pages",
                         select2_graded_pagedata_qs,
                         PageGradedInfoSearchWidget(
@@ -657,7 +642,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                     )
 
                 if select2_ungraded_pagedata_qs.count():
-                    select2_ungraded_form = PageGradingInfoForm(
+                    navigation_box_ungraded = PageGradingNaviBox(
                         "ungraded_pages",
                         select2_ungraded_pagedata_qs,
                         PageUnGradedInfoSearchWidget(
@@ -709,6 +694,10 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                     page_id=page_id)
                 .values_list("flow_session__pk", "ordinal")))
         )
+    navigation_boxes = []  # type: List[Any]
+    for box in [navigation_box_graded, navigation_box_ungraded]:
+        if box:
+            navigation_boxes.append(box)
 
     for i, other_flow_session_pk in enumerate(all_flow_session_pks):
         if other_flow_session_pk == flow_session.pk:
@@ -724,6 +713,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                         next_flow_session_id, page_ordinal))
 
             if grading_form:
+                from itertools import chain
                 for j in chain(range(i + 1, len(all_flow_session_pks)), range(i)):
                     next_ungraded_flow_session_ordinal = (
                         ungraded_pk_ordinal_dict_include_current.get(
@@ -759,10 +749,10 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
         from django.utils.safestring import mark_safe
         session_not_for_grading_warning_html = mark_safe(
             _("This page and session will not be counted into %(user)s's "
-              "grading of this flow%s, see %(url)s instead.")
+              "grading of this flow, see %(url)s instead.")
             % {
                 "user": current_flowpagedata.flow_session.user,
-                "url": "<a class='relate-grading-nav' href='%s'>%s</a>"
+                "url": "<a href='%s'>%s</a>"
                        % (uri, _("this session"))
             }
         )
@@ -798,8 +788,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 "next_ungraded_flow_session_id": next_ungraded_flow_session_id,
                 "next_ungraded_flow_session_ordinal":
                     next_ungraded_flow_session_ordinal,
-                "select2_graded_form": select2_graded_form,
-                "select2_ungraded_form": select2_ungraded_form,
+                "navigation_boxes": navigation_boxes,
                 "session_not_for_grading_warning_html":
                     session_not_for_grading_warning_html,
 
