@@ -79,7 +79,7 @@ def get_pre_impersonation_user(request):
     return None
 
 
-def get_impersonable_user_qs(impersonator):
+def get_impersonable_user_qset(impersonator):
     # type: (User) -> query.QuerySet
     if impersonator.is_superuser:
         return User.objects.exclude(pk=impersonator.pk)
@@ -88,7 +88,7 @@ def get_impersonable_user_qs(impersonator):
         user=impersonator,
         status=participation_status.active)
 
-    impersonable_user_qs = User.objects.none()
+    impersonable_user_qset = User.objects.none()
     for part in my_participations:
         # Notice: if a TA is not allowed to view participants'
         # profile in one course, then he/she is not able to impersonate
@@ -110,13 +110,13 @@ def get_impersonable_user_qs(impersonator):
 
         # There can be duplicate records. Removing duplicate records is needed
         # only when rendering ImpersonateForm
-        impersonable_user_qs = (
-            impersonable_user_qs
+        impersonable_user_qset = (
+            impersonable_user_qset
             |
             User.objects.filter(pk__in=q.values_list("user__pk", flat=True))
         )
 
-    return impersonable_user_qs
+    return impersonable_user_qset
 
 
 class ImpersonateMiddleware(object):
@@ -134,17 +134,16 @@ class ImpersonateMiddleware(object):
             except ObjectDoesNotExist:
                 pass
 
+            may_impersonate = False
             if impersonee is not None:
-                if (cast(User, impersonee)
-                    in
-                        get_impersonable_user_qs(cast(User, request.user))):
-                    request.relate_impersonate_original_user = request.user
-                    request.user = impersonee
+                if request.user.is_superuser:
+                    may_impersonate = True
                 else:
-                    messages.add_message(request, messages.ERROR,
-                            _("Error while impersonating."))
+                    qset = get_impersonable_user_qset(cast(User, request.user))
+                    if qset.filter(pk__in=cast(User, impersonee).pk).count():
+                        may_impersonate = True
 
-            else:
+            if not may_impersonate:
                 messages.add_message(request, messages.ERROR,
                         _("Error while impersonating."))
 
@@ -211,8 +210,8 @@ def impersonate(request):
     if not request.user.is_authenticated:
         raise PermissionDenied()
 
-    impersonable_user_qs = get_impersonable_user_qs(cast(User, request.user))
-    if not impersonable_user_qs.count():
+    impersonable_user_qset = get_impersonable_user_qset(cast(User, request.user))
+    if not impersonable_user_qset.count():
         raise PermissionDenied()
 
     if hasattr(request, "relate_impersonate_original_user"):
@@ -220,17 +219,18 @@ def impersonate(request):
                 _("Already impersonating someone."))
         return redirect("relate-stop_impersonating")
 
-    # distinct() will not work for impersonator with multiple participations
-    user_unique_pks = set([u.pk for u in impersonable_user_qs])
+    # Remove duplicate and sort
+    # order_by().distinct() directly on impersonable_user_qset will not work
     qset = (User.objects
-            .filter(pk__in=user_unique_pks)
+            .filter(pk__in=impersonable_user_qset.values_list("pk", flat=True))
             .order_by("last_name", "first_name", "username"))
     if request.method == 'POST':
         form = ImpersonateForm(request.POST, impersonable_qset=qset)
         if form.is_valid():
             impersonee = form.cleaned_data["user"]
 
-            if cast(User, impersonee) in qset:
+            if impersonable_user_qset.filter(
+                    pk__in=cast(User, impersonee).pk).count():
                 request.session['impersonate_id'] = impersonee.id
                 request.session['relate_impersonation_header'] = form.cleaned_data[
                         "add_impersonation_header"]
@@ -382,6 +382,11 @@ def sign_in_by_user_pw(request, redirect_field_name=REDIRECT_FIELD_NAME):
     """
     Displays the login form and handles the login action.
     """
+    if not settings.RELATE_SIGN_IN_BY_USERNAME_ENABLED:
+        messages.add_message(request, messages.ERROR,
+                _("Username-based sign-in is not being used"))
+        return redirect("relate-sign_in_choice")
+
     redirect_to = request.POST.get(redirect_field_name,
                                    request.GET.get(redirect_field_name, ''))
 
