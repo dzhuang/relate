@@ -99,19 +99,21 @@
             {% endfor %}
           </div>
           <script>
-            function navigate_to_grading_page(e){
+            function navigate_to_grading_page(e, grade_status){
               {# http://stackoverflow.com/a/33248730/3437454 #}
+              console.log(e.params);
               if (e.params.data.id){
                 $.ajax({
-                  url: window.location.origin + "/select2session/{{ course.identifier }}/" + e.params.data.id
+                  url: window.location.origin + "/select2session/{{ course.identifier }}/" + grade_status + "/" + e.params.data.id
                 }).done(function (result) {
                   if(result.uri!==window.location.pathname){
                     window.location = result.uri;}
                 });
               }
             }
-            $(".pagegradedinfosearchwidget").on('select2:select', function(e){
-              navigate_to_grading_page(e)
+            $('[class$="gradedinfosearchwidget"]').on('select2:select', function(e){
+              var grade_status = $(this).hasClass("pagegradedinfosearchwidget") ? "graded" : "ungraded";
+              navigate_to_grading_page(e, grade_status)
             });
           </script>
       {% endif %}
