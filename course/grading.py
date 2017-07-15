@@ -185,26 +185,26 @@ def get_session_grading_page_url(request, course_identifier, pagedata_pk):
     return response
 
 
-def get_excluded_participations(course_identifier, exception_obj=None):
+def get_excluded_participations(course_identifier, re_included_participation=None):
     # type: (Text, Optional[Participation]) -> query.QuerySet
-    # Get queryset of participations which don't needs_grade
+    # Get queryset of participations which will be skipped during manual grading
     # but exclude the exception_obj
 
-    if not exception_obj:
+    if not re_included_participation:
         return (
-            Participation.objects.exclue(
+            Participation.objects.filter(
                 course__identifier=course_identifier,
                 roles__permissions__permission=(
-                    pperm.included_in_grade_statistics))
+                    pperm.skip_during_manual_grading))
         )
 
     return (
         Participation.objects.filter(
-            ~Q(course__identifier=course_identifier,
+            Q(course__identifier=course_identifier,
                roles__permissions__permission=(
-                   pperm.included_in_grade_statistics))
+                   pperm.skip_during_manual_grading))
             &
-            ~Q(pk=exception_obj.pk)))
+            ~Q(pk=re_included_participation.pk)))
 
 
 # {{{ grading driver
@@ -251,15 +251,17 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     assert fpctx.page is not None
     assert fpctx.page_context is not None
 
-    prev_grades = (FlowPageVisitGrade.objects
-            .filter(
-                visit__flow_session=flow_session,
-                visit__flow_session__participation__roles__permissions__permission=(
-                    pperm.included_in_grade_statistics),
-                visit__page_data__ordinal=page_ordinal,
-                visit__is_submitted_answer=True)
-            .order_by("-visit__visit_time", "-grade_time")
-            .select_related("visit"))
+    prev_grades = (
+        FlowPageVisitGrade.objects.filter(
+            visit__flow_session=flow_session,
+            visit__page_data__ordinal=page_ordinal,
+            visit__is_submitted_answer=True)
+        .exclude(
+            visit__flow_session__participation__roles__permissions__permission=(
+                pperm.skip_during_manual_grading),
+        )
+        .order_by("-visit__visit_time", "-grade_time")
+        .select_related("visit"))
 
     # {{{ reproduce student view
 
@@ -449,24 +451,26 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
             flow_session__in_progress=flow_session.in_progress)
     )
 
-    # {{{ Ensure when view a page owned by a participation which doesn't needs_grade
-    # can navigate to other page with the same page_id.
-    excluded_pagedata_pk = None  # type: Optional[int]
-    if flow_session.participation.has_permission(pperm.included_in_grade_statistics):
-        all_pagedata_qset = (
-            all_pagedata_qset.filter(
-                flow_session__participation__roles__permissions__permission=(
-                    pperm.included_in_grade_statistics))
-        )
-    else:
-        excluded_pagedata_pk = current_flowpagedata.pk
+    re_included_pagedata_pk = None  # type: Optional[int]
+    if (flow_session.participation.has_permission(
+            pperm.skip_during_manual_grading)):
+        # We are now viewing a page owned by a participation which will be
+        # skipped during manual grading. It's page_data is now included back
+        # into all_pagedata_qset, otherwise we cannot navigate to other pages
+        # with the same page_id.
+        re_included_pagedata_pk = current_flowpagedata.pk
         excluded_participations = (
-            get_excluded_participations(course_identifier=pctx.course.identifier,
-                                        exception_obj=flow_session.participation))
+            get_excluded_participations(
+                course_identifier=pctx.course.identifier,
+                re_included_participation=flow_session.participation))
         all_pagedata_qset = all_pagedata_qset.exclude(
             flow_session__participation__in=excluded_participations)
-
-    # }}}
+    else:
+        all_pagedata_qset = (
+            all_pagedata_qset.exclude(
+                flow_session__participation__roles__permissions__permission=(
+                    pperm.skip_during_manual_grading))
+        )
 
     all_pagedata_qset = (all_pagedata_qset
         .select_related("flow_session")
@@ -515,7 +519,10 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
     navigation_box_graded = navigation_box_ungraded = None
 
-    not_null_graded_visit_pagedata_pks = []  # type: Iterable[int]
+    # Including graded but not released
+    graded_pagedata_pks = (
+        FlowPageData.objects.none()
+        .values_list("pk", flat=True))  # type: Iterable[Any]
 
     if all_flow_session_pks:
         may_view_participant_full_profile = (
@@ -566,7 +573,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
                 # }}}
 
-                not_null_graded_visit_pagedata_pks = (
+                graded_pagedata_pks = (
                     FlowPageVisitGrade.objects.filter(
                         pk__in=exist_visitgrade_pks,
                         correctness__isnull=False)
@@ -577,7 +584,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
                 graded_pagedata_qset = (
                     ordered_pagedata_qset.filter(
-                        pk__in=not_null_graded_visit_pagedata_pks)
+                        pk__in=graded_pagedata_pks)
                     .select_related("flow_session")
                     .select_related("flow_session__user")
                 )
@@ -588,7 +595,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                         &
                         ~Q(pk__in=graded_pagedata_qset.values_list("pk", flat=True))
                         &
-                        ~Q(pk=excluded_pagedata_pk)
+                        ~Q(pk=re_included_pagedata_pk)
                     )
                     .order_by("flow_session__user__last_name")
                     .select_related("flow_session")
@@ -626,17 +633,17 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     next_ungraded_flow_session_ordinal = None
 
     if grading_form:
-        ungraded_pk_ordinal_dict_include_current = (
-            dict((k, v) for (k, v) in list(
+        ungraded_flow_session_pks = list(
                 FlowPageData.objects.filter(
-                    Q(pk__in=not_null_graded_visit_pagedata_pks)
+                    Q(pk__in=graded_pagedata_pks)
                     &
-                    # With this, a page which does not require grade (when distinct)
+                    # With this, a page which is skipped during manual grading /
+                    # or filtered out by distinct()
                     # can navigate to pages which require grade.
                     Q(pk=current_flowpagedata.pk)
                 )
-                .values_list("flow_session__pk", "ordinal")))
-        )
+                .values_list("flow_session__pk", flat=True))
+
     navigation_boxes = []  # type: List[Any]
     for box in [navigation_box_graded, navigation_box_ungraded]:
         if box:
@@ -663,12 +670,16 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
             if grading_form:
                 from itertools import chain
+                next_ungraded_flow_session_id = None
                 for j in chain(range(i + 1, len(all_flow_session_pks)), range(i)):
-                    next_ungraded_flow_session_ordinal = (
-                        ungraded_pk_ordinal_dict_include_current.get(
-                            all_flow_session_pks[j], None))
-                    if next_ungraded_flow_session_ordinal is not None:
+                    if all_flow_session_pks[j] in ungraded_flow_session_pks:
                         next_ungraded_flow_session_id = all_flow_session_pks[j]
+                        next_ungraded_flow_session_ordinal = (
+                            FlowPageData.objects.get(
+                                flow_session__pk=next_ungraded_flow_session_id,
+                                page_id=page_id
+                            ).ordinal
+                        )
                         break
 
     # }}}
