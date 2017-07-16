@@ -523,7 +523,8 @@ urlpatterns = [
 
     url(r"^select2session"
         "/" + COURSE_ID_REGEX +
-        "/(?P<pagedata_pk>[0-9]+)"
+        "/(?P<grade_status>(graded|ungraded))"
+        "/(?P<pk>[0-9]+)"
         "/$",
         course.grading.get_session_grading_page_url,
         name="relate-get_session_grading_page_url"),

@@ -51,7 +51,6 @@ from course.utils import (
         course_view, render_course_page,
         get_session_grading_rule,
         FlowPageContext)
-from course.flow import get_all_page_data  # noqa
 from course.views import get_now_or_fake_time
 from course.page import InvalidPageData
 
@@ -77,7 +76,51 @@ if False:
 # }}}
 
 
-class GradeInfoSearchWidgetBase(ModelSelect2Widget):
+class PageGradedInfoSearchWidget(ModelSelect2Widget):
+    model = FlowPageVisitGrade
+    search_fields = [
+        'grader__username__icontains',
+        'grader__first_name__icontains',
+        'grader__last_name__icontains',
+        'visit__flow_session__pk__contains',
+        'visit__flow_session__user__username__icontains',
+        'visit__flow_session__user__first_name__icontains',
+        'visit__flow_session__user__last_name__icontains',
+        ]
+
+    def label_from_instance(self, obj):
+        flow_session = obj.visit.flow_session
+        user = flow_session.user
+        return (
+            _("%(full_name)s (%(username)s) session %(flow_session_pk)s, "
+                "graded at %(grade_time)s (%(grader)s)"
+              )
+            % {
+                "full_name": (
+                    user.get_full_name()
+                    if (user.first_name
+                        and user.last_name)
+                    else user.username
+                ),
+                "username": user.username,
+                "grade_time": format_datetime_local(
+                    as_local_time(obj.grade_time)
+                ),
+                "flow_session_pk": flow_session.pk,
+                "grader": (
+                    string_concat(
+                        _("by %(grader)s") %
+                        {"grader": (
+                            obj.grader.get_full_name()
+                            if obj.grader.first_name and obj.grader.last_name
+                            else obj.grader.username
+                        )},
+                        " ")
+                    if obj.grader is not None else _("autograded"))
+            })
+
+
+class PageUnGradedInfoSearchWidget(ModelSelect2Widget):
     model = FlowPageData
     search_fields = [
             'flow_session__pk__contains',
@@ -86,51 +129,7 @@ class GradeInfoSearchWidgetBase(ModelSelect2Widget):
             'flow_session__user__last_name__icontains',
             ]
 
-
-class PageGradedInfoSearchWidget(GradeInfoSearchWidgetBase):
     def label_from_instance(self, obj):
-        visit = FlowPageVisit.objects.filter(
-            flow_session=obj.flow_session,
-            page_data=obj,
-            is_submitted_answer=True
-        ).last()
-        if not visit:
-            return None
-
-        most_recent_grade = visit.get_most_recent_grade()
-        from django.utils.timezone import now
-        now_datetime = as_local_time(now())
-
-        return (
-            _("%(full_name)s (%(username)s) session %(flow_session_pk)s, "
-                "graded at %(grade_time)s (%(grader)s)"
-              )
-            % {
-                "full_name": (
-                    obj.flow_session.user.get_full_name()
-                    if (obj.flow_session.user.first_name
-                        and obj.flow_session.user.last_name)
-                    else obj.flow_session.user.username
-                ),
-                "username": obj.flow_session.user.username,
-                "grade_time": format_datetime_local(
-                    as_local_time(most_recent_grade.grade_time)
-                ),
-                "flow_session_pk": obj.flow_session.pk,
-                "grader": (
-                    string_concat(
-                        _("by %(grader)s") %
-                        {"grader": most_recent_grade.grader.get_full_name()},
-                        " ")
-                    if most_recent_grade.grader is not None else _("autograded"))
-            })
-
-
-class PageUnGradedInfoSearchWidget(GradeInfoSearchWidgetBase):
-    def label_from_instance(self, obj):
-        from django.utils.timezone import now
-        now_datetime = as_local_time(now())
-
         return (
             (
                 _("%(full_name)s session %(flow_session_pk)s")
@@ -167,7 +166,8 @@ class PageGradingNaviBox(StyledForm):
         )
 
 
-def get_session_grading_page_url(request, course_identifier, pagedata_pk):
+def get_session_grading_page_url(request, course_identifier,
+                                 grade_status, pk):
     if not request.user.is_authenticated:
         raise PermissionDenied()
     course = get_object_or_404(Course, identifier=course_identifier)
@@ -178,7 +178,11 @@ def get_session_grading_page_url(request, course_identifier, pagedata_pk):
     if not participation.has_permission(pperm.view_gradebook):
             raise PermissionDenied(_("may not view grade book"))
 
-    pagedata = FlowPageData.objects.get(pk=pagedata_pk)
+    if grade_status == "graded":
+        visitgrade = FlowPageVisitGrade.objects.get(pk=pk)
+        pagedata = visitgrade.visit.page_data
+    else:
+        pagedata = FlowPageData.objects.get(pk=pk)
     from django.urls import reverse
     uri = reverse("relate-grade_flow_page",
                   args=(
@@ -192,26 +196,26 @@ def get_session_grading_page_url(request, course_identifier, pagedata_pk):
     return response
 
 
-def get_excluded_participations(course_identifier, exception_obj=None):
+def get_excluded_participations(course_identifier, re_included_participation=None):
     # type: (Text, Optional[Participation]) -> query.QuerySet
-    # Get queryset of participations which don't needs_grade
+    # Get queryset of participations which will be skipped during manual grading
     # but exclude the exception_obj
 
-    if not exception_obj:
+    if not re_included_participation:
         return (
-            Participation.objects.exclue(
+            Participation.objects.filter(
                 course__identifier=course_identifier,
                 roles__permissions__permission=(
-                    pperm.included_in_grade_statistics))
+                    pperm.skip_during_manual_grading))
         )
 
     return (
         Participation.objects.filter(
-            ~Q(course__identifier=course_identifier,
+            Q(course__identifier=course_identifier,
                roles__permissions__permission=(
-                   pperm.included_in_grade_statistics))
+                   pperm.skip_during_manual_grading))
             &
-            ~Q(pk=exception_obj.pk)))
+            ~Q(pk=re_included_participation.pk)))
 
 
 # {{{ grading driver
@@ -258,15 +262,17 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     assert fpctx.page is not None
     assert fpctx.page_context is not None
 
-    prev_grades = (FlowPageVisitGrade.objects
-            .filter(
-                visit__flow_session=flow_session,
-                visit__flow_session__participation__roles__permissions__permission=(
-                    pperm.included_in_grade_statistics),
-                visit__page_data__ordinal=page_ordinal,
-                visit__is_submitted_answer=True)
-            .order_by("-visit__visit_time", "-grade_time")
-            .select_related("visit"))
+    prev_grades = (
+        FlowPageVisitGrade.objects.filter(
+            visit__flow_session=flow_session,
+            visit__page_data__ordinal=page_ordinal,
+            visit__is_submitted_answer=True)
+        .exclude(
+            visit__flow_session__participation__roles__permissions__permission=(
+                pperm.skip_during_manual_grading),
+        )
+        .order_by("-visit__visit_time", "-grade_time")
+        .select_related("visit"))
 
     # {{{ reproduce student view
 
@@ -438,7 +444,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     else:
         grading_opportunity = None
 
-    # {{{ enable flow session zapping
+    # {{{ enable flow session zapping by select2
 
     current_flowpagedata = FlowPageData.objects.get(
         flow_session=flow_session, ordinal=page_ordinal)
@@ -456,37 +462,40 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
             flow_session__in_progress=flow_session.in_progress)
     )
 
-    # {{{ Ensure when view a page owned by a participation which doesn't needs_grade
-    # can navigate to other page with the same page_id.
-    excluded_pagedata_pk = None  # type: Optional[int]
-    if flow_session.participation.has_permission(pperm.included_in_grade_statistics):
-        all_pagedata_qset = (
-            all_pagedata_qset.filter(
-                flow_session__participation__roles__permissions__permission=(
-                    pperm.included_in_grade_statistics))
-        )
-    else:
-        excluded_pagedata_pk = current_flowpagedata.pk
+    re_included_pagedata_pk = None  # type: Optional[int]
+    if (flow_session.participation.has_permission(
+            pperm.skip_during_manual_grading)):
+        # We are now viewing a page owned by a participation which will be
+        # skipped during manual grading. It's page_data is now included back
+        # into all_pagedata_qset, otherwise we cannot navigate to other pages
+        # with the same page_id.
+        re_included_pagedata_pk = current_flowpagedata.pk
         excluded_participations = (
-            get_excluded_participations(course_identifier=pctx.course.identifier,
-                                        exception_obj=flow_session.participation))
+            get_excluded_participations(
+                course_identifier=pctx.course.identifier,
+                re_included_participation=flow_session.participation))
         all_pagedata_qset = all_pagedata_qset.exclude(
             flow_session__participation__in=excluded_participations)
-
-    # }}}
+    else:
+        all_pagedata_qset = (
+            all_pagedata_qset.exclude(
+                flow_session__participation__roles__permissions__permission=(
+                    pperm.skip_during_manual_grading))
+        )
 
     all_pagedata_qset = (all_pagedata_qset
         .select_related("flow_session")
         .select_related("flow_session__participation")
         .select_related("flow_session__user"))
 
-    qs_order_by_list = [
+    order_by_list = [
         "flow_session__user__last_name",
         "flow_session__user__first_name"]
-    qs_distinct_list = None  # type: Optional[Any]
+
+    distinct_list = None  # type: Optional[Any]
     if connection.features.can_distinct_on_fields and grading_form:
         # No need to distinct for autograded page
-        qs_distinct_list = []
+        distinct_list = []
 
     if (grading_rule.grade_aggregation_strategy
         in
@@ -494,22 +503,21 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
              grade_aggregation_strategy.use_latest]):
         if (grading_rule.grade_aggregation_strategy
                 == grade_aggregation_strategy.use_earliest):
-            qs_order_by_list.append('flow_session__start_time')
+            order_by_list.append('flow_session__start_time')
         else:
-            qs_order_by_list.append('-flow_session__start_time')
+            order_by_list.append('-flow_session__start_time')
 
         # View only one session if use_latest or use_earliest for human graded pages
-        if qs_distinct_list is not None:
+        if distinct_list is not None:
             # distinct should have the same order_by, however, last_name
             # can be duplicate, use user to distinct instead.
-            qs_order_by_list.insert(0, "flow_session__user")
-            qs_distinct_list.insert(0, 'flow_session__user')
+            order_by_list.insert(0, "flow_session__user")
+            distinct_list.insert(0, 'flow_session__user')
 
-    all_pagedata_qset = all_pagedata_qset.order_by(*qs_order_by_list)
-    ordered_pagedata_qset = all_pagedata_qset.all()
+    all_pagedata_qset = all_pagedata_qset.order_by(*order_by_list)
 
-    if qs_distinct_list:
-        all_pagedata_qset = all_pagedata_qset.distinct(*qs_distinct_list)
+    if distinct_list:
+        all_pagedata_qset = all_pagedata_qset.distinct(*distinct_list)
 
     if all_pagedata_qset.count():
         if getattr(fpctx.page, "grading_sort_by_page_data", False):
@@ -535,17 +543,61 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
     navigation_box_graded = navigation_box_ungraded = None
 
-    not_null_graded_visit_pagedata_pks = []  # type: Iterable[int]
+    graded_pagedata_pks = (
+        FlowPageData.objects.none()
+        .values_list("pk", flat=True))  # type: Iterable[Any]
 
     if all_flow_session_pks:
         may_view_participant_full_profile = (
             not pctx.has_permission(pperm.view_participant_masked_profile))
 
         if current_page_expects_grade and may_view_participant_full_profile:
-            if not grading_form:
+
+            # {{{ Get the latest visitgrade of the page in each flow_sessions
+
+            # Ref: GROUP BY and Select MAX from each group via 2 queries
+            # https://gist.github.com/ryanpitts/1304725#gistcomment-1417399
+            exist_visitgrade_qset = (
+                FlowPageVisitGrade.objects.filter(
+                    visit__flow_session__pk__in=all_flow_session_pks,
+                    visit__page_data__group_id=group_id,
+                    visit__page_data__page_id=page_id)
+                .select_related("visit")
+                .select_related("visit__page_data")
+                .select_related("visit__flow_session")
+            )
+
+            from django.db.models import Max
+            latest_visitgrades = (
+                exist_visitgrade_qset.values(
+                    "visit__flow_session_id"
+                )
+                # assuming visitgrade with max pk is latest visitgrade
+                .annotate(latest_visit=Max("pk"))
+            )
+
+            exist_visitgrade_pks = (
+                exist_visitgrade_qset.filter(
+                    pk__in=latest_visitgrades.values('latest_visit'))
+                .order_by('-pk')
+                .values_list("pk", flat=True)
+            )
+
+            # }}}
+
+            latest_visitgrades_qset = (
+                FlowPageVisitGrade.objects.filter(
+                    pk__in=exist_visitgrade_pks,
+                    correctness__isnull=False)
+                .order_by("-grade_time")
+                .select_related("visit__page_data")
+                .select_related("grader")
+            )
+
+            if latest_visitgrades_qset.count():
                 navigation_box_graded = PageGradingNaviBox(
                     "graded_pages",
-                    all_pagedata_qset,
+                    latest_visitgrades_qset,
                     PageGradedInfoSearchWidget(
                         attrs={
                             'data-placeholder':
@@ -553,77 +605,27 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                                   "and grade time")}),
                 )
 
-            else:
-                # {{{ Get the latest visitgrade of the page in each flow_sessions
-
-                # Ref: GROUP BY and Select MAX from each group via 2 queries
-                # https://gist.github.com/ryanpitts/1304725#gistcomment-1417399
-                exist_visitgrade_qset = (
-                    FlowPageVisitGrade.objects.filter(
-                        visit__flow_session__pk__in=all_flow_session_pks,
-                        visit__page_data__group_id=group_id,
-                        visit__page_data__page_id=page_id)
-                    .select_related("visit")
-                    .select_related("visit__page_data")
-                    .select_related("visit__flow_session")
-                )
-
-                from django.db.models import Max
-                latest_visitgrades = (
-                    exist_visitgrade_qset.values(
-                        "visit__flow_session_id"
-                    )
-                    # assuming visitgrade with max pk is latest visitgrade
-                    .annotate(latest_visit=Max("pk"))
-                )
-
-                exist_visitgrade_pks = (
-                    exist_visitgrade_qset.filter(
-                        pk__in=latest_visitgrades.values('latest_visit'))
-                    .order_by('-pk')
-                    .values_list("pk", flat=True)
-                )
-
-                # }}}
-
-                not_null_graded_visit_pagedata_pks = (
-                    FlowPageVisitGrade.objects.filter(
-                        pk__in=exist_visitgrade_pks,
-                        correctness__isnull=False)
-                    .order_by("-grade_time")
-                    .select_related("visit__page_data")
-                    .values_list("visit__page_data__pk", flat=True)
-                )
-
-                graded_pagedata_qset = (
-                    ordered_pagedata_qset.filter(
-                        pk__in=not_null_graded_visit_pagedata_pks)
-                    .select_related("flow_session")
-                    .select_related("flow_session__user")
-                )
+            if grading_form:
+                graded_pagedata_pks = (
+                    latest_visitgrades_qset.values_list(
+                        "visit__page_data__pk", flat=True))
 
                 ungraded_pagedata_qset = (
                     FlowPageData.objects.filter(
                         Q(pk__in=all_pagedata_pks)
                         &
-                        ~Q(pk__in=graded_pagedata_qset.values_list("pk", flat=True))
+                        ~Q(pk__in=graded_pagedata_pks)
                         &
-                        ~Q(pk=excluded_pagedata_pk)
+                        ~Q(pk=re_included_pagedata_pk)
                     )
-                    .order_by("flow_session__user__last_name")
+                    .order_by(
+                        "flow_session__user__last_name",
+                        "flow_session__user__first_name"
+                        "flow_session__user__pk"
+                    )
                     .select_related("flow_session")
                     .select_related("flow_session__user")
                 )
-
-                if graded_pagedata_qset.count():
-                    navigation_box_graded = PageGradingNaviBox(
-                        "graded_pages",
-                        graded_pagedata_qset,
-                        PageGradedInfoSearchWidget(
-                            attrs={
-                                'data-placeholder':
-                                    _("Graded pages, ordered by grade time")}),
-                    )
 
                 if ungraded_pagedata_qset.count():
                     navigation_box_ungraded = PageGradingNaviBox(
@@ -636,67 +638,65 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                                       "ordered by user's last name.")}),
                     )
 
-    next_flow_session_id = None
-    next_flow_session_ordinal = None
-    prev_flow_session_id = None
-    prev_flow_session_ordinal = None
-
-    # get the next ungraded session with the page_id
-    next_ungraded_flow_session_id = None
-    next_ungraded_flow_session_ordinal = None
-
-    # This is used to ensure prev and next session button navigate to
-    # pages with the same page_id, when shuffled.
-    flow_session_id_ordinal_map_dict = {}  # type: Dict
-    if all_pagedata_qset.count():
-        flow_session_id_ordinal_map_dict = (
-            dict((k, v) for (k, v) in list(
-                FlowPageData.objects.filter(
-                    flow_session__course=flow_session.course,
-                    pk__in=all_pagedata_pks,
-                    group_id=group_id,
-                    page_id=page_id)
-                .values_list("flow_session__pk", "ordinal")))
-        )
-
-    if grading_form:
-        ungraded_pk_ordinal_dict_include_current = (
-            dict((k, v) for (k, v) in list(
-                FlowPageData.objects.filter(
-                    Q(pk__in=not_null_graded_visit_pagedata_pks)
-                    &
-                    # With this, a page which does not require grade (when distinct)
-                    # can navigate to pages which require grade.
-                    Q(pk=current_flowpagedata.pk)
-                )
-                .values_list("flow_session__pk", "ordinal")))
-        )
     navigation_boxes = []  # type: List[Any]
     for box in [navigation_box_graded, navigation_box_ungraded]:
         if box:
             navigation_boxes.append(box)
+    # }}}
+
+    # {{{ enable flow session zapping by navigatioin button
+    next_flow_session_id = None
+    next_flow_session_ordinal = None
+    prev_flow_session_id = None
+    prev_flow_session_ordinal = None
+    next_ungraded_flow_session_id = None
+    next_ungraded_flow_session_ordinal = None
+
+    ungraded_flow_session_pks = []  # type: List[int]
+    if grading_form:
+        ungraded_flow_session_pks = list(
+            FlowPageData.objects.filter(
+                Q(pk__in=graded_pagedata_pks)
+                &
+                # With this, a page which is skipped during manual grading
+                # or filtered out by distinct()
+                # can navigate to pages which require grade.
+                Q(pk=current_flowpagedata.pk)
+            )
+            .values_list("flow_session__pk", flat=True)
+        )
 
     for i, other_flow_session_pk in enumerate(all_flow_session_pks):
         if other_flow_session_pk == flow_session.pk:
             if i > 0:
                 prev_flow_session_id = all_flow_session_pks[i-1]
-                prev_flow_session_ordinal = (
-                    flow_session_id_ordinal_map_dict.get(
-                        prev_flow_session_id, page_ordinal))
+                try:
+                    prev_flow_session_ordinal = (
+                        FlowPageData.objects.get(pk=prev_flow_session_id).ordinal
+                    )
+                except ObjectDoesNotExist:
+                    prev_flow_session_id = page_ordinal
             if i + 1 < len(all_flow_session_pks):
                 next_flow_session_id = all_flow_session_pks[i+1]
-                next_flow_session_ordinal = (
-                    flow_session_id_ordinal_map_dict.get(
-                        next_flow_session_id, page_ordinal))
+                try:
+                    next_flow_session_ordinal = (
+                        FlowPageData.objects.get(pk=next_flow_session_id).ordinal
+                    )
+                except ObjectDoesNotExist:
+                    next_flow_session_ordinal = page_ordinal
 
             if grading_form:
                 from itertools import chain
+                next_ungraded_flow_session_id = None
                 for j in chain(range(i + 1, len(all_flow_session_pks)), range(i)):
-                    next_ungraded_flow_session_ordinal = (
-                        ungraded_pk_ordinal_dict_include_current.get(
-                            all_flow_session_pks[j], None))
-                    if next_ungraded_flow_session_ordinal is not None:
+                    if all_flow_session_pks[j] in ungraded_flow_session_pks:
                         next_ungraded_flow_session_id = all_flow_session_pks[j]
+                        next_ungraded_flow_session_ordinal = (
+                            FlowPageData.objects.get(
+                                flow_session__pk=next_ungraded_flow_session_id,
+                                page_id=page_id
+                            ).ordinal
+                        )
                         break
 
     # }}}
@@ -708,7 +708,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     session_not_for_grading_warning_html = None
 
     if (grading_form
-        and qs_distinct_list
+        and distinct_list
         and
                 current_flowpagedata.pk not in all_pagedata_pks):
 
