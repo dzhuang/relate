@@ -143,7 +143,10 @@ class ImpersonateMiddleware(object):
                     if qset.filter(pk__in=cast(User, impersonee).pk).count():
                         may_impersonate = True
 
-            if not may_impersonate:
+            if may_impersonate:
+                request.relate_impersonate_original_user = request.user
+                request.user = impersonee
+            else:
                 messages.add_message(request, messages.ERROR,
                         _("Error while impersonating."))
 
