@@ -543,9 +543,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
     navigation_box_graded = navigation_box_ungraded = None
 
-    graded_pagedata_pks = (
-        FlowPageData.objects.none()
-        .values_list("pk", flat=True))  # type: Iterable[Any]
+    ungraded_flow_session_pks = []  # type: List[int]
 
     if all_flow_session_pks:
         may_view_participant_full_profile = (
@@ -620,7 +618,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                     )
                     .order_by(
                         "flow_session__user__last_name",
-                        "flow_session__user__first_name"
+                        "flow_session__user__first_name",
                         "flow_session__user__pk"
                     )
                     .select_related("flow_session")
@@ -637,6 +635,9 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                                     _("Pages ungraded or graded but not released, "
                                       "ordered by user's last name.")}),
                     )
+                    ungraded_flow_session_pks = list(
+                        ungraded_pagedata_qset.values_list(
+                            "flow_session__pk", flat=True))
 
     navigation_boxes = []  # type: List[Any]
     for box in [navigation_box_graded, navigation_box_ungraded]:
@@ -652,27 +653,16 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     next_ungraded_flow_session_id = None
     next_ungraded_flow_session_ordinal = None
 
-    ungraded_flow_session_pks = []  # type: List[int]
-    if grading_form:
-        ungraded_flow_session_pks = list(
-            FlowPageData.objects.filter(
-                Q(pk__in=graded_pagedata_pks)
-                &
-                # With this, a page which is skipped during manual grading
-                # or filtered out by distinct()
-                # can navigate to pages which require grade.
-                Q(pk=current_flowpagedata.pk)
-            )
-            .values_list("flow_session__pk", flat=True)
-        )
-
     for i, other_flow_session_pk in enumerate(all_flow_session_pks):
         if other_flow_session_pk == flow_session.pk:
             if i > 0:
                 prev_flow_session_id = all_flow_session_pks[i-1]
                 try:
                     prev_flow_session_ordinal = (
-                        FlowPageData.objects.get(pk=prev_flow_session_id).ordinal
+                        FlowPageData.objects.get(
+                            flow_session__id=prev_flow_session_id,
+                            page_id=page_id
+                        ).ordinal
                     )
                 except ObjectDoesNotExist:
                     prev_flow_session_id = page_ordinal
@@ -680,7 +670,10 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 next_flow_session_id = all_flow_session_pks[i+1]
                 try:
                     next_flow_session_ordinal = (
-                        FlowPageData.objects.get(pk=next_flow_session_id).ordinal
+                        FlowPageData.objects.get(
+                            flow_session__id=next_flow_session_id,
+                            page_id=page_id
+                        ).ordinal
                     )
                 except ObjectDoesNotExist:
                     next_flow_session_ordinal = page_ordinal
