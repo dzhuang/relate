@@ -91,6 +91,11 @@ class PageGradedInfoSearchWidget(ModelSelect2Widget):
     def label_from_instance(self, obj):
         flow_session = obj.visit.flow_session
         user = flow_session.user
+
+        from relate.utils import compact_local_datetime_str
+        from django.utils.timezone import now
+        now_datetime = as_local_time(now())
+
         return (
             _("%(full_name)s (%(username)s) session %(flow_session_pk)s, "
                 "graded at %(grade_time)s (%(grader)s)"
@@ -103,8 +108,9 @@ class PageGradedInfoSearchWidget(ModelSelect2Widget):
                     else user.username
                 ),
                 "username": user.username,
-                "grade_time": format_datetime_local(
-                    as_local_time(obj.grade_time)
+                "grade_time": compact_local_datetime_str(
+                    as_local_time(obj.grade_time), now_datetime,
+                    in_python=True
                 ),
                 "flow_session_pk": flow_session.pk,
                 "grader": (
@@ -551,8 +557,9 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
         if current_page_expects_grade and may_view_participant_full_profile:
 
-            # {{{ Get the latest visitgrade of the page in each flow_sessions
+            # {{{ Make the navigation_box_graded
 
+            # Get the latest visitgrade of the page in each flow_sessions
             # Ref: GROUP BY and Select MAX from each group via 2 queries
             # https://gist.github.com/ryanpitts/1304725#gistcomment-1417399
             exist_visitgrade_qset = (
@@ -560,9 +567,9 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                     visit__flow_session__pk__in=all_flow_session_pks,
                     visit__page_data__group_id=group_id,
                     visit__page_data__page_id=page_id)
-                .select_related("visit")
-                .select_related("visit__page_data")
-                .select_related("visit__flow_session")
+                    .select_related("visit")
+                    .select_related("visit__page_data")
+                    .select_related("visit__flow_session")
             )
 
             from django.db.models import Max
@@ -570,39 +577,57 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 exist_visitgrade_qset.values(
                     "visit__flow_session_id"
                 )
-                # assuming visitgrade with max pk is latest visitgrade
-                .annotate(latest_visit=Max("pk"))
+                    # assuming visitgrade with max pk is latest visitgrade
+                    .annotate(latest_visit=Max("pk"))
             )
 
             exist_visitgrade_pks = (
                 exist_visitgrade_qset.filter(
                     pk__in=latest_visitgrades.values('latest_visit'))
-                .order_by('-pk')
-                .values_list("pk", flat=True)
+                    .order_by('-pk')
+                    .values_list("pk", flat=True)
             )
 
-            # }}}
+            if not grading_form:
+                # For autograded pages, group by users while sorting
+                graded_qset_order_by_list = [
+                    "visit__flow_session__user__last_name",
+                    "visit__flow_session__user__first_name",
+                    "visit__flow_session__user__username",
+                    "-grade_time"]
+                graded_box_widget_placeholder = (
+                    _("Graded pages, ordered by last_name, "
+                      "first_name and grade time"))
+            else:
+                # For human-graded pages, we care more about when the page is
+                # graded, thus order by grade_time
+                graded_qset_order_by_list = ["-grade_time"]
+                graded_box_widget_placeholder = (
+                    _("Graded pages, ordered by grade time")
+                )
 
             latest_visitgrades_qset = (
                 FlowPageVisitGrade.objects.filter(
                     pk__in=exist_visitgrade_pks,
                     correctness__isnull=False)
-                .order_by("-grade_time")
+                .order_by(*graded_qset_order_by_list)
+                .select_related("visit__flow_session")
+                .select_related("visit__flow_session__user")
                 .select_related("visit__page_data")
                 .select_related("grader")
             )
 
-            if latest_visitgrades_qset.count():
-                navigation_box_graded = PageGradingNaviBox(
-                    "graded_pages",
-                    latest_visitgrades_qset,
-                    PageGradedInfoSearchWidget(
-                        attrs={
-                            'data-placeholder':
-                                _("Graded pages, ordered by last name "
-                                  "and grade time")}),
-                )
+            navigation_box_graded = PageGradingNaviBox(
+                "graded_pages",
+                latest_visitgrades_qset,
+                PageGradedInfoSearchWidget(
+                    attrs={
+                        'data-placeholder': graded_box_widget_placeholder}),
+            )
 
+            # }}}
+
+            # {{{ Make the navigation_box_ungraded
             if grading_form:
                 graded_pagedata_pks = (
                     latest_visitgrades_qset.values_list(
@@ -638,6 +663,8 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                     ungraded_flow_session_pks = list(
                         ungraded_pagedata_qset.values_list(
                             "flow_session__pk", flat=True))
+
+            # }}}
 
     navigation_boxes = []  # type: List[Any]
     for box in [navigation_box_graded, navigation_box_ungraded]:
