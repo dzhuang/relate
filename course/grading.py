@@ -567,9 +567,9 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                     visit__flow_session__pk__in=all_flow_session_pks,
                     visit__page_data__group_id=group_id,
                     visit__page_data__page_id=page_id)
-                    .select_related("visit")
-                    .select_related("visit__page_data")
-                    .select_related("visit__flow_session")
+                .select_related("visit")
+                .select_related("visit__page_data")
+                .select_related("visit__flow_session")
             )
 
             from django.db.models import Max
@@ -577,15 +577,15 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 exist_visitgrade_qset.values(
                     "visit__flow_session_id"
                 )
-                    # assuming visitgrade with max pk is latest visitgrade
-                    .annotate(latest_visit=Max("pk"))
+                # assuming visitgrade with max pk is latest visitgrade
+                .annotate(latest_visit=Max("pk"))
             )
 
             exist_visitgrade_pks = (
                 exist_visitgrade_qset.filter(
                     pk__in=latest_visitgrades.values('latest_visit'))
-                    .order_by('-pk')
-                    .values_list("pk", flat=True)
+                .order_by('-pk')
+                .values_list("pk", flat=True)
             )
 
             if not grading_form:
