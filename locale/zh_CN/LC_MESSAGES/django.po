@@ -1785,7 +1785,7 @@ msgid "by %(grader)s"
 msgstr "，评分人：%(grader)s"
 
 msgid "autograded"
-msgstr "(自动评分)"
+msgstr "自动评分"
 
 #, python-format
 msgid "%(full_name)s session %(flow_session_pk)s"
