@@ -30,7 +30,7 @@ from django.db import connection
 from django.db.models import Q
 from django.shortcuts import (  # noqa
         get_object_or_404, redirect)
-from relate.utils import (
+from relate.utils import (  # noqa
     retry_transaction_decorator, StyledForm,
     as_local_time, format_datetime_local)
 from django.contrib import messages

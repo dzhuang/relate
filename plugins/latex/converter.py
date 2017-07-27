@@ -41,9 +41,8 @@ from django.conf import settings
 
 from relate.utils import local_now
 
-from course.latex.utils import get_mongo_db
-
 from .utils import (
+    get_mongo_db,
     popen_wrapper, get_basename_or_md5,
     file_read, file_write, get_abstract_latex_log)
 
@@ -54,14 +53,20 @@ if False:
     from pymongo.collection import Collection  # noqa
 
 DB = get_mongo_db()
+latex_settings = settings.RELATE_LATEX_SETTINGS
+DATAURI_MONGO_COLLECTION_NAME = latex_settings["latex"].get(
+    "RELATE_LATEX_DATAURI_MONGO_COLLECTION_NAME",
+    "relate_latex_datauri")
+ERROR_MONGO_COLLECTION_NAME = latex_settings["latex"].get(
+    "RELATE_LATEX_ERROR_MONGO_COLLECTION_NAME",
+    "relate_latex_error"
+)
 
 
 def get_latex_datauri_mongo_collection(name=None, db=DB, index_name="key"):
     # type: (Optional[Text], Optional[MongoClient], Optional[Text]) -> Collection
     if not name:
-        name = getattr(
-            settings, "RELATE_LATEX_DATAURI_MONGO_COLLECTION_NAME",
-            "relate_latex_datauri")
+        name = DATAURI_MONGO_COLLECTION_NAME
     collection = db[name]
     if index_name:
         collection.ensure_index(index_name, unique=True)
@@ -71,9 +76,7 @@ def get_latex_datauri_mongo_collection(name=None, db=DB, index_name="key"):
 def get_latex_error_mongo_collection(name=None, db=DB, index_name="key"):
     # type: (Optional[Text], Optional[MongoClient], Optional[Text]) -> Collection
     if not name:
-        name = getattr(
-            settings, "RELATE_LATEX_ERROR_MONGO_COLLECTION_NAME",
-            "relate_latex_error")
+        name = ERROR_MONGO_COLLECTION_NAME
     collection = db[name]
     if index_name:
         collection.ensure_index(index_name, unique=True)
@@ -118,6 +121,7 @@ class CommandBase(object):
             strerror = e.__str__()
 
         m = re.search(r'(\d+)\.(\d+)\.?(\d+)?', out)
+
         if not m:
             error = Critical(
                 strerror,
@@ -151,9 +155,9 @@ class CommandBase(object):
 class TexCompilerBase(CommandBase):
     def __init__(self):
         # type: () -> None
-        self.bin_path_dir = getattr(
-            settings, "RELATE_%s_BIN_DIR" % self.name.upper(),
-            getattr(settings, "RELATE_LATEX_BIN_DIR", "")
+        self.bin_path_dir = latex_settings["bin_path"].get(
+            "RELATE_%s_BIN_DIR" % self.name.upper(),
+            latex_settings["bin_path"].get("RELATE_LATEX_BIN_DIR", "")
         )
         self.bin_path = os.path.join(
             self.bin_path_dir, self.cmd.lower())
@@ -249,10 +253,9 @@ class Imageconverter(CommandBase):
 
     def __init__(self):
         # type: () -> None
-        bin_path_dir = getattr(
-            settings, "RELATE_%s_BIN_DIR" % self.name.upper(),
-            ""
-        )
+        bin_path_dir = latex_settings["bin_path"].get(
+            "RELATE_%s_BIN_DIR" % self.name.upper(),
+            "")
         self.bin_path = os.path.join(bin_path_dir,
                                      self.cmd.lower())
 

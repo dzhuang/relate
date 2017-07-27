@@ -901,39 +901,11 @@ def expand_markup(
         if jinja_env:
             kwargs.update(jinja_env)
 
-        # {{{ tex2img
-
-        def latex_not_enabled_warning(caller, *args, **kwargs):
-            return (
-                "<div class='alert alert-danger'>%s</div>" %
-                ("RELATE_LATEX_TO_IMAGE_ENABLED is set to False, "
-                 "no image will be generated."))
-
-        def jinja_tex_to_img_tag(caller, *args, **kwargs):
-            try:
-                from course.latex import tex_to_img_tag
-                return tex_to_img_tag(caller(), *args, **kwargs)
-            except Exception as e:
-                raise ValueError(
-                    u"<pre><div class='alert alert-danger'>"
-                    u"Error: %s: %s</div></pre>"
-                    % (type(e).__name__, str(e)))
-
-        # latex2image_enabled = getattr(
-        #     settings, "RELATE_LATEX_TO_IMAGE_ENABLED", False)
-        #
-        # if latex2image_enabled:
-        #     env.globals["latex"] = jinja_tex_to_img_tag
-        # else:
-        #     if not validate_only:
-        #         env.globals["latex"] = latex_not_enabled_warning
-        #     else:
-        #         raise ImproperlyConfigured(
-        #             _("RELATE_LATEX_TO_IMAGE_ENABLED is set to False, "
-        #               "no image will be generated."))
-        # }}}
-
-        kwargs["latex"] = jinja_tex_to_img_tag
+        settings_jinja_macro = getattr(settings, "JINJA2_MACRO", None)
+        if settings_jinja_macro:
+            from django.utils.module_loading import import_string
+            for key, value in settings_jinja_macro.items():
+                kwargs[key] = import_string(value)
 
         text = template.render(**kwargs)
 

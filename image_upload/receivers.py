@@ -122,7 +122,7 @@ def send_to_sendfile_on_page_save(sender, instance, **kwargs):
     except:
         return
 
-    from course.latex.utils import get_all_indirect_subclasses
+    from plugins.latex.utils import get_all_indirect_subclasses
     from image_upload.page.imgupload import ImageUploadQuestion
     all_subclass_name = [
         cls.__name__
@@ -146,7 +146,7 @@ def delete_temp_images_on_flowpage_answer_update(sender, instance, **kwargs):
     if instance.answer is None:
         return
 
-    from course.latex.utils import get_all_indirect_subclasses
+    from plugins.latex.utils import get_all_indirect_subclasses
     from image_upload.page.imgupload import ImageUploadQuestion
     all_subclass_name = [
         cls.__name__

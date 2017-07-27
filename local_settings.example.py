@@ -55,9 +55,29 @@ RELATE_USER_FULL_NAME_FORMAT_METHOD = customized.format_full_name
 
 RELATE_LATEX_TO_IMAGE_ENABLED = True
 
-RELATE_LATEX_BIN_DIR = \
-    "/usr/local/texlive/2015/bin/x86_64-linux"
+RELATE_LATEX_SETTINGS = {
+    "latex": {
 
+    },
+    "bin_path": {
+
+    },
+    "latex_page": {
+
+    }
+}
+
+
+import platform
+
+if platform.system().lower().startswith("win"):
+    RELATE_LATEX_SETTINGS["bin_path"].update(
+        {"RELATE_IMAGEMAGICK_BIN_DIR":
+            r"D:\Program Files\ImageMagick-7.0.1-Q16"})
+else:
+    RELATE_LATEX_SETTINGS["bin_path"].update(
+        {"RELATE_LATEX_BIN_DIR":
+            "/usr/local/texlive/2015/bin/x86_64-linux"})
 #}}}
 
 

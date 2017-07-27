@@ -29,9 +29,9 @@ import re
 
 from django.utils.translation import ugettext as _
 
-from course.latex.converter import get_tex2img_class
-from course.latex.latex import TexDoc
-from course.latex.utils import (
+from .converter import get_tex2img_class
+from .latex import TexDoc
+from .utils import (
     replace_latex_space_seperator, strip_spaces)
 
 TIKZ_PGF_RE = re.compile(r"\\begin\{(?:tikzpicture|pgfpicture)\}")
@@ -122,5 +122,31 @@ def tex_to_img_tag(tex_source, *args, **kwargs):
             "html_class": html_class,
             "alt": alt,
         })
+
+
+# {{{ tex2img
+
+def jinja_tex_to_img_tag(caller, *args, **kwargs):
+    from django.conf import settings
+    latex2image_enabled = getattr(
+        settings, "RELATE_LATEX_TO_IMAGE_ENABLED", False)
+
+    if not latex2image_enabled:
+        from django.core.exceptions import ImproperlyConfigured
+        raise ImproperlyConfigured(
+            _("RELATE_LATEX_TO_IMAGE_ENABLED is set to False, "
+              "no image will be generated."))
+
+    try:
+        return tex_to_img_tag(caller(), *args, **kwargs)
+    except Exception as e:
+        raise ValueError(
+            u"<pre><div class='alert alert-danger'>"
+            u"Error: %s: %s</div></pre>"
+            % (type(e).__name__, str(e)))
+
+# }}}
+
+
 
 # vim: foldmethod=marker

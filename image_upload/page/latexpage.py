@@ -57,7 +57,7 @@ from course.page import (  # type: ignore
     InlineMultiQuestion)
 from course.validation import ValidationError
 from course.content import get_repo_blob, get_repo_blob_data_cached
-from course.latex.utils import get_mongo_db
+from plugins.latex.utils import get_mongo_db
 from course.page.code import (
     PythonCodeQuestion, PythonCodeQuestionWithHumanTextFeedback,
     request_python_run_with_retries)
@@ -68,13 +68,24 @@ CACHE_VERSION = "V0"
 MAX_JINJIA_RETRY = 3
 DB = get_mongo_db()
 
+mong_latex_page_settings = settings.RELATE_LATEX_SETTINGS["latex_page"]
+LATEX_PAGE_COLLECTION_NAME = mong_latex_page_settings.get(
+    "RELATE_LATEX_PAGE_COLLECTION_NAME",
+    "relate_latex_page")
+LATEX_PAGE_PART_COLLECTION_NAME = mong_latex_page_settings.get(
+    "RELATE_LATEX_PAGE_PART_COLLECTION_NAME",
+    "relate_latex_page_part"
+)
+LATEX_PAGE_COMMITSHA_TEMPLATE_PAIR_COLLECTION = mong_latex_page_settings.get(
+    "RELATE_LATEX_PAGE_COMMITSHA_TEMPLATE_PAIR_COLLECTION",
+    "relate_latex_page_commitsha_template_pair"
+)
+
 
 def get_latex_page_mongo_collection(name=None, db=DB, index_name="key"):
     # type: (Optional[Text], Optional[MongoClient], Optional[Text]) -> Collection
     if not name:
-        name = getattr(
-            settings, "RELATE_LATEX_PAGE_COLLECTION_NAME",
-            "relate_latex_page")
+        name = LATEX_PAGE_COLLECTION_NAME
     collection = db[name]
     if index_name:
         collection.ensure_index(index_name, unique=True)
@@ -84,9 +95,7 @@ def get_latex_page_mongo_collection(name=None, db=DB, index_name="key"):
 def get_latex_page_part_mongo_collection(name=None, db=DB, index_name="key"):
     # type: (Optional[Text], Optional[MongoClient], Optional[Text]) -> Collection
     if not name:
-        name = getattr(
-            settings, "RELATE_LATEX_PAGE_PART_COLLECTION_NAME",
-            "relate_latex_page_part")
+        name = LATEX_PAGE_PART_COLLECTION_NAME
     collection = db[name]
     if index_name:
         collection.ensure_index(index_name, unique=True)
@@ -97,9 +106,7 @@ def get_latex_page_commitsha_template_pair_collection(
         name=None, db=DB, index_name="template_hash"):
     # type: (Optional[Text], Optional[MongoClient], Optional[Text]) -> Collection
     if not name:
-        name = getattr(
-            settings, "RELATE_LATEX_PAGE_COMMITSHA_TEMPLATE_PAIR_COLLECTION",
-            "relate_latex_page_commitsha_template_pair")
+        name = LATEX_PAGE_COMMITSHA_TEMPLATE_PAIR_COLLECTION
     collection = db[name]
     if index_name:
         collection.ensure_index(index_name, unique=True)

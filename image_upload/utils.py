@@ -177,14 +177,14 @@ def minify_python_script(source):
 
 def strip_template_comments(source):
     # type: (Text) -> Text
-    from course.latex.utils import strip_spaces
+    from plugins.latex.utils import strip_spaces
     source = strip_spaces(source, allow_single_empty_line=True)
     source = re.sub(JINJA_TEX_TEMPLATE_COMMENT_RE, "", source)
     source = re.sub(JINJA_TEX_TEMPLATE_LINE_COMMENT_RE, "", source)
 
     in_block_tex_list = JINJA_TEX_TEMPLATE_INBLOCK_LATEX_CALL_RE.findall(source)
     if in_block_tex_list:
-        from course.latex.utils import strip_comments
+        from plugins.latex.utils import strip_comments
         for b in in_block_tex_list:
             source = source.replace(b, strip_comments(b))
 

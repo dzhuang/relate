@@ -25,9 +25,30 @@ THE SOFTWARE.
 """
 
 from django.conf import settings
+from django.core.checks import Tags as DjangoTags, register
 
-settings_check = getattr(settings, "CHECK", None)
-if settings_check:
-    from django.utils.module_loading import import_string
-    for c in settings_check:
-        import_string(c)
+from .converter import CommandBase
+from .utils import get_all_indirect_subclasses
+
+
+class Tags(DjangoTags):
+    relate_course_tag = 'relate_course_tag'
+
+
+@register(Tags.relate_course_tag)
+def latex2image_bin_check(app_configs, **kwargs):
+    """
+    Check if all tex compiler and image converter
+    are correctly configured, if latex utility is
+    enabled.
+    """
+    if not getattr(settings, "RELATE_LATEX_TO_IMAGE_ENABLED", False):
+        return []
+    klass = get_all_indirect_subclasses(CommandBase)
+    instance_list = [cls() for cls in klass]
+    errors = []
+    for instance in instance_list:
+        error = instance.check()
+        if error:
+            errors.append(error)
+    return errors
