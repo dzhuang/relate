@@ -132,8 +132,8 @@ class CommandBase(object):
             )
         elif self.required_version:
             version = ".".join(d for d in m.groups() if d)
-            import distutils.version.LooseVersion as LV
-            if LV(version) < LV(self.required_version):
+            from pkg_resources import parse_version
+            if parse_version(version) < parse_version(self.required_version):
                 error = Critical(
                     "Version outdated",
                     hint=("'%(tool)s' with version "
