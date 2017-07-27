@@ -889,17 +889,16 @@ def expand_markup(
                 loader=GitTemplateLoader(repo, commit_sha),
                 undefined=StrictUndefined)
 
-        from relate.utils import as_local_time
-
-        def parse_date_spec_jinja(datespec):
-            return as_local_time(parse_date_spec(course, datespec))
-
-        env.globals["parse_date_spec"] = parse_date_spec_jinja
-
         template = env.from_string(text)
         kwargs = {}
         if jinja_env:
             kwargs.update(jinja_env)
+
+        from relate.utils import as_local_time
+        def parse_date_spec_jinja(datespec):
+            return as_local_time(parse_date_spec(course, datespec))
+
+        kwargs["parse_date_spec"] = parse_date_spec_jinja
 
         settings_jinja_macro = getattr(settings, "JINJA2_MACRO", None)
         if settings_jinja_macro:
