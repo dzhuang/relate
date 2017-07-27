@@ -919,19 +919,21 @@ def expand_markup(
                     u"Error: %s: %s</div></pre>"
                     % (type(e).__name__, str(e)))
 
-        latex2image_enabled = getattr(
-            settings, "RELATE_LATEX_TO_IMAGE_ENABLED", False)
-
-        if latex2image_enabled:
-            env.globals["latex"] = jinja_tex_to_img_tag
-        else:
-            if not validate_only:
-                env.globals["latex"] = latex_not_enabled_warning
-            else:
-                raise ImproperlyConfigured(
-                    _("RELATE_LATEX_TO_IMAGE_ENABLED is set to False, "
-                      "no image will be generated."))
+        # latex2image_enabled = getattr(
+        #     settings, "RELATE_LATEX_TO_IMAGE_ENABLED", False)
+        #
+        # if latex2image_enabled:
+        #     env.globals["latex"] = jinja_tex_to_img_tag
+        # else:
+        #     if not validate_only:
+        #         env.globals["latex"] = latex_not_enabled_warning
+        #     else:
+        #         raise ImproperlyConfigured(
+        #             _("RELATE_LATEX_TO_IMAGE_ENABLED is set to False, "
+        #               "no image will be generated."))
         # }}}
+
+        kwargs["latex"] = jinja_tex_to_img_tag
 
         text = template.render(**kwargs)
 
