@@ -31,11 +31,11 @@ from .converter import CommandBase
 from .utils import get_all_indirect_subclasses
 
 
-class Tags(DjangoTags):
-    relate_course_tag = 'relate_course_tag'
+class PluginTags(DjangoTags):
+    latex_jinja2_tag = 'latex_jinja2_tag'
 
 
-@register(Tags.relate_course_tag)
+@register(PluginTags.latex_jinja2_tag)
 def latex2image_bin_check(app_configs, **kwargs):
     """
     Check if all tex compiler and image converter

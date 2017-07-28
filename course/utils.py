@@ -28,7 +28,7 @@ import six
 import datetime  # noqa
 import pytz
 
-from typing import cast
+from typing import cast, Iterable
 
 from django.shortcuts import (  # noqa
         render, get_object_or_404)
@@ -1721,6 +1721,36 @@ def get_session_notify_rule(
                                  message=None)
 
 # }}}
+
+
+def get_valiated_custom_page_import_exec_str(klass, validate_only=False):
+    # type: (Union[Text, List, Tuple], Optional[bool]) -> Optional[Text]
+    if isinstance(klass, (list, tuple)) and len(klass) == 1:
+        klass, = cast(Iterable, klass)
+    if isinstance(klass, str):
+        dotted_path = klass
+        klass_name = klass.rsplit('.', 1)[1]
+    elif isinstance(klass, (list, tuple)):
+        try:
+            klass_name, dotted_path = cast(Iterable, klass)
+        except ValueError:
+            raise ValueError("The length of %s should be 2" % repr(klass))
+    else:
+        raise ValueError(
+            "'%s' is not an instance of str, list or tuple" % str(klass))
+    if not klass_name == dotted_path.rsplit(".", 1)[1]:
+        raise ValueError('"%s" is not included in the full path of "%s"' % (
+            klass_name, dotted_path))
+
+    exec_string = compile(
+        "%s = import_string('%s')" % (klass_name, dotted_path),
+        '<string>', 'exec')
+
+    if not validate_only:
+        return exec_string
+
+    from django.utils.module_loading import import_string  # noqa
+    exec(exec_string)
 
 
 # vim: foldmethod=marker

@@ -895,6 +895,7 @@ def expand_markup(
             kwargs.update(jinja_env)
 
         from relate.utils import as_local_time
+
         def parse_date_spec_jinja(datespec):
             return as_local_time(parse_date_spec(course, datespec))
 
