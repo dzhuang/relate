@@ -61,6 +61,9 @@ COURSE_STAFF_IMAGE_PERMISSION = (
 
 
 def is_course_staff_participation(participation):
+    if not participation:
+        return False
+
     from course.enrollment import (
         get_participation_permissions)
     perms = get_participation_permissions(
