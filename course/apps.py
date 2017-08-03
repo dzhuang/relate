@@ -9,3 +9,4 @@ class CourseConfig(AppConfig):
 
     def ready(self):
         import course.receivers  # noqa
+        import course.check  # noqa

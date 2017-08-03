@@ -243,6 +243,42 @@ RELATE_DOCKER_URL = "unix://var/run/docker.sock"
 
 RELATE_DOCKER_TLS_CONFIG = None
 
+# Configure this if only your RELATE instance and your runpy instances
+# are not on the same subnet, and you know exactly the private and public
+# ip of each runpy instance.
+# Format: {private_ip1: public_ip_1, private_ip2, public_ip_2}
+#RELATE_DOCKER_PRIVATE_PUBLIC_IP_MAP_DICT = {}
+
+RELATE_RUNPY_DOCKER_CONFIG = {
+    "docker_image": RELATE_DOCKER_RUNPY_IMAGE,
+    "client_config": {
+        "base_url": RELATE_DOCKER_URL,
+        "tls": RELATE_DOCKER_TLS_CONFIG,
+        "timeout": 15,
+        "version": "1.19"
+    },
+
+    "local_docker_machine": {
+        "enabled": True,
+        "config":{
+            "shell": None,
+            "name": "default",
+        },
+    },
+
+    # This is required to be configured for relate runpy docker for running code
+    # quetsions (and other cases when you need to used the
+    # get_connect_ip_and_port_by_container_from_config method),
+    # in cases when your RELATE instance and (runpy) docker-running
+    # instances are not on the same subnet. You must know the private ip and
+    # a correspond public ip (by which the RElATE instance can visit the docker
+    # instance) of each docker-running instances.
+    # Dict format: {private_ip1: public_ip_1, private_ip2, public_ip_2}
+    "private_public_ip_map_dict": {},
+}
+
+RELATE_RUNPY_DOCKER_ENABLED = False
+
 # Example setup for targeting remote Docker instances
 # with TLS authentication:
 

@@ -425,4 +425,16 @@ def ignore_no_such_table(f, *args):
             raise
 
 
+def is_windows_platform():
+    # type: () -> bool
+    import sys
+    return sys.platform.startswith('win')
+
+
+def is_osx_platform():
+    # type: () -> bool
+    import sys
+    return sys.platform.startswith('darwin')
+
+
 # vim: foldmethod=marker
