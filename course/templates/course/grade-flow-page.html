@@ -65,6 +65,22 @@
 
       {% include "base-page-top.html" %}
 
+      {% if grading_form_html != None or navigation_boxes %}
+          <div>
+            {% for navigation_box in navigation_boxes %}
+              {% if navigation_box %}
+                {% crispy navigation_box %}
+              {% endif %}
+            {% endfor %}
+          </div>
+          <script>
+            $('*[class*="gradedinfosearchwidget "]').on('select2:select', function(e){
+                if(e.params.data.uri !== window.location.pathname){
+                    window.location = e.params.data.uri;}
+            });
+          </script>
+      {% endif %}
+
       {# {{{ header table #}
       <table class="table table-condensed">
         <thead>
@@ -141,17 +157,40 @@
         </tr>
         <tr>
           <td>
+            <a
             {% if prev_flow_session_id != None %}
-              <a href="{% url "relate-grade_flow_page" course.identifier prev_flow_session_id page_data.ordinal %}"
-                 accesskey="p" class="btn btn-default" title="Alt/Cmd(+Shift+)p"><i class="fa fa-chevron-left"></i></a>
+                href="{% url "relate-grade_flow_page" course.identifier prev_flow_session_id prev_flow_session_ordinal %}"
+                class="btn btn-default"
             {% else %}
-              <a href="#" class="btn btn-default disabled"><i class="fa fa-chevron-left"></i></a>
+                href="#"
+                class="btn btn-default disabled"
             {% endif %}
+              accesskey="p"
+              title="{% trans "Previous page with the same page_id" %} Alt/Cmd(+Shift+)p"
+            ><i class="fa fa-chevron-left"></i></a>
+            <a
             {% if next_flow_session_id %}
-              <a href="{% url "relate-grade_flow_page" course.identifier next_flow_session_id page_data.ordinal %}"
-                 accesskey="n" class="btn btn-default" title="Alt/Cmd+(Shift+)n"><i class="fa fa-chevron-right"></i></a>
+                href="{% url "relate-grade_flow_page" course.identifier next_flow_session_id next_flow_session_ordinal %}"
+                   class="btn btn-default"
             {% else %}
-              <a href="#" class="btn btn-default disabled"><i class="fa fa-chevron-right"></i></a>
+                href="#"
+                class="btn btn-default disabled"
+            {% endif %}
+              accesskey="n"
+              title="{% trans "Next page with the same page_id" %} Alt/Cmd+(Shift+)n"
+            ><i class="fa fa-chevron-right"></i></a>
+            {% if grading_form_html != None %}
+              <a
+                {% if next_ungraded_flow_session_id %}
+                  href="{% url "relate-grade_flow_page" course.identifier next_ungraded_flow_session_id next_ungraded_flow_session_ordinal %}"
+                  class="btn btn-default"
+                {% else %}
+                  href="#"
+                  class="btn btn-default disabled"
+                {% endif %}
+                accesskey="l"
+                title="{% trans "Next ungraded page with the same page_id (cyclicly)" %} Alt/Cmd+(Shift+)l"
+                ><i class="fa fa fa-forward"></i></a>
             {% endif %}
             {% trans "Session" %}
           </td>
@@ -164,18 +203,26 @@
         </tr>
         <tr>
           <td>
+            <a
             {% if page_data.ordinal > 0 %}
-              <a href="{% url "relate-grade_flow_page" course.identifier flow_session.id page_data.previous_ordinal %}"
-                  class="btn btn-default"><i class="fa fa-chevron-left"></i></a>
+                href="{% url "relate-grade_flow_page" course.identifier flow_session.id page_data.previous_ordinal %}"
+                class="btn btn-default"
             {% else %}
-              <a href="#" class="btn btn-default disabled"><i class="fa fa-chevron-left"></i></a>
+                href="#"
+                class="btn btn-default disabled"
             {% endif %}
+              title="{% trans "Previous page in session" %}"
+            ><i class="fa fa-chevron-left"></i></a>
+            <a
             {% if page_data.next_ordinal < flow_session.page_count %}
-              <a href="{% url "relate-grade_flow_page" course.identifier flow_session.id page_data.next_ordinal %}"
-                  class="btn btn-default"><i class="fa fa-chevron-right"></i></a>
+                href="{% url "relate-grade_flow_page" course.identifier flow_session.id page_data.next_ordinal %}"
+                class="btn btn-default"
             {% else %}
-              <a href="#" class="btn btn-default disabled"><i class="fa fa-chevron-right"></i></a>
+                href="#"
+                class="btn btn-default disabled"
             {% endif %}
+              title="{% trans "Next page in session" %}"
+            ><i class="fa fa-chevron-right"></i></a>
             {% trans "Page number" %}
           </td>
           <td>
@@ -186,6 +233,13 @@
         </tr>
       </table>
       {# }}} #}
+
+      {% if session_not_for_grading_warning_html %}
+        <div class="alert alert-warning">
+        <i class="fa fa-warning"></i>
+        {{ session_not_for_grading_warning_html|safe }}
+        </div>
+      {% endif %}
 
       {# {{{ grading form #}
 
@@ -212,7 +266,7 @@
   </div>
 
   {# {{{ grade ui #}
-
+  {% if grading_form_html != None %}
   <script>
 
     // http://stackoverflow.com/a/30558011
@@ -358,10 +412,10 @@
       var next_page_url = null;
     {% endif %}
 
-    {% if next_flow_session_id %}
-      var next_session_url = "{% url "relate-grade_flow_page" course.identifier next_flow_session_id page_data.ordinal %}";
+      {% if next_ungraded_flow_session_id %}
+        var next_ungraded_session_url = "{% url "relate-grade_flow_page" course.identifier next_ungraded_flow_session_id next_ungraded_flow_session_ordinal %}";
     {% else %}
-      var next_session_url = null;
+        var next_ungraded_session_url = null;
     {% endif %}
 
     function save_and_next_page()
@@ -370,35 +424,36 @@
       $("#submit-id-submit").click();
     }
 
-    function save_and_next_session()
+      function save_and_next_ungraded_session()
     {
-      window.open(next_session_url, "_blank");
+        window.open(next_ungraded_session_url, "_blank");
       $("#submit-id-submit").click();
     }
 
     function add_submit_next()
     {
+        var $grading_form_submit_btn_div = $(".relate-grading-form .form-group:last .controls:last");
       if (next_page_url)
-        $(".grading-page-grade-entry .form-group:last .controls:last").append(
+          $grading_form_submit_btn_div.append(
             " <button class='btn btn-primary' id='save_next_page' type='button'>"
             + "{% trans "Submit and next page" %} &raquo;"
             + "</button>");
-      if (next_session_url)
-        $(".grading-page-grade-entry .form-group:last .controls:last").append(
-            " <button class='btn btn-primary' id='save_next_session' type='button'>"
-            + "{% trans "Submit and next session" %} &raquo;"
+        if (next_ungraded_session_url)
+          $grading_form_submit_btn_div.append(
+              " <button class='btn btn-primary' id='save_next_ungraded_session' type='button'>"
+              + "{% trans "Submit and next ungraded session" %} &raquo;"
             + "</button>");
 
       $("#save_next_page").click(save_and_next_page);
-      $("#save_next_session").click(save_and_next_session);
+        $("#save_next_ungraded_session").click(save_and_next_ungraded_session);
 
       {# http://stackoverflow.com/a/9549716/3437454 #}
-      $(".relate-grading-form").prepend($(".form-group:last").clone(true, true));
+        $(".relate-grading-form").prepend($grading_form_submit_btn_div.parent().clone(true, true));
     }
 
     $(document).ready(add_submit_next);
   </script>
-
+  {% endif %}
   {# }}} #}
 
 {% endblock %}
