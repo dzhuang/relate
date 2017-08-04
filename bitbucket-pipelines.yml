@@ -1,0 +1,17 @@
+image: python:3.5.1
+
+pipelines:
+  default:
+    - step:
+        caches:
+          - pip
+          - venv
+        script:
+          - "cp local_settings.example.py local_settings.py"
+          - ". ./bitbucket-ci/prepare-and-run-mypy.sh"
+          - ". ./bitbucket-ci/prepare-and-run-flake8.sh relate course accounts test bin"
+          - "PY_EXE=python3.5 bash ./bitbucket-ci/run-tests-for-ci.sh"
+
+definitions:
+  caches:
+    venv: .env
