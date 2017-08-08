@@ -513,6 +513,9 @@ def get_related_sessions_and_pagedata_qset_from_session(
         "flow_session__user"
     ]
 
+    if getattr(fpctx.page, "grading_sort_by_page_data", False):
+        order_by_args.insert(0, "data_stringfied")
+
     all_pagedata_qset = (
         FlowPageData.objects
         .filter(**filter_kwargs)
@@ -520,6 +523,10 @@ def get_related_sessions_and_pagedata_qset_from_session(
         .select_related("flow_session")
         .select_related("flow_session__participation")
         .select_related("flow_session__user"))
+
+    if getattr(fpctx.page, "grading_sort_by_page_data", False):
+        all_flow_session_pks = list(
+            all_pagedata_qset.values_list("flow_session__pk", flat=True))
 
     return all_flow_session_pks, all_pagedata_qset
 

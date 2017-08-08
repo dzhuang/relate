@@ -27,6 +27,7 @@ THE SOFTWARE.
 from typing import cast
 
 import six
+import json
 
 from django.db import models
 from django.utils.timezone import now
@@ -890,6 +891,9 @@ class FlowPageData(models.Model):
                 "easily return to pages that still need their attention."),
             verbose_name=_('Bookmarked'))
 
+    data_stringfied = models.CharField(max_length=1000,
+            verbose_name=_('Stringfied data'), null=True, blank=True, db_index=True)
+
     class Meta:
         verbose_name = _("Flow page data")
         verbose_name_plural = _("Flow page data")
@@ -915,6 +919,14 @@ class FlowPageData(models.Model):
 
     def human_readable_ordinal(self):
         return self.ordinal + 1
+
+    def get_stringfied_data(self):
+        return json.dumps(self.data, sort_keys=True)[:1000]
+
+    def save(self, *args, **kwargs):
+        if self.data:
+            self.data_stringfied = self.get_stringfied_data()
+        super(FlowPageData, self).save(*args, **kwargs)
 
 # }}}
 
