@@ -73,20 +73,9 @@
             {% endfor %}
           </div>
           <script>
-            function navigate_to_grading_page(e, grade_status){
-              {# http://stackoverflow.com/a/33248730/3437454 #}
-              if (e.params.data.id){
-                $.ajax({
-                  url: window.location.origin + "/select2session/{{ course.identifier }}/" + grade_status + "/" + e.params.data.id
-                }).done(function (result) {
-                  if(result.uri!==window.location.pathname){
-                    window.location = result.uri;}
-                });
-              }
-            }
             $('*[class*="gradedinfosearchwidget "]').on('select2:select', function(e){
-              var grade_status = $(this).hasClass("pagegradedinfosearchwidget") ? "graded" : "ungraded";
-              navigate_to_grading_page(e, grade_status)
+                if(e.params.data.uri !== window.location.pathname){
+                    window.location = e.params.data.uri;}
             });
           </script>
       {% endif %}

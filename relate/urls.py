@@ -538,18 +538,6 @@ urlpatterns = [
 
     #}}}
 
-    # {{{ django-select2
-
-    url(r"^select2session"
-        "/" + COURSE_ID_REGEX +
-        "/(?P<grade_status>(graded|ungraded))"
-        "/(?P<pk>[0-9]+)"
-        "/$",
-        course.grading.get_session_grading_page_url,
-        name="relate-get_session_grading_page_url"),
-
-    # }}}
-
     url(r'^admin/', admin.site.urls),
 
     # {{{ image_upload
