@@ -535,7 +535,8 @@ urlpatterns = [
     # {{{ django-select2
 
     url(r'^select2/', include('django_select2.urls')),
-
+    url(r"^grading_select2/auto.json$",
+        course.grading.GradingAutoResponseView.as_view(), name="grading_select2-json"),
     #}}}
 
     url(r'^admin/', admin.site.urls),
