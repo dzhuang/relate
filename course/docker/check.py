@@ -25,9 +25,34 @@ THE SOFTWARE.
 """
 
 from django.conf import settings
+from django.core.checks import Tags as DjangoTags, register, Critical
 
-startup_checks = getattr(settings, "RELATE_STARTUP_CHECKS", None)
-if startup_checks:
-    from django.utils.module_loading import import_string
-    for c in startup_checks:
-        import_string(c)
+DEBUG = False
+
+
+class Tags(DjangoTags):
+    docker_check_tag = 'relate_startup_check'
+
+
+@register(Tags.docker_check_tag)
+def docker_config_check(app_configs, **kwargs):
+    """
+    """
+    if not getattr(settings, "RELATE_RUNPY_DOCKER_ENABLED", False):
+        return []
+
+    docker_client_config = settings.RELATE_RUNPY_DOCKER_CLIENT_CONFIG
+    if docker_client_config is None:
+        return []
+
+    errors = []
+    try:
+        docker_client_config.validate()
+    except Exception as e:
+        errors.append(Critical("%s" % (str(e)), obj=type(e).__name__))
+
+        if DEBUG:
+            from traceback import format_exc
+            print("".join(format_exc()))
+
+    return errors

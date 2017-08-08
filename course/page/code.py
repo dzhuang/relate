@@ -80,7 +80,6 @@ class InvalidPingResponse(RuntimeError):
 def request_python_run(run_req, run_timeout, image=None):
     import json
     from six.moves import http_client
-    import docker
     import socket
     import errno
     from docker.errors import APIError as DockerAPIError
@@ -95,77 +94,27 @@ def request_python_run(run_req, run_timeout, image=None):
 
     docker_timeout = 15
 
+    container_id = None
+    connect_host_ip = 'localhost'
+    port = RUNPY_PORT
+
+    client_config = None
+
     # DEBUGGING SWITCH: 1 for 'spawn container', 0 for 'static container'
     if 1:
-        docker_url = getattr(settings, "RELATE_DOCKER_URL",
-                "unix://var/run/docker.sock")
-        docker_tls = getattr(settings, "RELATE_DOCKER_TLS_CONFIG",
-                None)
-        docker_kwargs = {
-            "base_url": docker_url,
-            "timeout": docker_timeout,
-            "tls": docker_tls,
-            "version": "1.19"
-        }
-        if getattr(settings, "RELATE_USE_LOCAL_DOCKER_MACHINE", False):
-            from docker.utils import kwargs_from_env
-            docker_kwargs.update(kwargs_from_env())
-        docker_cnx = docker.Client(**docker_kwargs)
+        docker_enabled = getattr(settings, "RELATE_RUNPY_DOCKER_ENABLED")
+        if not docker_enabled:
+            debug_print("DOCKER RUNPY NOT ENABLED")
+            return {"result": "docker_runpy_not_enabled"}
 
-        if image is None:
-            image = settings.RELATE_DOCKER_RUNPY_IMAGE
-
-        dresult = docker_cnx.create_container(
-                image=image,
-                command=[
-                    "/opt/runpy/runpy",
-                    "-1"],
-                host_config={
-                    "Memory": 384*10**6,
-                    "MemorySwap": -1,
-                    "PublishAllPorts": True,
-                    # Do not enable: matplotlib stops working if enabled.
-                    # "ReadonlyRootfs": True,
-                    },
-                user="runpy")
-
-        container_id = dresult["Id"]
-    else:
-        container_id = None
-
-    connect_host_ip = 'localhost'
+        # client_config should have passed start up check
+        client_config = getattr(settings, "RELATE_RUNPY_DOCKER_CLIENT_CONFIG")
 
     try:
-        # FIXME: Prohibit networking
-
-        if container_id is not None:
-            docker_cnx.start(container_id)
-
-            container_props = docker_cnx.inspect_container(container_id)
-            (port_info,) = (container_props
-                    ["NetworkSettings"]["Ports"]["%d/tcp" % RUNPY_PORT])
-            port_host_ip = port_info.get("HostIp")
-
-            if port_host_ip != "0.0.0.0":
-                connect_host_ip = port_host_ip
-
-            # print(getattr(settings, "RELATE_MAPPED_DOCKER_HOST_IP", None),
-            #       "---------------------------")
-
-            if (not getattr(settings, "RELATE_USE_LOCAL_DOCKER_MACHINE", False)
-                and
-                    getattr(settings, "RELATE_MAPPED_DOCKER_HOST_IP", None)):
-                mapped_ip = settings.RELATE_MAPPED_DOCKER_HOST_IP
-                connect_host_ip = mapped_ip.get(port_host_ip, connect_host_ip)
-
-            if (getattr(settings, "RELATE_USE_LOCAL_DOCKER_MACHINE", False)
-                and
-                    getattr(settings, "RELATE_DOCKER_HOST_IP", None)):
-                connect_host_ip = settings.RELATE_DOCKER_HOST_IP
-
-            port = int(port_info["HostPort"])
-        else:
-            port = RUNPY_PORT
+        if client_config:
+            docker_cnx, container_id, connect_host_ip, port = (
+                client_config.get_client_and_container_connection_info(
+                    default_port=port, default_connect_host_ip=connect_host_ip))
 
         from time import time, sleep
         start_time = time()
@@ -772,6 +721,14 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
 
         if response.result == "success":
             pass
+        elif response.result == "docker_runpy_not_enabled":
+            feedback_bits = (
+                ["".join([
+                    "<p class='alert alert-warning'>"
+                    "<i class='fa fa-warning'></i>",
+                    _("This page is not gradable right now, as "
+                      "Docker runpy is currently not enabled for this site."),
+                    "</p>"])])
         elif response.result in [
                 "uncaught_error",
                 "setup_compile_error",
