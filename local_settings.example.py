@@ -231,6 +231,16 @@ RELATE_SHOW_EDITOR_FORM = True
 
 # }}}
 
+# {{{ check
+
+# More start up checks besides those in RELATE_STARTUP_CHECKS.
+# Each item should be the path to an importable check function.
+RELATE_STARTUP_CHECKS_EXTRA = []
+
+# }}}
+
+
+
 # {{{ docker
 
 # A string containing the image ID of the docker image to be used to run
