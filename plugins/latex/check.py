@@ -29,13 +29,13 @@ from django.core.checks import Tags as DjangoTags, register
 
 from .converter import CommandBase
 from .utils import get_all_indirect_subclasses
+from course.checks import RelateCriticalCheckMessage
+
+# class PluginTags(DjangoTags):
+#     latex_jinja2_tag = 'latex_jinja2_tag'
 
 
-class PluginTags(DjangoTags):
-    latex_jinja2_tag = 'latex_jinja2_tag'
-
-
-@register(PluginTags.latex_jinja2_tag)
+#@register(PluginTags.latex_jinja2_tag)
 def latex2image_bin_check(app_configs, **kwargs):
     """
     Check if all tex compiler and image converter

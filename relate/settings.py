@@ -305,20 +305,6 @@ SAML_CREATE_UNKNOWN_USER = True
 
 # }}}
 
-# {{{ check
-
-# This detects potential problems of RELATE at start up, using Django's system
-# checks (https://docs.djangoproject.com/en/dev/ref/checks/)
-RELATE_STARTUP_CHECKS = []  # type: list
-
-checks_extra = local_settings.get("RELATE_STARTUP_CHECKS_EXTRA")
-if checks_extra:
-    assert isinstance(checks_extra, list)
-    RELATE_STARTUP_CHECKS = RELATE_STARTUP_CHECKS + checks_extra
-
-# }}}
-
-
 
 RELATE_RUNPY_DOCKER_CLIENT_CONFIG = None
 from course.docker.config import get_docker_client_config

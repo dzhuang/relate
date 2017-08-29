@@ -31,7 +31,6 @@ import shutil
 import re
 from hashlib import md5
 
-from django.core.checks import Critical
 from django.core.management.base import CommandError
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.html import escape
@@ -40,6 +39,7 @@ from django.utils.translation import ugettext as _, string_concat
 from django.conf import settings
 
 from relate.utils import local_now
+from course.checks import RelateCriticalCheckMessage
 
 from .utils import (
     get_mongo_db,
@@ -123,7 +123,7 @@ class CommandBase(object):
         m = re.search(r'(\d+)\.(\d+)\.?(\d+)?', out)
 
         if not m:
-            error = Critical(
+            error = RelateCriticalCheckMessage(
                 strerror,
                 hint=("Unable to run '%(cmd)s'. Is "
                       "%(tool)s installed or has its "
@@ -138,7 +138,7 @@ class CommandBase(object):
             version = ".".join(d for d in m.groups() if d)
             from pkg_resources import parse_version
             if parse_version(version) < parse_version(self.required_version):
-                error = Critical(
+                error = RelateCriticalCheckMessage(
                     "Version outdated",
                     hint=("'%(tool)s' with version "
                           ">=%(required)s is required, "

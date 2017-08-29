@@ -301,11 +301,19 @@ RELATE_SHOW_EDITOR_FORM = True
 
 # }}}
 
-# {{{ check
+# {{{ extra checks
 
-# More start up checks besides those in RELATE_STARTUP_CHECKS.
-# Each item should be the path to an importable check function.
-RELATE_STARTUP_CHECKS_EXTRA = []
+# This allow user to add customized startup checkes for user-defined modules
+# using Django's system checks (https://docs.djangoproject.com/en/dev/ref/checks/)
+# For example, define a `my_check_func in `my_module` with
+# <code>
+#   def my_check_func(app_configs, **kwargs):
+#         return [list of error]
+#</code>
+# The configuration should be
+# RELATE_STARTUP_CHECKS_EXTRA = ["my_module.my_check_func"]
+# i.e., Each item should be the path to an importable check function.
+#RELATE_STARTUP_CHECKS_EXTRA = []
 
 # }}}
 
