@@ -3,6 +3,7 @@ from __future__ import absolute_import
 """
 Django settings for RELATE.
 """
+
 if False:
     # for mypy
     from typing import Callable, Any, Union, Dict, Optional  # noqa
@@ -59,13 +60,13 @@ INSTALLED_APPS = (
     "course",
 )
 
-if local_settings.get("RELATE_CUSTOM_INSTALLED_APPS", False):  # type: ignore
+if local_settings.get("RELATE_CUSTOM_INSTALLED_APPS"):  # type: ignore
     INSTALLED_APPS = INSTALLED_APPS + local_settings["RELATE_CUSTOM_INSTALLED_APPS"]  # type: ignore # noqa
 
-if not local_settings.get("RELATE_STATIC_CDN_ENABLED", False):  # type: ignore
+if not local_settings.get("RELATE_STATIC_CDN_ENABLED"):  # type: ignore
     INSTALLED_APPS = INSTALLED_APPS + ("django.contrib.staticfiles",)  # type: ignore # noqa
 
-if local_settings.get("RELATE_SIGN_IN_BY_SAML2_ENABLED", False):  # type: ignore
+if local_settings.get("RELATE_SIGN_IN_BY_SAML2_ENABLED"):
     INSTALLED_APPS = INSTALLED_APPS + ("djangosaml2",)  # type: ignore
 
 # }}}
@@ -102,7 +103,7 @@ AUTHENTICATION_BACKENDS = (
     "django.contrib.auth.backends.ModelBackend",
     )
 
-if local_settings["RELATE_SIGN_IN_BY_SAML2_ENABLED"]:
+if local_settings.get("RELATE_SIGN_IN_BY_SAML2_ENABLED"):
     AUTHENTICATION_BACKENDS = AUTHENTICATION_BACKENDS + (  # type: ignore
             'course.auth.Saml2Backend',
             )
@@ -304,22 +305,20 @@ SAML_CREATE_UNKNOWN_USER = True
 
 # }}}
 
-# This makes sure the RELATE_BASE_URL is configured.
-assert local_settings["RELATE_BASE_URL"]
-
-# This makes sure RELATE_EMAIL_APPELATION_PRIORITY_LIST is a list
-if "RELATE_EMAIL_APPELATION_PRIORITY_LIST" in local_settings:
-    assert isinstance(
-        local_settings["RELATE_EMAIL_APPELATION_PRIORITY_LIST"], list)
+# {{{ check
 
 # This detects potential problems of RELATE at start up, using Django's system
 # checks (https://docs.djangoproject.com/en/dev/ref/checks/)
-RELATE_STARTUP_CHECKS = ["course.docker.check.docker_config_check"]
+RELATE_STARTUP_CHECKS = []  # type: list
 
 checks_extra = local_settings.get("RELATE_STARTUP_CHECKS_EXTRA")
 if checks_extra:
     assert isinstance(checks_extra, list)
     RELATE_STARTUP_CHECKS = RELATE_STARTUP_CHECKS + checks_extra
+
+# }}}
+
+
 
 RELATE_RUNPY_DOCKER_CLIENT_CONFIG = None
 from course.docker.config import get_docker_client_config

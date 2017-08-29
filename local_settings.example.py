@@ -301,6 +301,13 @@ RELATE_SHOW_EDITOR_FORM = True
 
 # }}}
 
+# {{{ check
+
+# More start up checks besides those in RELATE_STARTUP_CHECKS.
+# Each item should be the path to an importable check function.
+RELATE_STARTUP_CHECKS_EXTRA = []
+
+# }}}
 
 # {{{ convert LaTeX to image settings
 
