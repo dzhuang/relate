@@ -404,6 +404,8 @@ def validate_page_chunk(vctx, location, chunk):
                     "%s, rule %d" % (location, i+1),
                     rule)
 
+    validate_markup(vctx, location, chunk.content)
+
 
 def validate_staticpage_desc(vctx, location, page_desc):
     validate_struct(
@@ -1400,6 +1402,9 @@ def validate_course_content(repo, course_file, events_file,
                             permission=pperm.access_files_for,
                             )
                         .values_list("argument", flat=True))
+
+        access_kinds = frozenset(k for k in access_kinds if k is not None)
+
     else:
         access_kinds = ["public", "in_exam", "student", "ta",
                      "unenrolled", "instructor"]
