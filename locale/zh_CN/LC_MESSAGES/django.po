@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-07-16 21:50+0800\n"
+"POT-Creation-Date: 2017-08-30 14:46+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -885,10 +885,6 @@ msgstr "未找到资源\"%s\""
 msgid "I have no idea what a processing instruction is."
 msgstr "我也不知道处理的指令是什么"
 
-msgid ""
-"RELATE_LATEX_TO_IMAGE_ENABLED is set to False, no image will be generated."
-msgstr ""
-
 #, python-format
 msgid "invalid period: %s"
 msgstr "无效的周期：%s"
@@ -1082,6 +1078,14 @@ msgstr "成功地拒绝了."
 
 msgid "Successfully dropped."
 msgstr "成功地剔除了."
+
+#, python-format
+msgid ""
+"A data integrity issue was detected when saving this participation. Maybe a "
+"participation for this user already exists? (%s)"
+msgstr ""
+"在保存该participation时发生了一个数据完整性错误. 可能该user的participation已"
+"经存在了？ (%s)"
 
 msgid "Edit Participation"
 msgstr "编辑课程参与"
@@ -1788,8 +1792,8 @@ msgid "autograded"
 msgstr "自动评分"
 
 #, python-format
-msgid "%(full_name)s session %(flow_session_pk)s"
-msgstr "%(full_name)s, session\"%(flow_session_pk)s\""
+msgid "%(full_name)s (%(username)s) session %(flow_session_pk)s"
+msgstr "%(full_name)s, (%(username)s) session\"%(flow_session_pk)s\""
 
 msgid "Flow session not part of specified course"
 msgstr "该flow session不是选定课程的内容"
@@ -1803,21 +1807,24 @@ msgstr "不允许评分"
 msgid "Submit"
 msgstr "提交"
 
-msgid "Graded pages, ordered by last_name, first_name and grade time"
-msgstr "已评分页面，按用户姓、名及评分时间排序"
-
 msgid "Graded pages, ordered by grade time"
 msgstr "已评分页面，按评分时间排序"
+
+msgid "Graded pages, ordered by last_name, first_name and grade time"
+msgstr "已评分页面，按用户姓、名及评分时间排序"
 
 msgid "Pages ungraded or graded but not released, ordered by user's last name."
 msgstr "未评分页面 或 已评分但未发布，按用户姓氏排序."
 
+msgid "Pages, ordered by user's last name."
+msgstr "页面，按用户姓氏排序."
+
 #, python-format
 msgid ""
-"This page and session will not be counted into %(user)s's grading of this "
-"flow, see %(url)s instead."
+"This page and session will not be counted into %(username)s's grading of "
+"this flow, see %(url)s instead."
 msgstr ""
-"本page和session将不会被计入到%(user)s在本flow的评分中，你应该查看%(url)s."
+"本page和session将不会被计入到%(username)s在本flow的评分中，你应该查看%(url)s."
 
 msgid "this session"
 msgstr "这个session"
@@ -1861,57 +1868,6 @@ msgstr "信息已发送. "
 
 msgid "Send instant message"
 msgstr "发送即时信息"
-
-msgid "'compiler' must be specified."
-msgstr "必须指定compiler"
-
-msgid "'image_format' must be specified."
-msgstr "必须指定'image_format"
-
-msgid "\"html_class_extra\" must be a string or a list"
-msgstr ""
-
-msgid "Param 'tex_source' can not be an empty string"
-msgstr ""
-
-#, python-format
-msgid "No %s file was produced."
-msgstr "未生成 %s 文件. "
-
-msgid "No image was generated."
-msgstr ""
-
-#, python-format
-msgid "Unsupported image format '%s'"
-msgstr ""
-
-#, python-format
-msgid "Unsupported tex compiler '%s'"
-msgstr ""
-
-#, python-format
-msgid ""
-"Unsupported combination: ('%(compiler)s', '%(format)s'). Currently support %"
-"(supported)s."
-msgstr ""
-
-#, python-format
-msgid "No %s found in latex source"
-msgstr ""
-
-#, python-format
-msgid "More than one %s found in latex source"
-msgstr ""
-
-#, python-format
-msgid "The occurance of %s are not in proper order"
-msgstr ""
-
-msgid "No LaTeX source code is provided."
-msgstr "未提供LaTex源代码. "
-
-msgid "Error executing"
-msgstr ""
 
 msgid ""
 "A course identifier. Alphanumeric with dashes, no spaces. This is visible in "
@@ -2346,6 +2302,9 @@ msgstr ""
 
 msgid "Bookmarked"
 msgstr "已加书签"
+
+msgid "Stringfied data"
+msgstr "文本化的data"
 
 msgid "Flow page data"
 msgstr "flow page的数据"
@@ -2941,6 +2900,11 @@ msgid ""
 "It looks like you submitted code that is identical to the reference "
 "solution. This is not allowed."
 msgstr "看上去您所提交的代码与参考答案一致. 这是不被允许的."
+
+msgid ""
+"This page is not gradable right now, as Docker runpy is currently not "
+"enabled for this site."
+msgstr "该页面目前无法评分, 因为Docker runpy在本网站未启用. "
 
 msgid ""
 "The grading code failed. Sorry about that. The staff has been informed, and "
@@ -3752,12 +3716,6 @@ msgstr "重新允许修改回答"
 msgid "Submission history for this page"
 msgstr "本页面的提交历史"
 
-msgid "(current)"
-msgstr "(当前的)"
-
-msgid "(submitted)"
-msgstr "(已提交的)"
-
 msgid "Go to end"
 msgstr "跳转至最末"
 
@@ -3835,6 +3793,15 @@ msgstr "已保存"
 
 msgid "Error--not saved."
 msgstr "错误--未保存."
+
+msgid "No submission history"
+msgstr "无提交记录"
+
+msgid "(current)"
+msgstr "(当前的)"
+
+msgid "(submitted)"
+msgstr "(已提交的)"
 
 msgid "unfinished"
 msgstr "未完成"
@@ -3967,21 +3934,6 @@ msgstr "评分"
 msgid "Past submissions/grades"
 msgstr "过往的提交记录/评分记录"
 
-msgid "Submission:"
-msgstr "提交:"
-
-msgid "Grade:"
-msgstr "得分:"
-
-msgid "no grade"
-msgstr "无评分"
-
-#. Translators: the unit name in grading
-msgid "point"
-msgid_plural "points"
-msgstr[0] "分"
-msgstr[1] "分"
-
 msgid "Property"
 msgstr "属性"
 
@@ -4003,6 +3955,12 @@ msgstr "给予的分数"
 
 msgid "(unknown)"
 msgstr "(未知)"
+
+#. Translators: the unit name in grading
+msgid "point"
+msgid_plural "points"
+msgstr[0] "分"
+msgstr[1] "分"
 
 msgid "(n/a)"
 msgstr ""
@@ -4063,6 +4021,18 @@ msgstr "并翻下一页"
 
 msgid "Submit and next ungraded session"
 msgstr "并转下一个未评分session"
+
+msgid "No submission/grade history"
+msgstr "无提交记录/评分记录"
+
+msgid "Submission:"
+msgstr "提交:"
+
+msgid "Grade:"
+msgstr "得分:"
+
+msgid "no grade"
+msgstr "无评分"
 
 #, python-format
 msgid ""
@@ -5296,6 +5266,61 @@ msgstr "%(current)d个(共计%(total)d个)已经处理."
 
 msgid "Edit Course"
 msgstr "编辑课程"
+
+msgid "'compiler' must be specified."
+msgstr "必须指定compiler"
+
+msgid "'image_format' must be specified."
+msgstr "必须指定'image_format"
+
+msgid "\"html_class_extra\" must be a string or a list"
+msgstr "\"html_class_extra\"必须是一个str或一个list"
+
+msgid ""
+"RELATE_LATEX_TO_IMAGE_ENABLED is set to False, no image will be generated."
+msgstr "RELATE_LATEX_TO_IMAGE_ENABLED设为False，将不会生成图片. "
+
+msgid "Param 'tex_source' can not be an empty string"
+msgstr "参数'tex_source'不能是一个空字符串"
+
+#, python-format
+msgid "No %s file was produced."
+msgstr "未生成 %s 文件. "
+
+msgid "No image was generated."
+msgstr "未生成图片."
+
+#, python-format
+msgid "Unsupported image format '%s'"
+msgstr "不支持的图片格式'%s'"
+
+#, python-format
+msgid "Unsupported tex compiler '%s'"
+msgstr "不支持的tex编译器'%s'"
+
+#, python-format
+msgid ""
+"Unsupported combination: ('%(compiler)s', '%(format)s'). Currently support %"
+"(supported)s."
+msgstr "不支持的组合('%(compiler)s', '%(format)s'). 目前支持%(supported)s."
+
+#, python-format
+msgid "No %s found in latex source"
+msgstr "在LaTex源代码中未发现%s"
+
+#, python-format
+msgid "More than one %s found in latex source"
+msgstr "在LaTex源代码中发现超过1处%s"
+
+#, python-format
+msgid "The occurance of %s are not in proper order"
+msgstr "%s出现的次序不正确"
+
+msgid "No LaTeX source code is provided."
+msgstr "未提供LaTex源代码. "
+
+msgid "Error executing"
+msgstr "执行错误"
 
 msgid "403 Forbidden"
 msgstr "403 禁止访问"
