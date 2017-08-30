@@ -61,6 +61,24 @@ except ImportError:
 # }}}
 
 
+def get_local_settings():
+    import os
+    BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+    _local_settings_file = os.path.join(BASE_DIR, "local_settings.py")
+    local_settings = {
+        "__file__": _local_settings_file,
+    }
+    try:
+        with open(_local_settings_file) as inf:
+            local_settings_contents = inf.read()
+    except IOError:
+        pass
+    else:
+        exec(compile(local_settings_contents, "local_settings.py", "exec"),
+             local_settings)
+    return local_settings
+
+
 class StyledForm(forms.Form):
     def __init__(self, *args, **kwargs):
         # type: (...) -> None
@@ -423,6 +441,22 @@ def ignore_no_such_table(f, *args):
             local_rollback()
         else:
             raise
+
+
+def is_windows_platform():
+    # type: () -> bool
+    import sys
+    return sys.platform.startswith('win')
+
+
+def is_osx_platform():
+    # type: () -> bool
+    import sys
+    return sys.platform.startswith('darwin')
+
+
+class RELATEDeprecateWarning(PendingDeprecationWarning):
+    pass
 
 
 # vim: foldmethod=marker
