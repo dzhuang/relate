@@ -25,22 +25,33 @@ THE SOFTWARE.
 """
 
 from django.conf import settings
-from django.core.checks import register, Critical
+from django.core.checks import register, Critical, Warning
 
 RELATE_STARTUP_DOCKER_CHECKS_TAG = "relate_startup_docker_checks"
+RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME = "RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME"
 
 DEBUG = False
 
 
 def check_docker_client_config(app_configs, **kwargs):
-    docker_client_config = settings.RELATE_RUNPY_DOCKER_CLIENT_CONFIG
-    if docker_client_config is None:
-        return []
+    from course.docker.config import (
+        get_relate_runpy_docker_client_config, RunpyDockerConfigNotSetError,
+        RunpyDockerConfigNotSetWarning)
 
-    return docker_client_config.checks()
+    try:
+        runpy_client_config = (
+            get_relate_runpy_docker_client_config(silence_for_None=False))
+    except RunpyDockerConfigNotSetError as e:
+        return [Warning(
+            msg=str(e),
+            obj=RunpyDockerConfigNotSetWarning,
+            id="runpy_docker_config.W001"
+        )]
+
+    print("here", type(runpy_client_config))
+
+    return runpy_client_config.checks()
 
 
 def register_docker_client_config_checks():
-    if not getattr(settings, "RELATE_RUNPY_DOCKER_ENABLED", False):
-        return
     register(check_docker_client_config, RELATE_STARTUP_DOCKER_CHECKS_TAG)
