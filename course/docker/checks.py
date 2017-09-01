@@ -48,7 +48,8 @@ def check_docker_client_config(app_configs, **kwargs):
             id="runpy_docker_config.W001"
         )]
 
-    print("here", type(runpy_client_config))
+    if not runpy_client_config:
+        return []
 
     return runpy_client_config.checks()
 

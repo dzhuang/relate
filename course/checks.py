@@ -53,7 +53,7 @@ class RelateCriticalCheckMessage(Critical):
     def __init__(self, *args, **kwargs):
         super(RelateCriticalCheckMessage, self).__init__(*args, **kwargs)
         if not self.obj:
-            self.obj = ImproperlyConfigured.__name__
+            self.obj = ImproperlyConfigured
 
 
 class DeprecatedException(Exception):

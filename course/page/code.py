@@ -43,6 +43,8 @@ from course.page.base import (
         get_editor_interaction_mode)
 from course.constants import flow_permission
 
+from traceback import format_exc
+
 
 # {{{ python code question
 
@@ -102,13 +104,26 @@ def request_python_run(run_req, run_timeout, image=None):
 
     # DEBUGGING SWITCH: 1 for 'spawn container', 0 for 'static container'
     if 1:
-        docker_enabled = getattr(settings, "RELATE_RUNPY_DOCKER_ENABLED")
-        if not docker_enabled:
-            debug_print("DOCKER RUNPY NOT ENABLED")
-            return {"result": "docker_runpy_not_enabled"}
-
-        # client_config should have passed start up check
-        client_config = getattr(settings, "RELATE_RUNPY_DOCKER_CLIENT_CONFIG")
+        from course.docker.config import (
+            get_relate_runpy_docker_client_config, RunpyDockerConfigNotSetError)
+        try:
+            client_config = (
+                get_relate_runpy_docker_client_config(silence_for_None=False))
+            if not client_config:
+                debug_print("DOCKER RUNPY IS NOT ENABLED")
+                return {"result": "docker_runpy_not_enabled"}
+        except Exception:
+            debug_print("FAILED TO GET DOCKER RUNPY CLIENT CONFIG")
+            config_name = (
+                getattr(settings, "RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME"))
+            return {
+                "result": "uncaught_error",
+                "message":
+                    "Failed to get runpy docker client config '%s'"
+                    % config_name,
+                "traceback": "".join(format_exc()),
+                "exec_host": connect_host_ip,
+            }
 
     try:
         if client_config:
@@ -120,8 +135,6 @@ def request_python_run(run_req, run_timeout, image=None):
         start_time = time()
 
         # {{{ ping until response received
-
-        from traceback import format_exc
 
         def check_timeout():
                 if time() - start_time < docker_timeout:

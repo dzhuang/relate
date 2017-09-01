@@ -273,7 +273,7 @@ RELATE_DOCKER_TLS_CONFIG = None
 # Format: {private_ip1: public_ip_1, private_ip2, public_ip_2}
 #RELATE_DOCKER_PRIVATE_PUBLIC_IP_MAP_DICT = {}
 
-RELATE_DOCKERS_CONFIG = {
+RELATE_DOCKERS = {
     "runpy": {
         "docker_image": RELATE_DOCKER_RUNPY_IMAGE,
         "client_config": {
@@ -307,7 +307,7 @@ RELATE_DOCKERS_CONFIG = {
 
 
 # Switch to turn on/off runpy
-RELATE_RUNPY_DOCKER_ENABLED = True
+RELATE_RUNPY_DOCKER_ENABLED = False
 
 RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME = None
 
