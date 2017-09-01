@@ -49,6 +49,8 @@ if False:
 
 # {{{ Constants
 
+DEFAULT_DOCKER_RUNPY_CONFIG_ALIAS = 'default'
+
 LOCALHOST = '127.0.0.1'
 DOCKER_MACHINE_RUNNING = 'Running'
 DEFAULT_MACHINE_NAME = "default"
@@ -66,6 +68,7 @@ DOCKER_RUNPY_CLIENT_TIMEOUT_DEFAULT = 15
 
 # {{{ Settings name
 
+RELATE_RUNPY_DOCKER_ENABLED = "RELATE_RUNPY_DOCKER_ENABLED"
 RELATE_DOCKERS = "RELATE_DOCKERS"
 RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME = "RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME"
 
@@ -162,7 +165,7 @@ class DockerMachineVariablesNotExportedError(DockerMachineError):
     pass
 
 
-class RunpyDockerConfigNotSetWarning(Warning):
+class RunpyDockerClientConfigNameIsNoneWarning(Warning):
     pass
 
 
@@ -784,8 +787,8 @@ def get_docker_client_config(docker_config_name, for_runpy=True):
     representing whether the client is used for runpy (code question)
     :return: a `Docker_client_config_ish` instance.
     """
-    configs = get_config_by_name(docker_config_name)
-    print("\n",repr(configs))
+    from copy import deepcopy
+    configs = deepcopy(get_config_by_name(docker_config_name))
     docker_image = configs.pop("docker_image", None)
     client_config = configs.pop("client_config", {})
     use_local_docker_machine = False
@@ -831,7 +834,7 @@ def get_config_by_name(docker_config_name):
         )
     if docker_config_name not in relate_dockers_config:
         raise ImproperlyConfigured(
-            "%s: %s doesn't have a configure named '%s'"
+            "%s: %s has no configuration named '%s'"
             % (RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME, RELATE_DOCKERS,
                docker_config_name)
         )
@@ -840,21 +843,23 @@ def get_config_by_name(docker_config_name):
 
 def get_relate_runpy_docker_client_config(silence_for_None=True):
     from django.conf import settings
-    runpy_enabled = getattr(settings, "RELATE_RUNPY_DOCKER_ENABLED", False)
+    runpy_enabled = getattr(settings, RELATE_RUNPY_DOCKER_ENABLED, False)
     if not runpy_enabled:
         return None
     relate_runpy_docker_client_config_name = (
-        getattr(settings, RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME, "default"))
+        getattr(settings, RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME,
+                DEFAULT_DOCKER_RUNPY_CONFIG_ALIAS))
 
-    if not relate_runpy_docker_client_config_name:
-        msg = ("%s is not configured in RELATE local settings"
-               % RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME)
+    if relate_runpy_docker_client_config_name is None:
+        msg = ("%s can not be None when %s is True"
+               % (RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME,
+                  RELATE_RUNPY_DOCKER_ENABLED))
         if not silence_for_None:
             raise RunpyDockerConfigNotSetError(msg)
         else:
             warnings.warn(
                 msg,
-                RunpyDockerConfigNotSetWarning,
+                RunpyDockerClientConfigNameIsNoneWarning,
                 stacklevel=2)
             return None
     return get_docker_client_config(

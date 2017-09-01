@@ -36,7 +36,7 @@ DEBUG = False
 def check_docker_client_config(app_configs, **kwargs):
     from course.docker.config import (
         get_relate_runpy_docker_client_config, RunpyDockerConfigNotSetError,
-        RunpyDockerConfigNotSetWarning)
+        RunpyDockerClientConfigNameIsNoneWarning)
 
     try:
         runpy_client_config = (
@@ -44,7 +44,7 @@ def check_docker_client_config(app_configs, **kwargs):
     except RunpyDockerConfigNotSetError as e:
         return [Warning(
             msg=str(e),
-            obj=RunpyDockerConfigNotSetWarning,
+            obj=RunpyDockerClientConfigNameIsNoneWarning,
             id="runpy_docker_config.W001"
         )]
 
