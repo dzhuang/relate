@@ -65,8 +65,12 @@ else
 fi
 
 $PIP install -r req.txt
+$PIP install coveralls
 
 cp local_settings.example.py local_settings.py
 
 cd test
 python ../manage.py test
+
+cd ..
+coverage run --source=. manage.py test test/
