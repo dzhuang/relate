@@ -274,6 +274,8 @@ def set_up_new_course(request):
 
                         # }}}
 
+                        repo.close()
+
                         messages.add_message(request, messages.INFO,
                                 _("Course content validated, creation "
                                 "succeeded."))
