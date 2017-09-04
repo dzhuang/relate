@@ -274,8 +274,6 @@ def set_up_new_course(request):
 
                         # }}}
 
-                        repo.close()
-
                         messages.add_message(request, messages.INFO,
                                 _("Course content validated, creation "
                                 "succeeded."))
@@ -308,6 +306,10 @@ def set_up_new_course(request):
                                 % repo_path)
 
                     raise
+
+                finally:
+                    if repo is not None:
+                        repo.close()
 
             except Exception as e:
                 from traceback import print_exc
