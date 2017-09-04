@@ -13,6 +13,8 @@ cache:
   - '%LOCALAPPDATA%\pip\Cache'
 
 environment:
+  COVERALLS_REPO_TOKEN: secure:E2OdB4emY2n4Kgq0EKxI70afKNL79co9jktA9
+
   global:
     # SDK v7.0 MSVC Express 2008's SetEnv.cmd script will fail if the
     # /E:ON and /V:ON options are not enabled in the batch script intepreter

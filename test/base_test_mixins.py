@@ -195,7 +195,10 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
         cls.c.logout()
         # Remove repo folder for all courses
         for course in Course.objects.all():
-            cls.remove_course_repo(course)
+            identifier = course.identifier
+            course.delete()
+            cls.remove_exceptionally_undelete_course_repos(identifier)
+            #cls.remove_course_repo(course)
         super(CoursesTestMixinBase, cls).tearDownClass()
 
     @classmethod
