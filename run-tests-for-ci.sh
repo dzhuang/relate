@@ -72,3 +72,4 @@ cp local_settings.example.py local_settings.py
 
 $PIP install codecov
 coverage run manage.py test test/
+codecov
