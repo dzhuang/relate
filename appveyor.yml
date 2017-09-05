@@ -53,6 +53,8 @@ install:
   # about it being out of date.
   - "pip install --disable-pip-version-check --user --upgrade pip"
 
+  - "git submodule update --init --recursive"
+
   # Install requirements
   - ps: "cat requirements.txt | ?{$_ -notmatch 'dnspython'} > req.txt"
   - "%CMD_IN_ENV% pip install -r req.txt"
@@ -60,13 +62,13 @@ install:
 
 
 before_test:
-  - "%CMD_IN_ENV% pip install coveralls"
+  - "%CMD_IN_ENV% pip install coverage"
 
 test_script:
   # Run the project tests
   - "copy local_settings.example.py local_settings.py /Y"
-  - "%CMD_IN_ENV% coverage run --source=. manage.py test test/"
-  - "%CMD_IN_ENV% coverage report -m"
+  - "%CMD_IN_ENV% coverage run manage.py test test/"
 
 after_test:
-  - "%CMD_IN_ENV% coveralls"
+  - "%CMD_IN_ENV% pip install codecov"
+  - "%CMD_IN_ENV% codecov"

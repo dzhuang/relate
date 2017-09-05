@@ -2,7 +2,7 @@ language: python
 cache: pip
 install: true
 script:
-  - bash ./run-coveralls.sh
+  - bash ./run-codecov.sh
 env:
   - PY_EXE=python2.7
   - PY_EXE=python3.5
