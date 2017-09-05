@@ -1291,8 +1291,6 @@ class FlowRuleException(models.Model):
                     self.participation.course,
                     self.flow_id, commit_sha)
 
-        repo.close()
-
         tags = None
         grade_identifier = None
         if hasattr(flow_desc, "rules"):

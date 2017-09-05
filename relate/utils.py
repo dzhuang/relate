@@ -115,6 +115,12 @@ class SubdirRepoWrapper(object):
     def close(self):
         self.repo.close()
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
 
 Repo_ish = Union[dulwich.repo.Repo, SubdirRepoWrapper]
 
@@ -441,5 +447,6 @@ def force_remove_path(path):
         func(path)
 
     shutil.rmtree(path, onerror=remove_readonly)
+
 
 # vim: foldmethod=marker

@@ -253,8 +253,8 @@ def get_media(request, course_identifier, commit_sha, media_path):
     course = get_object_or_404(Course, identifier=course_identifier)
 
     with get_course_repo(course) as repo:
-        return get_repo_file_response(repo,
-                                      "media/" + media_path, commit_sha.encode())
+        return get_repo_file_response(
+            repo, "media/" + media_path, commit_sha.encode())
 
 
 def repo_file_etag_func(request, course_identifier, commit_sha, path):

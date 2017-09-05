@@ -304,7 +304,6 @@ def get_repo_blob_data_cached(repo, full_name, commit_sha):
         result = get_repo_blob(repo, full_name, commit_sha,
                 allow_tree=False).data
         assert isinstance(result, six.binary_type)
-        repo.close()
         return result
 
     # Byte string is wrapped in a tuple to force pickling because memcache's
