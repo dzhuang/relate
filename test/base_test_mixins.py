@@ -101,8 +101,7 @@ def force_remove_path(path):
         func(path)
 
     import shutil
-    if os.path.isdir(path):
-        shutil.rmtree(path, onerror=remove_readonly)
+    shutil.rmtree(path, onerror=remove_readonly)
 
 
 class SuperuserCreateMixin(object):
@@ -179,27 +178,20 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
         try:
             force_remove_path(os.path.join(settings.GIT_ROOT, course_identifier))
         except OSError:
-            raise
+            pass
 
     @classmethod
     def remove_course_repo(cls, course):
         from course.content import get_course_repo_path
         repo_path = get_course_repo_path(course)
-        try:
-            force_remove_path(repo_path)
-        except OSError:
-            pass
+        force_remove_path(repo_path)
 
     @classmethod
     def tearDownClass(cls):
         cls.c.logout()
-        del cls.c
         # Remove repo folder for all courses
         for course in Course.objects.all():
-            identifier = course.identifier
-            course.delete()
-            cls.remove_exceptionally_undelete_course_repos(identifier)
-            #cls.remove_course_repo(course)
+            cls.remove_course_repo(course)
         super(CoursesTestMixinBase, cls).tearDownClass()
 
     @classmethod
