@@ -71,4 +71,4 @@ test_script:
 
 after_test:
   - "%CMD_IN_ENV% pip install codecov"
-  - "%CMD_IN_ENV% codecov"
+  - "%CMD_IN_ENV% codecov -X gcov --branch %APPVEYOR_REPO_BRANCH% --build %APPVEYOR_BUILD_VERSION%"

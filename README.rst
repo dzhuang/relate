@@ -1,8 +1,8 @@
 .. image:: https://travis-ci.org/inducer/relate.svg?branch=master
   :target: https://travis-ci.org/inducer/relate
 
-.. image:: https://coveralls.io/repos/github/inducer/relate/badge.svg?branch=master
-  :target: https://coveralls.io/github/inducer/relate?branch=master
+.. image:: https://codecov.io/gh/dzhuang/relate/branch/master/graph/badge.svg
+  :target: https://codecov.io/gh/dzhuang/relate
 
 RELATE
 ======
