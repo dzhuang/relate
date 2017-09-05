@@ -338,38 +338,34 @@ def grade_page_visit(visit, visit_grade_model=FlowPageVisitGrade,
             get_flow_page_desc,
             instantiate_flow_page)
 
-    repo = get_course_repo(course)
+    with get_course_repo(course) as repo:
+        course_commit_sha = get_course_commit_sha(
+                course, flow_session.participation if respect_preview else None)
 
-    course_commit_sha = get_course_commit_sha(
-            course, flow_session.participation if respect_preview else None)
+        flow_desc = get_flow_desc(repo, course,
+                flow_session.flow_id, course_commit_sha)
 
-    flow_desc = get_flow_desc(repo, course,
-            flow_session.flow_id, course_commit_sha)
+        page_desc = get_flow_page_desc(
+                flow_session.flow_id,
+                flow_desc,
+                page_data.group_id, page_data.page_id)
 
-    page_desc = get_flow_page_desc(
-            flow_session.flow_id,
-            flow_desc,
-            page_data.group_id, page_data.page_id)
+        page = instantiate_flow_page(
+                location="flow '%s', group, '%s', page '%s'"
+                % (flow_session.flow_id, page_data.group_id, page_data.page_id),
+                repo=repo, page_desc=page_desc,
+                commit_sha=course_commit_sha)
 
-    page = instantiate_flow_page(
-            location="flow '%s', group, '%s', page '%s'"
-            % (flow_session.flow_id, page_data.group_id, page_data.page_id),
-            repo=repo, page_desc=page_desc,
-            commit_sha=course_commit_sha)
+        assert page.expects_answer()
+        if not page.is_answer_gradable():
+            return
 
-    assert page.expects_answer()
-    if not page.is_answer_gradable():
-        repo.close()
-        return
-
-    from course.page import PageContext
-    grading_page_context = PageContext(
-            course=course,
-            repo=repo,
-            commit_sha=course_commit_sha,
-            flow_session=flow_session)
-
-    repo.close()
+        from course.page import PageContext
+        grading_page_context = PageContext(
+                course=course,
+                repo=repo,
+                commit_sha=course_commit_sha,
+                flow_session=flow_session)
 
     with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
         answer_feedback = page.grade(
@@ -390,8 +386,6 @@ def grade_page_visit(visit, visit_grade_model=FlowPageVisitGrade,
     grade.save()
 
     update_bulk_feedback(page_data, grade, bulk_feedback_json)
-
-    repo.close()
 
 # }}}
 
