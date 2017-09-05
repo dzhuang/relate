@@ -359,6 +359,7 @@ def grade_page_visit(visit, visit_grade_model=FlowPageVisitGrade,
 
     assert page.expects_answer()
     if not page.is_answer_gradable():
+        repo.close()
         return
 
     from course.page import PageContext
@@ -367,6 +368,8 @@ def grade_page_visit(visit, visit_grade_model=FlowPageVisitGrade,
             repo=repo,
             commit_sha=course_commit_sha,
             flow_session=flow_session)
+
+    repo.close()
 
     with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
         answer_feedback = page.grade(
