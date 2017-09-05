@@ -595,6 +595,8 @@ class CoursePageContext(object):
                             % preview_sha.decode())
 
                     preview_sha = None
+                finally:
+                    true_repo.close()
 
                 if preview_sha is not None:
                     sha = preview_sha

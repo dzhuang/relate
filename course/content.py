@@ -1487,6 +1487,8 @@ def get_course_commit_sha(course, participation):
                 repo[preview_sha.encode()]
             except KeyError:
                 preview_sha = None
+            finally:
+                repo.close()
 
             if preview_sha is not None:
                 sha = preview_sha

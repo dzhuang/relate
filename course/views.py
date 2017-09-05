@@ -253,7 +253,9 @@ def get_media(request, course_identifier, commit_sha, media_path):
     course = get_object_or_404(Course, identifier=course_identifier)
 
     repo = get_course_repo(course)
-    return get_repo_file_response(repo, "media/" + media_path, commit_sha.encode())
+    result = get_repo_file_response(repo, "media/" + media_path, commit_sha.encode())
+    repo.close()
+    return result
 
 
 def repo_file_etag_func(request, course_identifier, commit_sha, path):
@@ -338,7 +340,10 @@ def get_repo_file_backend(
     if not is_repo_file_accessible_as(access_kinds, repo, commit_sha, path):
         raise PermissionDenied()
 
-    return get_repo_file_response(repo, path, commit_sha)
+    result = get_repo_file_response(repo, path, commit_sha)
+    repo.close()
+
+    return result
 
 
 def get_repo_file_response(repo, path, commit_sha):
