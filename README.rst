@@ -1,6 +1,9 @@
 .. image:: https://travis-ci.org/inducer/relate.svg?branch=master
   :target: https://travis-ci.org/inducer/relate
 
+.. image:: https://ci.appveyor.com/api/projects/status/54c937lry6mjvtx8/branch/master?svg=true
+  :target: https://ci.appveyor.com/project/dzhuang/relate
+
 .. image:: https://codecov.io/gh/dzhuang/relate/branch/master/graph/badge.svg
   :target: https://codecov.io/gh/dzhuang/relate
 
