@@ -5,7 +5,7 @@
   :target: https://ci.appveyor.com/project/dzhuang/relate
 
 .. image:: https://codecov.io/gh/dzhuang/relate/branch/master/graph/badge.svg
-  :target: https://codecov.io/gh/dzhuang/relate
+  :target: https://codecov.io/gh/dzhuang/relate/commits
 
 RELATE
 ======
