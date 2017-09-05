@@ -388,6 +388,8 @@ def grade_page_visit(visit, visit_grade_model=FlowPageVisitGrade,
 
     update_bulk_feedback(page_data, grade, bulk_feedback_json)
 
+    repo.close()
+
 # }}}
 
 
