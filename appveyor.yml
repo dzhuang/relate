@@ -13,13 +13,13 @@ cache:
   - '%LOCALAPPDATA%\pip\Cache'
 
 environment:
+  COVERALLS_REPO_TOKEN:
+    secure: MYrQjJxQQjjFYq6YAEOa9myBlc04nRkiurQxpjS0t4wpm6xryCsLuwB18qgoU6EO
   global:
     # SDK v7.0 MSVC Express 2008's SetEnv.cmd script will fail if the
     # /E:ON and /V:ON options are not enabled in the batch script intepreter
     # See: http://stackoverflow.com/a/13751649/163740
     CMD_IN_ENV: "cmd /E:ON /V:ON /C .\\appveyor\\run_with_env.cmd"
-    COVERALLS_REPO_TOKEN:
-      secure: E2OdB4emY2n4Kgq0EKxI70afKNL79co9jktA9
 
   matrix:
     # Pre-installed Python versions, which Appveyor may upgrade to
