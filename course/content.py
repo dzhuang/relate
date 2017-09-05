@@ -250,6 +250,7 @@ def get_repo_blob(repo, full_name, commit_sha, allow_tree=True):
 
     if not full_name_bytes:
         if allow_tree:
+            dul_repo.close()
             return tree
         else:
             raise ObjectDoesNotExist(
@@ -275,6 +276,9 @@ def get_repo_blob(repo, full_name, commit_sha, allow_tree=True):
 
     except KeyError:
         raise ObjectDoesNotExist(_("resource '%s' not found") % full_name)
+
+    finally:
+        dul_repo.close()
 
 
 def get_repo_blob_data_cached(repo, full_name, commit_sha):
@@ -304,6 +308,7 @@ def get_repo_blob_data_cached(repo, full_name, commit_sha):
         result = get_repo_blob(repo, full_name, commit_sha,
                 allow_tree=False).data
         assert isinstance(result, six.binary_type)
+        repo.close()
         return result
 
     # Byte string is wrapped in a tuple to force pickling because memcache's
@@ -1479,14 +1484,14 @@ def get_course_commit_sha(course, participation):
         if participation.preview_git_commit_sha:
             preview_sha = participation.preview_git_commit_sha
 
-            repo = get_course_repo(course)
-            if isinstance(repo, SubdirRepoWrapper):
-                repo = repo.repo
+            with get_course_repo(course) as repo:
+                if isinstance(repo, SubdirRepoWrapper):
+                    repo = repo.repo
 
-            try:
-                repo[preview_sha.encode()]
-            except KeyError:
-                preview_sha = None
+                try:
+                    repo[preview_sha.encode()]
+                except KeyError:
+                    preview_sha = None
 
             if preview_sha is not None:
                 sha = preview_sha

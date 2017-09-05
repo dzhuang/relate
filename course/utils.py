@@ -577,24 +577,25 @@ class CoursePageContext(object):
             if self.participation.preview_git_commit_sha:
                 preview_sha = self.participation.preview_git_commit_sha.encode()
 
-                repo = get_course_repo(self.course)
+                with get_course_repo(self.course) as repo:
+                    from relate.utils import SubdirRepoWrapper
+                    if isinstance(repo, SubdirRepoWrapper):
+                        true_repo = repo.repo
+                    else:
+                        true_repo = cast(dulwich.repo.Repo, repo)
 
-                from relate.utils import SubdirRepoWrapper
-                if isinstance(repo, SubdirRepoWrapper):
-                    true_repo = repo.repo
-                else:
-                    true_repo = cast(dulwich.repo.Repo, repo)
+                    try:
+                        true_repo[preview_sha]
+                    except KeyError:
+                        from django.contrib import messages
+                        messages.add_message(request, messages.ERROR,
+                                _("Preview revision '%s' does not exist--"
+                                "showing active course content instead.")
+                                % preview_sha.decode())
 
-                try:
-                    true_repo[preview_sha]
-                except KeyError:
-                    from django.contrib import messages
-                    messages.add_message(request, messages.ERROR,
-                            _("Preview revision '%s' does not exist--"
-                            "showing active course content instead.")
-                            % preview_sha.decode())
-
-                    preview_sha = None
+                        preview_sha = None
+                    finally:
+                        true_repo.close()
 
                 if preview_sha is not None:
                     sha = preview_sha
