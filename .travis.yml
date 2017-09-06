@@ -1,8 +1,15 @@
 language: python
 cache: pip
 install: true
+before_script:
+  - if [[ $Flake8 == true ]]; then curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/master/prepare-and-run-flake8.sh; cp local_settings.example.py local_settings.py; fi
+  - if [[ $Mypy == true ]]; then curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/master/prepare-and-run-mypy.sh; cp local_settings.example.py local_settings.py; fi
 script:
-  - bash ./run-tests-for-ci.sh
+  - if [[ $Flake8 == false && $Mypy == false ]]; then bash ./run-tests-for-ci.sh; fi
+  - if [[ $Mypy == true ]]; then bash ./prepare-and-run-mypy.sh; fi
+  - if [[ $Flake8 == true ]]; then bash ./prepare-and-run-flake8.sh relate course accounts test bin; fi
 env:
-  - PY_EXE=python2.7
-  - PY_EXE=python3.5
+  - PY_EXE=python2.7 Flake8=false Mypy=false
+  - PY_EXE=python3.5 Flake8=false Mypy=false
+  - PY_EXE=python3.5 Flake8=true Mypy=false
+  - PY_EXE=python3.5 Flake8=false Mypy=true
