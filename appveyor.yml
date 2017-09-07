@@ -71,6 +71,7 @@ install:
   - "git submodule update --init --recursive"
 
   # Install requirements
+  - SET VS90COMNTOOLS=%VS120COMNTOOLS% # for dulwich
   - ps: "cat requirements.txt | ?{$_ -notmatch 'dnspython'} > req.txt"
   - "%CMD_IN_ENV% pip install -r req.txt"
   - ps: "if ($env:PYTHON -like '*Python2*') { pip install dnspython mock} else { pip install dnspython3 }"
