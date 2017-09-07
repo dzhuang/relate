@@ -45,7 +45,7 @@ GIT_ROOT = "GIT_ROOT"
 RELATE_STARTUP_CHECKS = "RELATE_STARTUP_CHECKS"
 RELATE_STARTUP_CHECKS_EXTRA = "RELATE_STARTUP_CHECKS_EXTRA"
 
-RELATE_STARTUP_CHECKS_TAG = "start_up_check"
+RELATE_STARTUP_CHECKS_TAG = "start_up_checks"
 RELATE_STARTUP_CHECKS_EXTRA_TAG = "startup_checks_extra"
 
 
@@ -53,7 +53,7 @@ class RelateCriticalCheckMessage(Critical):
     def __init__(self, *args, **kwargs):
         super(RelateCriticalCheckMessage, self).__init__(*args, **kwargs)
         if not self.obj:
-            self.obj = ImproperlyConfigured.__name__
+            self.obj = ImproperlyConfigured
 
 
 class DeprecatedException(Exception):

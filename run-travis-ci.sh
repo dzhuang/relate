@@ -12,6 +12,7 @@ fi
 
 # run ci according to env variables
 if [[ $PY == true ]]; then
+
   . ./run-tests-for-ci.sh
 elif [[ $Mypy == true ]]; then
   . ./prepare-and-run-mypy.sh;
