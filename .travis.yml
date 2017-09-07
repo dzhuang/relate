@@ -2,7 +2,9 @@ language: python
 cache: pip
 install: true
 script:
-  - bash ./run-tests-for-ci.sh
+  - bash ./run-travis-ci.sh
 env:
-  - PY_EXE=python2.7
-  - PY_EXE=python3.5
+  - PY=true PY_EXE=python2.7
+  - PY=true PY_EXE=python3.5
+  - Flake8=true PY_EXE=python3.5
+  - Mypy=true PY_EXE=python3.5
