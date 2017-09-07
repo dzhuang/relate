@@ -7,6 +7,8 @@ version: 1.0.{build}
 
 build: off
 
+#image: Visual Studio 2017
+
 cache:
   - '%LOCALAPPDATA%\pip\Cache'
 
@@ -37,10 +39,18 @@ init:
   - ps: "ls C:/Python*"
 
 install:
+  # installl virtual_box
+  - ps: mkdir C:\downloads | Out-Null
+  - ps: cd C:\downloads
+  - ps: Start-FileDownload "http://download.docker.com/win/stable/DockerToolbox.exe"
+  - ps: Start-Process -FilePath "DockerToolbox.exe" -ArgumentList "-silent -logging -msiparams INSTALLDIR=C:\docker_machine" -Wait
+  - ps: cd $env:APPVEYOR_BUILD_FOLDER
+  - set PATH=C:\docker_machine;%PATH%
+  - "docker-machine --version"
   # Prepend newly installed Python to the PATH of this build (this cannot be
   # done from inside the powershell script as it would require to restart
   # the parent CMD process).
-  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+#  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
 
   - ECHO "Filesystem root:"
   - ps: "ls \"C:/\""
@@ -72,3 +82,6 @@ test_script:
 after_test:
   - "%CMD_IN_ENV% pip install codecov"
   - "%CMD_IN_ENV% codecov -X gcov"
+
+on_finish:
+  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
