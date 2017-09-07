@@ -34,7 +34,7 @@ from django.core.exceptions import ImproperlyConfigured
 from relate.utils import RELATEDeprecateWarning
 from .utils import (
     get_docker_program_version, run_cmd_line)
-from distutils.version import LooseVersion as lv
+from distutils.version import LooseVersion as lv  # noqa
 from course.checks import (
     GENERIC_ERROR_PATTERN, INSTANCE_ERROR_PATTERN,
     RelateCriticalCheckMessage)
@@ -184,7 +184,7 @@ def has_error(errors):
 
 class ClientConfigBase(object):
     def __init__(self, docker_config_name, client_config, **kwargs):
-        # type: (Dict, **Any) -> None
+        # type: (Text, Dict, **Any) -> None
         self.docker_config_name = docker_config_name
         self.client_config = client_config
 
@@ -232,11 +232,11 @@ class ClientConfigBase(object):
         except Exception as e:
             return [
                 Critical(
-                    msg=DOCKER_MACHINE_GENERIC_ERROR_PATTERN
-                        %{
-                            "error_type": type(e).__name__,
-                            "error_str": str(e)
-                        },
+                    msg=(DOCKER_MACHINE_GENERIC_ERROR_PATTERN
+                         % {
+                             "error_type": type(e).__name__,
+                             "error_str": str(e)
+                         }),
                     id="docker_version_exception_unknown.E001",
                     obj=RuntimeError
                 )]
@@ -310,13 +310,13 @@ class ClientConfigBase(object):
         except Exception as e:
             errors.append(
                 RelateCriticalCheckMessage(
-                    msg=GENERIC_ERROR_PATTERN
-                        %{"location": ("'client_config' of '%s' in %s"
-                                       % (self.docker_config_name,
-                                          RELATE_DOCKERS)),
-                          "error_type": type(e).__name__,
-                          "error_str": str(e)
-                          },
+                    msg=(GENERIC_ERROR_PATTERN
+                         % {"location": ("'client_config' of '%s' in %s"
+                                         % (self.docker_config_name,
+                                            RELATE_DOCKERS)),
+                            "error_type": type(e).__name__,
+                            "error_str": str(e)
+                            }),
                     id="docker_config_client_create.E001"
                 )
             )
@@ -385,9 +385,8 @@ class ClientForDockerMachineMixin(object):
 
     def check_docker_installed_and_version_supported(self):
         # type: () -> list[CheckMessage]
-        errors = (
-            super(ClientForDockerMachineMixin, self)
-                .check_docker_installed_and_version_supported())
+        errors = super(ClientForDockerMachineMixin, self)\
+            .check_docker_installed_and_version_supported()
 
         try:
             docker_machine_version = (
@@ -395,13 +394,13 @@ class ClientForDockerMachineMixin(object):
         except Exception as e:
             return [
                 RelateCriticalCheckMessage(
-                    msg=GENERIC_ERROR_PATTERN
-                        %{"location": ("'%s' in %s"
-                                       % (self.docker_config_name,
-                                          RELATE_DOCKERS)),
-                          "error_type": type(e).__name__,
-                          "error_str": str(e)
-                          },
+                    msg=(GENERIC_ERROR_PATTERN
+                         % {"location": ("'%s' in %s"
+                                         % (self.docker_config_name,
+                                            RELATE_DOCKERS)
+                                         ),
+                            "error_type": type(e).__name__,
+                            "error_str": str(e)}),
                     id="docker_machine_version_exception_unknown.E001"
                 )]
 
@@ -501,7 +500,6 @@ class RunpyDockerMixinBase(object):
             else:
                 for private_ip, public_ip in (
                         six.iteritems(self.private_public_ip_map_dict)):
-                    import ipaddress
                     try:
                         get_ip_address(six.text_type(private_ip))
                         get_ip_address(six.text_type(public_ip))
@@ -619,7 +617,7 @@ class RunpyClientForDockerMachineConfigure(
         return errors
 
     def check_docker_machine_setup(self, env=os.environ):
-        # type: () -> list[CheckMessage]
+        # type: (dict[Any]) -> list[CheckMessage]
         errors = []
         if not self._is_docker_machine_running():
             if show_log:
@@ -774,7 +772,7 @@ Docker_client_config_ish = Union[
 
 
 def get_docker_client_config(docker_config_name, for_runpy=True):
-    # type: (Text, bool, **Any) -> Optional[Docker_client_config_ish]
+    # type: (Text, bool) -> Optional[Docker_client_config_ish]
 
     """
     Get the client config from docker configurations with docker_config_name
@@ -841,7 +839,7 @@ def get_config_by_name(docker_config_name):
     return relate_dockers_config[docker_config_name]
 
 
-def get_relate_runpy_docker_client_config(silence_for_None=True):
+def get_relate_runpy_docker_client_config(silence_for_none=True):  # noqa
     from django.conf import settings
     runpy_enabled = getattr(settings, RELATE_RUNPY_DOCKER_ENABLED, False)
     if not runpy_enabled:
@@ -854,7 +852,7 @@ def get_relate_runpy_docker_client_config(silence_for_None=True):
         msg = ("%s can not be None when %s is True"
                % (RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME,
                   RELATE_RUNPY_DOCKER_ENABLED))
-        if not silence_for_None:
+        if not silence_for_none:
             raise RunpyDockerConfigNotSetError(msg)
         else:
             warnings.warn(

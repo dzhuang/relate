@@ -1,13 +1,42 @@
-from unittest import mock
+# -*- coding: utf-8 -*-
+
+from __future__ import division
+
+__copyright__ = "Copyright (C) 2017 Dong Zhuang"
+
+__license__ = """
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+"""
+
+try:
+    from unittest import mock
+except:
+    import mock
 from copy import deepcopy
 from django.conf import settings
 
-from django.test.utils import (
+from django.test.utils import (  # noqa
     isolate_apps, override_settings, override_system_checks,
 )
 from django.test import SimpleTestCase
-from django.core.checks import Error, Warning
-from django.core.management import call_command
+from django.core.checks import Error, Warning  # noqa
+from django.core.management import call_command  # noqa
 from course.docker.config import (
     get_docker_client_config, get_relate_runpy_docker_client_config)
 
@@ -15,7 +44,7 @@ from django.core.exceptions import ImproperlyConfigured
 import docker.tls
 import warnings
 
-from course.docker.config import (
+from course.docker.config import (  # noqa
     DEFAULT_DOCKER_RUNPY_CONFIG_ALIAS,
 
     RELATE_RUNPY_DOCKER_ENABLED,
@@ -48,7 +77,7 @@ TEST_DOCKERS = {
         },
         "local_docker_machine_config": {
             "enabled": True,
-            "config":{
+            "config": {
                 "shell": None,
                 "name": "default",
             },
@@ -118,7 +147,8 @@ class ClientConfigGetFunctionTests(SimpleTestCase):
 
     # {{{ test course.docker.config.get_docker_client_config
     @mock.patch("relate.utils.is_windows_platform", return_value=True)
-    @override_settings(RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=VALID_RUNPY_CONFIG_NAME)
+    @override_settings(
+        RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=VALID_RUNPY_CONFIG_NAME)
     def test_config_instance_windows(self, mocked_register, mocked_sys):
         result = get_docker_client_config(VALID_RUNPY_CONFIG_NAME, for_runpy=True)
         self.assertIsInstance(result, RunpyClientForDockerMachineConfigure)
@@ -129,13 +159,14 @@ class ClientConfigGetFunctionTests(SimpleTestCase):
         with self.assertRaises(AttributeError):
             result.image
 
-        result = get_relate_runpy_docker_client_config(silence_for_None=False)
+        result = get_relate_runpy_docker_client_config(silence_for_none=False)
         self.assertIsInstance(result, RunpyClientForDockerMachineConfigure)
         self.assertEqual(result.image, "runpy_test.image")
 
     @mock.patch("relate.utils.is_windows_platform", return_value=False)
     @mock.patch("relate.utils.is_windows_platform", return_value=False)
-    @override_settings(RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=VALID_RUNPY_CONFIG_NAME)
+    @override_settings(
+        RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=VALID_RUNPY_CONFIG_NAME)
     def test_config_instance_not_windows(
             self, mocked_register, mocked_sys1, mocked_sys2):
         result = get_docker_client_config(VALID_RUNPY_CONFIG_NAME, for_runpy=True)
@@ -147,7 +178,7 @@ class ClientConfigGetFunctionTests(SimpleTestCase):
         with self.assertRaises(AttributeError):
             result.image
 
-        result = get_relate_runpy_docker_client_config(silence_for_None=False)
+        result = get_relate_runpy_docker_client_config(silence_for_none=False)
         self.assertIsInstance(result, RunpyClientForDockerConfigure)
         self.assertEqual(result.image, "runpy_test.image")
 
@@ -167,7 +198,7 @@ class ClientConfigGetFunctionTests(SimpleTestCase):
         with self.assertRaises(AttributeError):
             result.image
 
-        result = get_relate_runpy_docker_client_config(silence_for_None=False)
+        result = get_relate_runpy_docker_client_config(silence_for_none=False)
         self.assertIsInstance(result, RunpyClientForDockerConfigure)
         self.assertEqual(result.image, "runpy_test.image")
 
@@ -190,7 +221,7 @@ class ClientConfigGetFunctionTests(SimpleTestCase):
         with self.assertRaises(AttributeError):
             result.image
 
-        result = get_relate_runpy_docker_client_config(silence_for_None=False)
+        result = get_relate_runpy_docker_client_config(silence_for_none=False)
         self.assertIsInstance(result, RunpyClientForDockerConfigure)
         self.assertEqual(result.image, "runpy_test.image")
 
@@ -217,11 +248,11 @@ class DefaultConfigClientConfigGetFunctionTests(SimpleTestCase):
                % (RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME,
                   RELATE_RUNPY_DOCKER_ENABLED))
         with self.assertRaisesMessage(ImproperlyConfigured, expected_msg):
-            get_relate_runpy_docker_client_config(silence_for_None=False)
+            get_relate_runpy_docker_client_config(silence_for_none=False)
 
         with warnings.catch_warnings(record=True) as warns:
             self.assertIsNone(
-                get_relate_runpy_docker_client_config(silence_for_None=True))
+                get_relate_runpy_docker_client_config(silence_for_none=True))
         self.assertEqual(len(warns), 1)
         self.assertIsInstance(
             warns[0].message, RunpyDockerClientConfigNameIsNoneWarning)
@@ -236,7 +267,7 @@ class DefaultConfigClientConfigGetFunctionTests(SimpleTestCase):
             del settings.RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME
             self.assertRaises(AttributeError, getattr,
                               settings, RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME)
-            result = get_relate_runpy_docker_client_config(silence_for_None=False)
+            result = get_relate_runpy_docker_client_config(silence_for_none=False)
             self.assertEqual(result.image, "runpy_default.image")
 
     @override_settings(RELATE_RUNPY_DOCKER_ENABLED=False,
@@ -250,7 +281,7 @@ class DefaultConfigClientConfigGetFunctionTests(SimpleTestCase):
                               settings,
                               RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME)
             result = get_relate_runpy_docker_client_config(
-                silence_for_None=False)
+                silence_for_none=False)
             self.assertIsNone(result)
 
 
@@ -270,15 +301,15 @@ class DeprecationTests(SimpleTestCase):
                 "RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME: RELATE_DOCKERS "
                 "has no configuration named 'not_exist_config'")
             with self.assertRaises(ImproperlyConfigured) as cm:
-                get_relate_runpy_docker_client_config(silence_for_None=False)
+                get_relate_runpy_docker_client_config(silence_for_none=False)
             self.assertEqual(str(cm.exception), expected_error_msg)
 
         with override_settings(RELATE_RUNPY_DOCKER_ENABLED=False):
             result = (
-                get_relate_runpy_docker_client_config(silence_for_None=False))
+                get_relate_runpy_docker_client_config(silence_for_none=False))
             self.assertIsNone(result)
             result = (
-                get_relate_runpy_docker_client_config(silence_for_None=True))
+                get_relate_runpy_docker_client_config(silence_for_none=True))
             self.assertIsNone(result)
 
             @override_settings(RELATE_DOCKERS=TEST_DOCKERS)
@@ -288,7 +319,7 @@ class DeprecationTests(SimpleTestCase):
             class NotDefinedConfigClientConfigGetFunctionTests(SimpleTestCase):
                 @mock.patch("relate.utils.is_windows_platform", return_value=True)
                 @override_settings(
-                    RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=RUNPY_DOCKER_CONFIG_NAME_NOT_EXIST)
+                    RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=RUNPY_DOCKER_CONFIG_NAME_NOT_EXIST)  # noqa
                 def test_get_runpy_config_with_not_exist_config_name(self,
                                                                      mocked_register,
                                                                      mocked_sys):
@@ -298,21 +329,17 @@ class DeprecationTests(SimpleTestCase):
                             "has no configuration named 'not_exist_config'")
                         with self.assertRaises(ImproperlyConfigured) as cm:
                             get_relate_runpy_docker_client_config(
-                                silence_for_None=False)
+                                silence_for_none=False)
                         self.assertEqual(str(cm.exception), expected_error_msg)
 
                     with override_settings(RELATE_RUNPY_DOCKER_ENABLED=False):
                         result = (
                             get_relate_runpy_docker_client_config(
-                                silence_for_None=False))
+                                silence_for_none=False))
                         self.assertIsNone(result)
                         result = (
                             get_relate_runpy_docker_client_config(
-                                silence_for_None=True))
+                                silence_for_none=True))
                         self.assertIsNone(result)
-
-
-
-
 
 # }}}
