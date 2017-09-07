@@ -48,6 +48,13 @@ RELATE_STARTUP_CHECKS_EXTRA = "RELATE_STARTUP_CHECKS_EXTRA"
 RELATE_STARTUP_CHECKS_TAG = "start_up_checks"
 RELATE_STARTUP_CHECKS_EXTRA_TAG = "startup_checks_extra"
 
+# {{{ for mypy
+
+if False:
+    from typing import Any  # noqa
+
+# }}}
+
 
 class RelateCriticalCheckMessage(Critical):
     def __init__(self, *args, **kwargs):
