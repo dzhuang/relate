@@ -249,8 +249,8 @@ class ClientConfigBase(object):
                 )]
 
         if (docker_version is None
-                or cast(Version, LooseVersion(docker_version))
-                < cast(Version, LooseVersion(REQUIRED_DOCKER_VERSION))):
+                or LooseVersion(docker_version)  # type: ignore
+                < LooseVersion(REQUIRED_DOCKER_VERSION)):  # type: ignore
             errors.append(
                 Critical(
                     msg=(
@@ -395,7 +395,7 @@ class ClientForDockerMachineMixin(object):
     def check_docker_installed_and_version_supported(self):
         # type: () -> list[CheckMessage]
         errors = (
-            super(ClientForDockerMachineMixin, self)
+            super(ClientForDockerMachineMixin, self)    # type: ignore
             .check_docker_installed_and_version_supported())  # type: ignore
 
         try:
@@ -415,8 +415,8 @@ class ClientForDockerMachineMixin(object):
                 )]
 
         if (not docker_machine_version  # type: ignore
-                or cast(Version, LooseVersion(docker_machine_version))
-                < cast(Version, LooseVersion(REQUIRED_DOCKER_MACHINE_VERSION))):
+                or LooseVersion(docker_machine_version)  # type: ignore
+                < LooseVersion(REQUIRED_DOCKER_MACHINE_VERSION)):  # type: ignore
             errors.append(
                 RelateCriticalCheckMessage(
                     msg=(
@@ -510,9 +510,9 @@ class RunpyDockerMixinBase(object):
         if has_error(errors):
             return errors
 
-        if cast(Dict, self.private_public_ip_map_dict):
+        if self.private_public_ip_map_dict:  # type: ignore
             for private_ip, public_ip in (
-                    six.iteritems(self.private_public_ip_map_dict)):
+                    six.iteritems(self.private_public_ip_map_dict)):  # type: ignore
                 try:
                     get_ip_address(six.text_type(private_ip))
                     get_ip_address(six.text_type(public_ip))
@@ -581,7 +581,7 @@ class RunpyDockerMixinBase(object):
         :return: the corresponding public ip which can be visited by
         RELATE instance.
         """
-        return self.private_public_ip_map_dict.get(ip, ip)
+        return self.private_public_ip_map_dict.get(ip, ip)  # type: ignore
 
 
 class RunpyDockerMixin(RunpyDockerMixinBase):
