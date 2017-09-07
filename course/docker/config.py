@@ -483,7 +483,7 @@ class RunpyDockerMixinBase(object):
             self.client_config["version"] = DOCKER_RUNPY_CLIENT_VERSION_DEFAULT
 
         private_public_ip_map_dict = (
-            kwargs.get("private_public_ip_map_dict", {}))  # type: Optional[Dict]
+            kwargs.get("private_public_ip_map_dict", {}))  # type: Optional[Dict[Text, Text]]  # noqa
 
         self.private_public_ip_map_dict_location = (
             "'private_public_ip_map_dict' of '%s' in %s"
@@ -581,7 +581,7 @@ class RunpyDockerMixinBase(object):
         """
 
         if cast(Dict, self.private_public_ip_map_dict):
-            return self.private_public_ip_map_dict.get(ip, ip)  # type: Text
+            return self.private_public_ip_map_dict.get(ip, ip)
         return ip
 
 

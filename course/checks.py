@@ -25,7 +25,6 @@ THE SOFTWARE.
 """
 
 import six
-from typing import cast
 from django.conf import settings
 from django.core.checks import Critical, Warning, register
 from django.core.exceptions import ImproperlyConfigured
