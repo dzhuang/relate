@@ -24,8 +24,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-from django.conf import settings
-from django.core.checks import register, Critical, Warning
+from django.core.checks import register, Warning
 
 RELATE_STARTUP_DOCKER_CHECKS_TAG = "relate_startup_docker_checks"
 RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME = "RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME"
@@ -40,7 +39,7 @@ def check_docker_client_config(app_configs, **kwargs):
 
     try:
         runpy_client_config = (
-            get_relate_runpy_docker_client_config(silence_for_None=False))
+            get_relate_runpy_docker_client_config(silence_for_none=False))
     except RunpyDockerConfigNotSetError as e:
         return [Warning(
             msg=str(e),
