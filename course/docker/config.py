@@ -101,7 +101,7 @@ logger = logging.getLogger("django.request")
 
 
 def _show_log():
-    # type: (None) -> bool
+    # type: () -> bool
     from django.conf import settings
     return Debug or getattr(settings, "DEBUG")
 
