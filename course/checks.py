@@ -61,8 +61,7 @@ class RelateCriticalCheckMessage(Critical):
     def __init__(self, *args, **kwargs):
         # type: (*Any, **Any) -> None
         super(RelateCriticalCheckMessage, self).__init__(*args, **kwargs)
-        self.obj = cast(Any, self.obj)
-        if not self.obj:
+        if not self.obj:  # type: ignore
             self.obj = ImproperlyConfigured  # type: Any
 
 

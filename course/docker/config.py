@@ -24,7 +24,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-from typing import cast
+from typing import cast, Dict
 import os
 import six
 from django.core.checks import CheckMessage, Critical
@@ -44,7 +44,7 @@ import docker
 # {{{ for mypy
 
 if False:
-    from typing import Any, Text, Optional, List, Dict, Tuple, Union  # noqa
+    from typing import Any, Text, Optional, List, Tuple, Union  # noqa
     from ipaddress import IPv4Address, IPv6Address  # noqa
 
 # }}}
@@ -118,6 +118,7 @@ def get_ip_address(ip_range):
 
 class RelateDockMachineCheckMessageBase(CheckMessage):
     def __init__(self, *args, **kwargs):
+        # type: (*Any, **Any) -> None
         super(RelateDockMachineCheckMessageBase, self).__init__(*args, **kwargs)
         if not self.obj:
             self.obj = "docker-machine"
@@ -125,6 +126,7 @@ class RelateDockMachineCheckMessageBase(CheckMessage):
 
 class RelateDockMachineDebugMessage(RelateDockMachineCheckMessageBase):
     def __init__(self, *args, **kwargs):
+        # type: (*Any, **Any) -> None
         from django.core.checks import DEBUG
         super(RelateDockMachineDebugMessage, self).__init__(
             DEBUG, *args, **kwargs)
@@ -140,6 +142,7 @@ class RelateDockMachineCritical(RelateDockMachineCheckMessageBase):
 
 class RelateDockMachineWarning(RelateDockMachineCheckMessageBase):
     def __init__(self, *args, **kwargs):
+        # type: (*Any, **Any) -> None
         from django.core.checks import WARNING
         super(RelateDockMachineWarning, self).__init__(
             WARNING, *args, **kwargs)
@@ -411,7 +414,8 @@ class ClientForDockerMachineMixin(object):
                 )]
 
         if (not docker_machine_version  # type: ignore
-                or lv(docker_machine_version) < lv(REQUIRED_DOCKER_MACHINE_VERSION)):
+                or cast(lv, lv(docker_machine_version))
+                < cast(lv, lv(REQUIRED_DOCKER_MACHINE_VERSION))):
             errors.append(
                 RelateCriticalCheckMessage(
                     msg=(
@@ -443,8 +447,8 @@ class RunpyDockerMixinBase(object):
     def __init__(self, docker_config_name, client_config, **kwargs):
         # type: (Text, Dict[Any, Any], **Any) -> None
         image = kwargs.pop("docker_image", None)
-        super(RunpyDockerMixinBase, self).__init__(
-            docker_config_name, client_config, **kwargs)  # type: ignore # noqa
+        super(RunpyDockerMixinBase, self).__init__(  # type: ignore
+            docker_config_name, client_config, **kwargs)
 
         self.docker_image_location = (
             "'docker_image' of '%s' in %s"
@@ -504,31 +508,22 @@ class RunpyDockerMixinBase(object):
         if has_error(errors):
             return errors
 
-        if self.private_public_ip_map_dict:
-            if not isinstance(self.private_public_ip_map_dict, dict):
-                errors.append(
-                    RelateCriticalCheckMessage(
-                        msg=(INSTANCE_ERROR_PATTERN
-                             % {'location':
-                                    self.private_public_ip_map_dict_location,
-                                "types": "str"}),
-                        id="private_public_ip_map_dict.E001"))
-            else:
-                for private_ip, public_ip in (
-                        six.iteritems(self.private_public_ip_map_dict)):
-                    try:
-                        get_ip_address(six.text_type(private_ip))
-                        get_ip_address(six.text_type(public_ip))
-                    except Exception as e:
-                        errors.append(RelateCriticalCheckMessage(
-                            msg=(
-                                GENERIC_ERROR_PATTERN
-                                % {'location':
-                                       self.private_public_ip_map_dict_location,
-                                   "error_type": type(e).__name__,
-                                   "error_str": str(e)
-                                   }),
-                            id="private_public_ip_map_dict.E002"))
+        if cast(Dict, self.private_public_ip_map_dict):
+            for private_ip, public_ip in (
+                    six.iteritems(self.private_public_ip_map_dict)):
+                try:
+                    get_ip_address(six.text_type(private_ip))
+                    get_ip_address(six.text_type(public_ip))
+                except Exception as e:
+                    errors.append(RelateCriticalCheckMessage(
+                        msg=(
+                            GENERIC_ERROR_PATTERN
+                            % {'location':
+                                   self.private_public_ip_map_dict_location,
+                               "error_type": type(e).__name__,
+                               "error_str": str(e)
+                               }),
+                        id="private_public_ip_map_dict.E002"))
 
         return errors
 
@@ -585,8 +580,8 @@ class RunpyDockerMixinBase(object):
         RELATE instance.
         """
 
-        if self.private_public_ip_map_dict:
-            return self.private_public_ip_map_dict.get(ip, ip)
+        if cast(Dict, self.private_public_ip_map_dict):
+            return self.private_public_ip_map_dict.get(ip, ip)  # type: Text
         return ip
 
 
@@ -633,7 +628,7 @@ class RunpyClientForDockerMachineConfigure(
         return errors
 
     def check_docker_machine_setup(self, env=os.environ):
-        # type: (Dict[Any, Any]) -> list[CheckMessage]
+        # type: (Any) -> list[CheckMessage]
         errors = []
         if not self._is_docker_machine_running():
             if show_log:
