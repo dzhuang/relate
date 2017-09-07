@@ -476,7 +476,7 @@ class RunpyDockerMixinBase(object):
         if not self.client_config.get("version"):
             self.client_config["version"] = DOCKER_RUNPY_CLIENT_VERSION_DEFAULT
 
-        private_public_ip_map_dict = (
+        private_public_ip_map_dict = (  # type: Optional[dict]
             kwargs.get("private_public_ip_map_dict", {}))
 
         self.private_public_ip_map_dict_location = (
@@ -484,11 +484,12 @@ class RunpyDockerMixinBase(object):
             % (docker_config_name, RELATE_DOCKERS)
         )
 
-        if not isinstance(private_public_ip_map_dict, dict):
-            raise ImproperlyConfigured(
-                INSTANCE_ERROR_PATTERN
-                % {'location': self.private_public_ip_map_dict_location,
-                   "types": "dict"})
+        if private_public_ip_map_dict:
+            if not isinstance(private_public_ip_map_dict, dict):
+                raise ImproperlyConfigured(
+                    INSTANCE_ERROR_PATTERN % {
+                        'location': self.private_public_ip_map_dict_location,
+                        "types": "dict"})
 
         self.private_public_ip_map_dict = private_public_ip_map_dict
 
