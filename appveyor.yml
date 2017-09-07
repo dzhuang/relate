@@ -11,6 +11,7 @@ image: Visual Studio 2017
 
 cache:
   - '%LOCALAPPDATA%\pip\Cache'
+  - "C:\\downloads"
 
 environment:
   COVERALLS_REPO_TOKEN:
@@ -71,16 +72,23 @@ install:
   - "git submodule update --init --recursive"
 
   # Install requirements
+  # need this to compile dulwich
   - SET VS90COMNTOOLS=%VS120COMNTOOLS%
   - pip install dulwich
+  #- pip3 install dulwich
+
   - ps: "cat requirements.txt | ?{$_ -notmatch 'dnspython'} | ?{$_ -notmatch 'dulwich'} > req.txt"
   - "%CMD_IN_ENV% pip install -r req.txt"
   - ps: "if ($env:PYTHON -like '*Python2*') { pip install dnspython mock} else { pip install dnspython3 }"
-#  - ps: if ($env:PYTHON -like '*Python2*') {Start-FileDownload 'http://www.lfd.uci.edu/~gohlke/pythonlibs/hkfw9m5o/dulwich-0.18.3-cp27-cp27m-win32.whl'; pip install dulwich-0.18.3-cp27-cp27m-win32.whl} else {Start-FileDownload 'http://www.lfd.uci.edu/~gohlke/pythonlibs/hkfw9m5o/dulwich-0.18.3-cp35-cp35m-win32.whl'; pip install dulwich-0.18.3-cp35-cp35m-win32.whl}
 
 
 before_test:
   - "%CMD_IN_ENV% pip install coverage"
+  - "docker-machine create --driver hyperv default"
+  - "docker-machine start default"
+  - "docker-machine env default"
+  - '%CMD_IN_ENV% @FOR /f tokens=*" %i IN ("docker-machine env default") DO @%i'
+  - "docker pull inducer/relate-runpy-i386"
 
 test_script:
   # Run the project tests
@@ -91,5 +99,5 @@ after_test:
   - "%CMD_IN_ENV% pip install codecov"
   - "%CMD_IN_ENV% codecov -X gcov"
 
-#on_finish:
-#  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+on_finish:
+  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
