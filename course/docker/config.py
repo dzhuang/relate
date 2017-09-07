@@ -374,7 +374,7 @@ class ClientForDockerMixin(object):
                     RELATEDeprecateWarning,
                     stacklevel=2
                 )
-                self.client_config["tls"] = deprecated_tls_setting  #type: ignore
+                self.client_config["tls"] = deprecated_tls_setting  # type: ignore
 
     def update_client_creation_kwargs(self):
         # type: () -> None
@@ -499,7 +499,8 @@ class RunpyDockerMixinBase(object):
                         "types": "dict"})
         else:
             private_public_ip_map_dict = {}
-        self.private_public_ip_map_dict = private_public_ip_map_dict
+
+        self.private_public_ip_map_dict = cast(Dict, private_public_ip_map_dict)
 
     def check_config_validaty(self):
         # type: () -> list[CheckMessage]
@@ -580,10 +581,7 @@ class RunpyDockerMixinBase(object):
         :return: the corresponding public ip which can be visited by
         RELATE instance.
         """
-
-        if cast(Dict, self.private_public_ip_map_dict):
-            return self.private_public_ip_map_dict.get(ip, ip)
-        return ip
+        return self.private_public_ip_map_dict.get(ip, ip)
 
 
 class RunpyDockerMixin(RunpyDockerMixinBase):
