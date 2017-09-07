@@ -772,7 +772,7 @@ Docker_client_config_ish = Union[
 
 
 def get_docker_client_config(docker_config_name, for_runpy=True):
-    # type: (Text, bool, **Any) -> Optional[Docker_client_config_ish]
+    # type: (Text, bool) -> Optional[Docker_client_config_ish]
 
     """
     Get the client config from docker configurations with docker_config_name
