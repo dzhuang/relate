@@ -25,6 +25,7 @@ THE SOFTWARE.
 """
 
 import six
+from typing import cast
 from django.conf import settings
 from django.core.checks import Critical, Warning, register
 from django.core.exceptions import ImproperlyConfigured
@@ -60,8 +61,9 @@ class RelateCriticalCheckMessage(Critical):
     def __init__(self, *args, **kwargs):
         # type: (*Any, **Any) -> None
         super(RelateCriticalCheckMessage, self).__init__(*args, **kwargs)
+        self.obj = cast(Any, self.obj)
         if not self.obj:
-            self.obj = ImproperlyConfigured
+            self.obj = ImproperlyConfigured  # type: Any
 
 
 class DeprecatedException(Exception):

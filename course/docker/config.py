@@ -24,6 +24,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+from typing import cast
 import os
 import six
 from django.core.checks import CheckMessage, Critical
@@ -112,7 +113,7 @@ show_log = _show_log()
 def get_ip_address(ip_range):
     # type: (Text) -> Union[IPv4Address, IPv6Address]
     import ipaddress
-    return ipaddress.ip_address(six.text_type(ip_range))
+    return ipaddress.ip_address(six.text_type(ip_range))  # type: ignore
 
 
 class RelateDockMachineCheckMessageBase(CheckMessage):
@@ -244,8 +245,9 @@ class ClientConfigBase(object):
                     obj=RuntimeError
                 )]
 
-        if (docker_version is None  # type: ignore
-                or lv(docker_version) < lv(REQUIRED_DOCKER_VERSION)):
+        if (docker_version is None
+                or cast(lv, lv(docker_version))
+                < cast(lv, lv(REQUIRED_DOCKER_VERSION))):
             errors.append(
                 Critical(
                     msg=(
@@ -332,39 +334,39 @@ class ClientForDockerMixin(object):
         super(ClientForDockerMixin, self).__init__(  # type: ignore # noqa
                 docker_config_name, client_config, **kwargs)
 
+        from django.conf import settings
+
         # This is not needed for docker-machine
-        base_url = self.client_config.get("base_url", None)
+        base_url = self.client_config.get("base_url", None)  # type: ignore
         if not base_url:
-            from django.conf import settings
             deprecated_docker_url_setting = (
                 getattr(settings, RELATE_DOCKER_URL, None))
             if not deprecated_docker_url_setting:
                 raise ImproperlyConfigured(
                     RUNPY_ATTR_NOT_CONFIGURED_PATTERN
-                    % {'location': self.client_base_url_location})
+                    % {'location': self.client_base_url_location})  # type: ignore  # noqa
             else:
                 warnings.warn(
                     RUNPY_DEPRECATED_SETTINGS_PATTERN
                     % {
-                        'location': self.client_base_url_location,
+                        'location': self.client_base_url_location,  # type: ignore  # noqa
                         'deprecated_location': RELATE_DOCKER_RUNPY_IMAGE
                     },
                     RELATEDeprecateWarning,
                     stacklevel=2
                 )
             assert deprecated_docker_url_setting
-            self.client_config["base_url"] = deprecated_docker_url_setting
+            self.client_config["base_url"] = deprecated_docker_url_setting  # type: ignore  # noqa
 
         # This is not needed for docker-machine
-        if not self.client_config.get("tls"):
-            from django.conf import settings
+        if not self.client_config.get("tls"):  # type: ignore
             deprecated_tls_setting = (
                 getattr(settings, RELATE_DOCKER_TLS_CONFIG, None))
             if deprecated_tls_setting:
                 warnings.warn(
                     RUNPY_DEPRECATED_SETTINGS_PATTERN
                     % {
-                        "location": self.client_tls_location,
+                        "location": self.client_tls_location,  # type: ignore
                         'deprecated_location': RELATE_DOCKER_TLS_CONFIG},
                     RELATEDeprecateWarning,
                     stacklevel=2
@@ -390,7 +392,7 @@ class ClientForDockerMachineMixin(object):
     def check_docker_installed_and_version_supported(self):
         # type: () -> list[CheckMessage]
         errors = super(ClientForDockerMachineMixin, self)\
-            .check_docker_installed_and_version_supported()
+            .check_docker_installed_and_version_supported()  # type: ignore
 
         try:
             docker_machine_version = (
@@ -400,7 +402,7 @@ class ClientForDockerMachineMixin(object):
                 RelateCriticalCheckMessage(
                     msg=(GENERIC_ERROR_PATTERN
                          % {"location": ("'%s' in %s"
-                                         % (self.docker_config_name,
+                                         % (self.docker_config_name,  # type: ignore
                                             RELATE_DOCKERS)
                                          ),
                             "error_type": type(e).__name__,
@@ -482,7 +484,7 @@ class RunpyDockerMixinBase(object):
         self.private_public_ip_map_dict_location = (
             "'private_public_ip_map_dict' of '%s' in %s"
             % (docker_config_name, RELATE_DOCKERS)
-        )
+        )  # type: Text
 
         if private_public_ip_map_dict:
             if not isinstance(private_public_ip_map_dict, dict):
@@ -490,13 +492,14 @@ class RunpyDockerMixinBase(object):
                     INSTANCE_ERROR_PATTERN % {
                         'location': self.private_public_ip_map_dict_location,
                         "types": "dict"})
-
+        else:
+            private_public_ip_map_dict = {}
         self.private_public_ip_map_dict = private_public_ip_map_dict
 
     def check_config_validaty(self):
         # type: () -> list[CheckMessage]
         errors = (
-            super(RunpyDockerMixinBase, self).check_config_validaty())
+            super(RunpyDockerMixinBase, self).check_config_validaty())  # type: ignore  # noqa
 
         if has_error(errors):
             return errors
@@ -630,7 +633,7 @@ class RunpyClientForDockerMachineConfigure(
         return errors
 
     def check_docker_machine_setup(self, env=os.environ):
-        # type: (Any) -> list[CheckMessage]
+        # type: (Dict[Any, Any]) -> list[CheckMessage]
         errors = []
         if not self._is_docker_machine_running():
             if show_log:
@@ -836,7 +839,7 @@ def get_docker_client_config(docker_config_name, for_runpy=True):
 
 
 def get_config_by_name(docker_config_name):
-    # type: (Text) -> Docker_client_config_ish
+    # type: (Text) -> Dict[Any, Any]
     from django.conf import settings
     relate_dockers_config = getattr(settings, RELATE_DOCKERS, None)
     if not relate_dockers_config:
