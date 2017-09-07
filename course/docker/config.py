@@ -487,10 +487,8 @@ class RunpyDockerMixinBase(object):
         if not isinstance(private_public_ip_map_dict, dict):
             raise ImproperlyConfigured(
                 INSTANCE_ERROR_PATTERN
-                     % {'location':
-                            self.private_public_ip_map_dict_location,
-                        "types": "dict"}
-            )
+                % {'location': self.private_public_ip_map_dict_location,
+                   "types": "dict"})
 
         self.private_public_ip_map_dict = private_public_ip_map_dict
 
