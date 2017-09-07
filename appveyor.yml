@@ -7,7 +7,7 @@ version: 1.0.{build}
 
 build: off
 
-#image: Visual Studio 2017
+image: Visual Studio 2017
 
 cache:
   - '%LOCALAPPDATA%\pip\Cache'
@@ -42,15 +42,20 @@ install:
   # installl virtual_box
   - ps: mkdir C:\downloads | Out-Null
   - ps: cd C:\downloads
+  #- ps: [Net.ServicePointManager]::SecurityProtocol = 'Ssl3, Tls, Tls11, Tls12'
+#  - ps: Start-FileDownload "http://download.virtualbox.org/virtualbox/5.1.6/VirtualBox-5.1.6-110634-Win.exe"
+#  - ps: Start-FileDownload "http://download.virtualbox.org/virtualbox/5.1.6/Oracle_VM_VirtualBox_Extension_Pack-5.1.6-110634.vbox-extpack"
+#  - ps: Start-FileDownload "http://releases.hashicorp.com/vagrant/1.8.5/vagrant_1.8.5.msi"
+#  - ps: Start-Process -FilePath "VirtualBox-5.1.6-110634-Win.exe" -ArgumentList "-silent -logging -msiparams INSTALLDIR=C:\VBox" -Wait
+#  - ps: Start-Process -FilePath "msiexec.exe" -ArgumentList "/a vagrant_1.8.5.msi /qb TARGETDIR=C:\Vagrant" -Wait
   - ps: Start-FileDownload "http://download.docker.com/win/stable/DockerToolbox.exe"
-  - ps: Start-Process -FilePath "DockerToolbox.exe" -ArgumentList "-silent -logging -msiparams INSTALLDIR=C:\docker_machine" -Wait
+  - DockerToolbox.exe /SILENT /COMPONENTS=docker,dockermachine,dockercompose
   - ps: cd $env:APPVEYOR_BUILD_FOLDER
-  - set PATH=C:\docker_machine;%PATH%
-  - "docker-machine --version"
   # Prepend newly installed Python to the PATH of this build (this cannot be
   # done from inside the powershell script as it would require to restart
   # the parent CMD process).
-#  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+  - "SET PATH=C:\\Program Files\\Docker Toolbox;%PATH%"
+  - "docker-machine --version"
 
   - ECHO "Filesystem root:"
   - ps: "ls \"C:/\""
