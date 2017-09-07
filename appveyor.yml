@@ -71,10 +71,12 @@ install:
   - "git submodule update --init --recursive"
 
   # Install requirements
-  - SET VS90COMNTOOLS=%VS120COMNTOOLS% # for dulwich
-  - ps: "cat requirements.txt | ?{$_ -notmatch 'dnspython'} > req.txt"
+  - SET VS90COMNTOOLS=%VS120COMNTOOLS%
+  - pip install dulwich
+  - ps: "cat requirements.txt | ?{$_ -notmatch 'dnspython'} | ?{$_ -notmatch 'dulwich'} > req.txt"
   - "%CMD_IN_ENV% pip install -r req.txt"
   - ps: "if ($env:PYTHON -like '*Python2*') { pip install dnspython mock} else { pip install dnspython3 }"
+#  - ps: if ($env:PYTHON -like '*Python2*') {Start-FileDownload 'http://www.lfd.uci.edu/~gohlke/pythonlibs/hkfw9m5o/dulwich-0.18.3-cp27-cp27m-win32.whl'; pip install dulwich-0.18.3-cp27-cp27m-win32.whl} else {Start-FileDownload 'http://www.lfd.uci.edu/~gohlke/pythonlibs/hkfw9m5o/dulwich-0.18.3-cp35-cp35m-win32.whl'; pip install dulwich-0.18.3-cp35-cp35m-win32.whl}
 
 
 before_test:
@@ -89,5 +91,5 @@ after_test:
   - "%CMD_IN_ENV% pip install codecov"
   - "%CMD_IN_ENV% codecov -X gcov"
 
-on_finish:
-  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+#on_finish:
+#  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
