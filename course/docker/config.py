@@ -43,7 +43,7 @@ import docker
 # {{{ for mypy
 
 if False:
-    from typing import Any, Text, Optional, Any, List, Dict, Tuple, Union  # noqa
+    from typing import Any, Text, Optional, List, Dict, Tuple, Union  # noqa
     from ipaddress import IPv4Address, IPv6Address  # noqa
 
 # }}}
@@ -187,7 +187,7 @@ def has_error(errors):
 
 class ClientConfigBase(object):
     def __init__(self, docker_config_name, client_config, **kwargs):
-        # type: (Text, Dict, **Any) -> None
+        # type: (Text, Dict[Any, Any], **Any) -> None
         self.docker_config_name = docker_config_name
         self.client_config = client_config
 
@@ -328,7 +328,7 @@ class ClientConfigBase(object):
 
 class ClientForDockerMixin(object):
     def __init__(self, docker_config_name, client_config, **kwargs):
-        # type: (Text, dict[Any], **Any) -> None
+        # type: (Text, Dict[Any, Any], **Any) -> None
         super(ClientForDockerMixin, self).__init__(  # type: ignore # noqa
                 docker_config_name, client_config, **kwargs)
 
@@ -378,7 +378,7 @@ class ClientForDockerMixin(object):
 
 class ClientForDockerMachineMixin(object):
     def __init__(self, docker_config_name, client_config, **kwargs):
-        # type: (Text, dict[Any], **Any) -> None
+        # type: (Text, Dict[Any, Any], **Any) -> None
         docker_machine_config = kwargs.pop("docker_machine_config", None)
         super(ClientForDockerMachineMixin, self).__init__(  # type: ignore # noqa
                 docker_config_name, client_config, **kwargs)
@@ -439,7 +439,7 @@ class ClientForDockerMachineConfigure(ClientForDockerMachineMixin, ClientConfigB
 
 class RunpyDockerMixinBase(object):
     def __init__(self, docker_config_name, client_config, **kwargs):
-        # type: (Text, Dict, **Any) -> None
+        # type: (Text, Dict[Any, Any], **Any) -> None
         image = kwargs.pop("docker_image", None)
         super(RunpyDockerMixinBase, self).__init__(
             docker_config_name, client_config, **kwargs)  # type: ignore # noqa
@@ -476,8 +476,8 @@ class RunpyDockerMixinBase(object):
         if not self.client_config.get("version"):
             self.client_config["version"] = DOCKER_RUNPY_CLIENT_VERSION_DEFAULT
 
-        private_public_ip_map_dict = (  # type: Optional[dict]
-            kwargs.get("private_public_ip_map_dict", {}))
+        private_public_ip_map_dict = (
+            kwargs.get("private_public_ip_map_dict", {}))  # type: Optional[Dict]
 
         self.private_public_ip_map_dict_location = (
             "'private_public_ip_map_dict' of '%s' in %s"
@@ -593,7 +593,7 @@ class RunpyDockerMixin(RunpyDockerMixinBase):
 
 class RunpyDockerMachineMixin(RunpyDockerMixinBase):
     def __init__(self, docker_config_name, client_config, **kwargs):
-        # type: (Text, dict, **Any) -> None
+        # type: (Text, Dict[Any, Any], **Any) -> None
         super(RunpyDockerMachineMixin, self).__init__(
             docker_config_name, client_config, **kwargs)
 
@@ -811,7 +811,7 @@ def get_docker_client_config(docker_config_name, for_runpy=True):
                 (is_windows_platform() or is_osx_platform())):
             use_local_docker_machine = True
 
-    kwargs = {}  # type: dict[Any]
+    kwargs = {}  # type: Dict[Any, Any]
     kwargs.update(configs)
     if for_runpy:
         kwargs.update({"docker_image": docker_image})
