@@ -51,6 +51,7 @@ RELATE_STARTUP_CHECKS_EXTRA_TAG = "startup_checks_extra"
 
 class RelateCriticalCheckMessage(Critical):
     def __init__(self, *args, **kwargs):
+        # type: (*Any, **Any) -> None
         super(RelateCriticalCheckMessage, self).__init__(*args, **kwargs)
         if not self.obj:
             self.obj = ImproperlyConfigured
