@@ -35,7 +35,7 @@ from django.core.exceptions import ImproperlyConfigured
 from relate.utils import RELATEDeprecateWarning
 from .utils import (
     get_docker_program_version, run_cmd_line)
-from distutils.version import LooseVersion as lv  # noqa
+from distutils.version import Version, LooseVersion
 from course.checks import (
     GENERIC_ERROR_PATTERN, INSTANCE_ERROR_PATTERN,
     RelateCriticalCheckMessage)
@@ -120,7 +120,7 @@ class RelateDockMachineCheckMessageBase(CheckMessage):
     def __init__(self, *args, **kwargs):
         # type: (*Any, **Any) -> None
         super(RelateDockMachineCheckMessageBase, self).__init__(*args, **kwargs)
-        if not self.obj:
+        if not self.obj:  # type: ignore
             self.obj = "docker-machine"
 
 
@@ -249,8 +249,8 @@ class ClientConfigBase(object):
                 )]
 
         if (docker_version is None
-                or cast(lv, lv(docker_version))
-                < cast(lv, lv(REQUIRED_DOCKER_VERSION))):
+                or cast(Version, LooseVersion(docker_version))
+                < cast(Version, LooseVersion(REQUIRED_DOCKER_VERSION))):
             errors.append(
                 Critical(
                     msg=(
@@ -374,7 +374,7 @@ class ClientForDockerMixin(object):
                     RELATEDeprecateWarning,
                     stacklevel=2
                 )
-                self.client_config["tls"] = deprecated_tls_setting
+                self.client_config["tls"] = deprecated_tls_setting  #type: ignore
 
     def update_client_creation_kwargs(self):
         # type: () -> None
@@ -394,8 +394,9 @@ class ClientForDockerMachineMixin(object):
 
     def check_docker_installed_and_version_supported(self):
         # type: () -> list[CheckMessage]
-        errors = super(ClientForDockerMachineMixin, self)\
-            .check_docker_installed_and_version_supported()  # type: ignore
+        errors = (
+            super(ClientForDockerMachineMixin, self)
+            .check_docker_installed_and_version_supported())  # type: ignore
 
         try:
             docker_machine_version = (
@@ -414,8 +415,8 @@ class ClientForDockerMachineMixin(object):
                 )]
 
         if (not docker_machine_version  # type: ignore
-                or cast(lv, lv(docker_machine_version))
-                < cast(lv, lv(REQUIRED_DOCKER_MACHINE_VERSION))):
+                or cast(Version, LooseVersion(docker_machine_version))
+                < cast(Version, LooseVersion(REQUIRED_DOCKER_MACHINE_VERSION))):
             errors.append(
                 RelateCriticalCheckMessage(
                     msg=(
@@ -483,7 +484,7 @@ class RunpyDockerMixinBase(object):
             self.client_config["version"] = DOCKER_RUNPY_CLIENT_VERSION_DEFAULT
 
         private_public_ip_map_dict = (
-            kwargs.get("private_public_ip_map_dict", {}))  # type: Optional[Dict[Text, Text]]  # noqa
+            kwargs.get("private_public_ip_map_dict", None))  # type: Optional[Dict[Text, Text]]  # noqa
 
         self.private_public_ip_map_dict_location = (
             "'private_public_ip_map_dict' of '%s' in %s"
