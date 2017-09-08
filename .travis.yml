@@ -1,6 +1,17 @@
+sudo: required
+service:
+  - docker
 language: python
 cache: pip
 install: true
+before_script:
+  - curl -L -O -k https://gist.githubusercontent.com/dzhuang/7eba18f8a38107c0f7bba8621448f298/raw/cc46d1d003e4975d344140ccfb4e9a07a3e7001d/create-docker-tls.sh
+  - sudo chmod 777 ./create-docker-tls.sh
+  - bash ./create-docker-tls.sh RELATE_LOCAL
+  - sudo systemctl daemon-reload
+  - sudo systemctl restart docker
+  - docker pull inducer/relate-runpy-i386
+  - docker ps
 script:
   - bash ./run-travis-ci.sh
 env:
