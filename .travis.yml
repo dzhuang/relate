@@ -15,13 +15,21 @@ matrix:
   - python: "3.6"
     env: Mypy=true PY_EXE=python3.6
 before_script:
-  - curl -L -O -k https://gist.githubusercontent.com/dzhuang/7eba18f8a38107c0f7bba8621448f298/raw/e38c92862403d5a9267ec71cbf560ed2769eff3b/create-docker-tls.sh
-  - curl -L -O -k https://gist.githubusercontent.com/dzhuang/45bd68c7c8f2b293bd94e807f5cf6220/raw/7ec4cd99a307cc768110379853314f786596107f/daemon.json
-  - sudo chmod -R o+rwx /etc/docker
-  - sudo yes | cp -rf ./daemon.json /etc/docker/daemon.json
-  - sudo chmod 777 ./create-docker-tls.sh
-  - cat /lib/systemd/system/docker.service
-  - bash ./create-docker-tls.sh RELATE_LOCAL
+#  - curl -L -O -k https://gist.githubusercontent.com/dzhuang/7eba18f8a38107c0f7bba8621448f298/raw/e38c92862403d5a9267ec71cbf560ed2769eff3b/create-docker-tls.sh
+#  - curl -L -O -k https://gist.githubusercontent.com/dzhuang/45bd68c7c8f2b293bd94e807f5cf6220/raw/7ec4cd99a307cc768110379853314f786596107f/daemon.json
+#  - sudo chmod -R o+rwx /etc/docker
+#  - sed -i 'Ns/.*/replacement-line/' file.txt
+#  - sudo chmod -R o+rwx /etc/docker
+#  - sudo yes | cp -rf ./daemon.json /etc/docker/daemon.json
+#  - sudo chmod 777 ./create-docker-tls.sh
+  - sudo chmod 777 /etc/default/docker
+  - cat /etc/default/docker || cat /lib/systemd/system/docker.service
+  #- cat /etc/default/docker.io
+#  - bash ./create-docker-tls.sh RELATE_LOCAL
   - docker pull inducer/relate-runpy-i386
 script:
   - bash ./run-travis-ci.sh
+
+# https://github.com/moby/moby/issues/22339
+
+# unable to configure the Docker daemon with file /etc/docker/daemon.json: the following directives are specified both as a flag and in the configuration file: hosts: (from flag: [unix:///var/run/docker.sock 0.0.0.0:2376], from file: [tcp://0.0.0.0:2376 unix:///var/run/docker.sock]), ip-forward: (from flag: false, from file: false), tlscert: (from flag: /home/travis/.docker/server-cert.pem, from file: /home/.docker/server-cert.pem), tlskey: (from flag: /home/travis/.docker/server-key.pem, from file: /home/.docker/server-key.pem)
