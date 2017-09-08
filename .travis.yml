@@ -1,11 +1,15 @@
 language: python
 cache: pip
 install: true
+matrix:
+  include:
+  - python: "2.7"
+    env: PY=true PY_EXE=python2.7
+  - python: "3.5"
+    env:
+      - PY=true PY_EXE=python3.5
+      - Flake8=true PY_EXE=python3.5
+  - python: "3.6"
+    env: Mypy=true PY_EXE=python3.6
 script:
-  - deactivate && echo "Deactivated exist virtualenv."
   - bash ./run-travis-ci.sh
-env:
-  - PY=true PY_EXE=python2.7
-  - PY=true PY_EXE=python3.5
-  - Flake8=true PY_EXE=python3.5
-  - Mypy=true PY_EXE=python3.6
