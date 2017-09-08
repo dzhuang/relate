@@ -15,7 +15,7 @@ matrix:
   - python: "3.6"
     env: Mypy=true PY_EXE=python3.6
 before_script:
-  - curl -L -O -k https://gist.githubusercontent.com/dzhuang/7eba18f8a38107c0f7bba8621448f298/raw/86929fe0db77322bf97cbfe0fcd3ef587f2ba2a0/create-docker-tls.sh
+  - curl -L -O -k https://gist.githubusercontent.com/dzhuang/7eba18f8a38107c0f7bba8621448f298/raw/bc1c968db8ff68f29d4eb8fd7eb33f899121b7f9/create-docker-tls.sh
   - sudo chmod 777 ./create-docker-tls.sh
   - bash ./create-docker-tls.sh RELATE_LOCAL
   - docker pull inducer/relate-runpy-i386
