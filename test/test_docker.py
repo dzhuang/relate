@@ -28,6 +28,8 @@ try:
     from unittest import mock
 except:
     import mock
+
+from unittest import skipIf
 from copy import deepcopy
 from django.conf import settings
 
@@ -64,7 +66,7 @@ GITLAB_CI = "GITLAB_CI"
 APPVEYOR_CI = "APPVEYOR"
 
 
-def skip_real_docker_test():
+def _skip_real_docker_test():
     import os
     for skipped_ci in [GITLAB_CI, APPVEYOR_CI]:
         if os.environ.get(skipped_ci):
@@ -74,8 +76,7 @@ def skip_real_docker_test():
     return False
 
 
-skip_read_docker_test = skip_real_docker_test()
-print(skip_read_docker_test)
+skip_read_docker_test = _skip_real_docker_test()
 
 ORIGINAL_RELATE_DOCKER_TLS_CONFIG = docker.tls.TLSConfig()
 ORIGINAL_RELATE_DOCKER_URL = "http://original.url.net"
@@ -384,21 +385,24 @@ REAL_DOCKERS = {
             "timeout": 15,
             "version": "1.19"
         },
-        "local_docker_machine_config": {
-            "enabled": True,
-            "config": {
-                "shell": None,
-                "name": "default",
-            },
-        },
-        "private_public_ip_map_dict": {
-            "192.168.1.100": "192.168.100.100"},
+        # "local_docker_machine_config": {
+        #     "enabled": True,
+        #     "config": {
+        #         "shell": None,
+        #         "name": "default",
+        #     },
+        # },
+        # "private_public_ip_map_dict": {
+        #     "192.168.1.100": "192.168.100.100"},
     },
 }
 
 REAL_RUNPY_CONFIG_NAME = "runpy"
 
+
+@skipIf(skip_read_docker_test, "These are tests for real docker")
 @override_settings(
+    RELATE_RUNPY_DOCKER_ENABLED=True,
     RELATE_DOCKERS=REAL_DOCKERS,
     RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=REAL_RUNPY_CONFIG_NAME
 )
