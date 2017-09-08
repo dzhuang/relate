@@ -162,8 +162,9 @@ def skip_check_docker_client_config(app_configs, **kwargs):
     "course.docker.checks.check_docker_client_config",
     side_effect=skip_check_docker_client_config)
 class ClientConfigGetFunctionTests(SimpleTestCase):
-
-    # {{{ test course.docker.config.get_docker_client_config
+    """
+    test course.docker.config.get_docker_client_config
+    """
     @mock.patch("relate.utils.is_windows_platform", return_value=True)
     @override_settings(
         RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=VALID_RUNPY_CONFIG_NAME)
@@ -242,8 +243,6 @@ class ClientConfigGetFunctionTests(SimpleTestCase):
         result = get_relate_runpy_docker_client_config(silence_for_none=False)
         self.assertIsInstance(result, RunpyClientForDockerConfigure)
         self.assertEqual(result.image, "runpy_test.image")
-
-    # }}}
 
 
 @override_settings(RELATE_DOCKERS=TEST_DOCKERS_WITH_DEFAULT_CONFIG)
@@ -343,7 +342,8 @@ class DeprecationTests(SimpleTestCase):
                                                                      mocked_sys):
                     with override_settings(RELATE_RUNPY_DOCKER_ENABLED=True):
                         expected_error_msg = (
-                            "RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME: RELATE_DOCKERS "
+                            "RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME: "
+                            "RELATE_DOCKERS "
                             "has no configuration named 'not_exist_config'")
                         with self.assertRaises(ImproperlyConfigured) as cm:
                             get_relate_runpy_docker_client_config(
@@ -360,4 +360,51 @@ class DeprecationTests(SimpleTestCase):
                                 silence_for_none=True))
                         self.assertIsNone(result)
 
-# }}}
+
+"""
+--tlsverify --tlscacert=/home/travis/.docker/ca.pem --tlscert=/home/travis/.docker/server-cert.pem 
+--tlskey=/home/travis/.docker/server-key.pem -H unix:///var/run/docker.sock -H=0.0.0.0:2376
+"""
+
+import docker.tls
+REAL_DOCKER_TLS_CONFIG = docker.tls.TLSConfig(
+    client_cert=(
+        "/home/travis/.docker/server-cert.pem",
+        "/home/travis/.docker/server-key.pem",
+        ),
+    ca_cert="/home/travis/.docker/ca.pem",
+    verify=True)
+
+REAL_DOCKERS = {
+    "runpy": {
+        "docker_image": "inducer/relate-runpy-i386",
+        "client_config": {
+            "base_url": "unix:///var/run/docker.sock",
+            "tls": TEST_TLS,
+            "timeout": 15,
+            "version": "1.19"
+        },
+        "local_docker_machine_config": {
+            "enabled": True,
+            "config": {
+                "shell": None,
+                "name": "default",
+            },
+        },
+        "private_public_ip_map_dict": {
+            "192.168.1.100": "192.168.100.100"},
+    },
+}
+
+REAL_RUNPY_CONFIG_NAME = "runpy"
+
+@override_settings(
+    RELATE_DOCKERS=REAL_DOCKERS,
+    RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=REAL_RUNPY_CONFIG_NAME
+)
+class ReadDockerTests(SimpleTestCase):
+    def test_get_real_docker_client_config(self):
+        result = get_relate_runpy_docker_client_config(silence_for_none=False)
+        self.assertIsInstance(result, RunpyClientForDockerConfigure)
+    def test_real_docker_check(self):
+        call_command('check')
