@@ -25,7 +25,7 @@ before_script:
   - cat /etc/default/docker || cat /lib/systemd/system/docker.service
 #  - sudo sed -i '2s/.*/DOCKER_OPTS=""/' /etc/default/docker
 #  - cat /etc/default/docker || cat /lib/systemd/system/docker.service
-  - bash ./create-docker-tls.sh RELATE_LOCAL
+  - bash ./create-docker-tls.sh 0.0.0.0
   - export DOCKER_HOST=tcp://0.0.0.0:2376
   - export DOCKER_TLS_VERIFY=1
   - docker pull inducer/relate-runpy-i386

@@ -380,7 +380,7 @@ REAL_DOCKERS = {
     "runpy": {
         "docker_image": "inducer/relate-runpy-i386",
         "client_config": {
-            "base_url": "fd://",
+            "base_url": "unix:///var/run/docker.sock",
             "tls": TEST_TLS,
             "timeout": 15,
             "version": "1.19"
