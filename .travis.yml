@@ -1,7 +1,9 @@
 language: python
 cache: pip
 install: true
+before_script:
 script:
+  - deactivate && echo "deactivating exist virtualenv"
   - bash ./run-coveralls.sh
 env:
   - PY_EXE=python2.7
