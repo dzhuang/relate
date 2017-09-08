@@ -4,18 +4,23 @@ service:
 language: python
 cache: pip
 install: true
+matrix:
+  include:
+  - python: "2.7"
+    env: PY=true PY_EXE=python2.7
+  - python: "3.5"
+    env: PY=true PY_EXE=python3.5
+  - python: "3.5"
+    env: Flake8=true PY_EXE=python3.5
+  - python: "3.6"
+    env: Mypy=true PY_EXE=python3.6
 before_script:
   - curl -L -O -k https://gist.githubusercontent.com/dzhuang/7eba18f8a38107c0f7bba8621448f298/raw/cc46d1d003e4975d344140ccfb4e9a07a3e7001d/create-docker-tls.sh
   - sudo chmod 777 ./create-docker-tls.sh
   - bash ./create-docker-tls.sh RELATE_LOCAL
-  #- sudo systemctl daemon-reload
   - sudo service docker restart
   - docker pull inducer/relate-runpy-i386
   - docker ps
+  - sudo service docker status
 script:
   - bash ./run-travis-ci.sh
-env:
-  - PY=true PY_EXE=python2.7
-  - PY=true PY_EXE=python3.5
-  - Flake8=true PY_EXE=python3.5
-  - Mypy=true PY_EXE=python3.5
