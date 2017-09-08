@@ -15,19 +15,21 @@ matrix:
   - python: "3.6"
     env: Mypy=true PY_EXE=python3.6
 before_script:
-  - curl -L -O -k https://gist.githubusercontent.com/dzhuang/7eba18f8a38107c0f7bba8621448f298/raw/e38c92862403d5a9267ec71cbf560ed2769eff3b/create-docker-tls.sh
+  # https://github.com/moby/moby/issues/22411
+
+#  - curl -L -O -k https://gist.githubusercontent.com/dzhuang/7eba18f8a38107c0f7bba8621448f298/raw/e38c92862403d5a9267ec71cbf560ed2769eff3b/create-docker-tls.sh
 #  - curl -L -O -k https://gist.githubusercontent.com/dzhuang/45bd68c7c8f2b293bd94e807f5cf6220/raw/7ec4cd99a307cc768110379853314f786596107f/daemon.json
 #  - sudo chmod -R o+rwx /etc/docker
 #  - sudo yes | cp -rf ./daemon.json /etc/docker/daemon.json
-  - sudo chmod 777 ./create-docker-tls.sh
+#  - sudo chmod 777 ./create-docker-tls.sh
 #  - sudo chmod 777 /etc/default
 #  - sudo chmod 777 /etc/default/docker
-  - cat /etc/default/docker || cat /lib/systemd/system/docker.service
+#  - cat /etc/default/docker || cat /lib/systemd/system/docker.service
 #  - sudo sed -i '2s/.*/DOCKER_OPTS=""/' /etc/default/docker
 #  - cat /etc/default/docker || cat /lib/systemd/system/docker.service
-  - bash ./create-docker-tls.sh 0.0.0.0
-  - export DOCKER_HOST=tcp://0.0.0.0:2376
-  - export DOCKER_TLS_VERIFY=1
+#  - bash ./create-docker-tls.sh 0.0.0.0
+#  - export DOCKER_HOST=tcp://0.0.0.0:2376
+  - export DOCKER_TLS_VERIFY=
   - docker pull inducer/relate-runpy-i386
 script:
   - bash ./run-travis-ci.sh

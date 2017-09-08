@@ -367,21 +367,21 @@ class DeprecationTests(SimpleTestCase):
 --tlskey=/home/travis/.docker/server-key.pem -H unix:///var/run/docker.sock -H=0.0.0.0:2376
 """
 
-import docker.tls
-REAL_DOCKER_TLS_CONFIG = docker.tls.TLSConfig(
-    client_cert=(
-        "/home/travis/.docker/server-cert.pem",
-        "/home/travis/.docker/server-key.pem",
-        ),
-    ca_cert="/home/travis/.docker/ca.pem",
-    verify=True)
+# import docker.tls
+# REAL_DOCKER_TLS_CONFIG = docker.tls.TLSConfig(
+#     client_cert=(
+#         "/home/travis/.docker/server-cert.pem",
+#         "/home/travis/.docker/server-key.pem",
+#         ),
+#     ca_cert="/home/travis/.docker/ca.pem",
+#     verify=True)
 
 REAL_DOCKERS = {
     "runpy": {
         "docker_image": "inducer/relate-runpy-i386",
         "client_config": {
             "base_url": "unix:///var/run/docker.sock",
-            "tls": TEST_TLS,
+            "tls": None,
             "timeout": 15,
             "version": "1.19"
         },
