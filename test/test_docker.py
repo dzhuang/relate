@@ -59,6 +59,24 @@ from course.docker.config import (  # noqa
     RunpyDockerClientConfigNameIsNoneWarning
 )
 
+
+GITLAB_CI = "GITLAB_CI"
+APPVEYOR_CI = "APPVEYOR"
+
+
+def skip_real_docker_test():
+    import os
+    for skipped_ci in [GITLAB_CI, APPVEYOR_CI]:
+        if os.environ.get(skipped_ci):
+            print("Running on %s" % skipped_ci)
+            return True
+
+    return False
+
+
+skip_read_docker_test = skip_real_docker_test()
+print(skip_read_docker_test)
+
 ORIGINAL_RELATE_DOCKER_TLS_CONFIG = docker.tls.TLSConfig()
 ORIGINAL_RELATE_DOCKER_URL = "http://original.url.net"
 ORIGINAL_RELATE_DOCKER_RUNPY_IMAGE = "runpy_original.image"
