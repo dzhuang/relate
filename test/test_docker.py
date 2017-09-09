@@ -41,6 +41,7 @@ from django.test.utils import (  # noqa
 )
 from django.test import SimpleTestCase
 from django.core.checks import Error, Warning  # noqa
+from django.core import checks
 from django.core.management import call_command  # noqa
 from course.docker.config import (
     get_docker_client_config, get_relate_runpy_docker_client_config)
@@ -419,10 +420,14 @@ class TLSNotConfiguredWarnCheck(SimpleTestCase):
         sys.stdout, sys.stderr = self.old_stdout, self.old_stderr
 
     @override_settings(SILENCED_SYSTEM_CHECKS=["docker_config_client_tls.W001"])
-    def test_silenced_error(self):
+    def test_silence_tls_error(self):
         out = StringIO()
         err = StringIO()
         call_command('check', stdout=out, stderr=err)
         self.assertEqual(out.getvalue(),
                          'System check identified no issues (1 silenced).\n')
         self.assertEqual(err.getvalue(), '')
+
+    def test_tls_error(self):
+        result = checks.run_checks()
+        self.assertEqual([r.id for r in result], ["docker_config_client_tls.W001"])
