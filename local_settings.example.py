@@ -258,7 +258,9 @@ RELATE_SHOW_EDITOR_FORM = True
 # {{{ docker
 
 # A string containing the image ID of the docker image to be used to run
-# student Python code. Docker should download the image on first run.
+# student Python code. Docker should download the image on first run on Linux?.
+# Needed to be pull for docker-machine, or it raises:
+# docker.errors.NotFound: 404 Client Error: Not Found ("b'No such image: inducer/relate-runpy-i386:latest'")  # noqa
 RELATE_DOCKER_RUNPY_IMAGE = "inducer/relate-runpy-i386"
 
 # A URL pointing to the Docker command interface which RELATE should use
