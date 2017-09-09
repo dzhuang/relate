@@ -25,7 +25,7 @@ THE SOFTWARE.
 """
 
 import sys
-from io import StringIO
+from six import StringIO
 
 try:
     from unittest import mock
@@ -70,6 +70,7 @@ APPVEYOR_CI = "APPVEYOR"
 
 # Controller in CI scripts
 ENABLE_DOCKER_TEST = "ENABLE_DOCKER_TEST"
+
 
 def _skip_real_docker_test():
     import os

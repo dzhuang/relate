@@ -11,6 +11,8 @@ if [[ $Mypy == true ]]; then
 fi
 
 if [[ $PY == true ]]; then
+  # https://github.com/travis-ci/travis-ci/issues/5358#issuecomment-248915326
+  mkdir -p $HOME/docker && docker images -a --filter='dangling=false' --format '{{.Repository}}:{{.Tag}} {{.ID}}' | xargs -n 2 -t sh -c 'test -e $HOME/docker/$1.tar.gz || docker save $0 | gzip -2 > $HOME/docker/$1.tar.gz'
   # We are not using tls verify, skipping the cert bother. To disable tls verify,
   # DOCKER_TLS_VERIFY should be an empty string (0 or false won't work).
   # Ref https://github.com/moby/moby/issues/22339
