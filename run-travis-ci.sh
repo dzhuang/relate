@@ -11,13 +11,10 @@ if [[ $Mypy == true ]]; then
 fi
 
 if [[ $PY == true ]]; then
-  # configure docker: https://gist.github.com/hc2p/9e284cee3d585eefbc59454e44cc247a
-  # We are currently not using this bec
-
   # We are not using tls verify, skipping the cert bother. To disable tls verify,
   # DOCKER_TLS_VERIFY should be an empty string (0 or false won't work).
   # Ref https://github.com/moby/moby/issues/22339
-  export DOCKER_TLS_VERIFY=
+  #export DOCKER_TLS_VERIFY=
 
   # Controller for real docker unittest
   export ENABLE_DOCKER_TEST=True
@@ -36,6 +33,7 @@ if [[ $PY == true ]]; then
   # ip-forward: (from flag: false, from file: false),
   # tlscert: (from flag: /home/travis/.docker/server-cert.pem, from file: /home/.docker/server-cert.pem),
   # tlskey: (from flag: /home/travis/.docker/server-key.pem, from file: /home/.docker/server-key.pem)
+  # https://gist.github.com/hc2p/9e284cee3d585eefbc59454e44cc247a
 fi
 
 # run ci according to env variables

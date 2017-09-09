@@ -24,6 +24,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+import os
 import sys
 from six import StringIO
 
@@ -31,6 +32,11 @@ try:
     from unittest import mock
 except:
     import mock
+
+try:
+    from test.support import EnvironmentVarGuard
+except:
+    from test.test_support import EnvironmentVarGuard
 
 from unittest import skipIf
 from copy import deepcopy
@@ -52,6 +58,10 @@ import warnings
 
 from course.docker.config import (  # noqa
     DEFAULT_DOCKER_RUNPY_CONFIG_ALIAS,
+
+    DOCKER_HOST,
+    DOCKER_CERT_PATH,
+    DOCKER_TLS_VERIFY,
 
     RELATE_RUNPY_DOCKER_ENABLED,
     RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME,
@@ -79,7 +89,6 @@ ENABLE_DOCKER_TEST = "ENABLE_DOCKER_TEST"
 
 
 def _skip_real_docker_test():
-    import os
     for skipped_ci in [GITLAB_CI, APPVEYOR_CI]:
         if os.environ.get(skipped_ci):
             print("Running on %s" % skipped_ci)
@@ -384,12 +393,23 @@ class NotDefinedConfigClientConfigGetFunctionTests(SimpleTestCase):
             self.assertIsNone(result)
 
 
+REAL_DOCKER_TLS_CONFIG = None
+
+if not skip_real_docker_test:
+    REAL_DOCKER_TLS_CONFIG = docker.tls.TLSConfig(
+        client_cert=(
+            os.path.join("/home/.docker/", "server-cert.pem"),
+            os.path.join("/home/.docker/", "server-key.pem"),
+            ),
+        ca_cert=os.path.join("/home/.docker/", "ca.pem"),
+        verify=1)
+
 REAL_DOCKERS = {
     "runpy": {
         "docker_image": "inducer/relate-runpy-i386",
         "client_config": {
             "base_url": "unix:///var/run/docker.sock",
-            "tls": None,
+            "tls": REAL_DOCKER_TLS_CONFIG,
             "timeout": 15,
             "version": "1.19"
         },
@@ -405,17 +425,29 @@ REAL_DOCKERS = {
     },
 }
 
+REAL_DOCKERS["runpy_no_tls"] = deepcopy(TEST_DOCKERS["runpy"])
+REAL_DOCKERS["runpy_no_tls"]["client_config"]["tls"] = None
+
 REAL_RUNPY_CONFIG_NAME = "runpy"
+REAL_RUNPY_NO_TLS_CONFIG_NAME = "runpy_no_tls"
 
 
 @skipIf(skip_real_docker_test, SKIP_REAL_DOCKER_REASON)
-@override_settings(
-    RELATE_RUNPY_DOCKER_ENABLED=True,
-    RELATE_DOCKERS=REAL_DOCKERS,
-    RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=REAL_RUNPY_CONFIG_NAME
-)
+@override_settings(RELATE_RUNPY_DOCKER_ENABLED=True, RELATE_DOCKERS=REAL_DOCKERS)
 class ReadDockerTests(SimpleTestCase):
+    @override_settings(
+        RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=REAL_RUNPY_CONFIG_NAME)
     def test_get_real_docker_client_config(self):
+        result = get_relate_runpy_docker_client_config(silence_for_none=False)
+        self.assertIsInstance(
+            result,
+            (RunpyClientForDockerConfigure,
+             RunpyClientForDockerMachineConfigure)
+        )
+
+    @override_settings(
+        RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=REAL_RUNPY_NO_TLS_CONFIG_NAME)
+    def test_get_real_docker_no_tls_client_config(self):
         result = get_relate_runpy_docker_client_config(silence_for_none=False)
         self.assertIsInstance(
             result,
@@ -432,6 +464,11 @@ class ReadDockerTests(SimpleTestCase):
 )
 class TLSNotConfiguredWarnCheck(SimpleTestCase):
     def setUp(self):
+        self.empty_env = EnvironmentVarGuard()
+        self.docker_host_env = self.empty_env.get(DOCKER_HOST)
+        self.docker_tls_verify = self.empty_env.get(DOCKER_TLS_VERIFY)
+        self.docker_cert_path = self.empty_env.get(DOCKER_CERT_PATH)
+
         self.old_stdout, self.old_stderr = sys.stdout, sys.stderr
         self.stdout, self.stderr = StringIO(), StringIO()
         sys.stdout, sys.stderr = self.stdout, self.stderr
