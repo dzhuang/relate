@@ -24,6 +24,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+import sys
+from io import StringIO
+
 try:
     from unittest import mock
 except:
@@ -65,6 +68,8 @@ from course.docker.config import (  # noqa
 GITLAB_CI = "GITLAB_CI"
 APPVEYOR_CI = "APPVEYOR"
 
+# Controller in CI scripts
+ENABLE_DOCKER_TEST = "ENABLE_DOCKER_TEST"
 
 def _skip_real_docker_test():
     import os
@@ -72,6 +77,10 @@ def _skip_real_docker_test():
         if os.environ.get(skipped_ci):
             print("Running on %s" % skipped_ci)
             return True
+
+    enable_docker_test = os.environ.get(ENABLE_DOCKER_TEST)
+    if enable_docker_test is None:
+        return True
 
     return False
 
@@ -330,53 +339,41 @@ class DeprecationTests(SimpleTestCase):
                 get_relate_runpy_docker_client_config(silence_for_none=True))
             self.assertIsNone(result)
 
-            @override_settings(RELATE_DOCKERS=TEST_DOCKERS)
-            @mock.patch(
-                "course.docker.checks.check_docker_client_config",
-                side_effect=skip_check_docker_client_config)
-            class NotDefinedConfigClientConfigGetFunctionTests(SimpleTestCase):
-                @mock.patch("relate.utils.is_windows_platform", return_value=True)
-                @override_settings(
-                    RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=RUNPY_DOCKER_CONFIG_NAME_NOT_EXIST)  # noqa
-                def test_get_runpy_config_with_not_exist_config_name(self,
-                                                                     mocked_register,
-                                                                     mocked_sys):
-                    with override_settings(RELATE_RUNPY_DOCKER_ENABLED=True):
-                        expected_error_msg = (
-                            "RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME: "
-                            "RELATE_DOCKERS "
-                            "has no configuration named 'not_exist_config'")
-                        with self.assertRaises(ImproperlyConfigured) as cm:
-                            get_relate_runpy_docker_client_config(
-                                silence_for_none=False)
-                        self.assertEqual(str(cm.exception), expected_error_msg)
 
-                    with override_settings(RELATE_RUNPY_DOCKER_ENABLED=False):
-                        result = (
-                            get_relate_runpy_docker_client_config(
-                                silence_for_none=False))
-                        self.assertIsNone(result)
-                        result = (
-                            get_relate_runpy_docker_client_config(
-                                silence_for_none=True))
-                        self.assertIsNone(result)
+@override_settings(RELATE_DOCKERS=TEST_DOCKERS)
+@mock.patch(
+    "course.docker.checks.check_docker_client_config",
+    side_effect=skip_check_docker_client_config)
+class NotDefinedConfigClientConfigGetFunctionTests(SimpleTestCase):
+    @mock.patch(
+        "relate.utils.is_windows_platform", return_value=True)
+    @override_settings(
+        RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=RUNPY_DOCKER_CONFIG_NAME_NOT_EXIST)  # noqa
+    def test_get_runpy_config_with_not_exist_config_name(self,
+                                                         mocked_register,
+                                                         mocked_sys):
+        with override_settings(RELATE_RUNPY_DOCKER_ENABLED=True):
+            expected_error_msg = (
+                "RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME: "
+                "RELATE_DOCKERS "
+                "has no configuration named 'not_exist_config'")
+            with self.assertRaises(ImproperlyConfigured) as cm:
+                get_relate_runpy_docker_client_config(
+                    silence_for_none=False)
+            self.assertEqual(str(cm.exception), expected_error_msg)
+
+        with override_settings(RELATE_RUNPY_DOCKER_ENABLED=False):
+            result = (
+                get_relate_runpy_docker_client_config(
+                    silence_for_none=False))
+            self.assertIsNone(result)
+            result = (
+                get_relate_runpy_docker_client_config(
+                    silence_for_none=True))
+            self.assertIsNone(result)
 
 
-"""
---tlsverify --tlscacert=/home/travis/.docker/ca.pem --tlscert=/home/travis/.docker/server-cert.pem 
---tlskey=/home/travis/.docker/server-key.pem -H unix:///var/run/docker.sock -H=0.0.0.0:2376
-"""
-
-# import docker.tls
-# REAL_DOCKER_TLS_CONFIG = docker.tls.TLSConfig(
-#     client_cert=(
-#         "/home/travis/.docker/server-cert.pem",
-#         "/home/travis/.docker/server-key.pem",
-#         ),
-#     ca_cert="/home/travis/.docker/ca.pem",
-#     verify=True)
-
-REAL_DOCKERS = {
+LINUX_REAL_DOCKERS = {
     "runpy": {
         "docker_image": "inducer/relate-runpy-i386",
         "client_config": {
@@ -385,30 +382,46 @@ REAL_DOCKERS = {
             "timeout": 15,
             "version": "1.19"
         },
-        # "local_docker_machine_config": {
-        #     "enabled": True,
-        #     "config": {
-        #         "shell": None,
-        #         "name": "default",
-        #     },
-        # },
-        # "private_public_ip_map_dict": {
-        #     "192.168.1.100": "192.168.100.100"},
     },
 }
 
-REAL_RUNPY_CONFIG_NAME = "runpy"
+LINUX_REAL_RUNPY_CONFIG_NAME = "runpy"
 
 
 @skipIf(skip_read_docker_test, "These are tests for real docker")
 @override_settings(
     RELATE_RUNPY_DOCKER_ENABLED=True,
-    RELATE_DOCKERS=REAL_DOCKERS,
-    RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=REAL_RUNPY_CONFIG_NAME
+    RELATE_DOCKERS=LINUX_REAL_DOCKERS,
+    RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=LINUX_REAL_RUNPY_CONFIG_NAME
 )
 class ReadDockerTests(SimpleTestCase):
     def test_get_real_docker_client_config(self):
         result = get_relate_runpy_docker_client_config(silence_for_none=False)
         self.assertIsInstance(result, RunpyClientForDockerConfigure)
-    def test_real_docker_check(self):
-        call_command('check')
+    # def test_real_docker_check(self):
+    #     call_command('check')
+
+
+@skipIf(skip_read_docker_test, "These are tests for real docker")
+@override_settings(
+    RELATE_RUNPY_DOCKER_ENABLED=True,
+    RELATE_DOCKERS=LINUX_REAL_DOCKERS,
+    RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=LINUX_REAL_RUNPY_CONFIG_NAME
+)
+class TLSNotConfiguredWarnCheck(SimpleTestCase):
+    def setUp(self):
+        self.old_stdout, self.old_stderr = sys.stdout, sys.stderr
+        self.stdout, self.stderr = StringIO(), StringIO()
+        sys.stdout, sys.stderr = self.stdout, self.stderr
+
+    def tearDown(self):
+        sys.stdout, sys.stderr = self.old_stdout, self.old_stderr
+
+    @override_settings(SILENCED_SYSTEM_CHECKS=["docker_config_client_tls.W001"])
+    def test_silenced_error(self):
+        out = StringIO()
+        err = StringIO()
+        call_command('check', stdout=out, stderr=err)
+        self.assertEqual(out.getvalue(),
+                         'System check identified no issues (1 silenced).\n')
+        self.assertEqual(err.getvalue(), '')

@@ -181,7 +181,7 @@ class RunpyDockerConfigNotSetError(ImproperlyConfigured):
 
 
 def has_error(errors):
-    # type: (list[CheckMessage]) -> bool
+    # type: (List[CheckMessage]) -> bool
     from django.core.checks import WARNING
     for error in errors:
         if error.level > WARNING:
@@ -213,7 +213,7 @@ class ClientConfigBase(object):
         raise NotImplementedError()
 
     def checks(self):
-        # type: () -> list[CheckMessage]
+        # type: () -> List[CheckMessage]
         errors = self.check_docker_installed_and_version_supported()
         if has_error(errors):
             return errors
@@ -230,7 +230,7 @@ class ClientConfigBase(object):
         return errors
 
     def check_docker_installed_and_version_supported(self):
-        # type: () -> list[CheckMessage]
+        # type: () -> List[CheckMessage]
         errors = []
 
         try:
@@ -266,7 +266,7 @@ class ClientConfigBase(object):
         return errors
 
     def check_client_tls(self):
-        # type: () -> list[CheckMessage]
+        # type: () -> List[CheckMessage]
         errors = []
         tls = self.client_config.get("tls", None)
         if not tls:
@@ -297,19 +297,19 @@ class ClientConfigBase(object):
         return errors
 
     def check_config_validaty(self):
-        # type: () -> list[CheckMessage]
+        # type: () -> List[CheckMessage]
         return []
 
     def check_docker_status(self):
-        # type: () -> list[CheckMessage]
+        # type: () -> List[CheckMessage]
         return []
 
     def check_engine(self):
-        # type: () -> list[CheckMessage]
+        # type: () -> List[CheckMessage]
         return self.check_docker_installed_and_version_supported()
 
     def check_client(self):
-        # type: () -> list[CheckMessage]
+        # type: () -> List[CheckMessage]
         errors = self.check_client_tls()
         if has_error(errors):
             return errors
@@ -393,7 +393,7 @@ class ClientForDockerMachineMixin(object):
                 docker_machine_config.get("name", DEFAULT_MACHINE_NAME))
 
     def check_docker_installed_and_version_supported(self):
-        # type: () -> list[CheckMessage]
+        # type: () -> List[CheckMessage]
         errors = (
             super(ClientForDockerMachineMixin, self)    # type: ignore
             .check_docker_installed_and_version_supported())  # type: ignore
@@ -503,7 +503,7 @@ class RunpyDockerMixinBase(object):
         self.private_public_ip_map_dict = cast(Dict, private_public_ip_map_dict)
 
     def check_config_validaty(self):
-        # type: () -> list[CheckMessage]
+        # type: () -> List[CheckMessage]
         errors = (
             super(RunpyDockerMixinBase, self).check_config_validaty())  # type: ignore  # noqa
 
@@ -622,12 +622,12 @@ class RunpyClientForDockerConfigure(RunpyDockerMixin, ClientForDockerConfigure):
 class RunpyClientForDockerMachineConfigure(
         RunpyDockerMachineMixin, ClientForDockerMachineConfigure):
     def check_docker_status(self):
-        # type: () -> list[CheckMessage]
+        # type: () -> List[CheckMessage]
         errors = self.check_docker_machine_setup()
         return errors
 
     def check_docker_machine_setup(self, env=os.environ):
-        # type: (Any) -> list[CheckMessage]
+        # type: (Any) -> List[CheckMessage]
         errors = []
         if not self._is_docker_machine_running():
             if show_log:
