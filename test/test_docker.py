@@ -87,7 +87,8 @@ def _skip_real_docker_test():
     return False
 
 
-skip_read_docker_test = _skip_real_docker_test()
+skip_real_docker_test = _skip_real_docker_test()
+SKIP_REAL_DOCKER_REASON = "These are tests for real docker"
 
 ORIGINAL_RELATE_DOCKER_TLS_CONFIG = docker.tls.TLSConfig()
 ORIGINAL_RELATE_DOCKER_URL = "http://original.url.net"
@@ -390,7 +391,7 @@ LINUX_REAL_DOCKERS = {
 LINUX_REAL_RUNPY_CONFIG_NAME = "runpy"
 
 
-@skipIf(skip_read_docker_test, "These are tests for real docker")
+@skipIf(skip_real_docker_test, SKIP_REAL_DOCKER_REASON)
 @override_settings(
     RELATE_RUNPY_DOCKER_ENABLED=True,
     RELATE_DOCKERS=LINUX_REAL_DOCKERS,
@@ -400,11 +401,9 @@ class ReadDockerTests(SimpleTestCase):
     def test_get_real_docker_client_config(self):
         result = get_relate_runpy_docker_client_config(silence_for_none=False)
         self.assertIsInstance(result, RunpyClientForDockerConfigure)
-    # def test_real_docker_check(self):
-    #     call_command('check')
 
 
-@skipIf(skip_read_docker_test, "These are tests for real docker")
+@skipIf(skip_real_docker_test, SKIP_REAL_DOCKER_REASON)
 @override_settings(
     RELATE_RUNPY_DOCKER_ENABLED=True,
     RELATE_DOCKERS=LINUX_REAL_DOCKERS,
@@ -420,7 +419,7 @@ class TLSNotConfiguredWarnCheck(SimpleTestCase):
         sys.stdout, sys.stderr = self.old_stdout, self.old_stderr
 
     @override_settings(SILENCED_SYSTEM_CHECKS=["docker_config_client_tls.W001"])
-    def test_silence_tls_error(self):
+    def test_silence_tls_not_configured_warning(self):
         out = StringIO()
         err = StringIO()
         call_command('check', stdout=out, stderr=err)
@@ -428,6 +427,6 @@ class TLSNotConfiguredWarnCheck(SimpleTestCase):
                          'System check identified no issues (1 silenced).\n')
         self.assertEqual(err.getvalue(), '')
 
-    def test_tls_error(self):
+    def test_tls_not_configured_warning(self):
         result = checks.run_checks()
         self.assertEqual([r.id for r in result], ["docker_config_client_tls.W001"])

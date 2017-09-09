@@ -11,8 +11,9 @@ if [[ $Mypy == true ]]; then
 fi
 
 if [[ $PY == true ]]; then
-  # https://github.com/travis-ci/travis-ci/issues/5358#issuecomment-248915326
-  mkdir -p $HOME/docker && docker images -a --filter='dangling=false' --format '{{.Repository}}:{{.Tag}} {{.ID}}' | xargs -n 2 -t sh -c 'test -e $HOME/docker/$1.tar.gz || docker save $0 | gzip -2 > $HOME/docker/$1.tar.gz'
+  # configure docker: https://gist.github.com/hc2p/9e284cee3d585eefbc59454e44cc247a
+  # We are currently not using this bec
+
   # We are not using tls verify, skipping the cert bother. To disable tls verify,
   # DOCKER_TLS_VERIFY should be an empty string (0 or false won't work).
   # Ref https://github.com/moby/moby/issues/22339
@@ -20,7 +21,13 @@ if [[ $PY == true ]]; then
 
   # Controller for real docker unittest
   export ENABLE_DOCKER_TEST=True
-  docker pull inducer/relate-runpy-i386
+
+  # load cached docker image: https://github.com/travis-ci/travis-ci/issues/5358#issuecomment-248915326
+  if [[ -d $HOME/docker ]]; then
+    ls $HOME/docker/*.tar.gz | xargs -I {file} sh -c "zcat {file} | docker load"
+  else
+    docker pull inducer/relate-runpy-i386
+  fi
 
   # Todo: Using tls verify? Need to work round the following issue:
   # unable to configure the Docker daemon with file /etc/docker/daemon.json:
