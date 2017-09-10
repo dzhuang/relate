@@ -33,16 +33,16 @@ except:
     import mock
 
 try:
-    from test.support import EnvironmentVarGuard
+    from test.support import EnvironmentVarGuard  # noqa
 except:
-    from test.test_support import EnvironmentVarGuard
+    from test.test_support import EnvironmentVarGuard  # noqa
 
 from unittest import skipIf
 from copy import deepcopy
 from django.conf import settings
 
 from django.test.utils import (  # noqa
-    isolate_apps, override_settings, override_system_checks,
+    isolate_apps, override_settings
 )
 from django.test import SimpleTestCase
 from django.core.checks import Error, Warning  # noqa
@@ -52,6 +52,7 @@ from course.docker.config import (
     get_docker_client_config, get_relate_runpy_docker_client_config)
 
 from django.core.exceptions import ImproperlyConfigured
+from relate.utils import is_windows_platform, is_osx_platform
 import docker.tls
 import warnings
 
@@ -303,10 +304,10 @@ class DefaultConfigClientConfigGetFunctionTests(SimpleTestCase):
         with warnings.catch_warnings(record=True) as warns:
             self.assertIsNone(
                 get_relate_runpy_docker_client_config(silence_for_none=True))
-        self.assertEqual(len(warns), 1)
-        self.assertIsInstance(
-            warns[0].message, RunpyDockerClientConfigNameIsNoneWarning)
-        self.assertEqual(str(warns[0].message), expected_msg)
+            self.assertEqual(len(warns), 1)
+            self.assertIsInstance(
+                warns[0].message, RunpyDockerClientConfigNameIsNoneWarning)
+            self.assertEqual(str(warns[0].message), expected_msg)
 
     @override_settings(RELATE_RUNPY_DOCKER_ENABLED=True)
     def test_get_runpy_config_not_named(self, mocked_register):
@@ -348,40 +349,63 @@ class DeprecationWarningsTests(SimpleTestCase):
                 RELATE_DOCKER_RUNPY_IMAGE=ORIGINAL_RELATE_DOCKER_RUNPY_IMAGE):
             with warnings.catch_warnings(record=True) as warns:
                 self.assertIsNotNone(
-                    get_relate_runpy_docker_client_config(silence_for_none=True))
-            self.assertEqual(len(warns), 1)
-            self.assertIsInstance(
-                warns[0].message, RELATEDeprecateWarning)
+                    get_relate_runpy_docker_client_config())
+                self.assertEqual(len(warns), 1)
+                self.assertIsInstance(
+                    warns[0].message, RELATEDeprecateWarning)
 
             with self.settings():
                 del settings.RELATE_DOCKER_RUNPY_IMAGE
                 with self.assertRaises(ImproperlyConfigured):
-                    get_relate_runpy_docker_client_config(silence_for_none=False)
+                    get_relate_runpy_docker_client_config()
 
+    @override_settings(
+        RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=RUNPY_DOCKER_CONFIG_NAME_NO_BASE_URL
+    )
+    def test_no_base_url(self, mocked_register):
+        with override_settings(
+                RELATE_DOCKER_URL=ORIGINAL_RELATE_DOCKER_URL):
+            with warnings.catch_warnings(
+                    record=True) as warns:
+                self.assertIsNotNone(
+                    get_relate_runpy_docker_client_config())
+                if is_windows_platform() or is_osx_platform():
+                    # because local_docker_machine_config is enabled
+                    self.assertEqual(len(warns), 0)
+                else:
+                    self.assertEqual(len(warns), 1)
+                    self.assertIsInstance(
+                        warns[0].message,
+                        RELATEDeprecateWarning)
 
-        # with override_settings(RELATE_DOCKER_RUNPY_IMAGE=None):
-        #     self.assertRaises(AttributeError, getattr,
-        #                       settings,
-        #                       RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME)
-        #     with warnings.catch_warnings(record=True) as warns:
-        #         self.assertIsNone(
-        #             get_relate_runpy_docker_client_config(silence_for_none=True))
-        #     self.assertEqual(len(warns), 1)
-        #     self.assertIsInstance(
-        #         warns[0].message, RunpyDockerClientConfigNameIsNoneWarning)
+            with self.settings():
+                del settings.RELATE_DOCKER_URL
+                if is_windows_platform() or is_osx_platform():
+                    self.assertIsNotNone(
+                        get_relate_runpy_docker_client_config())
+                else:
+                    with self.assertRaises(
+                            ImproperlyConfigured):
+                        get_relate_runpy_docker_client_config()
 
-        # with override_settings(
-        #         RELATE_DOCKER_RUNPY_IMAGE=ORIGINAL_RELATE_DOCKER_RUNPY_IMAGE):
-            #ORIGINAL_RELATE_DOCKER_TLS_CONFIG
-            #self.assertEqual(str(warns[0].message), expected_msg)
-
-            # expected_error_msg = (
-            #     "RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME: RELATE_DOCKERS "
-            #     "has no configuration named 'not_exist_config'")
-            # with self.assertRaises(ImproperlyConfigured) as cm:
-            #     get_relate_runpy_docker_client_config(silence_for_none=False)
-            # self.assertEqual(str(cm.exception), expected_error_msg)
-
+    @override_settings(
+        RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=RUNPY_DOCKER_CONFIG_NAME_NO_TLS
+    )
+    def test_no_tls(self, mocked_register):
+        with override_settings(
+                RELATE_DOCKER_TLS_CONFIG=ORIGINAL_RELATE_DOCKER_TLS_CONFIG):
+            with warnings.catch_warnings(
+                    record=True) as warns:
+                self.assertIsNotNone(
+                    get_relate_runpy_docker_client_config())
+                if is_windows_platform() or is_osx_platform():
+                    # because local_docker_machine_config is enabled
+                    self.assertEqual(len(warns), 0)
+                else:
+                    self.assertEqual(len(warns), 1)
+                    self.assertIsInstance(
+                        warns[0].message,
+                        RELATEDeprecateWarning)
 
 
 @override_settings(RELATE_DOCKERS=TEST_DOCKERS)
