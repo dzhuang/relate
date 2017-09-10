@@ -40,6 +40,7 @@ except:
 from unittest import skipIf
 from copy import deepcopy
 from django.conf import settings
+from django.core import mail
 
 from django.test.utils import (  # noqa
     isolate_apps, override_settings
@@ -516,12 +517,83 @@ class TLSNotConfiguredWarnCheck(SimpleTestCase):
     RELATE_DOCKERS=REAL_DOCKERS,
     RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=REAL_RUNPY_CONFIG_NAME
 )
-class CodePageTest(SingleCoursePageTestMixin, TestCase):
+class RealDockerCodePageTest(SingleCoursePageTestMixin, TestCase):
     flow_id = QUIZ_FLOW_ID
     page_id = "addition"
 
-    def test_code_page(self):
+    def test_code_page_correct_answer(self):
         answer_data = {"answer": "c = a + b"}
+        expected_str = (
+            "It looks like you submitted code that is identical to "
+            "the reference solution. This is not allowed.")
         resp = self.client_post_answer_by_page_id(self.page_id, answer_data)
+        self.assertContains(resp, expected_str, count=1)
         self.assertEqual(resp.status_code, 200)
         self.assertSessionScoreEqual(1)
+
+    def test_code_page_wrong_answer(self):
+        answer_data = {"answer": "c = a - b"}
+        resp = self.client_post_answer_by_page_id(self.page_id, answer_data)
+        self.assertEqual(resp.status_code, 200)
+        self.assertSessionScoreEqual(0)
+
+    def test_code_page_user_code_exception_raise(self):
+        answer_data = {"answer": "c = a ^ b"}
+        from django.utils.html import escape
+        expected_error_str1 = escape(
+            "Your code failed with an exception. "
+            "A traceback is below.")
+        expected_error_str2 = escape(
+            "TypeError: unsupported operand type(s) for ^: "
+            "'float' and 'float'")
+        resp = self.client_post_answer_by_page_id(self.page_id, answer_data)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, expected_error_str1, count=1)
+        self.assertContains(resp, expected_error_str2, count=1)
+        self.assertSessionScoreEqual(0)
+
+    # @override_settings(
+    #     EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+    # def test_code_with_uncaught_exception(self):
+    #     mail.outbox = []
+    #     answer_data = {"answer": "c = a ^ b"}
+    #     resp = self.client_post_answer_by_page_id(self.page_id, answer_data)
+    #     self.assertEqual(resp.status_code, 200)
+    #     self.assertEqual(len(mail.outbox), 1)
+    #     resp = self.client_post_answer_by_page_id(self.page_id, answer_data)
+    #     self.assertEqual(resp.status_code, 200)
+    #     self.assertSessionScoreEqual(0)
+    #     self.assertEqual(len(mail.outbox), 2)
+
+
+# @override_settings(
+#     RELATE_RUNPY_DOCKER_ENABLED=True,
+#     RELATE_DOCKERS=TEST_DOCKERS,
+#     RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=REAL_RUNPY_CONFIG_NAME
+# )
+# class CodePageTestOther(SingleCoursePageTestMixin, TestCase):
+#     flow_id = QUIZ_FLOW_ID
+#     page_id = "addition"
+#
+#     def test_code_page(self):
+#         answer_data = {"answer": "c = a + b"}
+#         resp = self.client_post_answer_by_page_id(self.page_id, answer_data)
+#         self.assertEqual(resp.status_code, 200)
+#
+#         answer_data = {"answer": "d = a + b"}
+#         resp = self.client_post_answer_by_page_id(self.page_id, answer_data)
+#         self.assertEqual(resp.status_code, 200)
+#         self.assertSessionScoreEqual(0)
+#
+#     @override_settings(
+#         EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+#     def test_code_with_uncaught_exception(self):
+#         mail.outbox = []
+#         answer_data = {"answer": "c = a ^ b"}
+#         resp = self.client_post_answer_by_page_id(self.page_id, answer_data)
+#         self.assertEqual(resp.status_code, 200)
+#         self.assertEqual(len(mail.outbox), 1)
+#         resp = self.client_post_answer_by_page_id(self.page_id, answer_data)
+#         self.assertEqual(resp.status_code, 200)
+#         self.assertSessionScoreEqual(0)
+#         self.assertEqual(len(mail.outbox), 2)
