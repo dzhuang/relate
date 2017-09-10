@@ -32,6 +32,11 @@ try:
 except:
     import mock
 
+try:
+    from test.support import EnvironmentVarGuard
+except:
+    from test.test_support import EnvironmentVarGuard
+
 from unittest import skipIf
 from copy import deepcopy
 from django.conf import settings
@@ -55,6 +60,13 @@ from course.docker.config import (  # noqa
 
     RELATE_RUNPY_DOCKER_ENABLED,
     RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME,
+
+    # items to be deprecated
+    RELATE_DOCKER_TLS_CONFIG,
+    RELATE_DOCKER_URL,
+    RELATE_DOCKER_RUNPY_IMAGE,
+
+    RELATEDeprecateWarning,
 
     RELATE_DOCKERS,
     ClientConfigBase,
@@ -99,7 +111,7 @@ skip_real_docker_test = _skip_real_docker_test()
 SKIP_REAL_DOCKER_REASON = "These are tests for real docker"
 
 ORIGINAL_RELATE_DOCKER_TLS_CONFIG = docker.tls.TLSConfig()
-ORIGINAL_RELATE_DOCKER_URL = "http://original.url.net"
+ORIGINAL_RELATE_DOCKER_URL = "http://original.url.net:2376"
 ORIGINAL_RELATE_DOCKER_RUNPY_IMAGE = "runpy_original.image"
 
 TEST_TLS = docker.tls.TLSConfig()
@@ -109,7 +121,7 @@ TEST_DOCKERS = {
     "runpy_test": {
         "docker_image": "runpy_test.image",
         "client_config": {
-            "base_url": "http://some.url.net",
+            "base_url": "http://some.url.net:2376",
             "tls": TEST_TLS,
             "timeout": 15,
             "version": "1.19"
@@ -127,7 +139,7 @@ TEST_DOCKERS = {
 }
 
 TEST_DOCKERS["no_image"] = deepcopy(TEST_DOCKERS["runpy_test"])
-TEST_DOCKERS["no_image"].pop("docker_image")
+del TEST_DOCKERS["no_image"]["docker_image"]
 
 TEST_DOCKERS["no_base_url"] = deepcopy(TEST_DOCKERS["runpy_test"])
 TEST_DOCKERS["no_base_url"]["client_config"].pop("base_url")
@@ -323,32 +335,53 @@ class DefaultConfigClientConfigGetFunctionTests(SimpleTestCase):
             self.assertIsNone(result)
 
 
-@override_settings(RELATE_DOCKERS=TEST_DOCKERS)
+@override_settings(RELATE_DOCKERS=TEST_DOCKERS, RELATE_RUNPY_DOCKER_ENABLED=True)
 @mock.patch(
     "course.docker.checks.check_docker_client_config",
     side_effect=skip_check_docker_client_config)
-class DeprecationTests(SimpleTestCase):
-    @mock.patch("relate.utils.is_windows_platform", return_value=True)
+class DeprecationWarningsTests(SimpleTestCase):
     @override_settings(
-        RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=RUNPY_DOCKER_CONFIG_NAME_NOT_EXIST)
-    def test_get_runpy_config_with_not_exist_config_name(self,
-                                                    mocked_register,
-                                                    mocked_sys):
-        with override_settings(RELATE_RUNPY_DOCKER_ENABLED=True):
-            expected_error_msg = (
-                "RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME: RELATE_DOCKERS "
-                "has no configuration named 'not_exist_config'")
-            with self.assertRaises(ImproperlyConfigured) as cm:
-                get_relate_runpy_docker_client_config(silence_for_none=False)
-            self.assertEqual(str(cm.exception), expected_error_msg)
+        RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=RUNPY_DOCKER_CONFIG_NAME_NO_IMAGE
+    )
+    def test_no_image(self, mocked_register):
+        with override_settings(
+                RELATE_DOCKER_RUNPY_IMAGE=ORIGINAL_RELATE_DOCKER_RUNPY_IMAGE):
+            with warnings.catch_warnings(record=True) as warns:
+                self.assertIsNotNone(
+                    get_relate_runpy_docker_client_config(silence_for_none=True))
+            self.assertEqual(len(warns), 1)
+            self.assertIsInstance(
+                warns[0].message, RELATEDeprecateWarning)
 
-        with override_settings(RELATE_RUNPY_DOCKER_ENABLED=False):
-            result = (
-                get_relate_runpy_docker_client_config(silence_for_none=False))
-            self.assertIsNone(result)
-            result = (
-                get_relate_runpy_docker_client_config(silence_for_none=True))
-            self.assertIsNone(result)
+            with self.settings():
+                del settings.RELATE_DOCKER_RUNPY_IMAGE
+                with self.assertRaises(ImproperlyConfigured):
+                    get_relate_runpy_docker_client_config(silence_for_none=False)
+
+
+        # with override_settings(RELATE_DOCKER_RUNPY_IMAGE=None):
+        #     self.assertRaises(AttributeError, getattr,
+        #                       settings,
+        #                       RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME)
+        #     with warnings.catch_warnings(record=True) as warns:
+        #         self.assertIsNone(
+        #             get_relate_runpy_docker_client_config(silence_for_none=True))
+        #     self.assertEqual(len(warns), 1)
+        #     self.assertIsInstance(
+        #         warns[0].message, RunpyDockerClientConfigNameIsNoneWarning)
+
+        # with override_settings(
+        #         RELATE_DOCKER_RUNPY_IMAGE=ORIGINAL_RELATE_DOCKER_RUNPY_IMAGE):
+            #ORIGINAL_RELATE_DOCKER_TLS_CONFIG
+            #self.assertEqual(str(warns[0].message), expected_msg)
+
+            # expected_error_msg = (
+            #     "RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME: RELATE_DOCKERS "
+            #     "has no configuration named 'not_exist_config'")
+            # with self.assertRaises(ImproperlyConfigured) as cm:
+            #     get_relate_runpy_docker_client_config(silence_for_none=False)
+            # self.assertEqual(str(cm.exception), expected_error_msg)
+
 
 
 @override_settings(RELATE_DOCKERS=TEST_DOCKERS)

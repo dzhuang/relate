@@ -353,7 +353,7 @@ class ClientForDockerMixin(object):
                     RUNPY_DEPRECATED_SETTINGS_PATTERN
                     % {
                         'location': self.client_base_url_location,  # type: ignore  # noqa
-                        'deprecated_location': RELATE_DOCKER_RUNPY_IMAGE
+                        'deprecated_location': RELATE_DOCKER_URL
                     },
                     RELATEDeprecateWarning,
                     stacklevel=2
