@@ -269,14 +269,9 @@ RELATE_DOCKER_URL = "unix://var/run/docker.sock"
 
 RELATE_DOCKER_TLS_CONFIG = None
 
-# Configure this if only your RELATE instance and your runpy instances
-# are not on the same subnet, and you know exactly the private and public
-# ip of each runpy instance.
-# Format: {private_ip1: public_ip_1, private_ip2, public_ip_2}
-#RELATE_DOCKER_PRIVATE_PUBLIC_IP_MAP_DICT = {}
 
 RELATE_DOCKERS = {
-    "runpy": {
+    "default": {
         "docker_image": RELATE_DOCKER_RUNPY_IMAGE,
         "client_config": {
             "base_url": RELATE_DOCKER_URL,
@@ -311,7 +306,13 @@ RELATE_DOCKERS = {
 # Switch to turn on/off runpy
 RELATE_RUNPY_DOCKER_ENABLED = False
 
-RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME = None
+# The config name which will be used for Runpy docker. If not set, "default" will
+# be used.
+# RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME = "default"
+
+# If True, submission of code question with RELATE_RUNPY_DOCKER_ENABLED = False
+# won't send email notifications about DockerNotEnabledError. Default to False
+SILENCE_DOCKER_NOT_ENABLE_ERROR = False
 
 RELATE_RUNPY_DOCKER_CLIENT_CONFIG = None
 if RELATE_RUNPY_DOCKER_ENABLED:

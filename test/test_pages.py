@@ -97,8 +97,6 @@ class SingleCoursePageTestMixin(SingleCourseTestMixin, TestCase):
         return resp
 
     def assertSessionScoreEqual(self, expect_score):  # noqa
-        resp = self.end_quiz()
-        self.assertEqual(resp.status_code, 200)
         self.assertEqual(FlowSession.objects.all()[0].points,
                                                 Decimal(str(expect_score)))
 
@@ -130,36 +128,43 @@ class SingleCourseQuizPageTest(SingleCoursePageTestMixin, TestCase):
         self.assertEqual(resp.status_code, 200)
 
     def test_quiz_no_answer(self):
+        self.assertEqual(self.end_quiz().status_code, 200)
         self.assertSessionScoreEqual(0)
 
     def test_quiz_text(self):
         resp = self.client_post_answer_by_ordinal(1, {"answer": ['0.5']})
         self.assertEqual(resp.status_code, 200)
+        self.assertEqual(self.end_quiz().status_code, 200)
         self.assertSessionScoreEqual(5)
 
     def test_quiz_choice(self):
         resp = self.client_post_answer_by_ordinal(2, {"choice": ['0']})
         self.assertEqual(resp.status_code, 200)
+        self.assertEqual(self.end_quiz().status_code, 200)
         self.assertSessionScoreEqual(2)
 
     def test_quiz_multi_choice_exact_correct(self):
         resp = self.client_post_answer_by_ordinal(3, {"choice": ['0', '1', '4']})
         self.assertEqual(resp.status_code, 200)
+        self.assertEqual(self.end_quiz().status_code, 200)
         self.assertSessionScoreEqual(1)
 
     def test_quiz_multi_choice_exact_wrong(self):
         resp = self.client_post_answer_by_ordinal(3, {"choice": ['0', '1']})
         self.assertEqual(resp.status_code, 200)
+        self.assertEqual(self.end_quiz().status_code, 200)
         self.assertSessionScoreEqual(0)
 
     def test_quiz_multi_choice_proportion_partial(self):
         resp = self.client_post_answer_by_ordinal(4, {"choice": ['0']})
         self.assertEqual(resp.status_code, 200)
+        self.assertEqual(self.end_quiz().status_code, 200)
         self.assertSessionScoreEqual(0.8)
 
     def test_quiz_multi_choice_proportion_correct(self):
         resp = self.client_post_answer_by_ordinal(4, {"choice": ['0', '3']})
         self.assertEqual(resp.status_code, 200)
+        self.assertEqual(self.end_quiz().status_code, 200)
         self.assertSessionScoreEqual(1)
 
     def test_quiz_inline(self):
@@ -169,12 +174,14 @@ class SingleCourseQuizPageTest(SingleCoursePageTestMixin, TestCase):
             'choice_a': ['0']}
         resp = self.client_post_answer_by_ordinal(5, answer_data)
         self.assertEqual(resp.status_code, 200)
+        self.assertEqual(self.end_quiz().status_code, 200)
         self.assertSessionScoreEqual(10)
 
     # All I can do for now since db do not store ordinal value
     def test_quiz_survey_choice(self):
         resp = self.client_post_answer_by_ordinal(6, {"answer": ["NOTHING!!!"]})
         self.assertEqual(resp.status_code, 200)
+        self.assertEqual(self.end_quiz().status_code, 200)
         self.assertSessionScoreEqual(0)
 
         query = FlowPageVisit.objects.filter(
@@ -187,6 +194,7 @@ class SingleCourseQuizPageTest(SingleCoursePageTestMixin, TestCase):
     def test_quiz_survey_text(self):
         resp = self.client_post_answer_by_ordinal(7, {"choice": ['8']})
         self.assertEqual(resp.status_code, 200)
+        self.assertEqual(self.end_quiz().status_code, 200)
         self.assertSessionScoreEqual(0)
 
         query = FlowPageVisit.objects.filter(

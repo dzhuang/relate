@@ -529,12 +529,14 @@ class RealDockerCodePageTest(SingleCoursePageTestMixin, TestCase):
         resp = self.client_post_answer_by_page_id(self.page_id, answer_data)
         self.assertContains(resp, expected_str, count=1)
         self.assertEqual(resp.status_code, 200)
+        self.assertEqual(self.end_quiz().status_code, 200)
         self.assertSessionScoreEqual(1)
 
     def test_code_page_wrong_answer(self):
         answer_data = {"answer": "c = a - b"}
         resp = self.client_post_answer_by_page_id(self.page_id, answer_data)
         self.assertEqual(resp.status_code, 200)
+        self.assertEqual(self.end_quiz().status_code, 200)
         self.assertSessionScoreEqual(0)
 
     def test_code_page_user_code_exception_raise(self):
@@ -550,20 +552,8 @@ class RealDockerCodePageTest(SingleCoursePageTestMixin, TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, expected_error_str1, count=1)
         self.assertContains(resp, expected_error_str2, count=1)
+        self.assertEqual(self.end_quiz().status_code, 200)
         self.assertSessionScoreEqual(0)
-
-    # @override_settings(
-    #     EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
-    # def test_code_with_uncaught_exception(self):
-    #     mail.outbox = []
-    #     answer_data = {"answer": "c = a ^ b"}
-    #     resp = self.client_post_answer_by_page_id(self.page_id, answer_data)
-    #     self.assertEqual(resp.status_code, 200)
-    #     self.assertEqual(len(mail.outbox), 1)
-    #     resp = self.client_post_answer_by_page_id(self.page_id, answer_data)
-    #     self.assertEqual(resp.status_code, 200)
-    #     self.assertSessionScoreEqual(0)
-    #     self.assertEqual(len(mail.outbox), 2)
 
 
 # @override_settings(
