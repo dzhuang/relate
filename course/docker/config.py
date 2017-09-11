@@ -786,7 +786,7 @@ Docker_client_config_ish = Union[
 
 def get_docker_client_config(docker_config_name, for_runpy=True,
                              use_deprecated_settings=False):
-    # type: (Text, bool) -> Optional[Docker_client_config_ish]
+    # type: (Text, bool, bool) -> Optional[Docker_client_config_ish]
 
     """
     Get the client config from docker configurations with docker_config_name
@@ -813,10 +813,10 @@ def get_docker_client_config(docker_config_name, for_runpy=True,
             }
         }
         if getattr(settings, RELATE_DOCKER_URL, None):
-            configs[DEFAULT_DOCKER_RUNPY_CONFIG_ALIAS] \
+            configs[DEFAULT_DOCKER_RUNPY_CONFIG_ALIAS]\
                 ["client_config"]["base_url"] = settings.RELATE_DOCKER_URL
         if getattr(settings, RELATE_DOCKER_TLS_CONFIG, None):
-            configs[DEFAULT_DOCKER_RUNPY_CONFIG_ALIAS] \
+            configs[DEFAULT_DOCKER_RUNPY_CONFIG_ALIAS]\
                 ["client_config"]["tls"] = settings.RELATE_DOCKER_TLS_CONFIG
 
     docker_image = configs.pop("docker_image", None)

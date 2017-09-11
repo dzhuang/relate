@@ -302,7 +302,7 @@ class DefaultConfigClientConfigGetFunctionTests(SimpleTestCase):
             self.assertEqual(str(warns[0].message), expected_msg)
 
     @override_settings(RELATE_RUNPY_DOCKER_ENABLED=True)
-    def test_get_runpy_config_not_named(self, mocked_register):
+    def test_get_runpy_config_not_named1(self, mocked_register):
         with self.settings():
             self.assertTrue(
                 hasattr(settings, RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME))
@@ -315,8 +315,7 @@ class DefaultConfigClientConfigGetFunctionTests(SimpleTestCase):
 
     @override_settings(RELATE_RUNPY_DOCKER_ENABLED=False,
                        RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=None)
-    def test_get_runpy_config_not_named_not_enabled(self, mocked_register):
-
+    def test_get_runpy_config_not_named_not_enabled2(self, mocked_register):
         with self.settings():
             # simulate RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME is not configured
             del settings.RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME
