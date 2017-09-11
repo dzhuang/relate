@@ -8,13 +8,16 @@ RUN echo "deb http://httpredir.debian.org/debian unstable main contrib" >> /etc/
 RUN echo 'APT::Default-Release "testing";' >> /etc/apt/apt.conf
 
 RUN apt-get update
-RUN apt-get -y -o APT::Install-Recommends=0 -o APT::Install-Suggests=0 install python3-scipy python3-pip python3-matplotlib python3-pillow graphviz python3-pandas python3-sympy glpk-utils python3-pulp python3-jinja2 python3-networkx
+RUN apt-get -y -o APT::Install-Recommends=0 -o APT::Install-Suggests=0 install curl python3-scipy python3-pip python3-matplotlib python3-pillow graphviz python3-pandas python3-sympy glpk-utils python3-pulp python3-jinja2 python3-networkx
 RUN fc-cache
 
 RUN mkdir -p /opt/runpy
 ADD runpy /opt/runpy/
-COPY code_feedback.py /opt/runpy/
-COPY code_runpy_backend.py /opt/runpy/
+RUN cd /opt/runpy
+RUN curl -L -O -k https://raw.githubusercontent.com/inducer/relate/master/course/page/code_feedback.py
+RUN curl -L -O -k https://raw.githubusercontent.com/inducer/relate/master/course/page/code_runpy_backend.py
+#COPY code_feedback.py /opt/runpy/
+#COPY code_runpy_backend.py /opt/runpy/
 
 RUN sed -i s/TkAgg/Agg/ /etc/matplotlibrc
 RUN echo "savefig.dpi : 80" >> /etc/matplotlibrc
