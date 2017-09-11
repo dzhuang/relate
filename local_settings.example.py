@@ -251,7 +251,9 @@ RELATE_SHOW_EDITOR_FORM = True
 # {{{ docker
 
 # A string containing the image ID of the docker image to be used to run
-# student Python code. Docker should download the image on first run.
+# student Python code. Docker should download the image on first run on Linux?.
+# Needed to be pull for docker-machine, or it raises:
+# docker.errors.NotFound: 404 Client Error: Not Found ("b'No such image: inducer/relate-runpy-i386:latest'")  # noqa
 RELATE_DOCKER_RUNPY_IMAGE = "inducer/relate-runpy-i386"
 
 # A URL pointing to the Docker command interface which RELATE should use
@@ -259,6 +261,59 @@ RELATE_DOCKER_RUNPY_IMAGE = "inducer/relate-runpy-i386"
 RELATE_DOCKER_URL = "unix://var/run/docker.sock"
 
 RELATE_DOCKER_TLS_CONFIG = None
+
+
+RELATE_DOCKERS = {
+    "default": {
+        "docker_image": RELATE_DOCKER_RUNPY_IMAGE,
+        "client_config": {
+            "base_url": RELATE_DOCKER_URL,
+            "tls": RELATE_DOCKER_TLS_CONFIG,
+            "timeout": 15,
+            "version": "1.19"
+        },
+        "local_docker_machine_config": {
+            "enabled": True,
+            "config":{
+                "shell": None,
+                "name": "default",
+            },
+        },
+
+        # This is required to be configured for relate runpy docker for running code
+        # quetsions (and other cases when you need to used the
+        # get_connect_ip_and_port_by_container_from_config method),
+        # in cases when your RELATE instance and (runpy) docker-running
+        # instances are not on the same subnet. You must know the private ip and
+        # a correspond public ip (by which the RElATE instance can visit the docker
+        # instance) of each docker-running instances.
+        # Dict format: {private_ip1: public_ip_1, private_ip2, public_ip_2}
+        "private_public_ip_map_dict": {},
+    },
+    "other":{
+
+    }
+}
+
+
+# Switch to turn on/off runpy
+RELATE_RUNPY_DOCKER_ENABLED = False
+
+# The config name which will be used for Runpy docker. If not set, "default" will
+# be used.
+# RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME = "default"
+
+# If True, submission of code question with RELATE_RUNPY_DOCKER_ENABLED = False
+# won't send email notifications about DockerNotEnabledError. Default to False
+SILENCE_DOCKER_NOT_ENABLE_ERROR = False
+
+RELATE_RUNPY_DOCKER_CLIENT_CONFIG = None
+if RELATE_RUNPY_DOCKER_ENABLED:
+    RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME = "runpy"
+    # from course.docker.config import get_docker_client_config
+    # RELATE_RUNPY_DOCKER_CLIENT_CONFIG = (  # type: ignore
+    #     get_docker_client_config("runpy", for_runpy=True))
+
 
 # Example setup for targeting remote Docker instances
 # with TLS authentication:
