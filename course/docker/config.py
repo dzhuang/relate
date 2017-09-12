@@ -226,7 +226,7 @@ class ClientConfigBase(object):
         if has_error(errors):
             return errors
 
-        errors.extend(self.check_client())
+        errors.extend(self.check_client_and_image())
         return errors
 
     def check_docker_installed_and_version_supported(self):
@@ -308,13 +308,14 @@ class ClientConfigBase(object):
         # type: () -> List[CheckMessage]
         return self.check_docker_installed_and_version_supported()
 
-    def check_client(self):
+    def check_client_and_image(self):
         # type: () -> List[CheckMessage]
         errors = self.check_client_tls()
         if has_error(errors):
             return errors
+        cli = None
         try:
-            self.create_client()
+            cli = self.create_client()
         except Exception as e:
             errors.append(
                 RelateCriticalCheckMessage(
@@ -328,7 +329,16 @@ class ClientConfigBase(object):
                     id="docker_config_client_create.E001"
                 )
             )
+
+        if has_error(errors):
+            return errors
+
+        errors.extend(self.check_image(cli))
         return errors
+
+    def check_image(self, cli):
+        # type: (docker.Client) -> List[CheckMessage]
+        return []
 
 
 class ClientForDockerMixin(object):
@@ -479,6 +489,7 @@ class RunpyDockerMixinBase(object):
                 )
                 image = deprecated_image_setting
         assert image
+        assert isinstance(image, six.text_type)
         self.image = image
 
         if not self.client_config.get("timout"):
@@ -530,6 +541,25 @@ class RunpyDockerMixinBase(object):
                                }),
                         id="private_public_ip_map_dict.E002"))
 
+        return errors
+
+    def check_image(self, cli):
+        # type: (docker.Client) -> List[CheckMessage]
+        errors = super(RunpyDockerMixinBase, self).check_image(cli)  # type: ignore  # noqa
+        assert cli is not None
+        image_exist = bool(cli.images(self.image))
+        if not image_exist:
+            errors.append(
+                RelateCriticalCheckMessage(
+                    msg=("'docker_image' of '%(config_name)s' in %(configs)s "
+                         "(%(image)s is not pulled, please 'docker pull %(image)s'"
+                         % {"config_name": self.docker_config_name,
+                            "configs": RELATE_DOCKERS,
+                            "image": self.image
+                            }),
+                    id="docker_config_image.E001"
+                )
+            )
         return errors
 
     def get_client_and_container_connection_info(
@@ -800,29 +830,39 @@ def get_docker_client_config(docker_config_name, for_runpy=True,
     :param use_deprecated_settings: Optional, a :class:`bool` instance.
     :return: a `Docker_client_config_ish` instance.
     """
-    from copy import deepcopy
     if not use_deprecated_settings:
-        configs = deepcopy(get_config_by_name(docker_config_name))
+        from copy import deepcopy
+        config = deepcopy(get_config_by_name(docker_config_name))
     else:
         from django.conf import settings
         assert not getattr(settings, RELATE_DOCKERS, None)
-        configs = {
-            DEFAULT_DOCKER_RUNPY_CONFIG_ALIAS: {
-                "docker_image": settings.RELATE_DOCKER_RUNPY_IMAGE,
-                "client_config": {}
-            }
+        deprecation_locations = [RELATE_DOCKER_RUNPY_IMAGE]
+        config = {
+            "docker_image": settings.RELATE_DOCKER_RUNPY_IMAGE,
+            "client_config": {}
         }
         if getattr(settings, RELATE_DOCKER_URL, None):
-            configs[DEFAULT_DOCKER_RUNPY_CONFIG_ALIAS]\
-                ["client_config"]["base_url"] = settings.RELATE_DOCKER_URL
+            config["client_config"]["base_url"] = settings.RELATE_DOCKER_URL
+            deprecation_locations.append(RELATE_DOCKER_URL)
         if getattr(settings, RELATE_DOCKER_TLS_CONFIG, None):
-            configs[DEFAULT_DOCKER_RUNPY_CONFIG_ALIAS]\
-                ["client_config"]["tls"] = settings.RELATE_DOCKER_TLS_CONFIG
+            config["client_config"]["tls"] = settings.RELATE_DOCKER_TLS_CONFIG
+            deprecation_locations.append(RELATE_DOCKER_TLS_CONFIG)
 
-    docker_image = configs.pop("docker_image", None)
-    client_config = configs.pop("client_config", {})
+        warnings.simplefilter("default", RELATEDeprecateWarning)
+        warnings.warn(
+            RUNPY_DEPRECATED_SETTINGS_PATTERN
+            % {
+                'location': RELATE_DOCKERS,
+                'deprecated_location': ", ".join(deprecation_locations)
+            },
+            RELATEDeprecateWarning,
+            stacklevel=2
+        )
+
+    docker_image = config.pop("docker_image", None)
+    client_config = config.pop("client_config", {})
     use_local_docker_machine = False
-    local_docker_machine_config = configs.pop("local_docker_machine_config", {})
+    local_docker_machine_config = config.pop("local_docker_machine_config", {})
     if local_docker_machine_config:
         from relate.utils import is_windows_platform, is_osx_platform
         if (local_docker_machine_config.get("enabled", False)
@@ -831,7 +871,7 @@ def get_docker_client_config(docker_config_name, for_runpy=True,
             use_local_docker_machine = True
 
     kwargs = {}  # type: Dict[Any, Any]
-    kwargs.update(configs)
+    kwargs.update(config)
     if for_runpy:
         kwargs.update({"docker_image": docker_image})
 

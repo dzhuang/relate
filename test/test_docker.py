@@ -74,7 +74,7 @@ from django.test import TestCase
 from test_pages import SingleCoursePageTestMixin, QUIZ_FLOW_ID
 
 # Switch for test locally
-Debug = False
+Debug = True
 
 GITLAB_CI = "GITLAB_CI"
 APPVEYOR_CI = "APPVEYOR"
@@ -303,11 +303,10 @@ class DefaultConfigClientConfigGetFunctionTests(SimpleTestCase):
 
     @override_settings(RELATE_RUNPY_DOCKER_ENABLED=True)
     def test_get_runpy_config_not_named1(self, mocked_register):
+        # simulate RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME is not configured
         with self.settings():
-            self.assertTrue(
-                hasattr(settings, RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME))
-            # simulate RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME is not configured
-            del settings.RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME
+            if hasattr(settings, RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME):
+                del settings.RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME
             self.assertRaises(AttributeError, getattr,
                               settings, RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME)
             result = get_relate_runpy_docker_client_config(silence_for_none=False)
@@ -316,15 +315,9 @@ class DefaultConfigClientConfigGetFunctionTests(SimpleTestCase):
     @override_settings(RELATE_RUNPY_DOCKER_ENABLED=False,
                        RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=None)
     def test_get_runpy_config_not_named_not_enabled2(self, mocked_register):
-        with self.settings():
-            # simulate RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME is not configured
-            del settings.RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME
-            self.assertRaises(AttributeError, getattr,
-                              settings,
-                              RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME)
-            result = get_relate_runpy_docker_client_config(
-                silence_for_none=False)
-            self.assertIsNone(result)
+        result = get_relate_runpy_docker_client_config(
+            silence_for_none=False)
+        self.assertIsNone(result)
 
 
 @override_settings(RELATE_DOCKERS=TEST_DOCKERS, RELATE_RUNPY_DOCKER_ENABLED=True)
@@ -345,7 +338,7 @@ class DeprecationWarningsTests(SimpleTestCase):
             with warnings.catch_warnings(record=True) as warns:
                 self.assertIsNotNone(
                     get_relate_runpy_docker_client_config())
-                self.assertEqual(len(warns), 3)
+                self.assertEqual(len(warns), 1)
                 self.assertIsInstance(
                     warns[0].message, RELATEDeprecateWarning)
 
@@ -477,13 +470,32 @@ REAL_DOCKERS = {
 REAL_RUNPY_CONFIG_NAME = "runpy"
 
 
+class ReadDockerTestMixin(object):
+    def setUp(self):
+        super(ReadDockerTestMixin, self).setUp()
+        self.make_sure_docker_image_pulled()
+
+    def make_sure_docker_image_pulled(self):
+        if skip_real_docker_test:
+            return
+        with self.settings():
+            settings.REAL_DOCKERS = RELATE_DOCKERS
+            settings.RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME = REAL_RUNPY_CONFIG_NAME
+            client_config = get_relate_runpy_docker_client_config(
+                silence_for_none=False)
+            cli = client_config.create_client()
+            if not bool(cli.images(client_config.image)):
+                # This should run only once and get cached on Travis-CI
+                cli.pull(client_config.image)
+
+
 @skipIf(skip_real_docker_test, SKIP_REAL_DOCKER_REASON)
 @override_settings(
     RELATE_RUNPY_DOCKER_ENABLED=True,
     RELATE_DOCKERS=REAL_DOCKERS,
     RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=REAL_RUNPY_CONFIG_NAME
 )
-class ReadDockerTests(SimpleTestCase):
+class ReadDockerTests(ReadDockerTestMixin, SimpleTestCase):
     def test_get_real_docker_client_config(self):
         result = get_relate_runpy_docker_client_config(silence_for_none=False)
         self.assertIsInstance(
@@ -499,7 +511,7 @@ class ReadDockerTests(SimpleTestCase):
     RELATE_DOCKERS=REAL_DOCKERS,
     RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=REAL_RUNPY_CONFIG_NAME
 )
-class TLSNotConfiguredWarnCheck(SimpleTestCase):
+class TLSNotConfiguredWarnCheck(ReadDockerTestMixin, SimpleTestCase):
     def setUp(self):
         self.old_stdout, self.old_stderr = sys.stdout, sys.stderr
         self.stdout, self.stderr = StringIO(), StringIO()
@@ -528,10 +540,13 @@ class TLSNotConfiguredWarnCheck(SimpleTestCase):
     RELATE_DOCKERS=REAL_DOCKERS,
     RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=REAL_RUNPY_CONFIG_NAME
 )
-class RealDockerCodePageTest(SingleCoursePageTestMixin, TestCase):
+class RealDockerCodePageTest(SingleCoursePageTestMixin,
+                             ReadDockerTestMixin, TestCase):
     flow_id = QUIZ_FLOW_ID
     page_id = "addition"
 
+    @skipIf(is_windows_platform(), "docker-machine is not availabe in this case")
+    @skipIf(is_osx_platform(), "docker-machine is not availabe in this case")
     @override_settings(RELATE_DOCKER_URL=REAL_RELATE_DOCKER_URL,
                        RELATE_DOCKER_TLS_CONFIG=REAL_RELATE_DOCKER_TLS_CONFIG,
                        RELATE_DOCKER_RUNPY_IMAGE=REAL_RELATE_DOCKER_RUNPY_IMAGE)
@@ -549,8 +564,7 @@ class RealDockerCodePageTest(SingleCoursePageTestMixin, TestCase):
             self.assertEqual(self.end_quiz().status_code, 200)
             self.assertSessionScoreEqual(1)
 
-
-    def test_code_page_with_relate_runpy_docker_enabled_not_configured(self):  # noqa
+    def test_code_page_with_relate_runpy_docker_enabled_not_configured(self):
         with self.settings():
             del settings.RELATE_RUNPY_DOCKER_ENABLED
             answer_data = {"answer": "c = a + b"}

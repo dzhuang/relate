@@ -22,7 +22,7 @@ if [[ $PY == true ]]; then
 
   # load cached docker image: https://github.com/travis-ci/travis-ci/issues/5358#issuecomment-248915326
   if [[ -d $HOME/docker ]]; then
-    ls $HOME/docker/*.tar.gz | xargs -I {file} sh -c "zcat {file} | docker load"  || docker pull inducer/relate-runpy-i386
+    ls $HOME/docker/*.tar.gz | xargs -I {file} sh -c "zcat {file} | docker load"
   else
     docker pull inducer/relate-runpy-i386
   fi
