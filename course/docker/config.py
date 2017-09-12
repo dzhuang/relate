@@ -73,6 +73,7 @@ DOCKER_RUNPY_CLIENT_TIMEOUT_DEFAULT = 15
 RELATE_RUNPY_DOCKER_ENABLED = "RELATE_RUNPY_DOCKER_ENABLED"
 RELATE_DOCKERS = "RELATE_DOCKERS"
 RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME = "RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME"
+SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR = "SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR"
 
 # Settings to be deprecated
 RELATE_DOCKER_TLS_CONFIG = "RELATE_DOCKER_TLS_CONFIG"
@@ -91,23 +92,23 @@ RUNPY_CONFIGURED_ERR_PATTERN = (  # noqa
 RUNPY_DEPRECATED_SETTINGS_PATTERN = (
     "%(deprecated_location)s is deprecated, use %(location)s instead"
 )
-DOCKER_MACHINE_GENERIC_ERROR_PATTERN = (
+DOCKER_GENERIC_ERROR_PATTERN = (
     "%(error_type)s: %(error_str)s")
 
 # }}}
 
-# Debuging switch
+# logger switch
 Debug = False
 logger = logging.getLogger("django.request")
 
 
-def _show_log():
+def _debug_print():
     # type: () -> bool
     from django.conf import settings
     return Debug or getattr(settings, "DEBUG")
 
 
-show_log = _show_log()
+debug_print = _debug_print()
 
 
 def get_ip_address(ip_range):
@@ -124,14 +125,6 @@ class RelateDockMachineCheckMessageBase(CheckMessage):
             self.obj = "docker-machine"
 
 
-class RelateDockMachineDebugMessage(RelateDockMachineCheckMessageBase):
-    def __init__(self, *args, **kwargs):
-        # type: (*Any, **Any) -> None
-        from django.core.checks import DEBUG
-        super(RelateDockMachineDebugMessage, self).__init__(
-            DEBUG, *args, **kwargs)
-
-
 class RelateDockMachineCritical(RelateDockMachineCheckMessageBase):
     def __init__(self, *args, **kwargs):
         # type: (*Any, **Any) -> None
@@ -140,19 +133,7 @@ class RelateDockMachineCritical(RelateDockMachineCheckMessageBase):
             CRITICAL, *args, **kwargs)
 
 
-class RelateDockMachineWarning(RelateDockMachineCheckMessageBase):
-    def __init__(self, *args, **kwargs):
-        # type: (*Any, **Any) -> None
-        from django.core.checks import WARNING
-        super(RelateDockMachineWarning, self).__init__(
-            WARNING, *args, **kwargs)
-
-
 class DockerError(Exception):
-    pass
-
-
-class DockerNotEnabledError(Exception):
     pass
 
 
@@ -176,7 +157,7 @@ class RunpyDockerClientConfigNameIsNoneWarning(Warning):
     pass
 
 
-class RunpyDockerConfigNotSetError(ImproperlyConfigured):
+class RunpyDockerNotUsableError(ImproperlyConfigured):
     pass
 
 
@@ -239,7 +220,7 @@ class ClientConfigBase(object):
         except Exception as e:
             return [
                 Critical(
-                    msg=(DOCKER_MACHINE_GENERIC_ERROR_PATTERN
+                    msg=(DOCKER_GENERIC_ERROR_PATTERN
                          % {
                              "error_type": type(e).__name__,
                              "error_str": str(e)
@@ -259,7 +240,7 @@ class ClientConfigBase(object):
                         " functionalities."
                         % {"version": REQUIRED_DOCKER_VERSION}),
                     obj=DockerVersionNotSupportedError,
-                    id="docker_program.E001"
+                    id="docker_version.E001"
                 )
             )
 
@@ -410,7 +391,7 @@ class ClientForDockerMachineMixin(object):
             docker_machine_version = (
                 get_docker_program_version("docker-machine", print_output=Debug))
         except Exception as e:
-            return [
+            errors.append(
                 RelateCriticalCheckMessage(
                     msg=(GENERIC_ERROR_PATTERN
                          % {"location": ("'%s' in %s"
@@ -420,7 +401,8 @@ class ClientForDockerMachineMixin(object):
                             "error_type": type(e).__name__,
                             "error_str": str(e)}),
                     id="docker_machine_version_exception_unknown.E001"
-                )]
+                ))
+            return errors
 
         if (not docker_machine_version  # type: ignore
                 or LooseVersion(docker_machine_version)  # type: ignore
@@ -532,7 +514,7 @@ class RunpyDockerMixinBase(object):
                                "error_type": type(e).__name__,
                                "error_str": str(e)
                                }),
-                        id="private_public_ip_map_dict.E002"))
+                        id="private_public_ip_map_dict.E001"))
 
         return errors
 
@@ -657,7 +639,7 @@ class RunpyClientForDockerMachineConfigure(
         # type: (Any) -> List[CheckMessage]
         errors = []
         if not self._is_docker_machine_running():
-            if show_log:
+            if debug_print:
                 logger.info("'%s' is not running. Starting..."
                              % self.docker_machine_name)
             try:
@@ -665,7 +647,7 @@ class RunpyClientForDockerMachineConfigure(
             except Exception as e:
                 errors.append(
                     RelateDockMachineCritical(
-                        msg=(DOCKER_MACHINE_GENERIC_ERROR_PATTERN
+                        msg=(DOCKER_GENERIC_ERROR_PATTERN
                              % {
                                  "error_type": type(e).__name__,
                                  "error_str": str(e)
@@ -675,14 +657,14 @@ class RunpyClientForDockerMachineConfigure(
                 )
                 return errors
         else:
-            if show_log:
+            if debug_print:
                 logger.info("'%s' is running." % self.docker_machine_name)
 
         # If env variables are not set, generate the cmdline for user to set them
         if (DOCKER_HOST not in env
                 or DOCKER_CERT_PATH not in env
                 or DOCKER_TLS_VERIFY not in env):
-            if show_log:
+            if debug_print:
                 logger.info("Environment variables for machine '%s' have "
                              "not been exported."
                              % self.docker_machine_name)
@@ -726,7 +708,7 @@ class RunpyClientForDockerMachineConfigure(
 
                 errors.append(
                     RelateDockMachineCritical(
-                        msg=(DOCKER_MACHINE_GENERIC_ERROR_PATTERN
+                        msg=(DOCKER_GENERIC_ERROR_PATTERN
                              % {
                                  "error_type": type(e).__name__,
                                  "error_str": get_readable_error_msg(e)
@@ -744,7 +726,7 @@ class RunpyClientForDockerMachineConfigure(
                         )
                     )
         else:
-            if show_log:
+            if debug_print:
                 logger.info("Environment variables for machine '%s' have "
                              "been exported."
                              % self.docker_machine_name)
@@ -906,7 +888,7 @@ def get_config_by_name(docker_config_name):
     return relate_dockers_config[docker_config_name]
 
 
-def get_relate_runpy_docker_client_config(silence_for_none=True):  # noqa
+def get_relate_runpy_docker_client_config(silence_if_not_usable=False):  # noqa
     from django.conf import settings
     relate_dockers = getattr(settings, RELATE_DOCKERS, None)
     if not relate_dockers:
@@ -919,6 +901,13 @@ def get_relate_runpy_docker_client_config(silence_for_none=True):  # noqa
 
     runpy_enabled = getattr(settings, RELATE_RUNPY_DOCKER_ENABLED, True)
     if not runpy_enabled:
+        if not silence_if_not_usable:
+            raise RunpyDockerNotUsableError(
+                "Runpy docker is not usable with %s=%s. Please set %s to "
+                "True if you want to start server without this check"
+                % (RELATE_RUNPY_DOCKER_ENABLED, runpy_enabled,
+                   SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR)
+            )
         return None
     relate_runpy_docker_client_config_name = (
         getattr(settings, RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME,
@@ -928,8 +917,8 @@ def get_relate_runpy_docker_client_config(silence_for_none=True):  # noqa
         msg = ("%s can not be None when %s is True"
                % (RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME,
                   RELATE_RUNPY_DOCKER_ENABLED))
-        if not silence_for_none:
-            raise RunpyDockerConfigNotSetError(msg)
+        if not silence_if_not_usable:
+            raise RunpyDockerNotUsableError(msg)
         else:
             warnings.warn(
                 msg,

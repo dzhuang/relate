@@ -104,19 +104,14 @@ def request_python_run(run_req, run_timeout, image=None):
 
     # DEBUGGING SWITCH: 1 for 'spawn container', 0 for 'static container'
     if 1:
-        from course.docker.config import (  # noqa
-            get_relate_runpy_docker_client_config, RunpyDockerConfigNotSetError)
+        from course.docker.config import get_relate_runpy_docker_client_config
+        silence_for_not_usable = getattr(
+            settings, "SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR", False)
         try:
-            client_config = (
-                get_relate_runpy_docker_client_config(silence_for_none=False))
+            client_config = get_relate_runpy_docker_client_config(
+                silence_if_not_usable=silence_for_not_usable)
             if not client_config:
                 debug_print("DOCKER RUNPY IS NOT ENABLED")
-                if not getattr(settings, "SILENCE_DOCKER_NOT_ENABLE_ERROR", False):
-                    # treat that as an uncaught error, and site staff will
-                    # receive a notification email.
-                    from course.docker.config import DockerNotEnabledError
-                    raise DockerNotEnabledError(
-                        "Docker runpy is currently not enabled for this site")
                 return {"result": "docker_runpy_not_enabled"}
         except Exception:
             debug_print("FAILED TO GET DOCKER RUNPY CLIENT CONFIG")

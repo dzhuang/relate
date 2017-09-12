@@ -53,6 +53,10 @@ import warnings
 from course.docker.config import (  # noqa
     DEFAULT_DOCKER_RUNPY_CONFIG_ALIAS,
 
+    DOCKER_HOST,
+    DOCKER_CERT_PATH,
+    DOCKER_TLS_VERIFY,
+
     RELATE_RUNPY_DOCKER_ENABLED,
     RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME,
 
@@ -70,7 +74,7 @@ from django.test import TestCase
 from test_pages import SingleCoursePageTestMixin, QUIZ_FLOW_ID
 
 # Switch for test locally
-Debug = True
+Debug = False
 
 GITLAB_CI = "GITLAB_CI"
 APPVEYOR_CI = "APPVEYOR"
@@ -81,14 +85,22 @@ ENABLE_DOCKER_TEST = "ENABLE_DOCKER_TEST"
 
 def _skip_real_docker_test():
     import os
+
+    # Skipping CI
     for skipped_ci in [GITLAB_CI, APPVEYOR_CI]:
         if os.environ.get(skipped_ci):
             print("Running on %s" % skipped_ci)
             return True
 
+    # For debugging on local Windows or Mac
     if Debug:
+        # Uncomment for tests in Windows when docker-machine is not started
+        # for env_variable in [DOCKER_HOST, DOCKER_CERT_PATH, DOCKER_TLS_VERIFY]:
+        #     if env_variable not in os.environ:
+        #         return True
         return False
 
+    # Skipping CI test which do not need docker (pep8, mypy)
     enable_docker_test = os.environ.get(ENABLE_DOCKER_TEST)
     if enable_docker_test is None:
         return True
@@ -200,7 +212,7 @@ class ClientConfigGetFunctionTests(SimpleTestCase):
         with self.assertRaises(AttributeError):
             result.image
 
-        result = get_relate_runpy_docker_client_config(silence_for_none=False)
+        result = get_relate_runpy_docker_client_config(silence_if_not_usable=False)
         self.assertIsInstance(result, RunpyClientForDockerMachineConfigure)
         self.assertEqual(result.image, "runpy_test.image")
 
@@ -219,7 +231,7 @@ class ClientConfigGetFunctionTests(SimpleTestCase):
         with self.assertRaises(AttributeError):
             result.image
 
-        result = get_relate_runpy_docker_client_config(silence_for_none=False)
+        result = get_relate_runpy_docker_client_config(silence_if_not_usable=False)
         self.assertIsInstance(result, RunpyClientForDockerConfigure)
         self.assertEqual(result.image, "runpy_test.image")
 
@@ -239,7 +251,7 @@ class ClientConfigGetFunctionTests(SimpleTestCase):
         with self.assertRaises(AttributeError):
             result.image
 
-        result = get_relate_runpy_docker_client_config(silence_for_none=False)
+        result = get_relate_runpy_docker_client_config(silence_if_not_usable=False)
         self.assertIsInstance(result, RunpyClientForDockerConfigure)
         self.assertEqual(result.image, "runpy_test.image")
 
@@ -262,7 +274,7 @@ class ClientConfigGetFunctionTests(SimpleTestCase):
         with self.assertRaises(AttributeError):
             result.image
 
-        result = get_relate_runpy_docker_client_config(silence_for_none=False)
+        result = get_relate_runpy_docker_client_config(silence_if_not_usable=False)
         self.assertIsInstance(result, RunpyClientForDockerConfigure)
         self.assertEqual(result.image, "runpy_test.image")
 
@@ -287,11 +299,11 @@ class DefaultConfigClientConfigGetFunctionTests(SimpleTestCase):
                % (RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME,
                   RELATE_RUNPY_DOCKER_ENABLED))
         with self.assertRaisesMessage(ImproperlyConfigured, expected_msg):
-            get_relate_runpy_docker_client_config(silence_for_none=False)
+            get_relate_runpy_docker_client_config(silence_if_not_usable=False)
 
         with warnings.catch_warnings(record=True) as warns:
             self.assertIsNone(
-                get_relate_runpy_docker_client_config(silence_for_none=True))
+                get_relate_runpy_docker_client_config(silence_if_not_usable=True))
             self.assertEqual(len(warns), 1)
             self.assertIsInstance(
                 warns[0].message, RunpyDockerClientConfigNameIsNoneWarning)
@@ -305,14 +317,16 @@ class DefaultConfigClientConfigGetFunctionTests(SimpleTestCase):
                 del settings.RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME
             self.assertRaises(AttributeError, getattr,
                               settings, RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME)
-            result = get_relate_runpy_docker_client_config(silence_for_none=False)
+            result = get_relate_runpy_docker_client_config(
+                silence_if_not_usable=False)
             self.assertEqual(result.image, "runpy_default.image")
 
     @override_settings(RELATE_RUNPY_DOCKER_ENABLED=False,
-                       RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=None)
+                       RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=None,
+                       SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR=True)
     def test_get_runpy_config_not_named_not_enabled2(self, mocked_register):
         result = get_relate_runpy_docker_client_config(
-            silence_for_none=False)
+            silence_if_not_usable=settings.SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR)
         self.assertIsNone(result)
 
 
@@ -424,17 +438,19 @@ class NotDefinedConfigClientConfigGetFunctionTests(SimpleTestCase):
                 "has no configuration named 'not_exist_config'")
             with self.assertRaises(ImproperlyConfigured) as cm:
                 get_relate_runpy_docker_client_config(
-                    silence_for_none=False)
+                    silence_if_not_usable=False)
             self.assertEqual(str(cm.exception), expected_error_msg)
 
-        with override_settings(RELATE_RUNPY_DOCKER_ENABLED=False):
+        with override_settings(
+                RELATE_RUNPY_DOCKER_ENABLED=False,
+                SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR=True):
             result = (
                 get_relate_runpy_docker_client_config(
-                    silence_for_none=False))
+                    silence_if_not_usable=settings.SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR))  # noqa
             self.assertIsNone(result)
             result = (
                 get_relate_runpy_docker_client_config(
-                    silence_for_none=True))
+                    silence_if_not_usable=True))
             self.assertIsNone(result)
 
 
@@ -469,6 +485,10 @@ REAL_DOCKERS_WITH_UNPULLED_IMAGE = deepcopy(REAL_DOCKERS)
 REAL_DOCKERS_WITH_UNPULLED_IMAGE[REAL_RUNPY_CONFIG_NAME]["docker_image"] = (
     "some/unpulled/repo"
 )
+REAL_DOCKERS_WITH_INVALID_IP_MAP = deepcopy(REAL_DOCKERS)
+REAL_DOCKERS_WITH_INVALID_IP_MAP[REAL_RUNPY_CONFIG_NAME]["private_public_ip_map_dict"] = (  # noqa
+    {"localhost": "another_ip"}
+)
 
 
 class ReadDockerTestMixin(object):
@@ -483,7 +503,7 @@ class ReadDockerTestMixin(object):
             settings.RELATE_DOCKERS = REAL_DOCKERS
             settings.RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME = REAL_RUNPY_CONFIG_NAME
             client_config = get_relate_runpy_docker_client_config(
-                silence_for_none=False)
+                silence_if_not_usable=False)
             cli = client_config.create_client()
             if not bool(cli.images(REAL_RELATE_DOCKER_RUNPY_IMAGE)):
                 # This should run only once and get cached on Travis-CI
@@ -496,14 +516,47 @@ class ReadDockerTestMixin(object):
     RELATE_DOCKERS=REAL_DOCKERS,
     RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=REAL_RUNPY_CONFIG_NAME
 )
-class ReadDockerTests(ReadDockerTestMixin, SimpleTestCase):
+class RealDockerTests(ReadDockerTestMixin, SimpleTestCase):
     def test_get_real_docker_client_config(self):
-        result = get_relate_runpy_docker_client_config(silence_for_none=False)
+        result = get_relate_runpy_docker_client_config(silence_if_not_usable=False)
         self.assertIsInstance(
             result,
             (RunpyClientForDockerConfigure,
              RunpyClientForDockerMachineConfigure)
         )
+
+
+def get_docker_program_version_none(program, print_output=False):
+    return None
+
+
+def get_docker_program_version_outdated(program, print_output=False):
+    if program == "docker":
+        return "1.5.9"
+    else:
+        return "0.6.9"
+
+
+def get_docker_program_version_machine_outdated(program, print_output=False):
+    if program == "docker":
+        return "1.7.1"
+    else:
+        return "0.6.9"
+
+
+class UnknownGetVersionException(Exception):
+    pass
+
+
+def get_docker_program_version_exception_both(program, print_output=False):
+    raise UnknownGetVersionException()
+
+
+def get_docker_program_version_exception_machine(program, print_output=False):
+    if program == "docker":
+        return "1.7.1"
+    else:
+        raise UnknownGetVersionException()
 
 
 @skipIf(skip_real_docker_test, SKIP_REAL_DOCKER_REASON)
@@ -522,6 +575,71 @@ class RealRunpyDockerCheck(ReadDockerTestMixin, SimpleTestCase):
         result = checks.run_checks()
         self.assertEqual([r.id for r in result], ["docker_config_client_tls.W001",
                                                   "docker_config_image.E001"])
+
+    @mock.patch("course.docker.config.get_docker_program_version",
+                side_effect=get_docker_program_version_none)
+    def test_docker_version_none(self, mocked_get_version):
+        result = checks.run_checks()
+        if is_windows_platform() or is_osx_platform():
+            self.assertEqual([r.id for r in result],
+                             ["docker_version.E001",
+                              'docker_machine_version.E001'])
+        else:
+            self.assertEqual([r.id for r in result],
+                             ["docker_version.E001"])
+
+    @mock.patch("course.docker.config.get_docker_program_version",
+                side_effect=get_docker_program_version_outdated)
+    def test_docker_version_outdated(self, mocked_get_version):
+        result = checks.run_checks()
+        if is_windows_platform() or is_osx_platform():
+            self.assertEqual([r.id for r in result],
+                             ["docker_version.E001",
+                              'docker_machine_version.E001'])
+        else:
+            self.assertEqual([r.id for r in result],
+                             ["docker_version.E001"])
+
+    @mock.patch("course.docker.config.get_docker_program_version",
+                side_effect=get_docker_program_version_machine_outdated)
+    def test_docker_version_machine_outdated(self, mocked_get_version):
+        result = checks.run_checks()
+        if is_windows_platform() or is_osx_platform():
+            self.assertEqual([r.id for r in result],
+                             ["docker_machine_version.E001"])
+        else:
+            self.assertTrue(len(result)==0)
+
+    @mock.patch("course.docker.config.get_docker_program_version",
+                side_effect=get_docker_program_version_exception_both)
+    def test_docker_version_exception_both(self, mocked_get_version):
+        result = checks.run_checks()
+        if is_windows_platform() or is_osx_platform():
+            self.assertEqual([r.id for r in result],
+                             ["docker_version_exception_unknown.E001",
+                              "docker_machine_version_exception_unknown.E001"])
+        else:
+            self.assertEqual([r.id for r in result],
+                             ["docker_version_exception_unknown.E001"])
+
+    @mock.patch("course.docker.config.get_docker_program_version",
+                side_effect=get_docker_program_version_exception_machine)
+    def test_docker_version_exception_machine(self, mocked_get_version):
+        result = checks.run_checks()
+        if is_windows_platform() or is_osx_platform():
+            self.assertEqual([r.id for r in result],
+                             ["docker_machine_version_exception_unknown.E001"])
+        else:
+            self.assertTrue(len(result)==0)
+
+    @override_settings(
+        RELATE_RUNPY_DOCKER_ENABLED=True,
+        RELATE_DOCKERS=REAL_DOCKERS_WITH_INVALID_IP_MAP,
+        RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=REAL_RUNPY_CONFIG_NAME)
+    def test_private_public_ip_map_dict_check(self):
+        result = checks.run_checks()
+        self.assertEqual([r.id for r in result],
+                         ['private_public_ip_map_dict.E001'])
 
 
 @skipIf(skip_real_docker_test, SKIP_REAL_DOCKER_REASON)
@@ -544,6 +662,7 @@ class RealDockerCodePageTest(SingleCoursePageTestMixin,
         with self.settings():
             del settings.RELATE_DOCKERS
             del settings.RELATE_RUNPY_DOCKER_ENABLED
+            del settings.SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR
             answer_data = {"answer": "c = a + b"}
             expected_str = (
                 "It looks like you submitted code that is identical to "
@@ -653,9 +772,17 @@ class CodePageTestOther(SingleCoursePageTestMixin, TestCase):
 
     @mock.patch("course.page.code.request_python_run",
                 return_value={"result": "success"})
-    def test_code_page_success(self, mocked_request_python_run):
+    @mock.patch("course.docker.config.RunpyDockerMixinBase.get_public_accessible_ip")  # noqa
+    def test_code_page_success(self,
+                               mocked_request_python_run, mock_get_public_acc_ip):
         answer_data = {"answer": "some code"}
         resp = self.client_post_answer_by_page_id(self.page_id, answer_data)
+        self.assertEqual(mock_get_public_acc_ip.call_count, 1)
+
+        # call again
+        resp = self.client_post_answer_by_page_id(self.page_id, answer_data)
+        self.assertEqual(mock_get_public_acc_ip.call_count, 2)
+
         self.assertEqual(resp.status_code, 200)
         self.end_quiz()
         self.assertEqual(len(mail.outbox), 0)
@@ -702,52 +829,51 @@ class CodePageTestOther(SingleCoursePageTestMixin, TestCase):
 
     @override_settings(
         RELATE_RUNPY_DOCKER_ENABLED=False,
-        EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend',
-        SILENCE_DOCKER_NOT_ENABLE_ERROR=False
+        SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR=False
     )
-    def test_code_page_docker_enabled_not_silenced(self):
+    def test_code_page_docker_not_enabled_not_silenced(self):
         answer_data = {"answer": "some code"}
         resp = self.client_post_answer_by_page_id(self.page_id, answer_data)
         self.assertEqual(resp.status_code, 200)
-        self.assertContains(resp,
-                            "Docker runpy is currently not "
-                            "enabled for this site",
-                            count=2
-                            )
+        self.assertContains(
+            resp,
+            "Runpy docker is not usable with %s=%s"
+            % (RELATE_RUNPY_DOCKER_ENABLED, settings.RELATE_RUNPY_DOCKER_ENABLED),
+            count=1)
         self.end_quiz()
         self.assertEqual(len(mail.outbox), 1)
+        # self.assert
 
     @override_settings(
         RELATE_RUNPY_DOCKER_ENABLED=False,
-        EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend'
     )
-    def test_code_page_docker_enabled_silenced_not_configured(self):
+    def test_code_page_docker_not_enabled_unconfigure_silence(self):
         with self.settings():
-            del settings.SILENCE_DOCKER_NOT_ENABLE_ERROR
+            del settings.SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR
             answer_data = {"answer": "some code"}
             resp = self.client_post_answer_by_page_id(self.page_id, answer_data)
             self.assertEqual(resp.status_code, 200)
-            self.assertContains(resp,
-                                "Docker runpy is currently not "
-                                "enabled for this site",
-                                count=2
-                                )
+            self.assertContains(
+                resp,
+                "Runpy docker is not usable with %s=%s"
+                % (
+                    RELATE_RUNPY_DOCKER_ENABLED,
+                    settings.RELATE_RUNPY_DOCKER_ENABLED),
+                count=1)
         self.end_quiz()
         self.assertEqual(len(mail.outbox), 1)
 
     @override_settings(
         RELATE_RUNPY_DOCKER_ENABLED=False,
-        EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend',
-        SILENCE_DOCKER_NOT_ENABLE_ERROR=True
+        SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR=True
     )
     def test_code_page_docker_enabled_silenced(self):
         answer_data = {"answer": "some code"}
         resp = self.client_post_answer_by_page_id(self.page_id, answer_data)
         self.assertEqual(resp.status_code, 200)
-        self.assertContains(resp,
-                            "Docker runpy is currently not "
-                            "enabled for this site",
-                            count=1
-                            )
+        self.assertContains(
+            resp,
+            "Docker runpy is currently not enabled for this site",
+            count=1)
         self.end_quiz()
         self.assertEqual(len(mail.outbox), 0)
