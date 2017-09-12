@@ -24,9 +24,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-import sys
-from six import StringIO
-
 try:
     from unittest import mock
 except:
@@ -45,7 +42,6 @@ from django.core import mail
 from django.test.utils import override_settings
 from django.test import SimpleTestCase
 from django.core import checks
-from django.core.management import call_command
 from course.docker.config import (
     get_docker_client_config, get_relate_runpy_docker_client_config)
 
@@ -469,6 +465,11 @@ REAL_DOCKERS = {
 
 REAL_RUNPY_CONFIG_NAME = "runpy"
 
+REAL_DOCKERS_WITH_UNPULLED_IMAGE = deepcopy(REAL_DOCKERS)
+REAL_DOCKERS_WITH_UNPULLED_IMAGE[REAL_RUNPY_CONFIG_NAME]["docker_image"] = (
+    "some/unpulled/repo"
+)
+
 
 class ReadDockerTestMixin(object):
     def setUp(self):
@@ -479,12 +480,12 @@ class ReadDockerTestMixin(object):
         if skip_real_docker_test:
             return
         with self.settings():
-            settings.REAL_DOCKERS = RELATE_DOCKERS
+            settings.RELATE_DOCKERS = REAL_DOCKERS
             settings.RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME = REAL_RUNPY_CONFIG_NAME
             client_config = get_relate_runpy_docker_client_config(
                 silence_for_none=False)
             cli = client_config.create_client()
-            if not bool(cli.images(client_config.image)):
+            if not bool(cli.images(REAL_RELATE_DOCKER_RUNPY_IMAGE)):
                 # This should run only once and get cached on Travis-CI
                 cli.pull(client_config.image)
 
@@ -511,27 +512,16 @@ class ReadDockerTests(ReadDockerTestMixin, SimpleTestCase):
     RELATE_DOCKERS=REAL_DOCKERS,
     RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=REAL_RUNPY_CONFIG_NAME
 )
-class TLSNotConfiguredWarnCheck(ReadDockerTestMixin, SimpleTestCase):
-    def setUp(self):
-        self.old_stdout, self.old_stderr = sys.stdout, sys.stderr
-        self.stdout, self.stderr = StringIO(), StringIO()
-        sys.stdout, sys.stderr = self.stdout, self.stderr
-
-    def tearDown(self):
-        sys.stdout, sys.stderr = self.old_stdout, self.old_stderr
-
-    @override_settings(SILENCED_SYSTEM_CHECKS=["docker_config_client_tls.W001"])
-    def test_silence_tls_not_configured_warning(self):
-        out = StringIO()
-        err = StringIO()
-        call_command('check', stdout=out, stderr=err)
-        self.assertEqual(out.getvalue(),
-                         'System check identified no issues (1 silenced).\n')
-        self.assertEqual(err.getvalue(), '')
-
+class RealRunpyDockerCheck(ReadDockerTestMixin, SimpleTestCase):
     def test_tls_not_configured_warning(self):
         result = checks.run_checks()
         self.assertEqual([r.id for r in result], ["docker_config_client_tls.W001"])
+
+    @override_settings(RELATE_DOCKERS=REAL_DOCKERS_WITH_UNPULLED_IMAGE)
+    def test_image_not_pulled_error(self):
+        result = checks.run_checks()
+        self.assertEqual([r.id for r in result], ["docker_config_client_tls.W001",
+                                                  "docker_config_image.E001"])
 
 
 @skipIf(skip_real_docker_test, SKIP_REAL_DOCKER_REASON)

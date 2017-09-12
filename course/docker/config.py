@@ -210,7 +210,7 @@ class ClientConfigBase(object):
 
     def update_client_creation_kwargs(self):
         # type: () -> None
-        raise NotImplementedError()
+        return
 
     def checks(self):
         # type: () -> List[CheckMessage]
@@ -388,10 +388,6 @@ class ClientForDockerMixin(object):
                 )
                 self.client_config["tls"] = deprecated_tls_setting  # type: ignore
 
-    def update_client_creation_kwargs(self):
-        # type: () -> None
-        return
-
 
 class ClientForDockerMachineMixin(object):
     def __init__(self, docker_config_name, client_config, **kwargs):
@@ -444,9 +440,7 @@ class ClientForDockerMachineMixin(object):
 
 
 class ClientForDockerConfigure(ClientForDockerMixin, ClientConfigBase):
-    def update_client_creation_kwargs(self):
-        # type: () -> None
-        return
+    pass
 
 
 class ClientForDockerMachineConfigure(ClientForDockerMachineMixin, ClientConfigBase):
@@ -489,7 +483,6 @@ class RunpyDockerMixinBase(object):
                 )
                 image = deprecated_image_setting
         assert image
-        assert isinstance(image, six.text_type)
         self.image = image
 
         if not self.client_config.get("timout"):
@@ -547,15 +540,16 @@ class RunpyDockerMixinBase(object):
         # type: (docker.Client) -> List[CheckMessage]
         errors = super(RunpyDockerMixinBase, self).check_image(cli)  # type: ignore  # noqa
         assert cli is not None
-        image_exist = bool(cli.images(self.image))
+        image_exist = bool(cli.images(self.image))  # type: ignore
         if not image_exist:
             errors.append(
                 RelateCriticalCheckMessage(
                     msg=("'docker_image' of '%(config_name)s' in %(configs)s "
-                         "(%(image)s is not pulled, please 'docker pull %(image)s'"
-                         % {"config_name": self.docker_config_name,
+                         "(%(image)s is not pulled, please run 'docker pull "
+                         "%(image)s' in your shell first."
+                         % {"config_name": self.docker_config_name,  # type: ignore
                             "configs": RELATE_DOCKERS,
-                            "image": self.image
+                            "image": self.image  # type: ignore
                             }),
                     id="docker_config_image.E001"
                 )
