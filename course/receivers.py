@@ -321,7 +321,7 @@ def remove_participation_roles_cache(
         # Make sure when new ptags are created/deleted,
         # changed in admin, unenrolled/anonymous participation
         # get their roles updated too.
-        participations.append(None)
+        participations.append(None)  # type: ignore
 
     from course.enrollment import get_participation_role_identifiers_cache_key
     cache_keys = [

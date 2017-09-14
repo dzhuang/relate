@@ -86,7 +86,7 @@ def get_latex_page_mongo_collection(name=None, db=DB, index_name="key"):
     # type: (Optional[Text], Optional[MongoClient], Optional[Text]) -> Collection
     if not name:
         name = LATEX_PAGE_COLLECTION_NAME
-    collection = db[name]
+    collection = db[name]  # type: ignore
     if index_name:
         collection.ensure_index(index_name, unique=True)
     return collection
@@ -96,7 +96,7 @@ def get_latex_page_part_mongo_collection(name=None, db=DB, index_name="key"):
     # type: (Optional[Text], Optional[MongoClient], Optional[Text]) -> Collection
     if not name:
         name = LATEX_PAGE_PART_COLLECTION_NAME
-    collection = db[name]
+    collection = db[name]  # type: ignore
     if index_name:
         collection.ensure_index(index_name, unique=True)
     return collection
@@ -107,7 +107,7 @@ def get_latex_page_commitsha_template_pair_collection(
     # type: (Optional[Text], Optional[MongoClient], Optional[Text]) -> Collection
     if not name:
         name = LATEX_PAGE_COMMITSHA_TEMPLATE_PAIR_COLLECTION
-    collection = db[name]
+    collection = db[name]  # type: ignore
     if index_name:
         collection.ensure_index(index_name, unique=True)
     return collection
@@ -656,7 +656,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
     def get_cached_result(self, page_context,
                           page_data, part="", warm_up_only=False):
-        # type: (PageContext, Dict, Optional[Text], Optional[bool]) -> Tuple[bool, Union[Text, Dict]]  # noqa
+        # type: (PageContext, Dict, Optional[Text], Optional[bool]) -> Tuple[bool, Optional[Union[Text, Dict]]]  # noqa
 
         try:
             key_making_string_md5 = page_data["key_making_string_md5"]
@@ -888,6 +888,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
     def jinja_runpy(
             self, page_context, question_data, code_name, common_code_name=""):
+        # type: (Any, Any, Text, Text) -> Tuple[bool, Any]
+
 
         # {{{ request run
 

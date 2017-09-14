@@ -247,10 +247,10 @@ class RunpyClientForDockerMachineConfigure(
                     % self.docker_machine_name)
 
         # If env variables are not set, generate the cmdline for user to set them
-        if (DOCKER_HOST not in env
-            or DOCKER_CERT_PATH not in env
+        if (DOCKER_HOST not in env  # type: ignore
+            or DOCKER_CERT_PATH not in env  # type: ignore
             or
-                    DOCKER_TLS_VERIFY not in env):
+                    DOCKER_TLS_VERIFY not in env):  # type: ignore
             self._get_docker_machine_env_cmdline()
 
         logger.info("Environment variables for docker-machine '%s' have "

@@ -167,7 +167,7 @@ def minify_python_script(source):
     from pyminifier import token_utils, minification
     from optparse import Values
     options = Values()
-    options.tabs = False
+    options.tabs = False  #  type: ignore
     tokens = token_utils.listified_tokenizer(source)
     return minification.minify(tokens, options)
 
