@@ -41,11 +41,12 @@ from crispy_forms.layout import Submit
 import datetime
 from bootstrap3_datetime.widgets import DateTimePicker
 
-from relate.utils import StyledForm, as_local_time, string_concat
+from relate.utils import StyledForm, as_local_time, string_concat, StyledModelForm
 from course.constants import (
         participation_permission as pperm,
         )
 from course.models import Event
+from django.shortcuts import get_object_or_404
 
 
 # {{{ creation
@@ -410,6 +411,211 @@ def view_calendar(pctx):
         "events_json": dumps(events_json),
         "event_info_list": event_info_list,
         "default_date": default_date.isoformat(),
+    })
+
+
+class EditEventForm(StyledModelForm):
+    class Meta:
+        model = Event
+        fields = ['kind', 'ordinal', 'time',
+                    'end_time', 'all_day', 'shown_in_calendar']
+        help_texts = {
+                'shown_in_calendar': ('Shown in students\' calendar')
+        }
+
+    def __init__(self, *args, **kwargs):
+        super(EditEventForm, self).__init__(*args, **kwargs)
+        self.fields['time'].widget.attrs = {'id': 'start_time'}
+        self.fields['end_time'].widget.attrs = {'id': 'end_time'}
+
+
+@login_required
+@course_view
+def edit_calendar(pctx):
+    from course.content import markup_to_html, parse_date_spec
+
+    from course.views import get_now_or_fake_time
+    now = get_now_or_fake_time(pctx.request)
+
+    if not pctx.has_permission(pperm.edit_events):
+        raise PermissionDenied(_("may not edit events"))
+
+    request = pctx.request
+
+    edit_existing_event_flag = False
+    id_to_edit = None
+    edit_event_form = EditEventForm()
+    default_date = now.date()
+
+    if request.method == "POST":
+        if 'id_to_delete' in request.POST:
+            event_to_delete = get_object_or_404(Event,
+                id=request.POST['id_to_delete'])
+            default_date = event_to_delete.time
+            event_to_delete.delete()
+            messages.add_message(request, messages.SUCCESS,
+                            _("Event deleted."))
+
+        elif 'id_to_edit' in request.POST:
+            id_to_edit = request.POST['id_to_edit']
+            exsting_event_form = get_object_or_404(Event,
+                id=id_to_edit)
+            edit_event_form = EditEventForm(instance=exsting_event_form)
+            edit_existing_event_flag = True
+
+        else:
+            init_event = Event(course=pctx.course)
+
+            if 'existing_event_to_save' in request.POST:
+                init_event = get_object_or_404(Event,
+                    id=request.POST['existing_event_to_save'])
+            form_event = EditEventForm(request.POST, instance=init_event)
+
+            if form_event.is_valid():
+                kind = form_event.cleaned_data['kind']
+                ordinal = form_event.cleaned_data['ordinal']
+                try:
+                    form_event.save()
+                except IntegrityError:
+                    e = EventAlreadyExists(
+                        _("'%(event_kind)s %(event_ordinal)d' already exists") %
+                        {'event_kind': kind,
+                        'event_ordinal': ordinal})
+                    messages.add_message(request, messages.ERROR,
+                                string_concat(
+                                    "%(err_type)s: %(err_str)s. ",
+                                    _("No event created."))
+                                % {
+                                    "err_type": type(e).__name__,
+                                    "err_str": str(e)})
+                except Exception as e:
+                    messages.add_message(request, messages.ERROR,
+                            string_concat(
+                                "%(err_type)s: %(err_str)s. ",
+                                _("No event created."))
+                            % {
+                                "err_type": type(e).__name__,
+                                "err_str": str(e)})
+                else:
+                    if 'existing_event_to_save' in request.POST:
+                        messages.add_message(request, messages.SUCCESS,
+                                _("Event updated."))
+                    else:
+                        messages.add_message(request, messages.SUCCESS,
+                                _("Event created."))
+                default_date = form_event.cleaned_data['time']
+    events_json = []
+
+    from course.content import get_raw_yaml_from_repo
+    try:
+        event_descr = get_raw_yaml_from_repo(pctx.repo,
+                pctx.course.events_file, pctx.course_commit_sha)
+    except ObjectDoesNotExist:
+        event_descr = {}
+
+    event_kinds_desc = event_descr.get("event_kinds", {})
+    event_info_desc = event_descr.get("events", {})
+
+    event_info_list = []
+
+    events = sorted(
+            Event.objects
+            .filter(
+                course=pctx.course,
+                ),
+            key=lambda evt: (
+                -evt.time.year, -evt.time.month, -evt.time.day,
+                evt.time.hour, evt.time.minute, evt.time.second))
+
+    for event in events:
+        kind_desc = event_kinds_desc.get(event.kind)
+
+        human_title = six.text_type(event)
+
+        event_json = {
+                "id": event.id,
+                "start": event.time.isoformat(),
+                "allDay": event.all_day,
+                }
+        if event.end_time is not None:
+            event_json["end"] = event.end_time.isoformat()
+
+        if kind_desc is not None:
+            if "color" in kind_desc:
+                event_json["color"] = kind_desc["color"]
+            if "title" in kind_desc:
+                if event.ordinal is not None:
+                    human_title = kind_desc["title"].format(nr=event.ordinal)
+                else:
+                    human_title = kind_desc["title"]
+
+        description = None
+        show_description = True
+        event_desc = event_info_desc.get(six.text_type(event))
+        if event_desc is not None:
+            if "description" in event_desc:
+                description = markup_to_html(
+                        pctx.course, pctx.repo, pctx.course_commit_sha,
+                        event_desc["description"])
+
+            if "title" in event_desc:
+                human_title = event_desc["title"]
+
+            if "color" in event_desc:
+                event_json["color"] = event_desc["color"]
+
+            if "show_description_from" in event_desc:
+                ds = parse_date_spec(
+                        pctx.course, event_desc["show_description_from"])
+                if now < ds:
+                    show_description = False
+
+            if "show_description_until" in event_desc:
+                ds = parse_date_spec(
+                        pctx.course, event_desc["show_description_until"])
+                if now > ds:
+                    show_description = False
+
+        event_json["title"] = human_title
+
+        if show_description and description:
+            event_json["url"] = "#event-%d" % event.id
+
+            start_time = event.time
+            end_time = event.end_time
+
+            if event.all_day:
+                start_time = start_time.date()
+                if end_time is not None:
+                    local_end_time = as_local_time(end_time)
+                    end_midnight = datetime.time(tzinfo=local_end_time.tzinfo)
+                    if local_end_time.time() == end_midnight:
+                        end_time = (end_time - datetime.timedelta(days=1)).date()
+                    else:
+                        end_time = end_time.date()
+
+            event_info_list.append(
+                    EventInfo(
+                        id=event.id,
+                        human_title=human_title,
+                        start_time=start_time,
+                        end_time=end_time,
+                        description=description
+                        ))
+
+        events_json.append(event_json)
+
+    if pctx.course.end_date is not None and default_date > pctx.course.end_date:
+        default_date = pctx.course.end_date
+
+    from json import dumps
+    return render_course_page(pctx, "course/calender_edit.html", {
+        "form": edit_event_form,
+        "events_json": dumps(events_json),
+        "event_info_list": event_info_list,
+        "default_date": default_date.isoformat(),
+        "edit_existing_event_flag": edit_existing_event_flag,
+        "id_to_edit": id_to_edit,
     })
 
 # }}}

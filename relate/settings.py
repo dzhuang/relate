@@ -137,6 +137,7 @@ BOWER_INSTALLED_APPS = (
     "select2#4.0.1",
     "select2-bootstrap-css",
     "blueimp-tmpl",
+    "eonasdan-bootstrap-datetimepicker#latest"
     )
 
 if local_settings.get("RELATE_CUSTOM_BOWER_INSTALLED_APPS", None):
