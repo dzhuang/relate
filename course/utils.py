@@ -24,11 +24,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+from typing import cast, Iterable
+
 import six
 import datetime  # noqa
 import pytz
-
-from typing import cast, Iterable
 
 from django.shortcuts import (  # noqa
         render, get_object_or_404)
@@ -62,7 +62,8 @@ MAX_DATETIME = pytz.utc.localize(datetime.datetime.max)
 # {{{ mypy
 
 if False:
-    from typing import Tuple, List, Text, Iterable, Any, Optional, Union, Dict  # noqa
+    from typing import (  # noqa
+        Tuple, List, Iterable, Any, Optional, Union, Dict, FrozenSet, Text)
     from relate.utils import Repo_ish  # noqa
     from course.models import (  # noqa
             Course,
@@ -123,7 +124,7 @@ class FlowSessionNotifyRule(FlowSessionRuleBase):
 class FlowSessionAccessRule(FlowSessionRuleBase):
     def __init__(
             self,
-            permissions,  # type: frozenset[Text]
+            permissions,  # type: FrozenSet[Text]
             message=None,  # type: Optional[Text]
             ):
         # type: (...) -> None
@@ -372,7 +373,7 @@ def get_session_start_rule(
         flow_id,  # type: Text
         flow_desc,  # type: FlowDesc
         now_datetime,  # type: datetime.datetime
-        facilities=None,  # type: Optional[frozenset[Text]]
+        facilities=None,  # type: Optional[FrozenSet[Text]]
         for_rollover=False,  # type: bool
         login_exam_ticket=None,  # type: Optional[ExamTicket]
         rules=[],  # type: List[Any]
@@ -490,7 +491,7 @@ def get_session_access_rule(
         session,  # type: FlowSession
         flow_desc,  # type: FlowDesc
         now_datetime,  # type: datetime.datetime
-        facilities=None,  # type: Optional[frozenset[Text]]
+        facilities=None,  # type: Optional[FrozenSet[Text]]
         login_exam_ticket=None,  # type: Optional[ExamTicket]
         rules=[],  # type: List[Any]
         ):
@@ -618,9 +619,25 @@ def get_session_grading_rule(
 
         if hasattr(rule, "if_completed_before"):
             ds = parse_date_spec(session.course, rule.if_completed_before)
-            if session.in_progress and now_datetime > ds:
-                continue
-            if not session.in_progress and session.completion_time > ds:
+
+            use_last_activity_as_completion_time = False
+            if hasattr(rule, "use_last_activity_as_completion_time"):
+                use_last_activity_as_completion_time = \
+                        rule.use_last_activity_as_completion_time
+
+            if use_last_activity_as_completion_time:
+                last_activity = session.last_activity()
+                if last_activity is not None:
+                    completion_time = last_activity
+                else:
+                    completion_time = now_datetime
+            else:
+                if session.in_progress:
+                    completion_time = now_datetime
+                else:
+                    completion_time = session.completion_time
+
+            if completion_time > ds:
                 continue
             if_completed_before = ds
 
@@ -641,6 +658,13 @@ def get_session_grading_rule(
         max_points = getattr_with_fallback((rule, flow_desc), "max_points", None)
         max_points_enforced_cap = getattr_with_fallback(
                 (rule, flow_desc), "max_points_enforced_cap", None)
+
+        try:
+            from typing import Text  # noqa
+        except ImportError:
+            Text = None  # noqa
+
+        grade_aggregation_strategy = cast(Text, grade_aggregation_strategy)  # type: ignore  # noqa
 
         return FlowSessionGradingRule(
                 grade_identifier=grade_identifier,
@@ -680,7 +704,7 @@ class CoursePageContext(object):
 
         self.request = request
         self.course_identifier = course_identifier
-        self._permissions_cache = None  # type: Optional[frozenset[Tuple[Text, Optional[Text]]]]  # noqa
+        self._permissions_cache = None  # type: Optional[FrozenSet[Tuple[Text, Optional[Text]]]]  # noqa
         self._role_identifiers_cache = None  # type: Optional[List[Text]]
 
         from course.models import Course  # noqa
@@ -705,8 +729,7 @@ class CoursePageContext(object):
             if self.participation.preview_git_commit_sha:
                 preview_sha = self.participation.preview_git_commit_sha.encode()
 
-                repo = get_course_repo(self.course)
-
+                with get_course_repo(self.course) as repo:
                 from relate.utils import SubdirRepoWrapper
                 if isinstance(repo, SubdirRepoWrapper):
                     true_repo = repo.repo
@@ -723,6 +746,8 @@ class CoursePageContext(object):
                             % preview_sha.decode())
 
                     preview_sha = None
+                    finally:
+                        true_repo.close()
 
                 if preview_sha is not None:
                     sha = preview_sha
@@ -740,7 +765,7 @@ class CoursePageContext(object):
         return self._role_identifiers_cache
 
     def permissions(self):
-        # type: () -> frozenset[Tuple[Text, Optional[Text]]]
+        # type: () -> FrozenSet[Tuple[Text, Optional[Text]]]
         if self.participation is None:
             if self._permissions_cache is not None:
                 return self._permissions_cache
@@ -761,6 +786,12 @@ class CoursePageContext(object):
                     for p, arg in self.permissions())
         else:
             return (perm, argument) in self.permissions()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.repo.close()
 
 
 class FlowContext(object):
@@ -880,7 +911,7 @@ def instantiate_flow_page_with_ctx(fctx, page_data):
 # {{{ utilties for course-based views
 def course_view(f):
     def wrapper(request, course_identifier, *args, **kwargs):
-        pctx = CoursePageContext(request, course_identifier)
+        with CoursePageContext(request, course_identifier) as pctx:
         response = f(pctx, *args, **kwargs)
         pctx.repo.close()
         return response
@@ -1094,7 +1125,7 @@ def get_codemirror_widget(
 # {{{ facility processing
 
 def get_facilities_config(request=None):
-    # type: (Optional[http.HttpRequest]) -> Dict[Text, Dict[Text, Any]]
+    # type: (Optional[http.HttpRequest]) -> Optional[Dict[Text, Dict[Text, Any]]]
     from django.conf import settings
 
     # This is called during offline validation, where Django isn't really set up.
@@ -1184,7 +1215,7 @@ def will_use_masked_profile_for_email(recipient_email):
         return False
     if not isinstance(recipient_email, list):
         recipient_email = [recipient_email]
-    from course.models import Participation
+    from course.models import Participation  # noqa
     recepient_participations = (
         Participation.objects.filter(
             user__email__in=recipient_email

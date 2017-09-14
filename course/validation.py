@@ -1225,7 +1225,8 @@ def check_attributes_yml(vctx, repo, path, tree, access_kinds):
         from relate.utils import dict_to_struct
         from yaml import load as load_yaml
 
-        att_yml = dict_to_struct(load_yaml(true_repo[attr_blob_sha].data))
+        yaml_data = load_yaml(true_repo[attr_blob_sha].data)  # type: ignore
+        att_yml = dict_to_struct(yaml_data)
 
         if path:
             loc = path + "/" + ATTRIBUTES_FILENAME
@@ -1518,11 +1519,11 @@ def validate_course_content(repo, course_file, events_file,
                                 ))
                         % entry_path)
 
-        location = "staticpages/%s" % entry_path
-        page_desc = get_yaml_from_repo_safely(repo, location,
-                commit_sha=validate_sha)
+            location = "staticpages/%s" % entry_path
+            page_desc = get_yaml_from_repo_safely(repo, location,
+                    commit_sha=validate_sha)
 
-        validate_staticpage_desc(vctx, location, page_desc)
+            validate_staticpage_desc(vctx, location, page_desc)
 
     # }}}
 

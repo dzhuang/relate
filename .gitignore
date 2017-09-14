@@ -20,6 +20,8 @@ saml_config.py
 *.pem
 
 git-roots
+
+.mypy_cache
 /media/CACHE
 /protected
 /.idea

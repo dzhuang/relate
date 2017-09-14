@@ -766,6 +766,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     else:
         grading_form = None
 
+    grading_form_html = None  # type: Optional[Text]
     need_manual_grading = False
     if grading_form is not None:
         need_manual_grading = True
@@ -779,9 +780,6 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
         grading_form_html = fpctx.page.grading_form_to_html(
                 pctx.request, fpctx.page_context, grading_form, grade_data)
-
-    else:
-        grading_form_html = None
 
     # }}}
 
