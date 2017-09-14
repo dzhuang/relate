@@ -730,22 +730,22 @@ class CoursePageContext(object):
                 preview_sha = self.participation.preview_git_commit_sha.encode()
 
                 with get_course_repo(self.course) as repo:
-                from relate.utils import SubdirRepoWrapper
-                if isinstance(repo, SubdirRepoWrapper):
-                    true_repo = repo.repo
-                else:
-                    true_repo = cast(dulwich.repo.Repo, repo)
+                    from relate.utils import SubdirRepoWrapper
+                    if isinstance(repo, SubdirRepoWrapper):
+                        true_repo = repo.repo
+                    else:
+                        true_repo = cast(dulwich.repo.Repo, repo)
 
-                try:
-                    true_repo[preview_sha]
-                except KeyError:
-                    from django.contrib import messages
-                    messages.add_message(request, messages.ERROR,
-                            _("Preview revision '%s' does not exist--"
-                            "showing active course content instead.")
-                            % preview_sha.decode())
+                    try:
+                        true_repo[preview_sha]
+                    except KeyError:
+                        from django.contrib import messages
+                        messages.add_message(request, messages.ERROR,
+                                _("Preview revision '%s' does not exist--"
+                                "showing active course content instead.")
+                                % preview_sha.decode())
 
-                    preview_sha = None
+                        preview_sha = None
                     finally:
                         true_repo.close()
 
@@ -912,9 +912,9 @@ def instantiate_flow_page_with_ctx(fctx, page_data):
 def course_view(f):
     def wrapper(request, course_identifier, *args, **kwargs):
         with CoursePageContext(request, course_identifier) as pctx:
-        response = f(pctx, *args, **kwargs)
-        pctx.repo.close()
-        return response
+            response = f(pctx, *args, **kwargs)
+            pctx.repo.close()
+            return response
 
     from functools import update_wrapper
     update_wrapper(wrapper, f)

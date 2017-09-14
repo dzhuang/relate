@@ -377,7 +377,7 @@ def grade_page_visit(visit, visit_grade_model=FlowPageVisitGrade,
                 flow_session=flow_session)
 
         # if getattr(page, "need_update_page_desc", False):
-        #     page.update_page_desc(grading_page_context, page_data.data)  # type: ignore
+        #     page.update_page_desc(grading_page_context, page_data.data)  # type: ignore  # noqa
 
         with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
             answer_feedback = page.grade(

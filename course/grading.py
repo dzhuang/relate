@@ -33,7 +33,7 @@ from django.shortcuts import (  # noqa
         get_object_or_404, redirect)
 from relate.utils import (
         retry_transaction_decorator, StyledForm, string_concat,
-    as_local_time, format_datetime_local)
+        as_local_time, format_datetime_local)
 from django.contrib import messages
 from django.core.exceptions import (  # noqa
         PermissionDenied, SuspiciousOperation,

@@ -14,4 +14,3 @@ class CourseConfig(AppConfig):
         # register all checks
         register_startup_checks()
         register_startup_checks_extra()
-
