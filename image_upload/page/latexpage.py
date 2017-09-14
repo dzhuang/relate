@@ -889,8 +889,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
     def jinja_runpy(
             self, page_context, question_data, code_name, common_code_name=""):
         # type: (Any, Any, Text, Text) -> Tuple[bool, Any]
-
-
         # {{{ request run
 
         assert question_data
