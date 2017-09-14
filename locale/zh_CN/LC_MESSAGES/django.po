@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-08-30 14:46+0800\n"
+"POT-Creation-Date: 2017-09-15 01:44+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -512,6 +512,29 @@ msgstr "重新编号"
 msgid "may not view calendar"
 msgstr "不允许查看日历"
 
+msgid "Event deleted."
+msgstr "Event删除成功. "
+
+msgid "(no ordinal)"
+msgstr "(无编号)"
+
+#, fuzzy, python-format
+#| msgid "'%(event_kind)s %(event_ordinal)s' already exists"
+msgid "'%(event_kind)s %(event_ordinal)s' already exists"
+msgstr "%(event_kind)s %(event_ordinal)d' 已经存在"
+
+msgid "Event not updated."
+msgstr "Event未更新. "
+
+msgid "No event created."
+msgstr "未创建event. "
+
+msgid "Event updated."
+msgstr "Event成功更新. "
+
+msgid "Event created."
+msgstr "Event创建成功. "
+
 msgctxt "User status"
 msgid "Unconfirmed"
 msgstr "未确认"
@@ -983,7 +1006,7 @@ msgid "File"
 msgstr "文件"
 
 msgid "Remove users that do not included in the csv file"
-msgstr "删除不大该csv文件中的用户"
+msgstr "删除不在该csv文件中的人员"
 
 msgid "Institutional ID + fullname"
 msgstr "学号 + 全名"
@@ -3334,9 +3357,34 @@ msgstr "你可以到以下页面中查看这个问题:"
 msgid "Calendar"
 msgstr "教学日历"
 
+msgid "Switch to Student View"
+msgstr "切换到 学生 视图"
+
+msgid "Switch to Edit View"
+msgstr "切换到 编辑 视图"
+
+msgid "Create a new event"
+msgstr "创建一个新的event"
+
+msgid "Note"
+msgstr "注"
+
 msgid ""
-"<b>Note:</b> Some calendar entries are clickable and link to entries below."
-msgstr "<b>注释:</b> 一些日历的条目是可点击的, 且与其下方的输入内容相链接. "
+"Different from the students' calendar, this calender shows <b>all</b> "
+"events. "
+msgstr "与学生视图的日历不同，本视图显示<strong>所有的</strong>event"
+
+msgid "Some calendar entries are clickable and link to entries below."
+msgstr "一些日历的条目是可点击的, 且与其下方的输入内容相链接. "
+
+msgid "Save"
+msgstr "保存"
+
+msgid "Remove this event"
+msgstr "删除该event"
+
+msgid "Edit this event"
+msgstr "编辑该event"
 
 #. Translators: The following are names for menu items in course page
 msgctxt "menu item"
@@ -3423,8 +3471,11 @@ msgstr "Markup沙箱"
 msgid "Test flow"
 msgstr "测试flow"
 
-msgid "Edit events"
-msgstr "编辑event"
+msgid "Edit events (admin)"
+msgstr "编辑event (admin)"
+
+msgid "Edit events (calendar)"
+msgstr "编辑event (日历)"
 
 msgctxt "menu item"
 msgid "Instructor"
@@ -5228,9 +5279,6 @@ msgstr "最高得分(按百分比)"
 
 msgid "Maximum number of points (enforced cap)"
 msgstr "最高得分(按分数)"
-
-msgid "Save"
-msgstr "保存"
 
 msgid ""
 "Must specify access expiration if 'due same as access expiration' is set."
