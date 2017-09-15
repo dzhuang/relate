@@ -1357,8 +1357,14 @@ class EditCourseForm(StyledModelForm):
                 "participants",
                 )
         widgets = {
-                "start_date": DateTimePicker(options={"format": "YYYY-MM-DD"}),
-                "end_date": DateTimePicker(options={"format": "YYYY-MM-DD"})
+                "start_date": DateTimePicker(
+                    options={"format": "YYYY-MM-DD"},
+                    div_attrs={'class': 'input-group date',
+                               'id': 'start_date'}),
+                "end_date": DateTimePicker(
+                    options={"format": "YYYY-MM-DD"},
+                    div_attrs={'class': 'input-group date',
+                               'id': 'end_date'}),
                 }
 
 
