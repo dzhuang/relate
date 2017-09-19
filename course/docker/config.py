@@ -537,6 +537,7 @@ class RunpyDockerMixinBase(object):
 
     def check_image(self, cli):
         # type: (docker.Client) -> List[CheckMessage]
+        print(type(self), "-------------------------------")
         errors = super(RunpyDockerMixinBase, self).check_image(cli)  # type: ignore  # noqa
         assert cli is not None
         image_exist = bool(cli.images(self.image))  # type: ignore
