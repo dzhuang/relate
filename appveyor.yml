@@ -9,6 +9,7 @@ build: off
 
 cache:
   - '%LOCALAPPDATA%\pip\Cache'
+  - '%HOME%\bin'
 
 environment:
   global:
@@ -39,6 +40,18 @@ install:
   # done from inside the powershell script as it would require to restart
   # the parent CMD process).
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+
+#  # We are not using docker-machine, because of it need Hardware Virtualization Technology
+#  # to be enabled, which can't be done for Appveyor.
+#  # Ref: https://docs.docker.com/toolbox/toolbox_install_windows/#step-1-check-your-version
+#  # We download it here because with that we can pass system checks at start up.
+#  - "if not exist %HOME%\\bin mkdir %HOME%\\bin"
+#  - curl https://github.com/docker/machine/releases/download/v0.12.1/docker-machine-Windows-x86_64.exe -o %HOME%\bin\docker-machine.exe
+#  - "SET PATH=%HOME%\\bin;%PATH%"
+#  #- "%CMD_IN_ENV% docker-machine --version"
+
+  - ps: Invoke-WebRequest https://download.docker.com/win/stable/InstallDocker.msi -outfile docker.msi
+  - start /wait msiexec /i docker.msi /qn /norestart /log install.log
 
   - ECHO "Filesystem root:"
   - ps: "ls \"C:/\""
