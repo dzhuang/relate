@@ -339,5 +339,8 @@ class SingleCoursePageTestMixin(SingleCourseTestMixin):
 
     def assertSessionScoreEqual(self, expect_score):  # noqa
         from decimal import Decimal
-        self.assertEqual(FlowSession.objects.all()[0].points,
-                                                Decimal(str(expect_score)))
+        if expect_score is not None:
+            self.assertEqual(FlowSession.objects.all()[0].points,
+                                                    Decimal(str(expect_score)))
+        else:
+            self.assertIsNone(FlowSession.objects.all()[0].points)

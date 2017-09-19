@@ -39,35 +39,16 @@ def which(program):
 
 def get_docker_program_version(program, print_output=False):
     # type: (Text, bool) -> Optional[Text]
-    assert program in ["docker-machine"]
+    assert program in ["docker", "docker-machine"]
     args = [program, '--version']
     try:
         version_str = run_cmd_line(args, print_output=print_output)
     except (OSError, CommandError):
         return None
 
-    # Docker: Docker version 1.11.2, build b9f10c9, but this failed for
-    # However, this no longer worked for 1.12.3
-    # Format:
-    # 1.12.3, which displays:
-    # Client:
-    #  Version:      17.05.0-ce
-    #  API version:  1.24 (downgraded from 1.29)
-    #  Go version:   go1.7.5
-    #  Git commit:   89658be
-    #  Built:        Fri May  5 15:36:11 2017
-    #  OS/Arch:      windows/amd64
-    #
-    # Server:
-    #  Version:      1.12.3
-    #  API version:  1.24 (minimum version )
-    #  Go version:   go1.6.3
-    #  Git commit:   6b644ec
-    #  Built:        Wed Oct 26 23:26:11 2016
-    #  OS/Arch:      linux/amd64
-    #  Experimental: false
-
-    # docker-machine version 0.11.0, build 5b27455
+    # version_str examples:
+    # for docker: "Docker version 1.11.2, build b9f10c9"
+    # version_str for docker-machine: "docker-machine version 0.11.0, build 5b27455"
     assert version_str
     return version_str.split()[2].strip(',')
 

@@ -24,112 +24,405 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+from typing import cast, Dict
 import os
+import six
+from django.core.checks import CheckMessage, Critical
 import logging
+import warnings
 from typing import Union
 from django.core.exceptions import ImproperlyConfigured
-from relate.utils import is_windows_platform, is_osx_platform
+from relate.utils import RELATEDeprecateWarning
 from .utils import (
     get_docker_program_version, run_cmd_line)
-from pkg_resources import parse_version as pv
+from distutils.version import LooseVersion
+from course.checks import (
+    GENERIC_ERROR_PATTERN, INSTANCE_ERROR_PATTERN,
+    RelateCriticalCheckMessage)
 import docker
 
 # {{{ for mypy
 
 if False:
-    from typing import Any, Text, Optional, Any, List, Dict, Tuple  # noqa
+    from typing import Any, Text, Optional, List, Tuple, Union  # noqa
+    from ipaddress import IPv4Address, IPv6Address  # noqa
 
 # }}}
 
+# {{{ Constants
 
-Debug = False
+DEFAULT_DOCKER_RUNPY_CONFIG_ALIAS = 'default'
 
-logger = logging.getLogger("django.request")
-REQUIRED_DOCKER_VERSION = '1.6.0'
-REQUIRED_MACHINE_VERSION = '0.7.0'
 LOCALHOST = '127.0.0.1'
 DOCKER_MACHINE_RUNNING = 'Running'
+DEFAULT_MACHINE_NAME = "default"
 DOCKER_HOST = 'DOCKER_HOST'
 DOCKER_CERT_PATH = 'DOCKER_CERT_PATH'
 DOCKER_TLS_VERIFY = 'DOCKER_TLS_VERIFY'
-DEFAULT_MACHINE_NAME = "default"
 
-RELATE_RUNPY_DOCKER_CONFIG = "RELATE_RUNPY_DOCKER_CONFIG"
+# default values
+REQUIRED_DOCKER_VERSION = '1.6.0'
+REQUIRED_DOCKER_MACHINE_VERSION = '0.7.0'
+DOCKER_RUNPY_CLIENT_VERSION_DEFAULT = "1.19"
+DOCKER_RUNPY_CLIENT_TIMEOUT_DEFAULT = 15
+
+# }}}
+
+# {{{ Settings name
+
+RELATE_RUNPY_DOCKER_ENABLED = "RELATE_RUNPY_DOCKER_ENABLED"
+RELATE_DOCKERS = "RELATE_DOCKERS"
+RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME = "RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME"
+SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR = "SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR"
+
+# Settings to be deprecated
 RELATE_DOCKER_TLS_CONFIG = "RELATE_DOCKER_TLS_CONFIG"
 RELATE_DOCKER_URL = "RELATE_DOCKER_URL"
-
 RELATE_DOCKER_RUNPY_IMAGE = "RELATE_DOCKER_RUNPY_IMAGE"
-RUNPY_BACKWARD_COMPAT_NOT_CONFIGURED_ERR_PATTERN = (  # noqa
+
+# }}}
+
+# {{{ String patterns
+
+RUNPY_ATTR_NOT_CONFIGURED_PATTERN = (  # noqa
+    '%(location)s not configured for docker runpy')
+RUNPY_CONFIGURED_ERR_PATTERN = (  # noqa
     '"%(config_name)s" not configured for '
-    'docker runpy in %(config_position)s')
+    'docker runpy in %(location)s')
+RUNPY_DEPRECATED_SETTINGS_PATTERN = (
+    "%(deprecated_location)s is deprecated, use %(location)s instead"
+)
+DOCKER_GENERIC_ERROR_PATTERN = (
+    "%(error_type)s: %(error_str)s")
 
-RUNPY_BACKWARD_COMPAT_USED_OLD_CONFIG_MSG_PATTERN = (  # noqa
-    RUNPY_BACKWARD_COMPAT_NOT_CONFIGURED_ERR_PATTERN.rstrip(".")
-    + ', used %(original_config)s instead.')
+# }}}
+
+# logger switch
+Debug = False
+logger = logging.getLogger("django.request")
 
 
-class DockerNotEnabledError(Exception):
+def _debug_print():
+    # type: () -> bool
+    from django.conf import settings
+    return Debug or getattr(settings, "DEBUG")
+
+
+debug_print = _debug_print()
+
+
+def get_ip_address(ip_range):
+    # type: (Text) -> Union[IPv4Address, IPv6Address]
+    import ipaddress
+    return ipaddress.ip_address(six.text_type(ip_range))  # type: ignore
+
+
+class RelateDockMachineCheckMessageBase(CheckMessage):
+    def __init__(self, *args, **kwargs):
+        # type: (*Any, **Any) -> None
+        super(RelateDockMachineCheckMessageBase, self).__init__(*args, **kwargs)
+        if not self.obj:  # type: ignore
+            self.obj = "docker-machine"
+
+
+class RelateDockMachineCritical(RelateDockMachineCheckMessageBase):
+    def __init__(self, *args, **kwargs):
+        # type: (*Any, **Any) -> None
+        from django.core.checks import CRITICAL
+        super(RelateDockMachineCritical, self).__init__(
+            CRITICAL, *args, **kwargs)
+
+
+class DockerError(Exception):
     pass
 
 
-class DockerVariablesNotExportedError(Exception):
+class DockerVersionNotSupportedError(DockerError):
     pass
 
 
-class DockerDependenciesNotInstalledError(Exception):
+class DockerMachineError(Exception):
     pass
+
+
+class DockerMachineVersionNotSupportedError(DockerMachineError):
+    pass
+
+
+class DockerMachineVariablesNotExportedError(DockerMachineError):
+    pass
+
+
+class RunpyDockerClientConfigNameIsNoneWarning(Warning):
+    pass
+
+
+class RunpyDockerNotUsableError(ImproperlyConfigured):
+    pass
+
+
+def has_error(errors):
+    # type: (List[CheckMessage]) -> bool
+    from django.core.checks import WARNING
+    for error in errors:
+        if error.level > WARNING:
+            return True
+    return False
 
 
 class ClientConfigBase(object):
-    def __init__(self, image, client_config, **kwargs):
-        # type: (Text, Dict, **Any) -> None
-        self.image = image
+    def __init__(self, docker_config_name, client_config, **kwargs):
+        # type: (Text, Dict[Any, Any], **Any) -> None
+        self.docker_config_name = docker_config_name
         self.client_config = client_config
 
-    def update_client_creation_kwargs(self):
-        # type: () -> None
-        raise NotImplementedError()
-
-    def check_client_tls(self):
-        # type: () -> None
-        if not self.client_config.get("tls", False):
-            logger.warning("SecurityWarning: TLS is not enabled "
-                           "for Docker client.")
+        self.client_config_location = (
+            "'client_config' of '%s' in %s"
+            % (self.docker_config_name, RELATE_DOCKERS)
+        )
+        self.client_tls_location = "'tls' in %s" % self.client_config_location
+        self.client_base_url_location = (
+            "'base_url' in %s" % self.client_tls_location)
 
     def create_client(self):
         # type: () -> docker.Client
         self.update_client_creation_kwargs()
-        self.check_client_tls()
         return docker.Client(**self.client_config)
 
-    def validate(self):
-        # type: () -> None
-        self.create_client()
-
-
-class ClientForDockerMixin(object):
     def update_client_creation_kwargs(self):
         # type: () -> None
         return
 
+    def checks(self):
+        # type: () -> List[CheckMessage]
+        errors = self.check_docker_installed_and_version_supported()
+        if has_error(errors):
+            return errors
+
+        errors.extend(self.check_config_validaty())
+        if has_error(errors):
+            return errors
+
+        errors.extend(self.check_docker_status())
+        if has_error(errors):
+            return errors
+
+        errors.extend(self.check_client_and_image())
+        return errors
+
+    def check_docker_installed_and_version_supported(self):
+        # type: () -> List[CheckMessage]
+        errors = []
+
+        try:
+            docker_version = (
+                get_docker_program_version("docker", print_output=Debug))
+        except Exception as e:
+            return [
+                Critical(
+                    msg=(DOCKER_GENERIC_ERROR_PATTERN
+                         % {
+                             "error_type": type(e).__name__,
+                             "error_str": str(e)
+                         }),
+                    id="docker_version_exception_unknown.E001",
+                    obj=RuntimeError
+                )]
+
+        if (docker_version is None
+                or LooseVersion(docker_version)  # type: ignore
+                < LooseVersion(REQUIRED_DOCKER_VERSION)):  # type: ignore
+            errors.append(
+                Critical(
+                    msg=(
+                        "You must install docker with version >="
+                        "%(version)s, to enable RELATE Docker"
+                        " functionalities."
+                        % {"version": REQUIRED_DOCKER_VERSION}),
+                    obj=DockerVersionNotSupportedError,
+                    id="docker_version.E001"
+                )
+            )
+
+        return errors
+
+    def check_client_tls(self):
+        # type: () -> List[CheckMessage]
+        errors = []
+        tls = self.client_config.get("tls", None)
+        if not tls:
+            from django.core.checks import Warning as CheckWarning
+            errors.append(
+                CheckWarning(
+                    msg=("SecurityWarning: TLS is not enabled "
+                         "for Docker client in %(location)s"
+                         % {"location": self.client_tls_location}
+                         ),
+                    id="docker_config_client_tls.W001",
+                    obj=self.__class__
+                )
+            )
+        else:
+            from docker.tls import TLSConfig
+            if not isinstance(tls, TLSConfig):
+                errors.append(
+                    RelateCriticalCheckMessage(
+                        msg=(
+                            INSTANCE_ERROR_PATTERN
+                            % {
+                                "location": self.client_tls_location,
+                                "types": TLSConfig.__name__}),
+                        id="docker_config_client_tls.E001",
+                    )
+                )
+        return errors
+
+    def check_config_validaty(self):
+        # type: () -> List[CheckMessage]
+        return []
+
+    def check_docker_status(self):
+        # type: () -> List[CheckMessage]
+        return []
+
+    def check_engine(self):
+        # type: () -> List[CheckMessage]
+        return self.check_docker_installed_and_version_supported()
+
+    def check_client_and_image(self):
+        # type: () -> List[CheckMessage]
+        errors = self.check_client_tls()
+        if has_error(errors):
+            return errors
+        cli = None
+        try:
+            cli = self.create_client()
+        except Exception as e:
+            errors.append(
+                RelateCriticalCheckMessage(
+                    msg=(GENERIC_ERROR_PATTERN
+                         % {"location": ("'client_config' of '%s' in %s"
+                                         % (self.docker_config_name,
+                                            RELATE_DOCKERS)),
+                            "error_type": type(e).__name__,
+                            "error_str": str(e)
+                            }),
+                    id="docker_config_client_create.E001"
+                )
+            )
+
+        if has_error(errors):
+            return errors
+
+        errors.extend(self.check_image(cli))
+        return errors
+
+    def check_image(self, cli):
+        # type: (docker.Client) -> List[CheckMessage]
+        return []
+
+
+class ClientForDockerMixin(object):
+    def __init__(self, docker_config_name, client_config, **kwargs):
+        # type: (Text, Dict[Any, Any], **Any) -> None
+        super(ClientForDockerMixin, self).__init__(  # type: ignore # noqa
+                docker_config_name, client_config, **kwargs)
+
+        from django.conf import settings
+
+        # This is not needed for docker-machine
+        base_url = self.client_config.get("base_url", None)  # type: ignore
+        if not base_url:
+            deprecated_docker_url_setting = (
+                getattr(settings, RELATE_DOCKER_URL, None))
+            if not deprecated_docker_url_setting:
+                raise ImproperlyConfigured(
+                    RUNPY_ATTR_NOT_CONFIGURED_PATTERN
+                    % {'location': self.client_base_url_location})  # type: ignore  # noqa
+            else:
+                warnings.simplefilter("default", RELATEDeprecateWarning)
+                warnings.warn(
+                    RUNPY_DEPRECATED_SETTINGS_PATTERN
+                    % {
+                        'location': self.client_base_url_location,  # type: ignore  # noqa
+                        'deprecated_location': RELATE_DOCKER_URL
+                    },
+                    RELATEDeprecateWarning,
+                    stacklevel=2
+                )
+            assert deprecated_docker_url_setting
+            self.client_config["base_url"] = deprecated_docker_url_setting  # type: ignore  # noqa
+
+        # This is not needed for docker-machine
+        if not self.client_config.get("tls"):  # type: ignore
+            deprecated_tls_setting = (
+                getattr(settings, RELATE_DOCKER_TLS_CONFIG, None))
+            if deprecated_tls_setting:
+                warnings.simplefilter("default", RELATEDeprecateWarning)
+                warnings.warn(
+                    RUNPY_DEPRECATED_SETTINGS_PATTERN
+                    % {
+                        "location": self.client_tls_location,  # type: ignore
+                        'deprecated_location': RELATE_DOCKER_TLS_CONFIG},
+                    RELATEDeprecateWarning,
+                    stacklevel=2
+                )
+                self.client_config["tls"] = deprecated_tls_setting  # type: ignore
+
 
 class ClientForDockerMachineMixin(object):
-    def __init__(self, image, client_config, **kwargs):
-        # type: (Text, Dict, **Any) -> None
-        docker_machine_config = kwargs.pop("docker_machine_config")
-
+    def __init__(self, docker_config_name, client_config, **kwargs):
+        # type: (Text, Dict[Any, Any], **Any) -> None
+        docker_machine_config = kwargs.pop("docker_machine_config", None)
         super(ClientForDockerMachineMixin, self).__init__(  # type: ignore # noqa
-                image, client_config, **kwargs)
+                docker_config_name, client_config, **kwargs)
         self.docker_running_shell = (
                 docker_machine_config.get("shell", None))
         self.docker_machine_name = (
                 docker_machine_config.get("name", DEFAULT_MACHINE_NAME))
 
+    def check_docker_installed_and_version_supported(self):
+        # type: () -> List[CheckMessage]
+        errors = (
+            super(ClientForDockerMachineMixin, self)    # type: ignore
+            .check_docker_installed_and_version_supported())  # type: ignore
+
+        try:
+            docker_machine_version = (
+                get_docker_program_version("docker-machine", print_output=Debug))
+        except Exception as e:
+            errors.append(
+                RelateCriticalCheckMessage(
+                    msg=(GENERIC_ERROR_PATTERN
+                         % {"location": ("'%s' in %s"
+                                         % (self.docker_config_name,  # type: ignore
+                                            RELATE_DOCKERS)
+                                         ),
+                            "error_type": type(e).__name__,
+                            "error_str": str(e)}),
+                    id="docker_machine_version_exception_unknown.E001"
+                ))
+            return errors
+
+        if (not docker_machine_version  # type: ignore
+                or LooseVersion(docker_machine_version)  # type: ignore
+                < LooseVersion(REQUIRED_DOCKER_MACHINE_VERSION)):  # type: ignore
+            errors.append(
+                RelateCriticalCheckMessage(
+                    msg=(
+                        "You must install docker-machine with version >="
+                        "%(machine_version)s, to enable RELATE Docker"
+                        " functionalities."
+                        % {"machine_version": REQUIRED_DOCKER_MACHINE_VERSION}),
+                    id="docker_machine_version.E001",
+                    obj=DockerMachineVersionNotSupportedError.__name__
+                ))
+
+        return errors
+
 
 class ClientForDockerConfigure(ClientForDockerMixin, ClientConfigBase):
-    def update_client_creation_kwargs(self):
-        # type: () -> None
-        return
+    pass
 
 
 class ClientForDockerMachineConfigure(ClientForDockerMachineMixin, ClientConfigBase):
@@ -139,12 +432,111 @@ class ClientForDockerMachineConfigure(ClientForDockerMachineMixin, ClientConfigB
         self.client_config.update(kwargs_from_env())
 
 
-class RunpyDockerMixin(object):
-    def __init__(self, image, client_config, **kwargs):
-        # type: (Text, Dict, **Any) -> None
-        super(RunpyDockerMixin, self).__init__(image, client_config, **kwargs)  # type: ignore # noqa
-        self.private_public_ip_map_dict = (
-            kwargs.get("private_public_ip_map_dict", {}))
+class RunpyDockerMixinBase(object):
+    def __init__(self, docker_config_name, client_config, **kwargs):
+        # type: (Text, Dict[Any, Any], **Any) -> None
+        image = kwargs.pop("docker_image", None)
+        super(RunpyDockerMixinBase, self).__init__(  # type: ignore
+            docker_config_name, client_config, **kwargs)
+
+        self.docker_image_location = (
+            "'docker_image' of '%s' in %s"
+            % (docker_config_name, RELATE_DOCKERS)
+        )
+
+        if not image:
+            from django.conf import settings
+            deprecated_image_setting = (
+                getattr(settings, RELATE_DOCKER_RUNPY_IMAGE, None))
+            if not deprecated_image_setting:
+                raise ImproperlyConfigured(
+                    RUNPY_ATTR_NOT_CONFIGURED_PATTERN
+                    % {'location': self.docker_image_location})
+            else:
+                warnings.simplefilter("default", RELATEDeprecateWarning)
+                warnings.warn(
+                    RUNPY_DEPRECATED_SETTINGS_PATTERN
+                    % {
+                        'location': self.docker_image_location,
+                        'deprecated_location': RELATE_DOCKER_RUNPY_IMAGE
+                    },
+                    RELATEDeprecateWarning,
+                    stacklevel=2
+                )
+                image = deprecated_image_setting
+        assert image
+        self.image = image
+
+        if not self.client_config.get("timout"):
+            self.client_config["timeout"] = DOCKER_RUNPY_CLIENT_TIMEOUT_DEFAULT
+        if not self.client_config.get("version"):
+            self.client_config["version"] = DOCKER_RUNPY_CLIENT_VERSION_DEFAULT
+
+        private_public_ip_map_dict = (
+            kwargs.get("private_public_ip_map_dict", None))  # type: Optional[Dict[Text, Text]]  # noqa
+
+        self.private_public_ip_map_dict_location = (
+            "'private_public_ip_map_dict' of '%s' in %s"
+            % (docker_config_name, RELATE_DOCKERS)
+        )  # type: Text
+
+        if private_public_ip_map_dict:
+            if not isinstance(private_public_ip_map_dict, dict):
+                raise ImproperlyConfigured(
+                    INSTANCE_ERROR_PATTERN % {
+                        'location': self.private_public_ip_map_dict_location,
+                        "types": "dict"})
+        else:
+            private_public_ip_map_dict = {}
+
+        self.private_public_ip_map_dict = cast(Dict, private_public_ip_map_dict)
+
+    def check_config_validaty(self):
+        # type: () -> List[CheckMessage]
+        errors = (
+            super(RunpyDockerMixinBase, self).check_config_validaty())  # type: ignore  # noqa
+
+        if has_error(errors):
+            return errors
+
+        if self.private_public_ip_map_dict:  # type: ignore
+            for private_ip, public_ip in (
+                    six.iteritems(self.private_public_ip_map_dict)):  # type: ignore
+                try:
+                    get_ip_address(six.text_type(private_ip))
+                    get_ip_address(six.text_type(public_ip))
+                except Exception as e:
+                    errors.append(RelateCriticalCheckMessage(
+                        msg=(
+                            GENERIC_ERROR_PATTERN
+                            % {'location':
+                                   self.private_public_ip_map_dict_location,
+                               "error_type": type(e).__name__,
+                               "error_str": str(e)
+                               }),
+                        id="private_public_ip_map_dict.E001"))
+
+        return errors
+
+    def check_image(self, cli):
+        # type: (docker.Client) -> List[CheckMessage]
+        errors = super(RunpyDockerMixinBase, self).check_image(cli)  # type: ignore  # noqa
+        assert cli is not None
+        image_exist = bool(cli.images(self.image))  # type: ignore
+        if not image_exist:
+            errors.append(
+                RelateCriticalCheckMessage(
+                    msg=("'docker_image' of '%(config_name)s' in %(configs)s "
+                         "(%(image)s is not pulled, please run 'docker pull "
+                         "%(image)s' in your shell first."
+                         % {"config_name": self.docker_config_name,  # type: ignore
+                            "configs": RELATE_DOCKERS,
+                            "image": self.image  # type: ignore
+                            }),
+                    id="docker_config_image.E001"
+                )
+            )
+        return errors
 
     def get_client_and_container_connection_info(
                 self, default_port, default_connect_host_ip):
@@ -190,7 +582,7 @@ class RunpyDockerMixin(object):
     def get_public_accessible_ip(self, ip):
         # type: (Text) -> Text
         """
-        RELATE_RUNPY_DOCKER_CONFIG['private_public_ip_map_dict'] need to be
+        RELATE_DOCKERS['private_public_ip_map_dict'] need to be
         configured in cases when your RELATE instance and (runpy) docker-running
         instances are not on the same subnet.
         See: discussion https://github.com/inducer/relate/issues/268
@@ -198,13 +590,26 @@ class RunpyDockerMixin(object):
         :return: the corresponding public ip which can be visited by
         RELATE instance.
         """
-
-        if self.private_public_ip_map_dict:
-            return self.private_public_ip_map_dict.get(ip, ip)
-        return ip
+        return self.private_public_ip_map_dict.get(ip, ip)  # type: ignore
 
 
-class RunpyDockerMachineMixin(RunpyDockerMixin):
+class RunpyDockerMixin(RunpyDockerMixinBase):
+    pass
+
+
+class RunpyDockerMachineMixin(RunpyDockerMixinBase):
+    def __init__(self, docker_config_name, client_config, **kwargs):
+        # type: (Text, Dict[Any, Any], **Any) -> None
+        super(RunpyDockerMachineMixin, self).__init__(
+            docker_config_name, client_config, **kwargs)
+
+        self.local_docker_machine = (
+            "'local_docker_machine' of '%s' in %s"
+            % (docker_config_name, RELATE_DOCKERS)
+        )
+        self.local_docker_machine_config_shell_location = (
+            "'shell' in 'config' of %s" % self.local_docker_machine)
+
     def get_connect_ip(self, connect_host_ip):
         # type: (Text) -> Text
         container_ip = self._get_container_ip()
@@ -225,36 +630,108 @@ class RunpyClientForDockerConfigure(RunpyDockerMixin, ClientForDockerConfigure):
 
 class RunpyClientForDockerMachineConfigure(
         RunpyDockerMachineMixin, ClientForDockerMachineConfigure):
-    def validate(self):
-        # type: () -> None
-        self.validate_docker_installed_and_version_supported()
-        self.docker_machine_setup()
-        self.create_client()
+    def check_docker_status(self):
+        # type: () -> List[CheckMessage]
+        errors = self.check_docker_machine_setup()
+        return errors
 
-    def initialize_docker(self, env=os.environ):
-        # type: (Optional[Any]) -> None
-        self.docker_machine_setup(env)
-
-    def docker_machine_setup(self, env=os.environ):
-        # type: (Optional[Any]) -> None
+    def check_docker_machine_setup(self, env=os.environ):
+        # type: (Any) -> List[CheckMessage]
+        errors = []
         if not self._is_docker_machine_running():
+            if debug_print:
+                logger.info("'%s' is not running. Starting..."
+                             % self.docker_machine_name)
             try:
                 self._start_docker_machine()
-            except:
-                raise
-
-        logger.info("docker-machine '%s' is running."
-                    % self.docker_machine_name)
+            except Exception as e:
+                errors.append(
+                    RelateDockMachineCritical(
+                        msg=(DOCKER_GENERIC_ERROR_PATTERN
+                             % {
+                                 "error_type": type(e).__name__,
+                                 "error_str": str(e)
+                             }),
+                        id="runpy_docker_machine.E002"
+                    )
+                )
+                return errors
+        else:
+            if debug_print:
+                logger.info("'%s' is running." % self.docker_machine_name)
 
         # If env variables are not set, generate the cmdline for user to set them
-        if (DOCKER_HOST not in env  # type: ignore
-            or DOCKER_CERT_PATH not in env  # type: ignore
-            or
-                    DOCKER_TLS_VERIFY not in env):  # type: ignore
-            self._get_docker_machine_env_cmdline()
+        if (DOCKER_HOST not in env
+                or DOCKER_CERT_PATH not in env
+                or DOCKER_TLS_VERIFY not in env):
+            if debug_print:
+                logger.info("Environment variables for machine '%s' have "
+                             "not been exported."
+                             % self.docker_machine_name)
+            try:
+                docker_machine_env_cmdline_msg = (
+                    self._get_docker_machine_env_cmdline_msg())
+            except Exception as e:
 
-        logger.info("Environment variables for docker-machine '%s' have "
-                    "been exported." % self.docker_machine_name)
+                def get_readable_error_msg(e):
+                    # type: (Exception) -> Text
+                    """Get a more readable error message for windows when
+                     failing "docker-machine env", as its e.args is a tuple with
+                     multiple elements.
+
+                    Without this, the stdout of `str(e)` is, for example:
+
+                        ('Exited with return code 1', 'Error checking TLS
+                        connection: Error checking and/or regenerating the certs:
+                        There was an error validating certificates for host
+                        "192.168.99.101:2376": x509: certificate is valid for
+                        192.168.99.100, not 192.168.99.101\nYou can attempt to
+                        regenerate them using \'docker-machine regenerate-certs
+                        [name]\'.\nBe advised that this will trigger a Docker
+                        daemon restart which might stop running containers.\n\n', 1)
+
+                    With this function, the stdout is:
+                        Exited with return code 1
+
+                        Error checking TLS connection: Error checking and/or
+                        regenerating the certs: There was an error validating
+                        certificates for host "192.168.99.101:2376": x509:
+                        certificate is valid for 192.168.99.100,
+                        not 192.168.99.101
+                        You can attempt to regenerate them using 'docker-machine
+                        regenerate-certs [name]'.
+                        Be advised that this will trigger a Docker daemon restart
+                        which might stop running containers
+                        1
+                    """
+                    return "\n".join([str(s).rstrip("\n") for s in list(e.args)])
+
+                errors.append(
+                    RelateDockMachineCritical(
+                        msg=(DOCKER_GENERIC_ERROR_PATTERN
+                             % {
+                                 "error_type": type(e).__name__,
+                                 "error_str": get_readable_error_msg(e)
+                             }),
+                        id="runpy_docker_machine.E002"
+                    )
+                )
+                return errors
+            else:
+                errors.append(
+                    RelateDockMachineCritical(
+                        msg=docker_machine_env_cmdline_msg,
+                        obj=DockerMachineVariablesNotExportedError,
+                        id="runpy_docker_machine_state.E001"
+                        )
+                    )
+        else:
+            if debug_print:
+                logger.info("Environment variables for machine '%s' have "
+                             "been exported."
+                             % self.docker_machine_name)
+
+        return errors
 
     def _is_docker_machine_running(self):
         # type: () -> bool
@@ -263,24 +740,18 @@ class RunpyClientForDockerMachineConfigure(
     def _get_docker_machine_status(self):
         # type: () -> Text
         status = run_cmd_line(
-            ['docker-machine', 'status', self.docker_machine_name],
-            print_output=Debug)
+            ['docker-machine', 'status', self.docker_machine_name])
         assert status
         return status.strip()
 
     def _start_docker_machine(self):
         # type: () -> None
-        logger.info("Docker-machine '%s' is not running. Starting"
-                    % self.docker_machine_name)
         run_cmd_line(
             ['docker-machine', 'start', self.docker_machine_name],
             print_output=True)
 
-    def _get_docker_machine_env_cmdline(self):
-        # type: () -> None
-        logger.info("Environment variables for docker-machine '%s' have "
-                    "not been exported."
-                    % self.docker_machine_name)
+    def _get_docker_machine_env_cmdline_msg(self):
+        # type: () -> Text
         args = ['docker-machine', 'env', self.docker_machine_name]
         if self.docker_running_shell:
             args += ["--shell", self.docker_running_shell]
@@ -302,163 +773,159 @@ class RunpyClientForDockerMachineConfigure(
                "Please following the instructions below and try to start "
                "the server again: \n%s%s\n%s" % ("-" * 50, output, "-" * 50))
         if not self.docker_running_shell:
+            from relate.utils import is_windows_platform
             if is_windows_platform():
                 msg += ("\nThe above export script is for 'cmd' shell, "
-                        "you can specify your shell via "
-                        "RELATE_RUNPY_DOCKER_CONFIG['local_docker_machine']"
-                        "['config']['shell'], see "
-                        "https://docs.docker.com/machine/reference/env/.")
+                        "you can specify your shell in %(location)s, see "
+                        "https://docs.docker.com/machine/reference/env/."
+                        % {"location":
+                               self.local_docker_machine_config_shell_location}
+                        )
 
-        raise DockerVariablesNotExportedError(msg)
-
-    def validate_docker_installed_and_version_supported(self):
-        # type:() -> None
-        err_msg = None
-
-        docker_machine_version = (
-            get_docker_program_version("docker-machine", print_output=Debug))
-        if (not docker_machine_version
-                or pv(docker_machine_version) < pv(REQUIRED_MACHINE_VERSION)):
-            err_msg = (
-                "You must install docker-machine version "
-                "%(machine_version)s, to enable RELATE Docker"
-                " functionalities."
-                % {"machine_version": REQUIRED_MACHINE_VERSION})
-
-        if err_msg:
-            raise DockerDependenciesNotInstalledError(err_msg)
+        return msg
 
 
-Docker_Client_ish = Union[
+Docker_client_config_ish = Union[
         ClientForDockerConfigure, ClientForDockerMachineConfigure,
         RunpyClientForDockerConfigure, RunpyClientForDockerMachineConfigure]
 
 
-def update_runpy_docker_client_config_kwargs(
-        docker_image, docker_config, client_config,
-        use_local_docker_machine, **kwargs):
-    # type: (Text, Dict, Dict, bool, **Any) -> Tuple[Text, Dict, Dict]
-    if not docker_image:
-        original_relate_docker_runpy_image = (
-            kwargs.get("original_relate_docker_runpy_image"))
-        if original_relate_docker_runpy_image:
-            docker_image = original_relate_docker_runpy_image
-            logger.warning(
-                RUNPY_BACKWARD_COMPAT_USED_OLD_CONFIG_MSG_PATTERN
-                % {
-                    'config_name': "docker_image",
-                    'config_position': '%s'
-                                       % RELATE_RUNPY_DOCKER_CONFIG,
-                    'original_config': RELATE_DOCKER_RUNPY_IMAGE, })
-        else:
-            raise ImproperlyConfigured(
-                RUNPY_BACKWARD_COMPAT_NOT_CONFIGURED_ERR_PATTERN
-                % {
-                    'config_name': "docker_image",
-                    'config_position': '%s'
-                                       % RELATE_RUNPY_DOCKER_CONFIG})
+def get_docker_client_config(docker_config_name, for_runpy=True,
+                             use_deprecated_settings=False):
+    # type: (Text, bool, bool) -> Optional[Docker_client_config_ish]
 
-    if not client_config.get("timeout"):
-        client_config.update({"timeout": 15})
+    """
+    Get the client config from docker configurations with docker_config_name
+    in RELATE_DOCKS, with backward compatibility (i.e., original
+    settings RELATE_DOCKER_RUNPY_IMAGE, RELATE_DOCKER_URL and
+    RELATE_DOCKER_TLS_CONFIG) if it is a runpy docker.
+    :param docker_config: Optional, a :class:`dict` instance. If not specified,
+    RELATE_DOCKERS will be used.
+    :param for_runpy: Optional, a :class:`bool` instance, default to True,
+    representing whether the client is used for runpy (code question)
+    :param use_deprecated_settings: Optional, a :class:`bool` instance.
+    :return: a `Docker_client_config_ish` instance.
+    """
+    if not use_deprecated_settings:
+        from copy import deepcopy
+        config = deepcopy(get_config_by_name(docker_config_name))
+    else:
+        from django.conf import settings
+        assert not getattr(settings, RELATE_DOCKERS, None)
+        deprecation_locations = [RELATE_DOCKER_RUNPY_IMAGE]
+        config = {
+            "docker_image": settings.RELATE_DOCKER_RUNPY_IMAGE,
+            "client_config": {}
+        }
+        if getattr(settings, RELATE_DOCKER_URL, None):
+            config["client_config"]["base_url"] = settings.RELATE_DOCKER_URL
+            deprecation_locations.append(RELATE_DOCKER_URL)
+        if getattr(settings, RELATE_DOCKER_TLS_CONFIG, None):
+            config["client_config"]["tls"] = settings.RELATE_DOCKER_TLS_CONFIG
+            deprecation_locations.append(RELATE_DOCKER_TLS_CONFIG)
 
-    if not client_config.get("version"):
-        client_config.update({"version": "1.19"})
+        warnings.simplefilter("default", RELATEDeprecateWarning)
+        warnings.warn(
+            RUNPY_DEPRECATED_SETTINGS_PATTERN
+            % {
+                'location': RELATE_DOCKERS,
+                'deprecated_location': ", ".join(deprecation_locations)
+            },
+            RELATEDeprecateWarning,
+            stacklevel=2
+        )
 
-    # When use_local_docker_machine, base_url and tls will be
-    # generated by docker_utils.kwargs_from_env()
-    if not use_local_docker_machine:
-        if not client_config.get("base_url"):
-            original_relate_docker_url = (
-                kwargs.get("original_relate_docker_url"))
-            if original_relate_docker_url:
-                client_config.update(
-                    {"base_url": original_relate_docker_url})
-                logger.warning(
-                    '[Warning]ImproperlyConfigured: ' +
-                    RUNPY_BACKWARD_COMPAT_USED_OLD_CONFIG_MSG_PATTERN
-                    % {
-                        'config_name': "base_url",
-                        'config_position': '%s'
-                                           % RELATE_RUNPY_DOCKER_CONFIG,
-                        'original_config': RELATE_DOCKER_URL})
-            else:
-                raise ImproperlyConfigured(
-                    RUNPY_BACKWARD_COMPAT_NOT_CONFIGURED_ERR_PATTERN
-                    % {
-                        'config_name': "base_url",
-                        'config_position': '%s["client"]["tls"]'
-                                           % RELATE_RUNPY_DOCKER_CONFIG,
-                    }
-                )
-        if not client_config.get("tls"):
-            original_relate_docker_tls_config = (
-                kwargs.get("original_relate_docker_tls_config"))
-            if original_relate_docker_tls_config:
-                client_config.update(
-                    {"tls": original_relate_docker_tls_config})
-                logger.warning(
-                    '[Warning]ImproperlyConfigured: ' +
-                    RUNPY_BACKWARD_COMPAT_NOT_CONFIGURED_ERR_PATTERN
-                    % {
-                        'config_name': "tls",
-                        'config_position': '%s["client"]["tls"]'
-                                           % RELATE_RUNPY_DOCKER_CONFIG,
-                        'original_config': RELATE_DOCKER_TLS_CONFIG})
-            else:
-                logger.warning(
-                    '[Warning]ImproperlyConfigured: ' +
-                    RUNPY_BACKWARD_COMPAT_NOT_CONFIGURED_ERR_PATTERN
-                    % {
-                        'config_name': "tls",
-                        'config_position': '%s["client"]["tls"]'
-                                           % RELATE_RUNPY_DOCKER_CONFIG})
-
-    return docker_image, docker_config, client_config
-
-
-def get_docker_client_config(docker_config, for_runpy=False, **kwargs):
-    # type: (Dict, bool, **Any) -> Optional[Docker_Client_ish]
-
-    docker_config = docker_config.copy()
-    docker_image = docker_config.pop("docker_image", None)
-    client_config = docker_config.pop("client_config", {})
+    docker_image = config.pop("docker_image", None)
+    client_config = config.pop("client_config", {})
     use_local_docker_machine = False
-    local_docker_machine_config = docker_config.pop("local_docker_machine", None)
+    local_docker_machine_config = config.pop("local_docker_machine_config", {})
     if local_docker_machine_config:
+        from relate.utils import is_windows_platform, is_osx_platform
         if (local_docker_machine_config.get("enabled", False)
             and
                 (is_windows_platform() or is_osx_platform())):
             use_local_docker_machine = True
 
+    kwargs = {}  # type: Dict[Any, Any]
+    kwargs.update(config)
     if for_runpy:
-        # backward compatibility
-        docker_image, docker_config, client_config = (
-            update_runpy_docker_client_config_kwargs(
-                docker_image, docker_config, client_config,
-                use_local_docker_machine, **kwargs))
-
-    if not docker_image:
-        raise ImproperlyConfigured(
-            RUNPY_BACKWARD_COMPAT_NOT_CONFIGURED_ERR_PATTERN
-            % {
-                'config_desc': "docker image",
-                'config_name': "docker_image",
-                'config_position': '"image"'})
+        kwargs.update({"docker_image": docker_image})
 
     if use_local_docker_machine:
         docker_machine_config = local_docker_machine_config.get("config", {})
-        docker_config.update({"docker_machine_config": docker_machine_config})
+        kwargs.update({"docker_machine_config": docker_machine_config})
 
         if for_runpy:
             return RunpyClientForDockerMachineConfigure(
-                docker_image, client_config, **docker_config)
+                docker_config_name, client_config, **kwargs)
         else:
             return ClientForDockerMachineConfigure(
-                docker_image, client_config, **docker_config)
+                docker_config_name, client_config, **kwargs)
 
     if for_runpy:
         return RunpyClientForDockerConfigure(
-            docker_image, client_config, **docker_config)
+            docker_config_name, client_config, **kwargs)
     else:
         return ClientForDockerConfigure(
-            docker_image, client_config, **docker_config)
+            docker_config_name, client_config, **kwargs)
+
+
+def get_config_by_name(docker_config_name):
+    # type: (Text) -> Dict[Any, Any]
+    from django.conf import settings
+    relate_dockers_config = getattr(settings, RELATE_DOCKERS, None)
+    if not relate_dockers_config:
+        raise ImproperlyConfigured(
+            "%s: '%s' is not configured in RELATE local settings."
+            % (RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME, RELATE_DOCKERS)
+        )
+    if docker_config_name not in relate_dockers_config:
+        raise ImproperlyConfigured(
+            "%s: %s has no configuration named '%s'"
+            % (RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME, RELATE_DOCKERS,
+               docker_config_name)
+        )
+    return relate_dockers_config[docker_config_name]
+
+
+def get_relate_runpy_docker_client_config(silence_if_not_usable=False):  # noqa
+    from django.conf import settings
+    relate_dockers = getattr(settings, RELATE_DOCKERS, None)
+    if not relate_dockers:
+        if not getattr(settings, RELATE_DOCKER_RUNPY_IMAGE, None):
+            return None
+        else:
+            return get_docker_client_config(
+                DEFAULT_DOCKER_RUNPY_CONFIG_ALIAS, for_runpy=True,
+                use_deprecated_settings=True)
+
+    runpy_enabled = getattr(settings, RELATE_RUNPY_DOCKER_ENABLED, True)
+    if not runpy_enabled:
+        if not silence_if_not_usable:
+            raise RunpyDockerNotUsableError(
+                "Runpy docker is not usable with %s=%s. Please set %s to "
+                "True if you want to start server without this check"
+                % (RELATE_RUNPY_DOCKER_ENABLED, runpy_enabled,
+                   SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR)
+            )
+        return None
+    relate_runpy_docker_client_config_name = (
+        getattr(settings, RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME,
+                DEFAULT_DOCKER_RUNPY_CONFIG_ALIAS))
+
+    if relate_runpy_docker_client_config_name is None:
+        msg = ("%s can not be None when %s is True"
+               % (RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME,
+                  RELATE_RUNPY_DOCKER_ENABLED))
+        if not silence_if_not_usable:
+            raise RunpyDockerNotUsableError(msg)
+        else:
+            warnings.warn(
+                msg,
+                RunpyDockerClientConfigNameIsNoneWarning,
+                stacklevel=2)
+            return None
+    return get_docker_client_config(
+        relate_runpy_docker_client_config_name, for_runpy=True)
+
+# vim: foldmethod=marker
