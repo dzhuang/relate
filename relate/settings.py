@@ -306,18 +306,4 @@ SAML_CREATE_UNKNOWN_USER = True
 
 # }}}
 
-
-RELATE_RUNPY_DOCKER_CLIENT_CONFIG = None
-from course.docker.config import get_docker_client_config
-if local_settings.get("RELATE_RUNPY_DOCKER_ENABLED"):
-    config = local_settings.get("RELATE_RUNPY_DOCKER_CONFIG", {})  # type: ignore
-    RELATE_RUNPY_DOCKER_CLIENT_CONFIG = get_docker_client_config(  # type: ignore
-        config, for_runpy=True,
-        original_relate_docker_runpy_image=(
-            local_settings.get("RELATE_DOCKER_RUNPY_IMAGE")),
-        original_relate_docker_tls_config=(
-            local_settings.get("RELATE_DOCKER_TLS_CONFIG")),
-        original_relate_docker_url=local_settings.get("RELATE_DOCKER_URL")
-    )
-
 # vim: foldmethod=marker

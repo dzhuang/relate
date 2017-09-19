@@ -64,6 +64,22 @@ from course.page.code import (
 
 from image_upload.page.imgupload import ImageUploadQuestion
 
+
+def _debug_print(s):
+
+    # debugging switch
+    debug = False
+
+    settings_debug = getattr(settings, "DEBUG", False)
+    debug = debug or settings_debug
+
+    if debug:
+        print(s)
+
+
+debug_print = _debug_print
+
+
 CACHE_VERSION = "V0"
 MAX_JINJIA_RETRY = 3
 DB = get_mongo_db()
@@ -687,10 +703,10 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     assert isinstance(result, six.text_type)
                 if warm_up_only:
                     return True, result
-                print("===result is in cache===")
+                debug_print("===result is in cache===")
                 return True, result
 
-            print("result is None when loading from cache")
+            debug_print("result is None when loading from cache")
 
         # cache_key is None means cache is not enabled
         result = None
@@ -711,7 +727,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     % (part, page_key))
 
         if result is not None:
-            print("===result is find in part mongo===")
+            debug_print("===result is find in part mongo===")
             try:
                 get_latex_page_mongo_collection().update_one(
                     {"key": page_key, part: {"$exists": False}},
@@ -726,7 +742,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 pass
             success = True
         else:
-            print("result is None in mongo part result")
+            debug_print("result is None in mongo part result")
             # read from page collection
             mongo_page_result = get_latex_page_mongo_collection().find_one(
                 {"key": page_key, part: {"$exists": True}}
@@ -738,7 +754,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     page_result = mongo_page_result[part].decode("utf-8")
                 if page_result:
                     result = page_result
-                    print("===result is find in page mongo===!")
+                    debug_print("===result is find in page mongo===!")
                     success = True
                 else:
                     raise RuntimeError(
@@ -746,7 +762,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                         % (part, page_key))
 
         if result is None:
-            print("!!!!!! runpy !!!!!!")
+            debug_print("!!!!!! runpy !!!!!!")
             try:
                 runpy_kwargs = {}
                 if (not hasattr(self.page_desc, "runpy_file")
@@ -797,7 +813,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     except DuplicateKeyError:
                         pass
         else:
-            print("===result is find in page mongo===")
+            debug_print("===result is find in page mongo===")
 
         if cache_key is None:
             return success, result
