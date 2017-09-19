@@ -54,24 +54,23 @@ install:
 #  - ps: Invoke-WebRequest https://download.docker.com/win/stable/InstallDocker.msi -outfile docker.msi
 #  - start /wait msiexec /i docker.msi /qn /norestart /log install.log
 
+  - ps: "if ($env:PYTHON -like '*Python2*') { cd c:\\; git clone https://github.com/jelmer/dulwich.git; cd dulwich; python setup.py install --without-c-extensions }"
+
   - ECHO "Filesystem root:"
   - ps: "ls \"C:/\""
 
   # Check that we have the expected version and architecture for Python
-  - "python --version && SET VS90COMNTOOLS=%VS140COMNTOOLS%"
+  - "python --version"
   - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
 
   # Upgrade to the latest version of pip to avoid it displaying warnings
   # about it being out of date.
-  - "pip install --disable-pip-version-check --user --upgrade pip"
+  #- "pip install --disable-pip-version-check --user --upgrade pip"
 
-  - "ECHO %VS140COMNTOOLS%"
-
-#  - ECHO %PYTHON% | findstr "2.7"
-#
-#  - ECHO %PYTHON% | findstr "2.7" && SET VS90COMNTOOLS=%VS140COMNTOOLS%
+  - "git submodule update --init --recursive"
 
   # Install requirements
+  - ps: "if ($env:PYTHON -like '*Python2*') { cd c:\\; git clone https://github.com/jelmer/dulwich.git; cd dulwich; python setup.py install --without-c-extensions }"
   - ps: "cat requirements.txt | ?{$_ -notmatch 'dnspython'} > req.txt"
   - "%CMD_IN_ENV% pip install -r req.txt"
   - ps: "if ($env:PYTHON -like '*Python2*') { pip install dnspython mock} else { pip install dnspython3 }"
