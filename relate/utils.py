@@ -494,4 +494,8 @@ def is_osx_platform():
     return sys.platform.startswith('darwin')
 
 
+class RELATEDeprecateWarning(PendingDeprecationWarning):
+    pass
+
+
 # vim: foldmethod=marker
