@@ -53,7 +53,7 @@ install:
 #  - ps: Invoke-WebRequest https://download.docker.com/win/stable/InstallDocker.msi -outfile docker.msi
 #  - start /wait msiexec /i docker.msi /qn /norestart /log install.log
 
-
+  - "ECHO %MAJOR_PYTHON_VERSION%"
   - ECHO "Filesystem root:"
   - ps: "ls \"C:/\""
 
@@ -63,21 +63,20 @@ install:
 
   # Upgrade to the latest version of pip to avoid it displaying warnings
   # about it being out of date.
-  #- "pip install --disable-pip-version-check --user --upgrade pip"
+  - "pip install --disable-pip-version-check --user --upgrade pip"
 
   - "git submodule update --init --recursive"
 
   # Install requirements
-  - SET VS90COMNTOOLS=%VS140COMNTOOLS%
-  - cd c:\\
-  - git clone https://github.com/jelmer/dulwich.git
-  - cd dulwich
-  - python setup.py install
-  - cd %APPVEYOR_BUILD_FOLDER%
+  - ps: >-
+      if ($env:PYTHON -like '*Python2*') {
+        $env:VS90COMNTOOLS=$env:VS140COMNTOOLS
+        pip install dulwich
+      }
+  - "ECHO %MAJOR_PYTHON_VERSION%"
   - ps: "cat requirements.txt | ?{$_ -notmatch 'dnspython'} > req.txt"
   - "%CMD_IN_ENV% pip install -r req.txt"
   - ps: "if ($env:PYTHON -like '*Python2*') { pip install dnspython mock} else { pip install dnspython3 }"
-
 
 before_test:
   - "%CMD_IN_ENV% pip install coverage"
