@@ -72,7 +72,7 @@ install:
   - cd c:\\
   - git clone https://github.com/jelmer/dulwich.git
   - cd dulwich
-  - python setup.py install --without-c-extensions
+  - python setup.py install
   #- ps: "if ($env:PYTHON -like '*Python2*') { cd c:\\; git clone https://github.com/jelmer/dulwich.git; cd dulwich; python setup.py install --without-c-extensions }"
   - ps: "cat requirements.txt | ?{$_ -notmatch 'dnspython'} > req.txt"
   - "%CMD_IN_ENV% pip install -r req.txt"
