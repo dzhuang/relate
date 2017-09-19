@@ -191,7 +191,7 @@ class ClientConfigGetFunctionTests(SimpleTestCase):
     """
     test course.docker.config.get_docker_client_config
     """
-    @mock.patch("relate.utils.is_windows_platform", return_value=True)
+    @mock.patch("course.docker.config.is_windows_platform", return_value=True)
     @override_settings(
         RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=VALID_RUNPY_CONFIG_NAME)
     def test_config_instance_windows(self, mocked_sys):
@@ -208,8 +208,8 @@ class ClientConfigGetFunctionTests(SimpleTestCase):
         self.assertIsInstance(result, RunpyClientForDockerMachineConfigure)
         self.assertEqual(result.image, "runpy_test.image")
 
-    @mock.patch("relate.utils.is_windows_platform", return_value=False)
-    @mock.patch("relate.utils.is_windows_platform", return_value=False)
+    @mock.patch("course.docker.config.is_windows_platform", return_value=False)
+    @mock.patch("course.docker.config.is_windows_platform", return_value=False)
     @override_settings(
         RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=VALID_RUNPY_CONFIG_NAME)
     def test_config_instance_not_windows(
@@ -227,7 +227,7 @@ class ClientConfigGetFunctionTests(SimpleTestCase):
         self.assertIsInstance(result, RunpyClientForDockerConfigure)
         self.assertEqual(result.image, "runpy_test.image")
 
-    @mock.patch("relate.utils.is_windows_platform", return_value=True)
+    @mock.patch("course.docker.config.is_windows_platform", return_value=True)
     @override_settings(
         RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=RUNPY_DOCKER_CONFIG_NAME_DOCKER_MACHINE_NOT_ENABLED)  # noqa
     def test_config_instance_docker_machine_not_enabled_windows(
@@ -247,8 +247,8 @@ class ClientConfigGetFunctionTests(SimpleTestCase):
         self.assertIsInstance(result, RunpyClientForDockerConfigure)
         self.assertEqual(result.image, "runpy_test.image")
 
-    @mock.patch("relate.utils.is_windows_platform", return_value=False)
-    @mock.patch("relate.utils.is_osx_platform", return_value=False)
+    @mock.patch("course.docker.config.is_windows_platform", return_value=False)
+    @mock.patch("course.docker.config.is_osx_platform", return_value=False)
     @override_settings(
         RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=RUNPY_DOCKER_CONFIG_NAME_DOCKER_MACHINE_NOT_ENABLED)  # noqa
     def test_config_instance_docker_machine_not_enabled_not_windows(

@@ -58,14 +58,18 @@ install:
   - ps: "ls \"C:/\""
 
   # Check that we have the expected version and architecture for Python
-  - "python --version"
+  - "python --version && SET VS90COMNTOOLS=%VS140COMNTOOLS%"
   - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
 
   # Upgrade to the latest version of pip to avoid it displaying warnings
   # about it being out of date.
   - "pip install --disable-pip-version-check --user --upgrade pip"
 
-  - "git submodule update --init --recursive"
+  - "ECHO %VS140COMNTOOLS%"
+
+#  - ECHO %PYTHON% | findstr "2.7"
+#
+#  - ECHO %PYTHON% | findstr "2.7" && SET VS90COMNTOOLS=%VS140COMNTOOLS%
 
   # Install requirements
   - ps: "cat requirements.txt | ?{$_ -notmatch 'dnspython'} > req.txt"

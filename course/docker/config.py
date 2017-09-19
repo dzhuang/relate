@@ -32,7 +32,8 @@ import logging
 import warnings
 from typing import Union
 from django.core.exceptions import ImproperlyConfigured
-from relate.utils import RELATEDeprecateWarning
+from relate.utils import (
+    RELATEDeprecateWarning, is_windows_platform, is_osx_platform)
 from .utils import (
     get_docker_program_version, run_cmd_line)
 from distutils.version import LooseVersion
@@ -537,7 +538,6 @@ class RunpyDockerMixinBase(object):
 
     def check_image(self, cli):
         # type: (docker.Client) -> List[CheckMessage]
-        print(type(self), "-------------------------------")
         errors = super(RunpyDockerMixinBase, self).check_image(cli)  # type: ignore  # noqa
         assert cli is not None
         image_exist = bool(cli.images(self.image))  # type: ignore
@@ -793,7 +793,6 @@ class RunpyClientForDockerMachineConfigure(
                "Please following the instructions below and try to start "
                "the server again: \n%s%s\n%s" % ("-" * 50, output, "-" * 50))
         if not self.docker_running_shell:
-            from relate.utils import is_windows_platform
             if is_windows_platform():
                 msg += ("\nThe above export script is for 'cmd' shell, "
                         "you can specify your shell in %(location)s, see "
@@ -811,8 +810,9 @@ Docker_client_config_ish = Union[
 
 
 def get_docker_client_config(docker_config_name, for_runpy=True,
-                             use_deprecated_settings=False):
-    # type: (Text, bool, bool) -> Optional[Docker_client_config_ish]
+                             use_deprecated_settings=False,
+                             silence_if_not_usable=False):
+    # type: (Text, bool, bool, bool) -> Optional[Docker_client_config_ish]
 
     """
     Get the client config from docker configurations with docker_config_name
@@ -826,11 +826,11 @@ def get_docker_client_config(docker_config_name, for_runpy=True,
     :param use_deprecated_settings: Optional, a :class:`bool` instance.
     :return: a `Docker_client_config_ish` instance.
     """
+    from django.conf import settings
     if not use_deprecated_settings:
         from copy import deepcopy
         config = deepcopy(get_config_by_name(docker_config_name))
     else:
-        from django.conf import settings
         assert not getattr(settings, RELATE_DOCKERS, None)
         deprecation_locations = [RELATE_DOCKER_RUNPY_IMAGE]
         config = {
@@ -860,7 +860,6 @@ def get_docker_client_config(docker_config_name, for_runpy=True,
     use_local_docker_machine = False
     local_docker_machine_config = config.pop("local_docker_machine_config", {})
     if local_docker_machine_config:
-        from relate.utils import is_windows_platform, is_osx_platform
         if (local_docker_machine_config.get("enabled", False)
             and
                 (is_windows_platform() or is_osx_platform())):
@@ -881,6 +880,43 @@ def get_docker_client_config(docker_config_name, for_runpy=True,
         else:
             return ClientForDockerMachineConfigure(
                 docker_config_name, client_config, **kwargs)
+    else:
+        if for_runpy and use_deprecated_settings:
+
+            # We only check this when use_deprecated_settings for Windows
+            # as previously docker was not supported by default local_settings for
+            # Windows, with the following check, we are preventing it throw
+            # AttributeError: module 'socket' has no attribute 'AF_UNIX'
+            # if the deprecated RELATE_DOCKER_URL is a unix specific socket url
+            if is_windows_platform():
+                windows_docker_client_useable = True
+                msg = ""
+                from docker.utils.utils import parse_host
+                client_config_base_url = getattr(settings, RELATE_DOCKER_URL, None)
+                if client_config_base_url:
+                    try:
+                        parsed_host = parse_host(client_config_base_url)
+                        if parsed_host.startswith("http+unix"):
+                            windows_docker_client_useable = False
+                            msg = (
+                                "%s is a unix specifc address and should not"
+                                "be configured for Windows: %s"
+                                % (RELATE_DOCKER_URL, settings.RELATE_DOCKER_URL))
+                    except Exception as e:
+                        msg = (
+                            "Error at %s: %s: %s"
+                            % (RELATE_DOCKERS, type(e).__name__, str(e))
+                        )
+
+                if not windows_docker_client_useable:
+                    if not silence_if_not_usable:
+                        raise RunpyDockerNotUsableError(msg)
+                    else:
+                        warnings.warn(
+                            msg,
+                            RunpyDockerClientConfigNameIsNoneWarning,
+                            stacklevel=2)
+                        return None
 
     if for_runpy:
         return RunpyClientForDockerConfigure(
@@ -929,7 +965,8 @@ def get_relate_runpy_docker_client_config(silence_if_not_usable=False):  # noqa
         else:
             return get_docker_client_config(
                 DEFAULT_DOCKER_RUNPY_CONFIG_ALIAS, for_runpy=True,
-                use_deprecated_settings=True)
+                use_deprecated_settings=True,
+                silence_if_not_usable=silence_if_not_usable)
 
     relate_runpy_docker_client_config_name = (
         getattr(settings, RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME,

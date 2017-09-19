@@ -261,7 +261,22 @@ RELATE_DOCKER_URL = "unix://var/run/docker.sock"
 
 RELATE_DOCKER_TLS_CONFIG = None
 
+# Example setup for targeting remote Docker instances
+# with TLS authentication:
 
+# RELATE_DOCKER_URL = "https://relate.cs.illinois.edu:2375"
+#
+# import os.path
+# pki_base_dir = os.path.dirname(__file__)
+#
+# import docker.tls
+# RELATE_DOCKER_TLS_CONFIG = docker.tls.TLSConfig(
+#     client_cert=(
+#         os.path.join(pki_base_dir, "client-cert.pem"),
+#         os.path.join(pki_base_dir, "client-key.pem"),
+#         ),
+#     ca_cert=os.path.join(pki_base_dir, "ca.pem"),
+#     verify=True)
 
 # Docker configurations used by Relate. For runpy Docker (code pages), which requires
 # the "docker_image" (with previous value "RELATE_DOCKER_RUNPY_IMAGE") key, the
@@ -318,28 +333,10 @@ RELATE_DOCKER_TLS_CONFIG = None
 # # Note: The following is used to ensure unittests can be run on Windows CI and for
 # # backward compatibility, you should remove them in your local_settings.py if you
 # # want to enable runpy docker functionality.
-# import sys
-# if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
-#     SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR = True
-#     RELATE_RUNPY_DOCKER_ENABLED = False
-
-
-# Example setup for targeting remote Docker instances
-# with TLS authentication:
-
-# RELATE_DOCKER_URL = "https://relate.cs.illinois.edu:2375"
-#
-# import os.path
-# pki_base_dir = os.path.dirname(__file__)
-#
-# import docker.tls
-# RELATE_DOCKER_TLS_CONFIG = docker.tls.TLSConfig(
-#     client_cert=(
-#         os.path.join(pki_base_dir, "client-cert.pem"),
-#         os.path.join(pki_base_dir, "client-key.pem"),
-#         ),
-#     ca_cert=os.path.join(pki_base_dir, "ca.pem"),
-#     verify=True)
+import sys
+if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
+    SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR = True
+    #RELATE_RUNPY_DOCKER_ENABLED = False
 
 # }}}
 
