@@ -69,6 +69,7 @@ install:
   - "git submodule update --init --recursive"
 
   # Install requirements
+  - SET VS90COMNTOOLS=%VS140COMNTOOLS%
   - cd c:\\
   - git clone https://github.com/jelmer/dulwich.git
   - cd dulwich
