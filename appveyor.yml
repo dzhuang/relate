@@ -70,8 +70,10 @@ install:
   # Install requirements
   - ps: >-
       if ($env:PYTHON -like '*Python2*') {
+        $env:ORIGINALVS90COMNTOOLS=$env:VS90COMNTOOLS
         $env:VS90COMNTOOLS=$env:VS140COMNTOOLS
         pip install dulwich
+        $env:VS90COMNTOOLS=$env:ORIGINALVS90COMNTOOLS
       }
   - "ECHO %MAJOR_PYTHON_VERSION%"
   - ps: "cat requirements.txt | ?{$_ -notmatch 'dnspython'} > req.txt"
