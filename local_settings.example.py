@@ -351,6 +351,23 @@ RELATE_DOCKER_URL = "unix://var/run/docker.sock"
 
 RELATE_DOCKER_TLS_CONFIG = None
 
+# Example setup for targeting remote Docker instances
+# with TLS authentication:
+
+# RELATE_DOCKER_URL = "https://relate.cs.illinois.edu:2375"
+#
+# import os.path
+# pki_base_dir = os.path.dirname(__file__)
+#
+# import docker.tls
+# RELATE_DOCKER_TLS_CONFIG = docker.tls.TLSConfig(
+#     client_cert=(
+#         os.path.join(pki_base_dir, "client-cert.pem"),
+#         os.path.join(pki_base_dir, "client-key.pem"),
+#         ),
+#     ca_cert=os.path.join(pki_base_dir, "ca.pem"),
+#     verify=True)
+
 # Docker configurations used by Relate. For runpy Docker (code pages), which requires
 # the "docker_image" (with previous value "RELATE_DOCKER_RUNPY_IMAGE") key, the
 # config name is default to "default". You can switch the name to other by
@@ -403,48 +420,13 @@ RELATE_DOCKER_TLS_CONFIG = None
 #SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR = False
 
 
-# Example setup for targeting remote Docker instances
-# with TLS authentication:
-
-# RELATE_DOCKER_URL = "https://relate.cs.illinois.edu:2375"
-#
-# import os.path
-# pki_base_dir = os.path.dirname(__file__)
-#
-# import docker.tls
-# RELATE_DOCKER_TLS_CONFIG = docker.tls.TLSConfig(
-#     client_cert=(
-#         os.path.join(pki_base_dir, "client-cert.pem"),
-#         os.path.join(pki_base_dir, "client-key.pem"),
-#         ),
-#     ca_cert=os.path.join(pki_base_dir, "ca.pem"),
-#     verify=True)
-
-# The following lines are for docker-machine on windows
-import platform
-if not platform.system().lower().startswith("linux"):
-    def get_windows_docker_host_ip(machine="default", raise_error=False):
-        from subprocess import PIPE, Popen
-        cmd = ["docker-machine", "env", machine]
-        p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-        stdout, stderr = p.communicate()
-        error_code = p.returncode
-        if error_code:
-            if raise_error:
-                raise RuntimeError(
-                    "error %s: %s" % (
-                            error_code, stderr.decode('utf-8').strip()))
-            else:
-                # fail silently
-                return 'localhost'
-        out = stdout.decode('utf-8')
-
-        import re
-        ip_re_pattern = "DOCKER_HOST=tcp://([\d.]+):"
-        s = re.search(ip_re_pattern, out)
-        return s.groups()[0]
-
-    RELATE_DOCKER_HOST_IP = get_windows_docker_host_ip()
+# Note: The following is used to ensure unittests can be run on Windows CI and for
+# backward compatibility, you should remove them in your local_settings.py if you
+# want to enable runpy docker functionality.
+import sys
+if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
+    SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR = True
+    #RELATE_RUNPY_DOCKER_ENABLED = False
 
 # }}}
 

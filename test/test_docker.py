@@ -41,7 +41,6 @@ from django.core import mail
 
 from django.test.utils import override_settings
 from django.test import SimpleTestCase
-from django.core import checks
 from course.docker.config import (
     get_docker_client_config, get_relate_runpy_docker_client_config)
 
@@ -183,26 +182,19 @@ TEST_DOCKERS_WITH_DEFAULT_CONFIG = {
 }
 
 
-def skip_check_docker_client_config(app_configs, **kwargs):
-    return []
-
-
 @override_settings(RELATE_RUNPY_DOCKER_ENABLED=True,
                    RELATE_DOCKERS=TEST_DOCKERS,
                    RELATE_DOCKER_RUNPY_IMAGE="Original.image",
                    RELATE_DOCKER_TLS_CONFIG=docker.tls.TLSConfig(),
                    RELATE_DOCKER_URL="http://original.url")
-@mock.patch(
-    "course.docker.checks.check_docker_client_config",
-    side_effect=skip_check_docker_client_config)
 class ClientConfigGetFunctionTests(SimpleTestCase):
     """
     test course.docker.config.get_docker_client_config
     """
-    @mock.patch("relate.utils.is_windows_platform", return_value=True)
+    @mock.patch("course.docker.config.is_windows_platform", return_value=True)
     @override_settings(
         RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=VALID_RUNPY_CONFIG_NAME)
-    def test_config_instance_windows(self, mocked_register, mocked_sys):
+    def test_config_instance_windows(self, mocked_sys):
         result = get_docker_client_config(VALID_RUNPY_CONFIG_NAME, for_runpy=True)
         self.assertIsInstance(result, RunpyClientForDockerMachineConfigure)
         self.assertEqual(result.image, "runpy_test.image")
@@ -216,12 +208,12 @@ class ClientConfigGetFunctionTests(SimpleTestCase):
         self.assertIsInstance(result, RunpyClientForDockerMachineConfigure)
         self.assertEqual(result.image, "runpy_test.image")
 
-    @mock.patch("relate.utils.is_windows_platform", return_value=False)
-    @mock.patch("relate.utils.is_windows_platform", return_value=False)
+    @mock.patch("course.docker.config.is_windows_platform", return_value=False)
+    @mock.patch("course.docker.config.is_windows_platform", return_value=False)
     @override_settings(
         RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=VALID_RUNPY_CONFIG_NAME)
     def test_config_instance_not_windows(
-            self, mocked_register, mocked_sys1, mocked_sys2):
+            self, mocked_sys1, mocked_sys2):
         result = get_docker_client_config(VALID_RUNPY_CONFIG_NAME, for_runpy=True)
         self.assertIsInstance(result, RunpyClientForDockerConfigure)
         self.assertEqual(result.image, "runpy_test.image")
@@ -235,11 +227,11 @@ class ClientConfigGetFunctionTests(SimpleTestCase):
         self.assertIsInstance(result, RunpyClientForDockerConfigure)
         self.assertEqual(result.image, "runpy_test.image")
 
-    @mock.patch("relate.utils.is_windows_platform", return_value=True)
+    @mock.patch("course.docker.config.is_windows_platform", return_value=True)
     @override_settings(
         RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=RUNPY_DOCKER_CONFIG_NAME_DOCKER_MACHINE_NOT_ENABLED)  # noqa
     def test_config_instance_docker_machine_not_enabled_windows(
-            self, mocked_register, mocked_sys):
+            self, mocked_sys):
         result = get_docker_client_config(
             RUNPY_DOCKER_CONFIG_NAME_DOCKER_MACHINE_NOT_ENABLED, for_runpy=True)
         self.assertIsInstance(result, RunpyClientForDockerConfigure)
@@ -255,12 +247,12 @@ class ClientConfigGetFunctionTests(SimpleTestCase):
         self.assertIsInstance(result, RunpyClientForDockerConfigure)
         self.assertEqual(result.image, "runpy_test.image")
 
-    @mock.patch("relate.utils.is_windows_platform", return_value=False)
-    @mock.patch("relate.utils.is_osx_platform", return_value=False)
+    @mock.patch("course.docker.config.is_windows_platform", return_value=False)
+    @mock.patch("course.docker.config.is_osx_platform", return_value=False)
     @override_settings(
         RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=RUNPY_DOCKER_CONFIG_NAME_DOCKER_MACHINE_NOT_ENABLED)  # noqa
     def test_config_instance_docker_machine_not_enabled_not_windows(
-            self, mocked_register, mocked_sys1, mocked_sys2):
+            self, mocked_sys1, mocked_sys2):
         result = get_docker_client_config(
             RUNPY_DOCKER_CONFIG_NAME_DOCKER_MACHINE_NOT_ENABLED,
             for_runpy=True)
@@ -280,9 +272,6 @@ class ClientConfigGetFunctionTests(SimpleTestCase):
 
 
 @override_settings(RELATE_DOCKERS=TEST_DOCKERS_WITH_DEFAULT_CONFIG)
-@mock.patch(
-    "course.docker.checks.check_docker_client_config",
-    side_effect=skip_check_docker_client_config)
 class DefaultConfigClientConfigGetFunctionTests(SimpleTestCase):
     """
     Test RELATE_DOCKS contains a configure named "default"
@@ -292,7 +281,7 @@ class DefaultConfigClientConfigGetFunctionTests(SimpleTestCase):
 
                        # Explicitly set to None
                        RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=None)
-    def test_get_runpy_config_explicitly_named_none(self, mocked_register):
+    def test_get_runpy_config_explicitly_named_none(self):
         self.assertTrue(hasattr(settings, RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME))
 
         expected_msg = ("%s can not be None when %s is True"
@@ -310,7 +299,7 @@ class DefaultConfigClientConfigGetFunctionTests(SimpleTestCase):
             self.assertEqual(str(warns[0].message), expected_msg)
 
     @override_settings(RELATE_RUNPY_DOCKER_ENABLED=True)
-    def test_get_runpy_config_not_named1(self, mocked_register):
+    def test_get_runpy_config_not_named1(self):
         # simulate RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME is not configured
         with self.settings():
             if hasattr(settings, RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME):
@@ -324,16 +313,13 @@ class DefaultConfigClientConfigGetFunctionTests(SimpleTestCase):
     @override_settings(RELATE_RUNPY_DOCKER_ENABLED=False,
                        RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=None,
                        SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR=True)
-    def test_get_runpy_config_not_named_not_enabled2(self, mocked_register):
+    def test_get_runpy_config_not_named_not_enabled2(self):
         result = get_relate_runpy_docker_client_config(
             silence_if_not_usable=settings.SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR)
         self.assertIsNone(result)
 
 
 @override_settings(RELATE_DOCKERS=TEST_DOCKERS, RELATE_RUNPY_DOCKER_ENABLED=True)
-@mock.patch(
-    "course.docker.checks.check_docker_client_config",
-    side_effect=skip_check_docker_client_config)
 class DeprecationWarningsTests(SimpleTestCase):
     @override_settings(
         RELATE_DOCKER_URL=ORIGINAL_RELATE_DOCKER_URL,
@@ -341,7 +327,7 @@ class DeprecationWarningsTests(SimpleTestCase):
         RELATE_DOCKER_RUNPY_IMAGE=ORIGINAL_RELATE_DOCKER_RUNPY_IMAGE,
         RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=RUNPY_DOCKER_CONFIG_NAME_NO_IMAGE
     )
-    def test_no_relate_dockers(self, mocked_register):
+    def test_no_relate_dockers(self):
         with self.settings():
             del settings.RELATE_DOCKERS
             del settings.RELATE_RUNPY_DOCKER_ENABLED
@@ -355,7 +341,7 @@ class DeprecationWarningsTests(SimpleTestCase):
     @override_settings(
         RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=RUNPY_DOCKER_CONFIG_NAME_NO_IMAGE
     )
-    def test_no_image(self, mocked_register):
+    def test_no_image(self):
         with override_settings(
                 RELATE_DOCKER_RUNPY_IMAGE=ORIGINAL_RELATE_DOCKER_RUNPY_IMAGE):
             with warnings.catch_warnings(record=True) as warns:
@@ -373,7 +359,7 @@ class DeprecationWarningsTests(SimpleTestCase):
     @override_settings(
         RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=RUNPY_DOCKER_CONFIG_NAME_NO_BASE_URL
     )
-    def test_no_base_url(self, mocked_register):
+    def test_no_base_url(self):
         with override_settings(
                 RELATE_DOCKER_URL=ORIGINAL_RELATE_DOCKER_URL):
             with warnings.catch_warnings(
@@ -402,7 +388,7 @@ class DeprecationWarningsTests(SimpleTestCase):
     @override_settings(
         RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=RUNPY_DOCKER_CONFIG_NAME_NO_TLS
     )
-    def test_no_tls(self, mocked_register):
+    def test_no_tls(self):
         with override_settings(
                 RELATE_DOCKER_TLS_CONFIG=ORIGINAL_RELATE_DOCKER_TLS_CONFIG):
             with warnings.catch_warnings(
@@ -420,17 +406,12 @@ class DeprecationWarningsTests(SimpleTestCase):
 
 
 @override_settings(RELATE_DOCKERS=TEST_DOCKERS)
-@mock.patch(
-    "course.docker.checks.check_docker_client_config",
-    side_effect=skip_check_docker_client_config)
 class NotDefinedConfigClientConfigGetFunctionTests(SimpleTestCase):
     @mock.patch(
         "relate.utils.is_windows_platform", return_value=True)
     @override_settings(
         RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=RUNPY_DOCKER_CONFIG_NAME_NOT_EXIST)  # noqa
-    def test_get_runpy_config_with_not_exist_config_name(self,
-                                                         mocked_register,
-                                                         mocked_sys):
+    def test_get_runpy_config_with_not_exist_config_name(self, mocked_sys):
         with override_settings(RELATE_RUNPY_DOCKER_ENABLED=True):
             expected_error_msg = (
                 "RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME: "
@@ -566,20 +547,25 @@ def get_docker_program_version_exception_machine(program, print_output=False):
     RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=REAL_RUNPY_CONFIG_NAME
 )
 class RealRunpyDockerCheck(ReadDockerTestMixin, SimpleTestCase):
+    @property
+    def func(self):
+        from course.docker.checks import check_docker_client_config
+        return check_docker_client_config
+
     def test_tls_not_configured_warning(self):
-        result = checks.run_checks()
+        result = self.func(None)
         self.assertEqual([r.id for r in result], ["docker_config_client_tls.W001"])
 
     @override_settings(RELATE_DOCKERS=REAL_DOCKERS_WITH_UNPULLED_IMAGE)
     def test_image_not_pulled_error(self):
-        result = checks.run_checks()
+        result = self.func(None)
         self.assertEqual([r.id for r in result], ["docker_config_client_tls.W001",
                                                   "docker_config_image.E001"])
 
     @mock.patch("course.docker.config.get_docker_program_version",
                 side_effect=get_docker_program_version_none)
     def test_docker_version_none(self, mocked_get_version):
-        result = checks.run_checks()
+        result = self.func(None)
         if is_windows_platform() or is_osx_platform():
             self.assertEqual([r.id for r in result],
                              ["docker_version.E001",
@@ -591,7 +577,7 @@ class RealRunpyDockerCheck(ReadDockerTestMixin, SimpleTestCase):
     @mock.patch("course.docker.config.get_docker_program_version",
                 side_effect=get_docker_program_version_outdated)
     def test_docker_version_outdated(self, mocked_get_version):
-        result = checks.run_checks()
+        result = self.func(None)
         if is_windows_platform() or is_osx_platform():
             self.assertEqual([r.id for r in result],
                              ["docker_version.E001",
@@ -603,17 +589,18 @@ class RealRunpyDockerCheck(ReadDockerTestMixin, SimpleTestCase):
     @mock.patch("course.docker.config.get_docker_program_version",
                 side_effect=get_docker_program_version_machine_outdated)
     def test_docker_version_machine_outdated(self, mocked_get_version):
-        result = checks.run_checks()
+        result = self.func(None)
         if is_windows_platform() or is_osx_platform():
             self.assertEqual([r.id for r in result],
                              ["docker_machine_version.E001"])
         else:
-            self.assertTrue(len(result)==0)
+            self.assertEqual([r.id for r in result],
+                             ["docker_config_client_tls.W001"])
 
     @mock.patch("course.docker.config.get_docker_program_version",
                 side_effect=get_docker_program_version_exception_both)
     def test_docker_version_exception_both(self, mocked_get_version):
-        result = checks.run_checks()
+        result = self.func(None)
         if is_windows_platform() or is_osx_platform():
             self.assertEqual([r.id for r in result],
                              ["docker_version_exception_unknown.E001",
@@ -625,19 +612,20 @@ class RealRunpyDockerCheck(ReadDockerTestMixin, SimpleTestCase):
     @mock.patch("course.docker.config.get_docker_program_version",
                 side_effect=get_docker_program_version_exception_machine)
     def test_docker_version_exception_machine(self, mocked_get_version):
-        result = checks.run_checks()
+        result = self.func(None)
         if is_windows_platform() or is_osx_platform():
             self.assertEqual([r.id for r in result],
                              ["docker_machine_version_exception_unknown.E001"])
         else:
-            self.assertTrue(len(result)==0)
+            self.assertEqual([r.id for r in result],
+                             ["docker_config_client_tls.W001"])
 
     @override_settings(
         RELATE_RUNPY_DOCKER_ENABLED=True,
         RELATE_DOCKERS=REAL_DOCKERS_WITH_INVALID_IP_MAP,
         RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=REAL_RUNPY_CONFIG_NAME)
     def test_private_public_ip_map_dict_check(self):
-        result = checks.run_checks()
+        result = self.func(None)
         self.assertEqual([r.id for r in result],
                          ['private_public_ip_map_dict.E001'])
 

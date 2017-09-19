@@ -35,8 +35,7 @@ DEBUG = False
 def check_docker_client_config(app_configs, **kwargs):
     from course.docker.config import (
         get_relate_runpy_docker_client_config, RunpyDockerNotUsableError,
-        SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR
-        )
+        SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR)
 
     from django.conf import settings
 

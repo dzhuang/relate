@@ -32,7 +32,8 @@ import logging
 import warnings
 from typing import Union
 from django.core.exceptions import ImproperlyConfigured
-from relate.utils import RELATEDeprecateWarning
+from relate.utils import (
+    RELATEDeprecateWarning, is_windows_platform, is_osx_platform)
 from .utils import (
     get_docker_program_version, run_cmd_line)
 from distutils.version import LooseVersion
@@ -246,40 +247,53 @@ class ClientConfigBase(object):
 
         return errors
 
-    def check_client_tls(self):
+    def check_client_tls_enabled(self):
         # type: () -> List[CheckMessage]
-        errors = []
+        """
+        Add a :class:`django.core.checks Warning` if tls is not enabled
+        """
+
+        # self.client_config should have been updated through
+        # update_client_creation_kwargs
         tls = self.client_config.get("tls", None)
-        if not tls:
-            from django.core.checks import Warning as CheckWarning
-            errors.append(
-                CheckWarning(
-                    msg=("SecurityWarning: TLS is not enabled "
-                         "for Docker client in %(location)s"
-                         % {"location": self.client_tls_location}
-                         ),
-                    id="docker_config_client_tls.W001",
-                    obj=self.__class__
-                )
+        if tls:
+            return []
+
+        from django.core.checks import Warning as CheckWarning
+        return [
+            CheckWarning(
+                msg=("SecurityWarning: TLS is not enabled "
+                     "for Docker client in %(location)s"
+                     % {"location": self.client_tls_location}
+                     ),
+                id="docker_config_client_tls.W001",
+                obj=self.__class__
             )
-        else:
-            from docker.tls import TLSConfig
-            if not isinstance(tls, TLSConfig):
-                errors.append(
-                    RelateCriticalCheckMessage(
-                        msg=(
-                            INSTANCE_ERROR_PATTERN
-                            % {
-                                "location": self.client_tls_location,
-                                "types": TLSConfig.__name__}),
-                        id="docker_config_client_tls.E001",
-                    )
-                )
-        return errors
+        ]
 
     def check_config_validaty(self):
         # type: () -> List[CheckMessage]
-        return []
+
+        errors = []
+        tls = self.client_config.get("tls", None)
+        if not tls:
+            # Whether tls is enabled is check after client is created
+            # at self.update_client_creation_kwargs(), because
+            # for docker-machine, tls is created through kwargs_from_env()
+            return []
+        from docker.tls import TLSConfig
+        if not isinstance(tls, TLSConfig):
+            errors.append(
+                RelateCriticalCheckMessage(
+                    msg=(
+                        INSTANCE_ERROR_PATTERN
+                        % {
+                            "location": self.client_tls_location,
+                            "types": TLSConfig.__name__}),
+                    id="docker_config_client_tls.E001",
+                )
+            )
+        return errors
 
     def check_docker_status(self):
         # type: () -> List[CheckMessage]
@@ -291,9 +305,7 @@ class ClientConfigBase(object):
 
     def check_client_and_image(self):
         # type: () -> List[CheckMessage]
-        errors = self.check_client_tls()
-        if has_error(errors):
-            return errors
+        errors = []
         cli = None
         try:
             cli = self.create_client()
@@ -310,6 +322,12 @@ class ClientConfigBase(object):
                     id="docker_config_client_create.E001"
                 )
             )
+
+        # check whether tls is enabled, it is cheched here instead of before
+        # self.create_client(), because tls might be None before that
+        # (for docker-machine) and is generated via update_client_creation_kwargs
+        # before returning a Client instance in self.create_client()
+        errors.extend(self.check_client_tls_enabled())
 
         if has_error(errors):
             return errors
@@ -740,7 +758,9 @@ class RunpyClientForDockerMachineConfigure(
     def _get_docker_machine_status(self):
         # type: () -> Text
         status = run_cmd_line(
-            ['docker-machine', 'status', self.docker_machine_name])
+            ['docker-machine', 'status', self.docker_machine_name],
+            print_output=Debug
+        )
         assert status
         return status.strip()
 
@@ -773,7 +793,6 @@ class RunpyClientForDockerMachineConfigure(
                "Please following the instructions below and try to start "
                "the server again: \n%s%s\n%s" % ("-" * 50, output, "-" * 50))
         if not self.docker_running_shell:
-            from relate.utils import is_windows_platform
             if is_windows_platform():
                 msg += ("\nThe above export script is for 'cmd' shell, "
                         "you can specify your shell in %(location)s, see "
@@ -791,8 +810,9 @@ Docker_client_config_ish = Union[
 
 
 def get_docker_client_config(docker_config_name, for_runpy=True,
-                             use_deprecated_settings=False):
-    # type: (Text, bool, bool) -> Optional[Docker_client_config_ish]
+                             use_deprecated_settings=False,
+                             silence_if_not_usable=False):
+    # type: (Text, bool, bool, bool) -> Optional[Docker_client_config_ish]
 
     """
     Get the client config from docker configurations with docker_config_name
@@ -806,11 +826,11 @@ def get_docker_client_config(docker_config_name, for_runpy=True,
     :param use_deprecated_settings: Optional, a :class:`bool` instance.
     :return: a `Docker_client_config_ish` instance.
     """
+    from django.conf import settings
     if not use_deprecated_settings:
         from copy import deepcopy
         config = deepcopy(get_config_by_name(docker_config_name))
     else:
-        from django.conf import settings
         assert not getattr(settings, RELATE_DOCKERS, None)
         deprecation_locations = [RELATE_DOCKER_RUNPY_IMAGE]
         config = {
@@ -840,7 +860,6 @@ def get_docker_client_config(docker_config_name, for_runpy=True,
     use_local_docker_machine = False
     local_docker_machine_config = config.pop("local_docker_machine_config", {})
     if local_docker_machine_config:
-        from relate.utils import is_windows_platform, is_osx_platform
         if (local_docker_machine_config.get("enabled", False)
             and
                 (is_windows_platform() or is_osx_platform())):
@@ -861,6 +880,43 @@ def get_docker_client_config(docker_config_name, for_runpy=True,
         else:
             return ClientForDockerMachineConfigure(
                 docker_config_name, client_config, **kwargs)
+    else:
+        if for_runpy and use_deprecated_settings:
+
+            # We only check this when use_deprecated_settings for Windows
+            # as previously docker was not supported by default local_settings for
+            # Windows, with the following check, we are preventing it throw
+            # AttributeError: module 'socket' has no attribute 'AF_UNIX'
+            # if the deprecated RELATE_DOCKER_URL is a unix specific socket url
+            if is_windows_platform():
+                windows_docker_client_useable = True
+                msg = ""
+                from docker.utils.utils import parse_host
+                client_config_base_url = getattr(settings, RELATE_DOCKER_URL, None)
+                if client_config_base_url:
+                    try:
+                        parsed_host = parse_host(client_config_base_url)
+                        if parsed_host.startswith("http+unix"):
+                            windows_docker_client_useable = False
+                            msg = (
+                                "%s is a unix specifc address and should not"
+                                "be configured for Windows: %s"
+                                % (RELATE_DOCKER_URL, settings.RELATE_DOCKER_URL))
+                    except Exception as e:
+                        msg = (
+                            "Error at %s: %s: %s"
+                            % (RELATE_DOCKERS, type(e).__name__, str(e))
+                        )
+
+                if not windows_docker_client_useable:
+                    if not silence_if_not_usable:
+                        raise RunpyDockerNotUsableError(msg)
+                    else:
+                        warnings.warn(
+                            msg,
+                            RunpyDockerClientConfigNameIsNoneWarning,
+                            stacklevel=2)
+                        return None
 
     if for_runpy:
         return RunpyClientForDockerConfigure(
@@ -890,15 +946,6 @@ def get_config_by_name(docker_config_name):
 
 def get_relate_runpy_docker_client_config(silence_if_not_usable=False):  # noqa
     from django.conf import settings
-    relate_dockers = getattr(settings, RELATE_DOCKERS, None)
-    if not relate_dockers:
-        if not getattr(settings, RELATE_DOCKER_RUNPY_IMAGE, None):
-            return None
-        else:
-            return get_docker_client_config(
-                DEFAULT_DOCKER_RUNPY_CONFIG_ALIAS, for_runpy=True,
-                use_deprecated_settings=True)
-
     runpy_enabled = getattr(settings, RELATE_RUNPY_DOCKER_ENABLED, True)
     if not runpy_enabled:
         if not silence_if_not_usable:
@@ -909,6 +956,18 @@ def get_relate_runpy_docker_client_config(silence_if_not_usable=False):  # noqa
                    SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR)
             )
         return None
+
+    relate_dockers = getattr(settings, RELATE_DOCKERS, None)
+    if not relate_dockers:
+        # backward compatibility
+        if not getattr(settings, RELATE_DOCKER_RUNPY_IMAGE, None):
+            return None
+        else:
+            return get_docker_client_config(
+                DEFAULT_DOCKER_RUNPY_CONFIG_ALIAS, for_runpy=True,
+                use_deprecated_settings=True,
+                silence_if_not_usable=silence_if_not_usable)
+
     relate_runpy_docker_client_config_name = (
         getattr(settings, RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME,
                 DEFAULT_DOCKER_RUNPY_CONFIG_ALIAS))
