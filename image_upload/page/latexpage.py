@@ -258,17 +258,15 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         self.will_receive_grade = getattr(page_desc, "will_receive_grade", True)
         self.updated_full_desc = None
-        self.get_updated_full_desc_error = None
-        self.update_page_desc_error = None
+        self.error_getting_updated_full_desc = None
+        self.error_updating_page_desc = None
 
-    def make_form(
-            self,
-            page_context,  # type: PageContext
-            page_data,  # type: Any
-            answer_data,  # type: Any
-            page_behavior,  # type: Any
-            ):
+    def update_page_full_desc(self, page_context, page_data):
+        if self.updated_full_desc is None:
+            self._update_page_full_desc(page_context, page_data)
+        assert self.updated_full_desc is not None
 
+    def _update_page_full_desc(self, page_context, page_data):
         if (hasattr(self.page_desc, "full_process_code")
             or
                 hasattr(self.page_desc, "runpy_file")):
@@ -278,9 +276,23 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             if success:
                 self.updated_full_desc = result
             else:
-                self.get_updated_full_desc_error = result
-                return None
-        if self.update_page_desc_error:
+                self.updated_full_desc = {}
+                self.error_getting_updated_full_desc = result
+
+    def make_form(
+            self,
+            page_context,  # type: PageContext
+            page_data,  # type: Any
+            answer_data,  # type: Any
+            page_behavior,  # type: Any
+            ):
+
+        self.update_page_full_desc(page_context, page_data)
+
+        if self.error_getting_updated_full_desc:
+            return None
+
+        if self.error_updating_page_desc:
             return None
         return super(LatexRandomQuestionBase, self).make_form(
             page_context, page_data, answer_data, page_behavior
@@ -844,10 +856,11 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         return success, result
 
     def body(self, page_context, page_data):
-        if self.get_updated_full_desc_error:
-            return markup_to_html(page_context, self.get_updated_full_desc_error)
-        if self.update_page_desc_error:
-            return markup_to_html(page_context, self.update_page_desc_error)
+        self.update_page_full_desc(page_context, page_data)
+        if self.error_getting_updated_full_desc:
+            return markup_to_html(page_context, self.error_getting_updated_full_desc)
+        if self.error_updating_page_desc:
+            return markup_to_html(page_context, self.error_updating_page_desc)
         if page_context.in_sandbox or page_data is None:
             page_data = self.initialize_page_data(page_context)
 
@@ -867,8 +880,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         if self.updated_full_desc:
             question_str = self.updated_full_desc.get("question", "")
-        elif self.get_updated_full_desc_error:
-            return markup_to_html(page_context, self.get_updated_full_desc_error)
+        elif self.error_getting_updated_full_desc:
+            return markup_to_html(page_context, self.error_getting_updated_full_desc)
         else:
             question_str = ""
             success = False
@@ -1158,8 +1171,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         # }}}
 
     def correct_answer(self, page_context, page_data, answer_data, grade_data):
-        if self.get_updated_full_desc_error:
-            return markup_to_html(page_context, self.get_updated_full_desc_error)
+        if self.error_getting_updated_full_desc:
+            return markup_to_html(page_context, self.error_getting_updated_full_desc)
 
         CA_PATTERN = string_concat(_("A correct answer is"), ": %s.")  # noqa
         answer_str = ""
@@ -1202,7 +1215,8 @@ class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestio
     need_update_page_desc = True
 
     def update_page_desc(self, page_context, page_data):
-        if self.get_updated_full_desc_error:
+        self.update_page_full_desc(page_context, page_data)
+        if self.error_getting_updated_full_desc:
             return
 
         from course.page.inline import WRAPPED_NAME_RE, NAME_RE
@@ -1254,7 +1268,7 @@ class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestio
         if answer_explanation_str:
             self.page_desc.answer_explanation = answer_explanation_str
 
-        if not self.get_updated_full_desc_error:
+        if not self.error_getting_updated_full_desc:
             try:
                 question = markup_to_html(page_context, blank_str)
                 from relate.utils import dict_to_struct
@@ -1285,7 +1299,7 @@ class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestio
                 from yaml.scanner import ScannerError
                 if isinstance(e, ScannerError):
                     from traceback import format_exc
-                    self.update_page_desc_error = string_concat(
+                    self.error_updating_page_desc = string_concat(
                         "<p class='latexpage-error alert alert-danger'><strong>",
                         _("Error: "),
                         _("The template failed to render, the log follows:"),
@@ -1299,6 +1313,7 @@ class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestio
 
     def get_question(self, page_context, page_data):
         # template error is supposed to be raised here
+        self.update_page_full_desc(page_context, page_data)
         self.update_page_desc(page_context, page_data)
         return super(LatexRandomCodeInlineMultiQuestion, self) \
             .get_question(page_context, page_data)
@@ -1310,6 +1325,7 @@ class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestio
         )
 
     def grade(self, page_context, page_data, answer_data, grade_data):
+        self.update_page_full_desc(page_context, page_data)
         self.update_page_desc(page_context, page_data)
         return super(LatexRandomCodeInlineMultiQuestion, self).grade(
             page_context, page_data, answer_data, grade_data)
