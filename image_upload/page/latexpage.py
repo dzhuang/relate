@@ -617,6 +617,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             if not page_context.in_sandbox:
                 break
 
+            if not warm_up_by_sandbox:
+                break
+
             page_data = {
                 "question_data": question_data,
                 "template_hash": template_hash,
