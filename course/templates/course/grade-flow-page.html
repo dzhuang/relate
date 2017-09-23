@@ -13,6 +13,7 @@
       {# {{{ student view #}
 
       {# {{{ past submissions #}
+      {% if expects_answer %}
       <div style="float: right; padding-top:1.5em; margin-right:0 !important;" class="navbar-right">
         <div class="dropdown" id="past-submission-and-grades_dropdown">
           <button class="btn btn-default dropdown-toggle" type="button" id="past-submission-and-grades_dropdown_button"
@@ -27,6 +28,7 @@
           </ul>
         </div>
       </div>
+      {% endif %}
 
       {# }}} #}
       {{ body|safe }}
@@ -487,6 +489,7 @@
 
 {% block page_bottom_javascript_extra %}
 
+  {% if expects_answer %}
   <script src="{{ STATIC_URL }}blueimp-tmpl/js/tmpl.min.js"></script>
   <script>
 
@@ -536,6 +539,7 @@
       {{ JQ_OPEN }} } {{ JQ_CLOSE }}
     {{ JQ_OPEN }} } {{ JQ_CLOSE }}
   </script>
+  {% endif %}
   {{ block.super }}
 {% endblock %}
 

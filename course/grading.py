@@ -645,7 +645,9 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     grade_data = None
     shown_grade = None
 
-    if fpctx.page.expects_answer():
+    page_expects_answer = fpctx.page.expects_answer()
+
+    if page_expects_answer:
         if fpctx.prev_answer_visit is not None and prev_grade_id is None:
             answer_data = fpctx.prev_answer_visit.answer
 
@@ -707,7 +709,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     # {{{ grading form
 
     page_expects_grade = (
-        fpctx.page.expects_answer()
+        page_expects_answer
         and fpctx.page.is_answer_gradable()
         and fpctx.prev_answer_visit is not None
         and not flow_session.in_progress
@@ -787,7 +789,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
     max_points = None  # type: Optional[Union[int, float]]
     points_awarded = None  # type: Optional[Union[int, float]]
-    if (fpctx.page.expects_answer()
+    if (page_expects_answer
             and fpctx.page.is_answer_gradable()):
         max_points = fpctx.page.max_points(fpctx.page_data)
         if feedback is not None and feedback.correctness is not None:
@@ -1017,6 +1019,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 "points_awarded": points_awarded,
                 "shown_grade": shown_grade,
                 "prev_grade_id": prev_grade_id,
+                "expects_answer": page_expects_answer,
 
                 "grading_opportunity": grading_opportunity,
 
