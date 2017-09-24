@@ -553,7 +553,7 @@ class RunpyDockerMixinBase(object):
                         id="private_public_ip_map_dict.E001"))
 
         if self.execution_host_alias_dict:  # type: ignore
-            for host, alias in six.iteritems(self.execution_host_alias_dict):  # type: ignore #
+            for host, alias in six.iteritems(self.execution_host_alias_dict):  # type: ignore  # noqa
                 if not isinstance(host, str) or not isinstance(alias, str):
                     errors.append(RelateCriticalCheckMessage(
                         msg=(

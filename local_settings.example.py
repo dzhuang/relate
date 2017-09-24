@@ -429,9 +429,9 @@ RELATE_DOCKER_TLS_CONFIG = None
 #SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR = False
 
 
-# Note: The following is used to ensure unittests can be run on Windows CI and for
-# backward compatibility, you should remove them in your local_settings.py if you
-# want to enable runpy docker functionality.
+# # Note: The following is used to ensure unittests can be run on Windows CI and for
+# # backward compatibility, you should remove them in your local_settings.py if you
+# # want to enable runpy docker functionality.
 import sys
 if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
     SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR = True
