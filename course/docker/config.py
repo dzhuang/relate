@@ -509,6 +509,24 @@ class RunpyDockerMixinBase(object):
 
         self.private_public_ip_map_dict = cast(Dict, private_public_ip_map_dict)
 
+        execution_host_alias_dict = (
+            kwargs.get("execution_host_alias_dict", None))  # type: Optional[Dict[Text, Text]]  # noqa
+
+        self.execution_host_alias_dict_location = (
+            "'execution_host_alias_dict' of '%s' in %s"
+            % (docker_config_name, RELATE_DOCKERS)
+        )  # type: Text
+
+        if execution_host_alias_dict:
+            if not isinstance(execution_host_alias_dict, dict):
+                raise ImproperlyConfigured(
+                    INSTANCE_ERROR_PATTERN % {
+                        'location': self.execution_host_alias_dict_location,
+                        "types": "dict"})
+        else:
+            execution_host_alias_dict = {}
+        self.execution_host_alias_dict = cast(Dict, execution_host_alias_dict)
+
     def check_config_validaty(self):
         # type: () -> List[CheckMessage]
         errors = (
@@ -533,6 +551,18 @@ class RunpyDockerMixinBase(object):
                                "error_str": str(e)
                                }),
                         id="private_public_ip_map_dict.E001"))
+
+        if self.execution_host_alias_dict:
+            for host, alias in six.iteritems(self.execution_host_alias_dict):
+                if not isinstance(host, str) or not isinstance(alias, str):
+                    errors.append(RelateCriticalCheckMessage(
+                        msg=(
+                            INSTANCE_ERROR_PATTERN % {
+                                'location': (
+                                    "Keys and values in %s"
+                                    % self.execution_host_alias_dict_location),
+                                "types": "str"}),
+                        id="execution_host_alias_dict.E001"))
 
         return errors
 
@@ -609,6 +639,10 @@ class RunpyDockerMixinBase(object):
         RELATE instance.
         """
         return self.private_public_ip_map_dict.get(ip, ip)  # type: ignore
+
+    def get_execution_host_alias(self, name):
+        # type: (Text) -> Text
+        return self.execution_host_alias_dict.get(name, name)
 
 
 class RunpyDockerMixin(RunpyDockerMixinBase):

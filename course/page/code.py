@@ -829,6 +829,19 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
             except socket.error:
                 exec_host_name = response.exec_host
 
+            from course.docker.config import get_relate_runpy_docker_client_config
+            silence_for_not_usable = getattr(
+                settings, "SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR", False)
+            try:
+                client_config = get_relate_runpy_docker_client_config(
+                    silence_if_not_usable=silence_for_not_usable)
+            except:
+                client_config = None
+
+            if client_config:
+                exec_host_name = (
+                    client_config.get_execution_host_alias(exec_host_name))
+
             feedback_bits.append("".join([
                 "<p>",
                 _("Your code ran on %s.") % exec_host_name,

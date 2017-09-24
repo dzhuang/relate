@@ -403,6 +403,10 @@ RELATE_DOCKER_TLS_CONFIG = None
 #         # instance) of each docker-running instances.
 #         # Dict format: {private_ip1: public_ip_1, private_ip2, public_ip_2}
 #         "private_public_ip_map_dict": {},
+#
+#         # This is used to display alias of execution hosts of runpy instance if
+#         # you don't want user to know the actual host name or ip address.
+#         "execution_host_alias_dict": {"some ip": "my runpy instance I"},
 #     },
 #     "other":{
 #
