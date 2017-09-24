@@ -524,15 +524,16 @@ class RunpyDockerMixinBase(object):
                     get_ip_address(six.text_type(private_ip))
                     get_ip_address(six.text_type(public_ip))
                 except Exception as e:
-                    errors.append(RelateCriticalCheckMessage(
-                        msg=(
-                            GENERIC_ERROR_PATTERN
-                            % {'location':
-                                   self.private_public_ip_map_dict_location,
-                               "error_type": type(e).__name__,
-                               "error_str": str(e)
-                               }),
-                        id="private_public_ip_map_dict.E001"))
+                    if not private_ip == "localhost":
+                        errors.append(RelateCriticalCheckMessage(
+                            msg=(
+                                GENERIC_ERROR_PATTERN
+                                % {'location':
+                                       self.private_public_ip_map_dict_location,
+                                   "error_type": type(e).__name__,
+                                   "error_str": str(e)
+                                   }),
+                            id="private_public_ip_map_dict.E001"))
 
         return errors
 
