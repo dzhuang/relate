@@ -552,8 +552,8 @@ class RunpyDockerMixinBase(object):
                                }),
                         id="private_public_ip_map_dict.E001"))
 
-        if self.execution_host_alias_dict:
-            for host, alias in six.iteritems(self.execution_host_alias_dict):
+        if self.execution_host_alias_dict:  # type: ignore
+            for host, alias in six.iteritems(self.execution_host_alias_dict):  # type: ignore #
                 if not isinstance(host, str) or not isinstance(alias, str):
                     errors.append(RelateCriticalCheckMessage(
                         msg=(
@@ -642,7 +642,12 @@ class RunpyDockerMixinBase(object):
 
     def get_execution_host_alias(self, name):
         # type: (Text) -> Text
-        return self.execution_host_alias_dict.get(name, name)
+        """
+        If you want to replace the actual execution host name with an alias so as
+        to hide it in the code question page,
+        RELATE_DOCKERS['execution_host_alias_dict'] needs to be configured
+        """
+        return self.execution_host_alias_dict.get(name, name)  # type: ignore
 
 
 class RunpyDockerMixin(RunpyDockerMixinBase):
