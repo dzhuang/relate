@@ -185,18 +185,11 @@ class CourseCreationForm(StyledModelForm):
             "notify_email",
             )
         widgets = {
-                "start_date": DateTimePicker(
-                    options={"format": "YYYY-MM-DD"},
-                    div_attrs={'class': 'input-group date',
-                               'id': 'start_date'}),
-                "end_date": DateTimePicker(
-                    options={"format": "YYYY-MM-DD"},
-                    div_attrs={'class': 'input-group date',
-                               'id': 'end_date'}),
-                "enroll_deadline": DateTimePicker(
-                    options={"format": "YYYY-MM-DD"},
-                    div_attrs={'class': 'input-group date',
-                               'id': 'enroll_deadline'}),  # added by zd
+                "start_date": DateTimePicker(options={"format": "YYYY-MM-DD"}),
+                "end_date": DateTimePicker(options={"format": "YYYY-MM-DD"}),
+                "enroll_deadline": (
+                    DateTimePicker(
+                        options={"format": "YYYY-MM-DD"})),  # added by zd
                 }
 
     def __init__(self, *args, **kwargs):
