@@ -70,3 +70,13 @@ test_script:
 after_test:
   - "%CMD_IN_ENV% pip install codecov"
   - "%CMD_IN_ENV% codecov -X gcov"
+
+# uncomment the following lines to enable remote debug
+on_finish:
+  - "npm install -g bower"
+  - "%CMD_IN_ENV% python manage.py bower_install --force"
+  - "%CMD_IN_ENV% python manage.py migrate"
+  - "echo \"from django.contrib.auth.models import User; User.objects.filter(email='admin@example.com').delete(); User.objects.create_superuser('admin', 'admin@example.com', 'nimda')\" | python manage.py shell"
+  - "%CMD_IN_ENV% python manage.py createsuperuser --username abc --email abc@abc.com --no-input"
+  - "ECHO Note: The python executable is in %PYTHON%, type %PYTHON%\\python manage.py runserver and then navigate to 127.0.0.1:8000 in browser"
+  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))

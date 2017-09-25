@@ -5,6 +5,7 @@
 SECRET_KEY = '<CHANGE ME TO SOME RANDOM STRING ONCE IN PRODUCTION>'
 
 ALLOWED_HOSTS = [
+        "127.0.0.1",
         "relate.example.com",
         ]
 
