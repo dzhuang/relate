@@ -32,7 +32,7 @@ from django.core.exceptions import ImproperlyConfigured
 REQUIRED_CONF_ERROR_PATTERN = (
     "You must configure %(location)s for RELATE to run properly.")
 INSTANCE_ERROR_PATTERN = "%(location)s must be an instance of %(types)s."
-GENERIC_ERROR_PATTERN = "Error in '%(location)s': %(error_type)s: %(error_str)s"
+GENERIC_ERROR_PATTERN = "Error at %(location)s: %(error_type)s: %(error_str)s"
 
 EMAIL_CONNECTIONS = "EMAIL_CONNECTIONS"
 RELATE_BASE_URL = "RELATE_BASE_URL"
