@@ -57,13 +57,6 @@ if False:
 
 # }}}
 
-# {{{ for mypy
-
-if False:
-    from typing import Any  # noqa
-
-# }}}
-
 
 class RelateCriticalCheckMessage(Critical):
     def __init__(self, *args, **kwargs):
