@@ -265,7 +265,7 @@ class ClientConfigBase(object):
 
         assert base_url
         if is_windows_platform():
-            exception = None
+            exception = None  # type: Optional[Exception]
             try:
                 if is_unix_specific_docker_base_url(base_url):
                     exception = TypeError("%s is a unix specifc address and "
@@ -976,7 +976,7 @@ def get_docker_client_config(docker_config_name, for_runpy=True,
             if is_windows_platform():
                 windows_docker_client_useable = True
                 client_config_base_url = getattr(settings, RELATE_DOCKER_URL, None)
-                exception = None
+                exception = None  # type: Optional[Exception]
                 if client_config_base_url:
                     try:
                         if is_unix_specific_docker_base_url(client_config_base_url):
