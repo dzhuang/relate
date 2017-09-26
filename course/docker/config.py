@@ -118,6 +118,13 @@ def get_ip_address(ip_range):
     return ipaddress.ip_address(six.text_type(ip_range))  # type: ignore
 
 
+def is_unix_specific_docker_base_url(base_url):
+    # type: (Text) -> bool
+    from docker.utils.utils import parse_host
+    parsed_host = parse_host(base_url)
+    return parsed_host.startswith("http+unix")
+
+
 class RelateDockMachineCheckMessageBase(CheckMessage):
     def __init__(self, *args, **kwargs):
         # type: (*Any, **Any) -> None
@@ -183,7 +190,7 @@ class ClientConfigBase(object):
         )
         self.client_tls_location = "'tls' in %s" % self.client_config_location
         self.client_base_url_location = (
-            "'base_url' in %s" % self.client_tls_location)
+            "'base_url' in %s" % self.client_config_location)
 
     def create_client(self):
         # type: () -> docker.Client
@@ -246,6 +253,39 @@ class ClientConfigBase(object):
             )
 
         return errors
+
+    def check_client_base_url(self):
+        # type: () -> List[CheckMessage]
+        base_url = self.client_config.get("base_url", None)
+        if not base_url:
+            # if tls is None, base_url can be None
+            # if tls is not None, exception will be raised and caught
+            # when create_client
+            return []
+
+        assert base_url
+        if is_windows_platform():
+            e = None
+            try:
+                if is_unix_specific_docker_base_url(base_url):
+                    e = TypeError("%s is a unix specifc address and "
+                                  "should not be configured for Windows"
+                                  % base_url)
+            except Exception as e:
+                pass
+
+            if e is not None:
+                return [
+                    RelateCriticalCheckMessage(
+                        msg=(GENERIC_ERROR_PATTERN
+                             % {"location": self.client_base_url_location,
+                                "error_type": type(e).__name__,
+                                "error_str": str(e)
+                                }),
+                        id="docker_config_client_base_url.E001",
+                        obj=self.__class__)]
+
+        return []
 
     def check_client_tls_enabled(self):
         # type: () -> List[CheckMessage]
@@ -313,9 +353,7 @@ class ClientConfigBase(object):
             errors.append(
                 RelateCriticalCheckMessage(
                     msg=(GENERIC_ERROR_PATTERN
-                         % {"location": ("'client_config' of '%s' in %s"
-                                         % (self.docker_config_name,
-                                            RELATE_DOCKERS)),
+                         % {"location": self.client_config_location,
                             "error_type": type(e).__name__,
                             "error_str": str(e)
                             }),
@@ -323,7 +361,15 @@ class ClientConfigBase(object):
                 )
             )
 
-        # check whether tls is enabled, it is cheched here instead of before
+        # check if base_url is valid, it is cheched here rather than before
+        # self.create_client(), because base_url might be None before that
+        # (for docker-machine) and is generated via update_client_creation_kwargs
+        # before returning a Client instance in self.create_client()
+        errors.extend(self.check_client_base_url())
+        if has_error(errors):
+            return errors
+
+        # check whether tls is enabled, it is cheched here rather than before
         # self.create_client(), because tls might be None before that
         # (for docker-machine) and is generated via update_client_creation_kwargs
         # before returning a Client instance in self.create_client()
@@ -929,33 +975,35 @@ def get_docker_client_config(docker_config_name, for_runpy=True,
             # if the deprecated RELATE_DOCKER_URL is a unix specific socket url
             if is_windows_platform():
                 windows_docker_client_useable = True
-                msg = ""
-                from docker.utils.utils import parse_host
                 client_config_base_url = getattr(settings, RELATE_DOCKER_URL, None)
+                e = None
                 if client_config_base_url:
                     try:
-                        parsed_host = parse_host(client_config_base_url)
-                        if parsed_host.startswith("http+unix"):
+                        if is_unix_specific_docker_base_url(client_config_base_url):
                             windows_docker_client_useable = False
-                            msg = (
+                            e = TypeError(
                                 "%s is a unix specifc address and should not"
                                 "be configured for Windows: %s"
                                 % (RELATE_DOCKER_URL, settings.RELATE_DOCKER_URL))
                     except Exception as e:
-                        msg = (
-                            "Error at %s: %s: %s"
-                            % (RELATE_DOCKERS, type(e).__name__, str(e))
-                        )
+                        windows_docker_client_useable = False
 
-                if not windows_docker_client_useable:
-                    if not silence_if_not_usable:
-                        raise RunpyDockerNotUsableError(msg)
-                    else:
-                        warnings.warn(
-                            msg,
-                            RunpyDockerClientConfigNameIsNoneWarning,
-                            stacklevel=2)
-                        return None
+                if e:
+                    msg = (GENERIC_ERROR_PATTERN
+                           % {"location": RELATE_DOCKERS,
+                              "error_type": type(e).__name__,
+                              "error_str": str(e)
+                              })
+
+                    if not windows_docker_client_useable:
+                        if not silence_if_not_usable:
+                            raise RunpyDockerNotUsableError(msg)
+                        else:
+                            warnings.warn(
+                                msg,
+                                RunpyDockerClientConfigNameIsNoneWarning,
+                                stacklevel=2)
+                            return None
 
     if for_runpy:
         return RunpyClientForDockerConfigure(
