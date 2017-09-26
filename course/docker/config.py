@@ -265,22 +265,22 @@ class ClientConfigBase(object):
 
         assert base_url
         if is_windows_platform():
-            e = None
+            exception = None
             try:
                 if is_unix_specific_docker_base_url(base_url):
-                    e = TypeError("%s is a unix specifc address and "
+                    exception = TypeError("%s is a unix specifc address and "
                                   "should not be configured for Windows"
                                   % base_url)
             except Exception as e:
-                pass
+                exception = e
 
-            if e is not None:
+            if exception:
                 return [
                     RelateCriticalCheckMessage(
                         msg=(GENERIC_ERROR_PATTERN
                              % {"location": self.client_base_url_location,
-                                "error_type": type(e).__name__,
-                                "error_str": str(e)
+                                "error_type": type(exception).__name__,
+                                "error_str": str(exception)
                                 }),
                         id="docker_config_client_base_url.E001",
                         obj=self.__class__)]
@@ -976,23 +976,24 @@ def get_docker_client_config(docker_config_name, for_runpy=True,
             if is_windows_platform():
                 windows_docker_client_useable = True
                 client_config_base_url = getattr(settings, RELATE_DOCKER_URL, None)
-                e = None
+                exception = None
                 if client_config_base_url:
                     try:
                         if is_unix_specific_docker_base_url(client_config_base_url):
                             windows_docker_client_useable = False
-                            e = TypeError(
+                            exception = TypeError(
                                 "%s is a unix specifc address and should not"
                                 "be configured for Windows: %s"
                                 % (RELATE_DOCKER_URL, settings.RELATE_DOCKER_URL))
                     except Exception as e:
+                        exception = e
                         windows_docker_client_useable = False
 
-                if e:
+                if exception:
                     msg = (GENERIC_ERROR_PATTERN
                            % {"location": RELATE_DOCKERS,
-                              "error_type": type(e).__name__,
-                              "error_str": str(e)
+                              "error_type": type(exception).__name__,
+                              "error_str": str(exception)
                               })
 
                     if not windows_docker_client_useable:
