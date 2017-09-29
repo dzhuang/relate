@@ -97,6 +97,9 @@ if False:
 
 
 NONE_SESSION_TAG = "<<<NONE>>>"  # noqa
+MESSAGE_ENROLL_REQUEST_PENDING_TEXT = _(
+    "Your enrollment request is pending. You will be "
+    "notified once it has been acted upon.")
 
 
 # {{{ home
@@ -184,8 +187,7 @@ def course_page(pctx):
         show_enroll_button = False
 
         messages.add_message(pctx.request, messages.INFO,
-                _("Your enrollment request is pending. You will be "
-                "notified once it has been acted upon."))
+                             MESSAGE_ENROLL_REQUEST_PENDING_TEXT)
 
         from course.models import ParticipationPreapproval
 
