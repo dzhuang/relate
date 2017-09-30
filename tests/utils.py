@@ -1,28 +1,11 @@
 # These are copied (and maybe modified) from django official unit tests
 
 from __future__ import division
-from email import message_from_bytes
 from django.test import override_settings
 from django.core import mail
 
 
-class HeadersCheckMixin:
-    def assertMessageHasHeaders(self, message, headers):  # noqa
-        """
-        Asserts that the `message` has all `headers`.
-
-        message: can be an instance of an email.Message subclass or a string
-                 with the contents of an email message.
-        headers: should be a set of (header-name, header-value) tuples.
-        """
-        if isinstance(message, bytes):
-            message = message_from_bytes(message)
-        msg_headers = set(message.items())
-        self.assertTrue(headers.issubset(msg_headers), msg='Message is missing '
-                        'the following headers: %s' % (headers - msg_headers),)
-
-
-class BaseEmailBackendTestsMixin(HeadersCheckMixin):
+class BaseEmailBackendTestsMixin(object):
     email_backend = None
 
     def setUp(self):  # noqa
@@ -103,7 +86,8 @@ class LocmemBackendTestsMixin(BaseEmailBackendTestsMixin):
         super(LocmemBackendTestsMixin, self).tearDown()
         mail.outbox = []
 
-class BaseEmailBackendTestsMixin(HeadersCheckMixin):
+
+class BaseEmailBackendTestsMixin(object):
     email_backend = None
 
     def setUp(self):  # noqa

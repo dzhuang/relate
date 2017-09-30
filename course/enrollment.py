@@ -79,6 +79,16 @@ if False:
 MESSAGE_ENROLLMENT_SENT_TEXT = _(
     "Enrollment request sent. You will receive notifcation "
     "by email once your request has been acted upon.")
+MESSAGE_ENROLL_REQUEST_PENDING_TEXT = _(
+    "Your enrollment request is pending. You will be "
+    "notified once it has been acted upon.")
+MESSAGE_ENROLL_DENIED_NOT_ALLOWED_TEXT = _(
+    "Your enrollment request had been denied. Enrollment is not allowed.")
+MESSAGE_ENROLL_DROPPED_NOT_ALLOWED_TEXT = _(
+    "You had been dropped from the course. Re-enrollment is not allowed.")
+MESSAGE_ENROLL_REQUEST_ALREADY_PENDING_TEXT = _(
+    "You have previously sent the enrollment request. "
+    "Re-sending the request is not allowed.")
 MESSAGE_PARTICIPATION_ALREADY_EXIST_TEXT = _(
     "A participation already exists. Enrollment attempt aborted.")
 MESSAGE_CANNOT_REENROLL_TEXT = _("Already enrolled. Cannot re-enroll.")
@@ -91,13 +101,21 @@ MESSAGE_ENROLL_ONLY_ACCEPT_POST_REQUEST_TEXT = _(
 MESSAGE_ENROLLMENT_DENIED_TEXT = _("Successfully denied.")
 MESSAGE_ENROLLMENT_DROPPED_TEXT = _("Successfully dropped.")
 
-MESSAGE_EMAIL_SUFFIX_REQUIRED_EMAIL_NOT_CONFIRMED_TEXT = _(
+MESSAGE_BATCH_PREAPPROVED_RESULT_PATTERN = _(
+    "%(n_created)d preapprovals created, "
+    "%(n_exist)d already existed, "
+    "%(n_requested_approved)d pending requests approved.")
+
+MESSAGE_EMAIL_NOT_CONFIRMED_TEXT = _(
     "Your email address is not yet confirmed. "
     "Confirm your email to continue.")
 MESSAGE_PARTICIPATION_CHANGE_SAVED_TEXT = _("Changes saved.")
 
 EMAIL_NEW_ENROLLMENT_REQUEST_TITLE_PATTERN = (
     string_concat("[%s] ", _("New enrollment request")))
+
+VALIDATION_ERROR_USER_NOT_CONFIRMED = _(
+    "This user has not confirmed his/her email.")
 
 
 # {{{ get_participation_for_request
@@ -189,11 +207,30 @@ def enroll_view(request, course_identifier):
     # type: (http.HttpRequest, str) -> http.HttpResponse
 
     course = get_object_or_404(Course, identifier=course_identifier)
-    participation = get_participation_for_request(request, course)
+    user = request.user
+    participations = Participation.objects.filter(course=course, user=user)
+    if not participations.count():
+        participation = None
+    else:
+        participation = participations.first()
 
     if participation is not None:
-        messages.add_message(request, messages.ERROR,
-                             MESSAGE_CANNOT_REENROLL_TEXT)
+        if participation.status == participation_status.requested:
+            messages.add_message(request, messages.ERROR,
+                                 MESSAGE_ENROLL_REQUEST_ALREADY_PENDING_TEXT)
+            return redirect("relate-course_page", course_identifier)
+        elif participation.status == participation_status.denied:
+            messages.add_message(request, messages.ERROR,
+                                 MESSAGE_ENROLL_DENIED_NOT_ALLOWED_TEXT)
+            return redirect("relate-course_page", course_identifier)
+        elif participation.status == participation_status.dropped:
+            messages.add_message(request, messages.ERROR,
+                                 MESSAGE_ENROLL_DROPPED_NOT_ALLOWED_TEXT)
+            return redirect("relate-course_page", course_identifier)
+        else:
+            assert participation.status == participation_status.active
+            messages.add_message(request, messages.ERROR,
+                                 MESSAGE_CANNOT_REENROLL_TEXT)
         return redirect("relate-course_page", course_identifier)
 
     if not course.accepts_enrollment:
@@ -208,11 +245,9 @@ def enroll_view(request, course_identifier):
                              MESSAGE_ENROLL_ONLY_ACCEPT_POST_REQUEST_TEXT)
         return redirect("relate-course_page", course_identifier)
 
-    user = request.user
-    if (course.enrollment_required_email_suffix
-            and user.status != user_status.active):
+    if user.status != user_status.active:
         messages.add_message(request, messages.ERROR,
-                             MESSAGE_EMAIL_SUFFIX_REQUIRED_EMAIL_NOT_CONFIRMED_TEXT)
+                             MESSAGE_EMAIL_NOT_CONFIRMED_TEXT)
         return redirect("relate-course_page", course_identifier)
 
     preapproval = None
@@ -235,7 +270,8 @@ def enroll_view(request, course_identifier):
     if (
             preapproval is None
             and course.enrollment_required_email_suffix
-            and not user.email.endswith(course.enrollment_required_email_suffix)):
+            and not user.email.endswith(
+                "@%s" % course.enrollment_required_email_suffix.lstrip("@"))):
 
         messages.add_message(request, messages.ERROR,
                              MESSAGE_EMAIL_SUFFIX_REQUIRED_PATTERN
@@ -271,16 +307,16 @@ def enroll_view(request, course_identifier):
                 from django.core.mail import EmailMessage
                 msg = EmailMessage(
                     EMAIL_NEW_ENROLLMENT_REQUEST_TITLE_PATTERN % course_identifier,
-                        message,
-                        getattr(settings, "ENROLLMENT_EMAIL_FROM",
+                    message,
+                    getattr(settings, "ENROLLMENT_EMAIL_FROM",
                             settings.ROBOT_EMAIL_FROM),
-                        [course.notify_email])
+                    [course.notify_email])
 
                 from relate.utils import get_outbound_mail_connection
                 msg.connection = (
-                        get_outbound_mail_connection("enroll")
-                        if hasattr(settings, "ENROLLMENT_EMAIL_FROM")
-                        else get_outbound_mail_connection("robot"))
+                    get_outbound_mail_connection("enroll")
+                    if hasattr(settings, "ENROLLMENT_EMAIL_FROM")
+                    else get_outbound_mail_connection("robot"))
 
                 msg.send()
 
@@ -554,10 +590,7 @@ def create_preapprovals(pctx):
                     created_count += 1
 
             messages.add_message(request, messages.INFO,
-                    _(
-                        "%(n_created)d preapprovals created, "
-                        "%(n_exist)d already existed, "
-                        "%(n_requested_approved)d pending requests approved.")
+                    MESSAGE_BATCH_PREAPPROVED_RESULT_PATTERN
                     % {
                         'n_created': created_count,
                         'n_exist': exist_count,
@@ -939,6 +972,13 @@ class EditParticipationForm(StyledModelForm):
 
         if not add_new:
             self.fields["user"].disabled = True
+        else:
+            participation_users = Participation.objects.filter(
+                course=participation.course).values_list("user__pk", flat=True)
+            self.fields["user"].queryset = (
+                get_user_model().objects.exclude(pk__in=participation_users)
+            )
+        self.add_new = add_new
 
         may_edit_permissions = pctx.has_permission(pperm.edit_course_permissions)
         if not may_edit_permissions:
@@ -973,6 +1013,16 @@ class EditParticipationForm(StyledModelForm):
         elif participation.status == participation_status.active:
             self.helper.add_input(
                     Submit("drop", _("Drop"), css_class="btn-danger"))
+
+    def clean_user(self):
+        user = self.cleaned_data["user"]
+        if not self.add_new:
+            return user
+        if user.status == user_status.active:
+            return user
+
+        from django.forms import ValidationError as FormValidationError
+        raise FormValidationError(VALIDATION_ERROR_USER_NOT_CONFIRMED)
 
     def save(self):
         # type: () -> Participation
