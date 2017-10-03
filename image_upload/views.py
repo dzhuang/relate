@@ -340,15 +340,12 @@ def flow_page_image_download(pctx, flow_session_id, creator_id,
 
 @login_required
 def _auth_download(request, download_object, privilege=False):
-    if (not request.user == download_object.creator
-        and
-            not request.user.is_staff
+    if (request.user == download_object.creator
         or
-            not privilege):
-        from django.core.exceptions import PermissionDenied
-        raise PermissionDenied(_("may not view other people's resource"))
-
-    return sendfile(request, download_object.image.path)
+            privilege):
+        return sendfile(request, download_object.image.path)
+    from django.core.exceptions import PermissionDenied
+    raise PermissionDenied(_("may not view other people's resource"))
 
 
 @login_required
