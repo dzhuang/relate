@@ -39,7 +39,7 @@ from django.utils.translation import ugettext as _, string_concat
 from django.conf import settings
 
 from relate.utils import local_now
-from course.checks import RelateCriticalCheckMessage
+from relate.checks import RelateCriticalCheckMessage
 
 from .utils import (
     get_mongo_db,

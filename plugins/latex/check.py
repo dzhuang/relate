@@ -29,7 +29,7 @@ from django.core.checks import Tags as DjangoTags, register
 
 from .converter import CommandBase
 from .utils import get_all_indirect_subclasses
-from course.checks import RelateCriticalCheckMessage
+from relate.checks import RelateCriticalCheckMessage
 
 # class PluginTags(DjangoTags):
 #     latex_jinja2_tag = 'latex_jinja2_tag'
