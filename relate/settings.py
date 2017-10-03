@@ -21,6 +21,12 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 RELATE_EMAIL_SMTP_ALLOW_NONAUTHORIZED_SENDER = True
 
 _local_settings_file = join(BASE_DIR, "local_settings.py")
+
+if os.environ.get("RELATE_LOCAL_TEST_SETTINGS", None):
+    # This is to make sure local_settings.py is not used for unit tests.
+    assert _local_settings_file != os.environ["RELATE_LOCAL_TEST_SETTINGS"]
+    _local_settings_file = os.environ["RELATE_LOCAL_TEST_SETTINGS"]
+
 local_settings = {
         "__file__": _local_settings_file,
         }
@@ -98,7 +104,8 @@ if local_settings.get("RELATE_CUSTOM_MIDDLEWARE_CLASS", None):
 # {{{ django: auth
 
 AUTHENTICATION_BACKENDS = (
-    "course.auth.TokenBackend",
+    "course.auth.EmailedTokenBackend",
+    "course.auth.APIBearerTokenBackend",
     "course.exam.ExamTicketBackend",
     "django.contrib.auth.backends.ModelBackend",
     )
