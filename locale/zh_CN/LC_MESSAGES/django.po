@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-09-24 22:49+0800\n"
+"POT-Creation-Date: 2017-10-05 15:24+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -105,12 +105,6 @@ msgstr "默认"
 #. Translators: the text editor used by participants
 msgid "Editor mode"
 msgstr "编辑器模式"
-
-msgid "A hash of the authentication token to be used for direct git access."
-msgstr "直接用于访问git时使用的验证token的哈希值"
-
-msgid "Hash of git authentication token"
-msgstr "验证token的哈希值"
 
 msgid "user"
 msgstr "用户"
@@ -412,21 +406,17 @@ msgstr "您的输入不匹配."
 msgid "Profile data saved."
 msgstr "用户信息已更新. "
 
-msgid "Reset"
-msgstr "重置"
+msgid "Create"
+msgstr "创建"
 
 #, python-format
-msgid "A new authentication token has been set: %s."
-msgstr "一个新的git认证token已设定: %s."
+msgid ""
+"A new authentication token has been created: %s. Please save this token, as "
+"you will not be able to retrieve it later."
+msgstr "创建了一个新的认证token: %s. 请将它保存下来，您以后都不会再收到它."
 
-msgid "An authentication token has previously been set."
-msgstr "之前已经设定了一个git认证token."
-
-msgid "No authentication token has previously been set."
-msgstr "之前尚未设定了git认证token."
-
-msgid "Manage Git Authentication Token"
-msgstr "管理Git认证token"
+msgid "Could not find which button was pressed."
+msgstr "无法找到哪一个按钮被按下"
 
 #. Translators: format of event kind in Event model
 msgid "Should be lower_case_with_underscores, no spaces allowed."
@@ -473,9 +463,6 @@ msgstr "开始的序号"
 msgctxt "Count of recurring events"
 msgid "Count"
 msgstr "次数"
-
-msgid "Create"
-msgstr "创建"
 
 #, python-format
 msgid "'%(event_kind)s %(event_ordinal)d' already exists"
@@ -569,6 +556,10 @@ msgstr "编辑课程"
 msgctxt "Participation permission"
 msgid "Use admin interface"
 msgstr "使用管理界面"
+
+msgctxt "Participation permission"
+msgid "Manage authentication tokens"
+msgstr "管理Git认证token"
 
 msgctxt "Participation permission"
 msgid "Impersonate role"
@@ -931,7 +922,18 @@ msgstr "page \"%(group_id)s/%(page_id)s\" (在flow \"%(flow_id)s\"中)"
 msgid "repo page class must conist of two dotted components (invalid: '%s')"
 msgstr "repo类型的page必须包括两个dotted组件 (无效: \"%s\")"
 
-msgid "Already enrolled. Cannot re-renroll."
+msgid ""
+"You have previously sent the enrollment request. Re-sending the request is "
+"not allowed."
+msgstr "您之前已经发送过加入课程的申请. 重新发送申请将不被受理."
+
+msgid "Your enrollment request had been denied. Enrollment is not allowed."
+msgstr "您的加入课程申请已经被拒绝, 再次申请将不被受理. "
+
+msgid "You had been dropped from the course. Re-enrollment is not allowed."
+msgstr "您已经从课程中被移除. 重新申请将不被受理."
+
+msgid "Already enrolled. Cannot re-enroll."
 msgstr "已经加入课程, 不能再次申请加入. "
 
 msgid "Course is not accepting enrollments."
@@ -1095,6 +1097,9 @@ msgstr "批准"
 
 msgid "Deny"
 msgstr "拒绝"
+
+msgid "This user has not confirmed his/her email."
+msgstr "该用户还未确定其email."
 
 msgid "Changes saved."
 msgstr "变更保存成功. "
@@ -2099,6 +2104,9 @@ msgstr "结束时间"
 msgid "All day"
 msgstr "全天"
 
+msgid "Shown in students' calendar"
+msgstr "在学生的日历中显示"
+
 msgid "Event"
 msgstr "事件(event)"
 
@@ -2249,6 +2257,27 @@ msgstr "学员"
 
 msgid "Unenrolled"
 msgstr "未加入"
+
+msgid "Restrict to role"
+msgstr "限制在role"
+
+msgid "Description"
+msgstr "描述"
+
+msgid "Last use time"
+msgstr "上一次使用的时间"
+
+msgid "Valid until"
+msgstr "有效至"
+
+msgid "Revocation time"
+msgstr "撤销时间"
+
+msgid "A hash of the authentication token to be used for direct git access."
+msgstr "直接用于访问git时使用的验证token的哈希值"
+
+msgid "Hash of git authentication token"
+msgstr "验证token的哈希值"
 
 msgid "Cancelled"
 msgstr "已取消的"
@@ -2635,9 +2664,6 @@ msgstr "即时信息"
 
 msgid "Instant messages"
 msgstr "即时信息"
-
-msgid "Description"
-msgstr "描述"
 
 msgid "Active"
 msgstr "正常"
@@ -3386,12 +3412,21 @@ msgstr "保存"
 msgid "Remove this event"
 msgstr "删除该event"
 
+msgid "Are you sure you want to delete this event?"
+msgstr "您确认删除该事件？"
+
 msgid "Edit this event"
 msgstr "编辑该event"
 
+msgid "Please confirm"
+msgstr "请确认"
+
+msgid "Delete"
+msgstr "删除"
+
 #. Translators: The following are names for menu items in course page
 msgctxt "menu item"
-msgid "Student"
+msgid "Participant"
 msgstr "学员"
 
 msgid "View grades"
@@ -3402,6 +3437,9 @@ msgstr "查看日历"
 
 msgid "Back to course page"
 msgstr "返回课程主页面"
+
+msgid "Manage Authentication Tokens"
+msgstr "管理Git认证token"
 
 msgctxt "menu item"
 msgid "Grading"
@@ -4486,6 +4524,27 @@ msgstr ""
 "如果您不记得您的密码，请 <a href=\"%(relate-reset_password)s\">重置密码</"
 "a> . "
 
+msgid "(No tokens have been created yet.)"
+msgstr "(尚未创建任何token.) "
+
+msgid "Token ID"
+msgstr ""
+
+msgid "Role Restriction"
+msgstr "Role限制"
+
+msgid "Created"
+msgstr "已创建的"
+
+msgid "Last used"
+msgstr "最后使用的"
+
+msgid "Revoked"
+msgstr "已撤回的"
+
+msgid "Indefinitely"
+msgstr "无限制的"
+
 msgid "Status"
 msgstr "状态"
 
@@ -5522,3 +5581,19 @@ msgstr "退出登录"
 
 msgid "User Profile"
 msgstr "用户信息"
+
+#~ msgid "Reset"
+#~ msgstr "重置"
+
+#~ msgid "A new authentication token has been set: %s."
+#~ msgstr "一个新的git认证token已设定: %s."
+
+#~ msgid "An authentication token has previously been set."
+#~ msgstr "之前已经设定了一个git认证token."
+
+#~ msgid "No authentication token has previously been set."
+#~ msgstr "之前尚未设定了git认证token."
+
+#~ msgctxt "menu item"
+#~ msgid "Student"
+#~ msgstr "学员"
