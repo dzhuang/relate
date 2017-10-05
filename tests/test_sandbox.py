@@ -24,6 +24,7 @@ THE SOFTWARE.
 
 from django.test import TestCase
 from django.urls import reverse
+from django.utils.safestring import mark_safe
 from .base_test_mixins import SingleCourseTestMixin
 from course.models import Participation
 from course.constants import participation_permission as pperm
@@ -116,7 +117,6 @@ class SingleCoursePageSandboxTest(SingleCoursePageSandboxTestBaseMixin, TestCase
         expected_body = "<h1>A half</h1><p>What's a half?</p>"
 
         self.assertInHTML(result_body, expected_body)
-        from django.utils.safestring import mark_safe
         self.assertEqual(mark_safe(result_correct_answer), expected_correct_answer)
 
     def test_page_sandbox_submit_answer(self):
