@@ -26,6 +26,7 @@ h6,
 .h6 {
   font-size: 14px;
 }
-p {
+/* exclude <p> in ipynb */
+:not(.text_cell_render) > p {
   margin: 0 0 11px;
-}  
+}
