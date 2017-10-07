@@ -37,7 +37,7 @@ from relate.utils import (
 from .utils import (
     get_docker_program_version, run_cmd_line)
 from distutils.version import LooseVersion
-from course.checks import (
+from relate.checks import (
     GENERIC_ERROR_PATTERN, INSTANCE_ERROR_PATTERN,
     RelateCriticalCheckMessage)
 import docker
