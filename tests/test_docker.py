@@ -24,10 +24,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-try:
-    from unittest import mock
-except:
-    import mock
+from .utils import mock
 
 try:
     from test.support import EnvironmentVarGuard  # noqa
@@ -70,7 +67,9 @@ from course.docker.config import (  # noqa
     RunpyDockerClientConfigNameIsNoneWarning,
 )
 from django.test import TestCase
-from test_pages import SingleCoursePageTestMixin, QUIZ_FLOW_ID
+from .base_test_mixins import (
+    SingleCoursePageTestMixin, FallBackStorageMessageTestMixin)
+from .test_pages import QUIZ_FLOW_ID
 
 # Switch for test locally
 Debug = False
@@ -472,9 +471,9 @@ REAL_DOCKERS_WITH_INVALID_IP_MAP[REAL_RUNPY_CONFIG_NAME]["private_public_ip_map_
 )
 
 
-class ReadDockerTestMixin(object):
+class RealDockerTestMixin(object):
     def setUp(self):
-        super(ReadDockerTestMixin, self).setUp()
+        super(RealDockerTestMixin, self).setUp()
         self.make_sure_docker_image_pulled()
 
     def make_sure_docker_image_pulled(self):
@@ -497,7 +496,7 @@ class ReadDockerTestMixin(object):
     RELATE_DOCKERS=REAL_DOCKERS,
     RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=REAL_RUNPY_CONFIG_NAME
 )
-class RealDockerTests(ReadDockerTestMixin, SimpleTestCase):
+class RealDockerTests(RealDockerTestMixin, SimpleTestCase):
     def test_get_real_docker_client_config(self):
         result = get_relate_runpy_docker_client_config(silence_if_not_usable=False)
         self.assertIsInstance(
@@ -546,7 +545,7 @@ def get_docker_program_version_exception_machine(program, print_output=False):
     RELATE_DOCKERS=REAL_DOCKERS,
     RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=REAL_RUNPY_CONFIG_NAME
 )
-class RealRunpyDockerCheck(ReadDockerTestMixin, SimpleTestCase):
+class RealRunpyDockerCheck(RealDockerTestMixin, SimpleTestCase):
     @property
     def func(self):
         from course.docker.checks import check_docker_client_config
@@ -637,9 +636,14 @@ class RealRunpyDockerCheck(ReadDockerTestMixin, SimpleTestCase):
     RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME=REAL_RUNPY_CONFIG_NAME
 )
 class RealDockerCodePageTest(SingleCoursePageTestMixin,
-                             ReadDockerTestMixin, TestCase):
+                             RealDockerTestMixin, TestCase):
     flow_id = QUIZ_FLOW_ID
     page_id = "addition"
+
+    def setUp(self):  # noqa
+        super(RealDockerCodePageTest, self).setUp()
+        self.c.force_login(self.student_participation.user)
+        self.start_quiz(self.flow_id)
 
     @skipIf(is_windows_platform(), "docker-machine is not availabe in this case")
     @skipIf(is_osx_platform(), "docker-machine is not availabe in this case")
@@ -753,6 +757,11 @@ DOCKER_RUNPY_NOT_ENABLED_ERROR = {
 class CodePageTestOther(SingleCoursePageTestMixin, TestCase):
     flow_id = QUIZ_FLOW_ID
     page_id = "addition"
+
+    def setUp(self):  # noqa
+        super(CodePageTestOther, self).setUp()
+        self.c.force_login(self.student_participation.user)
+        self.start_quiz(self.flow_id)
 
     def tearDown(self):
         super(CodePageTestOther, self).tearDown()
