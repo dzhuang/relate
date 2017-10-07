@@ -616,14 +616,33 @@ class RunpyDockerMixinBase(object):
         # type: (docker.Client) -> List[CheckMessage]
         errors = super(RunpyDockerMixinBase, self).check_image(cli)  # type: ignore  # noqa
         assert cli is not None
-        image_exist = bool(cli.images(self.image))  # type: ignore
+        try:
+            image_exist = bool(cli.images(self.image))  # type: ignore
+        except Exception as e:
+            from requests.exceptions import ConnectionError
+            print(type(e))
+            print(r"\x15\x03\x01\x00\x02\x02\n" in str(e))
+            if (isinstance(e, ConnectionError)
+                    and r"\x15\x03\x01\x00\x02\x02\n" in str(e)):
+                # Client is not using TLS while daemon requires TLS
+                # https://github.com/docker/docker-py/issues/369
+                errors.append(RelateCriticalCheckMessage(
+                    msg=(
+                        "%(location)s: "
+                        "TLS is required by the docker daemon, while "
+                        "the client doesn't configured TLS."
+                        % {'location': self.client_tls_location,  # type: ignore
+                           }),
+                    id="docker_config_client_tls.E002"))
+                return errors
+            raise e
         if not image_exist:
             errors.append(
                 RelateCriticalCheckMessage(
-                    msg=("'docker_image' of '%(config_name)s' in %(configs)s "
+                    msg=("%(location)s: "
                          "(%(image)s is not pulled, please run 'docker pull "
                          "%(image)s' in your shell first."
-                         % {"config_name": self.docker_config_name,  # type: ignore
+                         % {"location": self.docker_image_location,  # type: ignore
                             "configs": RELATE_DOCKERS,
                             "image": self.image  # type: ignore
                             }),

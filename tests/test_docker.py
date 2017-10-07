@@ -67,8 +67,7 @@ from course.docker.config import (  # noqa
     RunpyDockerClientConfigNameIsNoneWarning,
 )
 from django.test import TestCase
-from .base_test_mixins import (
-    SingleCoursePageTestMixin, FallBackStorageMessageTestMixin)
+from .base_test_mixins import SingleCoursePageTestMixin
 from .test_pages import QUIZ_FLOW_ID
 
 # Switch for test locally
