@@ -2721,7 +2721,7 @@ def finish_flow_session_view(pctx, flow_session_id):
         if notification_list:
             from course.utils import will_use_masked_profile_for_email
             use_masked_profile = will_use_masked_profile_for_email(
-                notification_list + [fctx.course.notify_email])
+                list(notification_list) + [fctx.course.notify_email])
 
             if (grading_rule.grade_identifier
                     and flow_session.participation is not None):
