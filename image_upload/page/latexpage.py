@@ -258,13 +258,14 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         self.will_receive_grade = getattr(page_desc, "will_receive_grade", True)
         self.updated_full_desc = None
+        self.is_full_desc_updated = False
         self.error_getting_updated_full_desc = None
         self.error_updating_page_desc = None
 
     def update_page_full_desc(self, page_context, page_data):
-        if self.updated_full_desc is None:
+        if self.updated_full_desc is None and not self.is_full_desc_updated:
             self._update_page_full_desc(page_context, page_data)
-        assert self.updated_full_desc is not None
+            self.is_full_desc_updated = True
 
     def _update_page_full_desc(self, page_context, page_data):
         if (hasattr(self.page_desc, "full_process_code")
