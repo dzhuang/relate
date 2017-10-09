@@ -620,8 +620,6 @@ class RunpyDockerMixinBase(object):
             image_exist = bool(cli.images(self.image))  # type: ignore
         except Exception as e:
             from requests.exceptions import ConnectionError
-            print(type(e))
-            print(r"\x15\x03\x01\x00\x02\x02\n" in str(e))
             if (isinstance(e, ConnectionError)
                     and r"\x15\x03\x01\x00\x02\x02\n" in str(e)):
                 # Client is not using TLS while daemon requires TLS
