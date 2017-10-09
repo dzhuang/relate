@@ -184,6 +184,16 @@ class PythonCodeQuestionWithPageContext(PythonCodeQuestion):
                                     page_context.repo, data_file,
                                     page_context.commit_sha).data).decode()
 
+                if (
+                    "question_data" not in run_req["data_files"]
+                    and
+                    page_data
+                    and
+                    page_data.get("question_data", None)
+                ):
+                    run_req["data_files"]["question_data"] =\
+                        page_data["question_data"]
+
         try:
             response_dict = request_python_run_with_retries(run_req,
                     run_timeout=self.page_desc.timeout)
@@ -224,12 +234,16 @@ class PythonCodeQuestionWithPageContext(PythonCodeQuestion):
 
             error_msg = "\n".join(error_msg_parts)
 
+            from relate.utils import local_now, format_datetime_local
             with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
                 from django.template.loader import render_to_string
                 message = render_to_string("course/broken-code-question-email.txt", {
+                    "site": getattr(settings, "RELATE_BASE_URL"),
                     "page_id": self.page_desc.id,
                     "course": page_context.course,
                     "error_message": error_msg,
+                    "review_uri": page_context.page_uri,
+                    "time": format_datetime_local(local_now())
                     })
 
                 if (
@@ -278,6 +292,21 @@ class PythonCodeQuestionWithPageContext(PythonCodeQuestion):
 
         # }}}
 
+        if hasattr(self.page_desc, "correct_code"):
+            def normalize_code(s):
+                return (s
+                        .replace(" ", "")
+                        .replace("\r", "")
+                        .replace("\n", "")
+                        .replace("\t", ""))
+
+            if (normalize_code(user_code)
+                    == normalize_code(self.page_desc.correct_code)):
+                feedback_bits.append(
+                        "<p><b>%s</b></p>"
+                        % _("It looks like you submitted code that is identical to "
+                            "the reference solution. This is not allowed."))
+
         from relate.utils import dict_to_struct
         response = dict_to_struct(response_dict)
 
@@ -292,6 +321,14 @@ class PythonCodeQuestionWithPageContext(PythonCodeQuestion):
 
         if response.result == "success":
             pass
+        elif response.result == "docker_runpy_not_enabled":
+            feedback_bits = (
+                ["".join([
+                    "<p class='alert alert-warning'>"
+                    "<i class='fa fa-warning'></i>",
+                    _("This page is not gradable right now, as "
+                      "Docker runpy is currently not enabled for this site."),
+                    "</p>"])])
         elif response.result in [
                 "uncaught_error",
                 "setup_compile_error",
@@ -342,13 +379,16 @@ class PythonCodeQuestionWithPageContext(PythonCodeQuestion):
             raise RuntimeError("invalid runpy result: %s" % response.result)
 
         if hasattr(response, "feedback") and response.feedback:
+            def sanitize(s):
+                import bleach
+                return bleach.clean(s, tags=["p", "pre"])
             feedback_bits.append("".join([
                 "<p>",
                 _("Here is some feedback on your code"),
                 ":"
                 "<ul>%s</ul></p>"]) %
                         "".join(
-                            "<li>%s</li>" % fb_item
+                            "<li>%s</li>" % sanitize(fb_item)
                             for fb_item in response.feedback))
         if hasattr(response, "traceback") and response.traceback:
             feedback_bits.append("".join([
@@ -363,6 +403,19 @@ class PythonCodeQuestionWithPageContext(PythonCodeQuestion):
                         response.exec_host)
             except socket.error:
                 exec_host_name = response.exec_host
+
+            from course.docker.config import get_relate_runpy_docker_client_config
+            silence_for_not_usable = getattr(
+                settings, "SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR", False)
+            try:
+                client_config = get_relate_runpy_docker_client_config(
+                    silence_if_not_usable=silence_for_not_usable)
+            except:
+                client_config = None
+
+            if client_config:
+                exec_host_name = (
+                    client_config.get_execution_host_alias(exec_host_name))
 
             feedback_bits.append("".join([
                 "<p>",
@@ -417,13 +470,13 @@ class PythonCodeQuestionWithPageContext(PythonCodeQuestion):
             def sanitize(s):
                 import bleach
 
-                def filter_audio_attributes(name, value):
+                def filter_audio_attributes(tag, name, value):
                     if name in ["controls"]:
                         return True
                     else:
                         return False
 
-                def filter_source_attributes(name, value):
+                def filter_source_attributes(tag, name, value):
                     if name in ["type"]:
                         return True
                     elif name == "src":
@@ -433,7 +486,7 @@ class PythonCodeQuestionWithPageContext(PythonCodeQuestion):
                     else:
                         return False
 
-                def filter_img_attributes(name, value):
+                def filter_img_attributes(tag, name, value):
                     if name in ["alt", "title"]:
                         return True
                     elif name == "src":
