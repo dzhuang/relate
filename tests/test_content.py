@@ -31,7 +31,7 @@ try:
 except ImportError:
     from unittest.mock import patch
 
-from test_sandbox import SingleCoursePageSandboxTestBaseMixin
+from .test_sandbox import SingleCoursePageSandboxTestBaseMixin
 
 # {{{ Test Nbconvert for rendering ipynb notebook
 
