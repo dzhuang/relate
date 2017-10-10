@@ -88,10 +88,9 @@ class ImageOperationMixin(UserPassesTestMixin):
     def test_func(self):
         from course.models import Course
         course_identifier = self.kwargs['course_identifier']
-        course = Course.objects.get(identifier=course_identifier)
-        if course:
-            if is_course_staff_course_image_request(self.request, course):
-                return True
+        course = get_object_or_404(Course, identifier=course_identifier)
+        if is_course_staff_course_image_request(self.request, course):
+            return True
 
         request = self.request
         flow_session_id = self.kwargs['flow_session_id']
@@ -150,7 +149,9 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin,
         self.object.flow_session_id = flow_session_id
         self.object.image_page_id = fpd.page_id
         self.object.course = course
-        self.object.save()
+
+        with transaction.atomic():
+            self.object.save()
 
         try:
             files = [serialize(self.request, self.object, 'image')]
@@ -166,7 +167,10 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin,
         return self.render_json_response(data)
 
     def form_invalid(self, form):
-        data = json.dumps(form.errors)
+        data = {
+            "success": False,
+            "error": dict(form.errors.items())
+        }
         return self.render_json_response(data, status=400)
 
 
@@ -185,20 +189,14 @@ class ImageDeleteView(LoginRequiredMixin, ImageOperationMixin, DeleteView):
         if self.request.user == self.object.creator:
             may_delete = True
         elif self.request.user == self.object.flow_session.participation.user:
+            # User may delete image in his/her own session
+            # (even uploaded by course staff)
+            may_delete = True
+        elif is_course_staff_course_image_request(self.request, self.object.course):
+            # Course staff may delete user images
             may_delete = True
         else:
             may_delete = False
-
-            # Course staff may delete user images
-            if is_course_staff_course_image_request(
-                    self.request, self.object.course):
-                may_delete = True
-            else:
-                # User may delete image uploaded by course staff
-                if (self.object.flow_session.id == self.kwargs['flow_session_id']
-                    and
-                        is_course_staff_participation(self.object.participation)):
-                    may_delete = True
 
         if not may_delete:
             from django.core.exceptions import PermissionDenied
@@ -304,7 +302,7 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
         queryset = self.get_queryset()
         if queryset:
             files = [serialize(self.request, p, 'image')
-                    for p in self.get_queryset()]
+                    for p in queryset]
             data = {'files': files}
         else:
             data = {}

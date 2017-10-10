@@ -89,7 +89,7 @@ def serialize(request, instance, file_attr='image'):
     error = None
     size = 0
     try:
-        size = instance.image.size
+        size = obj.size
     except:
         pass
 
