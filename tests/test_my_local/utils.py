@@ -1,5 +1,6 @@
-from django.conf import settings
+import os
 import platform
+from django.conf import settings
 from tempfile import mkdtemp
 
 TEST_NODES = ["Dzhuang-surface", "OfficeZD", "dzhuang-PC"]
@@ -9,7 +10,13 @@ def _skip_test():
     if not getattr(settings, "USING_LOCAL_TEST_SETTINGS", None):
         return True
     if platform.node() in TEST_NODES:
-        return False
+        if os.path.split(settings.SENDFILE_ROOT)[-1] == "test_protected":
+            return False
+        else:
+            print("To protected your production data for being deleted by "
+                  "tests, you must configure the test SENDFILE_ROOT "
+                  "with a directory named 'test_protected', otherwise the "
+                  "tests will be skipped!")
     return True
 
 skip_test = _skip_test()

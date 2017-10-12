@@ -146,7 +146,8 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin,
         ordinal = self.kwargs["ordinal"]
 
         from course.models import FlowPageData
-        fpd = FlowPageData.objects.get(flow_session=flow_session_id, ordinal=ordinal)
+        fpd = FlowPageData.objects.get(
+            flow_session=flow_session_id, ordinal=ordinal)
         self.object.flow_session_id = flow_session_id
         self.object.image_page_id = fpd.page_id
         self.object.course = course

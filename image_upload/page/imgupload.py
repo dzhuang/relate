@@ -194,7 +194,7 @@ class ImageUploadForm(StyledForm):
                 string_concat(
                     _("Some of you uploaded images just failed "
                       "for unknown reasons"),
-                    (": %s.") % ", ".join([img.slug for img in image_path_failed]),
+                    ": %s. " % ", ".join([img.slug for img in image_path_failed]),
                     _("please redo the upload and submission.")
                 ))
 

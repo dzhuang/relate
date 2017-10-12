@@ -1,7 +1,8 @@
+import os
 from django.test import override_settings
+from django.conf import settings
 from .utils import get_test_media_folder
 from ..base_test_mixins import force_remove_path
-from image_upload.models import FlowPageImage
 
 
 class ImageUploadStorageTestMixin(object):
@@ -15,15 +16,9 @@ class ImageUploadStorageTestMixin(object):
     def tearDown(self):  # noqa
         self.image_storage_settings_override.disable()
         force_remove_path(self.media_root)
-
-
-class ImageUploaderMixin(object):
-    def tearDown(self):
-        # Delete all uploaded files created during testing
-        for image in FlowPageImage.objects.all():
+        sendfile_root_dir_name = os.path.split(settings.SENDFILE_ROOT)[-1]
+        if sendfile_root_dir_name == "test_protected":
             try:
-                if image.image.path:
-                    image.file.delete()
-            except:
+                force_remove_path(settings.SENDFILE_ROOT)
+            except OSError:
                 pass
-            image.delete()

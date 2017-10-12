@@ -25,6 +25,8 @@ SENDFILE_URL = '/protected'
 SENDFILE_BACKEND = 'sendfile.backends.development'
 
 # This MUST be different from the value in local_settings.py
+# To prevent your production data from being delete,
+# the folder must be named "test_protected"
 SENDFILE_ROOT = os.path.join(BASE_DIR, 'test_protected')
 
 MEDIA_URL = '/media/'
