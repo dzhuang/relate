@@ -6,7 +6,7 @@ TEST_NODES = ["Dzhuang-surface", "OfficeZD", "dzhuang-PC"]
 
 
 def _skip_test():
-    if not getattr(settings, "USING_LOCAL_TEST_SETTINGS"):
+    if not getattr(settings, "USING_LOCAL_TEST_SETTINGS", None):
         return True
     if platform.node() in TEST_NODES:
         return False

@@ -70,6 +70,7 @@ class ImageUploadForm(StyledForm):
                  page_behavior, page_data, *args, **kwargs):
         require_image_for_submission = kwargs.pop(
             "require_image_for_submission", True)
+        max_number_of_files = kwargs.pop("max_number_of_files", None)
         super(ImageUploadForm, self).__init__(*args, **kwargs)
 
         self.fields["hidden_answer"] = forms.CharField(
@@ -80,6 +81,7 @@ class ImageUploadForm(StyledForm):
         self.page_context = page_context
         self.page_data = page_data
         self.require_image_for_submission = require_image_for_submission
+        self.max_number_of_files = max_number_of_files
 
         jfu_button_control = ""
 
@@ -120,8 +122,7 @@ class ImageUploadForm(StyledForm):
             if self.require_image_for_submission:
                 raise forms.ValidationError(
                     _("You have not upload image(s)!"))
-            elif len(pk_list_str) == 0:
-                return cleaned_data
+            return cleaned_data
 
         try:
             pk_list = [int(i.strip()) for i in pk_list_str.split(",")]
@@ -152,12 +153,12 @@ class ImageUploadForm(StyledForm):
 
                 # remove image uploaded by participations not in the course
                 from course.models import Participation
-                creator_participations = list(Participation.objects.filter(
+                creator_participations = (Participation.objects.filter(
                     user=image_i.creator,
                     course=self.page_context.course,
                     status=participation_status.active
                 ))
-                if len(creator_participations) == 0:
+                if not creator_participations.count():
                     pk_list.pop(pk_list.index(i))
                     continue
 
@@ -195,6 +196,15 @@ class ImageUploadForm(StyledForm):
                       "for unknown reasons"),
                     (": %s.") % ", ".join([img.slug for img in image_path_failed]),
                     _("please redo the upload and submission.")
+                ))
+
+        if (self.max_number_of_files is not None
+                and len(pk_list) > self.max_number_of_files):
+            raise forms.ValidationError(
+                string_concat(
+                    _("You are only allowed to upload %i images,"
+                      " got %i instead")
+                    % (self.max_number_of_files, len(pk_list)),
                 ))
 
         cleaned_data["hidden_answer"] = pk_list
@@ -380,7 +390,9 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
 
         form = ImageUploadForm(
             page_context, page_behavior, page_data,
-            require_image_for_submission=self.require_image_for_submission)
+            require_image_for_submission=self.require_image_for_submission,
+            max_number_of_files=self.maxNumberOfFiles
+        )
 
         return form
 
@@ -389,7 +401,9 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         form = ImageUploadForm(
             page_context, page_behavior, page_data,
             post_data, files_data,
-            require_image_for_submission=self.require_image_for_submission)
+            require_image_for_submission=self.require_image_for_submission,
+            max_number_of_files = self.maxNumberOfFiles
+        )
         return form
 
     def form_to_html(self, request, page_context, form, answer_data):

@@ -5,7 +5,7 @@
 USING_LOCAL_TEST_SETTINGS = True
 # test script
 # python manage.py test --local_test_settings test_local_settings.py
-# coverage run manage.py test --local_test_settings test_local_settings.py
+# coverage run manage.py test tests --local_test_settings test_local_settings.py
 # python manage.py test tests.test_my_local --local_test_settings test_local_settings.py
 
 import os, platform

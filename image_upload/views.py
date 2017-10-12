@@ -102,6 +102,7 @@ class ImageOperationMixin(UserPassesTestMixin):
             return get_page_image_behavior(
                 pctx, flow_session_id, ordinal).may_change_answer
         except ValueError:
+            # in sandbox
             return True
 
 
@@ -186,31 +187,20 @@ class ImageDeleteView(LoginRequiredMixin, ImageOperationMixin, DeleteView):
     def delete(self, request, *args, **kwargs):
         self.object = self.get_object()
 
-        if self.request.user == self.object.creator:
-            may_delete = True
-        elif self.request.user == self.object.flow_session.participation.user:
-            # User may delete image in his/her own session
-            # (even uploaded by course staff)
-            may_delete = True
-        elif is_course_staff_course_image_request(self.request, self.object.course):
-            # Course staff may delete user images
-            may_delete = True
-        else:
-            may_delete = False
+        assert (self.request.user == self.object.creator
+                or self.request.user == self.object.flow_session.participation.user
+                or is_course_staff_course_image_request(
+                        self.request, self.object.course))
 
-        if not may_delete:
-            from django.core.exceptions import PermissionDenied
-            raise PermissionDenied(_("may not delete other people's image"))
+        if self.object.is_in_temp_storage():
+            self.object.delete()
+            response = http.JsonResponse(True, safe=False)
         else:
-            if self.object.is_in_temp_storage():
-                self.object.delete()
-                response = http.JsonResponse(True, safe=False)
-            else:
-                response = http.JsonResponse(False, safe=False)
+            response = http.JsonResponse(False, safe=False)
 
-            response['Content-Disposition'] = 'inline; filename=files.json'
-            response['Content-Type'] = 'text/plain'
-            return response
+        response['Content-Disposition'] = 'inline; filename=files.json'
+        response['Content-Type'] = 'text/plain'
+        return response
 
 
 class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
@@ -376,6 +366,7 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
             pctx, flow_session_id, ordinal)
         may_change_answer = page_image_behavior.may_change_answer
     except ValueError:
+        # in sandbox
         may_change_answer = True
 
     course_staff_status = (
