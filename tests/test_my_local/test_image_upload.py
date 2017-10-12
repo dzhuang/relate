@@ -630,8 +630,8 @@ def update_flow_page_image():
                         pass
                     if image:
                         if image.is_temp_image:
-                            #print(visit.page_data.page_type, visit.flow_session)
-                            image.save_to_protected_storage()
+                            print(visit.page_data.page_type, visit.flow_session)
+                            # image.save_to_protected_storage()
                     else:
                         print("-----", answer, visit.flow_session)
 
