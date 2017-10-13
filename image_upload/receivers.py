@@ -137,6 +137,8 @@ def send_to_sendfile_on_page_save(sender, instance, **kwargs):
     )
 
     for img in saving_image_qs:
+        # notice that this will never happen in sandbox with ImageUploadQuestion
+        # because those will never save a FlowPageVisit object
         img.save_to_protected_storage(
             delete_temp_storage_file=True,
             fail_silently_on_save=True)

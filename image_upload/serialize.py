@@ -57,6 +57,8 @@ def get_truncated_name(name):
 def get_image_page_data_str(image):
     if not isinstance(image, FlowPageImage):
         return None
+    if not image.flow_session:
+        return None
     if image.flow_session.in_progress:
         return None
 
@@ -70,6 +72,8 @@ def get_image_page_data_str(image):
 
 def get_image_admin_url(image):
     if not isinstance(image, FlowPageImage):
+        return None
+    if not image.flow_session:
         return None
     if image.flow_session.in_progress:
         return None
@@ -100,22 +104,23 @@ def serialize(request, instance, file_attr='image'):
     name = getattr(instance, 'slug', obj_name)
     name_truncated = get_truncated_name(name)
 
+    handler_kwargs ={
+        'course_identifier': instance.course.identifier,
+        'pk': instance.pk,
+    }
+
+    if instance.flow_session_id:
+        # else is in sandbox
+        handler_kwargs.update({
+            'flow_session_id': instance.flow_session_id,
+            'ordinal': instance.get_page_ordinal()})
+
     delete_url = reverse('jfu_delete',
-            kwargs={
-                'course_identifier': instance.course.identifier,
-                'flow_session_id': instance.flow_session_id,
-                'ordinal': instance.get_page_ordinal(),
-                'pk': instance.pk,
-                }
+            kwargs=handler_kwargs
         )
 
     crop_handler_url = reverse('image_crop',
-            kwargs={
-                'course_identifier': instance.course.identifier,
-                'flow_session_id': instance.flow_session_id,
-                'ordinal': instance.get_page_ordinal(),
-                'pk': instance.pk,
-                }
+            kwargs=handler_kwargs
             )
 
     # {{{ creation time string
@@ -147,18 +152,19 @@ def serialize(request, instance, file_attr='image'):
                             in_python=True)
 
     modified_by_course_staff = False
-    if instance.creator != instance.flow_session.participation.user:
-        from course.models import Participation
-        creator_participation = None
-        try:
-            creator_participation = Participation.objects.get(
-                user=instance.creator, course=instance.course)
-        except Participation.DoesNotExist:
-            pass
-        if creator_participation:
-            from image_upload.views import is_course_staff_participation
-            modified_by_course_staff = (
-                is_course_staff_participation(creator_participation))
+    if instance.flow_session:
+        if instance.creator != instance.flow_session.participation.user:
+            from course.models import Participation
+            creator_participation = None
+            try:
+                creator_participation = Participation.objects.get(
+                    user=instance.creator, course=instance.course)
+            except Participation.DoesNotExist:
+                pass
+            if creator_participation:
+                from image_upload.views import is_course_staff_participation
+                modified_by_course_staff = (
+                    is_course_staff_participation(creator_participation))
 
     timestr_title = string_concat(
         _("Created at %s") % creation_time,

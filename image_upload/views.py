@@ -26,6 +26,7 @@ THE SOFTWARE.
 
 import os
 from django.shortcuts import get_object_or_404
+from django.core.exceptions import PermissionDenied
 from django.conf import settings
 from django import forms, http
 from django.contrib.auth.decorators import login_required
@@ -36,8 +37,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.utils.translation import ugettext_lazy as _, string_concat, ugettext
 from django.db import transaction
 
-from course.utils import course_view, FlowPageContext, get_session_access_rule, \
-    get_session_grading_rule, CoursePageContext
+from course.utils import (course_view, FlowPageContext, get_session_access_rule,
+    get_session_grading_rule, CoursePageContext)
 from course.constants import participation_permission as pperm
 
 from image_upload.serialize import serialize
@@ -76,9 +77,8 @@ def is_course_staff_participation(participation):
 
 
 def is_course_staff_course_image_request(request, course):
-    from course.enrollment import get_participation_for_request
-    participation = get_participation_for_request(request, course)
-    return is_course_staff_participation(participation)
+    pctx = CoursePageContext(request, course.identifier)
+    return pctx.has_permission(pperm.assign_grade)
 
 
 class ImageOperationMixin(UserPassesTestMixin):
@@ -86,24 +86,16 @@ class ImageOperationMixin(UserPassesTestMixin):
     raise_exception = True
 
     def test_func(self):
-        from course.models import Course
         course_identifier = self.kwargs['course_identifier']
-        course = get_object_or_404(Course, identifier=course_identifier)
-        if is_course_staff_course_image_request(self.request, course):
+        pctx = CoursePageContext(self.request, course_identifier)
+        if pctx.has_permission(pperm.assign_grade):
             return True
 
-        request = self.request
         flow_session_id = self.kwargs['flow_session_id']
         ordinal = self.kwargs['ordinal']
 
-        pctx = CoursePageContext(request, course_identifier)
-
-        try:
-            return get_page_image_behavior(
-                pctx, flow_session_id, ordinal).may_change_answer
-        except ValueError:
-            # in sandbox
-            return True
+        return get_page_image_behavior(
+            pctx, flow_session_id, ordinal).may_change_answer
 
 
 class ImageCreateView(LoginRequiredMixin, ImageOperationMixin,
@@ -140,17 +132,23 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin,
 
         course_identifier = self.kwargs["course_identifier"]
 
-        from course.models import Course
-        course = get_object_or_404(Course, identifier=course_identifier)
-        flow_session_id = self.kwargs["flow_session_id"]
-        ordinal = self.kwargs["ordinal"]
+        pctx = CoursePageContext(self.request, course_identifier)
 
-        from course.models import FlowPageData
-        fpd = FlowPageData.objects.get(
-            flow_session=flow_session_id, ordinal=ordinal)
-        self.object.flow_session_id = flow_session_id
-        self.object.image_page_id = fpd.page_id
-        self.object.course = course
+        self.object.course = pctx.course
+
+        flow_session_id = self.kwargs.get("flow_session_id")
+        ordinal = self.kwargs.get("ordinal")
+
+        if flow_session_id and ordinal:
+            from course.models import FlowPageData
+            fpd = FlowPageData.objects.get(
+                flow_session=flow_session_id, ordinal=ordinal)
+            self.object.flow_session_id = flow_session_id
+            self.object.image_page_id = fpd.page_id
+        else:
+            # this should happen in sandbox
+            if not pctx.has_permission(pperm.use_page_sandbox):
+                raise PermissionDenied()
 
         with transaction.atomic():
             self.object.save()
@@ -188,10 +186,11 @@ class ImageDeleteView(LoginRequiredMixin, ImageOperationMixin, DeleteView):
     def delete(self, request, *args, **kwargs):
         self.object = self.get_object()
 
+        pctx = CoursePageContext(self.request, self.object.course.identifier)
+
         assert (self.request.user == self.object.creator
                 or self.request.user == self.object.flow_session.participation.user
-                or is_course_staff_course_image_request(
-                        self.request, self.object.course))
+                or pctx.has_permission(pperm.assign_grade))
 
         if self.object.is_in_temp_storage():
             self.object.delete()
@@ -210,76 +209,91 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
     model = FlowPageImage
 
     def get_queryset(self):
-        flow_session_id = self.kwargs["flow_session_id"]
-
-        from course.models import FlowSession
-        try:
-            flow_session = get_object_or_404(FlowSession, id=int(flow_session_id))
-        except ValueError:
-            # in sandbox
-            return None
-        ordinal = self.kwargs["ordinal"]
         course_identifier = self.kwargs["course_identifier"]
-        from course.utils import CoursePageContext
+        flow_session_id = self.kwargs.get("flow_session_id")
+        ordinal = self.kwargs.get("ordinal")
+
         pctx = CoursePageContext(self.request, course_identifier)
-        prev_visit_id = self.request.GET.get("visit_id")
 
-        if prev_visit_id is not None:
-            try:
-                prev_visit_id = int(prev_visit_id)
-            except ValueError:
-                from django.core.exceptions import SuspiciousOperation
-                raise SuspiciousOperation("non-integer passed for 'visit_id'")
-        from course.utils import FlowPageContext
-        from course.flow import get_prev_answer_visits_qset
-        fpctx = FlowPageContext(
-            repo=pctx.repo,
-            course=pctx.course,
-            flow_id=flow_session.flow_id,
-            ordinal=int(ordinal),
-            flow_session=flow_session,
-            participation=flow_session.participation,
-            request=self.request
-        )
+        if not flow_session_id and not ordinal:
+            # this should happen in sandbox
+            if not pctx.has_permission(pperm.use_page_sandbox):
+                raise PermissionDenied()
 
-        prev_answer_visits = list(
-                get_prev_answer_visits_qset(fpctx.page_data))
+        if flow_session_id:
+            from course.models import FlowSession
+            flow_session = get_object_or_404(FlowSession, id=int(flow_session_id))
 
-        # {{{ fish out previous answer_visit
+            prev_visit_id = self.request.GET.get("visit_id")
 
-        if prev_answer_visits and prev_visit_id is not None:
-            answer_visit = prev_answer_visits[0]
+            if prev_visit_id is not None:
+                try:
+                    prev_visit_id = int(prev_visit_id)
+                except ValueError:
+                    from django.core.exceptions import SuspiciousOperation
+                    raise SuspiciousOperation("non-integer passed for 'visit_id'")
+            from course.utils import FlowPageContext
+            from course.flow import get_prev_answer_visits_qset
+            fpctx = FlowPageContext(
+                repo=pctx.repo,
+                course=pctx.course,
+                flow_id=flow_session.flow_id,
+                ordinal=int(ordinal),
+                flow_session=flow_session,
+                participation=flow_session.participation,
+                request=self.request
+            )
 
-            for pvisit in prev_answer_visits:
-                if pvisit.id == prev_visit_id:
-                    answer_visit = pvisit
-                    break
+            prev_answer_visits = list(
+                    get_prev_answer_visits_qset(fpctx.page_data))
 
-        elif prev_answer_visits:
-            answer_visit = prev_answer_visits[0]
+            # {{{ fish out previous answer_visit
+
+            if prev_answer_visits and prev_visit_id is not None:
+                answer_visit = prev_answer_visits[0]
+
+                for pvisit in prev_answer_visits:
+                    if pvisit.id == prev_visit_id:
+                        answer_visit = pvisit
+                        break
+
+            elif prev_answer_visits:
+                answer_visit = prev_answer_visits[0]
+
+            else:
+                answer_visit = None
+
+            # }}}
+
+            if not answer_visit:
+                return None
+
+            answer_data = answer_visit.answer
+
+            if not answer_data:
+                # For old pages which didn't used answer data
+                return None
+
+            if not isinstance(answer_data, dict):
+                # For old pages which didn't used dict as answer data
+                return None
+
+            pk_list = answer_data.get("answer", None)
+            if not pk_list:
+                # For old pages which didn't save pk_list in answer_data
+                return None
 
         else:
-            answer_visit = None
-
-        # }}}
-
-        if not answer_visit:
-            return None
-
-        answer_data = answer_visit.answer
-
-        if not answer_data:
-            return None
-
-        if not isinstance(answer_data, dict):
-            return None
-
-        pk_list = answer_data.get("answer", None)
-        if not pk_list:
-            return None
+            # this should happen in sandbox
+            pk_list = list(FlowPageImage.objects.filter(
+                course__identifier=course_identifier,
+                creator=self.request.user,
+                flow_session_id__isnull=True,
+                image_page_id__isnull=True
+            ).values_list("pk", flat=True))
 
         # Creating a QuerySet from a list while preserving order using Django
-        # https://codybonney.com/creating-a-queryset-from-a-list-while-preserving-order-using-django/
+        # https://codybonney.com/creating-a-queryset-from-a-list-while-preserving-order-using-django/  # noqa
         clauses = (
             ' '.join(['WHEN id=%s THEN %s' % (pk, i)
                       for i, pk in enumerate(pk_list)]))
@@ -307,16 +321,25 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
 
 @login_required
 @course_view
-def flow_page_image_download(pctx, flow_session_id, creator_id,
-                             download_id, file_name):
+def flow_page_image_download(pctx, **kwargs):
+    download_id = kwargs["download_id"]
+    flow_session_id = kwargs.get("flow_session_id")
+    creator_id = kwargs["creator_id"]
+    file_name = kwargs["file_name"]
     request = pctx.request
+
+    if not flow_session_id:
+        # this should happen in sandbox
+        if not pctx.has_permission(pperm.use_page_sandbox):
+            raise PermissionDenied()
+
     download_object = get_object_or_404(FlowPageImage, pk=download_id)
 
     privilege = False
 
     # whether the user is allowed to view the private image
     # First, course staff are allow to view participants image.
-    if is_course_staff_course_image_request(pctx.request, pctx.course):
+    if pctx.has_permission(pperm.assign_grade):
         privilege = True
 
     # Participants are allowed to view images in their pages, even uploaded
@@ -333,16 +356,15 @@ def _auth_download(request, download_object, privilege=False):
         or
             privilege):
         return sendfile(request, download_object.image.path)
-    from django.core.exceptions import PermissionDenied
     raise PermissionDenied(_("may not view other people's resource"))
 
 
 @login_required
 def _non_auth_download(request, download_object):
+    # this method is not implemented
     if (not request.user == download_object.creator
         and
             not request.user.is_staff):
-        from django.core.exceptions import PermissionDenied
         raise PermissionDenied(_("may not view other people's resource"))
 
     from sendfile.backends.development import sendfile
@@ -361,20 +383,31 @@ class CropImageError(BadRequest):
 @login_required
 @transaction.atomic
 @course_view
-def image_crop(pctx, flow_session_id, ordinal, pk):
-    try:
+def image_crop(pctx, **kwargs):
+    flow_session_id = kwargs.get("flow_session_id")
+    ordinal = kwargs.get("ordinal")
+    pk = kwargs.get("pk")
+
+    if not flow_session_id and not ordinal:
+        # this should happen in sandbox
+        if not pctx.has_permission(pperm.use_page_sandbox):
+            raise PermissionDenied()
+
+    in_sandbox = False
+    if flow_session_id:
+        assert ordinal is not None
         page_image_behavior = get_page_image_behavior(
             pctx, flow_session_id, ordinal)
         may_change_answer = page_image_behavior.may_change_answer
-    except ValueError:
+    else:
         # in sandbox
+        in_sandbox = True
         may_change_answer = True
 
-    course_staff_status = (
-        is_course_staff_course_image_request(pctx.request, pctx.course))
+    course_staff_request = pctx.has_permission(pperm.assign_grade)
     request = pctx.request
 
-    if not (may_change_answer or course_staff_status):
+    if not (may_change_answer or course_staff_request):
         raise CropImageError(ugettext('Not allowd to modify answer.'))
     try:
         crop_instance = FlowPageImage.objects.get(pk=pk)
@@ -450,9 +483,14 @@ def image_crop(pctx, flow_session_id, ordinal, pk):
 
     # the other attribute of the new image doen't have to be the same
     # with the original one.
-    if (crop_instance.course != pctx.course
-        or
-                int(crop_instance.flow_session_id) != int(flow_session_id)):
+    need_adjust_new_instance = False
+    if crop_instance.course != pctx.course:
+        need_adjust_new_instance = True
+    if not in_sandbox:
+        if int(crop_instance.flow_session_id) != int(flow_session_id):
+            need_adjust_new_instance = True
+
+    if need_adjust_new_instance:
         from course.models import FlowPageData
         fpd = FlowPageData.objects.get(flow_session=flow_session_id, ordinal=ordinal)
         new_instance.flow_session_id = flow_session_id

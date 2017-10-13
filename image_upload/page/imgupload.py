@@ -98,13 +98,19 @@ class ImageUploadForm(StyledForm):
 
         self.helper.form_id = "fileupload"
 
-        self.helper.form_action = reverse(
-            "jfu_upload",
-            kwargs={'course_identifier': page_context.course,
-                    'flow_session_id': page_context.flow_session.id,
-                    'ordinal': get_ordinal_from_page_context(page_context)
-                    }
-        )
+        if not page_context.in_sandbox:
+            self.helper.form_action = reverse(
+                "jfu_upload",
+                kwargs={'course_identifier': page_context.course,
+                        'flow_session_id': page_context.flow_session.id,
+                        'ordinal': get_ordinal_from_page_context(page_context)
+                        }
+            )
+        else:
+            self.helper.form_action = reverse(
+                "jfu_upload",
+                kwargs={'course_identifier': page_context.course}
+            )
         self.helper.form_method = "POST"
 
         self.helper.layout = Layout(
@@ -518,6 +524,9 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
 
         if prev_visit_id:
             ctx["prev_visit_id"] = prev_visit_id
+
+        if page_context.in_sandbox:
+            ctx["in_sandbox"] = True
 
         return render_to_string(
                 "image_upload/imgupload-page-tmpl.html", ctx, request)

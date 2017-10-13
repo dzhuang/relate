@@ -64,7 +64,18 @@ def user_flowsession_img_path(instance, filename):
         user_full_name = instance.creator.pk
 
     if instance.is_temp_image:
+        if instance.flow_session_id is None:
+            return 'user_images/{0}(user_{1})/temp/sandbox/{2}'.format(
+                user_full_name,
+                instance.creator_id,
+                filename)
         return 'user_images/{0}(user_{1})/temp/{2}'.format(
+            user_full_name,
+            instance.creator_id,
+            filename)
+
+    if instance.flow_session_id is None:
+        return 'user_images/{0}(user_{1})/sandbox/{2}'.format(
             user_full_name,
             instance.creator_id,
             filename)
@@ -184,13 +195,22 @@ class FlowPageImage(models.Model):
         import os
         file_name = os.path.basename(self.image.path)
         from django.urls import reverse
-        return reverse('flow_page_image_download', args=[
-                self.course.identifier,
-                self.flow_session_id,
-                self.creator_id,
-                self.pk,
-                file_name]
-                )
+        if self.flow_session_id:
+            return reverse('flow_page_image_download', args=[
+                    self.course.identifier,
+                    self.flow_session_id,
+                    self.creator_id,
+                    self.pk,
+                    file_name]
+                    )
+        else:
+            # in sandbox
+            return reverse('flow_page_image_download', args=[
+                    self.course.identifier,
+                    self.creator_id,
+                    self.pk,
+                    file_name]
+                    )
 
     def admin_image(self):
         # type: () -> Optional[Text]

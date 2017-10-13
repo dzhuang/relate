@@ -43,8 +43,15 @@ urlpatterns = [
     url(r"^course"
         "/" + COURSE_ID_REGEX +
         "/flow-session"
-        "/(?P<flow_session_id>[0-9]+|None)"
-        "/(?P<ordinal>[0-9]+|None)"
+        "/(?P<flow_session_id>[0-9]+)"
+        "/(?P<ordinal>[0-9]+)"
+        "/image/upload/$",
+        ImageCreateView.as_view(),
+        name='jfu_upload'),
+
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/sandbox/page"
         "/image/upload/$",
         ImageCreateView.as_view(),
         name='jfu_upload'),
@@ -52,8 +59,16 @@ urlpatterns = [
     url(r"^course"
         "/" + COURSE_ID_REGEX +
         "/flow-session"
-        "/(?P<flow_session_id>[0-9]+|None)"
-        "/(?P<ordinal>[0-9]+|None)"
+        "/(?P<flow_session_id>[0-9]+)"
+        "/(?P<ordinal>[0-9]+)"
+        "/image/delete"
+        "/(?P<pk>\d+)$",
+        ImageDeleteView.as_view(),
+        name='jfu_delete'),
+
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/sandbox/page"
         "/image/delete"
         "/(?P<pk>\d+)$",
         ImageDeleteView.as_view(),
@@ -62,8 +77,15 @@ urlpatterns = [
     url(r"^course"
         "/" + COURSE_ID_REGEX +
         "/flow-session"
-        "/(?P<flow_session_id>[0-9]+|None)"
-        "/(?P<ordinal>[0-9]+|None)"
+        "/(?P<flow_session_id>[0-9]+)"
+        "/(?P<ordinal>[0-9]+)"
+        "/image/view/$",
+        ImageListView.as_view(),
+        name='jfu_view'),
+
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/sandbox/page"
         "/image/view/$",
         ImageListView.as_view(),
         name='jfu_view'),
@@ -78,11 +100,28 @@ urlpatterns = [
         flow_page_image_download,
         name='flow_page_image_download'),
 
+    url(r"^user_flow_page_images"
+        "/" + COURSE_ID_REGEX +
+        "/sandbox/page"
+        "/(?P<creator_id>\d+)"
+        "/(?P<download_id>\d+)"
+        "/(?P<file_name>[^/]+)$",
+        flow_page_image_download,
+        name='flow_page_image_download'),
+
     url(r"^course"
         "/" + COURSE_ID_REGEX +
         "/flow-session"
-        "/(?P<flow_session_id>[0-9]+|None)"
-        "/(?P<ordinal>[0-9]+|None)"
+        "/(?P<flow_session_id>[0-9]+)"
+        "/(?P<ordinal>[0-9]+)"
+        "/image/crop"
+        "/(?P<pk>\d+)$",
+        image_crop,
+        name='image_crop'),
+
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/sandbox/page"
         "/image/crop"
         "/(?P<pk>\d+)$",
         image_crop,

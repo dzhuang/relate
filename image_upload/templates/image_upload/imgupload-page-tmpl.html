@@ -1,7 +1,11 @@
 {% load relate_jfutags %}
 {% load i18n %}
 
-{% jfu 'image_upload/imgupload-page-config.html' course_identifier=course_identifier flow_session_id=flow_session_id ordinal=ordinal %}
+{% if in_sandbox %}
+  {% jfu 'image_upload/imgupload-page-config.html' course_identifier=course_identifier %}
+{% else %}
+  {% jfu 'image_upload/imgupload-page-config.html' course_identifier=course_identifier flow_session_id=flow_session_id ordinal=ordinal %}
+{% endif %}
 
     <div>
         <form class="form-horizontal" method="post" style="padding-bottom: 0">
