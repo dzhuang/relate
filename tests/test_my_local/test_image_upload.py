@@ -111,6 +111,16 @@ class ImageUploadViewMixin(ImageUploadStorageTestMixin,
         page_params.update({"ordinal": str(page_ordinal), "pk": image_pk})
         return reverse("jfu_delete", kwargs=page_params)
 
+    def get_crop_url(self, image_pk, page_ordinal=None, page_id=None):
+        assert page_ordinal or page_id
+        if not page_ordinal:
+            assert page_id
+            page_ordinal = self.get_ordinal_via_page_id(page_id)
+        from copy import deepcopy
+        page_params = deepcopy(self.page_params)
+        page_params.update({"ordinal": str(page_ordinal), "pk": image_pk})
+        return reverse("image_crop", kwargs=page_params)
+
     def get_page_url(self, page_ordinal=None, page_id=None):
         assert page_ordinal or page_id
         if not page_ordinal:
@@ -144,6 +154,14 @@ class ImageUploadViewMixin(ImageUploadStorageTestMixin,
         delete_url = self.get_delete_url(image_pk=image_pk, page_id=page_id)
         resp = self.c.post(
             delete_url,
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        return resp
+
+    def post_crop_flowpageimage(self, page_id, image_pk, data):
+        crop_url = self.get_crop_url(image_pk=image_pk, page_id=page_id)
+        resp = self.c.post(
+            crop_url,
+            data=data,
             HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         return resp
 
@@ -884,6 +902,33 @@ class ImageUploadDownloadViewTest(ImageUploadQuizMixin, TestCase):
         self.assertTrue(resp.status_code, 403)
 
 
+@skipIf(skip_test, SKIP_LOCAL_TEST_REASON)
+@override_settings(
+    CACHE_BACKEND='dummy:///')
+class ImageUploadCropViewTest(ImageUploadQuizMixin, TestCase):
+    def setUp(self):  # noqa
+        super(ImageUploadCropViewTest, self).setUp()
+        page_id = "one_image"
+        self.post_create_flowpageimage(page_id, TEST_IMAGE1)
+        self.image1 = FlowPageImage.objects.first()
+
+        page_id = "two_images"
+        self.image2 = FlowPageImage.objects.last()
+        image_pks = [self.image2.pk]
+        image_pks_str = ",".join([str(pk) for pk in image_pks])
+        self.client_post_answer_by_page_id(
+            page_id, {"hidden_answer": [image_pks_str]})
+
+    def test_simple_crop(self):
+        page_id = "one_image"
+        post_data = (
+            {"x":0,"y":0,"width":20,"height":19,
+             "rotate":0,"scaleX":1,"scaleY":1})
+        resp = self.post_crop_flowpageimage(page_id=page_id, image_pk=self.image1.pk, data=post_data)
+        self.assertEqual(resp.status_code, 200)
+        print(resp.content.decode())
+
+
 QUESTION_MARKUP = """
 type: ImageUploadQuestion\r
 id: two_images\r
@@ -915,10 +960,9 @@ class ImageUploadSandboxViewTest(ImageUploadViewMixin,
     def page_params(self):
         return {"course_identifier": self.course.identifier}
 
-    @classmethod
-    def setUpTestData(cls):  # noqa
-        super(ImageUploadSandboxViewTest, cls).setUpTestData()
-        cls.c.force_login(cls.instructor_participation.user)
+    def setUp(self):  # noqa
+        super(ImageUploadSandboxViewTest, self).setUp()
+        self.c.force_login(self.instructor_participation.user)
 
     def get_sandbox_upload_url(self):
         return reverse("jfu_upload", kwargs=self.page_params)
@@ -996,11 +1040,106 @@ class ImageUploadSandboxViewTest(ImageUploadViewMixin,
         self.assertEqual(FlowPageImage.objects.all().count(), 1)
         image = FlowPageImage.objects.first()
         image_path = image.image.path
+        self.c.force_login(self.student_participation.user)
         resp = self.post_sandbox_delete_flowpageimage(image_pk=image.pk)
-        self.assertEqual(resp.status_code, 200)
-        self.assertFalse(os.path.isfile(image_path))
-        self.assertEqual(FlowPageImage.objects.all().count(), 0)
+        self.assertEqual(resp.status_code, 403)
+        self.assertTrue(os.path.isfile(image_path))
+        self.assertEqual(FlowPageImage.objects.all().count(), 1)
 
+    def test_sandbox_image_page_post(self):
+        self.post_sandbox_create_flowpageimage(TEST_IMAGE1)
+        self.post_sandbox_create_flowpageimage(TEST_IMAGE2)
+        self.assertEqual(FlowPageImage.objects.all().count(), 2)
+        self.assertEqual(FlowPageImage.objects.filter(is_temp_image=True).count(), 2)
+        image1 = FlowPageImage.objects.first()
+        image1_path = image1.image.path
+        image2 = FlowPageImage.objects.last()
+        image2_path = image2.image.path
 
+        image_pks = FlowPageImage.objects.all().values_list("pk", flat=True)
+        image_pks_str = ",".join([str(pk) for pk in image_pks])
 
+        answer_data = {"hidden_answer": [image_pks_str]}
+        resp = self.get_page_sandbox_submit_answer_response(
+            markup_content=QUESTION_MARKUP, answer_data=answer_data)
 
+        self.assertTrue(resp.status_code, 200)
+        # all images are still temp images after page post
+        self.assertEqual(FlowPageImage.objects.filter(is_temp_image=True).count(), 2)
+        self.assertTrue(os.path.isfile(image1_path))
+        self.assertTrue(os.path.isfile(image2_path))
+
+    def test_sandbox_image_page_post_403(self):
+        self.post_sandbox_create_flowpageimage(TEST_IMAGE1)
+        self.post_sandbox_create_flowpageimage(TEST_IMAGE2)
+        self.assertEqual(FlowPageImage.objects.all().count(), 2)
+        self.assertEqual(FlowPageImage.objects.filter(is_temp_image=True).count(), 2)
+
+        image_pks = FlowPageImage.objects.all().values_list("pk", flat=True)
+        image_pks_str = ",".join([str(pk) for pk in image_pks])
+
+        answer_data = {"hidden_answer": [image_pks_str]}
+
+        self.c.force_login(self.student_participation.user)
+        resp = self.get_page_sandbox_submit_answer_response(
+            markup_content=QUESTION_MARKUP, answer_data=answer_data)
+
+        self.assertTrue(resp.status_code, 403)
+        self.assertEqual(FlowPageImage.objects.filter(is_temp_image=True).count(), 2)
+
+    def test_sandbox_list_images(self):
+        self.post_sandbox_create_flowpageimage(TEST_IMAGE1)
+        self.post_sandbox_create_flowpageimage(TEST_IMAGE2)
+        image_pks = FlowPageImage.objects.all().values_list("pk", flat=True)
+        image_pks_str = ",".join([str(pk) for pk in image_pks])
+
+        answer_data = {"hidden_answer": [image_pks_str]}
+        self.get_page_sandbox_submit_answer_response(
+            markup_content=QUESTION_MARKUP, answer_data=answer_data)
+
+        resp = self.c.get(self.get_sandbox_list_url())
+        self.assertTrue(resp.status_code, 200)
+        resp_dict = json.loads(resp.content.decode())
+        self.assertEqual(len(resp_dict["files"]), 2)
+
+    def test_sandbox_list_images_403(self):
+        self.post_sandbox_create_flowpageimage(TEST_IMAGE1)
+        self.post_sandbox_create_flowpageimage(TEST_IMAGE2)
+        image_pks = FlowPageImage.objects.all ().values_list ("pk", flat=True)
+        image_pks_str = ",".join ([str (pk) for pk in image_pks])
+
+        answer_data = {"hidden_answer": [image_pks_str]}
+        self.get_page_sandbox_submit_answer_response(
+            markup_content=QUESTION_MARKUP, answer_data=answer_data)
+
+        self.c.force_login(self.student_participation.user)
+        resp = self.c.get(self.get_sandbox_list_url())
+        self.assertTrue(resp.status_code, 403)
+
+    def test_sandbox_download_image(self):
+        self.post_sandbox_create_flowpageimage(TEST_IMAGE1)
+        image_pks = FlowPageImage.objects.all().values_list("pk", flat=True)
+        image_pks_str = ",".join([str(pk) for pk in image_pks])
+
+        answer_data = {"hidden_answer": [image_pks_str]}
+        self.get_page_sandbox_submit_answer_response(
+            markup_content=QUESTION_MARKUP, answer_data=answer_data)
+        image_download_url = (
+            FlowPageImage.objects.all().first().get_absolute_url())
+        resp = self.c.get(image_download_url)
+        self.assertTrue(resp.status_code, 200)
+        self.assertEqual(resp.get('Content-Type'), "image/png")
+
+    def test_sandbox_download_image403(self):
+        self.post_sandbox_create_flowpageimage(TEST_IMAGE1)
+        image_pks = FlowPageImage.objects.all().values_list("pk", flat=True)
+        image_pks_str = ",".join([str(pk) for pk in image_pks])
+
+        answer_data = {"hidden_answer": [image_pks_str]}
+        self.get_page_sandbox_submit_answer_response(
+            markup_content=QUESTION_MARKUP, answer_data=answer_data)
+        image_download_url = (
+            FlowPageImage.objects.all().first().get_absolute_url())
+        self.c.force_login(self.student_participation.user)
+        resp = self.c.get(image_download_url)
+        self.assertTrue(resp.status_code, 403)

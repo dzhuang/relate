@@ -81,48 +81,40 @@ def is_course_staff_course_image_request(request, course):
     return pctx.has_permission(pperm.assign_grade)
 
 
-class ImageOperationMixin(UserPassesTestMixin):
+class ImageEditPermissionTestMixin(UserPassesTestMixin):
     # Mixin for determin if user can upload/delete/edit image
     raise_exception = True
 
     def test_func(self):
         course_identifier = self.kwargs['course_identifier']
         pctx = CoursePageContext(self.request, course_identifier)
-        if pctx.has_permission(pperm.assign_grade):
-            return True
 
         flow_session_id = self.kwargs.get('flow_session_id')
         ordinal = self.kwargs.get('ordinal')
 
-        if not flow_session_id and not ordinal:
-            # this should happen in sandbox
-            if pctx.has_permission(pperm.use_page_sandbox):
+        if flow_session_id is not None and ordinal is not None:
+            from course.models import FlowSession
+            flow_session = get_object_or_404 (FlowSession, id=int (flow_session_id))
+            if flow_session.user != self.request.user:
+                if pctx.has_permission(pperm.assign_grade):
+                    return True
+                return False
+            return get_page_image_behavior(
+                pctx, flow_session_id, ordinal).may_change_answer
+        else:
+            if pctx.has_permission (pperm.use_page_sandbox):
                 return True
             return False
 
-        return get_page_image_behavior(
-            pctx, flow_session_id, ordinal).may_change_answer
 
-
-class ImageCreateView(LoginRequiredMixin, ImageOperationMixin,
+class ImageCreateView(LoginRequiredMixin, ImageEditPermissionTestMixin,
                       JSONResponseMixin, CreateView):
     # Prevent download Json response in IE 7-10
     # http://stackoverflow.com/a/13944206/3437454
     content_type = 'text/plain'
     model = FlowPageImage
     fields = ("image", "slug")
-
-    def post(self, request, *args, **kwargs):
-        course_identifier = kwargs["course_identifier"]
-        pctx = CoursePageContext(request, course_identifier)
-        flow_session_id = kwargs.get("flow_session_id")
-        ordinal = kwargs.get("ordinal")
-
-        if not flow_session_id and not ordinal:
-            # this should happen in sandbox
-            if not pctx.has_permission(pperm.use_page_sandbox):
-                raise PermissionDenied()
-        return super(ImageCreateView, self).post(request, *args, **kwargs)
+    http_method_names = ["post"]
 
     def form_valid(self, form):
         image = form.cleaned_data.get('image')
@@ -150,14 +142,12 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin,
 
         course_identifier = self.kwargs["course_identifier"]
 
-        pctx = CoursePageContext(self.request, course_identifier)
-
-        self.object.course = pctx.course
-
+        from course.models import Course
+        self.object.course = get_object_or_404(Course, identifier=course_identifier)
         flow_session_id = self.kwargs.get("flow_session_id")
         ordinal = self.kwargs.get("ordinal")
 
-        if flow_session_id and ordinal:
+        if flow_session_id is not None and ordinal is not None:
             from course.models import FlowPageData
             fpd = FlowPageData.objects.get(
                 flow_session=flow_session_id, ordinal=ordinal)
@@ -194,10 +184,9 @@ class ImageItemForm(forms.ModelForm):
         fields = ("image",)
 
 
-class ImageDeleteView(LoginRequiredMixin, ImageOperationMixin, DeleteView):
+class ImageDeleteView(LoginRequiredMixin, ImageEditPermissionTestMixin, DeleteView):
     model = FlowPageImage
-
-    # def post(self, request, *args, **kwargs):
+    http_method_names = ["post"]
 
     def delete(self, request, *args, **kwargs):
         self.object = self.get_object()
@@ -223,6 +212,7 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
     # Prevent download Json response in IE 7-10
     # http://stackoverflow.com/a/13944206/3437454):
     model = FlowPageImage
+    http_method_names = ["get"]
 
     def get_queryset(self):
         course_identifier = self.kwargs["course_identifier"]
@@ -231,7 +221,7 @@ class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
 
         pctx = CoursePageContext(self.request, course_identifier)
 
-        if not flow_session_id and not ordinal:
+        if flow_session_id is None and ordinal is None:
             # this should happen in sandbox
             if not pctx.has_permission(pperm.use_page_sandbox):
                 raise PermissionDenied()
@@ -400,6 +390,13 @@ class CropImageError(BadRequest):
 @transaction.atomic
 @course_view
 def image_crop(pctx, **kwargs):
+    request = pctx.request
+
+    if not request.POST:
+        raise PermissionDenied()
+    if not request.is_ajax():
+        raise CropImageError(ugettext('Only Ajax Post is allowed.'))
+
     flow_session_id = kwargs.get("flow_session_id")
     ordinal = kwargs.get("ordinal")
     pk = kwargs.get("pk")
@@ -410,7 +407,7 @@ def image_crop(pctx, **kwargs):
             raise PermissionDenied()
 
     in_sandbox = False
-    if flow_session_id:
+    if flow_session_id is not None:
         assert ordinal is not None
         page_image_behavior = get_page_image_behavior(
             pctx, flow_session_id, ordinal)
@@ -421,7 +418,6 @@ def image_crop(pctx, **kwargs):
         may_change_answer = True
 
     course_staff_request = pctx.has_permission(pperm.assign_grade)
-    request = pctx.request
 
     if not (may_change_answer or course_staff_request):
         raise CropImageError(ugettext('Not allowd to modify answer.'))
@@ -435,12 +431,6 @@ def image_crop(pctx, **kwargs):
         raise CropImageError(
             string_concat(ugettext('File not found.'),
                           ugettext('Please upload the image first.')))
-
-    if not request.POST:
-        return {}
-
-    if not request.is_ajax():
-        raise CropImageError(ugettext('Only Ajax Post is allowed.'))
 
     json_data = json.loads(request.body.decode("utf-8"))
 
@@ -559,9 +549,7 @@ def get_page_image_behavior(pctx, flow_session_id, ordinal):
         get_prev_answer_visits_qset)
 
     request = pctx.request
-
     ordinal = int(ordinal)
-
     flow_session_id = int(flow_session_id)
     flow_session = get_and_check_flow_session(pctx, flow_session_id)
     flow_id = flow_session.flow_id
