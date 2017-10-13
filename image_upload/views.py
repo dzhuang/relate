@@ -91,8 +91,14 @@ class ImageOperationMixin(UserPassesTestMixin):
         if pctx.has_permission(pperm.assign_grade):
             return True
 
-        flow_session_id = self.kwargs['flow_session_id']
-        ordinal = self.kwargs['ordinal']
+        flow_session_id = self.kwargs.get('flow_session_id')
+        ordinal = self.kwargs.get('ordinal')
+
+        if not flow_session_id and not ordinal:
+            # this should happen in sandbox
+            if pctx.has_permission(pperm.use_page_sandbox):
+                return True
+            return False
 
         return get_page_image_behavior(
             pctx, flow_session_id, ordinal).may_change_answer
@@ -105,6 +111,18 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin,
     content_type = 'text/plain'
     model = FlowPageImage
     fields = ("image", "slug")
+
+    def post(self, request, *args, **kwargs):
+        course_identifier = kwargs["course_identifier"]
+        pctx = CoursePageContext(request, course_identifier)
+        flow_session_id = kwargs.get("flow_session_id")
+        ordinal = kwargs.get("ordinal")
+
+        if not flow_session_id and not ordinal:
+            # this should happen in sandbox
+            if not pctx.has_permission(pperm.use_page_sandbox):
+                raise PermissionDenied()
+        return super(ImageCreateView, self).post(request, *args, **kwargs)
 
     def form_valid(self, form):
         image = form.cleaned_data.get('image')
@@ -145,10 +163,6 @@ class ImageCreateView(LoginRequiredMixin, ImageOperationMixin,
                 flow_session=flow_session_id, ordinal=ordinal)
             self.object.flow_session_id = flow_session_id
             self.object.image_page_id = fpd.page_id
-        else:
-            # this should happen in sandbox
-            if not pctx.has_permission(pperm.use_page_sandbox):
-                raise PermissionDenied()
 
         with transaction.atomic():
             self.object.save()
@@ -182,6 +196,8 @@ class ImageItemForm(forms.ModelForm):
 
 class ImageDeleteView(LoginRequiredMixin, ImageOperationMixin, DeleteView):
     model = FlowPageImage
+
+    # def post(self, request, *args, **kwargs):
 
     def delete(self, request, *args, **kwargs):
         self.object = self.get_object()

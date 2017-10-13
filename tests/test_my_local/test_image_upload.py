@@ -66,7 +66,7 @@ from ..base_test_mixins import (
 )
 
 from ..test_pages import MESSAGE_ANSWER_SAVED_TEXT, MESSAGE_ANSWER_FAILED_SAVE_TEXT
-
+from ..test_sandbox import SingleCoursePageSandboxTestBaseMixin
 from .mixins import ImageUploadStorageTestMixin
 
 MY_SINGLE_COURSE_SETUP_LIST = deepcopy(SINGLE_COURSE_SETUP_LIST)
@@ -78,26 +78,9 @@ TEST_IMAGE1 = os.path.join(TEST_IMAGE_FOLDER, "test1.png")
 TEST_IMAGE2 = os.path.join(TEST_IMAGE_FOLDER, "test2.png")
 
 
-class ImageUploadViewMixin(ImageUploadStorageTestMixin, SingleCoursePageTestMixin):
-    courses_setup_list = MY_SINGLE_COURSE_SETUP_LIST
-    flow_id = IMAGE_UPLOAD_FLOW
-    none_participation_user_create_kwarg_list = (
-        NONE_PARTICIPATION_USER_CREATE_KWARG_LIST)
-
-    @classmethod
-    def setUpTestData(cls):  # noqa
-        super(ImageUploadViewMixin, cls).setUpTestData()
-        cls.student_participation2 = (
-            cls.create_participation(
-                cls.course, cls.non_participation_users[0],
-                status=participation_status.active))
-        cls.non_participation_user = cls.non_participation_users[1]
-
-    def setUp(self):  # noqa
-        super(ImageUploadViewMixin, self).setUp()
-        self.c.force_login(self.student_participation.user)
-        self.start_quiz(self.flow_id)
-
+class ImageUploadViewMixin(ImageUploadStorageTestMixin,
+                           FallBackStorageMessageTestMixin,
+                           SingleCoursePageTestMixin):
     def get_upload_url(self, page_ordinal=None, page_id=None):
         assert page_ordinal or page_id
         if not page_ordinal:
@@ -157,13 +140,33 @@ class ImageUploadViewMixin(ImageUploadStorageTestMixin, SingleCoursePageTestMixi
                 HTTP_X_REQUESTED_WITH='XMLHttpRequest')
             return resp
 
-
     def post_delete_flowpageimage(self, page_id, image_pk):
         delete_url = self.get_delete_url(image_pk=image_pk, page_id=page_id)
         resp = self.c.post(
             delete_url,
             HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         return resp
+
+
+class ImageUploadQuizMixin(ImageUploadViewMixin):
+    courses_setup_list = MY_SINGLE_COURSE_SETUP_LIST
+    flow_id = IMAGE_UPLOAD_FLOW
+    none_participation_user_create_kwarg_list = (
+        NONE_PARTICIPATION_USER_CREATE_KWARG_LIST)
+
+    @classmethod
+    def setUpTestData(cls):  # noqa
+        super(ImageUploadQuizMixin, cls).setUpTestData()
+        cls.student_participation2 = (
+            cls.create_participation(
+                cls.course, cls.non_participation_users[0],
+                status=participation_status.active))
+        cls.non_participation_user = cls.non_participation_users[1]
+
+    def setUp(self):  # noqa
+        super(ImageUploadQuizMixin, self).setUp()
+        self.c.force_login(self.student_participation.user)
+        self.start_quiz(self.flow_id)
 
 
 def mocked_corrupted_serialize_image(request, instance, file_attr='image'):
@@ -175,7 +178,7 @@ def mocked_corrupted_serialize_image(request, instance, file_attr='image'):
 @skipIf(skip_test, SKIP_LOCAL_TEST_REASON)
 @override_settings(
     CACHE_BACKEND='dummy:///')
-class ImageUploadCreateViewTest(ImageUploadViewMixin, TestCase):
+class ImageUploadCreateViewTest(ImageUploadQuizMixin, TestCase):
     def test_one_image_upload_owner(self):
         page_id = "one_image"
         page_url = self.get_page_url(page_id=page_id)
@@ -302,7 +305,7 @@ class ImageUploadCreateViewTest(ImageUploadViewMixin, TestCase):
 @skipIf(skip_test, SKIP_LOCAL_TEST_REASON)
 @override_settings(
     CACHE_BACKEND='dummy:///')
-class ImageUploadDeleteViewTest(ImageUploadViewMixin, TestCase):
+class ImageUploadDeleteViewTest(ImageUploadQuizMixin, TestCase):
 
     def test_one_image_delete_my_own_temp_image(self):
         page_id = "one_image"
@@ -403,8 +406,7 @@ FORM_ERROR_IMAGE_BROKEN_PATTERN = (
 @skipIf(skip_test, SKIP_LOCAL_TEST_REASON)
 @override_settings(
     CACHE_BACKEND='dummy:///')
-class ImageUploadPageTest(ImageUploadViewMixin, FallBackStorageMessageTestMixin,
-                          TestCase):
+class ImageUploadPageTest(ImageUploadQuizMixin, TestCase):
 
     def test_page_submit_success(self):
         page_id = "one_image"
@@ -762,7 +764,7 @@ class ImageUploadPageTest(ImageUploadViewMixin, FallBackStorageMessageTestMixin,
 @skipIf(skip_test, SKIP_LOCAL_TEST_REASON)
 @override_settings(
     CACHE_BACKEND='dummy:///')
-class ImageUploadListViewTest(ImageUploadViewMixin, TestCase):
+class ImageUploadListViewTest(ImageUploadQuizMixin, TestCase):
     def test_page_list_view(self):
         page_id = "two_images"
         page_ordinal = self.get_ordinal_via_page_id(page_id)
@@ -848,7 +850,7 @@ class ImageUploadListViewTest(ImageUploadViewMixin, TestCase):
 @skipIf(skip_test, SKIP_LOCAL_TEST_REASON)
 @override_settings(
     CACHE_BACKEND='dummy:///')
-class ImageUploadDownloadViewTest(ImageUploadViewMixin, TestCase):
+class ImageUploadDownloadViewTest(ImageUploadQuizMixin, TestCase):
     def setUp(self):  # noqa
         super(ImageUploadDownloadViewTest, self).setUp()
         page_id = "one_image"
@@ -880,3 +882,125 @@ class ImageUploadDownloadViewTest(ImageUploadViewMixin, TestCase):
         self.c.logout()
         resp = self.c.get(self.image_download_url)
         self.assertTrue(resp.status_code, 403)
+
+
+QUESTION_MARKUP = """
+type: ImageUploadQuestion\r
+id: two_images\r
+access_rules:\r
+    add_permissions:\r
+        - change_answer\r
+value: 5\r
+maxNumberOfFiles: 2\r
+
+prompt: |\r
+
+    # allow upload two images\r
+
+rubric: |\r
+    Any image?\r
+"""
+
+
+@skipIf(skip_test, SKIP_LOCAL_TEST_REASON)
+@override_settings(
+    CACHE_BACKEND='dummy:///')
+class ImageUploadSandboxViewTest(ImageUploadViewMixin,
+                                 SingleCoursePageSandboxTestBaseMixin, TestCase):
+    @property
+    def sandbox_url(self):
+        return reverse("relate-view_page_sandbox", args=[self.course.identifier])
+
+    @property
+    def page_params(self):
+        return {"course_identifier": self.course.identifier}
+
+    @classmethod
+    def setUpTestData(cls):  # noqa
+        super(ImageUploadSandboxViewTest, cls).setUpTestData()
+        cls.c.force_login(cls.instructor_participation.user)
+
+    def get_sandbox_upload_url(self):
+        return reverse("jfu_upload", kwargs=self.page_params)
+
+    def get_sandbox_list_url(self):
+        return reverse("jfu_view", kwargs=self.page_params)
+
+    def get_sandbox_delete_url(self, image_pk):
+        page_params = deepcopy(self.page_params)
+        page_params.update({"pk": image_pk})
+        return reverse("jfu_delete", kwargs=page_params)
+
+    def post_sandbox_create_flowpageimage(self, image_path=None):
+        upload_url = self.get_sandbox_upload_url()
+        if image_path:
+            with open(image_path, "rb") as fp:
+                post_data = {
+                    'image': [fp],
+                }
+                resp = self.c.post(
+                    upload_url,
+                    data=post_data,
+                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+                return resp
+        else:
+            resp = self.c.post(
+                upload_url,
+                data={},
+                HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+            return resp
+
+    def post_sandbox_delete_flowpageimage(self, image_pk):
+        delete_url = self.get_sandbox_delete_url(image_pk=image_pk)
+        resp = self.c.post(
+            delete_url,
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        return resp
+
+    def test_sandbox_imageuploadquestion_render(self):
+        resp = self.get_page_sandbox_preview_response(QUESTION_MARKUP)
+
+        # success render
+        self.assertEqual(resp.status_code, 200)
+        self.assertResponseMessagesCount(resp, 0)
+        self.assertContains(resp, "<h1>allow upload two images</h1>")
+
+    def test_sandbox_create_image(self):
+        resp = self.post_sandbox_create_flowpageimage(TEST_IMAGE1)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(FlowPageImage.objects.all().count(), 1)
+        self.assertEqual(
+            FlowPageImage.objects.filter(is_temp_image=True).count(), 1)
+        image = FlowPageImage.objects.get()
+        self.assertTrue(image.is_temp_image)
+        self.assertTrue(os.path.isfile(image.image.path))
+
+    def test_sandbox_create_image_403(self):
+        self.c.force_login(self.student_participation.user)
+        resp = self.post_sandbox_create_flowpageimage(TEST_IMAGE1)
+        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(FlowPageImage.objects.all().count(), 0)
+
+    def test_sandbox_delete_image(self):
+        self.post_sandbox_create_flowpageimage(TEST_IMAGE1)
+        self.assertEqual(FlowPageImage.objects.all().count(), 1)
+        image = FlowPageImage.objects.first()
+        image_path = image.image.path
+        resp = self.post_sandbox_delete_flowpageimage(image_pk=image.pk)
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(os.path.isfile(image_path))
+        self.assertEqual(FlowPageImage.objects.all().count(), 0)
+
+    def test_sandbox_delete_image_403(self):
+        self.post_sandbox_create_flowpageimage(TEST_IMAGE1)
+        self.assertEqual(FlowPageImage.objects.all().count(), 1)
+        image = FlowPageImage.objects.first()
+        image_path = image.image.path
+        resp = self.post_sandbox_delete_flowpageimage(image_pk=image.pk)
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(os.path.isfile(image_path))
+        self.assertEqual(FlowPageImage.objects.all().count(), 0)
+
+
+
+
