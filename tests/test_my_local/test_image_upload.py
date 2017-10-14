@@ -74,14 +74,14 @@ MY_SINGLE_COURSE_SETUP_LIST[0]["course"]["git_source"] = (
     "https://code.aliyun.com/dzhuang/my_learningwhat_test_repo.git")
 IMAGE_UPLOAD_FLOW = "image-upload-flow"
 TEST_IMAGE_FOLDER = os.path.join(os.path.dirname(__file__), "fixtures")
-TEST_IMAGE1 = os.path.join(TEST_IMAGE_FOLDER, "test1.png")
+TEST_IMAGE1 = os.path.join(TEST_IMAGE_FOLDER, "test1.jpg")
 TEST_IMAGE2 = os.path.join(TEST_IMAGE_FOLDER, "test2.png")
 
 
 class ImageUploadViewMixin(ImageUploadStorageTestMixin,
                            FallBackStorageMessageTestMixin,
                            SingleCoursePageTestMixin):
-    def get_upload_url(self, page_ordinal=None, page_id=None):
+    def get_upload_url(self, page_ordinal=None, page_id=None, flow_session_id=None):
         assert page_ordinal or page_id
         if not page_ordinal:
             assert page_id
@@ -89,9 +89,11 @@ class ImageUploadViewMixin(ImageUploadStorageTestMixin,
         from copy import deepcopy
         page_params = deepcopy(self.page_params)
         page_params.update({"ordinal": str(page_ordinal)})
+        if flow_session_id is not None:
+            page_params.update({"flow_session_id": str(flow_session_id)})
         return reverse("jfu_upload", kwargs=page_params)
 
-    def get_list_url(self, page_ordinal=None, page_id=None):
+    def get_list_url(self, page_ordinal=None, page_id=None, flow_session_id=None):
         assert page_ordinal or page_id
         if not page_ordinal:
             assert page_id
@@ -99,9 +101,12 @@ class ImageUploadViewMixin(ImageUploadStorageTestMixin,
         from copy import deepcopy
         page_params = deepcopy(self.page_params)
         page_params.update({"ordinal": str(page_ordinal)})
+        if flow_session_id is not None:
+            page_params.update({"flow_session_id": str(flow_session_id)})
         return reverse("jfu_view", kwargs=page_params)
 
-    def get_delete_url(self, image_pk, page_ordinal=None, page_id=None):
+    def get_delete_url(self, image_pk, page_ordinal=None, page_id=None,
+                       flow_session_id=None):
         assert page_ordinal or page_id
         if not page_ordinal:
             assert page_id
@@ -109,9 +114,12 @@ class ImageUploadViewMixin(ImageUploadStorageTestMixin,
         from copy import deepcopy
         page_params = deepcopy(self.page_params)
         page_params.update({"ordinal": str(page_ordinal), "pk": image_pk})
+        if flow_session_id is not None:
+            page_params.update({"flow_session_id": str(flow_session_id)})
         return reverse("jfu_delete", kwargs=page_params)
 
-    def get_crop_url(self, image_pk, page_ordinal=None, page_id=None):
+    def get_crop_url(self, image_pk, page_ordinal=None, page_id=None,
+                     flow_session_id=None):
         assert page_ordinal or page_id
         if not page_ordinal:
             assert page_id
@@ -119,9 +127,11 @@ class ImageUploadViewMixin(ImageUploadStorageTestMixin,
         from copy import deepcopy
         page_params = deepcopy(self.page_params)
         page_params.update({"ordinal": str(page_ordinal), "pk": image_pk})
+        if flow_session_id is not None:
+            page_params.update({"flow_session_id": str(flow_session_id)})
         return reverse("image_crop", kwargs=page_params)
 
-    def get_page_url(self, page_ordinal=None, page_id=None):
+    def get_page_url(self, page_ordinal=None, page_id=None, flow_session_id=None):
         assert page_ordinal or page_id
         if not page_ordinal:
             assert page_id
@@ -129,10 +139,14 @@ class ImageUploadViewMixin(ImageUploadStorageTestMixin,
         from copy import deepcopy
         page_params = deepcopy(self.page_params)
         page_params.update({"ordinal": str(page_ordinal)})
+        if flow_session_id is not None:
+            page_params.update({"flow_session_id": str(flow_session_id)})
         return reverse("relate-view_flow_page", kwargs=page_params)
 
-    def post_create_flowpageimage(self, page_id, image_path=None):
-        upload_url = self.get_upload_url(page_id=page_id)
+    def post_create_flowpageimage(self, page_id, image_path=None, page_ordinal=None,
+                                  flow_session_id=None):
+        upload_url = self.get_upload_url(page_ordinal=page_ordinal, page_id=page_id,
+                                         flow_session_id=flow_session_id)
         if image_path:
             with open(image_path, "rb") as fp:
                 post_data = {
@@ -150,18 +164,26 @@ class ImageUploadViewMixin(ImageUploadStorageTestMixin,
                 HTTP_X_REQUESTED_WITH='XMLHttpRequest')
             return resp
 
-    def post_delete_flowpageimage(self, page_id, image_pk):
-        delete_url = self.get_delete_url(image_pk=image_pk, page_id=page_id)
+    def post_delete_flowpageimage(self, page_id, image_pk, page_ordinal=None,
+                                  flow_session_id=None):
+        delete_url = self.get_delete_url(image_pk=image_pk, page_id=page_id,
+                                         page_ordinal=page_ordinal,
+                                         flow_session_id=flow_session_id)
         resp = self.c.post(
             delete_url,
             HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         return resp
 
-    def post_crop_flowpageimage(self, page_id, image_pk, data):
-        crop_url = self.get_crop_url(image_pk=image_pk, page_id=page_id)
+    def post_crop_flowpageimage(self, page_id, image_pk, crop_data,
+                                page_ordinal=None,
+                                flow_session_id=None):
+        crop_url = self.get_crop_url(image_pk=image_pk, page_id=page_id,
+                                     page_ordinal=page_ordinal,
+                                     flow_session_id=flow_session_id)
+        post_data = {"croppedResult": json.dumps(crop_data)}
         resp = self.c.post(
             crop_url,
-            data=data,
+            data=post_data,
             HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         return resp
 
@@ -227,6 +249,80 @@ class ImageUploadCreateViewTest(ImageUploadQuizMixin, TestCase):
         )
         self.assertEqual(resp_dict["files"][0]["error"], expected_error)
         self.assertEqual(FlowPageImage.objects.all().count(), 0)
+
+    def create_not_my_session_image(self, user):
+        page_id = "one_image"
+        self.c.force_login(self.student_participation2.user)
+        self.start_quiz(self.flow_id)
+        his_session = FlowSession.objects.all().order_by("-start_time")[0]
+        if user is not None:
+            self.c.force_login(user)
+        else:
+            self.c.logout()
+        resp = self.post_create_flowpageimage(page_id, TEST_IMAGE1,
+                                              flow_session_id=his_session.pk)
+
+        if user is None or user != self.instructor_participation.user:
+            self.assertEqual(resp.status_code, 403)
+            self.assertEqual(FlowPageImage.objects.all().count(), 0)
+        else:
+            self.assertEqual(resp.status_code, 200)
+            self.assertEqual(FlowPageImage.objects.all().count(), 1)
+
+    def test_create_not_my_session_image(self):
+        self.create_not_my_session_image(self.student_participation.user)
+
+    def test_create_not_my_session_image_staff(self):
+        self.create_not_my_session_image(self.instructor_participation.user)
+
+    def test_create_not_my_session_image_anonymous(self):
+        self.create_not_my_session_image(None)
+
+    def test_create_ordinal_invalid_image(self):
+        page_id = "one_image"
+        invalid_page_ordinal = 100
+        resp = self.post_create_flowpageimage(page_id, TEST_IMAGE1,
+                                              page_ordinal=invalid_page_ordinal)
+
+        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(FlowPageImage.objects.all().count(), 0)
+
+    def create_not_allowed_for_finished_page(self, user):
+        self.c.force_login(self.student_participation.user)
+        page_id = "one_image"
+        self.post_create_flowpageimage(page_id, TEST_IMAGE1)
+        image_pks = FlowPageImage.objects.all().values_list("pk", flat=True)
+        image_pks_str = ",".join([str(pk) for pk in image_pks])
+
+        # submit page
+        self.client_post_answer_by_page_id(
+            page_id, {"hidden_answer": [image_pks_str]})
+        # end session
+        self.end_quiz()
+
+        if user is not None:
+            self.c.force_login(user)
+        else:
+            self.c.logout()
+        resp = self.post_create_flowpageimage(page_id, TEST_IMAGE1)
+
+        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(FlowPageImage.objects.all().count(), 1)
+
+    def test_create_not_allowed_for_finished_page_owner(self):
+        self.create_not_allowed_for_finished_page(
+            self.student_participation.user)
+
+    def test_create_not_allowed_for_finished_page_another(self):
+        self.create_not_allowed_for_finished_page(
+            self.student_participation2.user)
+
+    def test_create_not_allowed_for_finished_page_staff(self):
+        self.create_not_allowed_for_finished_page(
+            self.instructor_participation.user)
+
+    def test_create_not_allowed_for_finished_page_anonymous(self):
+        self.create_not_allowed_for_finished_page(None)
 
     def test_one_image_upload_form_invalid(self):
         page_id = "one_image"
@@ -401,6 +497,44 @@ class ImageUploadDeleteViewTest(ImageUploadQuizMixin, TestCase):
         self.assertEqual(FlowPageImage.objects.all().count(), 1)
         self.assertTrue(os.path.isfile(image.image.path))
 
+    def delete_not_allowed_for_finished_page(self, user):
+        self.c.force_login(self.student_participation.user)
+        page_id = "one_image"
+        self.post_create_flowpageimage(page_id, TEST_IMAGE1)
+        image_pks = FlowPageImage.objects.all().values_list("pk", flat=True)
+        image_pks_str = ",".join([str(pk) for pk in image_pks])
+
+        # submit page
+        self.client_post_answer_by_page_id(
+            page_id, {"hidden_answer": [image_pks_str]})
+        # end session
+        self.end_quiz()
+
+        if user is not None:
+            self.c.force_login(user)
+        else:
+            self.c.logout()
+
+        resp = self.post_delete_flowpageimage(page_id=page_id, image_pk=1)
+
+        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(FlowPageImage.objects.all().count(), 1)
+
+    def test_delete_not_allowed_for_finished_page_owner(self):
+        self.delete_not_allowed_for_finished_page(
+            self.student_participation.user)
+
+    def test_delete_not_allowed_for_finished_page_another(self):
+        self.delete_not_allowed_for_finished_page(
+            self.student_participation2.user)
+
+    def test_delete_not_allowed_for_finished_page_staff(self):
+        self.delete_not_allowed_for_finished_page(
+            self.instructor_participation.user)
+
+    def test_delete_not_allowed_for_finished_page_anonymous(self):
+        self.delete_not_allowed_for_finished_page(None)
+
 
 MESSAGE_IMAGE_NOT_UPLOADED_TEXT = "You have not upload image(s)!"
 FORM_ERROR_IMAGE_NUMBER_EXCEEDED_PATTERN = (
@@ -441,6 +575,17 @@ class ImageUploadPageTest(ImageUploadQuizMixin, TestCase):
             FlowPageImage.objects.filter(is_temp_image=True).count(), 0)
         self.assertEqual(
             FlowPageImage.objects.filter(is_temp_image=False).count(), 1)
+
+    def test_get_image_grade_page(self):
+        page_id = "one_image"
+        grade_page_url =  reverse(
+            "relate-grade_flow_page",
+            kwargs={"course_identifier": self.course.identifier,
+                    "flow_session_id": FlowSession.objects.first().pk,
+                    "page_ordinal": self.get_ordinal_via_page_id(page_id)})
+        self.c.force_login(self.ta_participation.user)
+        resp = self.c.get(grade_page_url)
+        self.assertEqual(resp.status_code, 200)
 
     def test_page_submit_fail_bad_hidden_answer(self):
         page_id = "one_image"
@@ -883,13 +1028,13 @@ class ImageUploadDownloadViewTest(ImageUploadQuizMixin, TestCase):
     def test_owner_download(self):
         resp = self.c.get(self.image_download_url)
         self.assertTrue(resp.status_code, 200)
-        self.assertEqual(resp.get('Content-Type'), "image/png")
+        self.assertEqual(resp.get('Content-Type'), "image/jpeg")
 
     def test_staff_download(self):
         self.c.force_login(self.ta_participation.user)
         resp = self.c.get(self.image_download_url)
         self.assertTrue(resp.status_code, 200)
-        self.assertEqual(resp.get('Content-Type'), "image/png")
+        self.assertEqual(resp.get('Content-Type'), "image/jpeg")
 
     def test_other_user_download(self):
         self.c.force_login(self.student_participation2.user)
@@ -919,17 +1064,140 @@ class ImageUploadCropViewTest(ImageUploadQuizMixin, TestCase):
         self.client_post_answer_by_page_id(
             page_id, {"hidden_answer": [image_pks_str]})
 
-    def test_simple_crop(self):
-        page_id = "one_image"
-        crop_data = (
+    @property
+    def crop_data(self):
+        return (
             {"x":0,"y":0,"width":20,"height":19,
              "rotate":0,"scaleX":1,"scaleY":1})
-        post_data = {"croppedResult": json.dumps(crop_data)}
+
+    def test_crop_temp_image(self):
+        page_id = "one_image"
+        resp = self.post_crop_flowpageimage(
+            page_id=page_id, image_pk=self.image1.pk, crop_data=self.crop_data)
+        self.assertEqual(resp.status_code, 200)
+
+        self.assertEqual(
+            FlowPageImage.objects.filter(image_page_id="one_image").count(), 2)
+
+    def test_get_crop_image_url_403(self):
+        page_id = "one_image"
+        resp = self.c.get(self.get_crop_url(self.image1.pk, page_id=page_id))
+        self.assertEqual(resp.status_code, 403)
+
+    def test_post_crop_image_url_not_ajax_400(self):
+        page_id = "one_image"
+        resp = self.c.get(self.get_crop_url(self.image1.pk, page_id=page_id))
+        self.assertEqual(resp.status_code, 403)
+
+        post_data = {"croppedResult": json.dumps(self.crop_data)}
+        resp = self.c.post(
+            self.get_crop_url(self.image1.pk, page_id=page_id),
+            data=post_data)
+        self.assertEqual(resp.status_code, 400)
+
+    def test_crop_image_pk_not_exist_404(self):
+        page_id = "one_image"
+        resp = self.post_crop_flowpageimage(
+            page_id=page_id, image_pk=1000, crop_data=self.crop_data)
+        self.assertEqual(resp.status_code, 404)
+
+    def test_crop_none_temp_image(self):
+        page_id = "one_image"
+        # submit page
+        self.client_post_answer_by_page_id(
+            page_id, {"hidden_answer": ["1"]})
+
+        self.assertEqual(
+            FlowPageImage.objects.filter(image_page_id="one_image").count(), 1)
 
         resp = self.post_crop_flowpageimage(
-            page_id=page_id, image_pk=self.image1.pk, data=post_data)
+            page_id=page_id, image_pk=self.image1.pk, crop_data=self.crop_data)
         self.assertEqual(resp.status_code, 200)
-        print(resp.content.decode())
+
+        # crop non temp image create new
+        self.assertEqual(
+            FlowPageImage.objects.filter(image_page_id="one_image").count(), 2)
+
+    def crop_not_allowed_for_finished_page_response(self, user):
+        self.c.force_login(self.student_participation.user)
+
+        page_id = "one_image"
+        # submit page
+        self.client_post_answer_by_page_id(
+            page_id, {"hidden_answer": ["1"]})
+        # end session
+        self.end_quiz()
+
+        if user is not None:
+            self.c.force_login(user)
+        else:
+            self.c.logout()
+
+        resp = self.post_crop_flowpageimage(
+            page_id=page_id, image_pk=self.image1.pk, crop_data=self.crop_data)
+        return resp
+
+    def test_crop_not_allowed_for_finished_page_owner(self):
+        resp = self.crop_not_allowed_for_finished_page_response(
+            self.student_participation.user)
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(
+            FlowPageImage.objects.filter(image_page_id="one_image").count(), 1)
+
+    def test_crop_not_allowed_for_finished_page_another(self):
+        resp = self.crop_not_allowed_for_finished_page_response(
+            self.student_participation2.user)
+        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(
+            FlowPageImage.objects.filter(image_page_id="one_image").count(), 1)
+
+    def test_crop_allowed_for_finished_page_staff(self):
+        resp = self.crop_not_allowed_for_finished_page_response(
+            self.instructor_participation.user)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(
+            FlowPageImage.objects.filter(image_page_id="one_image").count(), 2)
+
+    def test_crop_not_allowed_for_finished_page_anonymous(self):
+        resp = self.crop_not_allowed_for_finished_page_response(None)
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(
+            FlowPageImage.objects.filter(image_page_id="one_image").count(), 1)
+
+    def create_new_course(self, course_identifier):
+        # create a new course
+        new_course_kwargs = deepcopy(self.courses_setup_list[0]["course"])
+        new_course_kwargs["identifier"] = course_identifier
+        self.c.force_login(self.instructor_participation.user)
+        self.create_course(**new_course_kwargs)
+        from course.models import Course
+        new_course = Course.objects.all().order_by("-pk")[0]
+        self.create_participation(new_course, self.student_participation.user,
+                                  status=participation_status.active)
+        assert Course.objects.count() == 2
+        return new_course
+
+    def test_need_adjust_new_instance_course_change(self):
+        new_course_identifier = "test-course2"
+        new_course = self.create_new_course(new_course_identifier)
+        self.c.force_login(self.student_participation.user)
+        existing_image_number = FlowPageImage.objects.count()
+        params = {"course_identifier": new_course_identifier,
+                  "flow_id": self.flow_id}
+        resp = self.c.post(reverse("relate-view_start_flow", kwargs=params))
+        _, _, kwargs = resolve(resp.url)
+        self.page_params = kwargs
+        page_id = "two_images"
+        resp = self.post_crop_flowpageimage(
+            page_id=page_id, image_pk=self.image1.pk, crop_data=self.crop_data)
+        self.assertEqual(resp.status_code, 200)
+        new_image = FlowPageImage.objects.last()
+        self.assertEqual(
+            new_image.course.identifier, new_course_identifier)
+        self.assertEqual(
+            new_image.image_page_id, page_id)
+        self.assertEqual(existing_image_number + 1, FlowPageImage.objects.count())
+        self.remove_course_repo(new_course)
 
 
 QUESTION_MARKUP = """
@@ -978,6 +1246,11 @@ class ImageUploadSandboxViewTest(ImageUploadViewMixin,
         page_params.update({"pk": image_pk})
         return reverse("jfu_delete", kwargs=page_params)
 
+    def get_sandbox_crop_url(self, image_pk):
+        page_params = deepcopy(self.page_params)
+        page_params.update({"pk": image_pk})
+        return reverse("image_crop", kwargs=page_params)
+
     def post_sandbox_create_flowpageimage(self, image_path=None):
         upload_url = self.get_sandbox_upload_url()
         if image_path:
@@ -1001,6 +1274,15 @@ class ImageUploadSandboxViewTest(ImageUploadViewMixin,
         delete_url = self.get_sandbox_delete_url(image_pk=image_pk)
         resp = self.c.post(
             delete_url,
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        return resp
+
+    def post_sandbox_crop_flowpageimage(self, image_pk, crop_data):
+        crop_url = self.get_sandbox_crop_url(image_pk=image_pk)
+        post_data = {"croppedResult": json.dumps(crop_data)}
+        resp = self.c.post(
+            crop_url,
+            data=post_data,
             HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         return resp
 
@@ -1131,7 +1413,7 @@ class ImageUploadSandboxViewTest(ImageUploadViewMixin,
             FlowPageImage.objects.all().first().get_absolute_url())
         resp = self.c.get(image_download_url)
         self.assertTrue(resp.status_code, 200)
-        self.assertEqual(resp.get('Content-Type'), "image/png")
+        self.assertEqual(resp.get('Content-Type'), "image/jpeg")
 
     def test_sandbox_download_image403(self):
         self.post_sandbox_create_flowpageimage(TEST_IMAGE1)
@@ -1146,3 +1428,39 @@ class ImageUploadSandboxViewTest(ImageUploadViewMixin,
         self.c.force_login(self.student_participation.user)
         resp = self.c.get(image_download_url)
         self.assertTrue(resp.status_code, 403)
+
+    def sandbox_crop_image_resp(self, user):
+        self.c.force_login(self.instructor_participation.user)
+        self.post_sandbox_create_flowpageimage(TEST_IMAGE1)
+        image_pks = FlowPageImage.objects.all().values_list("pk", flat=True)
+        image_pks_str = ",".join([str(pk) for pk in image_pks])
+
+        answer_data = {"hidden_answer": [image_pks_str]}
+        self.get_page_sandbox_submit_answer_response(
+            markup_content=QUESTION_MARKUP, answer_data=answer_data)
+
+        if user is not None:
+            self.c.force_login(user)
+        else:
+            self.c.logout()
+
+        resp = self.post_sandbox_crop_flowpageimage(
+            FlowPageImage.objects.first().pk,
+            crop_data={"x": 0,"y": 0, "width":20, "height":19,
+                       "rotate": 0, "scaleX": 1,"scaleY": 1})
+        return resp
+
+    def test_sandbox_crop_image_staff(self):
+        resp = self.sandbox_crop_image_resp(self.instructor_participation.user)
+        self.assertTrue(resp.status_code, 200)
+        self.assertEqual(FlowPageImage.objects.count(), 2)
+
+    def test_sandbox_crop_image_403(self):
+        resp = self.sandbox_crop_image_resp(self.student_participation.user)
+        self.assertTrue(resp.status_code, 403)
+        self.assertEqual(FlowPageImage.objects.count(), 1)
+
+    def test_sandbox_crop_image_not_auth_403(self):
+        resp = self.sandbox_crop_image_resp(None)
+        self.assertTrue(resp.status_code, 403)
+        self.assertEqual(FlowPageImage.objects.count(), 1)

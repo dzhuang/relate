@@ -122,14 +122,8 @@ def send_to_sendfile_on_page_save(sender, instance, **kwargs):
     except:
         return
 
-    from plugins.latex.utils import get_all_indirect_subclasses
-    from image_upload.page.imgupload import ImageUploadQuestion
-    all_subclass_name = [
-        cls.__name__
-        for cls in get_all_indirect_subclasses(ImageUploadQuestion)]
-    all_subclass_name.append(ImageUploadQuestion.__name__)
-
-    if instance.page_data.page_type not in all_subclass_name:
+    from image_upload.views import get_all_imageuploadpage_klass_names
+    if instance.page_data.page_type not in get_all_imageuploadpage_klass_names():
         return
 
     saving_image_qs = FlowPageImage.objects.filter(
@@ -149,14 +143,8 @@ def delete_temp_images_on_flowpage_answer_update(sender, instance, **kwargs):
     if instance.answer is None:
         return
 
-    from plugins.latex.utils import get_all_indirect_subclasses
-    from image_upload.page.imgupload import ImageUploadQuestion
-    all_subclass_name = [
-        cls.__name__
-        for cls in get_all_indirect_subclasses(ImageUploadQuestion)]
-    all_subclass_name.append(ImageUploadQuestion.__name__)
-
-    if instance.page_data.page_type not in all_subclass_name:
+    from image_upload.views import get_all_imageuploadpage_klass_names
+    if instance.page_data.page_type not in get_all_imageuploadpage_klass_names():
         return
 
     fpi_qs = FlowPageImage.objects.filter(

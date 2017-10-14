@@ -48,8 +48,6 @@ if False:
     from typing import Text, Any  # noqa
     from course.utils import PageContext  # noqa
 
-# extracted from course.flow
-
 
 # {{{  widget used in admin
 
