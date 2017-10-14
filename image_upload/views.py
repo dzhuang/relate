@@ -42,7 +42,7 @@ from course.utils import (course_view, FlowPageContext, get_session_access_rule,
 from course.constants import participation_permission as pperm
 
 from image_upload.serialize import serialize
-from image_upload.models import FlowPageImage, UserImageStorage
+from image_upload.models import FlowPageImage
 
 from jsonview.decorators import json_view
 from jsonview.exceptions import BadRequest
@@ -52,13 +52,143 @@ from PIL import Image
 from io import BytesIO
 from sendfile import sendfile
 
-storage = UserImageStorage()
-
 # Define the permssion required for course staff to edit/upload/delete
 # images uploaded by participants
 COURSE_STAFF_IMAGE_PERMISSION = (
     (pperm.assign_grade, None),
 )
+
+
+def check_page_handler_url_visit_permission(pctx, flow_session_id, ordinal):
+    if (not bool(flow_session_id is not None and ordinal is not None)
+            and bool(flow_session_id is not None or ordinal is not None)):
+        # flow_session_id and ordinal must be both None or not None
+        raise http.Http404()
+
+    if flow_session_id is not None:
+        assert ordinal is not None
+        from course.models import FlowPageData
+        from course.flow import get_and_check_flow_session
+        get_and_check_flow_session(pctx, flow_session_id)
+        fpd = get_object_or_404(
+            FlowPageData, flow_session_id=flow_session_id, ordinal=ordinal)
+        if fpd.page_type not in get_all_imageuploadpage_klass_names():
+            # For pages which don't upload images
+            raise http.Http404()
+
+    if flow_session_id is None:
+        assert ordinal is None
+        # this should happen only for cases in sandbox
+        if not pctx.has_permission(pperm.use_page_sandbox):
+            raise PermissionDenied()
+
+
+def get_page_image_behavior(pctx, flow_session_id, ordinal):
+
+    check_page_handler_url_visit_permission(pctx, flow_session_id, ordinal)
+
+    if flow_session_id is None:
+        assert ordinal is None
+        # this should happen only for cases in sandbox
+        # assert pctx.has_permission(pperm.use_page_sandbox
+        from course.page.base import PageBehavior
+        return PageBehavior(
+            show_correctness=True,
+            show_answer=True,
+            may_change_answer=True,
+        )
+
+    from course.flow import (
+        get_page_behavior, get_prev_answer_visits_qset)
+
+    request = pctx.request
+    ordinal = int(ordinal)
+    flow_session_id = int(flow_session_id)
+
+    from course.models import FlowSession
+    flow_session = FlowSession.objects.get(id=flow_session_id)
+    flow_id = flow_session.flow_id
+
+    fpctx = FlowPageContext(pctx.repo, pctx.course, flow_id, ordinal,
+            participation=pctx.participation,
+            flow_session=flow_session,
+            request=pctx.request)
+
+    from course.views import get_now_or_fake_time
+
+    now_datetime = get_now_or_fake_time(request)
+    access_rule = get_session_access_rule(
+            flow_session, fpctx.flow_desc, now_datetime,
+            facilities=pctx.request.relate_facilities)
+
+    grading_rule = get_session_grading_rule(
+            flow_session, fpctx.flow_desc, now_datetime)
+    generates_grade = (
+            grading_rule.grade_identifier is not None
+            and
+            grading_rule.generates_grade)
+
+    del grading_rule
+
+    permissions = fpctx.page.get_modified_permissions_for_page(
+            access_rule.permissions)
+
+    prev_answer_visits = list(
+            get_prev_answer_visits_qset(fpctx.page_data))
+
+    # {{{ fish out previous answer_visit
+
+    prev_visit_id = pctx.request.GET.get("visit_id")
+    if prev_visit_id is not None:
+        prev_visit_id = int(prev_visit_id)
+
+    if prev_answer_visits and prev_visit_id is not None:
+        answer_visit = prev_answer_visits[0]
+
+        for ivisit, pvisit in enumerate(prev_answer_visits):
+            if pvisit.id == prev_visit_id:
+                answer_visit = pvisit
+                break
+
+    elif prev_answer_visits:
+        answer_visit = prev_answer_visits[0]
+
+    else:
+        answer_visit = None
+
+    # }}}
+
+    if answer_visit is not None:
+        answer_was_graded = answer_visit.is_submitted_answer
+    else:
+        answer_was_graded = False
+
+    page_behavior = get_page_behavior(
+            page=fpctx.page,
+            permissions=permissions,
+            session_in_progress=flow_session.in_progress,
+            answer_was_graded=answer_was_graded,
+            generates_grade=generates_grade,
+            is_unenrolled_session=flow_session.participation is None)
+
+    return page_behavior
+
+
+class ImageListPermissionTestMixin(UserPassesTestMixin):
+    # Mixin for determin if user can list images
+    raise_exception = True
+
+    def test_func(self):
+        course_identifier = self.kwargs['course_identifier']
+        pctx = CoursePageContext(self.request, course_identifier)
+        flow_session_id = self.kwargs.get('flow_session_id')
+        ordinal = self.kwargs.get('ordinal')
+
+        try:
+            check_page_handler_url_visit_permission(pctx, flow_session_id, ordinal)
+            return True
+        except:
+            return False
 
 
 class ImageEditPermissionTestMixin(UserPassesTestMixin):
@@ -68,23 +198,10 @@ class ImageEditPermissionTestMixin(UserPassesTestMixin):
     def test_func(self):
         course_identifier = self.kwargs['course_identifier']
         pctx = CoursePageContext(self.request, course_identifier)
-
         flow_session_id = self.kwargs.get('flow_session_id')
         ordinal = self.kwargs.get('ordinal')
-
-        if flow_session_id is not None and ordinal is not None:
-            from course.models import FlowSession
-            flow_session = get_object_or_404 (FlowSession, id=int (flow_session_id))
-            if flow_session.user != self.request.user:
-                if pctx.has_permission(pperm.assign_grade):
-                    return True
-                return False
-            return get_page_image_behavior(
-                pctx, flow_session_id, ordinal).may_change_answer
-        else:
-            if pctx.has_permission (pperm.use_page_sandbox):
-                return True
-            return False
+        return get_page_image_behavior(
+            pctx, flow_session_id, ordinal).may_change_answer
 
 
 class ImageCreateView(LoginRequiredMixin, ImageEditPermissionTestMixin,
@@ -121,16 +238,18 @@ class ImageCreateView(LoginRequiredMixin, ImageEditPermissionTestMixin,
         self.object.creator = self.request.user
 
         course_identifier = self.kwargs["course_identifier"]
+        pctx = CoursePageContext(self.request, course_identifier)
 
         from course.models import Course
-        self.object.course = get_object_or_404(Course, identifier=course_identifier)
+        self.object.course = pctx.course
         flow_session_id = self.kwargs.get("flow_session_id")
         ordinal = self.kwargs.get("ordinal")
 
-        if flow_session_id is not None and ordinal is not None:
+        if flow_session_id is not None:
+            assert ordinal is not None
             from course.models import FlowPageData
             fpd = FlowPageData.objects.get(
-                flow_session=flow_session_id, ordinal=ordinal)
+                flow_session=int(flow_session_id), ordinal=int(ordinal))
             self.object.flow_session_id = flow_session_id
             self.object.image_page_id = fpd.page_id
 
@@ -188,95 +307,98 @@ class ImageDeleteView(LoginRequiredMixin, ImageEditPermissionTestMixin, DeleteVi
         return response
 
 
-class ImageListView(LoginRequiredMixin, JSONResponseMixin, ListView):
+class ImageListView(LoginRequiredMixin, ImageListPermissionTestMixin,
+                    JSONResponseMixin, ListView):
     # Prevent download Json response in IE 7-10
     # http://stackoverflow.com/a/13944206/3437454):
     model = FlowPageImage
     http_method_names = ["get"]
 
-    def get_queryset(self):
+    def get_pk_list(self):
         course_identifier = self.kwargs["course_identifier"]
         flow_session_id = self.kwargs.get("flow_session_id")
-        ordinal = self.kwargs.get("ordinal")
-
         pctx = CoursePageContext(self.request, course_identifier)
 
-        if flow_session_id is None and ordinal is None:
+        if not flow_session_id:
             # this should happen in sandbox
-            if not pctx.has_permission(pperm.use_page_sandbox):
-                raise PermissionDenied()
-
-        if flow_session_id:
-            from course.models import FlowSession
-            flow_session = get_object_or_404(FlowSession, id=int(flow_session_id))
-
-            prev_visit_id = self.request.GET.get("visit_id")
-
-            if prev_visit_id is not None:
-                try:
-                    prev_visit_id = int(prev_visit_id)
-                except ValueError:
-                    from django.core.exceptions import SuspiciousOperation
-                    raise SuspiciousOperation("non-integer passed for 'visit_id'")
-            from course.utils import FlowPageContext
-            from course.flow import get_prev_answer_visits_qset
-            fpctx = FlowPageContext(
-                repo=pctx.repo,
-                course=pctx.course,
-                flow_id=flow_session.flow_id,
-                ordinal=int(ordinal),
-                flow_session=flow_session,
-                participation=flow_session.participation,
-                request=self.request
-            )
-
-            prev_answer_visits = list(
-                    get_prev_answer_visits_qset(fpctx.page_data))
-
-            # {{{ fish out previous answer_visit
-
-            if prev_answer_visits and prev_visit_id is not None:
-                answer_visit = prev_answer_visits[0]
-
-                for pvisit in prev_answer_visits:
-                    if pvisit.id == prev_visit_id:
-                        answer_visit = pvisit
-                        break
-
-            elif prev_answer_visits:
-                answer_visit = prev_answer_visits[0]
-
-            else:
-                answer_visit = None
-
-            # }}}
-
-            if not answer_visit:
-                return None
-
-            answer_data = answer_visit.answer
-
-            if not answer_data:
-                # For old pages which didn't used answer data
-                return None
-
-            if not isinstance(answer_data, dict):
-                # For old pages which didn't used dict as answer data
-                return None
-
-            pk_list = answer_data.get("answer", None)
-            if not pk_list:
-                # For old pages which didn't save pk_list in answer_data
-                return None
-
-        else:
-            # this should happen in sandbox
-            pk_list = list(FlowPageImage.objects.filter(
+            return list(FlowPageImage.objects.filter(
                 course__identifier=course_identifier,
                 creator=self.request.user,
                 flow_session_id__isnull=True,
                 image_page_id__isnull=True
             ).values_list("pk", flat=True))
+
+        # {{{ extracting image pks from answer data
+        ordinal = self.kwargs.get("ordinal")
+
+        from course.models import FlowSession
+        flow_session = get_object_or_404(FlowSession, id=int(flow_session_id))
+
+        prev_visit_id = self.request.GET.get("visit_id")
+
+        if prev_visit_id is not None:
+            try:
+                prev_visit_id = int(prev_visit_id)
+            except ValueError:
+                from django.core.exceptions import SuspiciousOperation
+                raise SuspiciousOperation("non-integer passed for 'visit_id'")
+        from course.flow import get_prev_answer_visits_qset
+        fpctx = FlowPageContext(
+            repo=pctx.repo,
+            course=pctx.course,
+            flow_id=flow_session.flow_id,
+            ordinal=int(ordinal),
+            flow_session=flow_session,
+            participation=flow_session.participation,
+            request=self.request
+        )
+
+        prev_answer_visits = list(
+                get_prev_answer_visits_qset(fpctx.page_data))
+
+        # {{{ fish out previous answer_visit
+
+        if prev_answer_visits and prev_visit_id is not None:
+            answer_visit = prev_answer_visits[0]
+
+            for pvisit in prev_answer_visits:
+                if pvisit.id == prev_visit_id:
+                    answer_visit = pvisit
+                    break
+
+        elif prev_answer_visits:
+            answer_visit = prev_answer_visits[0]
+
+        else:
+            answer_visit = None
+
+        # }}}
+
+        if not answer_visit:
+            return []
+
+        answer_data = answer_visit.answer
+
+        if not answer_data:
+            # For old pages which didn't used answer data
+            return []
+
+        if not isinstance(answer_data, dict):
+            # For old pages which didn't used dict as answer data
+            return []
+
+        pk_list = answer_data.get("answer", None)
+        if not pk_list:
+            # For old pages which didn't save pk_list in answer_data
+            return []
+
+        # }}}
+
+        return pk_list
+
+
+    def get_queryset(self):
+        pk_list = self.get_pk_list()
 
         # Creating a QuerySet from a list while preserving order using Django
         # https://codybonney.com/creating-a-queryset-from-a-list-while-preserving-order-using-django/  # noqa
@@ -382,30 +504,28 @@ def image_crop(pctx, **kwargs):
     ordinal = kwargs.get("ordinal")
     pk = kwargs.get("pk")
 
-    if not flow_session_id and not ordinal:
+    crop_instance = get_object_or_404(FlowPageImage, pk=pk)
+
+    flow_session = None
+
+    if flow_session_id is None:
+        assert ordinal is None
         # this should happen in sandbox
         if not pctx.has_permission(pperm.use_page_sandbox):
             raise PermissionDenied()
-
-    in_sandbox = False
-    if flow_session_id is not None:
+        may_change_answer = True
+    else:
+        from course.models import FlowSession
+        flow_session = get_object_or_404(FlowSession, id=flow_session_id)
         assert ordinal is not None
         page_image_behavior = get_page_image_behavior(
             pctx, flow_session_id, ordinal)
         may_change_answer = page_image_behavior.may_change_answer
-    else:
-        # in sandbox
-        in_sandbox = True
-        may_change_answer = True
 
     course_staff_request = pctx.has_permission(pperm.assign_grade)
 
     if not (may_change_answer or course_staff_request):
         raise CropImageError(ugettext('Not allowd to modify answer.'))
-    try:
-        crop_instance = FlowPageImage.objects.get(pk=pk)
-    except FlowPageImage.DoesNotExist:
-        raise CropImageError(ugettext('Please upload the image first.'))
 
     image_orig_path = crop_instance.image.path
     if not image_orig_path:
@@ -442,6 +562,7 @@ def image_crop(pctx, **kwargs):
     new_image = new_image.crop(box)
 
     if new_image.mode != "RGB":
+        # for example, png images
         new_image = new_image.convert("RGB")
 
     new_image_io = BytesIO()
@@ -473,14 +594,18 @@ def image_crop(pctx, **kwargs):
     need_adjust_new_instance = False
     if crop_instance.course != pctx.course:
         need_adjust_new_instance = True
-    if not in_sandbox:
-        if int(crop_instance.flow_session_id) != int(flow_session_id):
+
+    if crop_instance.flow_session is not None and flow_session is not None:
+        if crop_instance.flow_session_id != flow_session_id:
             need_adjust_new_instance = True
+    else:
+        need_adjust_new_instance = (
+            bool(crop_instance.flow_session or flow_session))
 
     if need_adjust_new_instance:
         from course.models import FlowPageData
         fpd = FlowPageData.objects.get(flow_session=flow_session_id, ordinal=ordinal)
-        new_instance.flow_session_id = flow_session_id
+        new_instance.flow_session = flow_session
         new_instance.image_page_id = fpd.page_id
         new_instance.course = pctx.course
         new_instance.creation_time = local_now()
@@ -517,91 +642,14 @@ class ImgTableOrderError(BadRequest):
     pass
 
 
-def get_page_image_behavior(pctx, flow_session_id, ordinal):
-    if ordinal is None and flow_session_id is None:
-        from course.page.base import PageBehavior
-        if pctx.has_permission(pperm.use_page_sandbox):
-            return PageBehavior(
-                show_correctness=True,
-                show_answer=True,
-                may_change_answer=True,
-            )
-        else:
-            raise PermissionDenied()
-
-    from course.flow import (
-        get_page_behavior, get_and_check_flow_session,
-        get_prev_answer_visits_qset)
-
-    request = pctx.request
-    ordinal = int(ordinal)
-    flow_session_id = int(flow_session_id)
-    flow_session = get_and_check_flow_session(pctx, flow_session_id)
-    flow_id = flow_session.flow_id
-
-    fpctx = FlowPageContext(pctx.repo, pctx.course, flow_id, ordinal,
-            participation=pctx.participation,
-            flow_session=flow_session,
-            request=pctx.request)
-
-    from course.views import get_now_or_fake_time
-
-    now_datetime = get_now_or_fake_time(request)
-    access_rule = get_session_access_rule(
-            flow_session, fpctx.flow_desc, now_datetime,
-            facilities=pctx.request.relate_facilities)
-
-    grading_rule = get_session_grading_rule(
-            flow_session, fpctx.flow_desc, now_datetime)
-    generates_grade = (
-            grading_rule.grade_identifier is not None
-            and
-            grading_rule.generates_grade)
-
-    del grading_rule
-
-    permissions = fpctx.page.get_modified_permissions_for_page(
-            access_rule.permissions)
-
-    prev_answer_visits = list(
-            get_prev_answer_visits_qset(fpctx.page_data))
-
-    # {{{ fish out previous answer_visit
-
-    prev_visit_id = pctx.request.GET.get("visit_id")
-    if prev_visit_id is not None:
-        prev_visit_id = int(prev_visit_id)
-
-    if prev_answer_visits and prev_visit_id is not None:
-        answer_visit = prev_answer_visits[0]
-
-        for ivisit, pvisit in enumerate(prev_answer_visits):
-            if pvisit.id == prev_visit_id:
-                answer_visit = pvisit
-                break
-
-    elif prev_answer_visits:
-        answer_visit = prev_answer_visits[0]
-
-    else:
-        answer_visit = None
-
-    # }}}
-
-    if answer_visit is not None:
-        answer_was_graded = answer_visit.is_submitted_answer
-    else:
-        answer_was_graded = False
-
-    page_behavior = get_page_behavior(
-            page=fpctx.page,
-            permissions=permissions,
-            session_in_progress=flow_session.in_progress,
-            answer_was_graded=answer_was_graded,
-            generates_grade=generates_grade,
-            is_unenrolled_session=flow_session.participation is None)
-
-    return page_behavior
+def get_all_imageuploadpage_klass_names():
+    from plugins.latex.utils import get_all_indirect_subclasses
+    from image_upload.page.imgupload import ImageUploadQuestion
+    all_subclass_name = [
+        cls.__name__
+        for cls in get_all_indirect_subclasses(ImageUploadQuestion)]
+    all_subclass_name.append(ImageUploadQuestion.__name__)
+    return all_subclass_name
 
 
 def get_sendfile_storage_available_name(img):
@@ -613,5 +661,6 @@ def get_sendfile_storage_available_name(img):
         .replace(os.path.basename(img.image.name), img.slug)
         .replace("\\", "/")
         .replace("/temp/", "/"))
+    from image_upload.models import storage
     new_name = storage.get_available_name(original_source_name)
     return os.path.split(new_name)[-1]

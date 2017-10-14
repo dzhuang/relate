@@ -64,7 +64,7 @@ def user_flowsession_img_path(instance, filename):
         user_full_name = instance.creator.pk
 
     if instance.is_temp_image:
-        if instance.flow_session_id is None:
+        if instance.flow_session is None:
             return 'user_images/{0}(user_{1})/temp/sandbox/{2}'.format(
                 user_full_name,
                 instance.creator_id,
@@ -74,7 +74,7 @@ def user_flowsession_img_path(instance, filename):
             instance.creator_id,
             filename)
 
-    if instance.flow_session_id is None:
+    if instance.flow_session is None:
         return 'user_images/{0}(user_{1})/sandbox/{2}'.format(
             user_full_name,
             instance.creator_id,
