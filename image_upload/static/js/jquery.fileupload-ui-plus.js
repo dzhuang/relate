@@ -227,7 +227,7 @@
                         var jqxhr = $.ajax({
                             method: "POST",
                             url: $button.data("action"),
-                            data: JSON.stringify(result),
+                            data: {"croppedResult": JSON.stringify(result)},
                             beforeSend: function (xhr, settings) {
                                 xhr.setRequestHeader("X-CSRFToken", $button.data("data"));
                             }

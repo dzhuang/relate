@@ -432,7 +432,7 @@ def image_crop(pctx, **kwargs):
             string_concat(ugettext('File not found.'),
                           ugettext('Please upload the image first.')))
 
-    json_data = json.loads(request.body.decode("utf-8"))
+    json_data = json.loads(request.POST.get("croppedResult"))
 
     try:
         x = int(float(json_data['x']))
