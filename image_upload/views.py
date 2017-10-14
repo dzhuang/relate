@@ -348,6 +348,7 @@ def _auth_download(request, download_object, privilege=False):
 @login_required
 def _non_auth_download(request, download_object):
     # this method is not implemented
+    # view image in admin?
     if (not request.user == download_object.creator
         and
             not request.user.is_staff):
@@ -517,10 +518,16 @@ class ImgTableOrderError(BadRequest):
 
 
 def get_page_image_behavior(pctx, flow_session_id, ordinal):
-
     if ordinal is None and flow_session_id is None:
-        # This should never happen
-        return pctx.has_permission(pperm.use_page_sandbox)
+        from course.page.base import PageBehavior
+        if pctx.has_permission(pperm.use_page_sandbox):
+            return PageBehavior(
+                show_correctness=True,
+                show_answer=True,
+                may_change_answer=True,
+            )
+        else:
+            raise PermissionDenied()
 
     from course.flow import (
         get_page_behavior, get_and_check_flow_session,
