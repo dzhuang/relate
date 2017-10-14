@@ -61,26 +61,6 @@ COURSE_STAFF_IMAGE_PERMISSION = (
 )
 
 
-def is_course_staff_participation(participation):
-    if not participation:
-        return False
-
-    from course.enrollment import (
-        get_participation_permissions)
-    perms = get_participation_permissions(
-        participation.course, participation)
-
-    if all(perm in perms for perm in COURSE_STAFF_IMAGE_PERMISSION):
-        return True
-
-    return False
-
-
-def is_course_staff_course_image_request(request, course):
-    pctx = CoursePageContext(request, course.identifier)
-    return pctx.has_permission(pperm.assign_grade)
-
-
 class ImageEditPermissionTestMixin(UserPassesTestMixin):
     # Mixin for determin if user can upload/delete/edit image
     raise_exception = True
@@ -510,7 +490,8 @@ def image_crop(pctx, **kwargs):
     except (OSError, IOError) as e:
         raise BadRequest(string_concat(
             ugettext("Error"), ": ",
-            ugettext('There are errors, please refresh the page or try again later'),
+            ugettext(
+                'There are errors, please refresh the page or try again later'),
             "--%s:%s." % (type(e).__name__, str(e))
         ))
     finally:
@@ -536,13 +517,10 @@ class ImgTableOrderError(BadRequest):
 
 
 def get_page_image_behavior(pctx, flow_session_id, ordinal):
-    if ordinal == "None" and flow_session_id == "None":
-        from course.page.base import PageBehavior
-        return PageBehavior(
-            show_correctness=True,
-            show_answer=True,
-            may_change_answer=True,
-        )
+
+    if ordinal is None and flow_session_id is None:
+        # This should never happen
+        return pctx.has_permission(pperm.use_page_sandbox)
 
     from course.flow import (
         get_page_behavior, get_and_check_flow_session,

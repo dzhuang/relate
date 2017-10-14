@@ -162,7 +162,7 @@ def serialize(request, instance, file_attr='image'):
             except Participation.DoesNotExist:
                 pass
             if creator_participation:
-                from image_upload.views import is_course_staff_participation
+                from image_upload.utils import is_course_staff_participation
                 modified_by_course_staff = (
                     is_course_staff_participation(creator_participation))
 

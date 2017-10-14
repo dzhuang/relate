@@ -924,16 +924,10 @@ class ImageUploadCropViewTest(ImageUploadQuizMixin, TestCase):
         crop_data = (
             {"x":0,"y":0,"width":20,"height":19,
              "rotate":0,"scaleX":1,"scaleY":1})
-        post_data = {"result": json.dumps(crop_data)}
+        post_data = {"croppedResult": json.dumps(crop_data)}
 
-        # crop_url = self.get_crop_url(image_pk=self.image1.pk, page_id=page_id)
-        # resp = self.c.post(
-        #     crop_url,
-        #     data=post_data,
-        #     content_type="json",
-        #     HTTP_X_REQUESTED_WITH='XMLHttpRequest')
-
-        resp = self.post_crop_flowpageimage(page_id=page_id, image_pk=self.image1.pk, data=post_data)
+        resp = self.post_crop_flowpageimage(
+            page_id=page_id, image_pk=self.image1.pk, data=post_data)
         self.assertEqual(resp.status_code, 200)
         print(resp.content.decode())
 

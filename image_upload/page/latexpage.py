@@ -1100,7 +1100,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 ),
                 "</p>"]))
 
-            from image_upload.views import is_course_staff_participation
+            from image_upload.utils import is_course_staff_participation
             if is_course_staff_participation(
                     page_context.flow_session.participation):
                 feedback_bits.append("".join([

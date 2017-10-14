@@ -32,6 +32,9 @@ from django.template import Context
 from django.template.loader import get_template
 from django.contrib.admin import widgets
 from django.urls import resolve
+from course.constants import participation_permission as pperm
+from course.utils import CoursePageContext
+from image_upload.views import COURSE_STAFF_IMAGE_PERMISSION
 
 import zipfile
 import re
@@ -190,3 +193,23 @@ def strip_template_comments(source):
 
     return source
 # }}}
+
+
+def is_course_staff_participation(participation):
+    if not participation:
+        return False
+
+    from course.enrollment import (
+        get_participation_permissions)
+    perms = get_participation_permissions(
+        participation.course, participation)
+
+    if all(perm in perms for perm in COURSE_STAFF_IMAGE_PERMISSION):
+        return True
+
+    return False
+
+
+def is_course_staff_course_image_request(request, course):
+    pctx = CoursePageContext(request, course.identifier)
+    return pctx.has_permission(pperm.assign_grade)

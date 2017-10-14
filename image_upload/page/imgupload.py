@@ -44,8 +44,8 @@ from course.constants import participation_status
 
 from image_upload.models import UserImageStorage
 from image_upload.models import FlowPageImage
-from image_upload.utils import get_ordinal_from_page_context
-from image_upload.views import is_course_staff_course_image_request
+from image_upload.utils import get_ordinal_from_page_context, \
+    is_course_staff_participation, is_course_staff_course_image_request
 
 from crispy_forms.layout import Layout, HTML
 
@@ -171,7 +171,6 @@ class ImageUploadForm(StyledForm):
                 # preserve images created by course staff
                 # i.e., course staff is allowed to upload images to
                 # the participations' flow page
-                from image_upload.views import is_course_staff_participation
                 if is_course_staff_participation(creator_participations[0]):
                     continue
 
