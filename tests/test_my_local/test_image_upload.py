@@ -31,6 +31,8 @@ import os
 import json
 from .utils import skip_test, SKIP_LOCAL_TEST_REASON
 from ..utils import mock
+import zipfile
+from six import BytesIO
 
 try:
     from test.support import EnvironmentVarGuard  # noqa
@@ -1464,3 +1466,153 @@ class ImageUploadSandboxViewTest(ImageUploadViewMixin,
         resp = self.sandbox_crop_image_resp(None)
         self.assertTrue(resp.status_code, 403)
         self.assertEqual(FlowPageImage.objects.count(), 1)
+
+
+@skipIf(skip_test, SKIP_LOCAL_TEST_REASON)
+@override_settings(
+    CACHE_BACKEND='dummy:///')
+class ImageUploadDownloadSubmissionTest(ImageUploadQuizMixin, TestCase):
+    def setUp(self):  # noqa
+        super(ImageUploadDownloadSubmissionTest, self).setUp()
+        page_id = "one_image"
+        self.post_create_flowpageimage(page_id, TEST_IMAGE1)
+        image_pks = FlowPageImage.objects.all().values_list("pk", flat=True)
+        image_pks_str = ",".join([str(pk) for pk in image_pks])
+        self.client_post_answer_by_page_id(
+            page_id, {"hidden_answer": [image_pks_str]})
+
+        page_id = "two_images"
+        self.post_create_flowpageimage(page_id, TEST_IMAGE2)
+        image_pks = FlowPageImage.objects.all().values_list("pk", flat=True)
+        image_pks_str = ",".join([str(pk) for pk in image_pks])
+        self.client_post_answer_by_page_id(
+            page_id, {"hidden_answer": [image_pks_str]})
+        self.end_quiz()
+
+    def get_download_all_submissions_url(self):
+        params = {"course_identifier": self.course.identifier,
+                    "flow_id": self.flow_id}
+        return reverse("relate-download_all_submissions",
+                                            kwargs=params)
+
+    def get_download_all_post_data(self, group_page_id, **kwargs):
+        post_data = {'restrict_to_rules_tag': ['<<<ALL>>>'],
+                'which_attempt': ['last'],
+                'extra_file': [''], 'download': ['Download'],
+                'page_id': [],
+                'non_in_progress_only': ['on']}
+        post_data.update({"page_id": [group_page_id]})
+        post_data.update(kwargs)
+
+        return post_data
+
+    def post_download_all_submissions_resp(
+            self, group_page_id, post_data=None, **kwargs):
+        download_url = self.get_download_all_submissions_url()
+        if post_data is None:
+            post_data = self.get_download_all_post_data(group_page_id, **kwargs)
+        else:
+            post_data.update({"page_id": [group_page_id]})
+            post_data.update(kwargs)
+
+        return self.c.post(download_url, post_data)
+
+    def test_view_download_image_upload_submissions_one_image(self):
+        group_page_id = "image_only/one_image"
+        self.c.force_login(self.ta_participation.user)
+        resp = self.post_download_all_submissions_resp(group_page_id)
+        self.assertEqual(resp.status_code, 200)
+        prefix, zip_file = resp["Content-Disposition"].split('=')
+        self.assertEqual(prefix, "attachment; filename")
+        self.assertEqual(resp.get('Content-Type'), "application/zip")
+
+        buf = BytesIO(resp.content)
+        with zipfile.ZipFile(buf, 'r') as zf:
+            self.assertIsNone(zf.testzip())
+            self.assertEqual(len(zf.filelist), 2)
+            for f in zf.filelist:
+                self.assertGreater(f.file_size, 0)
+            self.assertEqual(zf.filelist[1].filename, 'submit_summary.csv')
+            self.assertIn(self.student_participation.user.get_full_name(),
+                          zf.filelist[0].filename)
+            my_zipped = BytesIO(zf.read(zf.filelist[0].filename))
+
+        with zipfile.ZipFile(my_zipped) as my_zip:
+            self.assertIsNone(my_zip.testzip())
+            self.assertEqual(len(my_zip.filelist), 1)
+            for f in my_zip.filelist:
+                self.assertGreater(f.file_size, 0)
+            self.assertGreater(my_zip.filelist[0].file_size, 0)
+            self.assertEqual(my_zip.filelist[0].filename, '1.jpg')
+
+    def test_view_download_image_upload_submissions_two_images(self):
+        group_page_id = "image_only/two_images"
+        self.c.force_login(self.ta_participation.user)
+        resp = self.post_download_all_submissions_resp(group_page_id)
+        self.assertEqual(resp.status_code, 200)
+        prefix, zip_file = resp["Content-Disposition"].split('=')
+        self.assertEqual(prefix, "attachment; filename")
+        self.assertEqual(resp.get('Content-Type'), "application/zip")
+
+        buf = BytesIO(resp.content)
+        with zipfile.ZipFile(buf, 'r') as zf:
+            self.assertIsNone(zf.testzip())
+            self.assertEqual(len(zf.filelist), 2)
+            for f in zf.filelist:
+                self.assertGreater(f.file_size, 0)
+            self.assertEqual(zf.filelist[1].filename, 'submit_summary.csv')
+            self.assertIn(self.student_participation.user.get_full_name(),
+                          zf.filelist[0].filename)
+            my_zipped = BytesIO(zf.read(zf.filelist[0].filename))
+
+        with zipfile.ZipFile(my_zipped) as my_zip:
+            self.assertIsNone(my_zip.testzip())
+            self.assertEqual(len(my_zip.filelist), 2)
+            for f in my_zip.filelist:
+                self.assertGreater(f.file_size, 0)
+            self.assertEqual(my_zip.filelist[0].filename, '1.jpg')
+            self.assertEqual(my_zip.filelist[1].filename, '2.png')
+
+    def test_view_download_image_upload_submissions_two_images_one_corrupted(self):
+        group_page_id = "image_only/two_images"
+        os.remove(FlowPageImage.objects.last().image.path)
+        self.c.force_login(self.ta_participation.user)
+        resp = self.post_download_all_submissions_resp(group_page_id)
+        self.assertEqual(resp.status_code, 200)
+        prefix, zip_file = resp["Content-Disposition"].split('=')
+        self.assertEqual(prefix, "attachment; filename")
+        self.assertEqual(resp.get('Content-Type'), "application/zip")
+
+        buf = BytesIO(resp.content)
+        with zipfile.ZipFile(buf, 'r') as zf:
+            self.assertIsNone(zf.testzip())
+            self.assertEqual(len(zf.filelist), 2)
+            for f in zf.filelist:
+                self.assertGreater(f.file_size, 0)
+            self.assertEqual(zf.filelist[1].filename, 'submit_summary.csv')
+            self.assertIn(self.student_participation.user.get_full_name(),
+                          zf.filelist[0].filename)
+            my_zipped = BytesIO(zf.read(zf.filelist[0].filename))
+
+        with zipfile.ZipFile(my_zipped) as my_zip:
+            self.assertIsNone(my_zip.testzip())
+            self.assertEqual(len(my_zip.filelist), 1)
+            for f in my_zip.filelist:
+                self.assertGreater(f.file_size, 0)
+
+    def test_view_download_image_upload_submissions_no_submission(self):
+        group_page_id = "image_only/one_image_no_change_answer"
+        self.c.force_login(self.ta_participation.user)
+        resp = self.post_download_all_submissions_resp(group_page_id)
+        self.assertEqual(resp.status_code, 200)
+        prefix, zip_file = resp["Content-Disposition"].split('=')
+        self.assertEqual(prefix, "attachment; filename")
+        self.assertEqual(resp.get('Content-Type'), "application/zip")
+
+        buf = BytesIO(resp.content)
+        with zipfile.ZipFile(buf, 'r') as zf:
+            self.assertIsNone(zf.testzip())
+            self.assertEqual(len(zf.filelist), 1)
+            for f in zf.filelist:
+                self.assertGreater(f.file_size, 0)
+            self.assertEqual(zf.filelist[0].filename, 'submit_summary.csv')
