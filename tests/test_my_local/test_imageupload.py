@@ -34,32 +34,18 @@ from ..utils import mock
 import zipfile
 from six import BytesIO
 
-try:
-    from test.support import EnvironmentVarGuard  # noqa
-except:
-    from test.test_support import EnvironmentVarGuard  # noqa
-
 from unittest import skipIf
 from copy import deepcopy
-from django.conf import settings
 from django.urls import reverse, resolve
 from django.core import mail
 from django.test import TestCase
 from django.contrib import messages
 
 from django.test.utils import override_settings
-from django.test import SimpleTestCase
-from course.docker.config import (
-    get_docker_client_config, get_relate_runpy_docker_client_config)
 
-from django.core.exceptions import ImproperlyConfigured
-from relate.utils import is_windows_platform, is_osx_platform
 from course.constants import participation_status
 from course.models import FlowSession
 from image_upload.models import FlowPageImage
-
-import docker.tls
-import warnings
 
 from ..base_test_mixins import (
     SINGLE_COURSE_SETUP_LIST, SingleCoursePageTestMixin,
