@@ -38,18 +38,18 @@ RELATE_MONGODB_NAME = "test_learningwhat_mongodb"
 RELATE_LATEX_SETTINGS = {
     "latex": {
         "RELATE_LATEX_DATAURI_MONGO_COLLECTION_NAME":
-            "learningwhat_latex_datauri",
+            "test_learningwhat_latex_datauri",
         "RELATE_LATEX_ERROR_MONGO_COLLECTION_NAME":
-            "learningwhat_latex_error"
+            "test_learningwhat_latex_error"
     },
     "bin_path": {},
     "latex_page": {
         "RELATE_LATEX_PAGE_COLLECTION_NAME":
-            "learningwhat_latex_page",
+            "test_learningwhat_latex_page",
         "RELATE_LATEX_PAGE_PART_COLLECTION_NAME":
-            "learningwhat_latex_page_part",
+            "test_learningwhat_latex_page_part",
         "RELATE_LATEX_PAGE_COMMITSHA_TEMPLATE_PAIR_COLLECTION":
-            "learningwhat_latex_page_commitsha_template_pair",
+            "test_learningwhat_latex_page_commitsha_template_pair",
     }
 }
 
@@ -184,12 +184,14 @@ else:
 # Btw, do not be tempted to use 'MemcachedCache'--it's unmaintained and
 # broken in Python 33, as of 2016-08-01.
 #
+
 # CACHES = {
-#     'default': {
-#         'BACKEND': 'django.core.cache.backends.memcached.PyLibMCCache',
-#         'LOCATION': '127.0.0.1:11211',
-#     }
-# }
+#    'default': {
+#      'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
+#      'LOCATION': '127.0.0.1:11211',
+#    }
+#  }
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True

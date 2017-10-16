@@ -384,19 +384,39 @@ class SingleCoursePageTestMixin(SingleCourseTestMixin):
         return flow_page_data.ordinal
 
     @classmethod
+    def get_page_url_by_ordinal(cls, page_ordinal):
+        page_params = cls.get_page_params_by_ordinal(page_ordinal)
+        return reverse("relate-view_flow_page", kwargs=page_params)
+
+    @classmethod
+    def get_page_url_by_page_id(cls, page_id):
+        page_ordinal = cls.get_ordinal_via_page_id(page_id)
+        return cls.get_page_url_by_ordinal(page_ordinal)
+
+    @classmethod
     def client_post_answer_by_page_id(cls, page_id, answer_data):
         page_ordinal = cls.get_ordinal_via_page_id(page_id)
         return cls.client_post_answer_by_ordinal(page_ordinal, answer_data)
 
     @classmethod
-    def client_post_answer_by_ordinal(cls, page_ordinal, answer_data):
+    def get_page_params_by_ordinal(cls, page_ordinal):
         from copy import deepcopy
         page_params = deepcopy(cls.page_params)
         page_params.update({"ordinal": str(page_ordinal)})
+        return page_params
+
+    @classmethod
+    def get_page_params_by_page_id(cls, page_id):
+        page_ordianl = cls.get_ordinal_via_page_id(page_id)
+        return cls.get_page_params_by_ordinal(page_ordianl)
+
+    @classmethod
+    def client_post_answer_by_ordinal(cls, page_ordinal, answer_data):
+        page_params = cls.get_page_params_by_ordinal(page_ordinal)
         submit_data = answer_data
         submit_data.update({"submit": ["Submit final answer"]})
         resp = cls.c.post(
-            reverse("relate-view_flow_page", kwargs=page_params),
+            cls.get_page_url_by_ordinal(page_ordinal),
             submit_data)
         return resp
 

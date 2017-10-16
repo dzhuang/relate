@@ -44,7 +44,9 @@ from relate.checks import RelateCriticalCheckMessage
 from .utils import (
     get_mongo_db,
     popen_wrapper, get_basename_or_md5,
-    file_read, file_write, get_abstract_latex_log)
+    file_read, file_write, get_abstract_latex_log,
+    get_latex_cache
+)
 
 # mypy
 if False:
@@ -463,7 +465,7 @@ class Tex2ImgBase(object):
                 except ImproperlyConfigured:
                     err_cache_key = None
                 else:
-                    def_cache = cache.caches["latex"]
+                    def_cache = get_latex_cache(cache)
                     err_cache_key = err_key
 
                 if not isinstance(log, six.text_type):
@@ -568,7 +570,7 @@ class Tex2ImgBase(object):
         except ImproperlyConfigured:
             err_cache_key = None
         else:
-            def_cache = cache.caches["latex"]
+            def_cache = get_latex_cache(cache)
             err_cache_key = err_key
             # Memcache is apparently limited to 250 characters.
             if len(err_cache_key) < 240:
@@ -639,7 +641,7 @@ class Tex2ImgBase(object):
         except ImproperlyConfigured:
             uri_cache_key = None
         else:
-            def_cache = cache.caches["latex"]
+            def_cache = get_latex_cache(cache)
             uri_cache_key = uri_key
 
             if force_regenerate:

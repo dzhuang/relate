@@ -31,6 +31,7 @@ from hashlib import md5
 from base64 import b64encode
 from pymongo.errors import DuplicateKeyError
 from bson.objectid import ObjectId
+from plugins.latex.utils import get_latex_cache
 
 # {{{ mypy
 if False:
@@ -709,8 +710,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             cache_key = None
         else:
             cache_key = part_key
-
-            def_cache = cache.caches["latex"]
+            def_cache = get_latex_cache(cache)
             result = def_cache.get(cache_key)
             if result is not None:
                 if part == "full":
@@ -836,7 +836,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         assert result
 
-        def_cache = cache.caches["latex"]
+        def_cache = get_latex_cache(cache)
         if isinstance(result, dict):
             for pt, v in result.items():
                 if not isinstance(v, six.text_type):

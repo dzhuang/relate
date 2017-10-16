@@ -426,4 +426,15 @@ def get_mongo_db(database=None):
     db = client[database]
     return db
 
+
+def get_latex_cache(cache):
+    from django.core.cache.backends.base import InvalidCacheBackendError
+    try:
+        def_cache = cache.caches["latex"]
+    except InvalidCacheBackendError:
+        # this is configured for tests and should not be used for production
+        def_cache = cache.caches["default"]
+    return def_cache
+
+
 # vim: foldmethod=marker
