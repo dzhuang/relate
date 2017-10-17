@@ -22,12 +22,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+import six
 from django.test import TestCase
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from .base_test_mixins import SingleCourseTestMixin
-from course.models import Participation
-from course.constants import participation_permission as pperm
 
 QUESTION_MARKUP = """
 type: TextQuestion\r
@@ -45,20 +44,16 @@ answers:\r
 """
 
 CORRECT_ANSWER = 0.5
+PAGE_WARNINGS = "page_warnings"
+PAGE_ERRORS = "page_errors"
+HAVE_VALID_PAGE = "have_valid_page"
 
 
 class SingleCoursePageSandboxTestBaseMixin(SingleCourseTestMixin):
-    @classmethod
-    def setUpTestData(cls):  # noqa
-        super(SingleCoursePageSandboxTestBaseMixin, cls).setUpTestData()
-        participation = (
-            Participation.objects.filter(
-                course=cls.course,
-                roles__permissions__permission=pperm.use_page_sandbox
-            ).first()
-        )
-        assert participation
-        cls.c.force_login(participation.user)
+    def setUp(self):  # noqa
+        super(SingleCoursePageSandboxTestBaseMixin, self).setUp()
+        self.c.logout()
+        self.c.force_login(self.instructor_participation.user)
 
     @classmethod
     def get_page_sandbox_post_response(cls, data):
@@ -96,6 +91,56 @@ class SingleCoursePageSandboxTestBaseMixin(SingleCourseTestMixin):
         data.update(answer_data)
         return cls.get_page_sandbox_post_response(data)
 
+    def get_sandbox_response_context_value(self, resp, context_name):
+        return resp.context.__getitem__(context_name)
+
+    def assertSandboxResponseContextEqual(self, resp,  # noqa
+                                                context_name, expected_value):
+        value = self.get_sandbox_response_context_value(resp, context_name)
+        self.assertEqual(value, expected_value)
+
+    def assertSandboxResponseContextContains(self, resp,  # noqa
+                                                context_name, expected_value):
+        value = self.get_sandbox_response_context_value(resp, context_name)
+        if value is None:
+            self.assertEqual(value, expected_value)
+        else:
+            self.assertIn(expected_value, value)
+
+    def assertSandboxResposeContextRegex(
+            self, resp,  # noqa
+            context_name, expected_value_regex):
+        value = self.get_sandbox_response_context_value(resp, context_name)
+        six.assertRegex(self, value, expected_value_regex)
+
+    def assertSandboxHaveValidPage(self, resp):  # noqa
+        self.assertSandboxResponseContextEqual(resp, HAVE_VALID_PAGE, True)
+
+    def assertSandboxWarningTextContain(self, resp, expected_text):  # noqa
+        warnings = self.get_sandbox_response_context_value(resp, PAGE_WARNINGS)
+        warnings_text = [w.text for w in warnings]
+        self.assertIn(expected_text, warnings_text)
+
+    def assertSandboxNotHaveValidPage(self, resp):  # noqa
+        self.assertSandboxResponseContextEqual(resp, HAVE_VALID_PAGE, False)
+
+    def debug_print_sandbox_response_context_value(self, resp, context_name):
+        try:
+            value = self.get_sandbox_response_context_value(resp, context_name)
+            print("\n-----------context %s-------------"
+                  % context_name)
+            if isinstance(value, (list, tuple)):
+                from course.validation import ValidationWarning
+                for v in value:
+                    if isinstance(v, ValidationWarning):
+                        print(v.text)
+                    else:
+                        print(repr(v))
+            else:
+                print(value)
+            print("-----------context end-------------\n")
+        except KeyError:
+            print("\n-------no value for context %s----------" % context_name)
 
 class SingleCoursePageSandboxTest(SingleCoursePageSandboxTestBaseMixin, TestCase):
     def test_page_sandbox_get(self):

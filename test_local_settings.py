@@ -509,7 +509,6 @@ RELATE_DOCKERS = {
 if USE_ANOTHER_ECS_FOR_RUNPY_DOCKER:
     default_docker = RELATE_DOCKERS["default"]
     default_docker["client_config"]["base_url"] = "http://119.23.140.116:2375"
-    default_docker["client_config"]["tls"] = None
     default_docker["local_docker_machine_config"]["enabled"] = False
     default_docker["execution_host_alias_dict"] = {"119.23.140.116": u"LearningWhat(ECS 10.29.248.41)"}
 

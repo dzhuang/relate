@@ -153,6 +153,12 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                           PageBaseWithCorrectAnswer):
     grading_sort_by_page_data = True
 
+    @property
+    def required_attrs_if_runpy_or_full_code_missing(self):
+        # if runpy_file or full_process_code is missing, the following
+        # attribute must present in page_desc
+        return ["question_process_code"]
+
     def __init__(self, vctx, location, page_desc):
         super(LatexRandomQuestionBase, self).__init__(vctx, location, page_desc)
 
@@ -160,9 +166,43 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             if hasattr(page_desc, "random_question_data_file"):
                 if page_desc.random_question_data_file not in page_desc.data_files:
                     raise ValidationError(
-                        "%s: " % location,
-                        string_concat(_("'%s' should be listed in 'data_files'"))
-                        % page_desc.random_question_data_file)
+                        string_concat(
+                            "%s: " % location,
+                            _("'%s' should be listed in 'data_files'")
+                            % page_desc.random_question_data_file))
+
+                repo_bytes_data = get_repo_blob_data_cached(
+                    vctx.repo,
+                    page_desc.random_question_data_file,
+                    vctx.commit_sha)
+                bio = BytesIO(repo_bytes_data)
+                try:
+                    # py3
+                    repo_data_loaded = pickle.load(bio, encoding="latin-1")
+                except TypeError:
+                    # py2
+                    repo_data_loaded = pickle.load(bio)
+                if not isinstance(repo_data_loaded, (list, tuple)):
+                    raise ValidationError(
+                        string_concat(
+                            "%s: " % location,
+                            _("'%s' must be dumped from a list or tuple")
+                            % page_desc.random_question_data_file))
+                n_data = len(repo_data_loaded)
+                if n_data == 0:
+                    raise ValidationError(
+                        string_concat(
+                            "%s: " % location,
+                            _("'%s' seems to be empty, that's not valid")
+                            % page_desc.random_question_data_file))
+
+            if hasattr(page_desc, "runpy_file"):
+                if page_desc.runpy_file not in page_desc.data_files:
+                    raise ValidationError(
+                        string_concat(
+                            "%s: " % location,
+                            _("'%s' should be listed in 'data_files'")
+                            % page_desc.runpy_file))
             if hasattr(page_desc, "cache_key_files"):
                 for cf in page_desc.cache_key_files:
                     if cf not in page_desc.data_files:
@@ -181,6 +221,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             for data_file in page_desc.data_files:
                 try:
                     if not isinstance(data_file, str):
+                        # This seems never happen
                         raise ObjectDoesNotExist()
 
                     get_repo_blob(vctx.repo, data_file, vctx.commit_sha)
@@ -189,6 +230,22 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                             % (location, data_file))
             if not hasattr(page_desc, "runpy_file"):
                 if self.__class__.__name__ != "LatexRandomCodeQuestion":
+                    if not hasattr(page_desc, "full_process_code"):
+                        missing_part = []
+                        for part in (
+                                self.required_attrs_if_runpy_or_full_code_missing):
+                            if not hasattr(page_desc, part):
+                                missing_part.append(part)
+                        if missing_part:
+                            raise ValidationError(
+                                string_concat(
+                                    location,
+                                    ": ",
+                                    _("'%s' must be configured when neiher "
+                                      "'runpy_file' nor 'full_processing_code'"
+                                      " is configured.")
+                                    % ", ".join(missing_part)))
+
                     vctx.add_warning(
                         location,
                         _("%s not using attribute "
@@ -205,14 +262,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     del runpy_file
                 except SyntaxError:
                     raise ValidationError(
-                        "%s: " % location,
-                        _("'%s' is not a valide Python script file.")
-                        % page_desc.runpy_file)
-                if page_desc.runpy_file not in page_desc.data_files:
-                    raise ValidationError(
-                        "%s: " % location,
-                        string_concat(_("'%s' should be listed in 'data_files'"))
-                        % page_desc.runpy_file)
+                        string_concat("%s: " % location,
+                                      _("'%s' is not a valid Python script file.")
+                                      % page_desc.runpy_file))
 
             if hasattr(page_desc, "cache_key_attrs"):
                 for attr in page_desc.cache_key_attrs:
@@ -347,6 +399,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
     def update_page_data(self, page_context, page_data):
         # type: (PageContext, Dict) -> Tuple[bool, Dict]
         question_data = page_data.get("question_data", None)
+        print("here!")
         page_data_template_hash = page_data.get("template_hash", None)
         key_making_string_md5 = page_data.get("key_making_string_md5", None)  # noqa
         if page_data_template_hash == "None":
@@ -354,6 +407,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         page_data_id = page_data.get("template_hash_id", None)
         if page_data_id == "None":
             page_data_id = None
+
+        print(page_data)
 
         if not question_data:
             new_page_data = self.initialize_page_data(page_context)
@@ -518,36 +573,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         return md5(template_string.encode("utf-8")).hexdigest()
 
-    def generate_question_data_key_making_string(
-            self, page_context, selected_data_bytes):
-        question_data = b64encode(selected_data_bytes.getvalue()).decode()
-
-        key_making_string = ""
-        if self.cache_key_files:
-            for cfile in self.cache_key_files:
-                # try:
-                    cfile_data = get_repo_blob_data_cached(
-                        page_context.repo,
-                        cfile,
-                        page_context.commit_sha)
-                    key_making_string += cfile_data.decode("utf-8")
-                # except UnicodeDecodeError:
-                #     pass
-
-        if self.cache_key_attrs:
-            for cattr in self.cache_key_attrs:
-                key_making_string += getattr(self.page_desc, cattr)
-
-        if self.runpy_context:
-            key_making_string += repr(self.runpy_context)
-
-        template_string = key_making_string
-
-        if question_data:
-            key_making_string += question_data
-
-        return question_data, template_string, key_making_string
-
     def get_key_making_string_md5_hash(self, template_hash, question_data):
         # type: (Text, Text) -> Text
         key_making_string = template_hash
@@ -557,6 +582,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
     def initialize_page_data(self, page_context):
         # type: (PageContext) -> Dict
+
+        # This should never happen
         if not hasattr(self.page_desc, "random_question_data_file"):
             return {}
 
@@ -578,12 +605,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         except TypeError:
             # py2
             repo_data_loaded = pickle.load(bio)
-        if not isinstance(repo_data_loaded, (list, tuple)):
-            return {}
-        n_data = len(repo_data_loaded)
-        if n_data < 1:
-            return {}
 
+        assert isinstance(repo_data_loaded, (list, tuple))
         all_data = list(repo_data_loaded)
 
         from random import choice
@@ -609,10 +632,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             question_data = b64encode(selected_data_bytes.getvalue()).decode()
             key_making_string_md5 = self.get_key_making_string_md5_hash(
                     template_hash, question_data)
-            # question_data, template_string, key_making_string = (
-            #     self.generate_question_data_key_making_string(
-            #         page_context, selected_data_bytes)
-            # )
 
             # this is used to let sandbox do the warm up job for
             # sequentially ordered data(not random)
@@ -628,8 +647,16 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 "key_making_string_md5": key_making_string_md5
             }
 
-            for part in ["full", "answer", "question", "blank",
-                         "blank_answer", "answer_explanation"]:
+            # let all processing code run to get the cache
+            all_process_attribute_parts = [
+                attr.replace("_process_code", "")
+                for attr in dir(self.page_desc)
+                if attr.endswith("_process_code")]
+
+            if "full" in all_process_attribute_parts:
+                all_process_attribute_parts = ["full"]
+
+            for part in all_process_attribute_parts:
                 try:
                     key_exist, result = self.get_cached_result(
                             page_context, page_data, part=part,
@@ -642,10 +669,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                                                warm_up_only=True)
                         else:
                             markup_to_html(page_context, result, warm_up_only=True)
-
-                        # if we have full code, then other is not necessary
-                        if part == "full":
-                            break
 
                 except KeyError:
                     continue
@@ -1217,6 +1240,13 @@ class LatexRandomCodeTextQuestion(LatexRandomQuestion, TextQuestion):
 
 class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestion):
     need_update_page_desc = True
+
+    @property
+    def required_attrs_if_runpy_or_full_code_missing(self):
+        return (
+            super(LatexRandomCodeInlineMultiQuestion, self)
+            .required_attrs_if_runpy_or_full_code_missing
+            + ["blank_process_code", "blank_answer_process_code"])
 
     def update_page_desc(self, page_context, page_data):
         self.update_page_full_desc(page_context, page_data)

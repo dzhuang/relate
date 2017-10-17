@@ -207,10 +207,11 @@ class ImageUploadForm(StyledForm):
                 and len(pk_list) > self.max_number_of_files):
             raise forms.ValidationError(
                 string_concat(
-                    _("You are only allowed to upload %i images,"
-                      " got %i instead")
-                    % (self.max_number_of_files, len(pk_list)),
-                ))
+                    _("You are only allowed to upload %(allowed)i images,"
+                      " got %(uploaded)i instead")
+                    % {"allowed": self.max_number_of_files,
+                       "uploaded": len(pk_list)}),
+                )
 
         cleaned_data["hidden_answer"] = pk_list
         return cleaned_data
