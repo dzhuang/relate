@@ -399,7 +399,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
     def update_page_data(self, page_context, page_data):
         # type: (PageContext, Dict) -> Tuple[bool, Dict]
         question_data = page_data.get("question_data", None)
-        print("here!")
         page_data_template_hash = page_data.get("template_hash", None)
         key_making_string_md5 = page_data.get("key_making_string_md5", None)  # noqa
         if page_data_template_hash == "None":
@@ -407,8 +406,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         page_data_id = page_data.get("template_hash_id", None)
         if page_data_id == "None":
             page_data_id = None
-
-        print(page_data)
 
         if not question_data:
             new_page_data = self.initialize_page_data(page_context)

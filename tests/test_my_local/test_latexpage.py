@@ -351,6 +351,7 @@ class LatexPageSandboxTest(SingleCoursePageSandboxTestBaseMixin, LatexPageMixin,
 class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
     courses_setup_list = MY_SINGLE_COURSE_SETUP_LIST
     flow_id = LATEXPAGE_FLOW_ID
+    # serialized_rollback = True
 
     def setUp(self):  # noqa
         super(LatexPageInitalPageDataTest, self).setUp()
@@ -359,22 +360,43 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
 
         self.page_id = page_id = "lp_dual_complimentary_slack1"
         self.c.get(self.get_page_url_by_page_id(page_id))
-        self.page_data = self.get_page_data_by_page_id()
+        # self.page_data = self.get_page_data()
 
-    def get_page_data_by_page_id(self, page_id=None):
+    def get_page_data(self, page_id=None):
         if page_id is None:
             page_id = self.page_id
         return FlowPageData.objects.get(
             flow_session=FlowSession.objects.first(), page_id=page_id)
 
-    def test_flow_page_data(self):
-        original_page_data = self.page_data.data["question_data"]
-        del self.page_data.data["question_data"]
-        # self.page_data.data["question_data"] = None
-        self.page_data.save()
-        self.c.get(self.get_page_url_by_page_id(self.page_id))
-        new_page_data = self.get_page_data_by_page_id()
-        self.assertEqual(new_page_data.data["question_data"], original_page_data)
+    def test_flow_page_data_no_question_data(self):
+        # simulate that the question_data is empty, generate a new one
+        page_data = self.get_page_data()
+        original_question_data = page_data.data["question_data"]
+        del page_data.data["question_data"]
+        page_data.save()
+        with mock.patch("course.content.get_course_commit_sha",
+                        return_value=b"b355795a7c153a0dd717ae0ec56d52c16ccfa164"):
+            self.c.get(self.get_page_url_by_page_id(self.page_id))
+            new_page_data = self.get_page_data()
+            self.assertEqual(new_page_data.data["question_data"],
+                             original_question_data)
+
+    def test_flow_page_data_no_template_hash_and_id(self):
+        # simulate that the tempate_hash and template_has_id are empty,
+        # generate new ones
+        page_data = self.get_page_data()
+        original_page_data = deepcopy(page_data)
+        del page_data.data["template_hash"]
+        del page_data.data["template_hash_id"]
+        page_data.save()
+        with mock.patch("course.content.get_course_commit_sha",
+                        return_value=b"b355795a7c153a0dd717ae0ec56d52c16ccfa164"):
+            self.c.get(self.get_page_url_by_page_id(self.page_id))
+            new_page_data = self.get_page_data()
+            self.assertEqual(new_page_data.data["template_hash"],
+                             original_page_data.data["template_hash"])
+            self.assertEqual(new_page_data.data["template_hash_id"],
+                             original_page_data.data["template_hash_id"])
 
 
 
