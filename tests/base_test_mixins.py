@@ -466,6 +466,30 @@ class SingleCoursePageTestMixin(SingleCourseTestMixin):
         result = json.loads(resp.content.decode())["result"]
         self.assertEqual(len(result), expected_count)
 
+    def get_update_course_url(self):
+        return reverse("relate-update_course", args=[self.course.identifier])
+
+    def update_course_to_commit_sha(self, commit_sha):
+        try:
+            logged_in_user_id = self.c.session['_auth_user_id']
+            from django.contrib.auth import get_user_model
+            logged_in_user = get_user_model().objects.get(pk=int(logged_in_user_id))
+        except KeyError:
+            logged_in_user = None
+
+        try:
+            commit_sha = commit_sha.decode()
+        except:
+            pass
+
+        self.c.force_login(self.instructor_participation.user)
+        self.c.post(self.get_update_course_url(),
+                    data={"new_sha": [commit_sha],
+                          "prevent_discarding_revisions": ["on"],
+                          "update": ["Update"]
+                          })
+        self.c.force_login(logged_in_user)
+
 
 class FallBackStorageMessageTestMixin(object):
     # In case other message storage are used, the following is the default

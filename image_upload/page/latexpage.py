@@ -69,7 +69,7 @@ from image_upload.page.imgupload import ImageUploadQuestion
 def _debug_print(s):
 
     # debugging switch
-    debug = False
+    debug = True
 
     settings_debug = getattr(settings, "DEBUG", False)
     debug = debug or settings_debug
@@ -101,6 +101,7 @@ LATEX_PAGE_COMMITSHA_TEMPLATE_PAIR_COLLECTION = mong_latex_page_settings.get(
 
 def get_latex_page_mongo_collection(name=None, db=DB, index_name="key"):
     # type: (Optional[Text], Optional[MongoClient], Optional[Text]) -> Collection
+    # return the collection storing the page
     if not name:
         name = LATEX_PAGE_COLLECTION_NAME
     collection = db[name]  # type: ignore
@@ -111,6 +112,7 @@ def get_latex_page_mongo_collection(name=None, db=DB, index_name="key"):
 
 def get_latex_page_part_mongo_collection(name=None, db=DB, index_name="key"):
     # type: (Optional[Text], Optional[MongoClient], Optional[Text]) -> Collection
+    # return the collection storing the page parts
     if not name:
         name = LATEX_PAGE_PART_COLLECTION_NAME
     collection = db[name]  # type: ignore
@@ -122,6 +124,7 @@ def get_latex_page_part_mongo_collection(name=None, db=DB, index_name="key"):
 def get_latex_page_commitsha_template_pair_collection(
         name=None, db=DB, index_name="template_hash"):
     # type: (Optional[Text], Optional[MongoClient], Optional[Text]) -> Collection
+    # return the collection storing the commit sha pairs
     if not name:
         name = LATEX_PAGE_COMMITSHA_TEMPLATE_PAIR_COLLECTION
     collection = db[name]  # type: ignore
@@ -163,38 +166,39 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         super(LatexRandomQuestionBase, self).__init__(vctx, location, page_desc)
 
         if vctx is not None and hasattr(page_desc, "data_files"):
-            if hasattr(page_desc, "random_question_data_file"):
-                if page_desc.random_question_data_file not in page_desc.data_files:
-                    raise ValidationError(
-                        string_concat(
-                            "%s: " % location,
-                            _("'%s' should be listed in 'data_files'")
-                            % page_desc.random_question_data_file))
+            # {{{ validate random_question_data_file
+            if page_desc.random_question_data_file not in page_desc.data_files:
+                raise ValidationError(
+                    string_concat(
+                        "%s: " % location,
+                        _("'%s' should be listed in 'data_files'")
+                        % page_desc.random_question_data_file))
 
-                repo_bytes_data = get_repo_blob_data_cached(
-                    vctx.repo,
-                    page_desc.random_question_data_file,
-                    vctx.commit_sha)
-                bio = BytesIO(repo_bytes_data)
-                try:
-                    # py3
-                    repo_data_loaded = pickle.load(bio, encoding="latin-1")
-                except TypeError:
-                    # py2
-                    repo_data_loaded = pickle.load(bio)
-                if not isinstance(repo_data_loaded, (list, tuple)):
-                    raise ValidationError(
-                        string_concat(
-                            "%s: " % location,
-                            _("'%s' must be dumped from a list or tuple")
-                            % page_desc.random_question_data_file))
-                n_data = len(repo_data_loaded)
-                if n_data == 0:
-                    raise ValidationError(
-                        string_concat(
-                            "%s: " % location,
-                            _("'%s' seems to be empty, that's not valid")
-                            % page_desc.random_question_data_file))
+            repo_bytes_data = get_repo_blob_data_cached(
+                vctx.repo,
+                page_desc.random_question_data_file,
+                vctx.commit_sha)
+            bio = BytesIO(repo_bytes_data)
+            try:
+                # py3
+                repo_data_loaded = pickle.load(bio, encoding="latin-1")
+            except TypeError:
+                # py2
+                repo_data_loaded = pickle.load(bio)
+            if not isinstance(repo_data_loaded, (list, tuple)):
+                raise ValidationError(
+                    string_concat(
+                        "%s: " % location,
+                        _("'%s' must be dumped from a list or tuple")
+                        % page_desc.random_question_data_file))
+            n_data = len(repo_data_loaded)
+            if n_data == 0:
+                raise ValidationError(
+                    string_concat(
+                        "%s: " % location,
+                        _("'%s' seems to be empty, that's not valid")
+                        % page_desc.random_question_data_file))
+            # }}}
 
             if hasattr(page_desc, "runpy_file"):
                 if page_desc.runpy_file not in page_desc.data_files:
@@ -203,6 +207,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                             "%s: " % location,
                             _("'%s' should be listed in 'data_files'")
                             % page_desc.runpy_file))
+
             if hasattr(page_desc, "cache_key_files"):
                 for cf in page_desc.cache_key_files:
                     if cf not in page_desc.data_files:
@@ -212,6 +217,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                                 ": ",
                                 _("'%s' should be listed in 'data_files'")
                                 % cf))
+
             if hasattr(page_desc, "excluded_cache_key_files"):
                 for cf in page_desc.excluded_cache_key_files:
                     if cf not in page_desc.data_files:
@@ -221,13 +227,14 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             for data_file in page_desc.data_files:
                 try:
                     if not isinstance(data_file, str):
-                        # This seems never happen
+                        # This seems never happened
                         raise ObjectDoesNotExist()
 
                     get_repo_blob(vctx.repo, data_file, vctx.commit_sha)
                 except ObjectDoesNotExist:
                     raise ValidationError("%s: data file '%s' not found"
                             % (location, data_file))
+
             if not hasattr(page_desc, "runpy_file"):
                 if self.__class__.__name__ != "LatexRandomCodeQuestion":
                     if not hasattr(page_desc, "full_process_code"):
@@ -298,14 +305,11 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             self.runpy_context = struct_to_dict(page_desc.runpy_context)
 
         if not self.cache_key_attrs:
-            for attr in [
-                "background_code",
-                "question_process_code",
-                "answer_process_code",
-                "blank_answer_process_code",
-                "blank_process_code",
-                "answer_explanation_process_code",
-            ]:
+            all_process_attributes = [
+                attr for attr in dir(self.page_desc)
+                if attr.endswith("_process_code")]
+            all_process_attributes.append("background_code")
+            for attr in all_process_attributes:
                 if hasattr(page_desc, attr):
                     self.cache_key_attrs.append(attr)
 
@@ -403,36 +407,36 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         key_making_string_md5 = page_data.get("key_making_string_md5", None)  # noqa
         if page_data_template_hash == "None":
             page_data_template_hash = None
-        page_data_id = page_data.get("template_hash_id", None)
-        if page_data_id == "None":
-            page_data_id = None
+        hash_id = page_data.get("template_hash_id", None)
+        if hash_id == "None":
+            hash_id = None
 
         if not question_data:
             new_page_data = self.initialize_page_data(page_context)
             return True, new_page_data
 
         commit_sha = page_context.commit_sha.decode()
-        if not (page_data_template_hash and page_data_id):
+        if not (page_data_template_hash and hash_id):
             amend_template_hash = self.generate_template_hash(page_context)
-            new_id = self.get_template_hash_id(commit_sha, amend_template_hash)
+            new_hash_id = self.get_template_hash_id(commit_sha, amend_template_hash)
             new_key_making_string_md5 = self.get_key_making_string_md5_hash(
                 amend_template_hash, question_data)
             return True, {"template_hash": amend_template_hash,
-                          "template_hash_id": str(new_id),
+                          "template_hash_id": str(new_hash_id),
                           "key_making_string_md5": new_key_making_string_md5
                           }
 
         exist_entry = get_latex_page_commitsha_template_pair_collection().find_one(
-            {"_id": ObjectId(page_data_id)})
+            {"_id": ObjectId(hash_id)})
 
         # mongo data is broken
         if not exist_entry:
             new_template_hash = self.generate_template_hash(page_context)
-            new_id = self.get_template_hash_id(commit_sha, new_template_hash)
+            new_hash_id = self.get_template_hash_id(commit_sha, new_template_hash)
             new_key_making_string_md5 = self.get_key_making_string_md5_hash(
                 new_template_hash, question_data)
             return True, {"template_hash": new_template_hash,
-                          "template_hash_id": str(new_id),
+                          "template_hash_id": str(new_hash_id),
                           "key_making_string_md5": new_key_making_string_md5
                           }
 
@@ -461,15 +465,15 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     new_template_hash = self.generate_template_hash(page_context)
                     new_key_making_string_md5 = self.get_key_making_string_md5_hash(
                         new_template_hash, question_data)
-                    new_id = self.get_template_hash_id(commit_sha, new_template_hash)
+                    new_hash_id = self.get_template_hash_id(commit_sha, new_template_hash)
                     get_latex_page_commitsha_template_pair_collection().update(
-                        {"_id": ObjectId(page_data_id),
+                        {"_id": ObjectId(hash_id),
                          commit_sha: {"$exists": False},
                          "%s_next" % commit_sha: {"$exists": False}},
-                        {"$set": {"%s_next" % commit_sha: str(new_id)}}
+                        {"$set": {"%s_next" % commit_sha: str(new_hash_id)}}
                     )
                     return True, {"template_hash": new_template_hash,
-                                  "template_hash_id": str(new_id),
+                                  "template_hash_id": str(new_hash_id),
                                   "key_making_string_md5": new_key_making_string_md5
                                   }
 
@@ -481,20 +485,20 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 # the entry is broken
                 if not redirect_entry:
                     new_template_hash = self.generate_template_hash(page_context)
-                    new_id = self.get_template_hash_id(commit_sha, new_template_hash)
+                    new_hash_id = self.get_template_hash_id(commit_sha, new_template_hash)
 
                     # the entry is broken, so we need to update where the source
                     # who told us to redirect here
                     get_latex_page_commitsha_template_pair_collection().update(
-                        {"_id": ObjectId(page_data_id),
+                        {"_id": ObjectId(hash_id),
                          commit_sha: {"$exists": False},
                         "%s_next" % commit_sha: {"$exists": True}},
-                        {"$set": {"%s_next" % commit_sha: str(new_id)}}
+                        {"$set": {"%s_next" % commit_sha: str(new_hash_id)}}
                     )
                     new_key_making_string_md5 = self.get_key_making_string_md5_hash(
                         new_template_hash, question_data)
                     return True, {"template_hash": new_template_hash,
-                                  "template_hash_id": str(new_id),
+                                  "template_hash_id": str(new_hash_id),
                                   "key_making_string_md5": new_key_making_string_md5
                                   }
                 # the entry exists
@@ -515,22 +519,22 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             new_template_hash = self.generate_template_hash(page_context)
             if new_template_hash == page_data_template_hash:
                 get_latex_page_commitsha_template_pair_collection().update(
-                    {"_id": ObjectId(page_data_id),
+                    {"_id": ObjectId(hash_id),
                      commit_sha: {"$exists": False}},
                     {"$set": {commit_sha: page_data_template_hash}}
                 )
                 return False, {}
             else:
-                new_id = self.get_template_hash_id(commit_sha, new_template_hash)
+                new_hash_id = self.get_template_hash_id(commit_sha, new_template_hash)
                 get_latex_page_commitsha_template_pair_collection().update(
-                    {"_id": ObjectId(page_data_id),
+                    {"_id": ObjectId(hash_id),
                      commit_sha: {"$exists": False}},
-                    {"$set": {"%s_next" % commit_sha: str(new_id)}}
+                    {"$set": {"%s_next" % commit_sha: str(new_hash_id)}}
                 )
                 new_key_making_string_md5 = self.get_key_making_string_md5_hash(
                     new_template_hash, question_data)
                 return True, {"template_hash": new_template_hash,
-                              "template_hash_id": str(new_id),
+                              "template_hash_id": str(new_hash_id),
                               "key_making_string_md5": new_key_making_string_md5
                               }
 

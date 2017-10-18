@@ -252,6 +252,9 @@ warm_up_by_sandbox: false\r
 value: 3\r
 prompt: |\r
     # 互补松弛定理的应用\r
+
+cache_key_attrs:\r
+    - answer_explanation\r
 data_files:\r
     - "question-data/linear-programming/dual-theory/lp_simplex_3_iter_max_min_complimentary_slack_01.bin"\r
     - "question-data/linear-programming/lpmodel.py"\r
@@ -259,9 +262,8 @@ data_files:\r
     - "question-data/jinja_env.py"\r
     - "question-data/linear-programming/dual-theory/lp_dual_complementary_slack.tex"\r
     - "question-data/linear-programming/dual-theory/lp_dual_complimentary_slack-runpy.py"\r
-excluded_cache_key_files:\r
+cache_key_files:\r
     - "question-data/linear-programming/lpmodel.py"\r
-    - "question-data/linear-programming/linprog.py"\r
 random_question_data_file: "question-data/linear-programming/dual-theory/lp_simplex_3_iter_max_min_complimentary_slack_01.bin"\r
 question_process_code: |
     print("abcd")
@@ -439,7 +441,8 @@ data_files:\r
     - "question-data/linear-programming/dual-theory/lp_dual_complimentary_slack-runpy.py"\r
 random_question_data_file: "question-data/linear-programming/dual-theory/lp_simplex_3_iter_max_min_complimentary_slack_01.bin"\r
 runpy_file: "question-data/linear-programming/dual-theory/lp_dual_complimentary_slack-runpy.py"\r
-cache_key_attrs:\r 
+cache_key_attrs:\r
+    - answer_explanation\r
     - excluded_cache_key_files\r
 question: |\r
     The float weight of $\\frac{1}{5}$ is [[blank_1]].\r

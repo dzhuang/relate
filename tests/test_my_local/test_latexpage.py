@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*-
+# Usage
+"""
+coverage run manage.py test tests --local_test_settings test_local_settings.py
+python manage.py test tests.test_my_local --local_test_settings test_local_settings.py
 
-# coverage run manage.py test tests --local_test_settings test_local_settings.py
-# python manage.py test tests.test_my_local --local_test_settings test_local_settings.py
+coverage run manage.py test tests.test_my_local.test_latexpage --local_test_settings test_local_settings.py
+python manage.py test tests.test_my_local.test_latexpage --local_test_settings test_local_settings.py
+"""
 
 from __future__ import division
 
@@ -27,12 +32,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+import six
 import os
 import json
 from .utils import skip_test, SKIP_LOCAL_TEST_REASON
 from ..utils import mock
 import zipfile
 from six import BytesIO
+from pymongo import MongoClient
 
 from unittest import skipIf
 from copy import deepcopy
@@ -68,6 +75,13 @@ from ..test_sandbox import (
 from .mixins import ImageUploadStorageTestMixin
 from .sources import latex_sandbox
 from .test_imageupload import MY_SINGLE_COURSE_SETUP_LIST
+from image_upload.page.latexpage import (
+    get_latex_page_mongo_collection as latex_page_collection,
+    get_latex_page_commitsha_template_pair_collection as latex_page_sha_collection)
+
+
+def disable_cache():
+    raise ImproperlyConfigured
 
 
 LATEXPAGE_FLOW_ID = "latex-flow"
@@ -79,6 +93,51 @@ class LatexPageMixin(SingleCoursePageTestMixin, FallBackStorageMessageTestMixin)
 
     def tearDown(self):  # noqa
         super(LatexPageMixin, self).tearDown()
+        self.drop_test_mongo()
+
+    def clear_cache(self):
+        logged_in_user_id = self.c.session['_auth_user_id']
+        try:
+            import django.core.cache as cache
+        except ImproperlyConfigured:
+            return
+        else:
+            from plugins.latex.utils import get_latex_cache
+            def_cache = get_latex_cache(cache)
+            def_cache.clear()
+
+        # in case the session cache is cleared so the user is logged out
+        try:
+            self.c.session['_auth_user_id']
+        except KeyError:
+            from django.contrib.auth import get_user_model
+            logged_in_user = get_user_model().objects.get(pk=int(logged_in_user_id))
+            self.c.force_login(logged_in_user)
+
+    def latex_page_commitsha_mongo_items_count(self):
+        return latex_page_sha_collection().count()
+
+    def debug_print_latex_page_commitsha_mongo_collection(self, filter=None):
+        if filter is None:
+            filter = {}
+        cursor = latex_page_sha_collection().find(filter)
+        for doc in cursor:
+            print(doc)
+
+    def latex_page_mongo_items_count(self):
+        return latex_page_collection().count()
+
+    def debug_print_latex_page_mongo_collection(self, filter=None, doc_field="full"):
+        if filter is None:
+            filter = {}
+        cursor = latex_page_collection().find(filter)
+        for doc in cursor:
+            if doc_field is None:
+                print(doc)
+            else:
+                print(doc[doc_field])
+
+    def drop_test_mongo(self):
         mongo_db_name = getattr(settings, "RELATE_MONGODB_NAME", None)
         assert mongo_db_name
         assert mongo_db_name.startswith("test_")
@@ -86,7 +145,6 @@ class LatexPageMixin(SingleCoursePageTestMixin, FallBackStorageMessageTestMixin)
         assert uri is None
 
         def drop_mongo():
-            from pymongo import MongoClient
             client = MongoClient()
             client.drop_database(mongo_db_name)
         drop_mongo()
@@ -345,6 +403,32 @@ class LatexPageSandboxTest(SingleCoursePageSandboxTestBaseMixin, LatexPageMixin,
                                 " seems to be empty, that's not valid"))
 
 
+if six.PY3:
+    import builtins  # noqa
+else:
+    import __builtin__ as builtins  # noqa
+
+realimport = builtins.__import__
+
+
+def my_disable_cache_import(name, globals=None, locals=None, fromlist=(), level=0):
+    """
+    mock import so as to disable cache
+    usage:
+
+    import six
+    if six.PY3:
+        mocking_import = "builtins.__import__"
+    else:
+        mocking_import = "__builtin__.__import__"
+    with mock.patch(mocking_import, side_effect=my_disable_cache_import):
+       do something
+    """
+    if name=="django.core.cache":
+        raise ImproperlyConfigured
+    return realimport(name, globals, locals, fromlist, level)
+
+
 @skipIf(skip_test, SKIP_LOCAL_TEST_REASON)
 @override_settings(
     CACHE_BACKEND='dummy:///')
@@ -352,6 +436,9 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
     courses_setup_list = MY_SINGLE_COURSE_SETUP_LIST
     flow_id = LATEXPAGE_FLOW_ID
     # serialized_rollback = True
+
+    commit_sha_with_same_content =b"bc48c6d16cc60bdbb2f0d097298f81f83dc50031"
+    commit_sha_with_different_content = b"29d19f8301c5efd101eb2a3c7753a4ced868597f"
 
     def setUp(self):  # noqa
         super(LatexPageInitalPageDataTest, self).setUp()
@@ -375,7 +462,7 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
         del page_data.data["question_data"]
         page_data.save()
         with mock.patch("course.content.get_course_commit_sha",
-                        return_value=b"b355795a7c153a0dd717ae0ec56d52c16ccfa164"):
+                        return_value=self.commit_sha_with_same_content):
             self.c.get(self.get_page_url_by_page_id(self.page_id))
             new_page_data = self.get_page_data()
             self.assertEqual(new_page_data.data["question_data"],
@@ -390,7 +477,7 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
         del page_data.data["template_hash_id"]
         page_data.save()
         with mock.patch("course.content.get_course_commit_sha",
-                        return_value=b"b355795a7c153a0dd717ae0ec56d52c16ccfa164"):
+                        return_value=self.commit_sha_with_same_content):
             self.c.get(self.get_page_url_by_page_id(self.page_id))
             new_page_data = self.get_page_data()
             self.assertEqual(new_page_data.data["template_hash"],
@@ -399,8 +486,73 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
                              original_page_data.data["template_hash_id"])
 
 
+    def test_flow_page_new_mongo_entry_create_when_change_commit_sha(self):
+        self.drop_test_mongo()
+        self.clear_cache()
+        self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 0)
+        self.assertEqual(self.latex_page_mongo_items_count(), 0)
+
+        with mock.patch("course.content.get_course_commit_sha",
+                        return_value=self.commit_sha_with_same_content):
+            self.c.get(self.get_page_url_by_page_id(self.page_id))
+        self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 1)
+        self.assertEqual(self.latex_page_mongo_items_count(), 1)
+
+    def test_flow_page_runpy_content_changed(self):
+        print("--------test started---------")
+
+        from course.content import get_course_commit_sha
+        current_commit_sha = get_course_commit_sha(
+            self.course, self.student_participation)
+        self.drop_test_mongo()
+        self.clear_cache()
+        self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 0)
+        self.assertEqual(self.latex_page_mongo_items_count(), 0)
+
+        import sys
+        if sys.version_info >= (3,):
+            mocking_import = "builtins.__import__"
+        else:
+            mocking_import = "__builtin__.__import__"
+
+        self.update_course_to_commit_sha(self.commit_sha_with_same_content)
+        self.c.get(self.get_page_url_by_page_id(self.page_id))
+        self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 1)
+        self.assertEqual(self.latex_page_mongo_items_count(), 1)
+
+        # print("--------------------------")
+        # self.debug_print_latex_page_commitsha_mongo_collection()
+        # print("--------------------------")
+        # self.debug_print_latex_page_mongo_collection()
+
+        self.update_course_to_commit_sha(self.commit_sha_with_different_content)
+        self.c.get(self.get_page_url_by_page_id(self.page_id))
+        self.c.get(self.get_page_url_by_page_id(self.page_id))
+        self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
+        self.assertEqual(self.latex_page_mongo_items_count(), 2)
+        print("--------------------------")
+        self.debug_print_latex_page_mongo_collection()
+
+        self.c.get(self.get_page_url_by_page_id(self.page_id))
+        self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
+        self.assertEqual(self.latex_page_mongo_items_count(), 2)
+
+        # print("--------------------------")
+        # self.debug_print_latex_page_commitsha_mongo_collection()
+        # print("--------------------------")
+        # self.debug_print_latex_page_mongo_collection()
+
+        self.update_course_to_commit_sha(current_commit_sha)
+        self.c.get(self.get_page_url_by_page_id(self.page_id))
+        self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
+        self.assertEqual(self.latex_page_mongo_items_count(), 2)
+
+        # self.c.get(self.get_page_url_by_page_id("lp_dual_complimentary_slack2"))
+        # self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
+        # self.assertEqual(self.latex_page_mongo_items_count(), 3)
 
 
-
-
-
+        # print("--------------------------")
+        # self.debug_print_latex_page_commitsha_mongo_collection()
+        # print("--------------------------")
+        # self.debug_print_latex_page_mongo_collection()
