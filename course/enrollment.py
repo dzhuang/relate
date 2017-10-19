@@ -157,12 +157,12 @@ def get_participation_role_identifiers(course, participation):
         cache_key = get_participation_role_identifiers_cache_key(
             course, participation)
 
-    def_cache = cache.caches["default"]
-
     if cache_key is None:
         result = _get_participation_role_identifiers(course, participation)
         assert isinstance(result, list)
         return result
+
+    def_cache = cache.caches["default"]
 
     if len(cache_key) < 240:
         result = def_cache.get(cache_key)
