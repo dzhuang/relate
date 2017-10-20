@@ -78,7 +78,8 @@ from .test_imageupload import MY_SINGLE_COURSE_SETUP_LIST
 from image_upload.page.latexpage import (
     get_latex_page_mongo_collection as latex_page_collection,
     get_latex_page_commitsha_template_pair_collection as latex_page_sha_collection)
-
+import pprint
+pp = pprint.PrettyPrinter(indent=4)
 
 def disable_cache():
     raise ImproperlyConfigured
@@ -127,15 +128,16 @@ class LatexPageMixin(SingleCoursePageTestMixin, FallBackStorageMessageTestMixin)
     def latex_page_mongo_items_count(self):
         return latex_page_collection().count()
 
-    def debug_print_latex_page_mongo_collection(self, filter=None, doc_field="full"):
+    def debug_print_latex_page_mongo_collection(self, filter=None, doc_field="full", compact=False):
         if filter is None:
             filter = {}
         cursor = latex_page_collection().find(filter)
+        pp = pprint.PrettyPrinter(indent=4, compact=compact)
         for doc in cursor:
             if doc_field is None:
-                print(doc)
+                pp.pprint(doc)
             else:
-                print(doc[doc_field])
+                pp.pprint(doc[doc_field])
 
     def drop_test_mongo(self):
         mongo_db_name = getattr(settings, "RELATE_MONGODB_NAME", None)
@@ -455,104 +457,164 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
         return FlowPageData.objects.get(
             flow_session=FlowSession.objects.first(), page_id=page_id)
 
-    def test_flow_page_data_no_question_data(self):
-        # simulate that the question_data is empty, generate a new one
-        page_data = self.get_page_data()
-        original_question_data = page_data.data["question_data"]
-        del page_data.data["question_data"]
-        page_data.save()
-        with mock.patch("course.content.get_course_commit_sha",
-                        return_value=self.commit_sha_with_same_content):
-            self.c.get(self.get_page_url_by_page_id(self.page_id))
-            new_page_data = self.get_page_data()
-            self.assertEqual(new_page_data.data["question_data"],
-                             original_question_data)
+    # def test_flow_page_data_no_question_data(self):
+    #     # simulate that the question_data is empty, generate a new one
+    #     page_data = self.get_page_data()
+    #     original_question_data = page_data.data["question_data"]
+    #     del page_data.data["question_data"]
+    #     page_data.save()
+    #     with mock.patch("course.content.get_course_commit_sha",
+    #                     return_value=self.commit_sha_with_same_content):
+    #         self.c.get(self.get_page_url_by_page_id(self.page_id))
+    #         new_page_data = self.get_page_data()
+    #         self.assertEqual(new_page_data.data["question_data"],
+    #                          original_question_data)
 
-    def test_flow_page_data_no_template_hash_and_id(self):
-        # simulate that the tempate_hash and template_has_id are empty,
-        # generate new ones
-        page_data = self.get_page_data()
-        original_page_data = deepcopy(page_data)
-        del page_data.data["template_hash"]
-        del page_data.data["template_hash_id"]
-        page_data.save()
-        with mock.patch("course.content.get_course_commit_sha",
-                        return_value=self.commit_sha_with_same_content):
-            self.c.get(self.get_page_url_by_page_id(self.page_id))
-            new_page_data = self.get_page_data()
-            self.assertEqual(new_page_data.data["template_hash"],
-                             original_page_data.data["template_hash"])
-            self.assertEqual(new_page_data.data["template_hash_id"],
-                             original_page_data.data["template_hash_id"])
+    # def test_flow_page_data_no_template_hash_and_id(self):
+    #     # simulate that the tempate_hash and template_has_id are empty,
+    #     # generate new ones
+    #     page_data = self.get_page_data()
+    #     original_page_data = deepcopy(page_data)
+    #     del page_data.data["template_hash"]
+    #     del page_data.data["template_hash_id"]
+    #     page_data.save()
+    #     with mock.patch("course.content.get_course_commit_sha",
+    #                     return_value=self.commit_sha_with_same_content):
+    #         self.c.get(self.get_page_url_by_page_id(self.page_id))
+    #         new_page_data = self.get_page_data()
+    #         self.assertEqual(new_page_data.data["template_hash"],
+    #                          original_page_data.data["template_hash"])
+    #         self.assertEqual(new_page_data.data["template_hash_id"],
+    #                          original_page_data.data["template_hash_id"])
 
-
-    def test_flow_page_new_mongo_entry_create_when_change_commit_sha(self):
-        self.drop_test_mongo()
-        self.clear_cache()
-        self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 0)
-        self.assertEqual(self.latex_page_mongo_items_count(), 0)
-
-        with mock.patch("course.content.get_course_commit_sha",
-                        return_value=self.commit_sha_with_same_content):
-            self.c.get(self.get_page_url_by_page_id(self.page_id))
-        self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 1)
-        self.assertEqual(self.latex_page_mongo_items_count(), 1)
-
-    def test_flow_page_runpy_content_changed(self):
+    @mock.patch("image_upload.page.latexpage.LatexRandomQuestionBase.jinja_runpy", return_value=True)
+    @mock.patch("image_upload.page.latexpage.LatexRandomQuestionBase.initialize_page_data", autospec=True)
+    @mock.patch(
+        "image_upload.page.latexpage.LatexRandomQuestionBase.get_template_hash_id", autospec=True)
+    def test_flow_page_runpy_commit_sha_changed_content_not_changed(
+            self,
+            mock_get_template_hash_id,
+            mock_initialize_page_data,
+            mock_runpy):
         print("--------test started---------")
 
-        from course.content import get_course_commit_sha
-        current_commit_sha = get_course_commit_sha(
-            self.course, self.student_participation)
+        print("---------original-----------------")
+        self.debug_print_latex_page_mongo_collection(doc_field=None)
+        print("-------------end of original-------------")
         self.drop_test_mongo()
         self.clear_cache()
-        self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 0)
-        self.assertEqual(self.latex_page_mongo_items_count(), 0)
-
-        import sys
-        if sys.version_info >= (3,):
-            mocking_import = "builtins.__import__"
-        else:
-            mocking_import = "__builtin__.__import__"
+        original_data = self.get_page_data().data
+        # self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 0)
+        # self.assertEqual(self.latex_page_mongo_items_count(), 0)
 
         self.update_course_to_commit_sha(self.commit_sha_with_same_content)
         self.c.get(self.get_page_url_by_page_id(self.page_id))
         self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 1)
         self.assertEqual(self.latex_page_mongo_items_count(), 1)
 
-        # print("--------------------------")
-        # self.debug_print_latex_page_commitsha_mongo_collection()
-        # print("--------------------------")
-        # self.debug_print_latex_page_mongo_collection()
+        # with the same content, won't run initialize_page_data()
+        mock_initialize_page_data.assert_not_called()
+
+        # with the same content, won't run get_template_hash_id()
+        mock_get_template_hash_id.assert_not_called()
+
+        # with the same content, won't run jinja_runpy()
+        mock_runpy.assert_not_called()
+
+        print("---------after update -----------------")
+        self.debug_print_latex_page_mongo_collection(doc_field=None)
+        print("-------------end of new-------------")
+
+
+        new_data = self.get_page_data().data
+
+        pp.pprint(original_data)
+        pp.pprint(new_data)
+
+        for k in original_data.keys():
+            # if k != "template_hash_id":
+                self.assertEqual(new_data[k], original_data[k])
+            # else:
+            #     self.assertNotEqual(new_data[k], original_data[k])
+
+
+    # @mock.patch("image_upload.page.latexpage.LatexRandomQuestionBase.jinja_runpy", autospec=True)
+    @mock.patch("image_upload.page.latexpage.LatexRandomQuestionBase.initialize_page_data")
+    def test_flow_page_runpy_commit_sha_changed_content_changed(
+            self,
+            # mock_get_template_hash_id,
+            mock_initialize_page_data,
+            # mock_runpy
+    ):
+        print("--------test started---------")
+
+        print("---------original-----------------")
+        self.debug_print_latex_page_mongo_collection(doc_field=None)
+        print("-------------end of original-------------")
+        self.clear_cache()
+        original_data = self.get_page_data().data
+        # self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 0)
+        # self.assertEqual(self.latex_page_mongo_items_count(), 0)
 
         self.update_course_to_commit_sha(self.commit_sha_with_different_content)
-        self.c.get(self.get_page_url_by_page_id(self.page_id))
-        self.c.get(self.get_page_url_by_page_id(self.page_id))
-        self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
-        self.assertEqual(self.latex_page_mongo_items_count(), 2)
-        print("--------------------------")
-        self.debug_print_latex_page_mongo_collection()
+        # self.c.get(self.get_page_url_by_page_id(self.page_id))
 
+        # jinja_runpy() will fail with ValueError when it is patched
+        # with self.assertRaises(ValueError):
         self.c.get(self.get_page_url_by_page_id(self.page_id))
-        self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
-        self.assertEqual(self.latex_page_mongo_items_count(), 2)
 
-        # print("--------------------------")
-        # self.debug_print_latex_page_commitsha_mongo_collection()
-        # print("--------------------------")
-        # self.debug_print_latex_page_mongo_collection()
+            # with the same content, won't run initialize_page_data()
+        mock_initialize_page_data.assert_not_called()
 
-        self.update_course_to_commit_sha(current_commit_sha)
-        self.c.get(self.get_page_url_by_page_id(self.page_id))
+        # with the same content, won't run get_template_hash_id()
+        # mock_get_template_hash_id.assert_called_once()
+
+        # with the same content, won't run jinja_runpy()
+        # mock_runpy.assert_called_once()
+
         self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
         self.assertEqual(self.latex_page_mongo_items_count(), 2)
 
-        # self.c.get(self.get_page_url_by_page_id("lp_dual_complimentary_slack2"))
-        # self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
-        # self.assertEqual(self.latex_page_mongo_items_count(), 3)
+        print("---------after update -----------------")
+        self.debug_print_latex_page_mongo_collection(doc_field=None)
+        print("-------------end of new-------------")
 
 
-        # print("--------------------------")
-        # self.debug_print_latex_page_commitsha_mongo_collection()
-        # print("--------------------------")
-        # self.debug_print_latex_page_mongo_collection()
+        new_data = self.get_page_data().data
+
+        pp.pprint(original_data)
+        pp.pprint(new_data)
+
+        for k in original_data.keys():
+            if k == "question_data":
+                self.assertEqual(new_data[k], original_data[k])
+            else:
+                self.assertNotEqual(new_data[k], original_data[k])
+
+    # def test_flow_page_runpy_commit_sha_changed_content_changed(self):
+    #     print("--------test started---------")
+    #
+    #     self.drop_test_mongo()
+    #     self.clear_cache()
+    #
+    #     original_data = self.get_page_data().data
+    #
+    #     self.update_course_to_commit_sha(self.commit_sha_with_different_content)
+    #     self.c.get(self.get_page_url_by_page_id(self.page_id))
+    #     self.c.get(self.get_page_url_by_page_id(self.page_id))
+    #     self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
+    #     self.assertEqual(self.latex_page_mongo_items_count(), 2)
+    #     print("--------------------------")
+    #     self.debug_print_latex_page_mongo_collection(doc_field=None)
+    #     print("--------------------------")
+    #
+    #     changed_data = self.get_page_data().data
+    #     print(original_data)
+    #     print(changed_data)
+    #
+    #     self.c.get(self.get_page_url_by_page_id(self.page_id))
+    #     self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
+    #     self.assertEqual(self.latex_page_mongo_items_count(), 2)
+
+
+

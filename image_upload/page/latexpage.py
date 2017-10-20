@@ -466,7 +466,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     new_key_making_string_md5 = self.get_key_making_string_md5_hash(
                         new_template_hash, question_data)
                     new_hash_id = self.get_template_hash_id(commit_sha, new_template_hash)
-                    get_latex_page_commitsha_template_pair_collection().update(
+                    get_latex_page_commitsha_template_pair_collection().update_one(
                         {"_id": ObjectId(hash_id),
                          commit_sha: {"$exists": False},
                          "%s_next" % commit_sha: {"$exists": False}},
