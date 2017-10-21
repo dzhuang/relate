@@ -48,9 +48,13 @@ from jsonview.decorators import json_view
 from jsonview.exceptions import BadRequest
 from braces.views import JSONResponseMixin
 import json
-from PIL import Image
+from PIL import Image, ImageFile
 from io import BytesIO
 from sendfile import sendfile
+
+# https://stackoverflow.com/a/23575424/3437454
+ImageFile.LOAD_TRUNCATED_IMAGES = True
+from imagekit.utils import get_cache  # noqa
 
 # Define the permssion required for course staff to edit/upload/delete
 # images uploaded by participants
@@ -261,11 +265,14 @@ class ImageCreateView(LoginRequiredMixin, ImageEditPermissionTestMixin,
             data = {'files': files}
         except IOError:
             return self.render_json_response(
-                {"success": False,
-                 "error": ugettext(
-                     "Sorry, the image is corrupted during "
-                     "handling. That should be solved by "
-                     "a re-uploading.")})
+                {
+                    "name": form.cleaned_data.get('slug'),
+                    "size": image._size,
+                    "error": ugettext(
+                        "Sorry, the image is corrupted during "
+                        "handling. That should be solved by "
+                        "a re-uploading.")
+                        })
 
         return self.render_json_response(data)
 

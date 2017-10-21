@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # coverage run manage.py test tests --local_test_settings test_local_settings.py
-# python manage.py test tests.test_my_local --local_test_settings test_local_settings.py
+# python manage.py test tests.test_my_local.test_imageupload --local_test_settings test_local_settings.py
 
 from __future__ import division
 
@@ -72,6 +72,7 @@ IMAGE_UPLOAD_FLOW = "image-upload-flow"
 TEST_IMAGE_FOLDER = os.path.join(os.path.dirname(__file__), "fixtures")
 TEST_IMAGE1 = os.path.join(TEST_IMAGE_FOLDER, "test1.jpg")
 TEST_IMAGE2 = os.path.join(TEST_IMAGE_FOLDER, "test2.png")
+TEST_IMAGE_TRUNCATED = os.path.join(TEST_IMAGE_FOLDER, "test_truncated.jpg")
 
 
 class ImageUploadViewMixin(ImageUploadStorageTestMixin,
@@ -410,6 +411,18 @@ class ImageUploadCreateViewTest(ImageUploadQuizMixin, TestCase):
         self.assertEqual(FlowPageImage.objects.all().count(), 2)
         self.assertEqual(
             FlowPageImage.objects.filter(is_temp_image=True).count(), 2)
+
+    def test_one_image_upload_trancated(self):
+        page_id = "one_image"
+        resp = self.post_create_flowpageimage(page_id, TEST_IMAGE_TRUNCATED)
+        self.assertEqual(resp.status_code, 200)
+        resp_dict = json.loads(resp.content.decode())
+        self.assertIsNone(resp_dict.get("error"))
+        self.assertIsNotNone(resp_dict.get("files"))
+        self.assertEqual(FlowPageImage.objects.all().count(), 1)
+        image = FlowPageImage.objects.get()
+        self.assertTrue(image.is_temp_image)
+        self.assertTrue(os.path.isfile(image.image.path))
 
 
 @skipIf(skip_test, SKIP_LOCAL_TEST_REASON)
