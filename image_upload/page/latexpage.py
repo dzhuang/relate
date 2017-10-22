@@ -462,6 +462,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         commit_sha = page_context.commit_sha.decode()
         if not (page_data_template_hash and hash_id):
             amend_template_hash = self.generate_template_hash(page_context)
+            print(amend_template_hash)
             new_hash_id = (
                 self.get_or_create_template_hash_id(commit_sha, amend_template_hash)
             )

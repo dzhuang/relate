@@ -94,6 +94,7 @@ class LatexPageMixin(SingleCoursePageTestMixin, FallBackStorageMessageTestMixin)
 
     def tearDown(self):  # noqa
         super(LatexPageMixin, self).tearDown()
+        self.clear_cache()
         self.drop_test_mongo()
 
     def clear_cache(self):
@@ -458,35 +459,61 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
         return FlowPageData.objects.get(
             flow_session=FlowSession.objects.first(), page_id=page_id)
 
-    # def test_flow_page_data_no_question_data(self):
-    #     # simulate that the question_data is empty, generate a new one
-    #     page_data = self.get_page_data()
-    #     original_question_data = page_data.data["question_data"]
-    #     del page_data.data["question_data"]
-    #     page_data.save()
-    #     with mock.patch("course.content.get_course_commit_sha",
-    #                     return_value=self.commit_sha_with_same_content):
-    #         self.c.get(self.get_page_url_by_page_id(self.page_id))
-    #         new_page_data = self.get_page_data()
-    #         self.assertEqual(new_page_data.data["question_data"],
-    #                          original_question_data)
+    def test_flow_page_data_no_question_data(self):
+        # simulate that the question_data is empty, generate a new one
+        page_data = self.get_page_data()
+        original_question_data = page_data.data["question_data"]
+        del page_data.data["question_data"]
+        page_data.save()
+        self.update_course_to_commit_sha(self.commit_sha_with_same_content)
+        self.c.get(self.get_page_url_by_page_id(self.page_id))
+        new_page_data = self.get_page_data()
+        self.assertEqual(new_page_data.data["question_data"],
+                         original_question_data)
 
-    # def test_flow_page_data_no_template_hash_and_id(self):
-    #     # simulate that the tempate_hash and template_has_id are empty,
-    #     # generate new ones
-    #     page_data = self.get_page_data()
-    #     original_page_data = deepcopy(page_data)
-    #     del page_data.data["template_hash"]
-    #     del page_data.data["template_hash_id"]
-    #     page_data.save()
-    #     with mock.patch("course.content.get_course_commit_sha",
-    #                     return_value=self.commit_sha_with_same_content):
-    #         self.c.get(self.get_page_url_by_page_id(self.page_id))
-    #         new_page_data = self.get_page_data()
-    #         self.assertEqual(new_page_data.data["template_hash"],
-    #                          original_page_data.data["template_hash"])
-    #         self.assertEqual(new_page_data.data["template_hash_id"],
-    #                          original_page_data.data["template_hash_id"])
+    @mock.patch(
+        "image_upload.page.latexpage.LatexRandomQuestionBase.initialize_page_data")
+    def test_flow_page_data_no_qst_data_assert_initialize_page_data_called_once(
+            self, mock_initialize_page_data):
+        # simulate that the question_data is empty, generate a new one
+        page_data = self.get_page_data()
+        del page_data.data["question_data"]
+        page_data.save()
+        self.update_course_to_commit_sha(self.commit_sha_with_same_content)
+        self.c.get(self.get_page_url_by_page_id(self.page_id))
+        self.assertEqual(mock_initialize_page_data.call_count, 1)
+
+    def test_flow_page_data_no_template_hash_and_id(self):
+        # simulate that the tempate_hash and template_has_id are empty,
+        # generate new ones
+        page_data = self.get_page_data()
+        original_page_data = deepcopy(page_data)
+        del page_data.data["template_hash"]
+        del page_data.data["template_hash_id"]
+        page_data.save()
+        self.update_course_to_commit_sha(self.commit_sha_with_same_content)
+        self.c.get(self.get_page_url_by_page_id(self.page_id))
+        new_page_data = self.get_page_data()
+        self.assertEqual(new_page_data.data["template_hash"],
+                         original_page_data.data["template_hash"])
+        self.assertEqual(new_page_data.data["template_hash_id"],
+                         original_page_data.data["template_hash_id"])
+
+    @mock.patch(
+        "image_upload.page.latexpage.LatexRandomQuestionBase.generate_template_hash",
+        return_value="88856fafa00fa9b08e109beab35d56cb")
+    def test_flow_page_data_no_tmpl_hash_and_id_assert_generate_hash_called_once(
+            self, mock_generate_hash):
+        # simulate that the tempate_hash and template_has_id are empty,
+        # generate new ones
+        page_data = self.get_page_data()
+        original_page_data = deepcopy(page_data)
+        del page_data.data["template_hash"]
+        del page_data.data["template_hash_id"]
+        page_data.save()
+        self.update_course_to_commit_sha(self.commit_sha_with_same_content)
+        self.c.get(self.get_page_url_by_page_id(self.page_id))
+        self.assertEqual(mock_generate_hash.call_count, 1)
 
     @mock.patch("image_upload.page.latexpage.LatexRandomQuestionBase.jinja_runpy")
     @mock.patch("image_upload.page.latexpage.LatexRandomQuestionBase.initialize_page_data")

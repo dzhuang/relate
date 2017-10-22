@@ -257,8 +257,20 @@ class ImageCreateView(LoginRequiredMixin, ImageEditPermissionTestMixin,
             self.object.flow_session_id = flow_session_id
             self.object.image_page_id = fpd.page_id
 
-        with transaction.atomic():
-            self.object.save()
+        max_tries = 5
+        while True:
+            try:
+                with transaction.atomic():
+                    self.object.save()
+                    break
+            except OSError:
+                max_tries -= 1
+                if not max_tries:
+                    raise
+
+            from random import uniform
+            from time import sleep
+            sleep(uniform(0.05, 0.2))
 
         try:
             files = [serialize(self.request, self.object, 'image')]
