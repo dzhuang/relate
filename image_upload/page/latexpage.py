@@ -82,7 +82,8 @@ debug_print = _debug_print
 
 
 CACHE_VERSION = "V0"
-MAX_JINJIA_RETRY = 3
+# This should be 1, because request_python_run_with_retries already tried 3 times
+MAX_JINJIA_RETRY = 1
 DB = get_mongo_db()
 
 
@@ -462,7 +463,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         commit_sha = page_context.commit_sha.decode()
         if not (page_data_template_hash and hash_id):
             amend_template_hash = self.generate_template_hash(page_context)
-            print(amend_template_hash)
             new_hash_id = (
                 self.get_or_create_template_hash_id(commit_sha, amend_template_hash)
             )
@@ -934,27 +934,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             return markup_to_html(page_context, self.error_getting_updated_full_desc)
         if self.error_updating_page_desc:
             return markup_to_html(page_context, self.error_updating_page_desc)
-        if page_context.in_sandbox or page_data is None:
-            page_data = self.initialize_page_data(page_context)
-
-        # this is for sandbox
-        if page_context.in_sandbox:
-            if not self.updated_full_desc:
-                if (hasattr(self.page_desc, "full_process_code")
-                    or
-                        hasattr(self.page_desc, "runpy_file")):
-                    success, result = (
-                        self.get_full_desc_from_full_process(
-                            page_context, page_data))
-                    if success:
-                        self.updated_full_desc = result
-                    else:
-                        return markup_to_html(page_context, result)
 
         if self.updated_full_desc:
             question_str = self.updated_full_desc.get("question", "")
-        elif self.error_getting_updated_full_desc:
-            return markup_to_html(page_context, self.error_getting_updated_full_desc)
         else:
             question_str = ""
             success = False
@@ -1008,7 +990,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                         % self.page_desc.runpy_file)
                 elif hasattr(self.page_desc, from_name):
                     run_jinja_req[name] = getattr(self.page_desc, from_name)
-            elif hasattr(self.page_desc, name):
+            else:
+                assert hasattr(self.page_desc, name)
                 run_jinja_req[name] = getattr(self.page_desc, name)
 
         run_jinja_req["user_code"] = ""

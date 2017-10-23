@@ -36,7 +36,7 @@ import six
 import os
 import json
 from .utils import skip_test, SKIP_LOCAL_TEST_REASON
-from ..utils import mock
+from ..utils import mock, LocmemBackendTestsMixin
 import zipfile
 from six import BytesIO
 from pymongo import MongoClient
@@ -433,13 +433,112 @@ def my_disable_cache_import(name, globals=None, locals=None, fromlist=(), level=
     return realimport(name, globals, locals, fromlist, level)
 
 
+fake_jinja_runpy_success_return_value = {
+    'answer_explanation': (
+        '\n\n\nOne correct answer is: $(5/4,19/4,3/2)^T$\n'),
+    'blank': (
+        '\n$(x_{1}^{*},\\,x_{2}^{*},\\,x_{3}^{*})^T=$[[blank1]]\n'),
+    'blank_answer': (
+        '\n'
+        '\n'
+        'blank1:\n'
+        '    type: ShortAnswer\n'
+        '    width: 10em\n'
+        '    correct_answer:\n'
+        '    - type: float_list_with_wrapper\n'
+        '      forced_left_wrapper: ["("]\n'
+        '      forced_right_wrapper: [")", ")^T"]\n'
+        '      force_wrapper_percentage_list: [0, 0.3]\n'
+        '      list_item_average_percentage: True\n'
+        '      rtol: 0.01\n'
+        '      atol: 0.01\n'
+        '      value: "(5/4,19/4,3/2)^T"\n'
+        '\n'),
+    'question': (
+        '$$\\begin{alignat*}{20}\n'
+        '\\max \\quad & \\rlap{Z = x_{1}+4x_{2}+5x_{3}}\\\\\n'
+        '\\text{s.t.}\\quad\n'
+        '&& x_{1}&{}+{}& x_{2}&{}{}&&&{}\\leqslant{}&6\\\\\n'
+        '&&\\mbox{$-$}x_{1}&{}+{}& '
+        'x_{2}&{}+{}&3x_{3}&&{}\\leqslant{}&8\\\\\n'
+        '&&3x_{1}&{}+{}& x_{2}&{}+{}& x_{3}&&{}\\leqslant{}&10\\\\\n'
+        '\\rlap{x_{1},x_{2},x_{3}\\geqslant 0}\n'
+        '\\end{alignat*}$$\n'
+        '\n')
+}
+
+fake_request_python_run_with_retries_return_value = {
+    "result": "setup_error",
+    "message": "Jinja runpy just failed to return an result in the test",
+}
+
+
+@skipIf(skip_test, SKIP_LOCAL_TEST_REASON)
+@override_settings(
+    CACHE_BACKEND='dummy:///')
+class LatexPageCacheTest(LatexPageMixin, TestCase):
+    courses_setup_list = MY_SINGLE_COURSE_SETUP_LIST
+    flow_id = LATEXPAGE_FLOW_ID
+
+    def setUp(self):  # noqa
+        super(LatexPageCacheTest, self).setUp()
+        self.c.force_login(self.student_participation.user)
+        self.start_quiz(self.flow_id)
+
+        self.page_id = page_id = "lp_dual_complimentary_slack1"
+        self.c.get(self.get_page_url_by_page_id(page_id))
+
+    def test_has_cache_no_runpy_for_revisit_page(self):
+        # revisit with cache
+        with mock.patch(
+            "image_upload.page.latexpage.LatexRandomQuestionBase.jinja_runpy",
+            return_value=(True, fake_jinja_runpy_success_return_value)
+        ) as mock_request_python_run:
+
+            resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
+            self.assertEqual(resp.status_code, 200)
+            self.assertEqual(mock_request_python_run.call_count, 0)
+
+    def test_cache_cleared_no_runpy_for_revisit_page(self):
+        self.clear_cache()
+        # revisit with cache cleared
+        with mock.patch(
+            "image_upload.page.latexpage.LatexRandomQuestionBase.jinja_runpy",
+            return_value=(True, fake_jinja_runpy_success_return_value)
+        ) as mock_request_python_run:
+
+            resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
+            self.assertEqual(resp.status_code, 200)
+            self.assertEqual(mock_request_python_run.call_count, 0)
+
+    def test_cache_not_configured_no_runpy_for_revisit_page(self):
+        # revisit with cache cleared
+        if six.PY3:
+            mocking_import = "builtins.__import__"
+        else:
+            mocking_import = "__builtin__.__import__"
+        with mock.patch(mocking_import, side_effect=my_disable_cache_import):
+            with self.assertRaises(ImproperlyConfigured):
+                # make sure cache is not configured
+                import django.core.cache as cache  # noqa
+
+            with mock.patch(
+                "image_upload.page.latexpage.LatexRandomQuestionBase.jinja_runpy",
+                return_value=(True, fake_jinja_runpy_success_return_value)
+            ) as mock_request_python_run:
+
+                resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
+                self.assertEqual(resp.status_code, 200)
+                self.assertEqual(mock_request_python_run.call_count, 0)
+
+
+
 @skipIf(skip_test, SKIP_LOCAL_TEST_REASON)
 @override_settings(
     CACHE_BACKEND='dummy:///')
 class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
     courses_setup_list = MY_SINGLE_COURSE_SETUP_LIST
     flow_id = LATEXPAGE_FLOW_ID
-    # serialized_rollback = True
 
     commit_sha_with_same_content =b"bc48c6d16cc60bdbb2f0d097298f81f83dc50031"
     commit_sha_with_different_content = b"29d19f8301c5efd101eb2a3c7753a4ced868597f"
@@ -451,7 +550,6 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
 
         self.page_id = page_id = "lp_dual_complimentary_slack1"
         self.c.get(self.get_page_url_by_page_id(page_id))
-        # self.page_data = self.get_page_data()
 
     def get_page_data(self, page_id=None):
         if page_id is None:
@@ -459,11 +557,14 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
         return FlowPageData.objects.get(
             flow_session=FlowSession.objects.first(), page_id=page_id)
 
+    # {{{ tests for a page which changed commit_sha
+    # while content of the page does not change
+
     @mock.patch("image_upload.page.latexpage.LatexRandomQuestionBase.jinja_runpy")
     @mock.patch("image_upload.page.latexpage.LatexRandomQuestionBase.initialize_page_data")
     @mock.patch(
         "image_upload.page.latexpage.LatexRandomQuestionBase.get_or_create_template_hash_id")
-    def test_flow_page_runpy_commit_sha_changed_content_not_changed(
+    def test_commit_sha_changed_content_not_changed(
             self,
             mock_get_template_hash_id,
             mock_initialize_page_data,
@@ -499,7 +600,7 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
     @mock.patch(
         "image_upload.page.latexpage.LatexRandomQuestionBase.generate_template_hash",
         return_value="88856fafa00fa9b08e109beab35d56cb")
-    def test_flow_page_runpy_commit_sha_changed_content_not_changed_assert_get_template_hash_called_once(
+    def test_commit_sha_changed_content_not_changed_assert_get_template_hash_called_once(
             self, mock_generate_hash):
         # when commit_sha changed, template_hash is regenerated only once.
         self.clear_cache()
@@ -511,7 +612,7 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
         self.c.get(self.get_page_url_by_page_id("lp_dual_complimentary_slack2"))
         self.assertEqual(mock_generate_hash.call_count, 1)
 
-    def test_commit_sha_changed_content_not_changed_flow_page_data_no_question_data(self):
+    def test_commit_sha_changed_content_not_changed_no_question_data(self):
         # simulate that the question_data is empty, generate a new one
         page_data = self.get_page_data()
         original_question_data = page_data.data["question_data"]
@@ -525,19 +626,20 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
 
     @mock.patch(
         "image_upload.page.latexpage.LatexRandomQuestionBase.initialize_page_data")
-    def test_commit_sha_changed_content_not_changed_flow_page_data_no_qst_data_assert_initialize_page_data_called_once(
+    def test_commit_sha_changed_content_not_changed_no_qst_data_assert_initialize_page_data_called_once(
             self, mock_initialize_page_data):
-        # simulate that the question_data is empty, generate a new one
         page_data = self.get_page_data()
         del page_data.data["question_data"]
         page_data.save()
         self.update_course_to_commit_sha(self.commit_sha_with_same_content)
         self.c.get(self.get_page_url_by_page_id(self.page_id))
+
         self.assertEqual(mock_initialize_page_data.call_count, 1)
 
     @mock.patch(
         "image_upload.page.latexpage.LatexRandomQuestionBase.initialize_page_data")
-    def test_commit_sha_changed_content_not_changed_flow_page_data_no_template_hash_and_id(self, mock_initialize_page_data):
+    def test_commit_sha_changed_content_not_changed_no_template_hash_and_id(
+            self, mock_initialize_page_data):
         # simulate that the tempate_hash and template_has_id are empty,
         # generate new ones
         page_data = self.get_page_data()
@@ -558,7 +660,7 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
     @mock.patch(
         "image_upload.page.latexpage.LatexRandomQuestionBase.generate_template_hash",
         return_value="88856fafa00fa9b08e109beab35d56cb")
-    def test_flow_page_data_no_tmpl_hash_and_id_assert_generate_hash_called_twice(
+    def test_no_tmpl_hash_and_id_assert_generate_hash_called_twice(
             self, mock_generate_hash):
         # simulate that the tempate_hash and template_has_id are empty,
         # generate new ones
@@ -572,8 +674,13 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
         # only
         self.assertEqual(mock_generate_hash.call_count, 2)
 
+    # }}}
+
+    # {{{ tests for a page which changed commit_sha
+    # and content of the page does change
+
     @mock.patch("image_upload.page.latexpage.LatexRandomQuestionBase.initialize_page_data")
-    def test_flow_page_runpy_commit_sha_changed_content_changed(
+    def test_commit_sha_changed_content_changed(
             self,
             mock_initialize_page_data):
 
@@ -656,50 +763,107 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
             self.assertTrue(
                 "One correct answer is:" in result["answer_explanation"])
 
-    def test_flow_page_runpy_commit_sha_changed_content_changed_assert_run_once(
+    def test_commit_sha_changed_content_changed_assert_jinja_runpy_called_once(
             self):
 
         self.clear_cache()
         self.update_course_to_commit_sha(self.commit_sha_with_different_content)
 
-        fake_return_value = {
-            'answer_explanation': (
-                '\n\n\nOne correct answer is: $(5/4,19/4,3/2)^T$\n'),
-            'blank': (
-                '\n$(x_{1}^{*},\\,x_{2}^{*},\\,x_{3}^{*})^T=$[[blank1]]\n'),
-            'blank_answer': (
-                '\n'
-                '\n'
-                'blank1:\n'
-                '    type: ShortAnswer\n'
-                '    width: 10em\n'
-                '    correct_answer:\n'
-                '    - type: float_list_with_wrapper\n'
-                '      forced_left_wrapper: ["("]\n'
-                '      forced_right_wrapper: [")", ")^T"]\n'
-                '      force_wrapper_percentage_list: [0, 0.3]\n'
-                '      list_item_average_percentage: True\n'
-                '      rtol: 0.01\n'
-                '      atol: 0.01\n'
-                '      value: "(5/4,19/4,3/2)^T"\n'
-                '\n'),
-            'question':(
-                '$$\\begin{alignat*}{20}\n'
-                '\\max \\quad & \\rlap{Z = x_{1}+4x_{2}+5x_{3}}\\\\\n'
-                '\\text{s.t.}\\quad\n'
-                '&& x_{1}&{}+{}& x_{2}&{}{}&&&{}\\leqslant{}&6\\\\\n'
-                '&&\\mbox{$-$}x_{1}&{}+{}& '
-                'x_{2}&{}+{}&3x_{3}&&{}\\leqslant{}&8\\\\\n'
-                '&&3x_{1}&{}+{}& x_{2}&{}+{}& x_{3}&&{}\\leqslant{}&10\\\\\n'
-                '\\rlap{x_{1},x_{2},x_{3}\\geqslant 0}\n'
-                '\\end{alignat*}$$\n'
-                '\n')
-        }
-
         with mock.patch(
             "image_upload.page.latexpage.LatexRandomQuestionBase.jinja_runpy",
-            return_value=(True, fake_return_value)) as mock_request_python_run:
+            return_value=(True, fake_jinja_runpy_success_return_value)
+        ) as mock_request_python_run:
 
             resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
             self.assertEqual(resp.status_code, 200)
             self.assertEqual(mock_request_python_run.call_count, 1)
+
+    # }}}
+
+
+@skipIf(skip_test, SKIP_LOCAL_TEST_REASON)
+@override_settings(
+    CACHE_BACKEND='dummy:///')
+class LatexPageRunpyFailureTest(
+        LatexPageMixin, SingleCoursePageSandboxTestBaseMixin,
+        LocmemBackendTestsMixin, TestCase):
+    courses_setup_list = MY_SINGLE_COURSE_SETUP_LIST
+    flow_id = LATEXPAGE_FLOW_ID
+
+    commit_sha_with_same_content =b"bc48c6d16cc60bdbb2f0d097298f81f83dc50031"
+    commit_sha_with_different_content = b"29d19f8301c5efd101eb2a3c7753a4ced868597f"
+
+    def setUp(self):  # noqa
+        super(LatexPageRunpyFailureTest, self).setUp()
+        self.c.force_login(self.student_participation.user)
+        self.start_quiz(self.flow_id)
+
+        self.page_id = page_id = "lp_dual_complimentary_slack1"
+        self.c.get(self.get_page_url_by_page_id(page_id))
+
+    def get_page_data(self, page_id=None):
+        if page_id is None:
+            page_id = self.page_id
+        return FlowPageData.objects.get(
+            flow_session=FlowSession.objects.first(), page_id=page_id)
+
+    def test_switch_to_working_course_commit_sha(self):
+        self.clear_cache()
+        self.update_course_to_commit_sha(self.commit_sha_with_different_content)
+        self.assertEqual(len(mail.outbox), 0)
+
+        with mock.patch(
+            "image_upload.page.latexpage.LatexRandomQuestionBase.jinja_runpy",
+            return_value=(True, fake_jinja_runpy_success_return_value)
+        ) as mock_request_python_run:
+
+            resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
+            self.assertEqual(resp.status_code, 200)
+            self.assertEqual(mock_request_python_run.call_count, 1)
+
+            self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
+            self.assertEqual(self.latex_page_mongo_items_count(), 2)
+
+            self.assertEqual(len(mail.outbox), 0)
+
+    def test_switch_to_failure_course_commit_sha(self):
+        self.clear_cache()
+        self.update_course_to_commit_sha(self.commit_sha_with_different_content)
+        self.assertEqual(len(mail.outbox), 0)
+
+        with mock.patch("image_upload.page.latexpage.MAX_JINJIA_RETRY", 2) as mock_max_jinja_retry:
+            with mock.patch(
+                "image_upload.page.latexpage.request_python_run_with_retries",
+                return_value=fake_request_python_run_with_retries_return_value
+            ) as mock_request_python_run_with_retries:
+
+                resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
+                self.assertEqual(resp.status_code, 200)
+
+                self.assertEqual(mock_request_python_run_with_retries.call_count, mock_max_jinja_retry)
+
+                self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
+
+                # no failure result will be saved in latex_page_mongo_collection
+                self.assertEqual(self.latex_page_mongo_items_count(), 1)
+
+                # {{{ the failure result won't be cached
+                new_data = self.get_page_data().data
+                template_hash = new_data["template_hash"]
+                question_data = new_data["question_data"]
+
+                from image_upload.page.latexpage import (
+                    make_latex_page_key, get_latex_cache, get_key_making_string_md5_hash)
+
+                key_making_string_md5 = get_key_making_string_md5_hash(
+                    template_hash, question_data)
+
+                import django.core.cache as cache
+                cache_key = make_latex_page_key(key_making_string_md5)
+                def_cache = get_latex_cache(cache)
+
+                self.assertIsNone(def_cache.get(cache_key))
+                # }}}
+
+                self.assertEqual(len(mail.outbox), mock_max_jinja_retry)
+
