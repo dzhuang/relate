@@ -31,6 +31,7 @@ from hashlib import md5
 from base64 import b64encode
 from pymongo.errors import DuplicateKeyError
 from bson.objectid import ObjectId
+from bson.errors import InvalidId
 from plugins.latex.utils import get_latex_cache
 
 # {{{ mypy
@@ -416,6 +417,19 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
     def is_answer_gradable(self):
         return self.will_receive_grade
 
+    def generate_new_page_data(self, page_context, question_data):
+        commit_sha = page_context.commit_sha.decode()
+        new_template_hash = self.generate_template_hash(page_context)
+        new_hash_id = (
+            self.get_or_create_template_hash_id(commit_sha, new_template_hash)
+        )
+        new_key_making_string_md5 = get_key_making_string_md5_hash(
+            new_template_hash, question_data)
+        return {
+            "template_hash": new_template_hash,
+            "template_hash_id": str(new_hash_id),
+            "key_making_string_md5": new_key_making_string_md5}
+
     def update_page_data(self, page_context, page_data):
         # type: (PageContext, Dict) -> Tuple[bool, Dict]
 
@@ -448,45 +462,28 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         """
 
         question_data = page_data.get("question_data", None)
-        page_data_template_hash = page_data.get("template_hash", None)
-        key_making_string_md5 = page_data.get("key_making_string_md5", None)  # noqa
-        if page_data_template_hash == "None":
-            page_data_template_hash = None
-        hash_id = page_data.get("template_hash_id", None)
-        if hash_id == "None":
-            hash_id = None
+        template_hash = page_data.get("template_hash", None)
+        key_making_string_md5 = page_data.get("key_making_string_md5", None)
+        template_hash_id = page_data.get("template_hash_id", None)
 
-        if not question_data:
+        if question_data is None:
             new_page_data = self.initialize_page_data(page_context)
             return True, new_page_data
 
         commit_sha = page_context.commit_sha.decode()
-        if not (page_data_template_hash and hash_id):
-            amend_template_hash = self.generate_template_hash(page_context)
-            new_hash_id = (
-                self.get_or_create_template_hash_id(commit_sha, amend_template_hash)
-            )
-            new_key_making_string_md5 = get_key_making_string_md5_hash(
-                amend_template_hash, question_data)
-            return True, {"template_hash": amend_template_hash,
-                          "template_hash_id": str(new_hash_id),
-                          "key_making_string_md5": new_key_making_string_md5
-                          }
+        if not (template_hash and template_hash_id and key_making_string_md5):
+            return True, self.generate_new_page_data(page_context, question_data)
 
-        exist_entry = get_latex_page_commitsha_template_pair_collection().find_one(
-            {"_id": ObjectId(hash_id)})
+        try:
+            exist_entry = (
+                get_latex_page_commitsha_template_pair_collection().find_one(
+                    {"_id": ObjectId(template_hash_id)}))
+        except InvalidId:
+            exist_entry = None
 
         # mongo data is broken
         if not exist_entry:
-            new_template_hash = self.generate_template_hash(page_context)
-            new_hash_id = (
-                self.get_or_create_template_hash_id(commit_sha, new_template_hash))
-            new_key_making_string_md5 = get_key_making_string_md5_hash(
-                new_template_hash, question_data)
-            return True, {"template_hash": new_template_hash,
-                          "template_hash_id": str(new_hash_id),
-                          "key_making_string_md5": new_key_making_string_md5
-                          }
+            return True, self.generate_new_page_data(page_context, question_data)
 
         # mongo data found
         else:
@@ -503,29 +500,25 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             assert not (match_template_hash and match_template_hash_redirect_id)
 
             if match_template_hash:
-                if match_template_hash == page_data_template_hash:
+                if match_template_hash == template_hash:
                     return False, {}
                 else:
+                    new_page_data = (
+                        self.generate_new_page_data(page_context, question_data))
+
                     # the template_hash don't belong to this entry
                     # so we generate a redirect field "(commit_sha)_next",
                     # for the new template_hash, with that new entry's id
                     # in the field
-                    new_template_hash = self.generate_template_hash(page_context)
-                    new_key_making_string_md5 = get_key_making_string_md5_hash(
-                        new_template_hash, question_data)
-                    new_hash_id = (
-                        self.get_or_create_template_hash_id(
-                            commit_sha, new_template_hash))
                     get_latex_page_commitsha_template_pair_collection().update_one(
-                        {"_id": ObjectId(hash_id),
+                        {"_id": ObjectId(template_hash_id),
                          commit_sha: {"$exists": False},
                          "%s_next" % commit_sha: {"$exists": False}},
-                        {"$set": {"%s_next" % commit_sha: str(new_hash_id)}}
+                        {"$set": {
+                            "%s_next" % commit_sha:
+                                new_page_data["template_hash_id"]}}
                     )
-                    return True, {"template_hash": new_template_hash,
-                                  "template_hash_id": str(new_hash_id),
-                                  "key_making_string_md5": new_key_making_string_md5
-                                  }
+                    return True, new_page_data
 
             if match_template_hash_redirect_id:
                 redirect_entry = (
@@ -534,25 +527,20 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
                 # in case the entry is broken
                 if not redirect_entry:
-                    new_template_hash = self.generate_template_hash(page_context)
-                    new_hash_id = (
-                        self.get_or_create_template_hash_id(
-                            commit_sha, new_template_hash))
+                    new_page_data = (
+                        self.generate_new_page_data(page_context, question_data))
 
                     # the entry is broken, so we need to update where the source
                     # who told us to redirect here
                     get_latex_page_commitsha_template_pair_collection().update_one(
-                        {"_id": ObjectId(hash_id),
+                        {"_id": ObjectId(template_hash_id),
                          commit_sha: {"$exists": False},
                         "%s_next" % commit_sha: {"$exists": True}},
-                        {"$set": {"%s_next" % commit_sha: str(new_hash_id)}}
+                        {"$set": {"%s_next" % commit_sha:
+                                      new_page_data["template_hash_id"]}}
                     )
-                    new_key_making_string_md5 = get_key_making_string_md5_hash(
-                        new_template_hash, question_data)
-                    return True, {"template_hash": new_template_hash,
-                                  "template_hash_id": str(new_hash_id),
-                                  "key_making_string_md5": new_key_making_string_md5
-                                  }
+                    return True, new_page_data
+
                 # the entry exists
                 else:
                     new_template_hash = redirect_entry.get(commit_sha, None)
@@ -568,29 +556,23 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
             assert not (match_template_hash or match_template_hash_redirect_id)
             # Neither match_template_hash nor match_template_hash_redirect_id
-            new_template_hash = self.generate_template_hash(page_context)
-            if new_template_hash == page_data_template_hash:
+
+            new_page_data = self.generate_new_page_data(page_context, question_data)
+            if new_page_data["template_hash"] == template_hash:
                 get_latex_page_commitsha_template_pair_collection().update_one(
-                    {"_id": ObjectId(hash_id),
+                    {"_id": ObjectId(template_hash_id),
                      commit_sha: {"$exists": False}},
-                    {"$set": {commit_sha: page_data_template_hash}}
+                    {"$set": {commit_sha: template_hash}}
                 )
                 return False, {}
             else:
-                new_hash_id = (
-                    self.get_or_create_template_hash_id(
-                        commit_sha, new_template_hash))
                 get_latex_page_commitsha_template_pair_collection().update_one(
-                    {"_id": ObjectId(hash_id),
+                    {"_id": ObjectId(template_hash_id),
                      commit_sha: {"$exists": False}},
-                    {"$set": {"%s_next" % commit_sha: str(new_hash_id)}}
+                    {"$set": {"%s_next" % commit_sha:
+                                  new_page_data["template_hash_id"]}}
                 )
-                new_key_making_string_md5 = get_key_making_string_md5_hash(
-                    new_template_hash, question_data)
-                return True, {"template_hash": new_template_hash,
-                              "template_hash_id": str(new_hash_id),
-                              "key_making_string_md5": new_key_making_string_md5
-                              }
+                return True, new_page_data
 
     def generate_template_hash(self, page_context):
         # type: (PageContext) -> Text

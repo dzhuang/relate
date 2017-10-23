@@ -562,11 +562,8 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
 
     @mock.patch("image_upload.page.latexpage.LatexRandomQuestionBase.jinja_runpy")
     @mock.patch("image_upload.page.latexpage.LatexRandomQuestionBase.initialize_page_data")
-    @mock.patch(
-        "image_upload.page.latexpage.LatexRandomQuestionBase.get_or_create_template_hash_id")
     def test_commit_sha_changed_content_not_changed(
             self,
-            mock_get_template_hash_id,
             mock_initialize_page_data,
             mock_runpy):
 
@@ -583,11 +580,6 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
         # question_data exists in page_data.data()
         # thus won't run initialize_page_data()
         self.assertEqual(mock_initialize_page_data.call_count, 0)
-
-        # with the same content, won't run get_or_create_template_hash_id()
-        self.assertEqual(mock_get_template_hash_id.call_count, 0)
-        # or
-        # six.assertCountEqual(self, mock_get_template_hash_id.call_args_list, [])
 
         # with the same content, won't run jinja_runpy()
         self.assertEqual(mock_runpy.call_count, 0)
