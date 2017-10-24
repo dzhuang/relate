@@ -35,6 +35,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "test_media")
 
 RELATE_MONGODB_NAME = "test_learningwhat_mongodb"
 
+# don't configure this for production!
+RELATE_MONGO_CLIENT_PATH = "mongomock.MongoClient"
+
 RELATE_LATEX_SETTINGS = {
     "latex": {
         "RELATE_LATEX_DATAURI_MONGO_COLLECTION_NAME":

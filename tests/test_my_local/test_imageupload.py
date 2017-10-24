@@ -587,11 +587,7 @@ class ImageUploadPageTest(ImageUploadQuizMixin, TestCase):
 
     def test_get_image_grade_page(self):
         page_id = "one_image"
-        grade_page_url =  reverse(
-            "relate-grade_flow_page",
-            kwargs={"course_identifier": self.course.identifier,
-                    "flow_session_id": FlowSession.objects.first().pk,
-                    "page_ordinal": self.get_ordinal_via_page_id(page_id)})
+        grade_page_url =  self.get_page_grading_url_by_page_id(page_id)
         self.c.force_login(self.ta_participation.user)
         resp = self.c.get(grade_page_url)
         self.assertEqual(resp.status_code, 200)

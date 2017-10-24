@@ -23,6 +23,14 @@ def _skip_test():
     if uri is not None:
         return True
 
+    from plugins.latex.utils import get_mongo_db
+    import mongomock
+    if not isinstance(get_mongo_db(), mongomock.database.Database):
+        print("To protected your production data for being deleted by "
+              "tests, you must configure the test RELATE_MONGO_CLIENT_PATH "
+              "with a directory named 'mongomock.MongoClient', otherwise the "
+              "tests will be skipped!")
+
     if platform.node() in TEST_NODES:
         if os.path.split(settings.SENDFILE_ROOT)[-1] == "test_protected":
             return False
@@ -31,6 +39,7 @@ def _skip_test():
                   "tests, you must configure the test SENDFILE_ROOT "
                   "with a directory named 'test_protected', otherwise the "
                   "tests will be skipped!")
+
     return True
 
 skip_test = _skip_test()

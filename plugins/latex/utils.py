@@ -39,13 +39,12 @@ from django.utils.encoding import (
     DEFAULT_LOCALE_ENCODING, force_text)
 from django.conf import settings
 
-from pymongo import MongoClient
-
 
 # {{{ mypy
 
 if False:
     from typing import Any, Text, List, Tuple, Optional  # noqa
+    from pymongo import MongoClient  # noqa
 
 # }}}
 
@@ -422,6 +421,14 @@ def get_mongo_db(database=None):
     uri = getattr(settings, "RELATE_MONGO_URI", None)
     if uri:
         args.append(uri)
+    relate_mongo_client_path = (
+        getattr(settings, "RELATE_MONGO_CLIENT_PATH", None))
+    if relate_mongo_client_path:
+        from django.utils.module_loading import import_string
+        MongoClient = import_string(relate_mongo_client_path)
+    else:
+        from pymongo import MongoClient
+
     client = MongoClient(*args, connect=False)
     db = client[database]
     return db

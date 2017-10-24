@@ -39,7 +39,7 @@ from .utils import skip_test, SKIP_LOCAL_TEST_REASON
 from ..utils import mock, LocmemBackendTestsMixin
 import zipfile
 from six import BytesIO
-from pymongo import MongoClient
+#from pymongo import MongoClient
 
 from unittest import skipIf
 from copy import deepcopy
@@ -48,6 +48,7 @@ from django.urls import reverse, resolve
 from django.core import mail
 from django.test import TestCase
 from django.contrib import messages
+from django.utils.module_loading import import_string
 
 from django.test.utils import override_settings
 from django.test import SimpleTestCase
@@ -59,6 +60,7 @@ from relate.utils import is_windows_platform, is_osx_platform
 from course.constants import participation_status
 from course.models import FlowSession, FlowPageData, FlowPageVisit
 from image_upload.models import FlowPageImage
+from collections import OrderedDict
 
 import docker.tls
 import warnings
@@ -77,7 +79,9 @@ from .sources import latex_sandbox
 from .test_imageupload import MY_SINGLE_COURSE_SETUP_LIST
 from image_upload.page.latexpage import (
     get_latex_page_mongo_collection as latex_page_collection,
-    get_latex_page_commitsha_template_pair_collection as latex_page_sha_collection)
+    get_latex_page_commitsha_template_pair_collection as latex_page_sha_collection,
+    get_latex_page_part_mongo_collection as latex_page_part_collection
+)
 import pprint
 pp = pprint.PrettyPrinter(indent=4)
 
@@ -142,15 +146,22 @@ class LatexPageMixin(SingleCoursePageTestMixin, FallBackStorageMessageTestMixin)
                 pp.pprint(doc[doc_field])
 
     def drop_test_mongo(self):
-        mongo_db_name = getattr(settings, "RELATE_MONGODB_NAME", None)
+        mongo_db_name = getattr(settings, "RELATE_MONGODB_NAME", 'test_mongo_db')
         assert mongo_db_name
         assert mongo_db_name.startswith("test_")
         uri = getattr(settings, "RELATE_MONGO_URI", None)
         assert uri is None
+        from plugins.latex.utils import get_mongo_db
+        import mongomock
+        assert isinstance(get_mongo_db(), mongomock.database.Database), (
+            'You must configure "RELATE_MONGO_CLIENT_PATH = '
+            '\'mongomock.MongoClient\' for unit test')
 
         def drop_mongo():
-            client = MongoClient()
-            client.drop_database(mongo_db_name)
+            from image_upload.page.latexpage import DB
+            db = DB
+            for col in db.collection_names(include_system_collections=False):
+                db.drop_collection(col)
         drop_mongo()
 
 
@@ -263,6 +274,49 @@ class LatexPageSandboxTest(SingleCoursePageSandboxTestBaseMixin, LatexPageMixin,
         self.assertSandboxHaveValidPage(resp)
         self.assertSandboxResponseContextEqual(resp, PAGE_ERRORS, None)
         self.assertSandboxResponseContextEqual(resp, PAGE_WARNINGS, [])
+
+    def test_latexpage_sandbox_answer_success(self):
+        answer_data = {'blank1': ["(5/4, 19/4, 3/2)^T"]}
+        resp = self.get_page_sandbox_submit_answer_response(
+            markup_content=latex_sandbox.LATEX_BLANK_FILLING_PAGE,
+            answer_data=answer_data)
+        self.assertEqual(resp.status_code, 200)
+        result_correctness = resp.context.__getitem__("feedback").correctness
+        self.assertEquals(int(result_correctness), 1)
+
+        answer_data = {'blank1': ["(0, 0, 0)"]}
+        resp = self.get_page_sandbox_submit_answer_response(
+            markup_content=latex_sandbox.LATEX_BLANK_FILLING_PAGE,
+            answer_data=answer_data)
+        result_correctness = resp.context.__getitem__("feedback").correctness
+        self.assertEquals(int(result_correctness), 0)
+
+    def test_latexpage_sandbox_old_style_preview_success(self):
+        resp = self.get_page_sandbox_preview_response(
+            latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS)
+        self.assertEqual(resp.status_code, 200)
+        self.assertSandboxHaveValidPage(resp)
+        self.assertSandboxResponseContextEqual(resp, PAGE_ERRORS, None)
+        self.assertSandboxWarningTextContain(
+            resp, "LatexRandomCodeInlineMultiQuestion not using attribute "
+                  "'runpy_file' is for debug only, it should not be used "
+                  "in production.")
+
+    def test_latexpage_sandbox_old_style_answer_success(self):
+        answer_data = {'blank1': ["(5/4, 19/4, 3/2)^T"]}
+        resp = self.get_page_sandbox_submit_answer_response(
+            markup_content=latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS,
+            answer_data=answer_data)
+        self.assertEqual(resp.status_code, 200)
+        result_correctness = resp.context.__getitem__("feedback").correctness
+        self.assertEquals(int(result_correctness), 1)
+
+        answer_data = {'blank1': ["(0, 0, 0)"]}
+        resp = self.get_page_sandbox_submit_answer_response(
+            markup_content=latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS,
+            answer_data=answer_data)
+        result_correctness = resp.context.__getitem__("feedback").correctness
+        self.assertEquals(int(result_correctness), 0)
 
     def test_latexpage_sandbox_data_files_missing_random_question_data_file(self):
         resp = self.get_page_sandbox_preview_response(
@@ -557,6 +611,66 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
         return FlowPageData.objects.get(
             flow_session=FlowSession.objects.first(), page_id=page_id)
 
+    def test_runpy_with_question_data_missing(self):
+        # raise an error when question_data is missing
+        self.clear_cache()
+        page_data = self.get_page_data()
+
+        # key_making_string_md5 needs to be deleted because
+        # key_making_string_md5 by question data
+        del page_data.data["key_making_string_md5"]
+        del page_data.data["question_data"]
+        page_data.save()
+
+        resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "'question_data' is missing in page_data.")
+        self.c.get(self.get_page_grading_url_by_page_id(self.page_id))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_runpy_with_question_data_missing_after_submission(self):
+        # raise an error when question_data is missing
+
+        self.client_post_answer_by_page_id(
+            self.page_id, {"blank1": ["(5/4,19/4,3/2)^T"]})
+        self.end_quiz()
+
+        self.clear_cache()
+        page_data = self.get_page_data()
+
+        # key_making_string_md5 needs to be deleted because
+        # key_making_string_md5 by question data
+        del page_data.data["key_making_string_md5"]
+        del page_data.data["question_data"]
+        page_data.save()
+
+        resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "'question_data' is missing in page_data.")
+        self.c.get(self.get_page_grading_url_by_page_id(self.page_id))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_runpy_with_key_making_string_md5_missing(self):
+        # the page can be rendered even key_making_string_md5 and template_hash
+        # and template_hash_id is not available
+        self.clear_cache()
+        self.drop_test_mongo()
+        page_data = self.get_page_data()
+        del page_data.data["template_hash"]
+        del page_data.data["key_making_string_md5"]
+        del page_data.data["template_hash_id"]
+        page_data.save()
+
+        resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
+        self.assertEqual(resp.status_code, 200)
+
+        resp = self.client_post_answer_by_page_id(
+            self.page_id, {"blank1": ["(5/4,19/4,3/2)^T"]})
+        self.assertResponseMessagesContains(resp, MESSAGE_ANSWER_SAVED_TEXT)
+        self.assertEqual(resp.status_code, 200)
+        self.end_quiz()
+        self.assertSessionScoreEqual(1)
+
     # {{{ tests for a page which changed commit_sha
     # while content of the page does not change
 
@@ -627,6 +741,19 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
         self.c.get(self.get_page_url_by_page_id(self.page_id))
 
         self.assertEqual(mock_initialize_page_data.call_count, 1)
+
+    def test_commit_sha_changed_content_not_changed_invalid_template_hash_id(self):
+        # simulate that the template_hash_id is invalid
+        invalid_template_hash_id = "invalid_id"
+        page_data = self.get_page_data()
+        page_data.data["template_hash_id"] = invalid_template_hash_id
+        page_data.save()
+        self.update_course_to_commit_sha(self.commit_sha_with_same_content)
+        resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
+        self.assertEqual(resp.status_code, 200)
+        new_page_data = self.get_page_data()
+        self.assertNotEqual(new_page_data.data["template_hash_id"],
+                            invalid_template_hash_id)
 
     @mock.patch(
         "image_upload.page.latexpage.LatexRandomQuestionBase.initialize_page_data")

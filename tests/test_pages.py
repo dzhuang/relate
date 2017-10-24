@@ -360,13 +360,6 @@ class SingleCourseQuizPageGradeInterfaceTest(LocmemBackendTestsMixin,
         self.start_quiz(self.flow_id)
         self.submit_any_upload_question()
 
-    def get_grading_page_url_by_page_id(self, flow_session_id, page_id):
-        return reverse(
-            "relate-grade_flow_page",
-            kwargs={"course_identifier": self.course.identifier,
-                    "flow_session_id": flow_session_id,
-                    "page_ordinal": self.get_ordinal_via_page_id(page_id)})
-
     def submit_any_upload_question_null_failure(self):
         self.client_post_answer_by_page_id(
             "anyup", {"uploaded_file": []})
@@ -382,7 +375,7 @@ class SingleCourseQuizPageGradeInterfaceTest(LocmemBackendTestsMixin,
         post_data = {"submit": [""]}
         post_data.update(grade_data)
         resp = self.c.post(
-            self.get_grading_page_url_by_page_id(flow_session_id, page_id),
+            self.get_page_grading_url_by_page_id(page_id),
             data=post_data,
             follow=True)
         return resp

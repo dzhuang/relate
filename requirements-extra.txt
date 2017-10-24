@@ -62,3 +62,6 @@ atomicwrites
 
 # for minify python script
 pyminifier
+
+# for tests of mongodb
+mongomock

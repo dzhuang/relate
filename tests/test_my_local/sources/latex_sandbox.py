@@ -693,3 +693,126 @@ answers:\r
 answer_explanation: |\r
     行向量不应有转置符，列向量应有.\r
 """
+
+
+LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS = """
+type: LatexRandomCodeInlineMultiQuestion\r
+id: lp_dual_complimentary_slack1\r
+value: 3\r
+access_rules:\r
+    remove_permissions:\r
+        - send_email_about_flow_page\r
+prompt: |\r
+    # 互补松弛定理的应用\r
+data_files:\r
+    - question-data/linear-programming/dual-theory/lp_simplex_3_iter_max_min_complimentary_slack_01.bin\r
+    - question-data/linear-programming/lpmodel.py\r
+    - question-data/linear-programming/linprog.py\r
+    - question-data/jinja_env.py\r
+    - question-data/linear-programming/dual-theory/lp_dual_complementary_slack.tex\r
+excluded_cache_key_files:\r
+    - question-data/linear-programming/lpmodel.py\r
+    - question-data/linear-programming/linprog.py\r
+random_question_data_file: question-data/linear-programming/dual-theory/lp_simplex_3_iter_max_min_complimentary_slack_01.bin\r
+background_code: |\r
+    from io import BytesIO\r
+    from copy import deepcopy\r
+    linprog = data_files["question-data/linear-programming/linprog.py"].decode("utf8")\r
+    exec(linprog)\r
+    lpmodel = data_files["question-data/linear-programming/lpmodel.py"].decode("utf8")\r
+    exec(lpmodel)\r
+    jinja_env = data_files["question-data/jinja_env.py"].decode("utf8")\r
+    exec(jinja_env)\r
+    latex_template = data_files["question-data/linear-programming/dual-theory/lp_dual_complementary_slack.tex"].decode("utf8")\r
+    template = latex_jinja_env.from_string(latex_template)\r
+    import pickle\r
+    bio = BytesIO(data_files["question_data"])\r
+    try:\r
+        l = pickle.load(bio)\r
+        import json\r
+        l = json.loads(l)\r
+        #print(l)\r
+    except Exception as e:\r
+        print("%s:%s" % (type(e).__name__, str(e)))\r
+    if l["qtype"] == "min":\r
+        l["qtype"] = "max"\r
+        l["goal"] = [float(i)*(-1) for i in l["goal"]]\r
+    lp = LP(**l)\r
+    lp.solve(method="simplex")\r
+    use_prime_result=False\r
+    after_description=(\r
+        u"的最优解是$%s = (%s)^T$，" % (r"(%s)^T" % ",\,".join(lp.opt_x), ",\,". join(lp.opt_value),)\r
+        +\r
+        u"则该问题的<strong>对偶问题</strong>的<strong>最优解</strong>是:")\r
+    blank_description = (\r
+        "$(%s)=$"\r
+        % ",\,".join(["y^*_{%s}" % str(idx + 1) for idx in range(len(lp.dual_opt_solution_list[0]))])\r
+    )\r
+    answer1 = "(%s)" % ",".join(lp.dual_opt_solution_list[0])\r
+    if not use_prime_result:\r
+        after_description = (\r
+            u"的对偶问题最优解是$(%s) = (%s)$，" % (\r
+                ",\,".join(["y^*_{%s}" % str(idx + 1) for idx in range(len(lp.dual_opt_solution_list[0]))]),\r
+                ",\,".join(lp.dual_opt_solution_str_list[0]))\r
+            +\r
+            u"则该问题的<strong>最优解</strong>是：")\r
+        blank_description = (\r
+            "$%s=$"\r
+            % (r"(%s)^T" % ",\,".join(lp.opt_x),)\r
+        )\r
+        answer1 = "(%s)^T" % ",".join(lp.opt_value_without_frac)\r
+question_process_code: |\r
+    tex = template.render(\r
+        show_question=True,\r
+        show_answer=False,\r
+        pre_description=u"已知线性规划问题",\r
+        after_description=after_description,\r
+        lp=lp,\r
+    )\r
+    print(tex)\r
+blank_process_code: |\r
+    tex = template.render(\r
+        show_question=False,\r
+        show_answer=False,\r
+        after_description=after_description,\r
+        blank_description=blank_description,\r
+        show_blank=True,\r
+        lp=lp,\r
+    )\r
+    print(tex)\r
+blank_answer_process_code: |\r
+    tex = template.render(\r
+        show_question=False,\r
+        show_answer=False,\r
+        show_blank_answer=True,\r
+        blank_description=blank_description,\r
+        lp=lp,\r
+        answer1= answer1,\r
+        forced_left_wrapper='["("]',\r
+        forced_right_wrapper='[")", ")^T"]',\r
+    )\r
+    print(tex)\r
+question: |\r
+    The float weight of $\\frac{1}{5}$ is [[blank_1]].\r
+answers:\r
+    blank_1:\r
+        type: ShortAnswer\r
+        width: 10em\r
+        hint: <p><strong>输入格式示例:</strong></p><ul><li>(1,2,3,4)</li><li>(1,2,3,4,5)^T</li></ul><p><strong>说明：</strong><ol><li>必须使用英文输入法输入；<li>输入必须是解向量的形式，即用圆括号包围；</li><li>如果需要转置，需要在末尾加上<strong>^T</strong>表示转置.</li></ol>\r
+        correct_answer:\r
+        - type: float_list_with_wrapper\r
+          forced_left_wrapper: ["("]\r
+          forced_right_wrapper: [")", ")^T"]\r
+          atol: 0.0001\r
+          rtol: 0.0001\r
+          value: "(1,2,3,4)"\r
+        - type: float_list_with_wrapper\r
+          forced_left_wrapper: ["("]\r
+          forced_right_wrapper: [")", ")^T"]\r
+          atol: 0.0001\r
+          rtol: 0.0001\r
+          value: "(1,2,3)^T"\r
+answer_explanation: |\r
+    行向量不应有转置符，列向量应有.\r
+
+"""

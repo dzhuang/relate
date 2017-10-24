@@ -389,9 +389,23 @@ class SingleCoursePageTestMixin(SingleCourseTestMixin):
         return reverse("relate-view_flow_page", kwargs=page_params)
 
     @classmethod
+    def get_page_grading_url_by_ordinal(cls, page_ordinal, flow_session_id=None):
+        page_params = cls.get_page_params_by_ordinal(page_ordinal)
+        del page_params["ordinal"]
+        page_params["page_ordinal"] = page_ordinal
+        if flow_session_id:
+            page_params["flow_session_id"] = flow_session_id
+        return reverse("relate-grade_flow_page", kwargs=page_params)
+
+    @classmethod
     def get_page_url_by_page_id(cls, page_id):
         page_ordinal = cls.get_ordinal_via_page_id(page_id)
         return cls.get_page_url_by_ordinal(page_ordinal)
+
+    @classmethod
+    def get_page_grading_url_by_page_id(cls, page_id, flow_session_id=None):
+        page_ordinal = cls.get_ordinal_via_page_id(page_id)
+        return cls.get_page_grading_url_by_ordinal(page_ordinal, flow_session_id)
 
     @classmethod
     def client_post_answer_by_page_id(cls, page_id, answer_data):

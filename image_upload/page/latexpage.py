@@ -748,7 +748,21 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         try:
             key_making_string_md5 = page_data["key_making_string_md5"]
         except KeyError:
-            _, updated_page_data = self.update_page_data(page_context, page_data)
+            # the page can be rendered even key_making_string_md5 and template_hash
+            # and template_hash_id is not available
+            if page_data.get("question_data") is None:
+                from course.page import InvalidPageData
+                error = string_concat(
+                    _("The page data stored in the database was found "
+                      "to be invalid for the page as given in the "
+                      "course content. Likely the course content was "
+                      "changed in an incompatible way (say, by adding "
+                      "an option to a choice question) without changing "
+                      "the question ID. The precise error encountered "
+                      "was the following: "),
+                      _("'question_data' is missing in page_data."))
+                return False, error
+            updated_page_data = self.update_page_data(page_context, page_data)[1]
             key_making_string_md5 = (
                 updated_page_data["key_making_string_md5"])
 
