@@ -33,54 +33,33 @@ THE SOFTWARE.
 """
 
 import six
-import os
-import json
-from .utils import skip_test, SKIP_LOCAL_TEST_REASON
-from ..utils import mock, LocmemBackendTestsMixin
-import zipfile
-from six import BytesIO
-#from pymongo import MongoClient
-
 from unittest import skipIf
 from copy import deepcopy
+import pprint
+
 from django.conf import settings
-from django.urls import reverse, resolve
 from django.core import mail
 from django.test import TestCase
-from django.contrib import messages
-from django.utils.module_loading import import_string
-
 from django.test.utils import override_settings
-from django.test import SimpleTestCase
-from course.docker.config import (
-    get_docker_client_config, get_relate_runpy_docker_client_config)
-
 from django.core.exceptions import ImproperlyConfigured
-from relate.utils import is_windows_platform, is_osx_platform
-from course.constants import participation_status
-from course.models import FlowSession, FlowPageData, FlowPageVisit
-from image_upload.models import FlowPageImage
-from collections import OrderedDict
+from course.models import FlowSession, FlowPageData
 
-import docker.tls
-import warnings
-
-from ..base_test_mixins import (
-    SINGLE_COURSE_SETUP_LIST, SingleCoursePageTestMixin,
-    FallBackStorageMessageTestMixin, NONE_PARTICIPATION_USER_CREATE_KWARG_LIST,
-    force_remove_path
-)
-
-from ..test_pages import MESSAGE_ANSWER_SAVED_TEXT, MESSAGE_ANSWER_FAILED_SAVE_TEXT
-from ..test_sandbox import (
-    SingleCoursePageSandboxTestBaseMixin, PAGE_WARNINGS, PAGE_ERRORS)
-from .mixins import ImageUploadStorageTestMixin
-from .sources import latex_sandbox
-from .test_imageupload import MY_SINGLE_COURSE_SETUP_LIST
 from image_upload.page.latexpage import (
     get_latex_page_mongo_collection as latex_page_collection,
     get_latex_page_commitsha_template_pair_collection as latex_page_sha_collection)
-import pprint
+
+from ..base_test_mixins import (
+    SingleCoursePageTestMixin, FallBackStorageMessageTestMixin)
+
+from .utils import skip_test, SKIP_LOCAL_TEST_REASON
+from ..utils import mock, LocmemBackendTestsMixin
+from ..test_pages import MESSAGE_ANSWER_SAVED_TEXT, MESSAGE_ANSWER_FAILED_SAVE_TEXT
+from ..test_sandbox import (
+    SingleCoursePageSandboxTestBaseMixin, PAGE_WARNINGS, PAGE_ERRORS)
+from .sources import latex_sandbox
+from .test_imageupload import MY_SINGLE_COURSE_SETUP_LIST
+
+
 pp = pprint.PrettyPrinter(indent=4)
 
 def disable_cache():
@@ -121,7 +100,8 @@ class LatexPageMixin(SingleCoursePageTestMixin, FallBackStorageMessageTestMixin)
     def latex_page_commitsha_mongo_items_count(self):
         return latex_page_sha_collection().count()
 
-    def debug_print_latex_page_commitsha_mongo_collection(self, filter=None, compact=False):
+    def debug_print_latex_page_commitsha_mongo_collection(
+            self, filter=None, compact=False):
         if filter is None:
             filter = {}
         cursor = latex_page_sha_collection().find(filter)
@@ -132,7 +112,8 @@ class LatexPageMixin(SingleCoursePageTestMixin, FallBackStorageMessageTestMixin)
     def latex_page_mongo_items_count(self):
         return latex_page_collection().count()
 
-    def debug_print_latex_page_mongo_collection(self, filter=None, doc_field="full", compact=False):
+    def debug_print_latex_page_mongo_collection(
+            self, filter=None, doc_field="full", compact=False):
         if filter is None:
             filter = {}
         cursor = latex_page_collection().find(filter)
@@ -509,6 +490,42 @@ fake_jinja_runpy_success_return_value = {
         '    - type: float_list_with_wrapper\n'
         '      forced_left_wrapper: ["("]\n'
         '      forced_right_wrapper: [")", ")^T"]\n'
+        '      force_wrapper_percentage_list: [0, 0.3]\n'
+        '      list_item_average_percentage: True\n'
+        '      rtol: 0.01\n'
+        '      atol: 0.01\n'
+        '      value: "(5/4,19/4,3/2)^T"\n'
+        '\n'),
+    'question': (
+        '$$\\begin{alignat*}{20}\n'
+        '\\max \\quad & \\rlap{Z = x_{1}+4x_{2}+5x_{3}}\\\\\n'
+        '\\text{s.t.}\\quad\n'
+        '&& x_{1}&{}+{}& x_{2}&{}{}&&&{}\\leqslant{}&6\\\\\n'
+        '&&\\mbox{$-$}x_{1}&{}+{}& '
+        'x_{2}&{}+{}&3x_{3}&&{}\\leqslant{}&8\\\\\n'
+        '&&3x_{1}&{}+{}& x_{2}&{}+{}& x_{3}&&{}\\leqslant{}&10\\\\\n'
+        '\\rlap{x_{1},x_{2},x_{3}\\geqslant 0}\n'
+        '\\end{alignat*}$$\n'
+        '\n')
+}
+
+
+# force_right_wrapper wrong identation
+fake_jinja_runpy_success_bad_formatted_return_value = {
+    'answer_explanation': (
+        '\n\n\nOne correct answer is: $(5/4,19/4,3/2)^T$\n'),
+    'blank': (
+        '\n$(x_{1}^{*},\\,x_{2}^{*},\\,x_{3}^{*})^T=$[[blank1]]\n'),
+    'blank_answer': (
+        '\n'
+        '\n'
+        'blank1:\n'
+        '    type: ShortAnswer\n'
+        '    width: 10em\n'
+        '    correct_answer:\n'
+        '    - type: float_list_with_wrapper\n'
+        '      forced_left_wrapper: ["("]\n'
+        '    forced_right_wrapper: [")", ")^T"]\n'
         '      force_wrapper_percentage_list: [0, 0.3]\n'
         '      list_item_average_percentage: True\n'
         '      rtol: 0.01\n'
@@ -907,6 +924,11 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
     # }}}
 
 
+def jinja_runpy_failure_side_effect(self, page_context,
+                                    question_data, code_name, common_code_name=""):
+    raise RuntimeError("This is a test exception.")
+
+
 @skipIf(skip_test, SKIP_LOCAL_TEST_REASON)
 @override_settings(
     CACHE_BACKEND='dummy:///')
@@ -941,23 +963,70 @@ class LatexPageRunpyFailureTest(
         with mock.patch(
             "image_upload.page.latexpage.LatexRandomQuestionBase.jinja_runpy",
             return_value=(True, fake_jinja_runpy_success_return_value)
-        ) as mock_request_python_run:
+        ) as mock_jinja_runpy:
 
             resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
             self.assertEqual(resp.status_code, 200)
-            self.assertEqual(mock_request_python_run.call_count, 1)
+            self.assertEqual(mock_jinja_runpy.call_count, 1)
 
             self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
             self.assertEqual(self.latex_page_mongo_items_count(), 2)
 
             self.assertEqual(len(mail.outbox), 0)
 
+    def test_switch_to_course_commit_sha_with_bad_result(self):
+        self.clear_cache()
+        self.update_course_to_commit_sha(self.commit_sha_with_different_content)
+        self.assertEqual(len(mail.outbox), 0)
+
+        with mock.patch(
+            "image_upload.page.latexpage.LatexRandomQuestionBase.jinja_runpy",
+            return_value=(True, fake_jinja_runpy_success_bad_formatted_return_value)
+        ) as mock_jinja_runpy:
+
+            resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
+            self.assertContains(resp, "The template failed to render, the log follows")
+            self.assertEqual(resp.status_code, 200)
+            self.assertEqual(mock_jinja_runpy.call_count, 1)
+
+            self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
+
+            # the result is saved in mongodb because it is rendered after save
+            self.assertEqual(self.latex_page_mongo_items_count(), 2)
+
+            # Todo: email the exception
+            self.assertEqual(len(mail.outbox), 1)
+            #self.debug_print_email_messages(0)
+
+    def test_runpy_raised_error(self):
+        self.clear_cache()
+        self.update_course_to_commit_sha(self.commit_sha_with_different_content)
+        self.assertEqual(len(mail.outbox), 0)
+
+        with mock.patch(
+            "image_upload.page.latexpage.LatexRandomQuestionBase.jinja_runpy",
+            side_effect=jinja_runpy_failure_side_effect, autospec=True
+        ) as mock_jinja_runpy:
+
+            resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
+            self.assertEqual(resp.status_code, 200)
+            self.assertEqual(mock_jinja_runpy.call_count, 1)
+
+            self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
+            self.assertEqual(self.latex_page_mongo_items_count(), 1)
+
+            self.assertEqual(len(mail.outbox), 1)
+            #self.debug_print_email_messages(0)
+            expected_error_str = "RuntimeError: This is a test exception."
+            self.assertContains(resp, expected_error_str)
+
     def test_switch_to_failure_course_commit_sha(self):
         self.clear_cache()
         self.update_course_to_commit_sha(self.commit_sha_with_different_content)
         self.assertEqual(len(mail.outbox), 0)
 
-        with mock.patch("image_upload.page.latexpage.MAX_JINJIA_RETRY", 2) as mock_max_jinja_retry:
+        with mock.patch("image_upload.page.latexpage.MAX_JINJIA_RETRY", 2)\
+                as mock_max_jinja_retry:
             with mock.patch(
                 "image_upload.page.latexpage.request_python_run_with_retries",
                 return_value=fake_request_python_run_with_retries_return_value
@@ -966,7 +1035,8 @@ class LatexPageRunpyFailureTest(
                 resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
                 self.assertEqual(resp.status_code, 200)
 
-                self.assertEqual(mock_request_python_run_with_retries.call_count, mock_max_jinja_retry)
+                self.assertEqual(mock_request_python_run_with_retries.call_count,
+                                 mock_max_jinja_retry)
 
                 self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
 
@@ -979,7 +1049,8 @@ class LatexPageRunpyFailureTest(
                 question_data = new_data["question_data"]
 
                 from image_upload.page.latexpage import (
-                    make_latex_page_key, get_latex_cache, get_key_making_string_md5_hash)
+                    make_latex_page_key, get_latex_cache,
+                    get_key_making_string_md5_hash)
 
                 key_making_string_md5 = get_key_making_string_md5_hash(
                     template_hash, question_data)

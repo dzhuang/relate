@@ -477,6 +477,7 @@ prompt: |\r
 data_files:\r
     - "question-data/linear-programming/dual-theory/lp_simplex_3_iter_max_min_complimentary_slack_01.bin"\r
     - "question-data/linear-programming/dual-theory/lp_dual_complimentary_slack-runpy.py"\r
+    - question-data/some_file
 random_question_data_file: "question-data/linear-programming/dual-theory/lp_simplex_3_iter_max_min_complimentary_slack_01.bin"\r
 runpy_file: "question-data/linear-programming/dual-theory/lp_dual_complimentary_slack-runpy.py"\r
 runpy_context: 

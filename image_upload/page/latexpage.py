@@ -770,8 +770,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     assert isinstance(result, dict)
                 else:
                     assert isinstance(result, six.text_type)
-                if warm_up_only:
-                    return True, result
                 debug_print("===result is in cache===")
                 return True, result
 
@@ -791,7 +789,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             else:
                 result = mongo_page_result[part].decode("utf-8")
             assert result is not None
-            debug_print("===result is find in page mongo===!")
+            debug_print("===result is found in page mongo===!")
             success = True
 
         if result is None:
@@ -807,8 +805,14 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     page_data["question_data"],
                     "%s_process_code" % part,
                     **runpy_kwargs)
-            except TypeError as e:
-                return False, "%s: %s" % (type(e).__name__, str(e))
+            except Exception as e:
+                from traceback import format_exc
+                error_msg = "".join(format_exc())
+                # error_msg = "%s: %s" % (type(e).__name__, str(e))
+                message = self.get_error_notification_email_messages(page_context,
+                                                                     error_msg)
+                self.send_error_notification_email(page_context, message)
+                return False, error_msg
 
             assert result is not None
 
@@ -836,7 +840,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 except DuplicateKeyError:
                     pass
         else:
-            debug_print("===result is find in page mongo===")
+            debug_print("===result is found in page mongo===")
 
         if cache_key is None:
             return success, result
@@ -907,6 +911,47 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         return super(LatexRandomQuestionBase, self).body(page_context, page_data)\
                + markup_to_html(page_context, question_str)
+
+    def send_error_notification_email(self, page_context, message):
+        from django.core.mail import EmailMessage
+        from django.utils import translation
+        with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
+            msg = EmailMessage(
+                "".join(["[%(course)s] ",
+                         _("LaTex page failed in "
+                           "user %(user)s's session")])
+                % {"course": page_context.course.identifier,
+                   "user":
+                       (page_context.flow_session.participation
+                        .user.username),
+                   },
+                message,
+                settings.ROBOT_EMAIL_FROM,
+                [page_context.course.notify_email])
+
+            from relate.utils import get_outbound_mail_connection
+            msg.connection = get_outbound_mail_connection("robot")
+            if not getattr(settings, "DEBUG") and not page_context.in_sandbox:
+                msg.send()
+
+    def get_error_notification_email_messages(self, page_context, error_msg):
+        from django.utils import translation
+        from relate.utils import local_now, format_datetime_local
+        with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
+            from django.template.loader import render_to_string
+            message = render_to_string(
+                "image_upload/broken-random-latex-question-email.txt",
+                {
+                    "site": getattr(settings, "RELATE_BASE_URL"),
+                    "username":
+                        page_context.flow_session.participation.user.username,
+                    "page_id": self.page_desc.id,
+                    "course": page_context.course,
+                    "error_message": error_msg,
+                    "review_uri": page_context.page_uri,
+                    "time": format_datetime_local(local_now())
+                })
+            return message
 
     def jinja_runpy(
             self, page_context, question_data, code_name, common_code_name=""):
@@ -1002,72 +1047,41 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             #else:
 
             from course.page.code import is_nuisance_failure
-            from django.utils import translation
-            from relate.utils import local_now, format_datetime_local
-            with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
-                from django.template.loader import render_to_string
-                message = render_to_string(
-                    "image_upload/broken-random-latex-question-email.txt",
-                    {
-                        "site": getattr(settings, "RELATE_BASE_URL"),
-                        "username":
-                            page_context.flow_session.participation.user.username,
-                        "page_id": self.page_desc.id,
-                        "course": page_context.course,
-                        "error_message": error_msg,
-                        "review_uri": page_context.page_uri,
-                        "time": format_datetime_local(local_now())
-                    })
+            message = self.get_error_notification_email_messages(page_context,
+                                                                 error_msg)
 
-                if (not page_context.in_sandbox
-                    and
-                        not is_nuisance_failure(response_dict)):
-                    try:
-                        from django.core.mail import EmailMessage
-                        msg = EmailMessage(
-                            "".join(["[%(course)s] ",
-                                     _("LaTex page failed in "
-                                       "user %(user)s's session")])
-                            % {"course": page_context.course.identifier,
-                               "user":
-                                   (page_context.flow_session.participation
-                                    .user.username),
-                               },
-                            message,
-                            settings.ROBOT_EMAIL_FROM,
-                            [page_context.course.notify_email])
+            if (not page_context.in_sandbox
+                and
+                    not is_nuisance_failure(response_dict)):
+                try:
+                    self.send_error_notification_email(page_context, message)
 
-                        from relate.utils import get_outbound_mail_connection
-                        msg.connection = get_outbound_mail_connection("robot")
-                        if not getattr(settings, "DEBUG"):
-                            msg.send()
+                except Exception:
+                    from traceback import format_exc
+                    feedback_bits.append(
+                        six.text_type(string_concat(
+                            "<p>",
+                            _(
+                                "Both the code and the attempt to "
+                                "notify course staff about the issue "
+                                "failed. "
+                                "Please contact the course or site staff "
+                                "and inform them of this issue, "
+                                "mentioning this "
+                                "entire error message:"),
+                            "</p>",
+                            "<p>",
+                            _(
+                                "Sending an email to the course staff "
+                                "about the following failure failed with "
+                                "the following error message:"),
+                            "<pre>",
+                            "".join(format_exc()),
+                            "</pre>",
+                            _("The original failure message follows:"),
+                            "</p>")))
 
-                    except Exception:
-                        from traceback import format_exc
-                        feedback_bits.append(
-                            six.text_type(string_concat(
-                                "<p>",
-                                _(
-                                    "Both the code and the attempt to "
-                                    "notify course staff about the issue "
-                                    "failed. "
-                                    "Please contact the course or site staff "
-                                    "and inform them of this issue, "
-                                    "mentioning this "
-                                    "entire error message:"),
-                                "</p>",
-                                "<p>",
-                                _(
-                                    "Sending an email to the course staff "
-                                    "about the following failure failed with "
-                                    "the following error message:"),
-                                "<pre>",
-                                "".join(format_exc()),
-                                "</pre>",
-                                _("The original failure message follows:"),
-                                "</p>")))
-
-                        # }}}
+                    # }}}
 
         from relate.utils import dict_to_struct
         response = dict_to_struct(response_dict)
@@ -1117,7 +1131,15 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             )
         else:
             success = False
-            raise RuntimeError("invalid runpy result: %s" % response.result)
+            error_msg = repr(response.result)
+            feedback_bits.append("".join([
+                "<p>",
+                error_msg,
+                "</p>"])
+            )
+            message = self.get_error_notification_email_messages(page_context,
+                                                                 error_msg)
+            self.send_error_notification_email(page_context, message)
 
         if hasattr(response, "figures") and response.figures:
             fig_lines = ["".join(
@@ -1149,8 +1171,15 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 try:
                     import json
                     result_dict = json.loads(response.feedback[0])
-                except:
-                    raise
+                except Exception as e:
+                    from traceback import format_exc
+                    error_msg = "".join(format_exc())
+                    # error_msg = "%s: %s" % (type(e).__name__, str(e))
+                    message = self.get_error_notification_email_messages(
+                        page_context,
+                        error_msg)
+                    self.send_error_notification_email(page_context, message)
+                    return False, error_msg
 
                 assert result_dict
                 return success, result_dict
@@ -1240,6 +1269,7 @@ class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestio
                     break
 
             if not success:
+                # Todo: don't raise error, email and render instead
                 raise RuntimeError(blank_str_tmp)
 
             success = False
@@ -1251,6 +1281,7 @@ class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestio
                     break
 
             if not success:
+                # Todo: don't raise error, email and render instead
                 raise RuntimeError(blank_answer_str_tmp)
 
             if hasattr(self.page_desc, "answer_explanation_process_code"):
@@ -1264,6 +1295,7 @@ class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestio
                         break
 
                 if not success:
+                    # Todo: don't raise error, email and render instead
                     raise RuntimeError(answer_explanation_tmp)
 
         if answer_explanation_str:
@@ -1297,20 +1329,20 @@ class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestio
 
                 self.answer_instance_list = answer_instance_list
             except Exception as e:
-                from yaml.scanner import ScannerError
-                if isinstance(e, ScannerError):
-                    from traceback import format_exc
-                    self.error_updating_page_desc = string_concat(
-                        "<p class='latexpage-error alert alert-danger'><strong>",
-                        _("Error: "),
-                        _("The template failed to render, the log follows:"),
-                        "</strong></p>",
-                        "<div class='latexpage-error alert alert-danger'>"
-                        "<pre>%s</pre></div>"
-                        % (
-                            "".join(format_exc())))
-                else:
-                    raise
+                from traceback import format_exc
+                error_msg = "".join(format_exc())
+                self.error_updating_page_desc = string_concat(
+                    "<p class='latexpage-error alert alert-danger'><strong>",
+                    _("Error: "),
+                    _("The template failed to render, the log follows:"),
+                    "</strong></p>",
+                    "<div class='latexpage-error alert alert-danger'>"
+                    "<pre>%s</pre></div>"
+                    % (
+                        "".join(format_exc())))
+                message = self.get_error_notification_email_messages(page_context,
+                                                                     error_msg)
+                self.send_error_notification_email(page_context, message)
 
     def get_question(self, page_context, page_data):
         # template error is supposed to be raised here
