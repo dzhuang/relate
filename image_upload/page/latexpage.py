@@ -126,18 +126,6 @@ def get_latex_page_mongo_collection(name=None, db=DB, index_name="key"):
         collection.ensure_index(index_name, unique=True)
     return collection
 
-
-def get_latex_page_part_mongo_collection(name=None, db=DB, index_name="key"):
-    # type: (Optional[Text], Optional[MongoClient], Optional[Text]) -> Collection
-    # return the collection storing the page parts
-    if not name:
-        name = LATEX_PAGE_PART_COLLECTION_NAME
-    collection = db[name]  # type: ignore
-    if index_name:
-        collection.ensure_index(index_name, unique=True)
-    return collection
-
-
 def get_latex_page_commitsha_template_pair_collection(
         name=None, db=DB, index_name="template_hash"):
     # type: (Optional[Text], Optional[MongoClient], Optional[Text]) -> Collection
@@ -793,54 +781,18 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         result = None
         success = False
 
-        # read from part collection
-        mongo_page_part_result = get_latex_page_part_mongo_collection().find_one(
-            {"key": part_key}
+        # read from page collection
+        mongo_page_result = get_latex_page_mongo_collection().find_one(
+            {"key": page_key, part: {"$exists": True}}
         )
-        if mongo_page_part_result:
-            part_result = mongo_page_part_result["source"].decode("utf-8")
-            if part_result:
-                result = mongo_page_part_result["source"].decode("utf-8")
-                get_latex_page_part_mongo_collection().delete_one({"key": part_key})
+        if mongo_page_result:
+            if part == "full":
+                result = mongo_page_result[part]
             else:
-                raise RuntimeError(
-                    "Page part result %s null in Mongo with key %s"
-                    % (part, page_key))
-
-        if result is not None:
-            debug_print("===result is find in part mongo===")
-            try:
-                get_latex_page_mongo_collection().update_one(
-                    {"key": page_key, part: {"$exists": False}},
-                    {"$setOnInsert":
-                         {"key": page_key,
-                          "creation_time": local_now()
-                          },
-                     "$set": {part: result.encode('utf-8')}},
-                    upsert=True,
-                )
-            except DuplicateKeyError:
-                pass
+                result = mongo_page_result[part].decode("utf-8")
+            assert result is not None
+            debug_print("===result is find in page mongo===!")
             success = True
-        else:
-            debug_print("result is None in mongo part result")
-            # read from page collection
-            mongo_page_result = get_latex_page_mongo_collection().find_one(
-                {"key": page_key, part: {"$exists": True}}
-            )
-            if mongo_page_result:
-                if part == "full":
-                    page_result = mongo_page_result[part]
-                else:
-                    page_result = mongo_page_result[part].decode("utf-8")
-                if page_result:
-                    result = page_result
-                    debug_print("===result is find in page mongo===!")
-                    success = True
-                else:
-                    raise RuntimeError(
-                        "Page result %s null in Mongo with key %s"
-                        % (part, page_key))
 
         if result is None:
             debug_print("!!!!!! runpy !!!!!!")
@@ -855,61 +807,51 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     page_data["question_data"],
                     "%s_process_code" % part,
                     **runpy_kwargs)
-            except TypeError:
-                return False, result
+            except TypeError as e:
+                return False, "%s: %s" % (type(e).__name__, str(e))
+
+            assert result is not None
 
             if isinstance(result, six.binary_type):
                 result = result.decode("utf-8")
 
-            if success and result is not None:
+            if success:
                 if part == "full":
                     to_set = dict(
                         (pt, result[pt].encode('utf-8'))
                         for pt in result.keys())
                     to_set.update({"full": result})
-                    try:
-                        get_latex_page_mongo_collection().update_one(
-                            {"key": page_key, part: {"$exists": False}},
-                            {"$setOnInsert":
-                                 {"key": page_key,
-                                  "creation_time": local_now()
-                                  },
-                             "$set": to_set},
-                            upsert=True,
-                        )
-                    except DuplicateKeyError:
-                        pass
-
                 else:
-                    try:
-                        get_latex_page_mongo_collection().update_one(
-                            {"key": page_key, part: {"$exists": False}},
-                            {"$setOnInsert":
-                                 {"key": page_key,
-                                  "creation_time": local_now()
-                                  },
-                             "$set": {part: result.encode('utf-8')}},
-                            upsert=True,
-                        )
-                    except DuplicateKeyError:
-                        pass
+                    to_set = {part: result.encode('utf-8')}
+                try:
+                    get_latex_page_mongo_collection().update_one(
+                        {"key": page_key, part: {"$exists": False}},
+                        {"$setOnInsert":
+                             {"key": page_key,
+                              "creation_time": local_now()
+                              },
+                         "$set": to_set},
+                        upsert=True,
+                    )
+                except DuplicateKeyError:
+                    pass
         else:
             debug_print("===result is find in page mongo===")
 
         if cache_key is None:
             return success, result
 
-        assert result
+        assert result is not None
 
         def_cache = get_latex_cache(cache)
         if isinstance(result, dict):
             for pt, v in result.items():
                 if not isinstance(v, six.text_type):
                     v = six.text_type(v)
-                    part_key = "%s:%s" % (page_key, pt)
-                    if (len(v) <= (
-                            getattr(settings, "RELATE_CACHE_MAX_BYTES", 0))):
-                        def_cache.add(part_key, v)
+                part_key = "%s:%s" % (page_key, pt)
+                if (len(v) <= (
+                        getattr(settings, "RELATE_CACHE_MAX_BYTES", 0))):
+                    def_cache.add(part_key, v)
             part_key = "%s:%s" % (page_key, "full")
             if (len(result) <= (
                     getattr(settings, "RELATE_CACHE_MAX_BYTES", 0))):

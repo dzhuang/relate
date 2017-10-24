@@ -79,9 +79,7 @@ from .sources import latex_sandbox
 from .test_imageupload import MY_SINGLE_COURSE_SETUP_LIST
 from image_upload.page.latexpage import (
     get_latex_page_mongo_collection as latex_page_collection,
-    get_latex_page_commitsha_template_pair_collection as latex_page_sha_collection,
-    get_latex_page_part_mongo_collection as latex_page_part_collection
-)
+    get_latex_page_commitsha_template_pair_collection as latex_page_sha_collection)
 import pprint
 pp = pprint.PrettyPrinter(indent=4)
 
@@ -274,6 +272,8 @@ class LatexPageSandboxTest(SingleCoursePageSandboxTestBaseMixin, LatexPageMixin,
         self.assertSandboxHaveValidPage(resp)
         self.assertSandboxResponseContextEqual(resp, PAGE_ERRORS, None)
         self.assertSandboxResponseContextEqual(resp, PAGE_WARNINGS, [])
+        self.get_page_sandbox_preview_response(
+            latex_sandbox.LATEX_BLANK_FILLING_PAGE)
 
     def test_latexpage_sandbox_answer_success(self):
         answer_data = {'blank1': ["(5/4, 19/4, 3/2)^T"]}
@@ -293,7 +293,7 @@ class LatexPageSandboxTest(SingleCoursePageSandboxTestBaseMixin, LatexPageMixin,
 
     def test_latexpage_sandbox_old_style_preview_success(self):
         resp = self.get_page_sandbox_preview_response(
-            latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS)
+            latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS_MULTIPLE_DATA)
         self.assertEqual(resp.status_code, 200)
         self.assertSandboxHaveValidPage(resp)
         self.assertSandboxResponseContextEqual(resp, PAGE_ERRORS, None)
@@ -301,6 +301,13 @@ class LatexPageSandboxTest(SingleCoursePageSandboxTestBaseMixin, LatexPageMixin,
             resp, "LatexRandomCodeInlineMultiQuestion not using attribute "
                   "'runpy_file' is for debug only, it should not be used "
                   "in production.")
+        self.get_page_sandbox_preview_response(
+            latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS_MULTIPLE_DATA)
+
+        # to cover get result from mongodb
+        self.clear_cache()
+        self.get_page_sandbox_preview_response(
+            latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS_MULTIPLE_DATA)
 
     def test_latexpage_sandbox_old_style_answer_success(self):
         answer_data = {'blank1': ["(5/4, 19/4, 3/2)^T"]}
