@@ -873,9 +873,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
     def body(self, page_context, page_data):
         self.update_page_full_desc(page_context, page_data)
         if self.error_getting_updated_full_desc:
-            return markup_to_html(page_context, self.error_getting_updated_full_desc)
+            return self.error_getting_updated_full_desc
         if self.error_updating_page_desc:
-            return markup_to_html(page_context, self.error_updating_page_desc)
+            return self.error_updating_page_desc
 
         if self.updated_full_desc:
             question_str = self.updated_full_desc.get("question", "")
@@ -1195,7 +1195,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
     def correct_answer(self, page_context, page_data, answer_data, grade_data):
         if self.error_getting_updated_full_desc:
-            return markup_to_html(page_context, self.error_getting_updated_full_desc)
+            return self.error_getting_updated_full_desc
 
         CA_PATTERN = string_concat(_("A correct answer is"), ": %s.")  # noqa
         answer_str = ""

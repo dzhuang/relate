@@ -67,6 +67,7 @@ def disable_cache():
 
 
 LATEXPAGE_FLOW_ID = "latex-flow"
+LATEXPAGE_FLOW_OLD_FULL_ID = "latex-flow-old-style-full"
 
 
 class LatexPageMixin(SingleCoursePageTestMixin, FallBackStorageMessageTestMixin):
@@ -236,6 +237,83 @@ class LatexPageTest(LatexPageMixin, TestCase):
 
     def test_random(self):
         page_id = "lp_dual_complimentary_slack"
+        resp = self.c.get(self.get_page_url_by_page_id(page_id))
+        self.assertEqual(resp.status_code, 200)
+
+
+@skipIf(skip_test, SKIP_LOCAL_TEST_REASON)
+@override_settings(
+    CACHE_BACKEND='dummy:///')
+class LatexPageOldStyleFullTest(LatexPageMixin, LocmemBackendTestsMixin, TestCase):
+    courses_setup_list = MY_SINGLE_COURSE_SETUP_LIST
+    flow_id = LATEXPAGE_FLOW_OLD_FULL_ID
+
+    def setUp(self):  # noqa
+        super(LatexPageOldStyleFullTest, self).setUp()
+        self.c.force_login(self.student_participation.user)
+        self.start_quiz(self.flow_id)
+
+    def test_old_full_success(self):
+        page_id = "old_full_success"
+        resp = self.c.get(self.get_page_url_by_page_id(page_id))
+        self.assertEqual(resp.status_code, 200)
+
+        resp = self.client_post_answer_by_page_id(
+            page_id, {"blank1": ["(5/4,19/4,3/2)^T"]})
+        self.assertResponseMessagesContains(resp, MESSAGE_ANSWER_SAVED_TEXT)
+        self.assertEqual(resp.status_code, 200)
+
+        self.end_quiz()
+        self.assertSessionScoreEqual(3)
+
+    def test_old_full_wrong(self):
+        page_id = "old_full_success"
+        resp = self.c.get(self.get_page_url_by_page_id(page_id))
+        self.assertEqual(resp.status_code, 200)
+
+        resp = self.client_post_answer_by_page_id(
+            page_id, {"blank1": ["(1, 2, 3)^T"]})
+        self.assertResponseMessagesContains(resp, MESSAGE_ANSWER_SAVED_TEXT)
+        self.assertEqual(resp.status_code, 200)
+
+        self.end_quiz()
+        self.assertSessionScoreEqual(0)
+
+    def test_old_full_fail(self):
+        page_id = "old_full_success"
+        resp = self.c.get(self.get_page_url_by_page_id(page_id))
+        self.assertEqual(resp.status_code, 200)
+
+        resp = self.client_post_answer_by_page_id(
+            page_id, {"blank1": ["1"]})
+        self.assertResponseMessagesContains(resp, MESSAGE_ANSWER_FAILED_SAVE_TEXT)
+        self.assertEqual(resp.status_code, 200)
+
+        self.end_quiz()
+        self.assertSessionScoreEqual(0)
+
+    def test_old_full_failure_student_view(self):
+        page_id = "old_full_failure1"
+        resp = self.c.get(self.get_page_url_by_page_id(page_id))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "The page failed to be rendered. Sorry about that.")
+        self.assertNotContains(resp, "This is the problematic code")
+        self.assertNotContains(resp, "This is the exception traceback")
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_old_full_failure_staff_view(self):
+        page_id = "old_full_failure1"
+        self.c.force_login(self.instructor_participation.user)
+        self.start_quiz(self.flow_id)
+        resp = self.c.get(self.get_page_url_by_page_id(page_id))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "The page failed to be rendered. Sorry about that.")
+        self.assertContains(resp, "This is the problematic code")
+        self.assertContains(resp, "This is the exception traceback")
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_old_full_random(self):
+        page_id = "old_full_success_random"
         resp = self.c.get(self.get_page_url_by_page_id(page_id))
         self.assertEqual(resp.status_code, 200)
 
@@ -445,8 +523,9 @@ class LatexPageSandboxTest(SingleCoursePageSandboxTestBaseMixin, LatexPageMixin,
                                    "Sorry about that. The staff has been "
                                    "informed, and it will be fixed as soon "
                                    "as possible."))
-        self.assertContains(resp, (
-            "KeyError: 'question-data/linear-programming/linprog.py'"))
+        self.assertContains(resp, "This is the problematic code")
+        self.assertContains(resp, "This is the exception traceback")
+        self.assertEqual(len(mail.outbox), 0)
 
     def test_latexpage_sandbox_success_no_warm_up_by_sandbox(self):
         resp = self.get_page_sandbox_preview_response(
