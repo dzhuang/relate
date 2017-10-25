@@ -306,6 +306,40 @@ class LatexPageSandboxTest(SingleCoursePageSandboxTestBaseMixin, LatexPageMixin,
         result_correctness = resp.context.__getitem__("feedback").correctness
         self.assertEquals(int(result_correctness), 0)
 
+    def test_latexpage_sandbox_old_style_full_process_preview_success(self):
+        resp = self.get_page_sandbox_preview_response(
+            latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_FULL_PROCESS_CODE)
+        self.assertEqual(resp.status_code, 200)
+        self.assertSandboxHaveValidPage(resp)
+        self.assertSandboxResponseContextEqual(resp, PAGE_ERRORS, None)
+        self.assertSandboxWarningTextContain(
+            resp, "LatexRandomCodeInlineMultiQuestion not using attribute "
+                  "'runpy_file' is for debug only, it should not be used "
+                  "in production.")
+        self.get_page_sandbox_preview_response(
+            latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_FULL_PROCESS_CODE)
+
+        # to cover get result from mongodb
+        self.clear_cache()
+        self.get_page_sandbox_preview_response(
+            latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_FULL_PROCESS_CODE)
+
+    def test_latexpage_sandbox_old_style_full_process_answer_success(self):
+        answer_data = {'blank1': ["(5/4, 19/4, 3/2)^T"]}
+        resp = self.get_page_sandbox_submit_answer_response(
+            markup_content=latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_FULL_PROCESS_CODE,
+            answer_data=answer_data)
+        self.assertEqual(resp.status_code, 200)
+        result_correctness = resp.context.__getitem__("feedback").correctness
+        self.assertEquals(int(result_correctness), 1)
+
+        answer_data = {'blank1': ["(0, 0, 0)"]}
+        resp = self.get_page_sandbox_submit_answer_response(
+            markup_content=latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_FULL_PROCESS_CODE,
+            answer_data=answer_data)
+        result_correctness = resp.context.__getitem__("feedback").correctness
+        self.assertEquals(int(result_correctness), 0)
+
     def test_latexpage_sandbox_data_files_missing_random_question_data_file(self):
         resp = self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_DATA_FILES_MISSING_RAND_QUES_DATA_FILE)
