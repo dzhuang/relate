@@ -1000,17 +1000,15 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     getattr(self.page_desc, common_code_name, ""),
                     run_jinja_req["setup_code"]))
 
-        if hasattr(self.page_desc, "data_files"):
-            run_jinja_req["data_files"] = {}
+        run_jinja_req["data_files"] = {}
+        for data_file in self.page_desc.data_files:
+            run_jinja_req["data_files"][data_file] = \
+                    b64encode(
+                            get_repo_blob_data_cached(
+                                page_context.repo, data_file,
+                                page_context.commit_sha)).decode()
 
-            for data_file in self.page_desc.data_files:
-                run_jinja_req["data_files"][data_file] = \
-                        b64encode(
-                                get_repo_blob_data_cached(
-                                    page_context.repo, data_file,
-                                    page_context.commit_sha)).decode()
-
-            run_jinja_req["data_files"]["question_data"] = question_data
+        run_jinja_req["data_files"]["question_data"] = question_data
 
         try:
             response_dict = request_python_run_with_retries(run_jinja_req,
