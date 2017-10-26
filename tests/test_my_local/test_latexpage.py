@@ -301,6 +301,21 @@ class LatexPageOldStyleFullTest(LatexPageMixin, LocmemBackendTestsMixin, TestCas
         self.assertNotContains(resp, "This is the exception traceback")
         self.assertEqual(len(mail.outbox), 1)
 
+    def test_old_full_failure_student_view_email_failure(self):
+        page_id = "old_full_failure1"
+        with mock.patch("image_upload.page.latexpage.LatexRandomQuestionBase.send_error_notification_email",  # noqa
+                        autospec=True) as mock_email:
+            expected_error_msg = ("This is a test exception for sending "
+                                      "a notification email.")
+            mock_email.side_effect = RuntimeError(expected_error_msg)
+            resp = self.c.get(self.get_page_url_by_page_id(page_id))
+            self.assertEqual(resp.status_code, 200)
+            self.assertContains(resp, "The page failed to be rendered. Sorry about that.")
+            self.assertContains(resp, "Both the code and the attempt to")
+            self.assertContains(resp, "Sending an email to the course staff")
+            self.assertContains(resp, expected_error_msg)
+            self.assertEqual(len(mail.outbox), 0)
+
     def test_old_full_failure_staff_view(self):
         page_id = "old_full_failure1"
         self.c.force_login(self.instructor_participation.user)
@@ -1037,11 +1052,6 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
     # }}}
 
 
-def jinja_runpy_failure_side_effect(self, page_context,
-                                    question_data, code_name, common_code_name=""):
-    raise RuntimeError("This is a test exception.")
-
-
 @skipIf(skip_test, SKIP_LOCAL_TEST_REASON)
 @override_settings(
     CACHE_BACKEND='dummy:///')
@@ -1098,7 +1108,16 @@ class LatexPageRunpyFailureTest(
         ) as mock_jinja_runpy:
 
             resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
-            self.assertContains(resp, "The template failed to render, the log follows")
+            expected_error_string = (
+                "The page failed to be rendered. Sorry about that")
+            self.assertContains(resp, expected_error_string)
+
+            # todo: don't show traceback to student
+            # unexpected_error_string = (
+            #     "ParserError: while parsing a block mapping"
+            # )
+            # self.assertNotContains(resp, unexpected_error_string)
+
             self.assertEqual(resp.status_code, 200)
             self.assertEqual(mock_jinja_runpy.call_count, 1)
 
@@ -1106,8 +1125,6 @@ class LatexPageRunpyFailureTest(
 
             # the result is saved in mongodb because it is rendered after save
             self.assertEqual(self.latex_page_mongo_items_count(), 2)
-
-            # Todo: email the exception
             self.assertEqual(len(mail.outbox), 1)
             #self.debug_print_email_messages(0)
 
@@ -1117,9 +1134,10 @@ class LatexPageRunpyFailureTest(
         self.assertEqual(len(mail.outbox), 0)
 
         with mock.patch(
-            "image_upload.page.latexpage.LatexRandomQuestionBase.jinja_runpy",
-            side_effect=jinja_runpy_failure_side_effect, autospec=True
-        ) as mock_jinja_runpy:
+                "image_upload.page.latexpage.LatexRandomQuestionBase.jinja_runpy",
+                autospec=True) as mock_jinja_runpy:
+            expected_error_str = "This is a test exception."
+            mock_jinja_runpy.side_effect = RuntimeError(expected_error_str)
 
             resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
             self.assertEqual(resp.status_code, 200)
@@ -1129,8 +1147,6 @@ class LatexPageRunpyFailureTest(
             self.assertEqual(self.latex_page_mongo_items_count(), 1)
 
             self.assertEqual(len(mail.outbox), 1)
-            #self.debug_print_email_messages(0)
-            expected_error_str = "RuntimeError: This is a test exception."
             self.assertContains(resp, expected_error_str)
 
     def test_switch_to_failure_course_commit_sha(self):
@@ -1138,42 +1154,79 @@ class LatexPageRunpyFailureTest(
         self.update_course_to_commit_sha(self.commit_sha_with_different_content)
         self.assertEqual(len(mail.outbox), 0)
 
-        with mock.patch("image_upload.page.latexpage.MAX_JINJIA_RETRY", 2)\
-                as mock_max_jinja_retry:
-            with mock.patch(
-                "image_upload.page.latexpage.request_python_run_with_retries",
-                return_value=fake_request_python_run_with_retries_return_value
-            ) as mock_request_python_run_with_retries:
+        with mock.patch(
+            "image_upload.page.latexpage.request_python_run_with_retries",
+            return_value=fake_request_python_run_with_retries_return_value
+        ) as mock_request_python_run_with_retries:
 
-                resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
-                self.assertEqual(resp.status_code, 200)
+            resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
+            self.assertEqual(resp.status_code, 200)
 
-                self.assertEqual(mock_request_python_run_with_retries.call_count,
-                                 mock_max_jinja_retry)
+            self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
 
-                self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
+            # no failure result will be saved in latex_page_mongo_collection
+            self.assertEqual(self.latex_page_mongo_items_count(), 1)
 
-                # no failure result will be saved in latex_page_mongo_collection
-                self.assertEqual(self.latex_page_mongo_items_count(), 1)
+            # {{{ the failure result won't be cached
+            new_data = self.get_page_data().data
+            template_hash = new_data["template_hash"]
+            question_data = new_data["question_data"]
 
-                # {{{ the failure result won't be cached
-                new_data = self.get_page_data().data
-                template_hash = new_data["template_hash"]
-                question_data = new_data["question_data"]
+            from image_upload.page.latexpage import (
+                make_latex_page_key, get_latex_cache,
+                get_key_making_string_md5_hash)
 
-                from image_upload.page.latexpage import (
-                    make_latex_page_key, get_latex_cache,
-                    get_key_making_string_md5_hash)
+            key_making_string_md5 = get_key_making_string_md5_hash(
+                template_hash, question_data)
 
-                key_making_string_md5 = get_key_making_string_md5_hash(
-                    template_hash, question_data)
+            import django.core.cache as cache
+            cache_key = make_latex_page_key(key_making_string_md5)
+            def_cache = get_latex_cache(cache)
 
-                import django.core.cache as cache
-                cache_key = make_latex_page_key(key_making_string_md5)
-                def_cache = get_latex_cache(cache)
+            self.assertIsNone(def_cache.get(cache_key))
+            # }}}
 
-                self.assertIsNone(def_cache.get(cache_key))
-                # }}}
+            self.assertEqual(len(mail.outbox), 1)
 
-                self.assertEqual(len(mail.outbox), mock_max_jinja_retry)
+    def test_switch_to_failure_course_commit_sha_raise_uncaught_error(self):
+        self.clear_cache()
+        self.update_course_to_commit_sha(self.commit_sha_with_different_content)
+        self.assertEqual(len(mail.outbox), 0)
 
+        with mock.patch(
+            "image_upload.page.latexpage.request_python_run_with_retries",
+            autospec=True
+        ) as mock_request_python_run_with_retries:
+            expected_error_str = ("This is an error raised with "
+                                  "request_python_run_with_retries")
+            mock_request_python_run_with_retries.side_effect=RuntimeError(
+                expected_error_str)
+
+            resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
+            self.assertEqual(resp.status_code, 200)
+
+            self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
+
+            # no failure result will be saved in latex_page_mongo_collection
+            self.assertEqual(self.latex_page_mongo_items_count(), 1)
+
+            # {{{ the failure result won't be cached
+            new_data = self.get_page_data().data
+            template_hash = new_data["template_hash"]
+            question_data = new_data["question_data"]
+
+            from image_upload.page.latexpage import (
+                make_latex_page_key, get_latex_cache,
+                get_key_making_string_md5_hash)
+
+            key_making_string_md5 = get_key_making_string_md5_hash(
+                template_hash, question_data)
+
+            import django.core.cache as cache
+            cache_key = make_latex_page_key(key_making_string_md5)
+            def_cache = get_latex_cache(cache)
+
+            self.assertIsNone(def_cache.get(cache_key))
+            # }}}
+
+            self.assertEqual(len(mail.outbox), 1)

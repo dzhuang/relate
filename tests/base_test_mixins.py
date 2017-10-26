@@ -31,6 +31,7 @@ from django.contrib.auth import get_user_model
 from relate.utils import force_remove_path
 from course.models import Course, Participation, ParticipationRole, FlowSession
 from course.constants import participation_status, user_status
+from bs4 import BeautifulSoup
 
 CREATE_SUPERUSER_KWARGS = {
     "username": "test_admin",
@@ -289,6 +290,13 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
     @classmethod
     def get_course_page_url(cls, course):
         return reverse("relate-course_page", args=[course.identifier])
+
+    def debug_print_response_content(self, response, body_only=True):
+        soup = BeautifulSoup(response.content, 'html.parser')
+        if body_only:
+            soup = soup.find_all("body")[0]
+        content = soup.get_text(strip=True).encode("utf-8")
+        print(repr(content))
 
 
 class SingleCourseTestMixin(CoursesTestMixinBase):
