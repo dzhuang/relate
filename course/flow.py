@@ -199,6 +199,7 @@ def _adjust_flow_session_page_data_inner(repo, flow_session,
             will_update_page_data, new_page_data = (
                 page.update_page_data(pctx, fpd.data))
             if will_update_page_data:
+                # alert! we must use "update" here, to prevent data loss
                 fpd.data.update(new_page_data)
                 fpd.save()
 

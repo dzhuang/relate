@@ -35,6 +35,7 @@ THE SOFTWARE.
 import six
 from unittest import skipIf
 from copy import deepcopy
+from bson.objectid import ObjectId
 import pprint
 
 from django.conf import settings
@@ -67,6 +68,7 @@ def disable_cache():
 
 
 LATEXPAGE_FLOW_ID = "latex-flow"
+LATEXPAGE_FLOW_OLD = "latex-flow-old-style"
 LATEXPAGE_FLOW_OLD_FULL_ID = "latex-flow-old-style-full"
 
 
@@ -172,8 +174,6 @@ class LatexPageTest(LatexPageMixin, TestCase):
 
     def test_1_wrong(self):
         page_id = "lp_dual_complimentary_slack1"
-        resp = self.c.get(self.get_page_url_by_page_id(page_id))
-        self.assertEqual(resp.status_code, 200)
 
         resp = self.client_post_answer_by_page_id(
             page_id, {"blank1": ["(1, 2, 3)^T"]})
@@ -185,8 +185,6 @@ class LatexPageTest(LatexPageMixin, TestCase):
 
     def test_1_fail(self):
         page_id = "lp_dual_complimentary_slack1"
-        resp = self.c.get(self.get_page_url_by_page_id(page_id))
-        self.assertEqual(resp.status_code, 200)
 
         resp = self.client_post_answer_by_page_id(
             page_id, {"blank1": ["1"]})
@@ -211,8 +209,6 @@ class LatexPageTest(LatexPageMixin, TestCase):
 
     def test_2_wrong(self):
         page_id = "lp_dual_complimentary_slack2"
-        resp = self.c.get(self.get_page_url_by_page_id(page_id))
-        self.assertEqual(resp.status_code, 200)
 
         resp = self.client_post_answer_by_page_id(
             page_id, {"blank1": ["(1, 2, 3)^T"]})
@@ -224,9 +220,6 @@ class LatexPageTest(LatexPageMixin, TestCase):
 
     def test_2_fail(self):
         page_id = "lp_dual_complimentary_slack2"
-        resp = self.c.get(self.get_page_url_by_page_id(page_id))
-        self.assertEqual(resp.status_code, 200)
-
         resp = self.client_post_answer_by_page_id(
             page_id, {"blank1": ["1"]})
         self.assertResponseMessagesContains(resp, MESSAGE_ANSWER_FAILED_SAVE_TEXT)
@@ -336,8 +329,60 @@ class LatexPageOldStyleFullTest(LatexPageMixin, LocmemBackendTestsMixin, TestCas
 @skipIf(skip_test, SKIP_LOCAL_TEST_REASON)
 @override_settings(
     CACHE_BACKEND='dummy:///')
+class LatexPageOldStylePartsTest(LatexPageMixin, LocmemBackendTestsMixin, TestCase):
+    courses_setup_list = MY_SINGLE_COURSE_SETUP_LIST
+    flow_id = LATEXPAGE_FLOW_OLD
+
+    def setUp(self):  # noqa
+        super(LatexPageOldStylePartsTest, self).setUp()
+        self.c.force_login(self.student_participation.user)
+        self.start_quiz(self.flow_id)
+
+    def test_old_full_success(self):
+        page_id = "old_parts_success"
+        resp = self.c.get(self.get_page_url_by_page_id(page_id))
+        self.assertEqual(resp.status_code, 200)
+
+        resp = self.client_post_answer_by_page_id(
+            page_id, {"blank1": ["(5/4,19/4,3/2)^T"]})
+        self.assertResponseMessagesContains(resp, MESSAGE_ANSWER_SAVED_TEXT)
+        self.assertEqual(resp.status_code, 200)
+
+        self.end_quiz()
+        self.assertSessionScoreEqual(3)
+
+    def test_old_full_wrong(self):
+        page_id = "old_parts_success"
+        resp = self.c.get(self.get_page_url_by_page_id(page_id))
+        self.assertEqual(resp.status_code, 200)
+
+        resp = self.client_post_answer_by_page_id(
+            page_id, {"blank1": ["(1, 2, 3)^T"]})
+        self.assertResponseMessagesContains(resp, MESSAGE_ANSWER_SAVED_TEXT)
+        self.assertEqual(resp.status_code, 200)
+
+        self.end_quiz()
+        self.assertSessionScoreEqual(0)
+
+    def test_old_full_fail(self):
+        page_id = "old_parts_success"
+        resp = self.c.get(self.get_page_url_by_page_id(page_id))
+        self.assertEqual(resp.status_code, 200)
+
+        resp = self.client_post_answer_by_page_id(
+            page_id, {"blank1": ["1"]})
+        self.assertResponseMessagesContains(resp, MESSAGE_ANSWER_FAILED_SAVE_TEXT)
+        self.assertEqual(resp.status_code, 200)
+
+        self.end_quiz()
+        self.assertSessionScoreEqual(0)
+
+
+@skipIf(skip_test, SKIP_LOCAL_TEST_REASON)
+@override_settings(
+    CACHE_BACKEND='dummy:///')
 class LatexPageSandboxTest(SingleCoursePageSandboxTestBaseMixin, LatexPageMixin,
-                           TestCase):
+                           LocmemBackendTestsMixin, TestCase):
     courses_setup_list = MY_SINGLE_COURSE_SETUP_LIST
     def test_latexpage_sandbox_preview_success(self):
         resp = self.get_page_sandbox_preview_response(
@@ -398,6 +443,125 @@ class LatexPageSandboxTest(SingleCoursePageSandboxTestBaseMixin, LatexPageMixin,
             answer_data=answer_data)
         result_correctness = resp.context.__getitem__("feedback").correctness
         self.assertEquals(int(result_correctness), 0)
+
+    def test_latexpage_sandbox_py_comments_do_not_runpy(self):
+        resp = self.get_page_sandbox_preview_response(
+            markup_content=latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS)
+        self.assertEqual(resp.status_code, 200)
+
+        self.c.logout()
+        self.c.force_login(self.instructor_participation.user)
+
+        with mock.patch(
+            "image_upload.page.latexpage.LatexRandomQuestionBase.jinja_runpy",
+            return_value=(True, "abcd")
+        ) as mock_request_python_run:
+            resp = self.get_page_sandbox_preview_response(
+                markup_content=latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS_WITH_PY_CODE_COMMENTS
+            )
+            self.assertEqual(resp.status_code, 200)
+            self.assertEqual(mock_request_python_run.call_count, 0)
+
+    def test_latexpage_sandbox_tex_template_spaces_do_not_runpy(self):
+        # todo: strip comments for latex_page specific tex template
+        resp = self.get_page_sandbox_preview_response(
+            markup_content=latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS)
+        self.assertEqual(resp.status_code, 200)
+
+        self.c.logout()
+        self.c.force_login(self.instructor_participation.user)
+
+        with mock.patch(
+            "image_upload.page.latexpage.LatexRandomQuestionBase.jinja_runpy",
+            return_value=(True, "abcd")
+        ) as mock_request_python_run:
+            resp = self.get_page_sandbox_preview_response(
+                markup_content=latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS_WITH_TEX_TEMPLATE_SPACES
+            )
+            self.assertEqual(resp.status_code, 200)
+            self.assertEqual(mock_request_python_run.call_count, 0)
+
+    def test_latexpage_sandbox_py_more_than_comments_do_runpy(self):
+        answer_data = {'blank1': ["(5/4, 19/4, 3/2)^T"]}
+        self.get_page_sandbox_submit_answer_response(
+            markup_content=latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS,
+            answer_data=answer_data)
+
+        self.c.logout()
+        self.c.force_login(self.instructor_participation.user)
+
+        with mock.patch(
+            "image_upload.page.latexpage.LatexRandomQuestionBase.jinja_runpy",
+            return_value=(True, "abcd")
+        ) as mock_request_python_run:
+            resp = self.get_page_sandbox_preview_response(
+                markup_content=latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS_WITH_PY_CODE_MORE_THAN_COMMENTS)
+            self.assertEqual(resp.status_code, 200)
+            self.assertTrue(mock_request_python_run.call_count >= 1)
+
+    def test_latexpage_sandbox_old_style_raise_error1(self):
+        error_markdown = (
+            latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS_WITH_EXCEPTION_COMMENTED
+                .replace("#raise QuestionProcessCodeException(error_info)",
+                         "raise QuestionProcessCodeException(error_info)"
+                         ))
+        resp = self.get_page_sandbox_preview_response(
+            markup_content=error_markdown)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "QuestionProcessCodeException: test exception")
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_latexpage_sandbox_old_style_raise_error2(self):
+        error_markdown = (
+            latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS_WITH_EXCEPTION_COMMENTED
+                .replace("#raise BlankProcessCodeException(error_info)",
+                         "raise BlankProcessCodeException(error_info)"
+                         ))
+        resp = self.get_page_sandbox_preview_response(
+            markup_content=error_markdown)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "BlankProcessCodeException: test exception")
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_latexpage_sandbox_old_style_raise_error3(self):
+        error_markdown = (
+            latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS_WITH_EXCEPTION_COMMENTED
+                .replace("#raise BlankAnswerProcessCodeException(error_info)",
+                         "raise BlankAnswerProcessCodeException(error_info)"
+                         ))
+        resp = self.get_page_sandbox_preview_response(
+            markup_content=error_markdown)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "BlankAnswerProcessCodeException: test exception")
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_latexpage_sandbox_old_style_raise_error4(self):
+        error_markdown = (
+            latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS_WITH_EXCEPTION_COMMENTED
+                .replace("#answer_explanation_process_code",
+                         "answer_explanation_process_code")
+                .replace("#    raise AnswerExplanationProcessCodeException(error_info)",
+                         "    raise AnswerExplanationProcessCodeException(error_info)")
+        )
+        resp = self.get_page_sandbox_preview_response(
+            markup_content=error_markdown)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "AnswerExplanationProcessCodeException: test exception")
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_latexpage_sandbox_old_style_raise_error5(self):
+        error_markdown = (
+            latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS_WITH_EXCEPTION_COMMENTED
+                .replace("#answer_explanation_process_code",
+                         "answer_explanation_process_code")
+                .replace("#    raise AnswerExplanationProcessCodeException(error_info)",
+                         "    pass")
+        )
+        resp = self.get_page_sandbox_preview_response(
+            markup_content=error_markdown)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, ("expects output, while got None"))
+        self.assertEqual(len(mail.outbox), 0)
 
     def test_latexpage_sandbox_old_style_full_process_preview_success(self):
         resp = self.get_page_sandbox_preview_response(
@@ -907,6 +1071,71 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
         self.assertNotEqual(new_page_data.data["template_hash_id"],
                             invalid_template_hash_id)
 
+    def test_commit_sha_changed_content_not_changed_mongo_template_hash_manualy_changed(self):
+        # simulate that the template_hash in mongo entry is manually changed
+        original_page_data = self.get_page_data()
+
+        f = FlowSession.objects.last()
+        current_commit_sha = f.active_git_commit_sha
+
+        template_hash_id = original_page_data.data["template_hash_id"]
+        template_hash = original_page_data.data["template_hash"]
+        mongo_fake_changed_template_hash = template_hash + "_change"
+
+        # switch to another commit_sha
+        self.update_course_to_commit_sha(self.commit_sha_with_same_content)
+        self.c.get(self.get_page_url_by_page_id(self.page_id))
+
+        # then we manually changed the mongo data
+        latex_page_sha_collection().update_one(
+            {"_id": ObjectId(template_hash_id)},
+            {"$set": {
+                current_commit_sha: mongo_fake_changed_template_hash}
+            }
+        )
+
+        # then we switch back to original commit_sha
+        self.update_course_to_commit_sha(current_commit_sha)
+        resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
+        self.assertEqual(resp.status_code, 200)
+
+        new_mongo_entry = latex_page_sha_collection().find_one(
+            {"_id": ObjectId(template_hash_id)},
+        )
+
+        # the record is "repaired"
+        self.assertEqual(new_mongo_entry[current_commit_sha], template_hash)
+
+    def test_commit_sha_changed_content_not_changed_page_data_hash_manualy_changed(self):
+        # simulate that the template_hash in page_data entry is manually changed
+        original_page_data = self.get_page_data()
+
+        f = FlowSession.objects.last()
+        current_commit_sha = f.active_git_commit_sha
+
+        template_hash = original_page_data.data["template_hash"]
+
+        # switch to another commit_sha
+        self.update_course_to_commit_sha(self.commit_sha_with_same_content)
+        self.c.get(self.get_page_url_by_page_id(self.page_id))
+
+        # then we switch back to original commit_sha
+        self.update_course_to_commit_sha(current_commit_sha)
+
+        # manually change page data
+        current_page_data = self.get_page_data()
+        data_fake_changed_template_hash = template_hash + "_change"
+        current_page_data.data["template_hash"] = data_fake_changed_template_hash
+        current_page_data.save()
+
+        resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
+        self.assertEqual(resp.status_code, 200)
+
+        # the data is "repaired"
+        new_page_data_data = self.get_page_data().data
+        for k in new_page_data_data.keys():
+            self.assertEqual(new_page_data_data[k], original_page_data.data[k])
+
     @mock.patch(
         "image_upload.page.latexpage.LatexRandomQuestionBase.initialize_page_data")
     def test_commit_sha_changed_content_not_changed_no_template_hash_and_id(
@@ -950,11 +1179,7 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
     # {{{ tests for a page which changed commit_sha
     # and content of the page does change
 
-    @mock.patch("image_upload.page.latexpage.LatexRandomQuestionBase.initialize_page_data")
-    def test_commit_sha_changed_content_changed(
-            self,
-            mock_initialize_page_data):
-
+    def test_commit_sha_changed_content_changed(self):
         self.clear_cache()
         original_data = self.get_page_data().data
         new_commit_sha = self.commit_sha_with_different_content.decode()
@@ -964,11 +1189,16 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
         self.assertIsNone(redirected_entry)
 
         self.update_course_to_commit_sha(self.commit_sha_with_different_content)
-        self.c.get(self.get_page_url_by_page_id(self.page_id))
 
-        # question_data exists in page_data.data()
-        # thus won't run initialize_page_data()
-        self.assertEqual(mock_initialize_page_data.call_count, 0)
+        with mock.patch(
+            "image_upload.page.latexpage.LatexRandomQuestionBase.initialize_page_data",
+            autospec=True
+        ) as mock_initialize_page_data:
+            self.c.get(self.get_page_url_by_page_id(self.page_id))
+
+            # question_data exists in page_data.data()
+            # thus won't run initialize_page_data()
+            self.assertEqual(mock_initialize_page_data.call_count, 0)
 
         self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
         self.assertEqual(self.latex_page_mongo_items_count(), 2)
@@ -1033,6 +1263,184 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
             # this is what the original page doesn't have
             self.assertTrue(
                 "One correct answer is:" in result["answer_explanation"])
+
+    def test_commit_sha_changed_content_changed_switch_back_and_forth(self):
+        f = FlowSession.objects.last()
+        current_commit_sha = f.active_git_commit_sha
+
+        self.update_course_to_commit_sha(self.commit_sha_with_different_content)
+        self.c.get(self.get_page_url_by_page_id(self.page_id))
+        self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
+        self.assertEqual(self.latex_page_mongo_items_count(), 2)
+
+        self.update_course_to_commit_sha(current_commit_sha)
+        self.c.get(self.get_page_url_by_page_id(self.page_id))
+        self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
+        self.assertEqual(self.latex_page_mongo_items_count(), 2)
+
+        self.update_course_to_commit_sha(self.commit_sha_with_different_content)
+        self.c.get(self.get_page_url_by_page_id(self.page_id))
+        self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
+        self.assertEqual(self.latex_page_mongo_items_count(), 2)
+
+    def test_commit_sha_changed_content_changed_switch_back_and_forth_redirect_broken(self):
+        f = FlowSession.objects.last()
+        current_commit_sha = f.active_git_commit_sha
+
+        # first, make sure the redirect_id is generated
+        self.update_course_to_commit_sha(self.commit_sha_with_different_content)
+        self.c.get(self.get_page_url_by_page_id(self.page_id))
+        self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
+        self.assertEqual(self.latex_page_mongo_items_count(), 2)
+
+        self.update_course_to_commit_sha(current_commit_sha)
+        self.c.get(self.get_page_url_by_page_id(self.page_id))
+        self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
+        self.assertEqual(self.latex_page_mongo_items_count(), 2)
+
+        different_commit_sha = self.commit_sha_with_different_content.decode()
+
+        # the redirect_entry must exist
+        redirect_entry = latex_page_sha_collection().find_one(
+            {"%s_next" % different_commit_sha: {"$exists": True}}
+        )
+        self.assertIsNotNone(redirect_entry)
+
+        # the target entry must exist
+        target_id = redirect_entry["%s_next" % different_commit_sha]
+        target_entry = latex_page_sha_collection().find_one(
+            {"_id": ObjectId(target_id)}
+        )
+        target_template_hash = target_entry["template_hash"]
+        self.assertIsNotNone(target_entry)
+
+        # delete the target entry
+        latex_page_sha_collection().delete_one({
+            "_id": ObjectId(target_id)
+        })
+        target_entry = latex_page_sha_collection().find_one(
+            {"_id": ObjectId(target_id)})
+        # make sure it is deleted
+        self.assertIsNone(target_entry)
+
+        # {{{ navigate to different commit_sha, make sure the redirect data is updated
+        self.update_course_to_commit_sha(self.commit_sha_with_different_content)
+        resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
+        self.assertEqual(resp.status_code, 200)
+
+        self.update_course_to_commit_sha(current_commit_sha)
+        resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
+        self.assertEqual(resp.status_code, 200)
+
+        self.update_course_to_commit_sha(self.commit_sha_with_different_content)
+        resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
+        self.assertEqual(resp.status_code, 200)
+        # }}}
+
+        # make sure the redirect entry is available
+        new_redirect_entry = latex_page_sha_collection().find_one(
+            {"%s_next" % different_commit_sha: {"$exists": True}}
+        )
+        self.assertIsNotNone(new_redirect_entry)
+
+        new_target_id = new_redirect_entry["%s_next" % different_commit_sha]
+        new_target_entry = latex_page_sha_collection().find_one(
+            {"_id": ObjectId(new_target_id)}
+        )
+        self.assertIsNotNone(new_target_entry)
+        new_target_template_hash = new_target_entry["template_hash"]
+
+        # make sure the template hash it the same with the "deleted" redirect_entry
+        self.assertEqual(target_template_hash, new_target_template_hash)
+
+        self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
+        self.assertEqual(self.latex_page_mongo_items_count(), 2)
+
+    def test_commit_sha_changed_content_changed_switch_back_and_forth_redirect_empty_template_hash(self):
+        f = FlowSession.objects.last()
+        current_commit_sha = f.active_git_commit_sha
+
+        # first, make sure the redirect_id is generated
+        self.update_course_to_commit_sha(self.commit_sha_with_different_content)
+        self.c.get(self.get_page_url_by_page_id(self.page_id))
+        self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
+        self.assertEqual(self.latex_page_mongo_items_count(), 2)
+
+        self.update_course_to_commit_sha(current_commit_sha)
+        self.c.get(self.get_page_url_by_page_id(self.page_id))
+        self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
+        self.assertEqual(self.latex_page_mongo_items_count(), 2)
+
+        different_commit_sha = self.commit_sha_with_different_content.decode()
+
+        # the redirect_entry must exist
+        redirect_entry = latex_page_sha_collection().find_one(
+            {"%s_next" % different_commit_sha: {"$exists": True}}
+        )
+        self.assertIsNotNone(redirect_entry)
+
+        # the target entry must exist
+        target_id = redirect_entry["%s_next" % different_commit_sha]
+        target_entry = latex_page_sha_collection().find_one(
+            {"_id": ObjectId(target_id)}
+        )
+        target_template_hash = target_entry["template_hash"]
+        self.assertIsNotNone(target_entry)
+
+        # pp.pprint(latex_page_sha_collection().find_one(
+        #     {"_id": ObjectId(target_id)}))
+
+        # delete the target entry
+        latex_page_sha_collection().update_one(
+            {"_id": ObjectId(target_id)},
+            {"$set": {
+                different_commit_sha: ""}}
+        )
+        # a = latex_page_sha_collection().find_one(
+        #     {"_id": ObjectId(target_id)})
+        # pp.pprint(latex_page_sha_collection().find_one(
+        #     {"_id": ObjectId(target_id)}))
+
+        # {{{ navigate to different commit_sha, make sure the redirect data is updated
+        self.update_course_to_commit_sha(self.commit_sha_with_different_content)
+        resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
+        self.assertEqual(resp.status_code, 200)
+
+        self.update_course_to_commit_sha(current_commit_sha)
+        resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
+        self.assertEqual(resp.status_code, 200)
+
+        self.update_course_to_commit_sha(self.commit_sha_with_different_content)
+        resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
+        self.assertEqual(resp.status_code, 200)
+        # }}}
+
+        # make sure the redirect entry is available
+        new_redirect_entry = latex_page_sha_collection().find_one(
+            {"%s_next" % different_commit_sha: {"$exists": True}}
+        )
+        self.assertIsNotNone(new_redirect_entry)
+
+        new_target_id = new_redirect_entry["%s_next" % different_commit_sha]
+        new_target_entry = latex_page_sha_collection().find_one(
+            {"_id": ObjectId(new_target_id)}
+        )
+
+        # pp.pprint(a)
+        # pp.pprint(latex_page_sha_collection().find_one(
+        #     {"_id": ObjectId(new_target_id)}))
+
+        # why they equal????
+        self.assertEqual(target_id, new_target_id)
+
+        self.assertIsNotNone(new_target_entry)
+        new_target_template_hash = new_target_entry["template_hash"]
+
+        # make sure the template hash it the same with the "modified" redirect_entry
+        self.assertEqual(target_template_hash, new_target_template_hash)
+
+        self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
+        self.assertEqual(self.latex_page_mongo_items_count(), 2)
 
     def test_commit_sha_changed_content_changed_assert_jinja_runpy_called_once(
             self):
@@ -1182,10 +1590,13 @@ class LatexPageRunpyFailureTest(
                 template_hash, question_data)
 
             import django.core.cache as cache
-            cache_key = make_latex_page_key(key_making_string_md5)
+            page_key = make_latex_page_key(key_making_string_md5)
+            cache_key = "%s:full" % page_key
             def_cache = get_latex_cache(cache)
 
-            self.assertIsNone(def_cache.get(cache_key))
+            self.assertIsNone(def_cache.get(cache_key),
+                              ("Make sure failure result of "
+                               "runpy is not cached!"))
             # }}}
 
             self.assertEqual(len(mail.outbox), 1)

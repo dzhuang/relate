@@ -50,10 +50,9 @@ from django.utils.html import escape
 
 from relate.utils import local_now, Struct, struct_to_dict
 
-from course.content import markup_to_html as mth
 from course.page.base import (
     PageBaseWithTitle, PageBaseWithValue,
-    PageBaseWithCorrectAnswer)
+    PageBaseWithCorrectAnswer, markup_to_html)
 from course.page import (  # type: ignore
     ChoiceQuestion, MultipleChoiceQuestion, TextQuestion,
     InlineMultiQuestion)
@@ -94,9 +93,9 @@ def make_latex_page_key(key_making_string_md5):
 
 def get_key_making_string_md5_hash(template_hash, question_data):
     # type: (Text, Text) -> Text
+    assert question_data is not None
     key_making_string = template_hash
-    if question_data:
-        key_making_string += question_data
+    key_making_string += question_data
     return md5(key_making_string.encode("utf-8")).hexdigest()
 
 
@@ -134,25 +133,6 @@ def get_latex_page_commitsha_template_pair_collection(
     if index_name:
         collection.ensure_index(index_name, unique=True)
     return collection
-
-
-def markup_to_html(
-        page_context,  # type: PageContext
-        text,  # type: Text
-        warm_up_only=False,  # type: bool
-        use_jinja=True,  # type: bool
-        reverse_func=None,  # type: Callable
-        ):
-    # type: (...) -> Text
-
-    return mth(
-            page_context.course,
-            page_context.repo,
-            page_context.commit_sha,
-            text,
-            validate_only=warm_up_only,
-            use_jinja=use_jinja,
-            reverse_func=reverse_func)
 
 
 class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
@@ -452,7 +432,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         return {
             "template_hash": new_template_hash,
             "template_hash_id": str(new_hash_id),
-            "key_making_string_md5": new_key_making_string_md5}
+            "key_making_string_md5": new_key_making_string_md5,
+            "question_data": question_data
+        }
 
     def update_page_data(self, page_context, page_data):
         # type: (PageContext, Dict) -> Tuple[bool, Dict]
@@ -496,7 +478,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         commit_sha = page_context.commit_sha.decode()
         if not (template_hash and template_hash_id and key_making_string_md5):
-            return True, self.generate_new_page_data(page_context, question_data)
+            new_page_data = self.generate_new_page_data(page_context, question_data)
+            assert new_page_data["question_data"] == question_data
+            return True, new_page_data
 
         try:
             exist_entry = (
@@ -507,7 +491,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         # mongo data is broken
         if not exist_entry:
-            return True, self.generate_new_page_data(page_context, question_data)
+            new_page_data = self.generate_new_page_data(page_context, question_data)
+            assert new_page_data["question_data"] == question_data
+            return True, new_page_data
 
         # mongo data found
         else:
@@ -527,30 +513,42 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 if match_template_hash == template_hash:
                     return False, {}
                 else:
+                    # This happen only when manually changed the template_hash field
+                    # in the mongo entry or manually changed page_data
                     new_page_data = (
                         self.generate_new_page_data(page_context, question_data))
+                    assert new_page_data["question_data"] == question_data
 
-                    # the template_hash don't belong to this entry
-                    # so we generate a redirect field "(commit_sha)_next",
-                    # for the new template_hash, with that new entry's id
-                    # in the field
-                    get_latex_page_commitsha_template_pair_collection().update_one(
-                        {"_id": ObjectId(template_hash_id),
-                         commit_sha: {"$exists": False},
-                         "%s_next" % commit_sha: {"$exists": False}},
-                        {"$set": {
-                            "%s_next" % commit_sha:
-                                new_page_data["template_hash_id"]}}
-                    )
-                    return True, new_page_data
+                    manually_changed_page_data = False
+                    for k in page_data.keys():
+                        if page_data[k] != new_page_data[k]:
+                            manually_changed_page_data = True
+
+                    manually_changed_mongo_template_hash = False
+                    if new_page_data["template_hash"] != match_template_hash:
+                        manually_changed_mongo_template_hash = True
+
+                    if manually_changed_mongo_template_hash:
+                        get_latex_page_commitsha_template_pair_collection().update_one(
+                            {"_id": ObjectId(template_hash_id)},
+                            {"$set": {
+                                commit_sha:
+                                    new_page_data["template_hash"]}}
+                        )
+
+                    if manually_changed_page_data:
+                        assert new_page_data["question_data"] == question_data
+                        return True, new_page_data
+
+                return False, {}
 
             if match_template_hash_redirect_id:
-                redirect_entry = (
+                target_entry = (
                     get_latex_page_commitsha_template_pair_collection().find_one(
                         {"_id": ObjectId(match_template_hash_redirect_id)}))
 
                 # in case the entry is broken
-                if not redirect_entry:
+                if not target_entry:
                     new_page_data = (
                         self.generate_new_page_data(page_context, question_data))
 
@@ -558,16 +556,16 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     # who told us to redirect here
                     get_latex_page_commitsha_template_pair_collection().update_one(
                         {"_id": ObjectId(template_hash_id),
-                         commit_sha: {"$exists": False},
                         "%s_next" % commit_sha: {"$exists": True}},
                         {"$set": {"%s_next" % commit_sha:
                                       new_page_data["template_hash_id"]}}
                     )
+                    assert new_page_data["question_data"] == question_data
                     return True, new_page_data
 
                 # the entry exists
                 else:
-                    new_template_hash = redirect_entry.get(commit_sha, None)
+                    new_template_hash = target_entry.get(commit_sha, None)
                     if new_template_hash:
                         new_key_making_string_md5 = (
                             get_key_making_string_md5_hash(
@@ -575,8 +573,16 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                         return True, {
                             "template_hash": new_template_hash,
                             "template_hash_id": match_template_hash_redirect_id,
-                            "key_making_string_md5": new_key_making_string_md5
+                            "key_making_string_md5": new_key_making_string_md5,
+                            "question_data": question_data
                         }
+                    else:
+                        # new_template_hash is empty, remove the redirect
+                        get_latex_page_commitsha_template_pair_collection().update_one(
+                            {"_id": ObjectId(template_hash_id)},
+                            {"$unset": {"%s_next" % commit_sha: ""}}
+                        )
+                        match_template_hash_redirect_id = None
 
             assert not (match_template_hash or match_template_hash_redirect_id)
             # Neither match_template_hash nor match_template_hash_redirect_id
@@ -596,6 +602,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     {"$set": {"%s_next" % commit_sha:
                                   new_page_data["template_hash_id"]}}
                 )
+                assert new_page_data["question_data"] == question_data
                 return True, new_page_data
 
     def generate_template_hash(self, page_context):
@@ -622,6 +629,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     and
                         # this is to avoid imported jinja macro in the attribute
                         not cattr_string.startswith("{")):
+                    cattr_string = getattr(self.page_desc, cattr)
                     cattr_string = minify_python_script(cattr_string)
                 template_string += cattr_string
 
@@ -708,17 +716,21 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
             for part in all_process_attribute_parts:
                 try:
-                    key_exist, result = self.get_cached_result(
-                            page_context, page_data, part=part,
-                            warm_up_only=True)
-                    if key_exist:
+                    success, result = self.get_cached_result(
+                            page_context, page_data, part=part)
+                    if success:
                         # when result is full or by run_py
                         if isinstance(result, dict):
                             for k, v in result.items():
-                                markup_to_html(page_context, v,
-                                               warm_up_only=True)
+                                try:
+                                    markup_to_html(page_context, v)
+                                except:
+                                    pass
                         else:
-                            markup_to_html(page_context, result, warm_up_only=True)
+                            try:
+                                markup_to_html(page_context, result)
+                            except:
+                                pass
 
                 except KeyError:
                     continue
@@ -761,9 +773,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         assert (_id)
         return _id
 
-    def get_cached_result(self, page_context,
-                          page_data, part="", warm_up_only=False):
-        # type: (PageContext, Dict, Optional[Text], Optional[bool]) -> Tuple[bool, Optional[Union[Text, Dict]]]  # noqa
+    def get_cached_result(self, page_context, page_data, part=""):
+        # type: (PageContext, Dict, Optional[Text]) -> Tuple[bool, Optional[Union[Text, Dict]]]  # noqa
 
         try:
             key_making_string_md5 = page_data["key_making_string_md5"]
@@ -879,6 +890,12 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         assert result is not None
 
+        # Important! prevent failure result being saved in cache and mongodb!
+        if not success:
+            return success, result
+
+        assert success
+
         def_cache = get_latex_cache(cache)
         if isinstance(result, dict):
             for pt, v in result.items():
@@ -894,9 +911,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 def_cache.add(part_key, result)
         else:
             assert isinstance(result, six.text_type), cache_key
-            if (success
-                and len(result) <= (
-                        getattr(settings, "RELATE_CACHE_MAX_BYTES", 0))):
+            if len(result) <= (
+                        getattr(settings, "RELATE_CACHE_MAX_BYTES", 0)):
                 if def_cache.get(cache_key) is None:
                     def_cache.delete(cache_key)
                 def_cache.add(cache_key, result)
@@ -908,7 +924,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             return self.error_updating_page_desc
 
         if self.updated_page_desc:
-            question_str = self.updated_page_desc.get("question", "")
+            question_str = markup_to_html(
+                page_context,
+                self.updated_page_desc.get("question", ""))
         else:
             success, question_str = self.get_cached_result(
                     page_context, page_data, part="question")
@@ -1098,8 +1116,33 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         response = dict_to_struct(response_dict)
 
         if response.result == "success":
-            pass
-        elif response.result in [
+            # > 1 because there will be execution time
+            if (code_name == "full_process_code"
+                and
+                    hasattr(response, "feedback")
+                and
+                        len(response.feedback) > 1):
+
+                try:
+                    import json
+                    result_dict = json.loads(response.feedback[0])
+                except Exception as e:
+                    from traceback import format_exc
+                    error_msg = "".join(format_exc())
+                    response.result = "uncaught_error"
+                    response.traceback = error_msg
+                else:
+                    assert result_dict
+                    return True, result_dict
+
+            elif hasattr(response, "stdout") and response.stdout:
+                return True, response.stdout
+            else:
+                response.result = "uncaught_error"
+                response.traceback = (
+                    _("'%s' expects output, while got None") % code_name)
+
+        if response.result in [
                 "uncaught_error",
                 "setup_compile_error",
                 "setup_error",
@@ -1152,54 +1195,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                                                                  error_msg)
             self.send_error_notification_email(page_context, message)
 
-        if hasattr(response, "figures") and response.figures:
-            fig_lines = ["".join(
-                ["<p>",
-                 _("Your code produced the following plots"),
-                 ":</p>"]),
-                '<dl class="result-figure-list">',
-            ]
-
-            for nr, mime_type, b64data in response.figures:
-                fig_lines.extend(
-                    ["".join(
-                        ["<dt>", _("Figure"), "%d<dt>"]) % nr,
-                     '<dd>'
-                     '<img alt="Figure %d" src="data:%s;base64,%s">'
-                     '</dd>'
-                     % (nr, mime_type, b64data)])
-
-            fig_lines.append("</dl>")
-
-        if success:
-            # > 1 because there will be execution time
-            if (code_name == "full_process_code"
-                and
-                    hasattr(response, "feedback")
-                and
-                        len(response.feedback) > 1):
-
-                try:
-                    import json
-                    result_dict = json.loads(response.feedback[0])
-                except Exception as e:
-                    from traceback import format_exc
-                    error_msg = "".join(format_exc())
-                    message = self.get_error_notification_email_messages(
-                        page_context,
-                        error_msg)
-                    self.send_error_notification_email(page_context, message)
-                    return False, error_msg
-
-                assert result_dict
-                return success, result_dict
-
-            elif hasattr(response, "stdout") and response.stdout:
-                return success, response.stdout
-        else:
-            return (success,
-                    '<div class="latexpage-error alert alert-danger">%s'
-                    '</div>' % "\n".join(feedback_bits))
+        return (success,
+                '<div class="latexpage-error alert alert-danger">%s'
+                '</div>' % "\n".join(feedback_bits))
 
         # }}}
 
