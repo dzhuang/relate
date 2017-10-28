@@ -206,6 +206,14 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                                 ": ",
                                 _("'%s' should be listed in 'data_files'")
                                 % cf))
+                    if (page_desc.random_question_data_file
+                            in page_desc.cache_key_files):
+                        vctx.add_warning(
+                            location,
+                            _("'%s' is not expected in "
+                              "'cache_key_files' as it will not "
+                              "be used for building cache")
+                            % page_desc.random_question_data_file)
 
             if hasattr(page_desc, "excluded_cache_key_files"):
                 for cf in page_desc.excluded_cache_key_files:
@@ -272,40 +280,43 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         # These files/attrs are used to generate rendered body and correct answer
 
-        # Whether use question data file as cache
-        use_question_data_file_as_cache = getattr(
-            page_desc, "use_question_data_file_as_cache", False)
-        self.cache_key_files = getattr(
-            page_desc, "cache_key_files", getattr(page_desc, "data_files"))
-        excluded_cache_key_files = getattr(
-            page_desc, "excluded_cache_key_files", None)
-        if excluded_cache_key_files:
-            self.cache_key_files = (
-                [f for f in self.cache_key_files
-                 if f not in excluded_cache_key_files])
-        if not use_question_data_file_as_cache:
-            self.cache_key_files = (
-                [f for f in self.cache_key_files
-                 if f != page_desc.random_question_data_file])
-        self.cache_key_attrs = getattr(page_desc, "cache_key_attrs", [])
+        self.cache_key_files = self.initialize_cache_key_file_attrs(page_desc)
+        self.cache_key_attrs = self.initialize_cache_key_attrs(page_desc)
 
         self.runpy_context = {}
         if getattr(page_desc, "runpy_context", None):
             self.runpy_context = struct_to_dict(page_desc.runpy_context)
 
-        if not self.cache_key_attrs:
+        self.will_receive_grade = getattr(page_desc, "will_receive_grade", True)
+        self.updated_page_desc = None
+        self.is_page_desc_updated = False
+        self.error_updating_page_desc = None
+
+    def initialize_cache_key_file_attrs(self, page_desc):
+        # generate file lists that will be used to make cache key
+        cache_key_files_set = set(getattr(
+            page_desc, "cache_key_files", getattr(page_desc, "data_files")))
+        excluded_cache_key_file_set = set(getattr(
+            page_desc, "excluded_cache_key_files", []))
+
+        # Exclude question data file for building cache
+        excluded_cache_key_file_set.update([page_desc.random_question_data_file])
+        cache_key_files_set.difference_update(excluded_cache_key_file_set)
+        return list(cache_key_files_set)
+
+    def initialize_cache_key_attrs(self, page_desc):
+        # generate attribute list that will be used to make cache key
+        cache_key_attrs = getattr(page_desc, "cache_key_attrs", [])
+
+        if not cache_key_attrs:
             all_process_attributes = [
                 attr for attr in dir(self.page_desc)
                 if attr.endswith("_process_code")]
             all_process_attributes.append("background_code")
             for attr in all_process_attributes:
                 if hasattr(page_desc, attr):
-                    self.cache_key_attrs.append(attr)
-
-        self.will_receive_grade = getattr(page_desc, "will_receive_grade", True)
-        self.updated_page_desc = None
-        self.is_page_desc_updated = False
-        self.error_updating_page_desc = None
+                    cache_key_attrs.append(attr)
+        return cache_key_attrs
 
     def update_page_desc(self, page_context, page_data):
         if self.updated_page_desc is not None and self.is_page_desc_updated:
@@ -412,7 +423,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             ("excluded_cache_key_files", list),
             ("cache_key_files", list),
             ("cache_key_attrs", list),
-            ("use_question_data_file_as_cache", bool),
             ("warm_up_by_sandbox", bool),
             ("will_receive_grade", bool),
             ("answer_explanation_process_code", str),

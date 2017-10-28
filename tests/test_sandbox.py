@@ -91,6 +91,18 @@ class SingleCoursePageSandboxTestBaseMixin(SingleCourseTestMixin):
         data.update(answer_data)
         return cls.get_page_sandbox_post_response(data)
 
+    def get_sandbox_data_by_key(self, key):
+        return self.c.session.get("%s:%s" % (key, self.course.identifier))
+
+    def get_sandbox_page_data(self):
+        return self.get_sandbox_data_by_key("cf_page_sandbox_page_data")
+
+    def get_sandbox_answer_data(self):
+        return self.get_sandbox_data_by_key("cf_page_sandbox_answer_data")
+
+    def get_sandbox_page_session(self):
+        return self.get_sandbox_data_by_key("cf_validated_sandbox_page")
+
     def get_sandbox_response_context_value(self, resp, context_name):
         return resp.context.__getitem__(context_name)
 

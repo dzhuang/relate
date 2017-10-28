@@ -393,6 +393,7 @@ class LatexPageSandboxTest(SingleCoursePageSandboxTestBaseMixin, LatexPageMixin,
         self.assertSandboxResponseContextEqual(resp, PAGE_WARNINGS, [])
         self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_PAGE)
+        print(self.c.session.get("cf_page_sandbox_page_data:" + self.course.identifier))
 
     def test_latexpage_sandbox_answer_success(self):
         answer_data = {'blank1': ["(5/4, 19/4, 3/2)^T"]}
