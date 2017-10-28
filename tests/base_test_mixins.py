@@ -29,7 +29,8 @@ from django.test import Client, override_settings
 from django.urls import reverse, resolve
 from django.contrib.auth import get_user_model
 from relate.utils import force_remove_path
-from course.models import Course, Participation, ParticipationRole, FlowSession
+from course.models import (
+    Course, Participation, ParticipationRole, FlowSession, FlowPageData)
 from course.constants import participation_status, user_status
 from bs4 import BeautifulSoup
 
@@ -349,6 +350,9 @@ class SingleCourseTestMixin(CoursesTestMixinBase):
     def tearDownClass(cls):
         super(SingleCourseTestMixin, cls).tearDownClass()
 
+    def get_page_data(self, flow_session_id, page_id):
+        return FlowPageData.objects.get(
+            flow_session_id=flow_session_id, page_id=page_id)
 
 class SingleCoursePageTestMixin(SingleCourseTestMixin):
     @property

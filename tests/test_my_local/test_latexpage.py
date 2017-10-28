@@ -76,10 +76,21 @@ class LatexPageMixin(SingleCoursePageTestMixin, FallBackStorageMessageTestMixin)
     courses_setup_list = MY_SINGLE_COURSE_SETUP_LIST
     flow_id = LATEXPAGE_FLOW_ID
 
+    @property
+    def page_id(self):
+        raise NotImplementedError()
+
     def tearDown(self):  # noqa
         super(LatexPageMixin, self).tearDown()
         self.clear_cache()
         self.drop_test_mongo()
+
+    def get_page_data(self, flow_session_id=None, page_id=None):
+        if flow_session_id is None:
+            flow_session_id = FlowSession.objects.first().pk
+        if page_id is None:
+            page_id = self.page_id
+        return super(LatexPageMixin, self).get_page_data(flow_session_id, page_id)
 
     def clear_cache(self):
         logged_in_user_id = self.c.session['_auth_user_id']
@@ -351,6 +362,23 @@ class LatexPageOldStylePartsTest(LatexPageMixin, LocmemBackendTestsMixin, TestCa
         self.end_quiz()
         self.assertSessionScoreEqual(3)
 
+    def test_old_full_success_markdown_rendered(self):
+        page_id = "old_parts_success"
+        resp = self.c.get(self.get_page_url_by_page_id(page_id))
+
+        # make sure markdown_to_html is called in each part
+        self.assertContains(
+            resp, '<a href="http://question.example.com">question</a>')
+        self.assertContains(
+            resp, '<a href="http://blank.example.com">blank</a>')
+        self.assertNotContains(
+            resp, '<a href="http://explanation.example.com">explanation</a>')
+
+        self.c.force_login(self.instructor_participation.user)
+        resp = self.c.get(self.get_page_grading_url_by_page_id(page_id))
+        self.assertContains(
+            resp, '<a href="http://explanation.example.com">explanation</a>')
+
     def test_old_full_wrong(self):
         page_id = "old_parts_success"
         resp = self.c.get(self.get_page_url_by_page_id(page_id))
@@ -393,7 +421,22 @@ class LatexPageSandboxTest(SingleCoursePageSandboxTestBaseMixin, LatexPageMixin,
         self.assertSandboxResponseContextEqual(resp, PAGE_WARNINGS, [])
         self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_PAGE)
-        print(self.c.session.get("cf_page_sandbox_page_data:" + self.course.identifier))
+        #print(self.c.session.get("cf_page_sandbox_page_data:" + self.course.identifier))
+
+    def test_latexpage_sandbox_preview_markdown_success(self):
+        # make sure markdown_to_html is called in each part
+        resp = self.get_page_sandbox_preview_response(
+            latex_sandbox.LATEX_BLANK_FILLING_PAGE_WITH_MARKDOWN)
+        self.assertEqual(resp.status_code, 200)
+        self.assertSandboxHaveValidPage(resp)
+        self.assertSandboxResponseContextEqual(resp, PAGE_ERRORS, None)
+        self.assertSandboxResponseContextEqual(resp, PAGE_WARNINGS, [])
+        self.assertContains(
+            resp, '<a href="http://question.example.com">question</a>')
+        self.assertContains(
+            resp, '<a href="http://blank.example.com">blank</a>')
+        self.assertContains(
+            resp, '<a href="http://explanation.example.com">explanation</a>')
 
     def test_latexpage_sandbox_answer_success(self):
         answer_data = {'blank1': ["(5/4, 19/4, 3/2)^T"]}
@@ -606,6 +649,22 @@ class LatexPageSandboxTest(SingleCoursePageSandboxTestBaseMixin, LatexPageMixin,
         self.assertSandboxResponseContextContains(
             resp, PAGE_ERRORS,
             "'foo' should be listed in 'data_files'")
+
+    def test_latexpage_sandbox_warn_random_question_data_file_not_for_cache(self):
+        resp = self.get_page_sandbox_preview_response(
+            latex_sandbox.LATEX_BLANK_FILLING_RANDOM_DATA_FILE_AS_CACHEKEY_FILE)
+        self.assertEqual(resp.status_code, 200)
+        self.assertSandboxHaveValidPage(resp)
+        expected_warning_text = (
+            "'question-data/linear-programming/dual-theory/lp_simplex_3_iter_max_min_complimentary_slack_01.bin' "
+            "is not expected in 'cache_key_files' as "
+            "it will not be used for building cache")
+        self.assertSandboxWarningTextContain(resp, expected_warning_text)
+        # self.debug_print_sandbox_response_context_value(resp, "page_warnings")
+        # self.debug_print_response_messages(resp)
+        # self.assertSandboxResponseContextContains(
+        #     resp, PAGE_ERRORS,
+        #     "'foo' should be listed in 'data_files'")
 
     def test_latexpage_sandbox_no_random_question_data_file(self):
         resp = self.get_page_sandbox_preview_response(
@@ -850,14 +909,13 @@ fake_request_python_run_with_retries_return_value = {
 class LatexPageCacheTest(LatexPageMixin, TestCase):
     courses_setup_list = MY_SINGLE_COURSE_SETUP_LIST
     flow_id = LATEXPAGE_FLOW_ID
+    page_id = "lp_dual_complimentary_slack1"
 
     def setUp(self):  # noqa
         super(LatexPageCacheTest, self).setUp()
         self.c.force_login(self.student_participation.user)
         self.start_quiz(self.flow_id)
-
-        self.page_id = page_id = "lp_dual_complimentary_slack1"
-        self.c.get(self.get_page_url_by_page_id(page_id))
+        self.c.get(self.get_page_url_by_page_id(self.page_id))
 
     def test_has_cache_no_runpy_for_revisit_page(self):
         # revisit with cache
@@ -910,6 +968,7 @@ class LatexPageCacheTest(LatexPageMixin, TestCase):
 class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
     courses_setup_list = MY_SINGLE_COURSE_SETUP_LIST
     flow_id = LATEXPAGE_FLOW_ID
+    page_id = "lp_dual_complimentary_slack1"
 
     commit_sha_with_same_content =b"bc48c6d16cc60bdbb2f0d097298f81f83dc50031"
     commit_sha_with_different_content = b"29d19f8301c5efd101eb2a3c7753a4ced868597f"
@@ -918,15 +977,7 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
         super(LatexPageInitalPageDataTest, self).setUp()
         self.c.force_login(self.student_participation.user)
         self.start_quiz(self.flow_id)
-
-        self.page_id = page_id = "lp_dual_complimentary_slack1"
-        self.c.get(self.get_page_url_by_page_id(page_id))
-
-    def get_page_data(self, page_id=None):
-        if page_id is None:
-            page_id = self.page_id
-        return FlowPageData.objects.get(
-            flow_session=FlowSession.objects.first(), page_id=page_id)
+        self.c.get(self.get_page_url_by_page_id(self.page_id))
 
     def test_runpy_with_question_data_missing(self):
         # raise an error when question_data is missing
@@ -1469,6 +1520,7 @@ class LatexPageRunpyFailureTest(
         LocmemBackendTestsMixin, TestCase):
     courses_setup_list = MY_SINGLE_COURSE_SETUP_LIST
     flow_id = LATEXPAGE_FLOW_ID
+    page_id = "lp_dual_complimentary_slack1"
 
     commit_sha_with_same_content =b"bc48c6d16cc60bdbb2f0d097298f81f83dc50031"
     commit_sha_with_different_content = b"29d19f8301c5efd101eb2a3c7753a4ced868597f"
@@ -1477,15 +1529,7 @@ class LatexPageRunpyFailureTest(
         super(LatexPageRunpyFailureTest, self).setUp()
         self.c.force_login(self.student_participation.user)
         self.start_quiz(self.flow_id)
-
-        self.page_id = page_id = "lp_dual_complimentary_slack1"
-        self.c.get(self.get_page_url_by_page_id(page_id))
-
-    def get_page_data(self, page_id=None):
-        if page_id is None:
-            page_id = self.page_id
-        return FlowPageData.objects.get(
-            flow_session=FlowSession.objects.first(), page_id=page_id)
+        self.c.get(self.get_page_url_by_page_id(self.page_id))
 
     def test_switch_to_working_course_commit_sha(self):
         self.clear_cache()
