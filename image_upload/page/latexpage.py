@@ -861,42 +861,10 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             except Exception as e:
                 from traceback import format_exc
                 error_msg = "".join(format_exc())
-                # error_msg = "%s: %s" % (type(e).__name__, str(e))
                 message = self.get_error_notification_email_messages(page_context,
                                                                      error_msg)
                 self.send_error_notification_email(page_context, message)
                 return False, error_msg
-
-            assert result is not None
-
-            if isinstance(result, six.binary_type):
-                result = result.decode("utf-8")
-
-            if success:
-                if part == "full":
-                    to_set = dict(
-                        (pt, result[pt].encode('utf-8'))
-                        for pt in result.keys())
-                    to_set.update({"full": result})
-                else:
-                    to_set = {part: result.encode('utf-8')}
-                try:
-                    get_latex_page_mongo_collection().update_one(
-                        {"key": page_key, part: {"$exists": False}},
-                        {"$setOnInsert":
-                             {"key": page_key,
-                              "creation_time": local_now()
-                              },
-                         "$set": to_set},
-                        upsert=True,
-                    )
-                except DuplicateKeyError:
-                    pass
-        else:
-            debug_print("===result is found in page mongo===")
-
-        if cache_key is None:
-            return success, result
 
         assert result is not None
 
@@ -905,6 +873,38 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             return success, result
 
         assert success
+
+        if isinstance(result, six.binary_type):
+            result = result.decode("utf-8")
+
+        # {{{ save in mongodb
+        if part == "full":
+            to_set = dict(
+                (pt, result[pt].encode('utf-8'))
+                for pt in result.keys())
+            to_set.update({"full": result})
+        else:
+            to_set = {part: result.encode('utf-8')}
+        try:
+            get_latex_page_mongo_collection().update_one(
+                {"key": page_key, part: {"$exists": False}},
+                {"$setOnInsert":
+                     {"key": page_key,
+                      "creation_time": local_now()
+                      },
+                 "$set": to_set},
+                upsert=True,
+            )
+        except DuplicateKeyError:
+            pass
+
+        # }}}
+
+        # {{{ cache the result
+        if cache_key is None:
+            return success, result
+
+        assert result is not None
 
         def_cache = get_latex_cache(cache)
         if isinstance(result, dict):
@@ -926,6 +926,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 if def_cache.get(cache_key) is None:
                     def_cache.delete(cache_key)
                 def_cache.add(cache_key, result)
+        # }}}
+
         return success, result
 
     def body(self, page_context, page_data):
