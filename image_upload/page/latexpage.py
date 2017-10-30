@@ -878,25 +878,28 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             result = result.decode("utf-8")
 
         # {{{ save in mongodb
-        if part == "full":
-            to_set = dict(
-                (pt, result[pt].encode('utf-8'))
-                for pt in result.keys())
-            to_set.update({"full": result})
-        else:
-            to_set = {part: result.encode('utf-8')}
-        try:
-            get_latex_page_mongo_collection().update_one(
-                {"key": page_key, part: {"$exists": False}},
-                {"$setOnInsert":
-                     {"key": page_key,
-                      "creation_time": local_now()
-                      },
-                 "$set": to_set},
-                upsert=True,
-            )
-        except DuplicateKeyError:
-            pass
+        if not mongo_page_result:
+            # make sure the result is not re-inserted if there already exist
+            # an entry
+            if part == "full":
+                to_set = dict(
+                    (pt, result[pt].encode('utf-8'))
+                    for pt in result.keys())
+                to_set.update({"full": result})
+            else:
+                to_set = {part: result.encode('utf-8')}
+            try:
+                get_latex_page_mongo_collection().update_one(
+                    {"key": page_key, part: {"$exists": False}},
+                    {"$setOnInsert":
+                         {"key": page_key,
+                          "creation_time": local_now()
+                          },
+                     "$set": to_set},
+                    upsert=True,
+                )
+            except DuplicateKeyError:
+                pass
 
         # }}}
 

@@ -960,6 +960,26 @@ class LatexPageCacheTest(LatexPageMixin, TestCase):
                 self.assertEqual(resp.status_code, 200)
                 self.assertEqual(mock_request_python_run.call_count, 0)
 
+    def test_has_mongo_result_no_mongo_operation_for_revisit_page(self):
+        # make sure when mongodb has the entry, no update_one is called.
+        self.clear_cache()
+        with mock.patch(
+            "image_upload.page.latexpage.get_latex_page_mongo_collection",
+                autospec=True) as mock_mongo_collection:
+            import mongomock
+            client = mongomock.MongoClient()
+            db = client['somedb']
+            mock_mongo_collection.return_value = db.a
+            resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
+            self.assertEqual(resp.status_code, 200)
+            with mock.patch.object(
+                    mongomock.collection.Collection, "update_one"
+            ) as mock_update_one:
+                self.clear_cache()
+                resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
+                self.assertEqual(resp.status_code, 200)
+                self.assertEqual(mock_update_one.call_count, 0)
+                db.a.drop()
 
 
 @skipIf(skip_test, SKIP_LOCAL_TEST_REASON)
