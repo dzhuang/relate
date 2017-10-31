@@ -67,7 +67,7 @@ from .mixins import ImageUploadStorageTestMixin
 
 MY_SINGLE_COURSE_SETUP_LIST = deepcopy(SINGLE_COURSE_SETUP_LIST)
 MY_SINGLE_COURSE_SETUP_LIST[0]["course"]["git_source"] = (
-    "https://code.aliyun.com/dzhuang/my_learningwhat_test_repo.git")
+    "https://code.aliyun.com/dzhuang/my_learningwhat_test_repo2.git")
 IMAGE_UPLOAD_FLOW = "image-upload-flow"
 TEST_IMAGE_FOLDER = os.path.join(os.path.dirname(__file__), "fixtures")
 TEST_IMAGE1 = os.path.join(TEST_IMAGE_FOLDER, "test1.jpg")

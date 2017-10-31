@@ -25,6 +25,7 @@ THE SOFTWARE.
 """
 
 import six
+from copy import deepcopy
 from io import BytesIO
 import pickle
 from hashlib import md5
@@ -143,7 +144,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
     def required_attrs_if_runpy_or_full_code_missing(self):
         # if runpy_file or full_process_code is missing, the following
         # attributes must present in page_desc
-        return ["question_process_code"]
+        return []
 
     @property
     def correct_answer_attr_if_runpy_or_full_code_missing(self):
@@ -318,38 +319,58 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     cache_key_attrs.append(attr)
         return cache_key_attrs
 
+    def strip_title(self, prompt):
+        try:
+            md_body = self.markup_body_for_title()
+        except NotImplementedError:
+            from warnings import warn
+            warn(_("PageBaseWithTitle subclass '%s' does not implement "
+                   "markdown_body_for_title()")
+                 % type(self).__name__)
+        else:
+            from course.content import extract_title_from_markup
+            title = extract_title_from_markup(md_body)
+
+        return prompt.replace(title, "")
+
+    def parse_page_desc_dict(self, new_page_desc_dict):
+        new_prompt = new_page_desc_dict.pop("prompt", "")
+        if new_prompt:
+            new_page_desc_dict["prompt"] = self.page_desc.prompt + new_prompt
+        return new_page_desc_dict
+
+    def get_updated_page_desc(self, page_context, new_page_desc_dict):
+        #new_page_desc_dict = self.parse_page_desc_dict(new_page_desc_dict)
+        if self.is_page_desc_updated:
+            return self.page_desc
+        # print(new_page_desc_dict)
+        page_desc_dict = struct_to_dict(self.page_desc)
+        if not self.is_page_desc_updated:
+            prompt = self.page_desc.prompt + new_page_desc_dict["prompt"]
+            new_page_desc_dict["prompt"] = prompt
+        page_desc_dict.update(new_page_desc_dict)
+        # print(page_desc_dict["prompt"])
+        from relate.utils import dict_to_struct
+        return dict_to_struct(page_desc_dict)
+
     def update_page_desc(self, page_context, page_data):
-        if self.updated_page_desc is not None and self.is_page_desc_updated:
+        if self.is_page_desc_updated:
+            # print("updated")
             return
         if self.error_updating_page_desc is not None:
             return
 
-        if (hasattr(self.page_desc, "full_process_code")
-            or
-                hasattr(self.page_desc, "runpy_file")):
-            success, result = (
-                self.get_full_desc_from_full_process(
-                    page_context, page_data))
-            if success:
-                self.updated_page_desc = result
-            else:
-                self.updated_page_desc = {}
-                self.error_updating_page_desc = result
+        success, result = self.get_updated_page_desc_dict_cached(
+            page_context, page_data)
 
-                # When not success, stop following process
-                return
+        if success:
+            new_desc = self.get_updated_page_desc(page_context, new_page_desc_dict=result)
 
-        try:
-            self.process_update_page_desc(page_context, page_data)
-        except Exception as e:
-            from traceback import format_exc
-            error_msg = "".join(format_exc())
-            display_error = "%s: %s" % (type(e).__name__, str(e))
-            from image_upload.utils import is_course_staff_participation
-            if page_context.in_sandbox or is_course_staff_participation(
-                    page_context.flow_session.participation):
-                display_error = error_msg
-
+            super(LatexRandomQuestionBase, self).__init__(None, None, new_desc)
+            self.is_page_desc_updated = True
+        else:
+            self.error_updating_page_desc = result
+            self.is_page_desc_updated = False
             self.error_updating_page_desc = string_concat(
                 "<p class='latexpage-error alert alert-danger'>",
                 _("Error: "),
@@ -361,17 +382,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 "</p>",
                 "<div class='latexpage-error alert alert-danger'>"
                 "<pre>%s</pre></div>"
-                % (display_error))
-            message = self.get_error_notification_email_messages(page_context,
-                                                                 error_msg)
-            self.send_error_notification_email(page_context, message)
-
-        self.is_page_desc_updated = True
-
-    def process_update_page_desc(self, page_context, page_data):
-        # this is used to update and validate page_desc,
-        # make sure to raise errors when fail
-        pass
+                % result)
 
     def make_form(
             self,
@@ -390,43 +401,36 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             page_context, page_data, answer_data, page_behavior
         )
 
-    def get_full_desc_from_full_process(self, page_context, page_data):
-        # type: (PageContext, Dict) -> Tuple[bool, Union[Dict, Text]]
-        success = False  # type: bool
-        result = None  # type: Any
-
-        try:
-            success, result = self.get_cached_result(
-                page_context, page_data, part="full")
-            if success:
-                assert isinstance(result, dict)
-        except KeyError:
-            pass
-
-        return success, result
-
     def required_attrs(self):
         return super(LatexRandomQuestionBase, self).required_attrs() + (
             ("data_files", (list, str)),
             ("random_question_data_file", str),
         )
 
-    def allowed_attrs(self):
-        return super(LatexRandomQuestionBase, self).allowed_attrs() + (
+    def allowed_runpy_attrs(self):
+        runpy_attrs = [
             ("background_code", str),
             ('runpy_file', str),
             ('runpy_context', Struct),
-            ("question_process_code", str),
-            ("answer_process_code", str),
             ("full_process_code", str),
             ("docker_timeout", (int, float)),
             ("excluded_cache_key_files", list),
             ("cache_key_files", list),
             ("cache_key_attrs", list),
             ("warm_up_by_sandbox", bool),
-            ("will_receive_grade", bool),
-            ("answer_explanation_process_code", str),
-        )
+        ]
+        for attr in (super(LatexRandomQuestionBase, self).allowed_attrs()
+                         + super(LatexRandomQuestionBase, self).required_attrs()):
+            if attr[0] not in ["type", "access_rules", "value", "title",
+                            "widget", "id", "is_optional_page"]:
+                runpy_attrs.append(("%s_process_code" % attr[0], str))
+        return runpy_attrs
+
+    def allowed_attrs(self):
+        # print(self.allowed_runpy_attrs())
+        return (
+            super(LatexRandomQuestionBase, self).allowed_attrs()
+            + tuple(self.allowed_runpy_attrs()))
 
     def is_answer_gradable(self):
         return self.will_receive_grade
@@ -715,35 +719,10 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 "key_making_string_md5": key_making_string_md5
             }
 
-            # let all processing code run to get the cache
-            all_process_attribute_parts = [
-                attr.replace("_process_code", "")
-                for attr in dir(self.page_desc)
-                if attr.endswith("_process_code")]
-
-            if "full" in all_process_attribute_parts:
-                all_process_attribute_parts = ["full"]
-
-            for part in all_process_attribute_parts:
-                try:
-                    success, result = self.get_cached_result(
-                            page_context, page_data, part=part)
-                    if success:
-                        # when result is full or by run_py
-                        if isinstance(result, dict):
-                            for k, v in result.items():
-                                try:
-                                    markup_to_html(page_context, v)
-                                except:
-                                    pass
-                        else:
-                            try:
-                                markup_to_html(page_context, result)
-                            except:
-                                pass
-
-                except KeyError:
-                    continue
+            # success, result = self.get_updated_page_desc_dict_cached(
+            #     page_context, page_data)
+            #
+            # # todo: try to do markdown
 
         return {"question_data": question_data,
                 "template_hash": template_hash,
@@ -783,8 +762,20 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         assert (_id)
         return _id
 
-    def get_cached_result(self, page_context, page_data, part=""):
-        # type: (PageContext, Dict, Optional[Text]) -> Tuple[bool, Optional[Union[Text, Dict]]]  # noqa
+    def validate_updated_page_desc(self, page_context, new_desc_dict):
+        new_desc_dict_copy = deepcopy(new_desc_dict)
+        new_desc = self.get_updated_page_desc(page_context,
+                                              new_page_desc_dict=new_desc_dict_copy)
+
+        from course.validation import ValidationContext
+        vctx = ValidationContext(
+            repo=page_context.repo,
+            commit_sha=page_context.commit_sha)
+        super(LatexRandomQuestionBase, self).__init__(vctx, None, new_desc)
+        return new_desc
+
+    def get_updated_page_desc_dict_cached(self, page_context, page_data):
+        # type: (PageContext, Dict) -> Tuple[bool, Union[Dict, Text]]
 
         try:
             key_making_string_md5 = page_data["key_making_string_md5"]
@@ -808,21 +799,17 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 updated_page_data["key_making_string_md5"])
 
         page_key = make_latex_page_key(key_making_string_md5)
-        part_key = ("%s:%s" % (page_key, part))
 
         try:
             import django.core.cache as cache
         except ImproperlyConfigured:
             cache_key = None
         else:
-            cache_key = part_key
+            cache_key = page_key
             def_cache = get_latex_cache(cache)
             result = def_cache.get(cache_key)
             if result is not None:
-                if part == "full":
-                    assert isinstance(result, dict)
-                else:
-                    assert isinstance(result, six.text_type)
+                assert isinstance(result, dict)
                 debug_print("===result is in cache===")
                 return True, result
 
@@ -831,16 +818,14 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         # cache_key is None means cache is not enabled
         result = None
         success = False
+        error_msg = None
 
         # read from page collection
         mongo_page_result = get_latex_page_mongo_collection().find_one(
-            {"key": page_key, part: {"$exists": True}}
+            {"key": page_key}
         )
         if mongo_page_result:
-            if part == "full":
-                result = mongo_page_result[part]
-            else:
-                result = mongo_page_result[part].decode("utf-8")
+            result = mongo_page_result["content"]
             assert result is not None
             debug_print("===result is found in page mongo===!")
             success = True
@@ -849,53 +834,110 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             debug_print("!!!!!! runpy !!!!!!")
             try:
                 runpy_kwargs = {}
+
+                all_process_attribute_parts = [
+                    attr.replace("_process_code", "")
+                    for attr in dir(self.page_desc)
+                    if attr.endswith("_process_code")]
+                # print(all_process_attribute_parts, "parts")
+                if "full" in all_process_attribute_parts or hasattr(self.page_desc, "runpy_file"):
+                    all_process_attribute_parts = ["full"]
+
+                assert all_process_attribute_parts
+
                 if (not hasattr(self.page_desc, "runpy_file")
-                    or
-                            part != "full"):
+                        or "full" not in all_process_attribute_parts):
                     runpy_kwargs["common_code_name"] = "background_code"
-                success, result = self.jinja_runpy(
-                    page_context,
-                    page_data["question_data"],
-                    "%s_process_code" % part,
-                    **runpy_kwargs)
+
+                # print(all_process_attribute_parts, "--------------------")
+                new_page_desc_dict = {}
+                for part in all_process_attribute_parts:
+                    success, result = self.jinja_runpy(
+                        page_context,
+                        page_data["question_data"],
+                        "%s_process_code" % part,
+                        **runpy_kwargs)
+                    if success:
+                        if isinstance(result, dict):
+                            for k in result.keys():
+                                # this should result from the full part
+                                if isinstance(result[k], six.binary_type):
+                                    result[k] = result[k].decode("utf-8")
+                            new_page_desc_dict = result
+                        else:
+                            if isinstance(result, six.binary_type):
+                                result = result.decode("utf-8")
+                            new_page_desc_dict[part] = result
+                    else:
+                        if isinstance(result, six.binary_type):
+                            result = result.decode("utf-8")
+                        #assert isinstance(result, six.text_type)
+                        raise RuntimeError(result)
+                result = new_page_desc_dict
             except Exception as e:
+                # print("here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                # print(type(e).__name__, str(e))
                 from traceback import format_exc
-                error_msg = "".join(format_exc())
-                message = self.get_error_notification_email_messages(page_context,
-                                                                     error_msg)
-                self.send_error_notification_email(page_context, message)
+                # todo: different message for staff and participation
+                from image_upload.utils import is_course_staff_participation
+                if page_context.in_sandbox or is_course_staff_participation(
+                        page_context.flow_session.participation):
+                    error_msg = "".join(format_exc())
+                else:
+                    error_msg = result
+
                 return False, error_msg
 
         assert result is not None
-
-        # Important! prevent failure result being saved in cache and mongodb!
-        if not success:
-            return success, result
-
         assert success
-
-        if isinstance(result, six.binary_type):
-            result = result.decode("utf-8")
 
         # {{{ save in mongodb
         if not mongo_page_result:
             # make sure the result is not re-inserted if there already exist
             # an entry
-            if part == "full":
-                to_set = dict(
-                    (pt, result[pt].encode('utf-8'))
-                    for pt in result.keys())
-                to_set.update({"full": result})
+
+            try:
+                self.validate_updated_page_desc(page_context, result)
+                self.is_page_desc_updated = True
+            except Exception as e:
+                from traceback import format_exc
+                error_msg = "".join(format_exc())
+                display_error = "%s: %s" % (type(e).__name__, str(e))
+                from image_upload.utils import is_course_staff_participation
+                if page_context.in_sandbox or is_course_staff_participation(
+                        page_context.flow_session.participation):
+                    display_error = error_msg
+
+                self.error_updating_page_desc = string_concat(
+                    "<p class='latexpage-error alert alert-danger'>",
+                    _("Error: "),
+                    _(
+                        "The page failed to be rendered. Sorry about that. "
+                        "The staff has been informed, and "
+                        "it will be fixed as soon as possible."
+                    ),
+                    "</p>",
+                    "<div class='latexpage-error alert alert-danger'>"
+                    "<pre>%s</pre></div>"
+                    % (display_error))
+
+                # Todo: don't email when debug
+                message = self.get_error_notification_email_messages(page_context,
+                                                                     error_msg)
+                self.send_error_notification_email(page_context, message)
+                # print("here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                return False, self.error_updating_page_desc
             else:
-                to_set = {part: result.encode('utf-8')}
+                success = True
+
             try:
                 get_latex_page_mongo_collection().update_one(
-                    {"key": page_key, part: {"$exists": False}},
+                    {"key": page_key, "content": {"$exists": False}},
                     {"$setOnInsert":
                          {"key": page_key,
                           "creation_time": local_now()
                           },
-                     "$set": to_set},
+                     "$set": {"content": result}},
                     upsert=True,
                 )
             except DuplicateKeyError:
@@ -910,25 +952,11 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         assert result is not None
 
         def_cache = get_latex_cache(cache)
-        if isinstance(result, dict):
-            for pt, v in result.items():
-                if not isinstance(v, six.text_type):
-                    v = six.text_type(v)
-                part_key = "%s:%s" % (page_key, pt)
-                if (len(v) <= (
-                        getattr(settings, "RELATE_CACHE_MAX_BYTES", 0))):
-                    def_cache.add(part_key, v)
-            part_key = "%s:%s" % (page_key, "full")
-            if (len(result) <= (
-                    getattr(settings, "RELATE_CACHE_MAX_BYTES", 0))):
-                def_cache.add(part_key, result)
-        else:
-            assert isinstance(result, six.text_type), cache_key
-            if len(result) <= (
-                        getattr(settings, "RELATE_CACHE_MAX_BYTES", 0)):
-                if def_cache.get(cache_key) is None:
-                    def_cache.delete(cache_key)
-                def_cache.add(cache_key, result)
+        assert isinstance(result, dict)
+        import sys
+        if (sys.getsizeof(result) <= (
+                getattr(settings, "RELATE_CACHE_MAX_BYTES", 0))):
+            def_cache.add(page_key, result)
         # }}}
 
         return success, result
@@ -937,26 +965,27 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         self.update_page_desc(page_context, page_data)
         if self.error_updating_page_desc:
             return self.error_updating_page_desc
+        return super(LatexRandomQuestionBase, self).body(page_context, page_data)
 
-        if self.updated_page_desc:
-            question_str = markup_to_html(
-                page_context,
-                self.updated_page_desc.get("question", ""))
-        else:
-            success, question_str = self.get_cached_result(
-                    page_context, page_data, part="question")
-            if success:
-                question_str = markup_to_html(page_context, question_str)
-
-            if page_context.in_sandbox:
-                # generate correct answer at the same time
-                success, answer_str = self.get_updated_correct_answer_string(
-                    page_context, page_data)
-                if success:
-                    markup_to_html(page_context, answer_str)
-
-        return (super(LatexRandomQuestionBase, self).body(page_context, page_data)
-                + question_str)
+    #
+    #     if self.is_page_desc_updated:
+    #         return (
+    #         super(LatexRandomQuestionBase, self).body(page_context, page_data))
+    #
+    #     success, question_str = self.get_updated_page_desc_dict_cached(
+    #             page_context, page_data, part="question")
+    #     if success:
+    #         question_str = markup_to_html(page_context, question_str)
+    #
+    #     if page_context.in_sandbox:
+    #         # generate correct answer at the same time
+    #         success, answer_str = self.get_updated_correct_answer_string(
+    #             page_context, page_data)
+    #         if success:
+    #             markup_to_html(page_context, answer_str)
+    #
+    #     return (super(LatexRandomQuestionBase, self).body(page_context, page_data)
+    #             + question_str)
 
     def send_error_notification_email(self, page_context, message):
         from django.core.mail import EmailMessage
@@ -1227,29 +1256,11 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 attr = self.correct_answer_attr_if_runpy_or_full_code_missing
                 if hasattr(self.page_desc, attr):
                     part_name = attr.replace("_process_code", "")
-                    success, answer_str = self.get_cached_result(
-                                       page_context, page_data, part=part_name)
+                    success, answer_str = self.get_updated_page_desc_dict_cached(
+                                       page_context, page_data)
             else:
                 success = True
         return success, answer_str
-
-    def correct_answer(self, page_context, page_data, answer_data, grade_data):
-        if self.error_updating_page_desc:
-            return self.error_updating_page_desc
-
-        CA_PATTERN = string_concat(_("A correct answer is"), ": %s.")  # noqa
-
-        success, answer_str = self.get_updated_correct_answer_string(
-            page_context, page_data)
-        if success:
-            answer_str = markup_to_html(page_context, answer_str)
-
-        super_correct_answer = super(LatexRandomQuestionBase, self)\
-                .correct_answer(page_context, page_data, answer_data, grade_data)
-        if super_correct_answer:
-            return super_correct_answer + answer_str
-        else:
-            return CA_PATTERN % answer_str
 
 
 class LatexRandomQuestion(LatexRandomQuestionBase):
@@ -1269,7 +1280,6 @@ class LatexRandomCodeTextQuestion(LatexRandomQuestion, TextQuestion):
 
 
 class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestion):
-    need_update_page_desc = True
     correct_answer_attr_if_runpy_or_full_code_missing = None
 
     @property
@@ -1277,72 +1287,18 @@ class LatexRandomCodeInlineMultiQuestion(LatexRandomQuestion, InlineMultiQuestio
         return (
             super(LatexRandomCodeInlineMultiQuestion, self)
             .required_attrs_if_runpy_or_full_code_missing
-            + ["blank_process_code", "blank_answer_process_code"])
+            + ["question_process_code", "answers_process_code"])
 
-    def process_update_page_desc(self, page_context, page_data):
-        from course.page.inline import WRAPPED_NAME_RE, NAME_RE
-
-        answer_explanation_str = ""
-
-        if self.updated_page_desc:
-            blank_str = self.updated_page_desc.get("blank")
-            blank_answers_str = self.updated_page_desc.get("blank_answer")
-            answer_explanation_str = (
-                self.updated_page_desc.get("answer_explanation"))
-        else:
-            success, blank_str = self.get_cached_result(
-                page_context, page_data, part="blank")
-
-            if not success:
-                raise RuntimeError(blank_str)
-
-            success, blank_answers_str = self.get_cached_result(
-                page_context, page_data, part="blank_answer")
-
-            if not success:
-                raise RuntimeError(blank_answers_str)
-
-            if hasattr(self.page_desc, "answer_explanation_process_code"):
-                success, answer_explanation_str = self.get_cached_result(
-                    page_context, page_data, part="answer_explanation")
-
-                if not success:
-                    raise RuntimeError(answer_explanation_str)
-
-        if answer_explanation_str:
-            self.page_desc.answer_explanation = answer_explanation_str
-
-        try:
-            question = markup_to_html(page_context, blank_str)
-            from relate.utils import dict_to_struct
-            import yaml
-            answers = dict_to_struct(yaml.load(blank_answers_str))
-            self.page_desc.question = question
-            self.page_desc.answers = answers
-            self.embedded_wrapped_name_list = WRAPPED_NAME_RE.findall(
-                    self.page_desc.question)
-            self.embedded_name_list = NAME_RE.findall(self.page_desc.question)
-            answer_instance_list = []
-
-            for idx, name in enumerate(self.embedded_name_list):
-                answers_desc = getattr(self.page_desc.answers, name)
-
-                from course.page.inline import parse_question
-                from course.validation import ValidationContext
-                vctx = ValidationContext(
-                    repo=page_context.repo,
-                    commit_sha=page_context.commit_sha)
-
-                parsed_answer = parse_question(
-                        vctx, "<runpy error>", name, answers_desc)
-                answer_instance_list.append(parsed_answer)
-
-            self.answer_instance_list = answer_instance_list
-        except Exception as e:
-            self.error_updating_page_desc = (
-                "%s: %s" % (type(e).__name__, str(e))
-            )
-            raise RuntimeError("%s: %s" % (type(e).__name__, str(e)))
+    def get_updated_page_desc(self, page_context, new_page_desc_dict):
+        new_desc = (
+            super(LatexRandomCodeInlineMultiQuestion, self)
+                .get_updated_page_desc(page_context, new_page_desc_dict))
+        if hasattr(new_desc, "answers"):
+            if not isinstance(new_desc.answers, Struct):
+                from relate.utils import dict_to_struct
+                import yaml
+                new_desc.answers = dict_to_struct(yaml.load(new_desc.answers))
+        return new_desc
 
     def get_question(self, page_context, page_data):
         # template error is supposed to be raised here

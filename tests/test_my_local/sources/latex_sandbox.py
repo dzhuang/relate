@@ -349,13 +349,13 @@ data_files:\r
 cache_key_files:\r
     - "question-data/linear-programming/lpmodel.py"\r
 random_question_data_file: "question-data/linear-programming/dual-theory/lp_simplex_3_iter_max_min_complimentary_slack_01.bin"\r
+prompt_process_code: |
+    print("abcd")
+    
 question_process_code: |
     print("abcd")
     
-blank_process_code: |
-    print("abcd")
-    
-blank_answer_process_code: |
+answers_process_code: |
     print("abcd")
 
 question: |\r
@@ -400,10 +400,10 @@ excluded_cache_key_files:\r
     - "question-data/linear-programming/lpmodel.py"\r
     - "question-data/linear-programming/linprog.py"\r
 random_question_data_file: "question-data/linear-programming/dual-theory/lp_simplex_3_iter_max_min_complimentary_slack_01.bin"\r
-question_process_code: |
+prompt_process_code: |
     print("abcd")
 
-blank_process_code: |
+question_process_code: |
     print("abcd")
 
 question: |\r
@@ -658,7 +658,7 @@ background_code: |\r
     for j, l in enumerate(L):\r
         l = [e.title() if e != "PHP" else e for e in l]\r
         L[j] = l\r
-question_process_code: |\r
+prompt_process_code: |\r
     print("L = %s" % repr(L))\r
 setup_code: |\r
     from io import BytesIO\r
@@ -846,7 +846,7 @@ background_code: |\r
             % (r"(%s)^T" % ",\,".join(lp.opt_x),)\r
         )\r
         answer1 = "(%s)^T" % ",".join(lp.opt_value_without_frac)\r
-question_process_code: |\r
+prompt_process_code: |\r
     tex = template.render(\r
         show_question=True,\r
         show_answer=False,\r
@@ -855,7 +855,7 @@ question_process_code: |\r
         lp=lp,\r
     )\r
     print(tex)\r
-blank_process_code: |\r
+question_process_code: |\r
     tex = template.render(\r
         show_question=False,\r
         show_answer=False,\r
@@ -865,7 +865,7 @@ blank_process_code: |\r
         lp=lp,\r
     )\r
     print(tex)\r
-blank_answer_process_code: |\r
+answers_process_code: |\r
     tex = template.render(\r
         show_question=False,\r
         show_answer=False,\r
@@ -969,7 +969,7 @@ background_code: |\r
             % (r"(%s)^T" % ",\,".join(lp.opt_x),)\r
         )\r
         answer1 = "(%s)^T" % ",".join(lp.opt_value_without_frac)\r
-question_process_code: |\r
+prompt_process_code: |\r
     tex = template.render(\r
         show_question=True,\r
         show_answer=False,\r
@@ -978,7 +978,7 @@ question_process_code: |\r
         lp=lp,\r
     )\r
     print(tex)\r
-blank_process_code: |\r
+question_process_code: |\r
     tex = template.render(\r
         show_question=False,\r
         show_answer=False,\r
@@ -988,7 +988,7 @@ blank_process_code: |\r
         lp=lp,\r
     )\r
     print(tex)\r
-blank_answer_process_code: |\r
+answers_process_code: |\r
     tex = template.render(\r
         show_question=False,\r
         show_answer=False,\r
@@ -1095,7 +1095,7 @@ background_code: |\r
             % (r"(%s)^T" % ",\,".join(lp.opt_x),)\r
         )\r
         answer1 = "(%s)^T" % ",".join(lp.opt_value_without_frac)\r
-question_process_code: |\r
+prompt_process_code: |\r
     # This is another comment\r
     tex = template.render(\r
         show_question=True,\r
@@ -1105,7 +1105,7 @@ question_process_code: |\r
         lp=lp,\r
     )\r
     print(tex)\r
-blank_process_code: |\r
+question_process_code: |\r
     # This is yet another comment, the following block add some spaces\r
     tex = template.render(    \r
         show_question = False,\r
@@ -1116,7 +1116,7 @@ blank_process_code: |\r
         lp=lp,\r
     )\r
     print(tex)\r
-blank_answer_process_code: |\r
+answers_process_code: |\r
     # This is yyet another comment\r
     tex = template.render(\r
         show_question=False,\r
@@ -1225,7 +1225,7 @@ background_code: |\r
             % (r"(%s)^T" % ",\,".join(lp.opt_x),)\r
         )\r
         answer1 = "(%s)^T" % ",".join(lp.opt_value_without_frac)\r
-question_process_code: |\r
+prompt_process_code: |\r
     # This is another comment\r
     tex = template.render(\r
         show_question=True,\r
@@ -1235,7 +1235,7 @@ question_process_code: |\r
         lp=lp,\r
     )\r
     print(tex)\r
-blank_process_code: |\r
+question_process_code: |\r
     # This is yet another comment, the following block add some spaces\r
     tex = template.render(    \r
         show_question = False,\r
@@ -1246,7 +1246,7 @@ blank_process_code: |\r
         lp=lp,\r
     )\r
     print(tex)\r
-blank_answer_process_code: |\r
+answers_process_code: |\r
     # And this is not comment at all\r
     tex = template.render(\r
         show_question=False,\r
@@ -1356,18 +1356,18 @@ background_code: |\r
         )\r
         answer1 = "(%s)^T" % ",".join(lp.opt_value_without_frac)\r
     \r
+    class PromptProcessCodeException(Exception):\r
+        pass\r
     class QuestionProcessCodeException(Exception):\r
         pass\r
-    class BlankProcessCodeException(Exception):\r
-        pass\r
-    class BlankAnswerProcessCodeException(Exception):\r
+    class AnswersProcessCodeException(Exception):\r
         pass\r
     class AnswerExplanationProcessCodeException(Exception):\r
         pass\r
     error_info = "test exception"
-question_process_code: |\r
+prompt_process_code: |\r
     # This is another comment\r
-    #raise QuestionProcessCodeException(error_info)\r
+    #raise PromptProcessCodeException(error_info)\r
     tex = template.render(\r
         show_question=True,\r
         show_answer=False,\r
@@ -1376,9 +1376,9 @@ question_process_code: |\r
         lp=lp,\r
     )\r
     print(tex)\r
-blank_process_code: |\r
+question_process_code: |\r
     # This is yet another comment, the following block add some spaces\r
-    #raise BlankProcessCodeException(error_info)\r
+    #raise QuestionProcessCodeException(error_info)\r
     tex = template.render(    \r
         show_question = False,\r
         show_answer=False,     \r
@@ -1388,9 +1388,9 @@ blank_process_code: |\r
         lp=lp,\r
     )\r
     print(tex)\r
-blank_answer_process_code: |\r
+answers_process_code: |\r
     # And this is not comment at all\r
-    #raise BlankAnswerProcessCodeException(error_info)\r
+    #raise AnswersProcessCodeException(error_info)\r
     tex = template.render(\r
         show_question=False,\r
         show_answer=False,\r
@@ -1496,7 +1496,7 @@ background_code: |\r
             % (r"(%s)^T" % ",\,".join(lp.opt_x),)\r
         )\r
         answer1 = "(%s)^T" % ",".join(lp.opt_value_without_frac)\r
-question_process_code: |\r
+prompt_process_code: |\r
     tex = template.render(\r
         show_question=True,\r
         show_answer=False,\r
@@ -1505,7 +1505,7 @@ question_process_code: |\r
         lp=lp,\r
     )\r
     print(tex)\r
-blank_process_code: |\r
+question_process_code: |\r
     tex = template.render(\r
         show_question=False,\r
         show_answer=False,\r
@@ -1515,7 +1515,7 @@ blank_process_code: |\r
         lp=lp,\r
     )\r
     print(tex)\r
-blank_answer_process_code: |\r
+answers_process_code: |\r
     tex = template.render(\r
         show_question=False,\r
         show_answer=False,\r
