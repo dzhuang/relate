@@ -70,6 +70,7 @@ def disable_cache():
 LATEXPAGE_FLOW_ID = "latex-flow"
 LATEXPAGE_FLOW_OLD = "latex-flow-old-style"
 LATEXPAGE_FLOW_OLD_FULL_ID = "latex-flow-old-style-full"
+LATEXPAGE_FLOW_WITH_LATEX_MACRO = "latex-flow-with-macro"
 
 
 class LatexPageMixin(SingleCoursePageTestMixin, FallBackStorageMessageTestMixin):
@@ -183,6 +184,12 @@ class LatexPageTest(LatexPageMixin, TestCase):
         self.end_quiz()
         self.assertSessionScoreEqual(1)
 
+    def test_1_success_assert_only_one_title(self):
+        page_id = "lp_dual_complimentary_slack1"
+        resp = self.c.get(self.get_page_url_by_page_id(page_id))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, u"<h1>互补松弛定理的应用</h1>", count=1)
+
     def test_1_wrong(self):
         page_id = "lp_dual_complimentary_slack1"
 
@@ -244,6 +251,35 @@ class LatexPageTest(LatexPageMixin, TestCase):
         resp = self.c.get(self.get_page_url_by_page_id(page_id))
         self.assertEqual(resp.status_code, 200)
 
+
+@skipIf(skip_test, SKIP_LOCAL_TEST_REASON)
+@override_settings(
+    CACHE_BACKEND='dummy:///')
+class LatexPageWithMacroTest(LatexPageMixin, LocmemBackendTestsMixin, TestCase):
+    courses_setup_list = MY_SINGLE_COURSE_SETUP_LIST
+    flow_id = LATEXPAGE_FLOW_WITH_LATEX_MACRO
+
+    def setUp(self):  # noqa
+        super(LatexPageWithMacroTest, self).setUp()
+        self.c.force_login(self.student_participation.user)
+        self.start_quiz(self.flow_id)
+
+    def test_success_page(self):
+        page_id = "lp_dual_complimentary_slack_macro"
+        resp = self.c.get(self.get_page_url_by_page_id(page_id))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, '<img src="data:image/png;base64')
+        self.assertNotContains(resp, "The page failed to be rendered")
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_fail_page(self):
+        page_id = "lp_dual_complimentary_slack_macro_failure"
+        resp = self.c.get(self.get_page_url_by_page_id(page_id))
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotContains(resp, '<img src="data:image/png;base64')
+        self.assertContains(resp, "The page failed to be rendered")
+        self.assertContains(resp, "Environment align* undefined")
+        self.assertEqual(len(mail.outbox), 1)
 
 @skipIf(skip_test, SKIP_LOCAL_TEST_REASON)
 @override_settings(
@@ -422,6 +458,12 @@ class LatexPageSandboxTest(SingleCoursePageSandboxTestBaseMixin, LatexPageMixin,
         self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_PAGE)
         #print(self.c.session.get("cf_page_sandbox_page_data:" + self.course.identifier))
+
+    def test_latexpage_sandbox_preview_success_assert_title_count_1(self):
+        resp = self.get_page_sandbox_preview_response(
+            latex_sandbox.LATEX_BLANK_FILLING_PAGE)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, u"<h1>互补松弛定理的应用</h1>")
 
     def test_latexpage_sandbox_preview_markdown_success(self):
         # make sure markdown_to_html is called in each part
@@ -1320,15 +1362,14 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
 
         if cache_key is not None:
             target_latex_page_entry = latex_page_collection().find_one(
-                {"key": cache_key, "full": {"$exists": True}}
+                {"key": cache_key}
             )
             self.assertIsNotNone(target_latex_page_entry)
-            cache_key_full = "%s:%s" % (cache_key, "full")
             def_cache = get_latex_cache(cache)
-            result = def_cache.get(cache_key_full)
+            result = def_cache.get(cache_key)
             self.assertIsNotNone(result)
 
-            expected_result = target_latex_page_entry["full"]
+            expected_result = target_latex_page_entry["content"]
             for k in expected_result.keys():
                 self.assertEqual(result[k], expected_result[k])
 
@@ -1654,8 +1695,7 @@ class LatexPageRunpyFailureTest(
                 template_hash, question_data)
 
             import django.core.cache as cache
-            page_key = make_latex_page_key(key_making_string_md5)
-            cache_key = "%s:full" % page_key
+            cache_key = make_latex_page_key(key_making_string_md5)
             def_cache = get_latex_cache(cache)
 
             self.assertIsNone(def_cache.get(cache_key),

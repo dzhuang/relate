@@ -1630,7 +1630,7 @@ full_process_code: |\r
         lp=lp,\r
     )\r
     feed_back_dict = {}\r
-    feed_back_dict.update({"question": question_tex})\r
+    feed_back_dict.update({"prompt": question_tex})\r
     blank_tex = template.render(\r
         show_question=False,\r
         show_answer=False,\r
@@ -1639,7 +1639,7 @@ full_process_code: |\r
         show_blank=True,\r
         lp=lp,\r
     )\r
-    feed_back_dict.update({"blank": blank_tex})\r
+    feed_back_dict.update({"question": blank_tex})\r
     blank_answer_tex = template.render(\r
         show_question=False,\r
         show_answer=False,\r
@@ -1650,7 +1650,7 @@ full_process_code: |\r
         forced_left_wrapper='["("]',\r
         forced_right_wrapper='[")", ")^T"]',\r
     )\r
-    feed_back_dict.update({"blank_answer": blank_answer_tex})\r
+    feed_back_dict.update({"answers": blank_answer_tex})\r
     answer_explanation_tex = template.render(\r
         show_answer_explanation=True,\r
         answer1="$%s$" % answer1,\r
