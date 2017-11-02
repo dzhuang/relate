@@ -55,7 +55,7 @@ from relate.utils import local_now, Struct, struct_to_dict
 
 from course.page.base import (
     PageBaseWithTitle, PageBaseWithValue,
-    PageBaseWithCorrectAnswer, markup_to_html)
+    PageBaseWithCorrectAnswer)
 from course.page import (  # type: ignore
     ChoiceQuestion, MultipleChoiceQuestion, TextQuestion,
     InlineMultiQuestion)
@@ -273,6 +273,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                         raise ValidationError("%s: attribute '%s' not found"
                                               % (location, attr))
 
+        self.original_page_desc_prompt = getattr(page_desc, "prompt", "")
         self.docker_run_timeout = getattr(page_desc, "docker_timeout", 5)
 
         # These files/attrs are used to generate rendered body and correct answer
@@ -285,7 +286,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             self.runpy_context = struct_to_dict(page_desc.runpy_context)
 
         self.will_receive_grade = getattr(page_desc, "will_receive_grade", True)
-        self.updated_page_desc = None
         self.is_page_desc_updated = False
         self.error_updating_page_desc = None
 
@@ -321,7 +321,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         page_desc_dict = struct_to_dict(self.page_desc)
         new_page_desc_dict["prompt"] = (
-            self.page_desc.prompt + "\n" + new_page_desc_dict["prompt"])
+            self.original_page_desc_prompt + "\n" + new_page_desc_dict["prompt"])
         page_desc_dict.update(new_page_desc_dict)
 
         from relate.utils import dict_to_struct
@@ -692,10 +692,14 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 "key_making_string_md5": key_making_string_md5
             }
 
-            # success, result = self.get_updated_page_desc_dict_cached(
-            #     page_context, page_data)
-            #
-            # # todo: try to do markdown
+            # try to do markup_to_html in warmup
+            self.is_page_desc_updated = False
+
+            self.update_page_desc(page_context, page_data)
+
+            self.body(page_context, page_data)
+            self.correct_answer(page_context, page_data,
+                                answer_data=None, grade_data=None)
 
         return {"question_data": question_data,
                 "template_hash": template_hash,

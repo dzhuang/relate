@@ -72,6 +72,8 @@ LATEXPAGE_FLOW_OLD = "latex-flow-old-style"
 LATEXPAGE_FLOW_OLD_FULL_ID = "latex-flow-old-style-full"
 LATEXPAGE_FLOW_WITH_LATEX_MACRO = "latex-flow-with-macro"
 
+COMMIT_SHA_WITH_SAME_CONTENT = b"465d8c8df5ad7679fe481d19712eb51f454cd5c4"
+COMMIT_SHA_WITH_DIFFERENT_CONTENT = b"7bb8ccea1348123b25a952eacc7a3c7ac9157d4f"
 
 class LatexPageMixin(SingleCoursePageTestMixin, FallBackStorageMessageTestMixin):
     courses_setup_list = MY_SINGLE_COURSE_SETUP_LIST
@@ -268,7 +270,8 @@ class LatexPageWithMacroTest(LatexPageMixin, LocmemBackendTestsMixin, TestCase):
         page_id = "lp_dual_complimentary_slack_macro"
         resp = self.c.get(self.get_page_url_by_page_id(page_id))
         self.assertEqual(resp.status_code, 200)
-        self.assertContains(resp, '<img src="data:image/png;base64')
+        self.assertContains(resp, 'data:image/png;base64')
+        self.assertContains(resp, 'img-responsive', count=1)
         self.assertNotContains(resp, "The page failed to be rendered")
         self.assertEqual(len(mail.outbox), 0)
 
@@ -276,7 +279,7 @@ class LatexPageWithMacroTest(LatexPageMixin, LocmemBackendTestsMixin, TestCase):
         page_id = "lp_dual_complimentary_slack_macro_failure"
         resp = self.c.get(self.get_page_url_by_page_id(page_id))
         self.assertEqual(resp.status_code, 200)
-        self.assertNotContains(resp, '<img src="data:image/png;base64')
+        self.assertNotContains(resp, 'img-responsive')
         self.assertContains(resp, "The page failed to be rendered")
         self.assertContains(resp, "Environment align* undefined")
         self.assertEqual(len(mail.outbox), 1)
@@ -463,7 +466,13 @@ class LatexPageSandboxTest(SingleCoursePageSandboxTestBaseMixin, LatexPageMixin,
         resp = self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_PAGE)
         self.assertEqual(resp.status_code, 200)
-        self.assertContains(resp, u"<h1>互补松弛定理的应用</h1>")
+        self.assertContains(resp, u"<h1>互补松弛定理的应用</h1>", count=1)
+
+    def test_latexpage_sandbox_preview_success_assert_content_count_1(self):
+        resp = self.get_page_sandbox_preview_response(
+            latex_sandbox.LATEX_BLANK_FILLING_PAGE)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, u"已知线性规划问题", count=1)
 
     def test_latexpage_sandbox_preview_markdown_success(self):
         # make sure markdown_to_html is called in each part
@@ -506,13 +515,41 @@ class LatexPageSandboxTest(SingleCoursePageSandboxTestBaseMixin, LatexPageMixin,
             resp, "LatexRandomCodeInlineMultiQuestion not using attribute "
                   "'runpy_file' is for debug only, it should not be used "
                   "in production.")
-        self.get_page_sandbox_preview_response(
-            latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS_MULTIPLE_DATA)
 
-        # to cover get result from mongodb
+    def test_latexpage_sandbox_old_style_preview_success_no_cache_assert_read_from_mongo(self):
+        resp = self.get_page_sandbox_preview_response(
+            latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS_MULTIPLE_DATA)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(self.latex_page_mongo_items_count(), 2)
+
+        self.c.logout()
+        self.c.force_login(self.instructor_participation.user)
+
+        # this is also used to cover get result from mongodb
         self.clear_cache()
         self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS_MULTIPLE_DATA)
+
+        # no new entry in mongo page collection
+        self.assertEqual(self.latex_page_mongo_items_count(), 2)
+
+    def test_latexpage_sandbox_old_style_preview_success_no_cache_switch_commit_sha_no_new_mongo_entry(self):
+        resp = self.get_page_sandbox_preview_response(
+            latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS_MULTIPLE_DATA)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(self.latex_page_mongo_items_count(), 2)
+
+        self.c.logout()
+        self.c.force_login(self.instructor_participation.user)
+
+        self.clear_cache()
+        self.update_course_to_commit_sha(COMMIT_SHA_WITH_SAME_CONTENT)
+
+        self.get_page_sandbox_preview_response(
+            latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS_MULTIPLE_DATA)
+
+        # no new entry in mongo page collection
+        self.assertEqual(self.latex_page_mongo_items_count(), 2)
 
     def test_latexpage_sandbox_old_style_answer_success(self):
         answer_data = {'blank1': ["(5/4, 19/4, 3/2)^T"]}
@@ -808,11 +845,51 @@ class LatexPageSandboxTest(SingleCoursePageSandboxTestBaseMixin, LatexPageMixin,
         self.assertContains(resp, "This is the exception traceback")
         self.assertEqual(len(mail.outbox), 0)
 
+    def test_latexpage_sandbox_success_warm_up_by_sandbox(self):
+        resp = self.get_page_sandbox_preview_response(
+            latex_sandbox.LATEX_BLANK_FILLING_PAGE_WARMUP_BY_SANDBOX)
+        self.assertEqual(resp.status_code, 200)
+        self.assertSandboxHaveValidPage(resp)
+        self.assertEqual(self.latex_page_mongo_items_count(), 2)
+        self.assertSandboxResponseContextEqual(resp, PAGE_ERRORS, None)
+        self.assertSandboxResponseContextEqual(resp, PAGE_WARNINGS, [])
+
+        self.c.logout()
+        self.c.force_login(self.instructor_participation.user)
+
+        self.clear_cache()
+        resp = self.get_page_sandbox_preview_response(
+            latex_sandbox.LATEX_BLANK_FILLING_PAGE_WARMUP_BY_SANDBOX)
+        self.assertEqual(resp.status_code, 200)
+        self.assertSandboxHaveValidPage(resp)
+        self.assertEqual(self.latex_page_mongo_items_count(), 2)
+        self.assertSandboxResponseContextEqual(resp, PAGE_ERRORS, None)
+        self.assertSandboxResponseContextEqual(resp, PAGE_WARNINGS, [])
+
+    def test_latexpage_sandbox_success_warm_up_by_sandbox_switch_commit_sha_no_new_page_mongo_entry(self):
+        self.get_page_sandbox_preview_response(
+            latex_sandbox.LATEX_BLANK_FILLING_PAGE_WARMUP_BY_SANDBOX)
+        self.assertEqual(self.latex_page_mongo_items_count(), 2)
+
+        self.c.logout()
+        self.c.force_login(self.instructor_participation.user)
+
+        self.clear_cache()
+        self.update_course_to_commit_sha(COMMIT_SHA_WITH_SAME_CONTENT)
+        resp = self.get_page_sandbox_preview_response(
+            latex_sandbox.LATEX_BLANK_FILLING_PAGE_WARMUP_BY_SANDBOX)
+        self.assertEqual(resp.status_code, 200)
+        self.assertSandboxHaveValidPage(resp)
+        self.assertEqual(self.latex_page_mongo_items_count(), 2)
+        self.assertSandboxResponseContextEqual(resp, PAGE_ERRORS, None)
+        self.assertSandboxResponseContextEqual(resp, PAGE_WARNINGS, [])
+
     def test_latexpage_sandbox_success_no_warm_up_by_sandbox(self):
         resp = self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_PAGE_NO_WARMUP_BY_SANDBOX)
         self.assertEqual(resp.status_code, 200)
         self.assertSandboxHaveValidPage(resp)
+        self.assertEqual(self.latex_page_mongo_items_count(), 1)
         self.assertSandboxResponseContextEqual(resp, PAGE_ERRORS, None)
         self.assertSandboxResponseContextEqual(resp, PAGE_WARNINGS, [])
 
@@ -1032,9 +1109,6 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
     flow_id = LATEXPAGE_FLOW_ID
     page_id = "lp_dual_complimentary_slack1"
 
-    commit_sha_with_same_content = b"465d8c8df5ad7679fe481d19712eb51f454cd5c4"
-    commit_sha_with_different_content = b"7bb8ccea1348123b25a952eacc7a3c7ac9157d4f"
-
     def setUp(self):  # noqa
         super(LatexPageInitalPageDataTest, self).setUp()
         self.c.force_login(self.student_participation.user)
@@ -1116,7 +1190,7 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
         self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 1)
         self.assertEqual(self.latex_page_mongo_items_count(), 1)
 
-        self.update_course_to_commit_sha(self.commit_sha_with_same_content)
+        self.update_course_to_commit_sha(COMMIT_SHA_WITH_SAME_CONTENT)
         self.c.get(self.get_page_url_by_page_id(self.page_id))
         self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 1)
         self.assertEqual(self.latex_page_mongo_items_count(), 1)
@@ -1140,7 +1214,7 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
             self, mock_generate_hash):
         # when commit_sha changed, template_hash is regenerated only once.
         self.clear_cache()
-        self.update_course_to_commit_sha(self.commit_sha_with_same_content)
+        self.update_course_to_commit_sha(COMMIT_SHA_WITH_SAME_CONTENT)
         self.c.get(self.get_page_url_by_page_id(self.page_id))
         self.assertEqual(mock_generate_hash.call_count, 1)
         self.c.get(self.get_page_url_by_page_id("lp_dual_complimentary_slack"))
@@ -1154,7 +1228,7 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
         original_question_data = page_data.data["question_data"]
         del page_data.data["question_data"]
         page_data.save()
-        self.update_course_to_commit_sha(self.commit_sha_with_same_content)
+        self.update_course_to_commit_sha(COMMIT_SHA_WITH_SAME_CONTENT)
         self.c.get(self.get_page_url_by_page_id(self.page_id))
         new_page_data = self.get_page_data()
         self.assertEqual(new_page_data.data["question_data"],
@@ -1167,7 +1241,7 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
         page_data = self.get_page_data()
         del page_data.data["question_data"]
         page_data.save()
-        self.update_course_to_commit_sha(self.commit_sha_with_same_content)
+        self.update_course_to_commit_sha(COMMIT_SHA_WITH_SAME_CONTENT)
         self.c.get(self.get_page_url_by_page_id(self.page_id))
 
         self.assertEqual(mock_initialize_page_data.call_count, 1)
@@ -1178,7 +1252,7 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
         page_data = self.get_page_data()
         page_data.data["template_hash_id"] = invalid_template_hash_id
         page_data.save()
-        self.update_course_to_commit_sha(self.commit_sha_with_same_content)
+        self.update_course_to_commit_sha(COMMIT_SHA_WITH_SAME_CONTENT)
         resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
         self.assertEqual(resp.status_code, 200)
         new_page_data = self.get_page_data()
@@ -1197,7 +1271,7 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
         mongo_fake_changed_template_hash = template_hash + "_change"
 
         # switch to another commit_sha
-        self.update_course_to_commit_sha(self.commit_sha_with_same_content)
+        self.update_course_to_commit_sha(COMMIT_SHA_WITH_SAME_CONTENT)
         self.c.get(self.get_page_url_by_page_id(self.page_id))
 
         # then we manually changed the mongo data
@@ -1230,7 +1304,7 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
         template_hash = original_page_data.data["template_hash"]
 
         # switch to another commit_sha
-        self.update_course_to_commit_sha(self.commit_sha_with_same_content)
+        self.update_course_to_commit_sha(COMMIT_SHA_WITH_SAME_CONTENT)
         self.c.get(self.get_page_url_by_page_id(self.page_id))
 
         # then we switch back to original commit_sha
@@ -1261,7 +1335,7 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
         del page_data.data["template_hash"]
         del page_data.data["template_hash_id"]
         page_data.save()
-        self.update_course_to_commit_sha(self.commit_sha_with_same_content)
+        self.update_course_to_commit_sha(COMMIT_SHA_WITH_SAME_CONTENT)
         self.c.get(self.get_page_url_by_page_id(self.page_id))
         new_page_data = self.get_page_data()
         self.assertEqual(new_page_data.data["template_hash"],
@@ -1282,7 +1356,7 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
         del page_data.data["template_hash"]
         del page_data.data["template_hash_id"]
         page_data.save()
-        self.update_course_to_commit_sha(self.commit_sha_with_same_content)
+        self.update_course_to_commit_sha(COMMIT_SHA_WITH_SAME_CONTENT)
         self.c.get(self.get_page_url_by_page_id(self.page_id))
         # one for generate template_hash for all other questions, one for this page
         # only
@@ -1296,13 +1370,13 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
     def test_commit_sha_changed_content_changed(self):
         self.clear_cache()
         original_data = self.get_page_data().data
-        new_commit_sha = self.commit_sha_with_different_content.decode()
+        new_commit_sha = COMMIT_SHA_WITH_DIFFERENT_CONTENT.decode()
 
         redirected_entry = latex_page_sha_collection().find_one(
             {"%s_next" % new_commit_sha: {"$exists": True}})
         self.assertIsNone(redirected_entry)
 
-        self.update_course_to_commit_sha(self.commit_sha_with_different_content)
+        self.update_course_to_commit_sha(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
 
         with mock.patch(
             "image_upload.page.latexpage.LatexRandomQuestionBase.initialize_page_data",
@@ -1381,7 +1455,7 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
         f = FlowSession.objects.last()
         current_commit_sha = f.active_git_commit_sha
 
-        self.update_course_to_commit_sha(self.commit_sha_with_different_content)
+        self.update_course_to_commit_sha(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
         self.c.get(self.get_page_url_by_page_id(self.page_id))
         self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
         self.assertEqual(self.latex_page_mongo_items_count(), 2)
@@ -1391,7 +1465,7 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
         self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
         self.assertEqual(self.latex_page_mongo_items_count(), 2)
 
-        self.update_course_to_commit_sha(self.commit_sha_with_different_content)
+        self.update_course_to_commit_sha(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
         self.c.get(self.get_page_url_by_page_id(self.page_id))
         self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
         self.assertEqual(self.latex_page_mongo_items_count(), 2)
@@ -1401,7 +1475,7 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
         current_commit_sha = f.active_git_commit_sha
 
         # first, make sure the redirect_id is generated
-        self.update_course_to_commit_sha(self.commit_sha_with_different_content)
+        self.update_course_to_commit_sha(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
         self.c.get(self.get_page_url_by_page_id(self.page_id))
         self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
         self.assertEqual(self.latex_page_mongo_items_count(), 2)
@@ -1411,7 +1485,7 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
         self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
         self.assertEqual(self.latex_page_mongo_items_count(), 2)
 
-        different_commit_sha = self.commit_sha_with_different_content.decode()
+        different_commit_sha = COMMIT_SHA_WITH_DIFFERENT_CONTENT.decode()
 
         # the redirect_entry must exist
         redirect_entry = latex_page_sha_collection().find_one(
@@ -1437,7 +1511,7 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
         self.assertIsNone(target_entry)
 
         # {{{ navigate to different commit_sha, make sure the redirect data is updated
-        self.update_course_to_commit_sha(self.commit_sha_with_different_content)
+        self.update_course_to_commit_sha(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
         resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
         self.assertEqual(resp.status_code, 200)
 
@@ -1445,7 +1519,7 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
         resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
         self.assertEqual(resp.status_code, 200)
 
-        self.update_course_to_commit_sha(self.commit_sha_with_different_content)
+        self.update_course_to_commit_sha(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
         resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
         self.assertEqual(resp.status_code, 200)
         # }}}
@@ -1474,7 +1548,7 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
         current_commit_sha = f.active_git_commit_sha
 
         # first, make sure the redirect_id is generated
-        self.update_course_to_commit_sha(self.commit_sha_with_different_content)
+        self.update_course_to_commit_sha(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
         self.c.get(self.get_page_url_by_page_id(self.page_id))
         self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
         self.assertEqual(self.latex_page_mongo_items_count(), 2)
@@ -1484,7 +1558,7 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
         self.assertEqual(self.latex_page_commitsha_mongo_items_count(), 2)
         self.assertEqual(self.latex_page_mongo_items_count(), 2)
 
-        different_commit_sha = self.commit_sha_with_different_content.decode()
+        different_commit_sha = COMMIT_SHA_WITH_DIFFERENT_CONTENT.decode()
 
         # the redirect_entry must exist
         redirect_entry = latex_page_sha_collection().find_one(
@@ -1515,7 +1589,7 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
         #     {"_id": ObjectId(target_id)}))
 
         # {{{ navigate to different commit_sha, make sure the redirect data is updated
-        self.update_course_to_commit_sha(self.commit_sha_with_different_content)
+        self.update_course_to_commit_sha(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
         resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
         self.assertEqual(resp.status_code, 200)
 
@@ -1523,7 +1597,7 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
         resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
         self.assertEqual(resp.status_code, 200)
 
-        self.update_course_to_commit_sha(self.commit_sha_with_different_content)
+        self.update_course_to_commit_sha(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
         resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
         self.assertEqual(resp.status_code, 200)
         # }}}
@@ -1559,7 +1633,7 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
             self):
 
         self.clear_cache()
-        self.update_course_to_commit_sha(self.commit_sha_with_different_content)
+        self.update_course_to_commit_sha(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
 
         with mock.patch(
             "image_upload.page.latexpage.LatexRandomQuestionBase.jinja_runpy",
@@ -1583,9 +1657,6 @@ class LatexPageRunpyFailureTest(
     flow_id = LATEXPAGE_FLOW_ID
     page_id = "lp_dual_complimentary_slack1"
 
-    commit_sha_with_same_content = b"465d8c8df5ad7679fe481d19712eb51f454cd5c4"
-    commit_sha_with_different_content = b"7bb8ccea1348123b25a952eacc7a3c7ac9157d4f"
-
     def setUp(self):  # noqa
         super(LatexPageRunpyFailureTest, self).setUp()
         self.c.force_login(self.student_participation.user)
@@ -1594,7 +1665,7 @@ class LatexPageRunpyFailureTest(
 
     def test_switch_to_working_course_commit_sha(self):
         self.clear_cache()
-        self.update_course_to_commit_sha(self.commit_sha_with_different_content)
+        self.update_course_to_commit_sha(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
         self.assertEqual(len(mail.outbox), 0)
 
         with mock.patch(
@@ -1613,7 +1684,7 @@ class LatexPageRunpyFailureTest(
 
     def test_switch_to_course_commit_sha_with_bad_result(self):
         self.clear_cache()
-        self.update_course_to_commit_sha(self.commit_sha_with_different_content)
+        self.update_course_to_commit_sha(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
         self.assertEqual(len(mail.outbox), 0)
 
         with mock.patch(
@@ -1643,7 +1714,7 @@ class LatexPageRunpyFailureTest(
 
     # def test_runpy_raised_error(self):
     #     self.clear_cache()
-    #     self.update_course_to_commit_sha(self.commit_sha_with_different_content)
+    #     self.update_course_to_commit_sha(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
     #     self.assertEqual(len(mail.outbox), 0)
     #
     #     with mock.patch(
@@ -1664,7 +1735,7 @@ class LatexPageRunpyFailureTest(
 
     def test_switch_to_failure_course_commit_sha(self):
         self.clear_cache()
-        self.update_course_to_commit_sha(self.commit_sha_with_different_content)
+        self.update_course_to_commit_sha(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
         self.assertEqual(len(mail.outbox), 0)
 
         expected_error_str = ("Jinja runpy just failed to "
@@ -1707,7 +1778,7 @@ class LatexPageRunpyFailureTest(
 
     def test_switch_to_python_run_timeout(self):
         self.clear_cache()
-        self.update_course_to_commit_sha(self.commit_sha_with_different_content)
+        self.update_course_to_commit_sha(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
         self.assertEqual(len(mail.outbox), 0)
 
         expected_error_str = "The page failed to be rendered due to timeout"
@@ -1752,7 +1823,7 @@ class LatexPageRunpyFailureTest(
 
     def test_switch_to_failure_course_commit_sha_raise_uncaught_error(self):
         self.clear_cache()
-        self.update_course_to_commit_sha(self.commit_sha_with_different_content)
+        self.update_course_to_commit_sha(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
         self.assertEqual(len(mail.outbox), 0)
 
         with mock.patch(
@@ -1795,7 +1866,7 @@ class LatexPageRunpyFailureTest(
 
     def test_runpy_raise_other_unknown_error(self):
         self.clear_cache()
-        self.update_course_to_commit_sha(self.commit_sha_with_different_content)
+        self.update_course_to_commit_sha(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
         self.assertEqual(len(mail.outbox), 0)
 
         with mock.patch(

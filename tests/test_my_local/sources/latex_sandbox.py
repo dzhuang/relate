@@ -593,6 +593,48 @@ answer_explanation: |\r
     行向量不应有转置符，列向量应有.\r
 """
 
+LATEX_BLANK_FILLING_PAGE_WARMUP_BY_SANDBOX = """
+type: LatexRandomCodeInlineMultiQuestion\r
+id: lp_dual_complimentary_slack\r
+value: 3\r
+prompt: |\r
+    # 互补松弛定理的应用\r
+data_files:\r
+    - "question-data/linear-programming/dual-theory/lp_simplex_3_iter_max_min_complimentary_slack.bin"\r
+    - "question-data/linear-programming/lpmodel.py"\r
+    - "question-data/linear-programming/linprog.py"\r
+    - "question-data/jinja_env.py"\r
+    - "question-data/linear-programming/dual-theory/lp_dual_complementary_slack.tex"\r
+    - "question-data/linear-programming/dual-theory/lp_dual_complimentary_slack-runpy.py"\r
+excluded_cache_key_files:\r
+    - "question-data/linear-programming/lpmodel.py"\r
+    - "question-data/linear-programming/linprog.py"\r
+random_question_data_file: "question-data/linear-programming/dual-theory/lp_simplex_3_iter_max_min_complimentary_slack.bin"\r
+runpy_file: "question-data/linear-programming/dual-theory/lp_dual_complimentary_slack-runpy.py"\r
+question: |\r
+    The float weight of $\\frac{1}{5}$ is [[blank_1]].\r
+answers:\r
+    blank_1:\r
+        type: ShortAnswer\r
+        width: 10em\r
+        hint: <p><strong>输入格式示例:</strong></p><ul><li>(1,2,3,4)</li><li>(1,2,3,4,5)^T</li></ul><p><strong>说明：</strong><ol><li>必须使用英文输入法输入；<li>输入必须是解向量的形式，即用圆括号包围；</li><li>如果需要转置，需要在末尾加上<strong>^T</strong>表示转置.</li></ol>\r
+        correct_answer:\r
+        - type: float_list_with_wrapper\r
+          forced_left_wrapper: ["("]\r
+          forced_right_wrapper: [")", ")^T"]\r
+          atol: 0.0001\r
+          rtol: 0.0001\r
+          value: "(1,2,3,4)"\r
+        - type: float_list_with_wrapper\r
+          forced_left_wrapper: ["("]\r
+          forced_right_wrapper: [")", ")^T"]\r
+          atol: 0.0001\r
+          rtol: 0.0001\r
+          value: "(1,2,3)^T"\r
+answer_explanation: |\r
+    行向量不应有转置符，列向量应有.\r
+"""
+
 LATEX_BLANK_FILLING_PAGE_NO_WARMUP_BY_SANDBOX = """
 type: LatexRandomCodeInlineMultiQuestion\r
 id: lp_dual_complimentary_slack\r
