@@ -411,7 +411,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
     def generate_new_page_data(self, page_context, question_data):
         commit_sha = page_context.commit_sha.decode()
         new_template_hash = self.generate_template_hash(page_context)
-        created, new_hash_id = (
+        new_hash_id = (
             self.get_or_create_template_hash_id(commit_sha, new_template_hash)
         )
         new_key_making_string_md5 = get_key_making_string_md5_hash(
@@ -571,54 +571,26 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                         )
                         match_template_hash_redirect_id = None
 
-            # Neither match_template_hash nor match_template_hash_redirect_id
             assert not (match_template_hash or match_template_hash_redirect_id)
+            # Neither match_template_hash nor match_template_hash_redirect_id
 
-        new_template_hash = self.generate_template_hash(page_context)
-        created, new_template_hash_id = (
-            self.get_or_create_template_hash_id(commit_sha, new_template_hash))
-        if not created:
-            # The new template hash exists! This can happen when viewing a page
-            # with commit_sha changed after a warm up by sandbox was done for the
-            # new commit_sha, as sandbox doesn't have an old page_data.
-
-            try:
+            new_page_data = self.generate_new_page_data(page_context, question_data)
+            if new_page_data["template_hash"] == template_hash:
                 get_latex_page_commitsha_template_pair_collection().update_one(
                     {"_id": ObjectId(template_hash_id),
-                     "%s_next" % commit_sha: {"$exists": False}},
-                     {"$set": {"%s_next" % commit_sha: new_template_hash_id}}
+                     commit_sha: {"$exists": False}},
+                    {"$set": {commit_sha: template_hash}}
                 )
-
-            except DuplicateKeyError:
-                pass
-            finally:
-                new_key_making_string_md5 = (
-                    get_key_making_string_md5_hash(
-                        new_template_hash, question_data))
-                return True, {
-                    "template_hash": new_template_hash,
-                    "template_hash_id": new_template_hash_id,
-                    "key_making_string_md5": new_key_making_string_md5,
-                    "question_data": question_data
-                }
-
-        new_page_data = self.generate_new_page_data(page_context, question_data)
-        if new_page_data["template_hash"] == template_hash:
-            get_latex_page_commitsha_template_pair_collection().update_one(
-                {"_id": ObjectId(template_hash_id),
-                 commit_sha: {"$exists": False}},
-                {"$set": {commit_sha: template_hash}}
-            )
-            return False, {}
-        else:
-            get_latex_page_commitsha_template_pair_collection().update_one(
-                {"_id": ObjectId(template_hash_id),
-                 commit_sha: {"$exists": False}},
-                {"$set": {"%s_next" % commit_sha:
-                              new_page_data["template_hash_id"]}}
-            )
-            assert new_page_data["question_data"] == question_data
-            return True, new_page_data
+                return False, {}
+            else:
+                get_latex_page_commitsha_template_pair_collection().update_one(
+                    {"_id": ObjectId(template_hash_id),
+                     commit_sha: {"$exists": False}},
+                    {"$set": {"%s_next" % commit_sha:
+                                  new_page_data["template_hash_id"]}}
+                )
+                assert new_page_data["question_data"] == question_data
+                return True, new_page_data
 
     def generate_template_hash(self, page_context):
         # type: (PageContext) -> Text
@@ -689,7 +661,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         # template_string is the string independent of data
         template_hash = self.generate_template_hash(page_context)
-        created, _id = self.get_or_create_template_hash_id(commit_sha, template_hash)
+        _id = self.get_or_create_template_hash_id(commit_sha, template_hash)
 
         for i in range(len(all_data)):
             if not page_context.in_sandbox or not warm_up_by_sandbox:
@@ -736,15 +708,13 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 }
 
     def get_or_create_template_hash_id(self, commit_sha, template_hash):
-        # type: (Text, Text) -> Tuple(bool, Text)
+        # type: (Text, Text) -> Text
         # TODO: find or insert
         info = get_latex_page_commitsha_template_pair_collection().find_one(
             {commit_sha: template_hash})
         _id = None
-        created = True
         if info:
             _id = str(info.get("_id"))
-            created = False
         else:
             try:
                 info = (
@@ -760,15 +730,14 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 if info.upserted_id:
                     _id = str(info.upserted_id)
             except DuplicateKeyError:
-                created = False
+                pass
             if not _id:
-                assert not created
                 info = get_latex_page_commitsha_template_pair_collection().find_one(
                     {commit_sha: template_hash})
                 assert info
                 _id = str(info.get("_id"))
         assert (_id)
-        return created, _id
+        return _id
 
     def validate_updated_page_desc(self, page_context, new_desc_dict):
         new_desc_dict_copy = deepcopy(new_desc_dict)
@@ -1010,6 +979,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             self, page_context, question_data, code_name, common_code_name=""):
         # type: (Any, Any, Text, Text) -> Tuple[bool, Any]
         # {{{ request run
+
+        print("------------------runpy--------------------")
 
         assert question_data
         run_jinja_req = {"compile_only": False}

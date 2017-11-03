@@ -71,9 +71,10 @@ LATEXPAGE_FLOW_ID = "latex-flow"
 LATEXPAGE_FLOW_OLD = "latex-flow-old-style"
 LATEXPAGE_FLOW_OLD_FULL_ID = "latex-flow-old-style-full"
 LATEXPAGE_FLOW_WITH_LATEX_MACRO = "latex-flow-with-macro"
+LATEXPAGE_FLOW_RANDOM_ALL_SAME_ID = "latex-flow-all-same-random"
 
-COMMIT_SHA_WITH_SAME_CONTENT = b"465d8c8df5ad7679fe481d19712eb51f454cd5c4"
-COMMIT_SHA_WITH_DIFFERENT_CONTENT = b"7bb8ccea1348123b25a952eacc7a3c7ac9157d4f"
+COMMIT_SHA_WITH_SAME_CONTENT = b"6d0f1144eefd9b64c95821fe29b63b989471299e"
+COMMIT_SHA_WITH_DIFFERENT_CONTENT = b"a5af3a1a05a4555c6f6ed6dc219ad264293fb4c5"
 
 class LatexPageMixin(SingleCoursePageTestMixin, FallBackStorageMessageTestMixin):
     courses_setup_list = MY_SINGLE_COURSE_SETUP_LIST
@@ -451,6 +452,7 @@ class LatexPageOldStylePartsTest(LatexPageMixin, LocmemBackendTestsMixin, TestCa
 class LatexPageSandboxTest(SingleCoursePageSandboxTestBaseMixin, LatexPageMixin,
                            LocmemBackendTestsMixin, TestCase):
     courses_setup_list = MY_SINGLE_COURSE_SETUP_LIST
+    flow_id = LATEXPAGE_FLOW_RANDOM_ALL_SAME_ID
     def test_latexpage_sandbox_preview_success(self):
         resp = self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_PAGE)
@@ -865,6 +867,75 @@ class LatexPageSandboxTest(SingleCoursePageSandboxTestBaseMixin, LatexPageMixin,
         self.assertEqual(self.latex_page_mongo_items_count(), 2)
         self.assertSandboxResponseContextEqual(resp, PAGE_ERRORS, None)
         self.assertSandboxResponseContextEqual(resp, PAGE_WARNINGS, [])
+
+    def test_latexpage_sandbox_success_warm_up_by_sandbox_page_no_new_mongo_entry(self):
+        self.get_page_sandbox_preview_response(
+            latex_sandbox.LATEX_BLANK_FILLING_PAGE_WARMUP_BY_SANDBOX)
+        exist_mongo_page_count = self.latex_page_mongo_items_count()
+        self.assertEqual(exist_mongo_page_count, 2)
+        self.start_quiz(self.flow_id)
+        with mock.patch(
+            "image_upload.page.latexpage.LatexRandomQuestionBase.jinja_runpy",
+            return_value=(True, fake_jinja_runpy_success_return_value)
+        ) as mock_request_python_run:
+            for page_id in ["lp_dual_complimentary_slack_random%i" % i
+                            for i in range(1, 8)]:
+                resp = self.c.get(self.get_page_url_by_page_id(page_id))
+                self.assertEqual(resp.status_code, 200)
+                self.assertContains(resp, u"已知线性规划问题")
+            self.assertEqual(exist_mongo_page_count,
+                             self.latex_page_mongo_items_count())
+            self.assertEqual(mock_request_python_run.call_count, 0)
+
+    # def test_latexpage_commit_sha_changed_then_sandbox_warm_up_by_sandbox_original_page_view_no_new_runpy(self):
+    #     """
+    #     Case: if some session is created and viewed, then then content is changed,
+    #     the instructor did a warm up in sandbox. The test is to ensure that, the
+    #     original pages won't do a new runpy (no new mongo page entry will be created)
+    #     """
+    #     self.clear_cache()
+    #     self.update_course_to_commit_sha(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
+    #     self.start_quiz(self.flow_id)
+    #     for page_id in ["lp_dual_complimentary_slack_random%i" % i
+    #                     for i in range(1, 8)]:
+    #         resp = self.c.get(self.get_page_url_by_page_id(page_id))
+    #         self.assertEqual(resp.status_code, 200)
+    #         self.assertContains(resp, u"已知线性规划问题")
+    #
+    #     original_data = self.get_page_data(page_id="lp_dual_complimentary_slack_random1").data
+    #
+    #     exist_mongo_page_count = self.latex_page_mongo_items_count()
+    #     self.assertEqual(exist_mongo_page_count, 2)
+    #
+    #     self.clear_cache()
+    #     self.update_course_to_commit_sha(COMMIT_SHA_WITH_SAME_CONTENT)
+    #     self.get_page_sandbox_preview_response(
+    #         latex_sandbox.LATEX_BLANK_FILLING_PAGE_WARMUP_BY_SANDBOX)
+    #     expected_mongo_page_count = exist_mongo_page_count + 2
+    #
+    #     self.assertEqual(self.latex_page_mongo_items_count(),
+    #                      expected_mongo_page_count)
+    #
+    #     with mock.patch(
+    #         "image_upload.page.latexpage.LatexRandomQuestionBase.jinja_runpy",
+    #         return_value=(True, fake_jinja_runpy_success_return_value)
+    #     ) as mock_request_python_run:
+    #         for page_id in ["lp_dual_complimentary_slack_random%i" % i
+    #                         for i in range(1, 8)]:
+    #             resp = self.c.get(self.get_page_url_by_page_id(page_id))
+    #             self.assertEqual(resp.status_code, 200)
+    #             self.assertContains(resp, u"已知线性规划问题")
+    #         self.assertEqual(self.latex_page_mongo_items_count(),
+    #                          expected_mongo_page_count)
+    #         self.assertEqual(mock_request_python_run.call_count, 0)
+    #
+    #     self.clear_cache()
+    #
+    #     print("review--------------------------------------------")
+    #
+    #     new_data = self.get_page_data(page_id="lp_dual_complimentary_slack_random1").data
+    #     pp.pprint(original_data)
+    #     pp.pprint(new_data)
 
     def test_latexpage_sandbox_success_warm_up_by_sandbox_switch_commit_sha_no_new_page_mongo_entry(self):
         self.get_page_sandbox_preview_response(
