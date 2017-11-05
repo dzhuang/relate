@@ -288,6 +288,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         self.will_receive_grade = getattr(page_desc, "will_receive_grade", True)
         self.is_page_desc_updated = False
         self.error_updating_page_desc = None
+        self.is_warming_up = False
 
     def initialize_cache_key_file_attrs(self, page_desc):
         # generate file lists that will be used to make cache key
@@ -694,6 +695,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
             # try to do markup_to_html in warmup
             self.is_page_desc_updated = False
+            self.is_warming_up = True
 
             self.update_page_desc(page_context, page_data)
 
@@ -701,6 +703,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             self.correct_answer(page_context, page_data,
                                 answer_data=None, grade_data=None)
 
+        self.is_warming_up = False
         return {"question_data": question_data,
                 "template_hash": template_hash,
                 "template_hash_id": _id,
@@ -784,13 +787,14 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         else:
             cache_key = page_key
             def_cache = get_latex_cache(cache)
-            result = def_cache.get(cache_key)
-            if result is not None:
-                assert isinstance(result, dict)
-                debug_print("===result is in cache===")
-                return True, result
+            if not self.is_warming_up:
+                result = def_cache.get(cache_key)
+                if result is not None:
+                    assert isinstance(result, dict)
+                    debug_print("===result is in cache===")
+                    return True, result
 
-            debug_print("result is None when loading from cache")
+                debug_print("result is None when loading from cache")
 
         # cache_key is None means cache is not enabled
         result = None
@@ -923,7 +927,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         import sys
         if (sys.getsizeof(result)
                 <= (getattr(settings, "RELATE_CACHE_MAX_BYTES", 0))):
-            def_cache.add(page_key, result)
+            if not def_cache.get(page_key):
+                def_cache.add(page_key, result)
         # }}}
 
         return success, result

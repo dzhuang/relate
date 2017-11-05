@@ -200,7 +200,11 @@ def _adjust_flow_session_page_data_inner(repo, flow_session,
                 page.update_page_data(pctx, fpd.data))
             if will_update_page_data:
                 # alert! we must use "update" here, to prevent data loss
+                print("-----------------update page_data-----------")
+                print(fpd.data)
                 fpd.data.update(new_page_data)
+                print(fpd.data)
+                print("-----------------page_data updated-----------")
                 fpd.save()
 
             ordinal[0] += 1

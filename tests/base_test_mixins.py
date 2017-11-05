@@ -495,7 +495,9 @@ class SingleCoursePageTestMixin(SingleCourseTestMixin):
     def get_update_course_url(self):
         return reverse("relate-update_course", args=[self.course.identifier])
 
-    def update_course_to_commit_sha(self, commit_sha):
+    def update_course_content(self, commit_sha,
+                              fetch_update=False,
+                              prevent_discarding_revisions=True):
         try:
             logged_in_user_id = self.c.session['_auth_user_id']
             from django.contrib.auth import get_user_model
@@ -508,14 +510,20 @@ class SingleCoursePageTestMixin(SingleCourseTestMixin):
         except:
             pass
 
-        self.c.force_login(self.instructor_participation.user)
-        self.c.post(self.get_update_course_url(),
-                    data={"new_sha": [commit_sha],
-                          "prevent_discarding_revisions": ["on"],
-                          "update": ["Update"]
-                          })
-        self.c.force_login(logged_in_user)
+        data = {"new_sha": [commit_sha],
+                }
 
+        if not prevent_discarding_revisions:
+            data["prevent_discarding_revisions"] = ["on"]
+
+        if not fetch_update:
+            data["update"] = ["Update"]
+        else:
+            data["fetch_update"] = ["Fetch and update"]
+
+        self.c.force_login(self.instructor_participation.user)
+        self.c.post(self.get_update_course_url(), data)
+        self.c.force_login(logged_in_user)
 
 class FallBackStorageMessageTestMixin(object):
     # In case other message storage are used, the following is the default
