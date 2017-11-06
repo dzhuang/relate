@@ -300,7 +300,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         # Exclude question data file for building cache
         excluded_cache_key_file_set.update([page_desc.random_question_data_file])
         cache_key_files_set.difference_update(excluded_cache_key_file_set)
-        return list(cache_key_files_set)
+
+        # In case order changed across repo and across runs
+        return sorted(list(cache_key_files_set))
 
     def initialize_cache_key_attrs(self, page_desc):
         # generate attribute list that will be used to make cache key
@@ -314,7 +316,10 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             for attr in all_process_attributes:
                 if hasattr(page_desc, attr):
                     cache_key_attrs.append(attr)
-        return cache_key_attrs
+
+        # sorted because python dict is not ordered, and update_page_desc can
+        # result in different result across runs
+        return sorted(cache_key_attrs)
 
     def get_updated_page_desc(self, page_context, new_page_desc_dict):
         if self.is_page_desc_updated:
@@ -912,11 +917,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     upsert=True,
                 )
             except DuplicateKeyError:
-                print("---------------------dup----------------------")
                 pass
-
-            assert get_latex_page_mongo_collection().find_one(
-                    {"key": page_key, "content": {"$exists": True}})
 
         # }}}
 

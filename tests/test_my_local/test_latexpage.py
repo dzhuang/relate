@@ -742,11 +742,6 @@ class LatexPageSandboxTest(SingleCoursePageSandboxTestBaseMixin, LatexPageMixin,
             "is not expected in 'cache_key_files' as "
             "it will not be used for building cache")
         self.assertSandboxWarningTextContain(resp, expected_warning_text)
-        # self.debug_print_sandbox_response_context_value(resp, "page_warnings")
-        # self.debug_print_response_messages(resp)
-        # self.assertSandboxResponseContextContains(
-        #     resp, PAGE_ERRORS,
-        #     "'foo' should be listed in 'data_files'")
 
     def test_latexpage_sandbox_no_random_question_data_file(self):
         resp = self.get_page_sandbox_preview_response(
@@ -1577,19 +1572,12 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
         target_template_hash = target_entry["template_hash"]
         self.assertIsNotNone(target_entry)
 
-        # pp.pprint(latex_page_sha_collection().find_one(
-        #     {"_id": ObjectId(target_id)}))
-
         # delete the target entry
         latex_page_sha_collection().update_one(
             {"_id": ObjectId(target_id)},
             {"$set": {
                 different_commit_sha: ""}}
         )
-        # a = latex_page_sha_collection().find_one(
-        #     {"_id": ObjectId(target_id)})
-        # pp.pprint(latex_page_sha_collection().find_one(
-        #     {"_id": ObjectId(target_id)}))
 
         # {{{ navigate to different commit_sha, make sure the redirect data is updated
         self.update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
@@ -1615,10 +1603,6 @@ class LatexPageInitalPageDataTest(LatexPageMixin, TestCase):
         new_target_entry = latex_page_sha_collection().find_one(
             {"_id": ObjectId(new_target_id)}
         )
-
-        # pp.pprint(a)
-        # pp.pprint(latex_page_sha_collection().find_one(
-        #     {"_id": ObjectId(new_target_id)}))
 
         # why they equal????
         self.assertEqual(target_id, new_target_id)
@@ -1713,7 +1697,6 @@ class LatexPageRunpyFailureTest(
 
             self.assertEqual(self.latex_page_mongo_items_count(), 1)
             self.assertEqual(len(mail.outbox), 1)
-            #self.debug_print_email_messages(0)
 
     # def test_runpy_raised_error(self):
     #     self.clear_cache()
@@ -1937,94 +1920,6 @@ class LatexPageSandboxFlowCombineTest(SingleCoursePageSandboxTestBaseMixin, Late
         self.assertSandboxResponseContextEqual(resp, PAGE_ERRORS, None)
         self.assertSandboxResponseContextEqual(resp, PAGE_WARNINGS, [])
 
-    def test_latexpage_commit_sha_changed_then_sandbox_warm_up_by_sandbox_original_page_view_no_new_runpy(self):
-        """
-        Case: if some session is created and viewed, then then content is changed,
-        the instructor did a warm up in sandbox. The test is to ensure that, the
-        original pages won't do a new runpy (no new mongo page entry will be created)
-        """
-        self.clear_cache()
-        self.update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
-        self.start_quiz(self.flow_id)
-        for page_id in ["lp_dual_complimentary_slack_random%i" % i
-                        for i in range(1, 8)]:
-            resp = self.c.get(self.get_page_url_by_page_id(page_id))
-            self.assertEqual(resp.status_code, 200)
-            self.assertContains(resp, u"已知线性规划问题")
-
-        original_data = self.get_page_data(page_id="lp_dual_complimentary_slack_random1").data
-
-        exist_mongo_page_count = self.latex_page_mongo_items_count()
-        self.assertEqual(exist_mongo_page_count, 2)
-
-        self.clear_cache()
-        self.update_course_content(COMMIT_SHA_WITH_SAME_CONTENT)
-        self.get_page_sandbox_preview_response(
-            latex_sandbox.LATEX_BLANK_FILLING_PAGE_WARMUP_BY_SANDBOX)
-        expected_mongo_page_count = exist_mongo_page_count + 2
-
-        self.assertEqual(self.latex_page_mongo_items_count(),
-                         expected_mongo_page_count)
-
-        with mock.patch(
-            "image_upload.page.latexpage.LatexRandomQuestionBase.jinja_runpy",
-            return_value=(True, fake_jinja_runpy_success_return_value)
-        ) as mock_request_python_run:
-            for page_id in ["lp_dual_complimentary_slack_random%i" % i
-                            for i in range(1, 8)]:
-                resp = self.c.get(self.get_page_url_by_page_id(page_id))
-                self.assertEqual(resp.status_code, 200)
-                self.assertContains(resp, u"已知线性规划问题")
-            self.assertEqual(self.latex_page_mongo_items_count(),
-                             expected_mongo_page_count)
-            self.assertEqual(mock_request_python_run.call_count, 0)
-
-        self.clear_cache()
-
-        print("review--------------------------------------------")
-
-        new_data = self.get_page_data(page_id="lp_dual_complimentary_slack_random1").data
-        pp.pprint(original_data)
-        pp.pprint(new_data)
-
-        self.update_course_content(COMMIT_SHA_WITH_SAME_CONTENT, fetch_update=True)
-
-        with mock.patch(
-            "image_upload.page.latexpage.LatexRandomQuestionBase.jinja_runpy",
-            return_value=(True, fake_jinja_runpy_success_return_value)
-        ) as mock_request_python_run:
-            for page_id in ["lp_dual_complimentary_slack_random%i" % i
-                            for i in range(1, 8)]:
-                resp = self.c.get(self.get_page_url_by_page_id(page_id))
-                self.assertEqual(resp.status_code, 200)
-                self.assertContains(resp, u"已知线性规划问题")
-            self.assertEqual(self.latex_page_mongo_items_count(),
-                             expected_mongo_page_count)
-
-            self.get_page_sandbox_preview_response(
-                latex_sandbox.LATEX_BLANK_FILLING_PAGE_WARMUP_BY_SANDBOX)
-
-            self.assertEqual(mock_request_python_run.call_count, 0)
-
-        self.start_quiz(self.flow_id)
-
-        with mock.patch(
-                "image_upload.page.latexpage.LatexRandomQuestionBase.jinja_runpy",
-                return_value=(True, fake_jinja_runpy_success_return_value)
-        ) as mock_request_python_run:
-            for page_id in ["lp_dual_complimentary_slack_random%i" % i
-                            for i in range(1, 8)]:
-                resp = self.c.get(self.get_page_url_by_page_id(page_id))
-                self.assertEqual(resp.status_code, 200)
-                self.assertContains(resp, u"已知线性规划问题")
-            self.assertEqual(self.latex_page_mongo_items_count(),
-                             expected_mongo_page_count)
-
-            self.get_page_sandbox_preview_response(
-                latex_sandbox.LATEX_BLANK_FILLING_PAGE_WARMUP_BY_SANDBOX)
-
-            self.assertEqual(mock_request_python_run.call_count, 0)
-
     def test_get_current_commit_sha(self):
         current_commit_sha = get_course_commit_sha(
             self.course, self.instructor_participation)
@@ -2056,8 +1951,6 @@ class LatexPageSandboxFlowCombineTest(SingleCoursePageSandboxTestBaseMixin, Late
         self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_PAGE_WARMUP_BY_SANDBOX)
 
-        print("review--------------------------------------------")
-
         self.update_course_content(COMMIT_SHA_WITH_SAME_CONTENT, fetch_update=True)
 
         self.start_quiz(self.flow_id)
@@ -2075,3 +1968,30 @@ class LatexPageSandboxFlowCombineTest(SingleCoursePageSandboxTestBaseMixin, Late
                 latex_sandbox.LATEX_BLANK_FILLING_PAGE_WARMUP_BY_SANDBOX)
 
             self.assertEqual(mock_request_python_run.call_count, 0)
+
+    def test_latexpage_multiple_session_same_template_hash_correct(self):
+        """
+        this is to make sure the template hash is correct
+        across run, or the same content will generate different cache key
+        and result in diffrent mongo_page and caches
+        """
+        def get_commit_sha_template_hash(hash):
+            self.clear_cache()
+            self.update_course_content(hash)
+            for page_id in ["lp_dual_complimentary_slack_random%i" % i
+                            for i in range(1, 8)]:
+                resp = self.c.get(self.get_page_url_by_page_id(page_id))
+                self.assertEqual(resp.status_code, 200)
+                data = self.get_page_data(
+                    page_id="lp_dual_complimentary_slack_random1").data
+                return data["template_hash"]
+
+        self.start_quiz(self.flow_id)
+
+        for i in range(10):
+            self.assertEqual(
+                get_commit_sha_template_hash(COMMIT_SHA_WITH_SAME_CONTENT),
+                "7807a27f8cb96a431a064929977c0882")
+            self.assertEqual(
+                get_commit_sha_template_hash(COMMIT_SHA_WITH_DIFFERENT_CONTENT),
+                "8bcc33cb58788fe6c2a252cf45de3d1d")
