@@ -912,7 +912,11 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     upsert=True,
                 )
             except DuplicateKeyError:
+                print("---------------------dup----------------------")
                 pass
+
+            assert get_latex_page_mongo_collection().find_one(
+                    {"key": page_key, "content": {"$exists": True}})
 
         # }}}
 
