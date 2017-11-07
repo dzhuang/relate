@@ -126,6 +126,7 @@ def get_latex_page_mongo_collection(name=None, db=DB, index_name="key"):
         collection.ensure_index(index_name, unique=True)
     return collection
 
+
 def get_latex_page_commitsha_template_pair_collection(
         name=None, db=DB, index_name="template_hash"):
     # type: (Optional[Text], Optional[MongoClient], Optional[Text]) -> Collection
@@ -137,6 +138,20 @@ def get_latex_page_commitsha_template_pair_collection(
         collection.ensure_index(index_name, unique=True)
     return collection
 
+
+def question_data_equal(data1, data2):
+    if data1 == data2:
+        return True
+    else:
+        from base64 import b64decode
+        data1_dict = b64decode(data1.encode())
+        data2_dict = b64decode(data2.encode())
+        if isinstance(data1_dict, dict) and isinstance(data2_dict, dict):
+            for k in data1_dict.keys():
+                if data1_dict[k] != data2_dict[k]:
+                    return False
+            return True
+    return False
 
 class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                           PageBaseWithCorrectAnswer):
@@ -472,7 +487,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         commit_sha = page_context.commit_sha.decode()
         if not (template_hash and template_hash_id and key_making_string_md5):
             new_page_data = self.generate_new_page_data(page_context, question_data)
-            assert new_page_data["question_data"] == question_data
+            assert question_data_equal(
+                new_page_data["question_data"], question_data)
             return True, new_page_data
 
         try:
@@ -485,7 +501,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         # mongo data is broken
         if not exist_entry:
             new_page_data = self.generate_new_page_data(page_context, question_data)
-            assert new_page_data["question_data"] == question_data
+            assert question_data_equal(
+                new_page_data["question_data"], question_data)
             return True, new_page_data
 
         # mongo data found
@@ -510,7 +527,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     # in the mongo entry or manually changed page_data
                     new_page_data = (
                         self.generate_new_page_data(page_context, question_data))
-                    assert new_page_data["question_data"] == question_data
+                    assert question_data_equal(new_page_data["question_data"],
+                                               question_data)
 
                     manually_changed_page_data = False
                     for k in page_data.keys():
@@ -530,7 +548,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                         )
 
                     if manually_changed_page_data:
-                        assert new_page_data["question_data"] == question_data
+                        assert question_data_equal(new_page_data["question_data"],
+                                                   question_data)
                         return True, new_page_data
 
                 return False, {}
@@ -553,7 +572,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                         {"$set": {"%s_next" % commit_sha:
                                       new_page_data["template_hash_id"]}}
                     )
-                    assert new_page_data["question_data"] == question_data
+                    assert question_data_equal(new_page_data["question_data"],
+                                               question_data)
                     return True, new_page_data
 
                 # the entry exists
@@ -595,7 +615,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     {"$set": {"%s_next" % commit_sha:
                                   new_page_data["template_hash_id"]}}
                 )
-                assert new_page_data["question_data"] == question_data
+                assert question_data_equal(new_page_data["question_data"],
+                                           question_data)
                 return True, new_page_data
 
     def generate_template_hash(self, page_context):
@@ -674,6 +695,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 random_data = choice(all_data)
             else:
                 random_data = all_data[i]
+            if isinstance(random_data, dict):
+                from collections import OrderedDict
+                random_data = OrderedDict(random_data)
             selected_data_bytes = BytesIO()
             pickle.dump(random_data, selected_data_bytes)
 
