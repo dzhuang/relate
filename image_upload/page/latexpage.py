@@ -483,6 +483,13 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         if question_data is None:
             new_page_data = self.initialize_page_data(page_context)
             return True, new_page_data
+        else:
+            # backward compatibility, converting dict data to Ordereddict
+            new_page_data = self.generate_new_page_data(page_context, question_data)
+            if new_page_data != new_page_data["question_data"]:
+                if question_data_equal(
+                        new_page_data["question_data"], question_data):
+                    question_data = new_page_data["question_data"]
 
         commit_sha = page_context.commit_sha.decode()
         if not (template_hash and template_hash_id and key_making_string_md5):
@@ -521,6 +528,13 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
             if match_template_hash:
                 if match_template_hash == template_hash:
+                    new_page_data = self.generate_new_page_data(page_context,
+                                                                question_data)
+                    if new_page_data != new_page_data["question_data"]:
+                        if question_data_equal(
+                                new_page_data["question_data"], question_data):
+                            return True, {}
+
                     return False, {}
                 else:
                     # This happen only when manually changed the template_hash field
@@ -551,6 +565,13 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                         assert question_data_equal(new_page_data["question_data"],
                                                    question_data)
                         return True, new_page_data
+
+                new_page_data = self.generate_new_page_data(page_context,
+                                                            question_data)
+                if new_page_data != new_page_data["question_data"]:
+                    if question_data_equal(
+                            new_page_data["question_data"], question_data):
+                        return True, {}
 
                 return False, {}
 
@@ -607,6 +628,10 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                      commit_sha: {"$exists": False}},
                     {"$set": {commit_sha: template_hash}}
                 )
+                if new_page_data != new_page_data["question_data"]:
+                    if question_data_equal(
+                            new_page_data["question_data"], question_data):
+                        return True, {}
                 return False, {}
             else:
                 get_latex_page_commitsha_template_pair_collection().update_one(
