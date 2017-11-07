@@ -168,4 +168,32 @@ def regrade_flow_sessions(self, course_id, flow_id, access_rules_tag, inprog_val
     return {"message": _("%d sessions regraded.") % count}
 
 
+@shared_task(bind=True)
+def adjust_flow_session_page_data_batch(self, course_id, flow_id):
+    course = Course.objects.get(id=course_id)
+    repo = get_course_repo(course)
+
+    sessions = (FlowSession.objects
+            .filter(
+                course=course,
+                participation__isnull=False,
+                flow_id=flow_id))
+
+    nsessions = sessions.count()
+    count = 0
+
+    from course.flow import adjust_flow_session_page_data
+    for session in sessions:
+        adjust_flow_session_page_data(repo, session, course.identifier,
+                                      respect_preview=False)
+        count += 1
+
+        self.update_state(
+                state='PROGRESS',
+                meta={'current': count, 'total': nsessions})
+
+    repo.close()
+    return {"message": _("%d sessions adjusted.") % count}
+
+
 # vim: foldmethod=marker

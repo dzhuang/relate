@@ -751,6 +751,60 @@ def test_flow(pctx):
 # }}}
 
 
+# {{{ adjust exist flow page data
+
+class FlowPageDataAdjustForm(StyledForm):
+    def __init__(self, flow_ids, *args, **kwargs):
+        super(FlowPageDataAdjustForm, self).__init__(*args, **kwargs)
+
+        self.fields["flow_id"] = forms.ChoiceField(
+                choices=[(fid, fid) for fid in flow_ids],
+                required=True,
+                label=_("Flow ID"),
+                widget=Select2Widget())
+
+        self.helper.add_input(
+                Submit(
+                    "warmup",
+                    mark_safe_lazy(
+                        string_concat(
+                            pgettext("Start an activity", "Go"),
+                            " &raquo;")),
+                    ))
+
+
+@course_view
+def batch_adjust_flow_page_data(pctx):
+    if not pctx.has_permission(pperm.test_flow):
+        raise PermissionDenied()
+
+    from course.content import list_flow_ids
+    flow_ids = list_flow_ids(pctx.repo, pctx.course_commit_sha)
+
+    request = pctx.request
+    if request.method == "POST":
+        form = FlowPageDataAdjustForm(flow_ids, request.POST, request.FILES)
+        if "warmup" not in request.POST:
+            raise SuspiciousOperation(_("invalid operation"))
+
+        if form.is_valid():
+            from course.tasks import adjust_flow_session_page_data_batch
+            async_res = adjust_flow_session_page_data_batch.delay(
+                pctx.course.id, form.cleaned_data["flow_id"])
+
+            return redirect("relate-monitor_task", async_res.id)
+
+    else:
+        form = FlowPageDataAdjustForm(flow_ids)
+
+    return render_course_page(pctx, "course/generic-course-form.html", {
+        "form": form,
+        "form_description": _("Batch adjust existing flow page data"),
+    })
+
+# }}}
+
+
 # {{{ flow access exceptions
 
 class ParticipationChoiceField(forms.ModelChoiceField):

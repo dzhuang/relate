@@ -604,7 +604,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             minify_python_script, strip_template_comments)
         template_string = ""
         if self.cache_key_files:
-            for cfile in self.cache_key_files:
+            for cfile in sorted(self.cache_key_files):
                 cfile_data = get_repo_blob_data_cached(
                     page_context.repo,
                     cfile,
@@ -616,7 +616,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 template_string += cfile_data
 
         if self.cache_key_attrs:
-            for cattr in self.cache_key_attrs:
+            for cattr in sorted(self.cache_key_attrs):
                 cattr_string = repr(getattr(self.page_desc, cattr)).strip()
                 if (cattr.endswith("_code")
                     and

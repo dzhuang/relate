@@ -129,6 +129,7 @@
       {% if pperm.test_flow %}
         <li role="presentation" class="divider"></li>
         <li><a href="{% url "relate-test_flow" course.identifier %}">{% trans "Test flow" %}</a></li>
+        <li><a href="{% url "relate-batch_adjust_flow_page_data" course.identifier %}">{% trans "Batch adjust flow page data" %}</a></li>
       {% endif %}
 
       {% if pperm.edit_events %}

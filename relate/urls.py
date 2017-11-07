@@ -455,6 +455,12 @@ urlpatterns = [
         name="relate-test_flow"),
     url(r"^course"
         "/" + COURSE_ID_REGEX +
+        "/adjust-flow"
+        "/$",
+        course.views.batch_adjust_flow_page_data,
+        name="relate-batch_adjust_flow_page_data"),
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
         "/instant-flow"
         "/$",
         course.views.manage_instant_flow_requests,
