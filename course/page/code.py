@@ -155,6 +155,7 @@ def request_python_run(run_req, run_timeout, image=None):
         while True:
             try:
                 connection = http_client.HTTPConnection(connect_host_ip, port)
+                print(connect_host_ip, port)
 
                 connection.request('GET', '/ping')
 
