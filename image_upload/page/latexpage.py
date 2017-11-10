@@ -152,7 +152,7 @@ def b64_pickled_bytes_to_data_string(p):
     # because the data might contains Numpy ndarray
     # https://stackoverflow.com/a/5465268/3437454
     import joblib
-    print(joblib.hash(data))
+    # print(joblib.hash(data))
     return joblib.hash(data)
 
 
@@ -516,25 +516,25 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         key_making_string_md5 = page_data.get("key_making_string_md5", None)
         template_hash_id = page_data.get("template_hash_id", None)
 
-        print("------------------------------new -------------------------------")
-        print(self.generate_new_page_data(page_context, question_data))
+        # print("------------------------------new -------------------------------")
+        # print(self.generate_new_page_data(page_context, question_data))
 
         if question_data is None:
             new_page_data = self.initialize_page_data(page_context)
             return True, new_page_data
-        else:
-            # backward compatibility, converting dict data to Ordereddict
-            new_page_data = self.generate_new_page_data(page_context, question_data)
-            if new_page_data["question_data"] != question_data:
-                if question_data_equal(
-                        new_page_data["question_data"], question_data):
-                    question_data = new_page_data["question_data"]
-                    template_hash = new_page_data["template_hash"]
-                    template_hash_id = new_page_data["template_hash_id"]
-                    key_making_string_md5 = new_page_data["key_making_string_md5"]
-                    print("---------------back ward------------------------------")
-                    print(question_data, template_hash, template_hash_id)
-                    print("---------------end back ward------------------------------")
+        # else:
+        #     # backward compatibility, converting dict data to Ordereddict
+        #     new_page_data = self.generate_new_page_data(page_context, question_data)
+        #     if new_page_data["question_data"] != question_data:
+        #         if question_data_equal(
+        #                 new_page_data["question_data"], question_data):
+        #             question_data = new_page_data["question_data"]
+        #             template_hash = new_page_data["template_hash"]
+        #             template_hash_id = new_page_data["template_hash_id"]
+        #             key_making_string_md5 = new_page_data["key_making_string_md5"]
+        #             print("---------------back ward------------------------------")
+        #             print(question_data, template_hash, template_hash_id)
+        #             print("---------------end back ward------------------------------")
 
         commit_sha = page_context.commit_sha.decode()
         if not (template_hash and template_hash_id and key_making_string_md5):
@@ -644,11 +644,11 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
                 # the entry exists
                 else:
-                    print("------------------rediredted----------------")
-                    print(self.generate_template_hash(page_context))
+                    # print("------------------rediredted----------------")
+                    # print(self.generate_template_hash(page_context))
                     new_template_hash = target_entry.get(commit_sha, None)
-                    print(new_template_hash)
-                    print("------------------rediredted ended----------------")
+                    # print(new_template_hash)
+                    # print("------------------rediredted ended----------------")
                     if new_template_hash:
                         new_key_making_string_md5 = (
                             get_key_making_string_md5_hash(
@@ -773,8 +773,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 from collections import OrderedDict
                 random_data = deep_convert_ordereddict(random_data)
                 #print(random_data)
-            if i == 1:
-                print(random_data)
+            # if i == 1:
+                # print(random_data)
             selected_data_bytes = BytesIO()
             pickle.dump(random_data, selected_data_bytes)
             #print(selected_data_bytes)
@@ -791,8 +791,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             if not warm_up_by_sandbox:
                 break
 
-            if i != 1:
-                continue
+            # if i != 1:
+            #     continue
 
             page_data = {
                 "question_data": question_data,
@@ -800,10 +800,10 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 "key_making_string_md5": key_making_string_md5
             }
 
-            import pprint
-            pp = pprint.PrettyPrinter(indent=4)
-
-            pp.pprint(page_data)
+            # import pprint
+            # pp = pprint.PrettyPrinter(indent=4)
+            #
+            # pp.pprint(page_data)
 
 
             # try to do markup_to_html in warmup
@@ -1098,7 +1098,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         # type: (Any, Any, Text, Text) -> Tuple[bool, Any]
         # {{{ request run
 
-        print("------------------runpy--------------------")
+        # print("------------------runpy--------------------")
 
         assert question_data
         run_jinja_req = {"compile_only": False}
