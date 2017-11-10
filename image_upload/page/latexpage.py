@@ -99,7 +99,7 @@ def get_key_making_string_md5_hash(template_hash, question_data):
     # type: (Text, Text) -> Text
     assert question_data is not None
     key_making_string = template_hash
-    key_making_string += question_data
+    key_making_string += b64_pickled_bytes_to_data_string(question_data)
     return md5(key_making_string.encode("utf-8")).hexdigest()
 
 
@@ -140,31 +140,40 @@ def get_latex_page_commitsha_template_pair_collection(
     return collection
 
 
+def b64_pickled_bytes_to_data(b64_string):
+    bio = BytesIO(b64decode(b64_string.encode()))
+    return pickle.load(bio, encoding="latin-1")
 
+
+def b64_pickled_bytes_to_data_string(p):
+    data = b64_pickled_bytes_to_data(p)
+    data = deep_convert_ordereddict(data)
+
+    # because the data might contains Numpy ndarray
+    # https://stackoverflow.com/a/5465268/3437454
+    import joblib
+    print(joblib.hash(data))
+    return joblib.hash(data)
 
 
 def question_data_equal(data1, data2):
     if data1 == data2:
-        print(True)
         return True
     if deep_eq(data1, data2):
         return True
     else:
-        bio = BytesIO(b64decode(data1.encode()))
-        data1_decode = pickle.load(bio, encoding="latin-1")
-        bio = BytesIO(b64decode(data2.encode()))
-        data2_decode = pickle.load(bio, encoding="latin-1")
-        print(type(data1_decode), type(data2_decode))
+        data1_decode = b64_pickled_bytes_to_data(data1)
+        data2_decode = b64_pickled_bytes_to_data(data2)
         return deep_eq(data1_decode, data2_decode)
-    # print(False)
-    # return False
 
 
 def deep_convert_ordereddict(layer):
     to_ret = layer
     if isinstance(layer, dict):
         from collections import OrderedDict
-        to_ret = OrderedDict(layer)
+        # OrderedDict remembers the order in which the elements have been inserted
+        # https://stackoverflow.com/q/9001509/3437454
+        to_ret = OrderedDict(sorted(six.iteritems(layer)))
 
     if isinstance(layer, list):
         for i, item in enumerate(layer):
@@ -462,20 +471,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         new_hash_id = (
             self.get_or_create_template_hash_id(commit_sha, new_template_hash)
         )
-        # -----------------backward compatibility---------------------
-        bio = BytesIO(b64decode(question_data.encode()))
-        original_data = pickle.load(bio, encoding="latin-1")
-        print("-----------------------------------------------------here")
-        new_question_data = deep_convert_ordereddict(original_data)
-        print(type(original_data))
-        print(new_question_data)
-        print(type(new_question_data))
-        print("-----------------------------------------------------here end")
-        assert question_data_equal(original_data, new_question_data)
-        data_bytes = BytesIO()
-        pickle.dump(new_question_data, data_bytes)
-        question_data = b64encode(data_bytes.getvalue()).decode()
-        # ------------------------------------------------------------
         new_key_making_string_md5 = get_key_making_string_md5_hash(
             new_template_hash, question_data)
         return {
@@ -521,6 +516,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         key_making_string_md5 = page_data.get("key_making_string_md5", None)
         template_hash_id = page_data.get("template_hash_id", None)
 
+        print("------------------------------new -------------------------------")
+        print(self.generate_new_page_data(page_context, question_data))
+
         if question_data is None:
             new_page_data = self.initialize_page_data(page_context)
             return True, new_page_data
@@ -531,6 +529,12 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 if question_data_equal(
                         new_page_data["question_data"], question_data):
                     question_data = new_page_data["question_data"]
+                    template_hash = new_page_data["template_hash"]
+                    template_hash_id = new_page_data["template_hash_id"]
+                    key_making_string_md5 = new_page_data["key_making_string_md5"]
+                    print("---------------back ward------------------------------")
+                    print(question_data, template_hash, template_hash_id)
+                    print("---------------end back ward------------------------------")
 
         commit_sha = page_context.commit_sha.decode()
         if not (template_hash and template_hash_id and key_making_string_md5):
@@ -571,10 +575,10 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 if match_template_hash == template_hash:
                     new_page_data = self.generate_new_page_data(page_context,
                                                                 question_data)
-                    if new_page_data != new_page_data["question_data"]:
-                        if question_data_equal(
-                                new_page_data["question_data"], question_data):
-                            return True, {}
+                    if new_page_data["question_data"] != question_data:
+                        assert question_data_equal(
+                                new_page_data["question_data"], question_data)
+                        return True, new_page_data
 
                     return False, {}
                 else:
@@ -609,10 +613,10 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
                 new_page_data = self.generate_new_page_data(page_context,
                                                             question_data)
-                if new_page_data != new_page_data["question_data"]:
-                    if question_data_equal(
-                            new_page_data["question_data"], question_data):
-                        return True, {}
+                if new_page_data["question_data"] != question_data:
+                    assert question_data_equal(
+                        new_page_data["question_data"], question_data)
+                    return True, new_page_data
 
                 return False, {}
 
@@ -640,7 +644,11 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
                 # the entry exists
                 else:
+                    print("------------------rediredted----------------")
+                    print(self.generate_template_hash(page_context))
                     new_template_hash = target_entry.get(commit_sha, None)
+                    print(new_template_hash)
+                    print("------------------rediredted ended----------------")
                     if new_template_hash:
                         new_key_making_string_md5 = (
                             get_key_making_string_md5_hash(
@@ -669,10 +677,10 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                      commit_sha: {"$exists": False}},
                     {"$set": {commit_sha: template_hash}}
                 )
-                if new_page_data != new_page_data["question_data"]:
-                    if question_data_equal(
-                            new_page_data["question_data"], question_data):
-                        return True, {}
+                if new_page_data["question_data"] != question_data:
+                    assert question_data_equal(
+                        new_page_data["question_data"], question_data)
+                    return True, new_page_data
                 return False, {}
             else:
                 get_latex_page_commitsha_template_pair_collection().update_one(
@@ -714,7 +722,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 template_string += cattr_string
 
         if self.runpy_context:
-            # runpy_context is a dict, which may have different repr
+            # runpy_context is a dict, convert to OrderedDict
             sorted_runpy_context_str = repr(sorted(
                 list((k, self.runpy_context[k]) for k in self.runpy_context.keys()),
                 key=lambda x: x[0]))
@@ -764,14 +772,13 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             if isinstance(random_data, dict):
                 from collections import OrderedDict
                 random_data = deep_convert_ordereddict(random_data)
+                #print(random_data)
+            if i == 1:
                 print(random_data)
             selected_data_bytes = BytesIO()
             pickle.dump(random_data, selected_data_bytes)
-            print(selected_data_bytes)
+            #print(selected_data_bytes)
 
-            # question_data is the original data
-            # key_making_string is going to be deprecated, which is now used
-            # by referring cache key
             question_data = b64encode(selected_data_bytes.getvalue()).decode()
             key_making_string_md5 = get_key_making_string_md5_hash(
                     template_hash, question_data)
@@ -784,11 +791,20 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             if not warm_up_by_sandbox:
                 break
 
+            if i != 1:
+                continue
+
             page_data = {
                 "question_data": question_data,
                 "template_hash": template_hash,
                 "key_making_string_md5": key_making_string_md5
             }
+
+            import pprint
+            pp = pprint.PrettyPrinter(indent=4)
+
+            pp.pprint(page_data)
+
 
             # try to do markup_to_html in warmup
             self.is_page_desc_updated = False
