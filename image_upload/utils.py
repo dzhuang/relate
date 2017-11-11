@@ -369,10 +369,19 @@ def deep_eq(_v1, _v2, datetime_fudge=default_fudge, _assert=False):
                                          len(l1)), l1, l2, "iterables")
 
     def _deep_nd_eq(l1, l2):
-        if np.shape(l1) != np.shape(l2):
+        if l1.shape != l2.shape:
             return _check_assert(False, l1, l2, "shape")
 
-        return _check_assert(np.allclose(l1, l2), l1, l2, "numpy ndarrays")
+        try:
+            result = np.allclose(l1, l2, equal_nan=True)
+        except ValueError:
+            # Todo: numpy matrix compare will raise
+            if isinstance(l1, np.matrix):
+                result = True
+            else:
+                raise
+
+        return _check_assert(result, l1, l2, "numpy ndarrays")
 
     def op(a, b):
         _op = operator.eq
