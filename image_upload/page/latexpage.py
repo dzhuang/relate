@@ -39,7 +39,7 @@ from plugins.latex.utils import get_latex_cache
 
 # {{{ mypy
 if False:
-    from typing import Text, Callable, Any, Dict, Tuple, Union, Optional  # noqa
+    from typing import Text, Any, Dict, Tuple, Union, Optional  # noqa
     from course.utils import PageContext  # noqa
     from pymongo import MongoClient  # noqa
     from pymongo.collection import Collection  # noqa
@@ -67,7 +67,7 @@ from course.page.code import (
     request_python_run_with_retries)
 
 from image_upload.page.imgupload import ImageUploadQuestion
-from image_upload.utils import deep_eq
+from image_upload.utils import deep_eq, deep_convert_ordereddict, deep_np_to_string
 
 
 def _debug_print(s):
@@ -150,10 +150,7 @@ def b64_pickled_bytes_to_data_string(p):
     data = deep_convert_ordereddict(data)
 
     # because the data might contains Numpy ndarray
-    # https://stackoverflow.com/a/5465268/3437454
-    import joblib
-    # print(joblib.hash(data))
-    return joblib.hash(data)
+    return str(deep_np_to_string(data))
 
 
 def question_data_equal(data1, data2):
@@ -165,28 +162,6 @@ def question_data_equal(data1, data2):
         data1_decode = b64_pickled_bytes_to_data(data1)
         data2_decode = b64_pickled_bytes_to_data(data2)
         return deep_eq(data1_decode, data2_decode)
-
-
-def deep_convert_ordereddict(layer):
-    to_ret = layer
-    if isinstance(layer, dict):
-        from collections import OrderedDict
-        # OrderedDict remembers the order in which the elements have been inserted
-        # https://stackoverflow.com/q/9001509/3437454
-        to_ret = OrderedDict(sorted(six.iteritems(layer)))
-
-    if isinstance(layer, list):
-        for i, item in enumerate(layer):
-            layer[i] = deep_convert_ordereddict(item)
-    try:
-        for key, value in six.iteritems(to_ret):
-            to_ret[key] = deep_convert_ordereddict(value)
-    except AttributeError:
-        pass
-
-    assert deep_eq(layer, to_ret)
-
-    return to_ret
 
 
 class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
@@ -516,9 +491,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         key_making_string_md5 = page_data.get("key_making_string_md5", None)
         template_hash_id = page_data.get("template_hash_id", None)
 
-        # print("------------------------------new -------------------------------")
-        # print(self.generate_new_page_data(page_context, question_data))
-
         if question_data is None:
             new_page_data = self.initialize_page_data(page_context)
             return True, new_page_data
@@ -572,9 +544,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             assert not (match_template_hash and match_template_hash_redirect_id)
 
             if match_template_hash:
+                new_page_data = self.generate_new_page_data(page_context,
+                                                            question_data)
                 if match_template_hash == template_hash:
-                    new_page_data = self.generate_new_page_data(page_context,
-                                                                question_data)
                     if new_page_data["question_data"] != question_data:
                         assert question_data_equal(
                                 new_page_data["question_data"], question_data)
@@ -584,11 +556,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 else:
                     # This happen only when manually changed the template_hash field
                     # in the mongo entry or manually changed page_data
-                    new_page_data = (
-                        self.generate_new_page_data(page_context, question_data))
                     assert question_data_equal(new_page_data["question_data"],
                                                question_data)
-
                     manually_changed_page_data = False
                     for k in page_data.keys():
                         if page_data[k] != new_page_data[k]:
@@ -611,8 +580,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                                                    question_data)
                         return True, new_page_data
 
-                new_page_data = self.generate_new_page_data(page_context,
-                                                            question_data)
                 if new_page_data["question_data"] != question_data:
                     assert question_data_equal(
                         new_page_data["question_data"], question_data)
@@ -644,11 +611,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
                 # the entry exists
                 else:
-                    # print("------------------rediredted----------------")
-                    # print(self.generate_template_hash(page_context))
                     new_template_hash = target_entry.get(commit_sha, None)
-                    # print(new_template_hash)
-                    # print("------------------rediredted ended----------------")
                     if new_template_hash:
                         new_key_making_string_md5 = (
                             get_key_making_string_md5_hash(
@@ -770,16 +733,12 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             else:
                 random_data = all_data[i]
             if isinstance(random_data, dict):
-                from collections import OrderedDict
                 random_data = deep_convert_ordereddict(random_data)
-                #print(random_data)
-            # if i == 1:
-                # print(random_data)
+
             selected_data_bytes = BytesIO()
             pickle.dump(random_data, selected_data_bytes)
-            #print(selected_data_bytes)
-
             question_data = b64encode(selected_data_bytes.getvalue()).decode()
+
             key_making_string_md5 = get_key_making_string_md5_hash(
                     template_hash, question_data)
 
@@ -791,20 +750,11 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             if not warm_up_by_sandbox:
                 break
 
-            # if i != 1:
-            #     continue
-
             page_data = {
                 "question_data": question_data,
                 "template_hash": template_hash,
                 "key_making_string_md5": key_making_string_md5
             }
-
-            # import pprint
-            # pp = pprint.PrettyPrinter(indent=4)
-            #
-            # pp.pprint(page_data)
-
 
             # try to do markup_to_html in warmup
             self.is_page_desc_updated = False

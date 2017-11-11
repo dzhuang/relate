@@ -40,6 +40,7 @@ from django.urls import resolve
 from course.constants import participation_permission as pperm
 from course.utils import CoursePageContext
 from image_upload.views import COURSE_STAFF_IMAGE_PERMISSION
+import numpy as np
 
 
 default_fudge = datetime.timedelta(seconds=0, microseconds=0, days=0)
@@ -221,6 +222,62 @@ def is_course_staff_course_image_request(request, course):
     return pctx.has_permission(pperm.assign_grade)
 
 
+def deep_np_to_string(layer):
+    # convert embeded numpy ndarray to string(bytes string)
+    # while retain the original data structure
+    to_ret = layer
+
+    if isinstance(layer, np.ndarray):
+        to_ret = layer.tostring()
+
+    if isinstance(layer, list):
+        for i, item in enumerate(layer):
+            layer[i] = deep_np_to_string(item)
+
+    if isinstance(layer, tuple):
+        _layer = list(layer)
+        for i, item in enumerate(layer):
+            _layer[i] = deep_np_to_string(item)
+        return tuple(_layer)
+
+    try:
+        for key, value in six.iteritems(to_ret):
+            to_ret[key] = deep_np_to_string(value)
+    except AttributeError:
+        pass
+
+    return to_ret
+
+
+def deep_convert_ordereddict(layer):
+    to_ret = layer
+    if isinstance(layer, dict):
+        from collections import OrderedDict
+        # OrderedDict remembers the order in which the elements have been inserted
+        # https://stackoverflow.com/q/9001509/3437454
+        to_ret = OrderedDict(sorted(six.iteritems(layer)))
+
+    if isinstance(layer, list):
+        for i, item in enumerate(layer):
+            layer[i] = deep_convert_ordereddict(item)
+
+    if isinstance(layer, tuple):
+        _layer = list(layer)
+        for i, item in enumerate(layer):
+            _layer[i] = deep_convert_ordereddict(item)
+        return tuple(_layer)
+
+    try:
+        for key, value in six.iteritems(to_ret):
+            to_ret[key] = deep_convert_ordereddict(value)
+    except AttributeError:
+        pass
+
+    assert deep_eq(layer, to_ret)
+
+    return to_ret
+
+
 def deep_eq(_v1, _v2, datetime_fudge=default_fudge, _assert=False):
     """
     Modified from https://gist.github.com/samuraisam/901117
@@ -312,8 +369,10 @@ def deep_eq(_v1, _v2, datetime_fudge=default_fudge, _assert=False):
                                          len(l1)), l1, l2, "iterables")
 
     def _deep_nd_eq(l1, l2):
-        import numpy as np
-        return np.allclose(l1, l2)
+        if np.shape(l1) != np.shape(l2):
+            return _check_assert(False, l1, l2, "shape")
+
+        return _check_assert(np.allclose(l1, l2), l1, l2, "numpy ndarrays")
 
     def op(a, b):
         _op = operator.eq
@@ -336,7 +395,6 @@ def deep_eq(_v1, _v2, datetime_fudge=default_fudge, _assert=False):
         if isinstance(_v1, dict):
             op = _deep_dict_eq
         else:
-            import numpy as np
             if isinstance(_v1, np.ndarray):
                 c1, c2 = _v1, _v2
                 op = _deep_nd_eq
