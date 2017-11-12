@@ -368,20 +368,39 @@ def deep_eq(_v1, _v2, datetime_fudge=default_fudge, _assert=False):
                                              for v1, v2 in zip(l1, l2)),
                                          len(l1)), l1, l2, "iterables")
 
-    def _deep_nd_eq(l1, l2):
-        if l1.shape != l2.shape:
-            return _check_assert(False, l1, l2, "shape")
+    def _deep_nd_eq(np1, np2):
+        if np1.shape != np2.shape:
+            return _check_assert(False, np1.shape, np2.shape, "shape not equal")
 
+        reason = ""
         try:
-            result = np.allclose(l1, l2, equal_nan=True)
-        except ValueError:
-            # Todo: numpy matrix compare will raise
-            if isinstance(l1, np.matrix):
-                result = True
+            result = np.allclose(np1, np2, equal_nan=True)
+            if not result:
+                reason = "numpy ndarrays not equal"
+        except Exception as e:
+            # in case the objects are np.matrix instances
+            # https://stackoverflow.com/a/28029145/3437454
+            if isinstance(e, ValueError):
+                if isinstance(np1, np.matrix):
+                    if not isinstance(np2, np.matrix):
+                        result = False
+                        reason = ("the two numpy object have different "
+                                  "type (np.ndarray vs. np.matrix)")
+                    else:
+                        np1array = np.asarray(np1)
+                        np2array = np.asarray(np2)
+                        result = np.allclose(np1array, np2array, equal_nan=True)
+                        if not result:
+                            reason = "numpy matrices not equal"
+                else:
+                    result = False
             else:
-                raise
+                result = False
+            if not result:
+                if not reason:
+                    reason = "%s: %s" % (type(e).__name__, str(e))
 
-        return _check_assert(result, l1, l2, "numpy ndarrays")
+        return _check_assert(result, np1, np2, reason)
 
     def op(a, b):
         _op = operator.eq
