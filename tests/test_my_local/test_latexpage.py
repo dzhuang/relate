@@ -286,6 +286,7 @@ class LatexPageWithMacroTest(LatexPageMixin, LocmemBackendTestsMixin, TestCase):
         self.assertContains(resp, "Environment align* undefined")
         self.assertEqual(len(mail.outbox), 1)
 
+
 @skipIf(skip_test, SKIP_LOCAL_TEST_REASON)
 @override_settings(
     CACHE_BACKEND='dummy:///')
@@ -470,8 +471,16 @@ class LatexPageSandboxTest(SingleCoursePageSandboxTestBaseMixin, LatexPageMixin,
             latex_sandbox.LATEX_BLANK_FILLING_PAGE)
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, u"<h1>互补松弛定理的应用</h1>", count=1)
+        resp = self.get_page_sandbox_preview_response(
+            latex_sandbox.LATEX_BLANK_FILLING_PAGE)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, u"<h1>互补松弛定理的应用</h1>", count=1)
 
     def test_latexpage_sandbox_preview_success_assert_content_count_1(self):
+        resp = self.get_page_sandbox_preview_response(
+            latex_sandbox.LATEX_BLANK_FILLING_PAGE)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, u"已知线性规划问题", count=1)
         resp = self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_PAGE)
         self.assertEqual(resp.status_code, 200)
@@ -829,7 +838,7 @@ class LatexPageSandboxTest(SingleCoursePageSandboxTestBaseMixin, LatexPageMixin,
 
     def test_latexpage_sandbox_page_error_with_cachekey_attribute_and_runpy_context(self):  # noqa
         resp = self.get_page_sandbox_preview_response(
-            latex_sandbox.LATEX_BLANK_FILLING_SUCCESS_WITH_CACHEKEY_ATTRIBUTE_AND_RUNPY_CONTEXT)
+            latex_sandbox.LATEX_BLANK_FILLING_FAILURE_WITH_CACHEKEY_ATTRIBUTE_AND_RUNPY_CONTEXT)
         self.assertEqual(resp.status_code, 200)
         self.assertSandboxHaveValidPage(resp)
         self.assertSandboxResponseContextEqual(resp, PAGE_ERRORS, None)
@@ -1995,3 +2004,147 @@ class LatexPageSandboxFlowCombineTest(SingleCoursePageSandboxTestBaseMixin, Late
             self.assertEqual(
                 get_commit_sha_template_hash(COMMIT_SHA_WITH_DIFFERENT_CONTENT),
                 "8bcc33cb58788fe6c2a252cf45de3d1d")
+
+
+@skipIf(skip_test, SKIP_LOCAL_TEST_REASON)
+@override_settings(
+    CACHE_BACKEND='dummy:///')
+class RealLatexPageSandboxTest(SingleCoursePageSandboxTestBaseMixin, LatexPageMixin,
+                           LocmemBackendTestsMixin, TestCase):
+    courses_setup_list = MY_SINGLE_COURSE_SETUP_LIST
+    flow_id = LATEXPAGE_FLOW_RANDOM_ALL_SAME_ID
+    def test_latexpage_sandbox_preview_success(self):
+        resp = self.get_page_sandbox_preview_response(
+            latex_sandbox.LATEX_BLANK_FILLING_PAGE)
+        self.assertEqual(resp.status_code, 200)
+        self.assertSandboxHaveValidPage(resp)
+        self.assertSandboxResponseContextEqual(resp, PAGE_ERRORS, None)
+        self.assertSandboxResponseContextEqual(resp, PAGE_WARNINGS, [])
+        self.assertContains(resp, u"<h1>互补松弛定理的应用</h1>", count=1)
+        self.assertContains(resp, u"已知线性规划问题", count=1)
+
+    def test_latexpage_sandbox_old_style_preview_success(self):
+        resp = self.get_page_sandbox_preview_response(
+            latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS_MULTIPLE_DATA)
+        self.assertEqual(resp.status_code, 200)
+        self.assertSandboxHaveValidPage(resp)
+        self.assertSandboxResponseContextEqual(resp, PAGE_ERRORS, None)
+        self.assertSandboxWarningTextContain(
+            resp, "LatexRandomCodeInlineMultiQuestion not using attribute "
+                  "'runpy_file' is for debug only, it should not be used "
+                  "in production.")
+
+    def test_latexpage_sandbox_old_style_answer_success(self):
+        answer_data = {'blank1': ["(5/4, 19/4, 3/2)^T"]}
+        resp = self.get_page_sandbox_submit_answer_response(
+            markup_content=latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS,
+            answer_data=answer_data)
+        self.assertEqual(resp.status_code, 200)
+        result_correctness = resp.context.__getitem__("feedback").correctness
+        self.assertEquals(int(result_correctness), 1)
+
+    def test_latexpage_sandbox_old_style_raise_error1(self):
+        error_markdown = (
+            latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS_WITH_EXCEPTION_COMMENTED
+                .replace("#raise PromptProcessCodeException(error_info)",
+                         "raise PromptProcessCodeException(error_info)"
+                         ))
+        resp = self.get_page_sandbox_preview_response(
+            markup_content=error_markdown)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "PromptProcessCodeException: test exception")
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_latexpage_sandbox_old_style_raise_error2(self):
+        error_markdown = (
+            latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS_WITH_EXCEPTION_COMMENTED
+                .replace("#raise QuestionProcessCodeException(error_info)",
+                         "raise QuestionProcessCodeException(error_info)"
+                         ))
+        resp = self.get_page_sandbox_preview_response(
+            markup_content=error_markdown)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "QuestionProcessCodeException: test exception")
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_latexpage_sandbox_old_style_raise_error3(self):
+        error_markdown = (
+            latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS_WITH_EXCEPTION_COMMENTED
+                .replace("#raise AnswersProcessCodeException(error_info)",
+                         "raise AnswersProcessCodeException(error_info)"
+                         ))
+        resp = self.get_page_sandbox_preview_response(
+            markup_content=error_markdown)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "AnswersProcessCodeException: test exception")
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_latexpage_sandbox_old_style_raise_error4(self):
+        error_markdown = (
+            latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS_WITH_EXCEPTION_COMMENTED
+                .replace("#answer_explanation_process_code",
+                         "answer_explanation_process_code")
+                .replace("#    raise AnswerExplanationProcessCodeException(error_info)",
+                         "    raise AnswerExplanationProcessCodeException(error_info)")
+        )
+        resp = self.get_page_sandbox_preview_response(
+            markup_content=error_markdown)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "AnswerExplanationProcessCodeException: test exception")
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_latexpage_sandbox_old_style_raise_error5(self):
+        error_markdown = (
+            latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS_WITH_EXCEPTION_COMMENTED
+                .replace("#answer_explanation_process_code",
+                         "answer_explanation_process_code")
+                .replace("#    raise AnswerExplanationProcessCodeException(error_info)",
+                         "    pass")
+        )
+        resp = self.get_page_sandbox_preview_response(
+            markup_content=error_markdown)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, ("expects output, while got None"))
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_latexpage_sandbox_old_style_full_process_preview_success(self):
+        resp = self.get_page_sandbox_preview_response(
+            latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_FULL_PROCESS_CODE)
+        self.assertEqual(resp.status_code, 200)
+        self.assertSandboxHaveValidPage(resp)
+        self.assertSandboxResponseContextEqual(resp, PAGE_ERRORS, None)
+        self.assertSandboxWarningTextContain(
+            resp, "LatexRandomCodeInlineMultiQuestion not using attribute "
+                  "'runpy_file' is for debug only, it should not be used "
+                  "in production.")
+        self.get_page_sandbox_preview_response(
+            latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_FULL_PROCESS_CODE)
+
+        # to cover get result from mongodb
+        self.clear_cache()
+        self.get_page_sandbox_preview_response(
+            latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_FULL_PROCESS_CODE)
+
+    def test_latexpage_sandbox_page_error_with_cachekey_attribute_and_runpy_context(self):  # noqa
+        resp = self.get_page_sandbox_preview_response(
+            latex_sandbox.LATEX_BLANK_FILLING_FAILURE_WITH_CACHEKEY_ATTRIBUTE_AND_RUNPY_CONTEXT)
+        self.assertEqual(resp.status_code, 200)
+        self.assertSandboxHaveValidPage(resp)
+        self.assertSandboxResponseContextEqual(resp, PAGE_ERRORS, None)
+        self.assertSandboxResponseContextEqual(resp, PAGE_WARNINGS, [])
+        # the runpy_context introduced in this page is invalid.
+        self.assertContains(resp, ("The page failed to be rendered. "
+                                   "Sorry about that. The staff has been "
+                                   "informed, and it will be fixed as soon "
+                                   "as possible."))
+        self.assertContains(resp, "This is the problematic code")
+        self.assertContains(resp, "This is the exception traceback")
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_latex_code_page_sandbox_success(self):
+        resp = self.get_page_sandbox_preview_response(
+            latex_sandbox.LATEX_CODE_QUESTION)
+        self.assertEqual(resp.status_code, 200)
+        self.assertSandboxHaveValidPage(resp)
+        self.assertSandboxResponseContextEqual(resp, PAGE_ERRORS, None)
+        self.assertSandboxResponseContextEqual(resp, PAGE_WARNINGS, [])

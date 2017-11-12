@@ -552,7 +552,7 @@ answer_explanation: |\r
     行向量不应有转置符，列向量应有.\r
 """
 
-LATEX_BLANK_FILLING_SUCCESS_WITH_CACHEKEY_ATTRIBUTE_AND_RUNPY_CONTEXT = """
+LATEX_BLANK_FILLING_FAILURE_WITH_CACHEKEY_ATTRIBUTE_AND_RUNPY_CONTEXT = """
 type: LatexRandomCodeInlineMultiQuestion\r
 id: lp_dual_complimentary_slack\r
 value: 3\r
