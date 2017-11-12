@@ -1043,12 +1043,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 })
             return message
 
-    def jinja_runpy(
-            self, page_context, question_data, code_name, common_code_name=""):
-        # type: (Any, Any, Text, Text) -> Tuple[bool, Any]
-        # {{{ request run
-
-        # print("------------------runpy--------------------")
+    def get_run_jinja_req(self, page_context, question_data, code_name, **kwargs):
 
         assert question_data
         run_jinja_req = {"compile_only": False}
@@ -1070,24 +1065,38 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 run_jinja_req[name] = getattr(self.page_desc, name)
 
         run_jinja_req["user_code"] = ""
-
         transfer_attr_to("setup_code", from_name=code_name)
         assert run_jinja_req["setup_code"]
-        if common_code_name and getattr(self.page_desc, common_code_name, ""):
+
+        common_code_name = kwargs.pop("common_code_name", None)
+        if (common_code_name is not None
+                and getattr(self.page_desc, common_code_name, "")):
             run_jinja_req["setup_code"] = (
                 u"%s\n%s" % (
                     getattr(self.page_desc, common_code_name, ""),
                     run_jinja_req["setup_code"]))
 
         run_jinja_req["data_files"] = {}
+
         for data_file in self.page_desc.data_files:
             run_jinja_req["data_files"][data_file] = \
-                    b64encode(
-                            get_repo_blob_data_cached(
-                                page_context.repo, data_file,
-                                page_context.commit_sha)).decode()
+                b64encode(
+                    get_repo_blob_data_cached(
+                        page_context.repo, data_file,
+                        page_context.commit_sha)).decode()
 
         run_jinja_req["data_files"]["question_data"] = question_data
+        return run_jinja_req
+
+    def jinja_runpy(
+            self, page_context, question_data, code_name, **kwargs):
+        # type: (Any, Any, Text, Dict) -> Tuple[bool, Any]
+        # {{{ request run
+
+        # print("------------------runpy--------------------")
+
+        run_jinja_req = self.get_run_jinja_req(page_context, question_data,
+                                               code_name, **kwargs)
 
         try:
             response_dict = request_python_run_with_retries(run_jinja_req,
