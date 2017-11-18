@@ -25,11 +25,12 @@ THE SOFTWARE.
 """
 
 import six
-
+import json
 import jinja2
 
 from django.utils.html import escape
-from django.utils.translation import ugettext as _, string_concat
+from django.utils.translation import ugettext as _
+from relate.utils import string_concat
 from django.utils import translation
 from django.conf import settings
 
@@ -45,24 +46,14 @@ from course.page.code import (
 # {{{ python code question with page_context
 
 class PythonCodeQuestionWithPageContext(PythonCodeQuestion):
+    def _initial_code_with_page_context(self, page_context):
+        return self.get_code_with_page_context_str(page_context, "initial_code")
 
     def allowed_attrs(self):
         return super(PythonCodeQuestionWithPageContext, self).allowed_attrs() + (
-                ("setup_code", str),
-                ("show_setup_code", bool),
-                ("names_for_user", list),
-                ("names_from_user", list),
-                ("test_code", str),
-                ("show_test_code", bool),
-                ("correct_code_explanation", "markup"),
-                ("correct_code", str),
-                ("initial_code", str),
-                ("data_files", list),
-                ("single_submission", bool),
-                )
-
-    def _initial_code_with_page_context(self, page_context):
-        return self.get_code_with_page_context_str(page_context, "initial_code")
+            ("warn_suspective_behavior", bool),
+            ("penalty_for_suspective_behavior", bool)
+        )
 
     def body(self, page_context, page_data):
         from django.template.loader import render_to_string
@@ -135,6 +126,9 @@ class PythonCodeQuestionWithPageContext(PythonCodeQuestion):
         template = jinja_env.from_string(code.strip())
         return template.render(page_context=page_context)
 
+    def get_test_code(self, page_context):
+        return self.get_code_with_page_context_str(page_context, "test_code")
+
     def get_test_code_with_page_context(self, page_context):
         test_code = self.get_code_with_page_context_str(
             page_context, "test_code")
@@ -149,111 +143,65 @@ class PythonCodeQuestionWithPageContext(PythonCodeQuestion):
         from .code_runpy_backend import substitute_correct_code_into_test_code
         return substitute_correct_code_into_test_code(test_code, correct_code)
 
-    def grade(self, page_context, page_data, answer_data, grade_data):
-        if answer_data is None:
-            return AnswerFeedback(correctness=0,
-                    feedback=_("No answer provided."))
+    def process_correctness_and_feedback_bits_from_response_dict(
+            self, page_context, answer_data, response_dict):
 
-        user_code = answer_data["answer"]
+        adjusted_correctness = None
 
-        # {{{ request run
+        # {{{ send email if success but have dishonest result
+        if response_dict["result"] == "success":
+            if "feedback" in response_dict and response_dict["feedback"]:
+                message = None
+                suspective_reason = None
+                for i, item in enumerate(response_dict["feedback"]):
+                    try:
+                        suspective_reason_dict = json.loads(item)
+                        suspective_reason = suspective_reason_dict["suspective_reason"]
+                        response_dict["feedback"].pop(i)
+                    except:
+                        pass
 
-        run_req = {"compile_only": False, "user_code": user_code}
+                for i, item in enumerate(response_dict["feedback"]):
+                    if "suspective_behavior" in item:
+                        print("here!!!")
+                        error_message = _(
+                            "There are suspective "
+                            "behavior with submission of "
+                            "this code question%s"
+                            % (": %s" % suspective_reason
+                               if suspective_reason else "")
+                        )
+                        from relate.utils import local_now, format_datetime_local
+                        with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
+                            from django.template.loader import render_to_string
+                            message = render_to_string(
+                                "course/broken-code-question-email.txt", {
+                                    "site": getattr(settings, "RELATE_BASE_URL"),
+                                    "page_id": self.page_desc.id,
+                                    "course": page_context.course,
+                                    "error_message": error_message,
+                                    "review_uri": page_context.page_uri,
+                                    "time": format_datetime_local(local_now())
+                                })
+                        if getattr(self.page_desc,
+                                   "penalty_for_suspective_behavior", True):
+                            adjusted_correctness = 0
 
-        def transfer_attr(name):
-            if hasattr(self.page_desc, name):
-                run_req[name] = getattr(self.page_desc, name)
+                        if not getattr(self.page_desc,
+                                   "warn_suspective_behavior", True):
+                            response_dict["feedback"].pop(i)
+                        break
 
-        transfer_attr("setup_code")
-        transfer_attr("names_for_user")
-        transfer_attr("names_from_user")
-
-        if hasattr(self.page_desc, "test_code"):
-            run_req["test_code"] = self.get_test_code_with_page_context(page_context)
-
-        if hasattr(self.page_desc, "data_files"):
-            run_req["data_files"] = {}
-
-            from course.content import get_repo_blob
-
-            for data_file in self.page_desc.data_files:
-                from base64 import b64encode
-                run_req["data_files"][data_file] = \
-                        b64encode(
-                                get_repo_blob(
-                                    page_context.repo, data_file,
-                                    page_context.commit_sha).data).decode()
-
-                if (
-                    "question_data" not in run_req["data_files"]
-                    and
-                    page_data
-                    and
-                    page_data.get("question_data", None)
-                ):
-                    run_req["data_files"]["question_data"] =\
-                        page_data["question_data"]
-
-        try:
-            response_dict = request_python_run_with_retries(run_req,
-                    run_timeout=self.page_desc.timeout)
-        except:
-            from traceback import format_exc
-            response_dict = {
-                    "result": "uncaught_error",
-                    "message": "Error connecting to container",
-                    "traceback": "".join(format_exc()),
-                    }
-
-        # }}}
-
-        feedback_bits = []
-
-        # {{{ send email if the grading code broke
-
-        if response_dict["result"] in [
-                "uncaught_error",
-                "setup_compile_error",
-                "setup_error",
-                "test_compile_error",
-                "test_error"]:
-            error_msg_parts = ["RESULT: %s" % response_dict["result"]]
-            for key, val in sorted(response_dict.items()):
-                if (key not in ["result", "figures"]
-                        and val
-                        and isinstance(val, six.string_types)):
-                    error_msg_parts.append("-------------------------------------")
-                    error_msg_parts.append(key)
-                    error_msg_parts.append("-------------------------------------")
-                    error_msg_parts.append(val)
-            error_msg_parts.append("-------------------------------------")
-            error_msg_parts.append("user code")
-            error_msg_parts.append("-------------------------------------")
-            error_msg_parts.append(user_code)
-            error_msg_parts.append("-------------------------------------")
-
-            error_msg = "\n".join(error_msg_parts)
-
-            from relate.utils import local_now, format_datetime_local
-            with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
-                from django.template.loader import render_to_string
-                message = render_to_string("course/broken-code-question-email.txt", {
-                    "site": getattr(settings, "RELATE_BASE_URL"),
-                    "page_id": self.page_desc.id,
-                    "course": page_context.course,
-                    "error_message": error_msg,
-                    "review_uri": page_context.page_uri,
-                    "time": format_datetime_local(local_now())
-                    })
-
-                if (
+                if (message and
                         not page_context.in_sandbox
-                        and
+                    and
                         not is_nuisance_failure(response_dict)):
                     try:
                         from django.core.mail import EmailMessage
-                        msg = EmailMessage("".join(["[%s:%s] ",
-                            _("code question execution failed")])
+                        msg = EmailMessage(
+                            "".join(["[%s:%s] ",
+                                     _(
+                                         "code question execution failed")])
                             % (
                                 page_context.course.identifier,
                                 page_context.flow_session.flow_id
@@ -268,252 +216,19 @@ class PythonCodeQuestionWithPageContext(PythonCodeQuestion):
                         msg.send()
 
                     except Exception:
-                        from traceback import format_exc
-                        feedback_bits.append(
-                            six.text_type(string_concat(
-                                "<p>",
-                                _(
-                                    "Both the grading code and the attempt to "
-                                    "notify course staff about the issue failed. "
-                                    "Please contact the course or site staff and "
-                                    "inform them of this issue, mentioning this "
-                                    "entire error message:"),
-                                "</p>",
-                                "<p>",
-                                _(
-                                    "Sending an email to the course staff about the "
-                                    "following failure failed with "
-                                    "the following error message:"),
-                                "<pre>",
-                                "".join(format_exc()),
-                                "</pre>",
-                                _("The original failure message follows:"),
-                                "</p>")))
+                        pass
 
         # }}}
 
-        if hasattr(self.page_desc, "correct_code"):
-            def normalize_code(s):
-                return (s
-                        .replace(" ", "")
-                        .replace("\r", "")
-                        .replace("\n", "")
-                        .replace("\t", ""))
+        correctness, feedback_bits, bulk_feedback_bits = (
+            super(PythonCodeQuestionWithPageContext, self)
+                .process_correctness_and_feedback_bits_from_response_dict(
+                page_context, answer_data, response_dict))
 
-            if (normalize_code(user_code)
-                    == normalize_code(self.page_desc.correct_code)):
-                feedback_bits.append(
-                        "<p><b>%s</b></p>"
-                        % _("It looks like you submitted code that is identical to "
-                            "the reference solution. This is not allowed."))
+        if adjusted_correctness is not None:
+            correctness = adjusted_correctness
 
-        from relate.utils import dict_to_struct
-        response = dict_to_struct(response_dict)
-
-        bulk_feedback_bits = []
-        if hasattr(response, "points"):
-            correctness = response.points
-            feedback_bits.append(
-                    "<p><b>%s</b></p>"
-                    % get_auto_feedback(correctness))
-        else:
-            correctness = None
-
-        if response.result == "success":
-            pass
-        elif response.result == "docker_runpy_not_enabled":
-            feedback_bits = (
-                ["".join([
-                    "<p class='alert alert-warning'>"
-                    "<i class='fa fa-warning'></i>",
-                    _("This page is not gradable right now, as "
-                      "Docker runpy is currently not enabled for this site."),
-                    "</p>"])])
-        elif response.result in [
-                "uncaught_error",
-                "setup_compile_error",
-                "setup_error",
-                "test_compile_error",
-                "test_error"]:
-            feedback_bits.append("".join([
-                "<p>",
-                _(
-                    "The grading code failed. Sorry about that. "
-                    "The staff has been informed, and if this problem is "
-                    "due to an issue with the grading code, "
-                    "it will be fixed as soon as possible. "
-                    "In the meantime, you'll see a traceback "
-                    "below that may help you figure out what went wrong."
-                    ),
-                "</p>"]))
-        elif response.result == "timeout":
-            feedback_bits.append("".join([
-                "<p>",
-                _(
-                    "Your code took too long to execute. The problem "
-                    "specifies that your code may take at most %s seconds "
-                    "to run. "
-                    "It took longer than that and was aborted."
-                    ),
-                "</p>"])
-                    % self.page_desc.timeout)
-
-            correctness = 0
-        elif response.result == "user_compile_error":
-            feedback_bits.append("".join([
-                "<p>",
-                _("Your code failed to compile. An error message is "
-                    "below."),
-                "</p>"]))
-
-            correctness = 0
-        elif response.result == "user_error":
-            feedback_bits.append("".join([
-                "<p>",
-                _("Your code failed with an exception. "
-                    "A traceback is below."),
-                "</p>"]))
-
-            correctness = 0
-        else:
-            raise RuntimeError("invalid runpy result: %s" % response.result)
-
-        if hasattr(response, "feedback") and response.feedback:
-            def sanitize(s):
-                import bleach
-                return bleach.clean(s, tags=["p", "pre"])
-            feedback_bits.append("".join([
-                "<p>",
-                _("Here is some feedback on your code"),
-                ":"
-                "<ul>%s</ul></p>"]) %
-                        "".join(
-                            "<li>%s</li>" % sanitize(fb_item)
-                            for fb_item in response.feedback))
-        if hasattr(response, "traceback") and response.traceback:
-            feedback_bits.append("".join([
-                "<p>",
-                _("This is the exception traceback"),
-                ":"
-                "<pre>%s</pre></p>"]) % escape(response.traceback))
-        if hasattr(response, "exec_host") and response.exec_host != "localhost":
-            import socket
-            try:
-                exec_host_name, dummy, dummy = socket.gethostbyaddr(
-                        response.exec_host)
-            except socket.error:
-                exec_host_name = response.exec_host
-
-            from course.docker.config import get_relate_runpy_docker_client_config
-            silence_for_not_usable = getattr(
-                settings, "SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR", False)
-            try:
-                client_config = get_relate_runpy_docker_client_config(
-                    silence_if_not_usable=silence_for_not_usable)
-            except:
-                client_config = None
-
-            if client_config:
-                exec_host_name = (
-                    client_config.get_execution_host_alias(exec_host_name))
-
-            feedback_bits.append("".join([
-                "<p>",
-                _("Your code ran on %s.") % exec_host_name,
-                "</p>"]))
-
-        if hasattr(response, "stdout") and response.stdout:
-            bulk_feedback_bits.append("".join([
-                "<p>",
-                _("Your code printed the following output"),
-                ":"
-                "<pre>%s</pre></p>"])
-                    % escape(response.stdout))
-        if hasattr(response, "stderr") and response.stderr:
-            bulk_feedback_bits.append("".join([
-                "<p>",
-                _("Your code printed the following error messages"),
-                ":"
-                "<pre>%s</pre></p>"]) % escape(response.stderr))
-        if hasattr(response, "figures") and response.figures:
-            fig_lines = ["".join([
-                "<p>",
-                _("Your code produced the following plots"),
-                ":</p>"]),
-                '<dl class="result-figure-list">',
-                ]
-
-            for nr, mime_type, b64data in response.figures:
-                if mime_type in ["image/jpeg", "image/png"]:
-                    fig_lines.extend([
-                        "".join([
-                            "<dt>",
-                            _("Figure"), "%d<dt>"]) % nr,
-                        '<dd><img alt="Figure %d" src="data:%s;base64,%s"></dd>'
-                        % (nr, mime_type, b64data)])
-
-            fig_lines.append("</dl>")
-            bulk_feedback_bits.extend(fig_lines)
-
-        # {{{ html output / santization
-
-        if hasattr(response, "html") and response.html:
-            def is_allowed_data_uri(allowed_mimetypes, uri):
-                import re
-                m = re.match(r"^data:([-a-z0-9]+/[-a-z0-9]+);base64,", uri)
-                if not m:
-                    return False
-
-                mimetype = m.group(1)
-                return mimetype in allowed_mimetypes
-
-            def sanitize(s):
-                import bleach
-
-                def filter_audio_attributes(tag, name, value):
-                    if name in ["controls"]:
-                        return True
-                    else:
-                        return False
-
-                def filter_source_attributes(tag, name, value):
-                    if name in ["type"]:
-                        return True
-                    elif name == "src":
-                        return is_allowed_data_uri([
-                            "audio/wav",
-                            ], value)
-                    else:
-                        return False
-
-                def filter_img_attributes(tag, name, value):
-                    if name in ["alt", "title"]:
-                        return True
-                    elif name == "src":
-                        return is_allowed_data_uri([
-                            "image/png",
-                            "image/jpeg",
-                            ], value)
-                    else:
-                        return False
-
-                return bleach.clean(s,
-                        tags=bleach.ALLOWED_TAGS + ["audio", "video", "source"],
-                        attributes={
-                            "audio": filter_audio_attributes,
-                            "source": filter_source_attributes,
-                            "img": filter_img_attributes,
-                            })
-
-            bulk_feedback_bits.extend(
-                    sanitize(snippet) for snippet in response.html)
-
-        # }}}
-
-        return AnswerFeedback(
-                correctness=correctness,
-                feedback="\n".join(feedback_bits),
-                bulk_feedback="\n".join(bulk_feedback_bits))
+        return correctness, feedback_bits, bulk_feedback_bits
 
     def correct_answer(self, page_context, page_data, answer_data, grade_data):
         result = ""

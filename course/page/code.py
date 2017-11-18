@@ -562,7 +562,7 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
     def answer_data(self, page_context, page_data, form, files_data):
         return {"answer": form.cleaned_data["answer"].strip()}
 
-    def get_test_code(self):
+    def get_test_code(self, page_context):
         test_code = getattr(self.page_desc, "test_code", None)
         if test_code is None:
             return test_code
@@ -574,15 +574,10 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
         from .code_runpy_backend import substitute_correct_code_into_test_code
         return substitute_correct_code_into_test_code(test_code, correct_code)
 
-    def grade(self, page_context, page_data, answer_data, grade_data):
-        if answer_data is None:
-            return AnswerFeedback(correctness=0,
-                    feedback=_("No answer provided."))
-
+    def get_request_run_response(self, page_context, page_data, answer_data):
         user_code = answer_data["answer"]
 
         # {{{ request run
-
         run_req = {"compile_only": False, "user_code": user_code}
 
         def transfer_attr(name):
@@ -592,10 +587,8 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
         transfer_attr("setup_code")
         transfer_attr("names_for_user")
         transfer_attr("names_from_user")
-
         if hasattr(self.page_desc, "test_code"):
-            run_req["test_code"] = self.get_test_code()
-
+            run_req["test_code"] = self.get_test_code(page_context)
         if hasattr(self.page_desc, "data_files"):
             run_req["data_files"] = {}
 
@@ -604,44 +597,64 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
             for data_file in self.page_desc.data_files:
                 from base64 import b64encode
                 run_req["data_files"][data_file] = \
-                        b64encode(
-                                get_repo_blob(
-                                    page_context.repo, data_file,
-                                    page_context.commit_sha).data).decode()
+                    b64encode(
+                        get_repo_blob(
+                            page_context.repo, data_file,
+                            page_context.commit_sha).data).decode()
 
                 if (
-                    "question_data" not in run_req["data_files"]
-                    and
-                    page_data
-                    and
-                    page_data.get("question_data", None)
+                                    "question_data" not in run_req["data_files"]
+                            and
+                                page_data
+                        and
+                            page_data.get("question_data", None)
                 ):
-                    run_req["data_files"]["question_data"] =\
+                    run_req["data_files"]["question_data"] = \
                         page_data["question_data"]
-
         try:
-            response_dict = request_python_run_with_retries(run_req,
-                    run_timeout=self.page_desc.timeout)
+            response_dict = request_python_run_with_retries(
+                run_req,
+                run_timeout=self.page_desc.timeout)
         except:
             from traceback import format_exc
             response_dict = {
-                    "result": "uncaught_error",
-                    "message": "Error connecting to container",
-                    "traceback": "".join(format_exc()),
-                    }
+                "result": "uncaught_error",
+                "message": "Error connecting to container",
+                "traceback": "".join(format_exc()),
+            }
 
         # }}}
+        return response_dict
 
+    def grade(self, page_context, page_data, answer_data, grade_data):
+        if answer_data is None:
+            return AnswerFeedback(correctness=0,
+                    feedback=_("No answer provided."))
+
+        response_dict = self.get_request_run_response(page_context, page_data,
+                                                      answer_data)
+
+        correctness, feedback_bits, bulk_feedback_bits = (
+            self.process_correctness_and_feedback_bits_from_response_dict(
+                page_context, answer_data, response_dict))
+
+        return AnswerFeedback(
+                correctness=correctness,
+                feedback="\n".join(feedback_bits),
+                bulk_feedback="\n".join(bulk_feedback_bits))
+
+    def process_correctness_and_feedback_bits_from_response_dict(
+            self, page_context, answer_data, response_dict):
+
+        user_code = answer_data["answer"]
         feedback_bits = []
-
         # {{{ send email if the grading code broke
-
         if response_dict["result"] in [
-                "uncaught_error",
-                "setup_compile_error",
-                "setup_error",
-                "test_compile_error",
-                "test_error"]:
+            "uncaught_error",
+            "setup_compile_error",
+            "setup_error",
+            "test_compile_error",
+            "test_error"]:
             error_msg_parts = ["RESULT: %s" % response_dict["result"]]
             for key, val in sorted(response_dict.items()):
                 if (key not in ["result", "figures"]
@@ -669,24 +682,25 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                     "error_message": error_msg,
                     "review_uri": page_context.page_uri,
                     "time": format_datetime_local(local_now())
-                    })
+                })
 
                 if (
-                        not page_context.in_sandbox
+                            not page_context.in_sandbox
                         and
-                        not is_nuisance_failure(response_dict)):
+                            not is_nuisance_failure(response_dict)):
                     try:
                         from django.core.mail import EmailMessage
                         msg = EmailMessage("".join(["[%s:%s] ",
-                            _("code question execution failed")])
-                            % (
-                                page_context.course.identifier,
-                                page_context.flow_session.flow_id
-                                if page_context.flow_session is not None
-                                else _("<unknown flow>")),
-                            message,
-                            settings.ROBOT_EMAIL_FROM,
-                            [page_context.course.notify_email])
+                                                    _(
+                                                        "code question execution failed")])
+                                           % (
+                                               page_context.course.identifier,
+                                               page_context.flow_session.flow_id
+                                               if page_context.flow_session is not None
+                                               else _("<unknown flow>")),
+                                           message,
+                                           settings.ROBOT_EMAIL_FROM,
+                                           [page_context.course.notify_email])
 
                         from relate.utils import get_outbound_mail_connection
                         msg.connection = get_outbound_mail_connection("robot")
@@ -716,7 +730,6 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                                 "</p>")))
 
         # }}}
-
         if hasattr(self.page_desc, "correct_code"):
             def normalize_code(s):
                 return (s
@@ -728,22 +741,19 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
             if (normalize_code(user_code)
                     == normalize_code(self.page_desc.correct_code)):
                 feedback_bits.append(
-                        "<p><b>%s</b></p>"
-                        % _("It looks like you submitted code that is identical to "
-                            "the reference solution. This is not allowed."))
-
+                    "<p><b>%s</b></p>"
+                    % _("It looks like you submitted code that is identical to "
+                        "the reference solution. This is not allowed."))
         from relate.utils import dict_to_struct
         response = dict_to_struct(response_dict)
-
         bulk_feedback_bits = []
         if hasattr(response, "points"):
             correctness = response.points
             feedback_bits.append(
-                    "<p><b>%s</b></p>"
-                    % get_auto_feedback(correctness))
+                "<p><b>%s</b></p>"
+                % get_auto_feedback(correctness))
         else:
             correctness = None
-
         if response.result == "success":
             pass
         elif response.result == "docker_runpy_not_enabled":
@@ -755,11 +765,11 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                       "Docker runpy is currently not enabled for this site."),
                     "</p>"])])
         elif response.result in [
-                "uncaught_error",
-                "setup_compile_error",
-                "setup_error",
-                "test_compile_error",
-                "test_error"]:
+            "uncaught_error",
+            "setup_compile_error",
+            "setup_error",
+            "test_compile_error",
+            "test_error"]:
             feedback_bits.append("".join([
                 "<p>",
                 _(
@@ -769,7 +779,7 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                     "it will be fixed as soon as possible. "
                     "In the meantime, you'll see a traceback "
                     "below that may help you figure out what went wrong."
-                    ),
+                ),
                 "</p>"]))
         elif response.result == "timeout":
             feedback_bits.append("".join([
@@ -779,16 +789,16 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                     "specifies that your code may take at most %s seconds "
                     "to run. "
                     "It took longer than that and was aborted."
-                    ),
+                ),
                 "</p>"])
-                    % self.page_desc.timeout)
+                                 % self.page_desc.timeout)
 
             correctness = 0
         elif response.result == "user_compile_error":
             feedback_bits.append("".join([
                 "<p>",
                 _("Your code failed to compile. An error message is "
-                    "below."),
+                  "below."),
                 "</p>"]))
 
             correctness = 0
@@ -796,25 +806,25 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
             feedback_bits.append("".join([
                 "<p>",
                 _("Your code failed with an exception. "
-                    "A traceback is below."),
+                  "A traceback is below."),
                 "</p>"]))
 
             correctness = 0
         else:
             raise RuntimeError("invalid runpy result: %s" % response.result)
-
         if hasattr(response, "feedback") and response.feedback:
             def sanitize(s):
                 import bleach
                 return bleach.clean(s, tags=["p", "pre"])
+
             feedback_bits.append("".join([
                 "<p>",
                 _("Here is some feedback on your code"),
                 ":"
                 "<ul>%s</ul></p>"]) %
-                        "".join(
-                            "<li>%s</li>" % sanitize(fb_item)
-                            for fb_item in response.feedback))
+                                 "".join(
+                                     "<li>%s</li>" % sanitize(fb_item)
+                                     for fb_item in response.feedback))
         if hasattr(response, "traceback") and response.traceback:
             feedback_bits.append("".join([
                 "<p>",
@@ -825,7 +835,7 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
             import socket
             try:
                 exec_host_name, dummy, dummy = socket.gethostbyaddr(
-                        response.exec_host)
+                    response.exec_host)
             except socket.error:
                 exec_host_name = response.exec_host
 
@@ -846,14 +856,13 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                 "<p>",
                 _("Your code ran on %s.") % exec_host_name,
                 "</p>"]))
-
         if hasattr(response, "stdout") and response.stdout:
             bulk_feedback_bits.append("".join([
                 "<p>",
                 _("Your code printed the following output"),
                 ":"
                 "<pre>%s</pre></p>"])
-                    % escape(response.stdout))
+                                      % escape(response.stdout))
         if hasattr(response, "stderr") and response.stderr:
             bulk_feedback_bits.append("".join([
                 "<p>",
@@ -866,7 +875,7 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                 _("Your code produced the following plots"),
                 ":</p>"]),
                 '<dl class="result-figure-list">',
-                ]
+            ]
 
             for nr, mime_type, b64data in response.figures:
                 if mime_type in ["image/jpeg", "image/png"]:
@@ -881,7 +890,6 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
             bulk_feedback_bits.extend(fig_lines)
 
         # {{{ html output / santization
-
         if hasattr(response, "html") and response.html:
             def is_allowed_data_uri(allowed_mimetypes, uri):
                 import re
@@ -907,7 +915,7 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                     elif name == "src":
                         return is_allowed_data_uri([
                             "audio/wav",
-                            ], value)
+                        ], value)
                     else:
                         return False
 
@@ -918,27 +926,24 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                         return is_allowed_data_uri([
                             "image/png",
                             "image/jpeg",
-                            ], value)
+                        ], value)
                     else:
                         return False
 
                 return bleach.clean(s,
-                        tags=bleach.ALLOWED_TAGS + ["audio", "video", "source"],
-                        attributes={
-                            "audio": filter_audio_attributes,
-                            "source": filter_source_attributes,
-                            "img": filter_img_attributes,
-                            })
+                                    tags=bleach.ALLOWED_TAGS + ["audio", "video",
+                                                                "source"],
+                                    attributes={
+                                        "audio": filter_audio_attributes,
+                                        "source": filter_source_attributes,
+                                        "img": filter_img_attributes,
+                                    })
 
             bulk_feedback_bits.extend(
-                    sanitize(snippet) for snippet in response.html)
+                sanitize(snippet) for snippet in response.html)
 
         # }}}
-
-        return AnswerFeedback(
-                correctness=correctness,
-                feedback="\n".join(feedback_bits),
-                bulk_feedback="\n".join(bulk_feedback_bits))
+        return correctness, feedback_bits, bulk_feedback_bits
 
     def correct_answer(self, page_context, page_data, answer_data, grade_data):
         result = ""

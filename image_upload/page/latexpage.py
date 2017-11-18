@@ -141,11 +141,19 @@ def get_latex_page_commitsha_template_pair_collection(
 
 
 def b64_pickled_bytes_to_data(b64_string):
+    # type: (Text) -> Any
     bio = BytesIO(b64decode(b64_string.encode()))
-    return pickle.load(bio, encoding="latin-1")
+    data = pickle.load(bio, encoding="latin-1")
+    try:
+        import json
+        data = json.loads(data)
+    except:
+        pass
+    return data
 
 
 def b64_pickled_bytes_to_data_string(p):
+    # type: (Text) -> Text
     data = b64_pickled_bytes_to_data(p)
     data = deep_convert_ordereddict(data)
 
@@ -154,9 +162,8 @@ def b64_pickled_bytes_to_data_string(p):
 
 
 def question_data_equal(data1, data2):
+    # type: (Text, Text) -> bool
     if data1 == data2:
-        return True
-    if deep_eq(data1, data2):
         return True
     else:
         data1_decode = b64_pickled_bytes_to_data(data1)
@@ -212,14 +219,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                         % page_desc.random_question_data_file))
             # }}}
 
-            if hasattr(page_desc, "runpy_file"):
-                if page_desc.runpy_file not in page_desc.data_files:
-                    raise ValidationError(
-                        string_concat(
-                            "%s: " % location,
-                            _("'%s' should be listed in 'data_files'")
-                            % page_desc.runpy_file))
-
             if hasattr(page_desc, "cache_key_files"):
                 for cf in page_desc.cache_key_files:
                     if cf not in page_desc.data_files:
@@ -256,31 +255,45 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                             % (location, data_file))
 
             if not hasattr(page_desc, "runpy_file"):
-                if self.__class__.__name__ != "LatexRandomCodeQuestion":
-                    if not hasattr(page_desc, "full_process_code"):
-                        missing_part = []
-                        for part in (
-                                self.required_attrs_if_runpy_or_full_code_missing):
-                            if not hasattr(page_desc, part):
-                                missing_part.append(part)
-                        if missing_part:
-                            raise ValidationError(
-                                string_concat(
-                                    location,
-                                    ": ",
-                                    _("'%s' must be configured when neiher "
-                                      "'runpy_file' nor 'full_processing_code'"
-                                      " is configured.")
-                                    % ", ".join(missing_part)))
+                if not hasattr(page_desc, "full_process_code"):
+                    if hasattr(page_desc, "runpy_context"):
+                        vctx.add_warning(
+                            location,
+                            _("'runpy_context' is configured with neither "
+                              "'runpy_file' nor 'full_process_code' configured "
+                              "it will be neglected.")
+                        )
 
-                    vctx.add_warning(
-                        location,
-                        _("%s not using attribute "
-                          "'runpy_file' is for debug only, it should not "
-                          "be used in production.")
-                        % self.__class__.__name__
-                    )
+                    missing_part = []
+                    for part in (
+                            self.required_attrs_if_runpy_or_full_code_missing):
+                        if not hasattr(page_desc, part):
+                            missing_part.append(part)
+                    if missing_part:
+                        raise ValidationError(
+                            string_concat(
+                                location,
+                                ": ",
+                                _("'%s' must be configured when neither "
+                                  "'runpy_file' nor 'full_processing_code'"
+                                  " is configured.")
+                                % ", ".join(missing_part)))
+
+                vctx.add_warning(
+                    location,
+                    _("%s not using attribute "
+                      "'runpy_file' is for debug only, it should not "
+                      "be used in production.")
+                    % self.__class__.__name__
+                )
             else:
+                if page_desc.runpy_file not in page_desc.data_files:
+                    raise ValidationError(
+                        string_concat(
+                            "%s: " % location,
+                            _("'%s' should be listed in 'data_files'")
+                            % page_desc.runpy_file))
+
                 try:
                     runpy_file = get_repo_blob_data_cached(
                         vctx.repo, page_desc.runpy_file,
@@ -308,8 +321,10 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         self.cache_key_attrs = self.initialize_cache_key_attrs(page_desc)
 
         self.runpy_context = {}
-        if getattr(page_desc, "runpy_context", None):
-            self.runpy_context = struct_to_dict(page_desc.runpy_context)
+        if (hasattr(page_desc, "runpy_file")
+                or hasattr(page_desc, "full_process_code")):
+            if getattr(page_desc, "runpy_context", None):
+                self.runpy_context = struct_to_dict(page_desc.runpy_context)
 
         self.will_receive_grade = getattr(page_desc, "will_receive_grade", True)
         self.is_page_desc_updated = False
@@ -494,19 +509,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         if question_data is None:
             new_page_data = self.initialize_page_data(page_context)
             return True, new_page_data
-        # else:
-        #     # backward compatibility, converting dict data to Ordereddict
-        #     new_page_data = self.generate_new_page_data(page_context, question_data)
-        #     if new_page_data["question_data"] != question_data:
-        #         if question_data_equal(
-        #                 new_page_data["question_data"], question_data):
-        #             question_data = new_page_data["question_data"]
-        #             template_hash = new_page_data["template_hash"]
-        #             template_hash_id = new_page_data["template_hash_id"]
-        #             key_making_string_md5 = new_page_data["key_making_string_md5"]
-        #             print("---------------back ward------------------------------")
-        #             print(question_data, template_hash, template_hash_id)
-        #             print("---------------end back ward------------------------------")
 
         commit_sha = page_context.commit_sha.decode()
         if not (template_hash and template_hash_id and key_making_string_md5):
@@ -544,22 +546,18 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             assert not (match_template_hash and match_template_hash_redirect_id)
 
             if match_template_hash:
-                new_page_data = self.generate_new_page_data(page_context,
-                                                            question_data)
                 if match_template_hash == template_hash:
-                    if new_page_data["question_data"] != question_data:
-                        assert question_data_equal(
-                                new_page_data["question_data"], question_data)
-                        return True, new_page_data
-
                     return False, {}
                 else:
                     # This happen only when manually changed the template_hash field
                     # in the mongo entry or manually changed page_data
+                    new_page_data = self.generate_new_page_data(page_context,
+                                                                question_data)
                     assert question_data_equal(new_page_data["question_data"],
                                                question_data)
+
                     manually_changed_page_data = False
-                    for k in page_data.keys():
+                    for k in ["template_hash_id", "template_hash"]:
                         if page_data[k] != new_page_data[k]:
                             manually_changed_page_data = True
 
@@ -609,10 +607,14 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                                                question_data)
                     return True, new_page_data
 
-                # the entry exists
+                # the redirect entry exists
                 else:
                     new_template_hash = target_entry.get(commit_sha, None)
                     if new_template_hash:
+                        if new_template_hash == template_hash:
+                            # will this happen?
+                            return False, {}
+
                         new_key_making_string_md5 = (
                             get_key_making_string_md5_hash(
                                 new_template_hash, question_data))
@@ -1079,11 +1081,12 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         run_jinja_req["data_files"] = {}
 
         for data_file in self.page_desc.data_files:
-            run_jinja_req["data_files"][data_file] = \
-                b64encode(
-                    get_repo_blob_data_cached(
-                        page_context.repo, data_file,
-                        page_context.commit_sha)).decode()
+            if data_file != self.page_desc.random_question_data_file:
+                run_jinja_req["data_files"][data_file] = \
+                    b64encode(
+                        get_repo_blob_data_cached(
+                            page_context.repo, data_file,
+                            page_context.commit_sha)).decode()
 
         run_jinja_req["data_files"]["question_data"] = question_data
         return run_jinja_req

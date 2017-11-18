@@ -41,6 +41,7 @@ from course.constants import participation_permission as pperm
 from course.utils import CoursePageContext
 from image_upload.views import COURSE_STAFF_IMAGE_PERMISSION
 import numpy as np
+from numpy.core import numeric
 
 
 default_fudge = datetime.timedelta(seconds=0, microseconds=0, days=0)
@@ -253,7 +254,8 @@ def deep_convert_ordereddict(layer):
     to_ret = layer
     if isinstance(layer, dict):
         from collections import OrderedDict
-        # OrderedDict remembers the order in which the elements have been inserted
+        # because OrderedDict remembers the order in which the
+        # elements have been inserted
         # https://stackoverflow.com/q/9001509/3437454
         to_ret = OrderedDict(sorted(six.iteritems(layer)))
 
@@ -273,7 +275,12 @@ def deep_convert_ordereddict(layer):
     except AttributeError:
         pass
 
-    assert deep_eq(layer, to_ret)
+    # This doesn't gurantee the (embedded) dicts are converted to OrderedDict
+    # but to ensure the data equals the original one
+    try:
+        assert deep_eq(layer, to_ret)
+    except AssertionError:
+        raise ValueError("%s and %s not equal" % (layer, to_ret))
 
     return to_ret
 
@@ -295,53 +302,6 @@ def deep_eq(_v1, _v2, datetime_fudge=default_fudge, _assert=False):
                                 when values do not match, instead of returning
                                 false (very useful in combination with pdb)
 
-    Doctests included:
-
-    >>> x1, y1 = ({'a': 'b'}, {'a': 'b'})
-    >>> deep_eq(x1, y1)
-    True
-    >>> x2, y2 = ({'a': 'b'}, {'b': 'a'})
-    >>> deep_eq(x2, y2)
-    False
-    >>> x3, y3 = ({'a': {'b': 'c'}}, {'a': {'b': 'c'}})
-    >>> deep_eq(x3, y3)
-    True
-    >>> x4, y4 = ({'c': 't', 'a': {'b': 'c'}}, {'a': {'b': 'n'}, 'c': 't'})
-    >>> deep_eq(x4, y4)
-    False
-    >>> x5, y5 = ({'a': [1,2,3]}, {'a': [1,2,3]})
-    >>> deep_eq(x5, y5)
-    True
-    >>> x6, y6 = ({'a': [1,'b',8]}, {'a': [2,'b',8]})
-    >>> deep_eq(x6, y6)
-    False
-    >>> x7, y7 = ('a', 'a')
-    >>> deep_eq(x7, y7)
-    True
-    >>> x8, y8 = (['p','n',['asdf']], ['p','n',['asdf']])
-    >>> deep_eq(x8, y8)
-    True
-    >>> x9, y9 = (['p','n',['asdf',['omg']]], ['p', 'n', ['asdf',['nowai']]])
-    >>> deep_eq(x9, y9)
-    False
-    >>> x10, y10 = (1, 2)
-    >>> deep_eq(x10, y10)
-    False
-    >>> deep_eq((str(p) for p in range(10)), (str(p) for p in range(10)))
-    True
-    >>> str(deep_eq(range(4), range(4)))
-    'True'
-    >>> deep_eq(range(100), range(100))
-    True
-    >>> deep_eq(range(2), range(5))
-    False
-    >>> import datetime
-    >>> from datetime import datetime as dt
-    >>> d1, d2 = (dt.now(), dt.now() + datetime.timedelta(seconds=4))
-    >>> deep_eq(d1, d2)
-    False
-    >>> deep_eq(d1, d2, datetime_fudge=datetime.timedelta(seconds=5))
-    True
     """
     _deep_eq = functools.partial(deep_eq, datetime_fudge=datetime_fudge,
                                  _assert=_assert)
@@ -369,6 +329,13 @@ def deep_eq(_v1, _v2, datetime_fudge=default_fudge, _assert=False):
                                          len(l1)), l1, l2, "iterables")
 
     def _deep_nd_eq(np1, np2):
+        if isinstance(np1, np.matrix) or isinstance(np2, np.matrix):
+            if not (isinstance(np1, np.matrix)
+                    and isinstance(np2, np.matrix)):
+                reason = ("the two numpy object have different "
+                          "type (np.ndarray vs. np.matrix)")
+                return _check_assert(False, np1.shape, np2.shape, reason)
+
         if np1.shape != np2.shape:
             return _check_assert(False, np1.shape, np2.shape, "shape not equal")
 
@@ -377,30 +344,19 @@ def deep_eq(_v1, _v2, datetime_fudge=default_fudge, _assert=False):
             result = np.allclose(np1, np2, equal_nan=True)
             if not result:
                 reason = "numpy ndarrays not equal"
+            return _check_assert(result, np1, np2, reason)
         except Exception as e:
-            # in case the objects are np.matrix instances
-            # https://stackoverflow.com/a/28029145/3437454
-            if isinstance(e, ValueError):
-                if isinstance(np1, np.matrix):
-                    if not isinstance(np2, np.matrix):
-                        result = False
-                        reason = ("the two numpy object have different "
-                                  "type (np.ndarray vs. np.matrix)")
-                    else:
-                        np1array = np.asarray(np1)
-                        np2array = np.asarray(np2)
-                        result = np.allclose(np1array, np2array, equal_nan=True)
-                        if not result:
-                            reason = "numpy matrices not equal"
-                else:
-                    result = False
+            if isinstance(e, (ValueError, TypeError)):
+                # for cases when the objects are np.matrix instances with nan
+                # https://stackoverflow.com/a/28029145/3437454
+                np1array = np.asarray(np1)
+                np2array = np.asarray(np2)
+                result = np.allclose(np1array, np2array, equal_nan=True)
+                if not result:
+                    reason = "numpy matrices not equal"
+                return _check_assert(result, np1, np2, reason)
             else:
-                result = False
-            if not result:
-                if not reason:
-                    reason = "%s: %s" % (type(e).__name__, str(e))
-
-        return _check_assert(result, np1, np2, reason)
+                raise
 
     def op(a, b):
         _op = operator.eq
@@ -435,52 +391,3 @@ def deep_eq(_v1, _v2, datetime_fudge=default_fudge, _assert=False):
                     op = _deep_iter_eq
 
     return op(c1, c2)
-
-
-if __name__ == "__main__":
-    x1, y1 = ({'a': 'b'}, {'a': 'b'})
-    assert deep_eq(x1, y1)
-
-    x2, y2 = ({'a': 'b'}, {'b': 'a'})
-    assert not deep_eq(x2, y2)
-
-    x3, y3 = ({'a': {'b': 'c'}}, {'a': {'b': 'c'}})
-    assert deep_eq(x3, y3)
-    x4, y4 = ({'c': 't', 'a': {'b': 'c'}}, {'a': {'b': 'n'}, 'c': 't'})
-    assert not deep_eq(x4, y4)
-
-    x5, y5 = ({'a': [1, 2, 3]}, {'a': [1, 2, 3]})
-    assert deep_eq(x5, y5)
-    x6, y6 = ({'a': [1, 'b', 8]}, {'a': [2, 'b', 8]})
-    assert not deep_eq(x6, y6)
-
-    x7, y7 = ('a', 'a')
-    assert deep_eq(x7, y7)
-    x8, y8 = (['p', 'n', ['asdf']], ['p', 'n', ['asdf']])
-    assert deep_eq(x8, y8)
-    x9, y9 = (['p', 'n', ['asdf', ['omg']]], ['p', 'n', ['asdf', ['nowai']]])
-    assert not deep_eq(x9, y9)
-
-    x10, y10 = (1, 2)
-    assert not deep_eq(x10, y10)
-
-    assert deep_eq((str(p) for p in range(10)), (str(p) for p in range(10)))
-    str(deep_eq(range(4), range(4)))
-
-    assert deep_eq(range(100), range(100))
-    assert not deep_eq(range(2), range(5))
-
-    from datetime import datetime as dt
-
-    d1, d2 = (dt.now(), dt.now() + datetime.timedelta(seconds=4))
-    assert not deep_eq(d1, d2)
-
-    assert deep_eq(d1, d2, datetime_fudge=datetime.timedelta(seconds=5))
-
-    from collections import OrderedDict
-    x11, y11 = ({'a': 'b', 'c': 'd'}, OrderedDict({'c': 'd', 'a': 'b'}))
-    assert deep_eq(x11, y11)
-
-    x12, y12 = ({'a': 'b', 'c': [{'a':1, 'b':2}]},
-                OrderedDict({'c': [{'b':2, 'a':1}], 'a': 'b'}))
-    assert deep_eq(x12, y12)
