@@ -615,7 +615,7 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
             response_dict = request_python_run_with_retries(
                 run_req,
                 run_timeout=self.page_desc.timeout)
-        except:
+        except Exception:
             from traceback import format_exc
             response_dict = {
                 "result": "uncaught_error",
