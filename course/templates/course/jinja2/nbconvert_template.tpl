@@ -11,3 +11,6 @@
 </div>
 </div>
 {%- endblock input %}
+
+{% block empty_in_prompt -%}
+{%- endblock empty_in_prompt %}

@@ -986,7 +986,7 @@ def markup_to_html(
     ]
 
     if not disable_codehilite:
-        extensions += ["markdown.extensions.codehilite"]
+        extensions += ["markdown.extensions.codehilite(css_class=highlight)"]
 
     result = markdown.markdown(text,
         extensions=extensions,
