@@ -271,7 +271,7 @@ class NbconvertRenderTestWithoutCodeHilite(NbconvertRenderTestMixin, TestCase):
         self.assertContains(resp, SECOND_TITLE_TEXT, count=1)
         self.assertContains(resp, CODE_CELL_PRINT_STR1, count=2)
         self.assertNotContains(resp, CODE_CELL_PRINT_STR2)
-        self.assertNotContains(resp, "class=\"codehilite\"")
+        self.assertNotContains(resp, "class=\"highlight\"")
         self.assertContains(resp, "print(")
 
         nb_html = get_nb_html_from_response(resp)
@@ -338,7 +338,7 @@ class NbconvertRenderTestCodeHilite(NbconvertRenderTestMixin, TestCase):
         self.assertContains(resp, CODE_CELL_HTML_CLASS, count=3)
         self.assertContains(resp, FIRST_TITLE_TEXT, count=1)
         self.assertContains(resp, SECOND_TITLE_TEXT, count=1)
-        self.assertContains(resp, "class=\"codehilite\"", count=3)
+        self.assertContains(resp, "class=\"highlight\"", count=3)
         self.assertContains(resp,
                             '<span class="k">print</span>'
                             '<span class="p">(</span><span class="s2">',
