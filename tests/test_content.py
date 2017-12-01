@@ -228,6 +228,8 @@ class NbconvertRenderTestMixin(SingleCoursePageSandboxTestBaseMixin):
                    CACHE_BACKEND='dummy:///')
 class NbconvertRenderTestWithoutCodeHilite(NbconvertRenderTestMixin, TestCase):
 
+    # todo: add backtick test
+
     @classmethod
     def setUpTestData(cls):  # noqa
         super(NbconvertRenderTestWithoutCodeHilite, cls).setUpTestData()

@@ -2,14 +2,7 @@
 
 {# This is changed to prevent code_cell being process by markdown twice #}
 
-{% block input %}
-<div class="inner_cell">
-<div class="input_area">
-```{% if nb.metadata.language_info %}{{ nb.metadata.language_info.name }}{% endif %}
-{{ cell.source}}
-```
-</div>
-</div>
+{% block input %}<pre class="relate_tmp_pre">{{ super() }}</pre>
 {%- endblock input %}
 
 {% block empty_in_prompt -%}
