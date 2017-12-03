@@ -30,6 +30,7 @@ import sys
 import shutil
 import re
 from hashlib import md5
+from pymongo.errors import DuplicateKeyError
 
 from django.core.management.base import CommandError
 from django.core.exceptions import ImproperlyConfigured
@@ -471,16 +472,19 @@ class Tex2ImgBase(object):
                 if not isinstance(log, six.text_type):
                     log = six.text_type(log)
 
-                get_latex_error_mongo_collection().update_one(
-                    {"key": err_key},
-                    {"$setOnInsert":
-                         {"key": err_key,
-                          "errorlog": log.encode('utf-8'),
-                          "source": self.tex_source.encode('utf-8'),
-                          "creation_time": local_now()
-                          }},
-                    upsert=True,
-                )
+                try:
+                    get_latex_error_mongo_collection().update_one(
+                        {"key": err_key},
+                        {"$setOnInsert":
+                             {"key": err_key,
+                              "errorlog": log.encode('utf-8'),
+                              "source": self.tex_source.encode('utf-8'),
+                              "creation_time": local_now()
+                              }},
+                        upsert=True,
+                    )
+                except DuplicateKeyError:
+                    pass
 
                 if err_cache_key:
                     assert isinstance(log, six.text_type)
@@ -672,15 +676,18 @@ class Tex2ImgBase(object):
             result = self.get_converted_image_datauri()
             if not isinstance(result, six.text_type):
                 result = six.text_type(result)
-            get_latex_datauri_mongo_collection().update_one(
-                {"key": uri_key},
-                {"$setOnInsert":
-                     {"key": uri_key,
-                      "datauri": result.encode('utf-8'),
-                      "creation_time": local_now()
-                      }},
-                upsert=True,
-            )
+            try:
+                get_latex_datauri_mongo_collection().update_one(
+                    {"key": uri_key},
+                    {"$setOnInsert":
+                         {"key": uri_key,
+                          "datauri": result.encode('utf-8'),
+                          "creation_time": local_now()
+                          }},
+                    upsert=True,
+                )
+            except DuplicateKeyError:
+                pass
 
         assert result
 
