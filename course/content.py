@@ -1028,6 +1028,13 @@ def markup_to_html(
     ]
 
     if not disable_codehilite:
+        # Note: no matter whether disable_codehilite, the code in
+        # the rendered ipython notebook will be highlighted.
+        # "css_class=highlight" is to ensure that, when codehilite extension
+        # is enabled, code out side of notebook uses the same html class
+        # attribute as the default highlight class (i.e., `highlight`)
+        # used by rendered ipynb notebook cells, Thus we don't need to
+        # make 2 copies of css for the highlight.
         extensions += ["markdown.extensions.codehilite(css_class=highlight)"]
 
     result = markdown.markdown(text,
