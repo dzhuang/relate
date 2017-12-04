@@ -1041,7 +1041,8 @@ def markup_to_html(
         extensions=extensions,
         output_format="html5")
 
-    result = unwrap_relate_tmp_pre_tag(result)
+    if result.strip():
+        result = unwrap_relate_tmp_pre_tag(result)
 
     assert isinstance(result, six.text_type)
     if cache_key is not None:
