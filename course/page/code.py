@@ -44,6 +44,10 @@ from course.page.base import (
 from course.constants import flow_permission
 
 from traceback import format_exc
+# DEBUGGING SWITCH:
+# True for 'spawn containers' (normal operation)
+# False for 'just connect to localhost:RUNPY_PORT' for runpy'
+SPAWN_CONTAINERS_FOR_RUNPY = True
 
 
 # {{{ python code question
@@ -102,8 +106,7 @@ def request_python_run(run_req, run_timeout, image=None):
 
     client_config = None
 
-    # DEBUGGING SWITCH: 1 for 'spawn container', 0 for 'static container'
-    if 1:
+    if SPAWN_CONTAINERS_FOR_RUNPY:
         from course.docker.config import get_relate_runpy_docker_client_config
         silence_for_not_usable = getattr(
             settings, "SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR", False)

@@ -29,17 +29,17 @@ from django.utils.safestring import mark_safe
 from .base_test_mixins import SingleCourseTestMixin
 
 QUESTION_MARKUP = """
-type: TextQuestion\r
-id: half\r
-value: 5\r
-prompt: |\r
-    # A half\r
-    What's a half?\r
-answers:\r
-    - type: float\r
-      value: 0.5\r
-      rtol: 1e-4\r
-    - <plain>half\r
+type: TextQuestion
+id: half
+value: 5
+prompt: |
+    # A half
+    What's a half?
+answers:
+    - type: float
+      value: 0.5
+      rtol: 1e-4
+    - <plain>half
     - <plain>a half
 """
 
@@ -52,7 +52,6 @@ HAVE_VALID_PAGE = "have_valid_page"
 class SingleCoursePageSandboxTestBaseMixin(SingleCourseTestMixin):
     def setUp(self):  # noqa
         super(SingleCoursePageSandboxTestBaseMixin, self).setUp()
-        self.c.logout()
         self.c.force_login(self.instructor_participation.user)
 
     @classmethod
@@ -103,56 +102,17 @@ class SingleCoursePageSandboxTestBaseMixin(SingleCourseTestMixin):
     def get_sandbox_page_session(self):
         return self.get_sandbox_data_by_key("cf_validated_sandbox_page")
 
-    def get_sandbox_response_context_value(self, resp, context_name):
-        return resp.context.__getitem__(context_name)
-
-    def assertSandboxResponseContextEqual(self, resp,  # noqa
-                                                context_name, expected_value):
-        value = self.get_sandbox_response_context_value(resp, context_name)
-        self.assertEqual(value, expected_value)
-
-    def assertSandboxResponseContextContains(self, resp,  # noqa
-                                                context_name, expected_value):
-        value = self.get_sandbox_response_context_value(resp, context_name)
-        if value is None:
-            self.assertEqual(value, expected_value)
-        else:
-            self.assertIn(expected_value, value)
-
-    def assertSandboxResposeContextRegex(
-            self, resp,  # noqa
-            context_name, expected_value_regex):
-        value = self.get_sandbox_response_context_value(resp, context_name)
-        six.assertRegex(self, value, expected_value_regex)
-
     def assertSandboxHaveValidPage(self, resp):  # noqa
-        self.assertSandboxResponseContextEqual(resp, HAVE_VALID_PAGE, True)
+        self.assertResponseContextEqual(resp, HAVE_VALID_PAGE, True)
 
     def assertSandboxWarningTextContain(self, resp, expected_text):  # noqa
-        warnings = self.get_sandbox_response_context_value(resp, PAGE_WARNINGS)
+        warnings = self.get_response_context_value_by_name(resp, PAGE_WARNINGS)
         warnings_text = [w.text for w in warnings]
         self.assertIn(expected_text, warnings_text)
 
     def assertSandboxNotHaveValidPage(self, resp):  # noqa
-        self.assertSandboxResponseContextEqual(resp, HAVE_VALID_PAGE, False)
+        self.assertResponseContextEqual(resp, HAVE_VALID_PAGE, False)
 
-    def debug_print_sandbox_response_context_value(self, resp, context_name):
-        try:
-            value = self.get_sandbox_response_context_value(resp, context_name)
-            print("\n-----------context %s-------------"
-                  % context_name)
-            if isinstance(value, (list, tuple)):
-                from course.validation import ValidationWarning
-                for v in value:
-                    if isinstance(v, ValidationWarning):
-                        print(v.text)
-                    else:
-                        print(repr(v))
-            else:
-                print(value)
-            print("-----------context end-------------\n")
-        except KeyError:
-            print("\n-------no value for context %s----------" % context_name)
 
 class SingleCoursePageSandboxTest(SingleCoursePageSandboxTestBaseMixin, TestCase):
     def test_page_sandbox_get(self):
@@ -164,17 +124,17 @@ class SingleCoursePageSandboxTest(SingleCoursePageSandboxTestBaseMixin, TestCase
         # Check one of the quiz questions
         resp = self.get_page_sandbox_preview_response(QUESTION_MARKUP)
         self.assertEqual(resp.status_code, 200)
+        self.assertSandboxHaveValidPage(resp)
+        self.assertResponseContextIsNone(resp, "feedback")
 
-        result_body = resp.context.__getitem__("body")
-        result_correct_answer = resp.context.__getitem__("correct_answer")
-        self.assertIsNone(resp.context.__getitem__("feedback"))
+        from course.page.text import CORRECT_ANSWER_PATTERN
+        expected_correct_answer = CORRECT_ANSWER_PATTERN % CORRECT_ANSWER
+        expected_body_html = "<h1>A half</h1><p>What's a half?</p>"
 
-        from course.page.text import CA_PATTERN
-        expected_correct_answer = CA_PATTERN % CORRECT_ANSWER
-        expected_body = "<h1>A half</h1><p>What's a half?</p>"
-
-        self.assertInHTML(result_body, expected_body)
-        self.assertEqual(mark_safe(result_correct_answer), expected_correct_answer)
+        self.assertResponseContextContains(
+                    resp, "body", expected_body_html, html=True)
+        self.assertResponseContextEqual(
+                    resp, "correct_answer", expected_correct_answer)
 
     def test_page_sandbox_submit_answer(self):
         # Try to answer the rendered question
@@ -182,12 +142,9 @@ class SingleCoursePageSandboxTest(SingleCoursePageSandboxTestBaseMixin, TestCase
         resp = self.get_page_sandbox_submit_answer_response(
             markup_content=QUESTION_MARKUP, answer_data=answer_data)
         self.assertEqual(resp.status_code, 200)
-
-        result_correctness = resp.context.__getitem__("feedback").correctness
-        self.assertEquals(int(result_correctness), 1)
+        self.assertResponseContextAnswerFeedbackCorrectnessEquals(resp, 1)
 
         answer_data = {'answer': ['0.6']}
         resp = self.get_page_sandbox_submit_answer_response(
             markup_content=QUESTION_MARKUP, answer_data=answer_data)
-        result_correctness = resp.context.__getitem__("feedback").correctness
-        self.assertEquals(int(result_correctness), 0)
+        self.assertResponseContextAnswerFeedbackCorrectnessEquals(resp, 0)

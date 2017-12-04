@@ -468,6 +468,7 @@ def may_set_fake_time(user):
             ).count() > 0
 
 
+@login_required
 def set_fake_time(request):
     # allow staff to set fake time when impersonating
     pre_imp_user = get_pre_impersonation_user(request)
@@ -561,6 +562,7 @@ def may_set_pretend_facility(user):
             ).count() > 0
 
 
+@login_required
 def set_pretend_facilities(request):
     # allow staff to set fake time when impersonating
     pre_imp_user = get_pre_impersonation_user(request)
@@ -1406,6 +1408,7 @@ def generate_ssh_keypair(request):
 
 # {{{ celery task monitoring
 
+@login_required
 def monitor_task(request, task_id):
     from celery.result import AsyncResult
     async_res = AsyncResult(task_id)
