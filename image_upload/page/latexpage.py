@@ -982,7 +982,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         # }}}
 
         # {{{ cache the result
-        if cache_key is None or not self.is_warming_up:
+        if cache_key is None or self.is_warming_up:
             return success, result
 
         assert result is not None
