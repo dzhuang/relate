@@ -1577,7 +1577,7 @@ def get_human_readable_session_grading_rule_desc_or_list(
                 if grule.max_points_enforced_cap:
                     max_points = min(max_points, grule.max_points_enforced_cap)
                 credit_expected = (
-                    _(" at most <b>%(max_points)d%</b> points")
+                    _(" at most <b>%(max_points)d</b> points")
                     % {"max_points": max_points}
                 )
             if grule.bonus_points:
