@@ -25,7 +25,6 @@ THE SOFTWARE.
 import six
 from django.test import TestCase
 from django.urls import reverse
-from django.utils.safestring import mark_safe
 from .base_test_mixins import SingleCourseTestMixin
 
 QUESTION_MARKUP = """
@@ -129,10 +128,10 @@ class SingleCoursePageSandboxTest(SingleCoursePageSandboxTestBaseMixin, TestCase
 
         from course.page.text import CORRECT_ANSWER_PATTERN
         expected_correct_answer = CORRECT_ANSWER_PATTERN % CORRECT_ANSWER
-        expected_body_html = "<h1>A half</h1><p>What's a half?</p>"
+        expected_body_string = "<h1>A half</h1>\n<p>What's a half?</p>"
 
         self.assertResponseContextContains(
-                    resp, "body", expected_body_html, html=True)
+                    resp, "body", expected_body_string)
         self.assertResponseContextEqual(
                     resp, "correct_answer", expected_correct_answer)
 
