@@ -658,7 +658,7 @@ class RealDockerCodePageTest(SingleCoursePageTestMixin,
             expected_str = (
                 "It looks like you submitted code that is identical to "
                 "the reference solution. This is not allowed.")
-            resp = self.client_post_answer_by_page_id(self.page_id, answer_data)
+            resp = self.post_answer_by_page_id(self.page_id, answer_data)
             self.assertContains(resp, expected_str, count=1)
             self.assertEqual(resp.status_code, 200)
             self.assertEqual(self.end_quiz().status_code, 200)
@@ -671,7 +671,7 @@ class RealDockerCodePageTest(SingleCoursePageTestMixin,
             expected_str = (
                 "It looks like you submitted code that is identical to "
                 "the reference solution. This is not allowed.")
-            resp = self.client_post_answer_by_page_id(self.page_id, answer_data)
+            resp = self.post_answer_by_page_id(self.page_id, answer_data)
             self.assertContains(resp, expected_str, count=1)
             self.assertEqual(resp.status_code, 200)
             self.assertEqual(self.end_quiz().status_code, 200)
@@ -682,7 +682,7 @@ class RealDockerCodePageTest(SingleCoursePageTestMixin,
         expected_str = (
             "It looks like you submitted code that is identical to "
             "the reference solution. This is not allowed.")
-        resp = self.client_post_answer_by_page_id(self.page_id, answer_data)
+        resp = self.post_answer_by_page_id(self.page_id, answer_data)
         self.assertContains(resp, expected_str, count=1)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(self.end_quiz().status_code, 200)
@@ -690,7 +690,7 @@ class RealDockerCodePageTest(SingleCoursePageTestMixin,
 
     def test_code_page_wrong_answer(self):
         answer_data = {"answer": "c = a - b"}
-        resp = self.client_post_answer_by_page_id(self.page_id, answer_data)
+        resp = self.post_answer_by_page_id(self.page_id, answer_data)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(self.end_quiz().status_code, 200)
         self.assertSessionScoreEqual(0)
@@ -704,7 +704,7 @@ class RealDockerCodePageTest(SingleCoursePageTestMixin,
         expected_error_str2 = escape(
             "TypeError: unsupported operand type(s) for ^: "
             "'float' and 'float'")
-        resp = self.client_post_answer_by_page_id(self.page_id, answer_data)
+        resp = self.post_answer_by_page_id(self.page_id, answer_data)
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, expected_error_str1, count=1)
         self.assertContains(resp, expected_error_str2, count=1)
@@ -772,11 +772,11 @@ class CodePageTestOther(SingleCoursePageTestMixin, TestCase):
     def test_code_page_success(self,
                                mocked_request_python_run, mock_get_public_acc_ip):
         answer_data = {"answer": "some code"}
-        resp = self.client_post_answer_by_page_id(self.page_id, answer_data)
+        resp = self.post_answer_by_page_id(self.page_id, answer_data)
         self.assertEqual(mock_get_public_acc_ip.call_count, 1)
 
         # call again
-        resp = self.client_post_answer_by_page_id(self.page_id, answer_data)
+        resp = self.post_answer_by_page_id(self.page_id, answer_data)
         self.assertEqual(mock_get_public_acc_ip.call_count, 2)
 
         self.assertEqual(resp.status_code, 200)
@@ -787,7 +787,7 @@ class CodePageTestOther(SingleCoursePageTestMixin, TestCase):
                 return_value=UNCAUGHT_ERROR)
     def test_code_page_uncaught_error(self, mocked_request_python_run):
         answer_data = {"answer": "some code"}
-        resp = self.client_post_answer_by_page_id(self.page_id, answer_data)
+        resp = self.post_answer_by_page_id(self.page_id, answer_data)
         self.assertEqual(resp.status_code, 200)
         self.end_quiz()
         self.assertEqual(len(mail.outbox), 1)
@@ -796,11 +796,11 @@ class CodePageTestOther(SingleCoursePageTestMixin, TestCase):
                 return_value=SETUP_COMPILE_ERROR)
     def test_code_page_setup_compile_error(self, mocked_request_python_run):
         answer_data = {"answer": "some code"}
-        resp = self.client_post_answer_by_page_id(self.page_id, answer_data)
+        resp = self.post_answer_by_page_id(self.page_id, answer_data)
         self.assertEqual(resp.status_code, 200)
 
         # again
-        resp = self.client_post_answer_by_page_id(self.page_id, answer_data)
+        resp = self.post_answer_by_page_id(self.page_id, answer_data)
         self.assertEqual(resp.status_code, 200)
         self.end_quiz()
         self.assertEqual(len(mail.outbox), 2)
@@ -809,7 +809,7 @@ class CodePageTestOther(SingleCoursePageTestMixin, TestCase):
                 return_value=USER_COMPILE_ERROR)
     def test_code_page_user_compile_error(self, mocked_request_python_run):
         answer_data = {"answer": "some code"}
-        resp = self.client_post_answer_by_page_id(self.page_id, answer_data)
+        resp = self.post_answer_by_page_id(self.page_id, answer_data)
         self.assertEqual(resp.status_code, 200)
         self.end_quiz()
         self.assertEqual(len(mail.outbox), 0)
@@ -818,7 +818,7 @@ class CodePageTestOther(SingleCoursePageTestMixin, TestCase):
                 return_value=TIMEOUT_RESULT)
     def test_code_page_run_timeout(self, mocked_request_python_run):
         answer_data = {"answer": "some code"}
-        resp = self.client_post_answer_by_page_id(self.page_id, answer_data)
+        resp = self.post_answer_by_page_id(self.page_id, answer_data)
         self.assertEqual(resp.status_code, 200)
         self.end_quiz()
         self.assertEqual(len(mail.outbox), 0)
@@ -829,7 +829,7 @@ class CodePageTestOther(SingleCoursePageTestMixin, TestCase):
     )
     def test_code_page_docker_not_enabled_not_silenced(self):
         answer_data = {"answer": "some code"}
-        resp = self.client_post_answer_by_page_id(self.page_id, answer_data)
+        resp = self.post_answer_by_page_id(self.page_id, answer_data)
         self.assertEqual(resp.status_code, 200)
         self.assertContains(
             resp,
@@ -847,7 +847,7 @@ class CodePageTestOther(SingleCoursePageTestMixin, TestCase):
         with self.settings():
             del settings.SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR
             answer_data = {"answer": "some code"}
-            resp = self.client_post_answer_by_page_id(self.page_id, answer_data)
+            resp = self.post_answer_by_page_id(self.page_id, answer_data)
             self.assertEqual(resp.status_code, 200)
             self.assertContains(
                 resp,
@@ -865,7 +865,7 @@ class CodePageTestOther(SingleCoursePageTestMixin, TestCase):
     )
     def test_code_page_docker_enabled_silenced(self):
         answer_data = {"answer": "some code"}
-        resp = self.client_post_answer_by_page_id(self.page_id, answer_data)
+        resp = self.post_answer_by_page_id(self.page_id, answer_data)
         self.assertEqual(resp.status_code, 200)
         self.assertContains(
             resp,

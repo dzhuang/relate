@@ -45,6 +45,7 @@ class BaseEmailBackendTestsMixin(object):
         return mailbox[0]
 
     def get_the_latest_message(self):
+        from django.core.mail.message import SafeMIMEText
         mailbox = self.get_mailbox_content()
         self.assertGreater(
             len(mailbox), 0,

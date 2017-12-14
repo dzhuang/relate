@@ -292,7 +292,7 @@ class ImageUploadCreateViewTest(ImageUploadQuizMixin, TestCase):
         image_pks_str = ",".join([str(pk) for pk in image_pks])
 
         # submit page
-        self.client_post_answer_by_page_id(
+        self.post_answer_by_page_id(
             page_id, {"hidden_answer": [image_pks_str]})
         # end session
         self.end_quiz()
@@ -514,7 +514,7 @@ class ImageUploadDeleteViewTest(ImageUploadQuizMixin, TestCase):
         image_pks_str = ",".join([str(pk) for pk in image_pks])
 
         # submit page
-        self.client_post_answer_by_page_id(
+        self.post_answer_by_page_id(
             page_id, {"hidden_answer": [image_pks_str]})
         # end session
         self.end_quiz()
@@ -574,7 +574,7 @@ class ImageUploadPageTest(ImageUploadQuizMixin, TestCase):
         self.post_create_flowpageimage(page_id, TEST_IMAGE1)
         image_pks = FlowPageImage.objects.all().values_list("pk", flat=True)
         image_pks_str = ",".join([str(pk) for pk in image_pks])
-        resp = self.client_post_answer_by_page_id(
+        resp = self.post_answer_by_page_id(
             page_id, {"hidden_answer": [image_pks_str]})
         self.assertEqual(FlowPageImage.objects.all().count(), 1)
         self.assertTrue(resp.status_code, 200)
@@ -599,7 +599,7 @@ class ImageUploadPageTest(ImageUploadQuizMixin, TestCase):
 
         # bad hidden_answer string
         image_pks_str = ",".join([str(pk) for pk in image_pks] + ["not_a_number"])
-        resp = self.client_post_answer_by_page_id(
+        resp = self.post_answer_by_page_id(
             page_id, {"hidden_answer": [image_pks_str]})
         expected_form_error = FORM_ERROR_FORM_DATA_BROKEN_TEXT
         self.assertTrue(resp.status_code, 200)
@@ -627,7 +627,7 @@ class ImageUploadPageTest(ImageUploadQuizMixin, TestCase):
         self.assertTrue(len(image_pks), 1)
 
         image_pks_str = ",".join([str(pk) for pk in image_pks])
-        resp = self.client_post_answer_by_page_id(
+        resp = self.post_answer_by_page_id(
             page_id, {"hidden_answer": [image_pks_str]})
         expected_form_error = FORM_ERROR_SUBMITTING_OTHERS_IMAGE_TEXT
         self.assertTrue(resp.status_code, 200)
@@ -645,7 +645,7 @@ class ImageUploadPageTest(ImageUploadQuizMixin, TestCase):
         image_pks = FlowPageImage.objects.all().values_list("pk", flat=True)
 
         image_pks_str = ",".join([str(pk) for pk in image_pks])
-        resp = self.client_post_answer_by_page_id(
+        resp = self.post_answer_by_page_id(
             page_id, {"hidden_answer": [image_pks_str]})
         self.assertEqual(FlowPageImage.objects.all().count(), 2)
         self.assertTrue(resp.status_code, 200)
@@ -662,7 +662,7 @@ class ImageUploadPageTest(ImageUploadQuizMixin, TestCase):
         image_pks = FlowPageImage.objects.all().values_list("pk", flat=True)
 
         image_pks_str = ",".join([str(pk) for pk in image_pks] + ["100"])
-        resp = self.client_post_answer_by_page_id(
+        resp = self.post_answer_by_page_id(
             page_id, {"hidden_answer": [image_pks_str]})
         self.assertEqual(FlowPageImage.objects.all().count(), 1)
         self.assertTrue(resp.status_code, 200)
@@ -684,7 +684,7 @@ class ImageUploadPageTest(ImageUploadQuizMixin, TestCase):
 
         image_pks = FlowPageImage.objects.all().values_list("pk", flat=True)
         image_pks_str = ",".join([str(pk) for pk in image_pks])
-        resp = self.client_post_answer_by_page_id(
+        resp = self.post_answer_by_page_id(
             page_id, {"hidden_answer": [image_pks_str]})
         self.assertTrue(resp.status_code, 200)
         self.assertResponseMessagesEqual(resp, [MESSAGE_ANSWER_SAVED_TEXT])
@@ -704,7 +704,7 @@ class ImageUploadPageTest(ImageUploadQuizMixin, TestCase):
         os.remove(image.image.path)
         expected_form_error = (
             FORM_ERROR_IMAGE_BROKEN_PATTERN % image.slug)
-        resp = self.client_post_answer_by_page_id(
+        resp = self.post_answer_by_page_id(
             page_id, {"hidden_answer": [str(image.pk)]})
         self.assertEqual(FlowPageImage.objects.all().count(), 1)
         self.assertTrue(resp.status_code, 200)
@@ -716,7 +716,7 @@ class ImageUploadPageTest(ImageUploadQuizMixin, TestCase):
 
     def test_page_submit_no_image_which_requires(self):
         page_id = "one_image"
-        resp = self.client_post_answer_by_page_id(
+        resp = self.post_answer_by_page_id(
             page_id, {"hidden_answer": [""]})
         self.assertEqual(FlowPageImage.objects.all().count(), 0)
         self.assertTrue(resp.status_code, 200)
@@ -731,7 +731,7 @@ class ImageUploadPageTest(ImageUploadQuizMixin, TestCase):
 
     def test_page_submit_no_image_which_allow_non_images(self):
         page_id = "allow_no_image"
-        resp = self.client_post_answer_by_page_id(
+        resp = self.post_answer_by_page_id(
             page_id, {"hidden_answer": [""]})
         self.assertEqual(FlowPageImage.objects.all().count(), 0)
         self.assertTrue(resp.status_code, 200)
@@ -749,7 +749,7 @@ class ImageUploadPageTest(ImageUploadQuizMixin, TestCase):
         image_pks = FlowPageImage.objects.all().values_list("pk", flat=True)
         image_pks_str = ",".join([str(pk) for pk in image_pks])
 
-        resp = self.client_post_answer_by_page_id(
+        resp = self.post_answer_by_page_id(
             page_id, {"hidden_answer": [image_pks_str]})
         self.assertEqual(FlowPageImage.objects.all().count(), 2)
         self.assertTrue(resp.status_code, 200)
@@ -769,7 +769,7 @@ class ImageUploadPageTest(ImageUploadQuizMixin, TestCase):
         image_pks = FlowPageImage.objects.all().values_list("pk", flat=True)
         image_pks_str = ",".join([str(pk) for pk in image_pks])
 
-        self.client_post_answer_by_page_id(
+        self.post_answer_by_page_id(
             page_id, {"hidden_answer": [image_pks_str]})
 
         resp = self.post_create_flowpageimage(page_id, TEST_IMAGE1)
@@ -783,7 +783,7 @@ class ImageUploadPageTest(ImageUploadQuizMixin, TestCase):
         image_pks = FlowPageImage.objects.all().values_list("pk", flat=True)
         image_pks_str = ",".join([str(pk) for pk in image_pks])
 
-        self.client_post_answer_by_page_id(
+        self.post_answer_by_page_id(
             page_id, {"hidden_answer": [image_pks_str]})
 
         resp = self.post_create_flowpageimage(page_id, TEST_IMAGE2)
@@ -805,7 +805,7 @@ class ImageUploadPageTest(ImageUploadQuizMixin, TestCase):
             FlowPageImage.objects.filter(is_temp_image=False).count(), 0)
 
         # submit only the first one
-        self.client_post_answer_by_page_id(
+        self.post_answer_by_page_id(
             page_id, {"hidden_answer": [image_pks_str]})
         self.assertEqual(FlowPageImage.objects.all().count(), 1)
         self.assertEqual(
@@ -828,7 +828,7 @@ class ImageUploadPageTest(ImageUploadQuizMixin, TestCase):
             FlowPageImage.objects.filter(is_temp_image=False).count(), 0)
 
         # submit only the first one
-        self.client_post_answer_by_page_id(
+        self.post_answer_by_page_id(
             page_id1, {"hidden_answer": [image_pks_str]})
         self.assertEqual(FlowPageImage.objects.all().count(), 2)
         self.assertEqual(
@@ -843,7 +843,7 @@ class ImageUploadPageTest(ImageUploadQuizMixin, TestCase):
         image_pks = FlowPageImage.objects.all().values_list("pk", flat=True)
         image_pks_str = ",".join([str(pk) for pk in image_pks])
 
-        self.client_post_answer_by_page_id(
+        self.post_answer_by_page_id(
             page_id, {"hidden_answer": [image_pks_str]})
 
         image = FlowPageImage.objects.get()
@@ -862,7 +862,7 @@ class ImageUploadPageTest(ImageUploadQuizMixin, TestCase):
         image_pks = FlowPageImage.objects.all().values_list("pk", flat=True)
         image_pks_str = ",".join([str(pk) for pk in image_pks])
 
-        self.client_post_answer_by_page_id(
+        self.post_answer_by_page_id(
             page_id, {"hidden_answer": [image_pks_str]})
 
         image = FlowPageImage.objects.get()
@@ -882,7 +882,7 @@ class ImageUploadPageTest(ImageUploadQuizMixin, TestCase):
             page_ordinal=page_ordinal, expected_count=0)
 
         # submit a page with no image which requires
-        self.client_post_answer_by_page_id(page_id, {"hidden_answer": [""]})
+        self.post_answer_by_page_id(page_id, {"hidden_answer": [""]})
 
         self.assertSubmitHistoryItemsCount(
             page_ordinal=page_ordinal, expected_count=0)
@@ -900,13 +900,13 @@ class ImageUploadPageTest(ImageUploadQuizMixin, TestCase):
         image_pks = FlowPageImage.objects.all().values_list("pk", flat=True)
         image_pks_str = ",".join([str(pk) for pk in image_pks])
 
-        self.client_post_answer_by_page_id(
+        self.post_answer_by_page_id(
             page_id, {"hidden_answer": [image_pks_str]})
         self.assertSubmitHistoryItemsCount(
             page_ordinal=page_ordinal, expected_count=1)
 
         # submit with no image which requires
-        self.client_post_answer_by_page_id(page_id, {"hidden_answer": [""]})
+        self.post_answer_by_page_id(page_id, {"hidden_answer": [""]})
         self.assertSubmitHistoryItemsCount(
             page_ordinal=page_ordinal, expected_count=1)
 
@@ -915,12 +915,12 @@ class ImageUploadPageTest(ImageUploadQuizMixin, TestCase):
         image_pks = FlowPageImage.objects.all().values_list("pk", flat=True)
         image_pks_str = ",".join([str(pk) for pk in image_pks])
 
-        self.client_post_answer_by_page_id(
+        self.post_answer_by_page_id(
             page_id, {"hidden_answer": [image_pks_str]})
         self.assertSubmitHistoryItemsCount(
             page_ordinal=page_ordinal, expected_count=2)
 
-        self.client_post_answer_by_page_id(
+        self.post_answer_by_page_id(
             page_id, {"hidden_answer": [image_pks_str]})
         self.assertSubmitHistoryItemsCount(
             page_ordinal=page_ordinal, expected_count=3)
@@ -946,7 +946,7 @@ class ImageUploadListViewTest(ImageUploadQuizMixin, TestCase):
         self.post_create_flowpageimage(page_id, TEST_IMAGE1)
         image_pks = FlowPageImage.objects.all().values_list("pk", flat=True)
         image_pks_str = ",".join([str(pk) for pk in image_pks])
-        self.client_post_answer_by_page_id(
+        self.post_answer_by_page_id(
             page_id, {"hidden_answer": [image_pks_str]})
         self.assertSubmitHistoryItemsCount(
             page_ordinal=page_ordinal, expected_count=1)
@@ -959,7 +959,7 @@ class ImageUploadListViewTest(ImageUploadQuizMixin, TestCase):
         self.post_create_flowpageimage(page_id, TEST_IMAGE2)
         image_pks = FlowPageImage.objects.all().values_list("pk", flat=True)
         image_pks_str = ",".join([str(pk) for pk in image_pks])
-        self.client_post_answer_by_page_id(
+        self.post_answer_by_page_id(
             page_id, {"hidden_answer": [image_pks_str]})
         resp = self.c.get(list_page_url)
         self.assertEqual(resp.status_code, 200)
@@ -979,18 +979,18 @@ class ImageUploadListViewTest(ImageUploadQuizMixin, TestCase):
         self.post_create_flowpageimage(page_id, TEST_IMAGE1)
         image_pks1 = FlowPageImage.objects.all().values_list("pk", flat=True)
         image_pks_str1 = ",".join([str(pk) for pk in image_pks1])
-        self.client_post_answer_by_page_id(
+        self.post_answer_by_page_id(
             page_id, {"hidden_answer": [image_pks_str1]})
 
         # add another image to existing list
         self.post_create_flowpageimage(page_id, TEST_IMAGE2)
         image_pks2 = FlowPageImage.objects.all().values_list("pk", flat=True)
         image_pks_str2 = ",".join([str(pk) for pk in image_pks2])
-        self.client_post_answer_by_page_id(
+        self.post_answer_by_page_id(
             page_id, {"hidden_answer": [image_pks_str2]})
-        self.client_post_answer_by_page_id(
+        self.post_answer_by_page_id(
             page_id, {"hidden_answer": [image_pks_str1]})
-        self.client_post_answer_by_page_id(
+        self.post_answer_by_page_id(
             page_id, {"hidden_answer": [image_pks_str2]})
 
         # This visit_id doesn't exist, use the latest
@@ -1025,7 +1025,7 @@ class ImageUploadDownloadViewTest(ImageUploadQuizMixin, TestCase):
         self.post_create_flowpageimage(page_id, TEST_IMAGE1)
         image_pks = FlowPageImage.objects.all().values_list("pk", flat=True)
         image_pks_str = ",".join([str(pk) for pk in image_pks])
-        self.client_post_answer_by_page_id(
+        self.post_answer_by_page_id(
             page_id, {"hidden_answer": [image_pks_str]})
         self.image_download_url = (
             FlowPageImage.objects.all().first().get_absolute_url())
@@ -1066,7 +1066,7 @@ class ImageUploadCropViewTest(ImageUploadQuizMixin, TestCase):
         self.image2 = FlowPageImage.objects.last()
         image_pks = [self.image2.pk]
         image_pks_str = ",".join([str(pk) for pk in image_pks])
-        self.client_post_answer_by_page_id(
+        self.post_answer_by_page_id(
             page_id, {"hidden_answer": [image_pks_str]})
 
     @property
@@ -1109,7 +1109,7 @@ class ImageUploadCropViewTest(ImageUploadQuizMixin, TestCase):
     def test_crop_none_temp_image(self):
         page_id = "one_image"
         # submit page
-        self.client_post_answer_by_page_id(
+        self.post_answer_by_page_id(
             page_id, {"hidden_answer": ["1"]})
 
         self.assertEqual(
@@ -1128,7 +1128,7 @@ class ImageUploadCropViewTest(ImageUploadQuizMixin, TestCase):
 
         page_id = "one_image"
         # submit page
-        self.client_post_answer_by_page_id(
+        self.post_answer_by_page_id(
             page_id, {"hidden_answer": ["1"]})
         # end session
         self.end_quiz()
@@ -1481,14 +1481,14 @@ class ImageUploadDownloadSubmissionTest(ImageUploadQuizMixin, TestCase):
         self.post_create_flowpageimage(page_id, TEST_IMAGE1)
         image_pks = FlowPageImage.objects.all().values_list("pk", flat=True)
         image_pks_str = ",".join([str(pk) for pk in image_pks])
-        self.client_post_answer_by_page_id(
+        self.post_answer_by_page_id(
             page_id, {"hidden_answer": [image_pks_str]})
 
         page_id = "two_images"
         self.post_create_flowpageimage(page_id, TEST_IMAGE2)
         image_pks = FlowPageImage.objects.all().values_list("pk", flat=True)
         image_pks_str = ",".join([str(pk) for pk in image_pks])
-        self.client_post_answer_by_page_id(
+        self.post_answer_by_page_id(
             page_id, {"hidden_answer": [image_pks_str]})
         self.end_quiz()
 

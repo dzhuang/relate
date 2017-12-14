@@ -939,28 +939,21 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 self.validate_updated_page_desc(page_context, result)
                 self.is_page_desc_updated = True
             except Exception as e:
-                error_msg = "".join(format_exc())
-                display_error = "%s: %s" % (type(e).__name__, str(e))
+                error_msg = ""
+                extra_error_msg = (
+                    "<div class='latexpage-error alert alert-danger'>"
+                    "<pre>%s</pre></div>"
+                    % "".join(format_exc()))
+
                 from image_upload.utils import is_course_staff_participation
                 if page_context.in_sandbox or is_course_staff_participation(
                         page_context.flow_session.participation):
-                    display_error = error_msg
+                    error_msg += extra_error_msg
 
-                self.error_updating_page_desc = string_concat(
-                    "<p class='latexpage-error alert alert-danger'>",
-                    _("Error: "),
-                    _(
-                        "The page failed to be rendered. Sorry about that. "
-                        "The staff has been informed, and "
-                        "it will be fixed as soon as possible."
-                    ),
-                    "</p>",
-                    "<div class='latexpage-error alert alert-danger'>"
-                    "<pre>%s</pre></div>"
-                    % (display_error))
+                self.error_updating_page_desc = error_msg
 
-                message = self.get_error_notification_email_messages(page_context,
-                                                                     error_msg)
+                message = self.get_error_notification_email_messages(
+                    page_context, extra_error_msg)
                 self.send_error_notification_email(page_context, message)
                 return False, self.error_updating_page_desc
 
@@ -1005,6 +998,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         return super(LatexRandomQuestionBase, self).body(page_context, page_data)
 
     def send_error_notification_email(self, page_context, message):
+        if not (getattr(settings, "DEBUG") or not page_context.in_sandbox):
+            return
         from django.core.mail import EmailMessage
         from django.utils import translation
         with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
@@ -1023,8 +1018,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
             from relate.utils import get_outbound_mail_connection
             msg.connection = get_outbound_mail_connection("robot")
-            if not getattr(settings, "DEBUG") and not page_context.in_sandbox:
-                msg.send()
+            msg.send()
 
     def get_error_notification_email_messages(self, page_context, error_msg):
         from django.utils import translation
@@ -1142,18 +1136,16 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 "-------------------------------------")
 
             error_msg = "\n".join(error_msg_parts)
-            if getattr(settings, "DEBUG"):
-                pass
-                #response_dict["stdout"] = error_msg
-            #else:
 
             from course.page.code import is_nuisance_failure
-            message = self.get_error_notification_email_messages(page_context,
-                                                                 error_msg)
 
             if (not page_context.in_sandbox
                 and
                     not is_nuisance_failure(response_dict)):
+
+                message = self.get_error_notification_email_messages(page_context,
+                                                                     error_msg)
+
                 try:
                     self.send_error_notification_email(page_context, message)
 
