@@ -183,7 +183,10 @@ class CourseCreationForm(StyledModelForm):
             "enrollment_required_email_suffix",
             "from_email",
             "notify_email",
-            )
+        )
+        from django.conf import settings
+        if getattr(settings, "ENABLE_COURSE_FORCE_LANG", False):
+            fields = fields + ("force_lang",)  # type: ignore
         widgets = {
                 "start_date": DateTimePicker(options={"format": "YYYY-MM-DD"}),
                 "end_date": DateTimePicker(options={"format": "YYYY-MM-DD"}),

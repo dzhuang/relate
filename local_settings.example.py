@@ -307,6 +307,22 @@ RELATE_SITE_ANNOUNCEMENT = None
 
 #LANGUAGE_CODE='en-us'
 
+# Whether enable forcibly use language in course setup
+
+ENABLE_COURSE_FORCE_LANG = True
+
+# The allowed languages which can be used for rendering course view in this site
+# The LANGUAGES list can be found in django.conf.global_settings.LANGUAGES, also
+# if not configured, django.conf.global_settings.LANGUAGES will be used.
+
+from django.utils.translation import ugettext_lazy as _
+
+LANGUAGES = [
+    ('en', _('English')),
+    ('zh-hans', _('Simplified Chinese')),
+    ('de', _('German')),
+]
+
 # {{{ exams and testing
 
 # This may also be a callable that receives a local-timezone datetime and returns

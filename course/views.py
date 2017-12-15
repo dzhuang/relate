@@ -1359,6 +1359,9 @@ class EditCourseForm(StyledModelForm):
         exclude = (
                 "participants",
                 )
+        from django.conf import settings
+        if not getattr(settings, "ENABLE_COURSE_FORCE_LANG", False):
+            exclude = exclude + ("force_lang",)  # type: ignore
         widgets = {
                 "start_date": DateTimePicker(options={"format": "YYYY-MM-DD"}),
                 "end_date": DateTimePicker(options={"format": "YYYY-MM-DD"})
