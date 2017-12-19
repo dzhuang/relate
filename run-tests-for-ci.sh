@@ -65,6 +65,7 @@ $PIP install -r req.txt
 cp local_settings.example.py local_settings.py
 
 $PIP install codecov
+${PY_EXE} manage.py compilemessages --pythonpath .
 coverage run manage.py test tests/
 coverage report -m
 codecov

@@ -38,7 +38,7 @@ from django.core.validators import RegexValidator
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from django.conf import settings
+from django.conf import settings, global_settings
 
 from relate.utils import string_concat
 from course.constants import (  # noqa
@@ -70,6 +70,8 @@ if False:
 
 from jsonfield import JSONField
 from yamlfield.fields import YAMLField
+
+DEFAULT_LANGUAGES = getattr(settings, "COURSE_LANGUAGES", global_settings.LANGUAGES)
 
 
 # {{{ course
@@ -191,6 +193,13 @@ class Course(models.Model):
             help_text=_("This email address will receive "
             "notifications about the course."),
             verbose_name=_('Notify email'))
+
+    force_lang = models.CharField(max_length=10, blank=True, null=True,
+            default=None, choices=DEFAULT_LANGUAGES,
+            help_text=_("Which language is forced to be used for this course. "
+            "If not set, displayed language will be determined by "
+            "user preference"),
+            verbose_name=_('Course language forcibly used'))
 
     # {{{ XMPP
 
