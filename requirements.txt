@@ -112,4 +112,6 @@ typing
 # For unittest by mock (only required for Py2)
 # mock
 
+django_slowtests
+
 # vim: foldmethod=marker

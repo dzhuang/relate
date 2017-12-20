@@ -61,8 +61,7 @@ install:
 
 before_test:
   - "%CMD_IN_ENV% pip install coverage"
-  - "copy local_settings.example.py local_settings.py"
-  - "%CMD_IN_ENV% python manage.py compilemessages --pythonpath ."
+
 test_script:
   # Run the project tests
   - "%CMD_IN_ENV% coverage run manage.py test tests/"

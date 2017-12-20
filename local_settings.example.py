@@ -1,3 +1,6 @@
+TEST_RUNNER = 'django_slowtests.testrunner.DiscoverSlowestTestsRunner'
+NUM_SLOW_TESTS = 50
+
 # See https://docs.djangoproject.com/en/dev/howto/deployment/checklist/
 
 # {{{ database and site

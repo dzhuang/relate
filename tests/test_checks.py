@@ -23,11 +23,10 @@ THE SOFTWARE.
 """
 
 import os
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, mock
 from django.test.utils import override_settings
 from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
-from .utils import mock
 
 
 class CheckRelateSettingsBase(SimpleTestCase):
