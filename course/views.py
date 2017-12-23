@@ -80,7 +80,9 @@ from course.content import get_course_repo
 from course.utils import (  # noqa
         course_view,
         render_course_page,
-        CoursePageContext)
+        CoursePageContext,
+        get_course_specific_langs_choices,
+        get_available_languages)
 
 # {{{ for mypy
 
@@ -1363,6 +1365,26 @@ class EditCourseForm(StyledModelForm):
                 "start_date": DateTimePicker(options={"format": "YYYY-MM-DD"}),
                 "end_date": DateTimePicker(options={"format": "YYYY-MM-DD"})
                 }
+        from django.conf import settings
+        if not getattr(settings, "RELATE_ENABLE_COURSE_SPECIFIC_LANG", False):
+            widgets["force_lang"] = (forms.HiddenInput())
+        else:
+            widgets["force_lang"] = (
+                forms.Select(choices=get_course_specific_langs_choices()))
+
+    def clean_force_lang(self):
+        force_lang = self.cleaned_data["force_lang"]
+
+        if not force_lang.strip():
+            return ""
+
+        if force_lang not in get_available_languages():
+            from django.forms import ValidationError as FormValidationError
+            raise FormValidationError(_("'%s' is currently not supported "
+                                        "as a course specific language at "
+                                        "this site") % force_lang)
+
+        return force_lang
 
 
 @course_view

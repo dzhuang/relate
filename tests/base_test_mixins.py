@@ -508,9 +508,9 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
         # To speed up, use create_course instead, this is better used for tests
         cls.c.force_login(cls.superuser)
         existing_course_count = Course.objects.count()
-        with override_settings(**cls.override_settings_at_post_create_course):
-            resp = cls.c.post(
-                reverse("relate-set_up_new_course"), create_course_kwargs)
+        # with override_settings(**cls.override_settings_at_post_create_course):
+        resp = cls.c.post(
+            reverse("relate-set_up_new_course"), create_course_kwargs)
         if raise_error:
             all_courses = Course.objects.all()
             if not all_courses.count() == existing_course_count + 1:
@@ -542,7 +542,8 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
                 git_source_url_to_cache_keys(last_course.git_source))
             mc.set_multi({url_cache_key: get_course_repo_path(last_course),
                           commit_sha_cach_key: last_course.active_git_commit_sha},
-                         time=120)
+                         #time=120
+                         )
         return resp
 
     @classmethod
@@ -574,9 +575,23 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
         assert Course.objects.count() == existing_course_count + 1
 
     @classmethod
+    def get_course_view_url(cls, view_name, course_identifier=None):
+        course_identifier = (
+            course_identifier or cls.get_default_course_identifier())
+        return reverse(view_name, args=[course_identifier])
+
+    @classmethod
+    def get_edit_course_url(cls, course_identifier=None):
+        return cls.get_course_view_url("relate-edit_course", course_identifier)
+
+    @classmethod
+    def post_edit_course(cls, data, course_identifier=None):
+        edit_course_url = cls.get_edit_course_url(course_identifier)
+        return cls.c.post(edit_course_url, data)
+
+    @classmethod
     def get_course_page_url(cls, course_identifier=None):
-        course_identifier = course_identifier or cls.get_default_course_identifier()
-        return reverse("relate-course_page", args=[course_identifier])
+        return cls.get_course_view_url("relate-course_page", course_identifier)
 
     def get_logged_in_user(self):
         try:

@@ -33,6 +33,7 @@ from django.shortcuts import (  # noqa
         render, get_object_or_404)
 from django import http
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils import translation
 from django.utils.translation import (
         ugettext as _, pgettext_lazy)
 
@@ -659,10 +660,25 @@ class CoursePageContext(object):
         else:
             return (perm, argument) in self.permissions()
 
+    def _set_course_lang(self, action):
+        # type: (Text) -> None
+        from django.conf import settings
+        if not getattr(settings, "RELATE_ENABLE_COURSE_SPECIFIC_LANG", False):
+            return
+        if self.course.force_lang is not None:
+            if action == "activate":
+                self.old_language = translation.get_language()
+                translation.activate(self.course.force_lang)
+            else:
+                if self.old_language is not None:
+                    translation.activate(self.old_language)
+
     def __enter__(self):
+        self._set_course_lang(action="activate")
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        self._set_course_lang(action="deactivate")
         self.repo.close()
 
 
@@ -1098,5 +1114,24 @@ def will_use_masked_profile_for_email(recipient_email):
         if part.has_permission(pperm.view_participant_masked_profile):
             return True
     return False
+
+
+def get_course_specific_langs_choices():
+    # type: () -> Tuple[Iterable]
+    from django.conf import settings
+    if getattr(settings, "LANGUAGES"):
+        return (
+            (("", _("(None)")), )
+            + tuple([k, _(v)] for (k, v) in settings.LANGUAGES))
+    else:
+        return (("", _("(None)")), )
+
+
+def get_available_languages():
+    # type: () -> List[Text]
+    from django.conf import settings
+    if not getattr(settings, "LANGUAGES", None):
+        return []
+    return [lang[0] for lang in settings.LANGUAGES]
 
 # vim: foldmethod=marker

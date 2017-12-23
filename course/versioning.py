@@ -51,7 +51,9 @@ from course.models import (
         Participation,
         ParticipationRole)
 
-from course.utils import course_view, render_course_page
+from course.utils import (
+    course_view, render_course_page,
+    get_course_specific_langs_choices, get_available_languages)
 import paramiko
 import paramiko.client
 
@@ -183,11 +185,19 @@ class CourseCreationForm(StyledModelForm):
             "enrollment_required_email_suffix",
             "from_email",
             "notify_email",
+            "force_lang",
             )
         widgets = {
                 "start_date": DateTimePicker(options={"format": "YYYY-MM-DD"}),
                 "end_date": DateTimePicker(options={"format": "YYYY-MM-DD"}),
                 }
+        from django.conf import settings
+        if getattr(settings, "RELATE_ENABLE_COURSE_SPECIFIC_LANG", False):
+            widgets["force_lang"] = (
+                forms.Select(choices=get_course_specific_langs_choices()))
+        else:
+            widgets["force_lang"] = (forms.HiddenInput())
+
 
     def __init__(self, *args, **kwargs):
         # type: (*Any, **Any) -> None
@@ -204,10 +214,25 @@ class CourseCreationForm(StyledModelForm):
 
         return self.cleaned_data["git_source"]
 
+    def clean_force_lang(self):
+        force_lang = self.cleaned_data["force_lang"]
+
+        if not force_lang.strip():
+            return ""
+
+        if force_lang not in get_available_languages():
+            from django.forms import ValidationError as FormValidationError
+            raise FormValidationError(_("'%s' is currently not supported "
+                                        "as a course specific language at "
+                                        "this site") % force_lang)
+
+        return force_lang
+
 
 @permission_required("course.add_course")
 def set_up_new_course(request):
     # type: (http.HttpRequest) -> http.HttpResponse
+    form_klass = get_course_creation_form_klass()
     if request.method == "POST":
         form = CourseCreationForm(request.POST)
 
