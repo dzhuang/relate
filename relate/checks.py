@@ -42,6 +42,8 @@ RELATE_MAINTENANCE_MODE_EXCEPTIONS = "RELATE_MAINTENANCE_MODE_EXCEPTIONS"
 RELATE_SESSION_RESTART_COOLDOWN_SECONDS = "RELATE_SESSION_RESTART_COOLDOWN_SECONDS"
 RELATE_TICKET_MINUTES_VALID_AFTER_USE = "RELATE_TICKET_MINUTES_VALID_AFTER_USE"
 GIT_ROOT = "GIT_ROOT"
+RELATE_ENABLE_COURSE_SPECIFIC_LANG = "RELATE_ENABLE_COURSE_SPECIFIC_LANG"
+COURSE_LANGUAGES = "COURSE_LANGUAGES"
 RELATE_STARTUP_CHECKS = "RELATE_STARTUP_CHECKS"
 RELATE_STARTUP_CHECKS_EXTRA = "RELATE_STARTUP_CHECKS_EXTRA"
 
@@ -341,6 +343,37 @@ def check_relate_settings(app_configs, **kwargs):
                     id="git_root.E005"
                 ))
 
+    # }}}
+
+    # {{{ check RELATE_ENABLE_COURSE_SPECIFIC_LANG and COURSE_LANGUAGES
+    enable_course_specific_lang = getattr(settings,
+                                          RELATE_ENABLE_COURSE_SPECIFIC_LANG, False)
+    course_languages = None
+    if enable_course_specific_lang:
+        if hasattr(settings, COURSE_LANGUAGES):
+            course_languages = settings.COURSE_LANGUAGES
+
+    if course_languages is not None:
+        from django.utils.itercompat import is_iterable
+        if (isinstance(course_languages, six.string_types) or
+                not is_iterable(course_languages)):
+            errors.append(RelateCriticalCheckMessage(
+                msg=(INSTANCE_ERROR_PATTERN
+                     % {"location": COURSE_LANGUAGES,
+                        "types": "an iterable (e.g., a list or tuple)."}),
+                id="relate_course_languages.E001")
+            )
+        elif any(isinstance(choice, six.string_types) or
+                 not is_iterable(choice) or len(choice) != 2
+                 for choice in course_languages):
+            errors.append(RelateCriticalCheckMessage(
+                msg=("'%s' must be an iterable containing "
+                     "(language code, language name) tuples, just like "
+                     "the format of LANGUAGES setting ("
+                     "https://docs.djangoproject.com/en/dev/ref/settings/"
+                     "#languages)" % COURSE_LANGUAGES),
+                id="relate_course_languages.E002")
+            )
     # }}}
 
     return errors

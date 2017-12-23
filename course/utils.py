@@ -33,6 +33,7 @@ from django.shortcuts import (  # noqa
         render, get_object_or_404)
 from django import http
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils import translation
 from django.utils.translation import (
         ugettext as _, pgettext_lazy)
 
@@ -659,10 +660,23 @@ class CoursePageContext(object):
         else:
             return (perm, argument) in self.permissions()
 
+    def _set_course_lang(self, action):
+        # type: (Text) -> None
+        from django.conf import settings
+        if not getattr(settings, "RELATE_ENABLE_COURSE_SPECIFIC_LANG", False):
+            return
+        if self.course.force_lang is not None:
+            if action == "activate":
+                translation.activate(self.course.force_lang)
+            else:
+                translation.deactivate()
+
     def __enter__(self):
+        self._set_course_lang(action="activate")
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        self._set_course_lang(action="deactivate")
         self.repo.close()
 
 

@@ -192,6 +192,15 @@ class Course(models.Model):
             "notifications about the course."),
             verbose_name=_('Notify email'))
 
+    force_lang = models.CharField(max_length=200, blank=True, null=True,
+            default=None,
+            help_text=_(
+                "Which language name is forced to be used for this course. "
+                "For example, 'en', 'de', 'zh-hans'. "
+                "If not set, displayed language will be determined by "
+                "user preference"),
+            verbose_name=_('Course language forcibly used'))
+
     # {{{ XMPP
 
     course_xmpp_id = models.CharField(max_length=200, blank=True, null=True,

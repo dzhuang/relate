@@ -1363,6 +1363,32 @@ class EditCourseForm(StyledModelForm):
                 "start_date": DateTimePicker(options={"format": "YYYY-MM-DD"}),
                 "end_date": DateTimePicker(options={"format": "YYYY-MM-DD"})
                 }
+        from django.conf import settings
+        if not getattr(settings, "RELATE_ENABLE_COURSE_SPECIFIC_LANG", False):
+            exclude = exclude + ("force_lang",)  # type: ignore
+        else:
+            from course.versioning import get_course_specific_langs_choices
+            widgets["force_lang"] = (
+                forms.Select(choices=get_course_specific_langs_choices()))
+
+    def clean_force_lang(self):
+        force_lang = self.cleaned_data["force_lang"]
+
+        if not force_lang.strip():
+            return ""
+
+        from django.conf import settings, global_settings
+        available_langs = [lang[0]
+                          for lang in getattr(settings, "COURSE_LANGUAGES",
+                                              global_settings.LANGUAGES)]
+
+        if force_lang not in available_langs:
+            from django.forms import ValidationError as FormValidationError
+            raise FormValidationError(_("'%s' is currently not supported "
+                                        "as a course specific language at "
+                                        "this site") % force_lang)
+
+        return force_lang
 
 
 @course_view
