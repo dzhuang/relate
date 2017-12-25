@@ -4,7 +4,7 @@ from image_upload.utils import (
     deep_np_to_string, deep_eq, deep_convert_ordereddict, default_fudge)
 import numpy as np
 from collections import OrderedDict
-from ..utils import mock
+from django.test import mock
 
 class DeepEqTest(TestCase):
 

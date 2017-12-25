@@ -169,8 +169,8 @@ def get_ordinal_from_page_context(page_context):
 
     relative_url = urlparse(page_context.page_uri).path
     func, args, kwargs = resolve(relative_url)
-    assert kwargs["ordinal"]
-    return kwargs["ordinal"]
+    assert kwargs["page_ordinal"]
+    return kwargs["page_ordinal"]
 
 
 def minify_python_script(source):

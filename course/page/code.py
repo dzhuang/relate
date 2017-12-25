@@ -606,8 +606,8 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                             page_context.commit_sha).data).decode()
 
                 if (
-                                    "question_data" not in run_req["data_files"]
-                            and
+                                "question_data" not in run_req["data_files"]
+                        and
                                 page_data
                         and
                             page_data.get("question_data", None)

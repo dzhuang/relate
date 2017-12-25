@@ -145,7 +145,7 @@ class FlowPageImage(models.Model):
         from course.models import FlowPageData
         fpd = FlowPageData.objects.get(
             flow_session=self.flow_session_id, page_id=self.image_page_id)
-        return fpd.ordinal
+        return fpd.page_ordinal
 
     def save(self, *args, **kwargs):
         if not self.slug:

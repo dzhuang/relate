@@ -24,8 +24,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-from .utils import mock
-
 try:
     from test.support import EnvironmentVarGuard  # noqa
 except:
@@ -37,7 +35,7 @@ from django.conf import settings
 from django.core import mail
 
 from django.test.utils import override_settings
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, mock
 from course.docker.config import (
     get_docker_client_config, get_relate_runpy_docker_client_config)
 
@@ -642,7 +640,7 @@ class RealDockerCodePageTest(SingleCoursePageTestMixin,
     def setUp(self):  # noqa
         super(RealDockerCodePageTest, self).setUp()
         self.c.force_login(self.student_participation.user)
-        self.start_quiz(self.flow_id)
+        self.start_flow(self.flow_id)
 
     @skipIf(is_windows_platform(), "docker-machine is not availabe in this case")
     @skipIf(is_osx_platform(), "docker-machine is not availabe in this case")
@@ -661,7 +659,7 @@ class RealDockerCodePageTest(SingleCoursePageTestMixin,
             resp = self.post_answer_by_page_id(self.page_id, answer_data)
             self.assertContains(resp, expected_str, count=1)
             self.assertEqual(resp.status_code, 200)
-            self.assertEqual(self.end_quiz().status_code, 200)
+            self.assertEqual(self.end_flow().status_code, 200)
             self.assertSessionScoreEqual(1)
 
     def test_code_page_with_relate_runpy_docker_enabled_not_configured(self):
@@ -674,7 +672,7 @@ class RealDockerCodePageTest(SingleCoursePageTestMixin,
             resp = self.post_answer_by_page_id(self.page_id, answer_data)
             self.assertContains(resp, expected_str, count=1)
             self.assertEqual(resp.status_code, 200)
-            self.assertEqual(self.end_quiz().status_code, 200)
+            self.assertEqual(self.end_flow().status_code, 200)
             self.assertSessionScoreEqual(1)
 
     def test_code_page_correct_answer(self):
@@ -685,14 +683,14 @@ class RealDockerCodePageTest(SingleCoursePageTestMixin,
         resp = self.post_answer_by_page_id(self.page_id, answer_data)
         self.assertContains(resp, expected_str, count=1)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(self.end_quiz().status_code, 200)
+        self.assertEqual(self.end_flow().status_code, 200)
         self.assertSessionScoreEqual(1)
 
     def test_code_page_wrong_answer(self):
         answer_data = {"answer": "c = a - b"}
         resp = self.post_answer_by_page_id(self.page_id, answer_data)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(self.end_quiz().status_code, 200)
+        self.assertEqual(self.end_flow().status_code, 200)
         self.assertSessionScoreEqual(0)
 
     def test_code_page_user_code_exception_raise(self):
@@ -708,7 +706,7 @@ class RealDockerCodePageTest(SingleCoursePageTestMixin,
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, expected_error_str1, count=1)
         self.assertContains(resp, expected_error_str2, count=1)
-        self.assertEqual(self.end_quiz().status_code, 200)
+        self.assertEqual(self.end_flow().status_code, 200)
         self.assertSessionScoreEqual(0)
 
 
@@ -760,7 +758,7 @@ class CodePageTestOther(SingleCoursePageTestMixin, TestCase):
     def setUp(self):  # noqa
         super(CodePageTestOther, self).setUp()
         self.c.force_login(self.student_participation.user)
-        self.start_quiz(self.flow_id)
+        self.start_flow(self.flow_id)
 
     def tearDown(self):
         super(CodePageTestOther, self).tearDown()
@@ -780,7 +778,7 @@ class CodePageTestOther(SingleCoursePageTestMixin, TestCase):
         self.assertEqual(mock_get_public_acc_ip.call_count, 2)
 
         self.assertEqual(resp.status_code, 200)
-        self.end_quiz()
+        self.end_flow()
         self.assertEqual(len(mail.outbox), 0)
 
     @mock.patch("course.page.code.request_python_run",
@@ -789,7 +787,7 @@ class CodePageTestOther(SingleCoursePageTestMixin, TestCase):
         answer_data = {"answer": "some code"}
         resp = self.post_answer_by_page_id(self.page_id, answer_data)
         self.assertEqual(resp.status_code, 200)
-        self.end_quiz()
+        self.end_flow()
         self.assertEqual(len(mail.outbox), 1)
 
     @mock.patch("course.page.code.request_python_run",
@@ -802,7 +800,7 @@ class CodePageTestOther(SingleCoursePageTestMixin, TestCase):
         # again
         resp = self.post_answer_by_page_id(self.page_id, answer_data)
         self.assertEqual(resp.status_code, 200)
-        self.end_quiz()
+        self.end_flow()
         self.assertEqual(len(mail.outbox), 2)
 
     @mock.patch("course.page.code.request_python_run",
@@ -811,7 +809,7 @@ class CodePageTestOther(SingleCoursePageTestMixin, TestCase):
         answer_data = {"answer": "some code"}
         resp = self.post_answer_by_page_id(self.page_id, answer_data)
         self.assertEqual(resp.status_code, 200)
-        self.end_quiz()
+        self.end_flow()
         self.assertEqual(len(mail.outbox), 0)
 
     @mock.patch("course.page.code.request_python_run",
@@ -820,7 +818,7 @@ class CodePageTestOther(SingleCoursePageTestMixin, TestCase):
         answer_data = {"answer": "some code"}
         resp = self.post_answer_by_page_id(self.page_id, answer_data)
         self.assertEqual(resp.status_code, 200)
-        self.end_quiz()
+        self.end_flow()
         self.assertEqual(len(mail.outbox), 0)
 
     @override_settings(
@@ -836,7 +834,7 @@ class CodePageTestOther(SingleCoursePageTestMixin, TestCase):
             "Runpy docker is not usable with %s=%s"
             % (RELATE_RUNPY_DOCKER_ENABLED, settings.RELATE_RUNPY_DOCKER_ENABLED),
             count=1)
-        self.end_quiz()
+        self.end_flow()
         self.assertEqual(len(mail.outbox), 1)
         # self.assert
 
@@ -856,7 +854,7 @@ class CodePageTestOther(SingleCoursePageTestMixin, TestCase):
                     RELATE_RUNPY_DOCKER_ENABLED,
                     settings.RELATE_RUNPY_DOCKER_ENABLED),
                 count=1)
-        self.end_quiz()
+        self.end_flow()
         self.assertEqual(len(mail.outbox), 1)
 
     @override_settings(
@@ -871,5 +869,5 @@ class CodePageTestOther(SingleCoursePageTestMixin, TestCase):
             resp,
             "Docker runpy is currently not enabled for this site",
             count=1)
-        self.end_quiz()
+        self.end_flow()
         self.assertEqual(len(mail.outbox), 0)

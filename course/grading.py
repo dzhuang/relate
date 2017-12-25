@@ -91,7 +91,7 @@ def get_prev_visit_grades(
     return (FlowPageVisitGrade.objects
             .filter(
                 visit__flow_session_id=flow_session_id,
-                visit__page_data__ordinal=page_ordinal,
+                visit__page_data__page_ordinal=page_ordinal,
                 visit__is_submitted_answer=True)
             .order_by(*order_by_args)
             .select_related("visit"))
@@ -153,17 +153,17 @@ class GradingAutoResponseView(AutoResponseView):
     def get_obj_url(self, obj):
         if isinstance(obj, FlowPageData):
             flow_session = obj.flow_session
-            ordinal = obj.ordinal
+            page_ordinal = obj.page_ordinal
         else:
             assert isinstance(obj, FlowPageVisitGrade)
             flow_session = obj.visit.flow_session
-            ordinal = obj.visit.page_data.ordinal
+            page_ordinal = obj.visit.page_data.page_ordinal
 
         return reverse("relate-grade_flow_page",
                       args=(
                           flow_session.course.identifier,
                           flow_session.id,
-                          ordinal))
+                          page_ordinal))
 
 
 class PageGradedInfoSearchWidget(ModelSelect2Widget):
@@ -304,7 +304,7 @@ def get_navi_box_grading_page_url(pctx, flow_id, data_type, data_pk):
                   args=(
                       pctx.course_identifier,
                       pagedata.flow_session.id,
-                      pagedata.ordinal))
+                      pagedata.page_ordinal))
 
     response = http.JsonResponse({
         "uri": uri
@@ -626,8 +626,8 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
             pctx.course.identifier, respect_preview=False)
 
     fpctx = FlowPageContext(pctx.repo, pctx.course, flow_session.flow_id,
-            page_ordinal, participation=flow_session.participation,
-            flow_session=flow_session, request=pctx.request)
+                            page_ordinal, participation=flow_session.participation,
+                            flow_session=flow_session, request=pctx.request)
 
     if fpctx.page_desc is None:
         raise http.Http404()
@@ -732,7 +732,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
 
                 with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
                     feedback = fpctx.page.grade(
-                            fpctx.page_context, fpctx.page_data,
+                            fpctx.page_context, fpctx.page_data.data,
                             answer_data, grade_data)
 
                 if feedback is not None:
@@ -812,7 +812,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     # {{{ enable flow session zapping by select2
 
     flowpagedata = FlowPageData.objects.get(
-        flow_session=flow_session, ordinal=page_ordinal)
+        flow_session=flow_session, page_ordinal=page_ordinal)
     page_id = flowpagedata.page_id
     group_id = flowpagedata.group_id
 
@@ -917,8 +917,8 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 flow_session__pk=flow_session_pk,
                 group_id=group_id,
                 page_id=page_id,
-                ordinal__isnull=False,
-            ).ordinal)
+                page_ordinal__isnull=False,
+            ).page_ordinal)
 
     for i, other_flow_session_pk in enumerate(all_flow_session_pks):
         if other_flow_session_pk == flow_session.pk:
@@ -976,7 +976,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                       args=(
                           pctx.course_identifier,
                           available_pagedata.flow_session.id,
-                          available_pagedata.ordinal))
+                          available_pagedata.page_ordinal))
 
         user = flow_session.user
         if may_view_participant_full_profile:
@@ -1007,7 +1007,7 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 "flow_identifier": fpctx.flow_id,
                 "flow_session": flow_session,
                 "flow_desc": fpctx.flow_desc,
-                "ordinal": fpctx.ordinal,
+                "page_ordinal": fpctx.page_ordinal,
                 "page_data": fpctx.page_data,
 
                 "body": fpctx.page.body(
@@ -1100,7 +1100,7 @@ def show_grader_statistics(pctx, flow_id):
 
     graders = set()
 
-    # tuples: (ordinal, id)
+    # tuples: (page_ordinal, id)
     pages = set()
 
     counts = {}
@@ -1109,7 +1109,7 @@ def show_grader_statistics(pctx, flow_id):
 
     def commit_grade_info(grade):
         grader = grade.grader
-        page = (grade.visit.page_data.ordinal,
+        page = (grade.visit.page_data.page_ordinal,
                 grade.visit.page_data.group_id + "/" + grade.visit.page_data.page_id)
 
         graders.add(grader)

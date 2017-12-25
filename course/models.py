@@ -201,6 +201,15 @@ class Course(models.Model):
             "notifications about the course."),
             verbose_name=_('Notify email'))
 
+    force_lang = models.CharField(max_length=200, blank=True, null=True,
+            default=None,
+            help_text=_(
+                "Which language name is forced to be used for this course. "
+                "For example, 'en', 'de', 'zh-hans'. "
+                "If not set, displayed language will be determined by "
+                "user preference"),
+            verbose_name=_('Course language forcibly used'))
+
     # {{{ XMPP
 
     course_xmpp_id = models.CharField(max_length=200, blank=True, null=True,
@@ -949,8 +958,8 @@ class FlowSession(models.Model):
 class FlowPageData(models.Model):
     flow_session = models.ForeignKey(FlowSession, related_name="page_data",
             verbose_name=_('Flow session'), on_delete=models.CASCADE)
-    ordinal = models.IntegerField(null=True, blank=True,
-            verbose_name=_('Ordinal'))
+    page_ordinal = models.IntegerField(null=True, blank=True,
+            verbose_name=_('Page ordinal'))
 
     # This exists to catch changing page types in course content,
     # which will generally lead to an inconsistency disaster.
@@ -985,10 +994,10 @@ class FlowPageData(models.Model):
     def __unicode__(self):
         # flow page data
         return (_("Data for page '%(group_id)s/%(page_id)s' "
-                "(ordinal %(ordinal)s) in %(flow_session)s") % {
+                "(page ordinal %(page_ordinal)s) in %(flow_session)s") % {
                     'group_id': self.group_id,
                     'page_id': self.page_id,
-                    'ordinal': self.ordinal,
+                    'page_ordinal': self.page_ordinal,
                     'flow_session': self.flow_session})
 
     if six.PY3:
@@ -996,13 +1005,13 @@ class FlowPageData(models.Model):
 
     # Django's templates are a little daft. No arithmetic--really?
     def previous_ordinal(self):
-        return self.ordinal - 1
+        return self.page_ordinal - 1
 
     def next_ordinal(self):
-        return self.ordinal + 1
+        return self.page_ordinal + 1
 
     def human_readable_ordinal(self):
-        return self.ordinal + 1
+        return self.page_ordinal + 1
 
     def get_stringfied_data(self):
         return json.dumps(self.data, sort_keys=True)[:1000]

@@ -29,6 +29,7 @@ import six
 from django.shortcuts import (  # noqa
         render, get_object_or_404, redirect)
 from django.contrib import messages
+from django.conf import settings, global_settings
 import django.forms as forms
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
@@ -163,6 +164,12 @@ def get_dulwich_client_and_remote_path_from_course(course):
 
 # {{{ new course setup
 
+def get_course_specific_langs_choices():
+    # type: () -> Tuple[Tuple[Text, Any], ...]
+    return (("", _("(None)")), ) + tuple(
+        getattr(settings, "COURSE_LANGUAGES", global_settings.LANGUAGES))
+
+
 class CourseCreationForm(StyledModelForm):
     class Meta:
         model = Course
@@ -192,6 +199,11 @@ class CourseCreationForm(StyledModelForm):
                     DateTimePicker(
                         options={"format": "YYYY-MM-DD"})),  # added by zd
                 }
+        from django.conf import settings
+        if getattr(settings, "RELATE_ENABLE_COURSE_SPECIFIC_LANG", False):
+            fields = fields + ("force_lang",)  # type: ignore
+            widgets["force_lang"] = (
+                forms.Select(choices=get_course_specific_langs_choices()))
 
     def __init__(self, *args, **kwargs):
         # type: (*Any, **Any) -> None
@@ -207,6 +219,24 @@ class CourseCreationForm(StyledModelForm):
             raise FormValidationError(_("Git source must be specified"))
 
         return self.cleaned_data["git_source"]
+
+    def clean_force_lang(self):
+        force_lang = self.cleaned_data["force_lang"]
+
+        if not force_lang:
+            return ""
+
+        available_langs = [lang[0]
+                          for lang in getattr(settings, "COURSE_LANGUAGES",
+                                              global_settings.LANGUAGES)]
+
+        if force_lang not in available_langs:
+            from django.forms import ValidationError as FormValidationError
+            raise FormValidationError(_("'%s' is currently not supported "
+                                        "as a course specific language at "
+                                        "this site") % force_lang)
+
+        return force_lang
 
 
 @permission_required("course.add_course")

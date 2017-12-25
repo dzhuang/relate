@@ -321,8 +321,8 @@ class FlowPageImageAdmin(admin.ModelAdmin):
             from django.core.urlresolvers import reverse
 
             try:
-                ordinal = obj.get_page_ordinal()
-                if ordinal is None:
+                page_ordinal = obj.get_page_ordinal()
+                if page_ordinal is None:
                     return None
             except:
                 return None
@@ -330,7 +330,7 @@ class FlowPageImageAdmin(admin.ModelAdmin):
             return reverse('relate-view_flow_page', kwargs={
                 'course_identifier': obj.course.identifier,
                 'flow_session_id': obj.flow_session.id,
-                'ordinal': ordinal
+                'page_ordinal': page_ordinal
             })
 
     def render_change_form(self, request, context,
@@ -354,7 +354,7 @@ class FlowPageImageAdmin(admin.ModelAdmin):
         if obj:
             context.update({'course_identifier': obj.course.identifier,
                            'flow_session_id': obj.flow_session_id,
-                           'ordinal': obj.get_page_ordinal()
+                           'page_ordinal': obj.get_page_ordinal()
                             })
 
         context.update({"preserved_filters": preserved_filters})

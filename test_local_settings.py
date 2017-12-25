@@ -8,6 +8,26 @@ USING_LOCAL_TEST_SETTINGS = True
 # coverage run manage.py test tests --local_test_settings test_local_settings.py
 # python manage.py test tests.test_my_local --local_test_settings test_local_settings.py
 
+
+# {{{ course specific language
+
+# Whether enable course-specific language in course setup
+RELATE_ENABLE_COURSE_SPECIFIC_LANG = True
+
+# The allowed languages which can be used for rendering course view. Available
+# COURSE_LANGUAGES can be found in django.conf.global_settings.COURSE_LANGUAGES.
+# If not configured, django.conf.global_settings.COURSE_LANGUAGES will be used.
+
+from django.utils.translation import ugettext_lazy as _
+
+COURSE_LANGUAGES = [
+    ('en', _('English')),
+    ('zh-hans', _('Simplified Chinese')),
+    ('de', _('German')),
+]
+
+# }}}
+
 import os, platform
 BASE_DIR = os.path.dirname(__file__)
 

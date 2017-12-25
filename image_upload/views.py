@@ -63,36 +63,36 @@ COURSE_STAFF_IMAGE_PERMISSION = (
 )
 
 
-def check_page_handler_url_visit_permission(pctx, flow_session_id, ordinal):
-    if (not bool(flow_session_id is not None and ordinal is not None)
-            and bool(flow_session_id is not None or ordinal is not None)):
-        # flow_session_id and ordinal must be both None or not None
+def check_page_handler_url_visit_permission(pctx, flow_session_id, page_ordinal):
+    if (not bool(flow_session_id is not None and page_ordinal is not None)
+            and bool(flow_session_id is not None or page_ordinal is not None)):
+        # flow_session_id and page_ordinal must be both None or not None
         raise http.Http404()
 
     if flow_session_id is not None:
-        assert ordinal is not None
+        assert page_ordinal is not None
         from course.models import FlowPageData
         from course.flow import get_and_check_flow_session
         get_and_check_flow_session(pctx, flow_session_id)
         fpd = get_object_or_404(
-            FlowPageData, flow_session_id=flow_session_id, ordinal=ordinal)
+            FlowPageData, flow_session_id=flow_session_id, page_ordinal=page_ordinal)
         if fpd.page_type not in get_all_imageuploadpage_klass_names():
             # For pages which don't upload images
             raise http.Http404()
 
     if flow_session_id is None:
-        assert ordinal is None
+        assert page_ordinal is None
         # this should happen only for cases in sandbox
         if not pctx.has_permission(pperm.use_page_sandbox):
             raise PermissionDenied()
 
 
-def get_page_image_behavior(pctx, flow_session_id, ordinal):
+def get_page_image_behavior(pctx, flow_session_id, page_ordinal):
 
-    check_page_handler_url_visit_permission(pctx, flow_session_id, ordinal)
+    check_page_handler_url_visit_permission(pctx, flow_session_id, page_ordinal)
 
     if flow_session_id is None:
-        assert ordinal is None
+        assert page_ordinal is None
         # this should happen only for cases in sandbox
         # assert pctx.has_permission(pperm.use_page_sandbox
         from course.page.base import PageBehavior
@@ -106,17 +106,17 @@ def get_page_image_behavior(pctx, flow_session_id, ordinal):
         get_page_behavior, get_prev_answer_visits_qset)
 
     request = pctx.request
-    ordinal = int(ordinal)
+    page_ordinal = int(page_ordinal)
     flow_session_id = int(flow_session_id)
 
     from course.models import FlowSession
     flow_session = FlowSession.objects.get(id=flow_session_id)
     flow_id = flow_session.flow_id
 
-    fpctx = FlowPageContext(pctx.repo, pctx.course, flow_id, ordinal,
-            participation=pctx.participation,
-            flow_session=flow_session,
-            request=pctx.request)
+    fpctx = FlowPageContext(pctx.repo, pctx.course, flow_id, page_ordinal,
+                            participation=pctx.participation,
+                            flow_session=flow_session,
+                            request=pctx.request)
 
     from course.views import get_now_or_fake_time
 
@@ -186,10 +186,11 @@ class ImageListPermissionTestMixin(UserPassesTestMixin):
         course_identifier = self.kwargs['course_identifier']
         pctx = CoursePageContext(self.request, course_identifier)
         flow_session_id = self.kwargs.get('flow_session_id')
-        ordinal = self.kwargs.get('ordinal')
+        page_ordinal = self.kwargs.get('page_ordinal')
 
         try:
-            check_page_handler_url_visit_permission(pctx, flow_session_id, ordinal)
+            check_page_handler_url_visit_permission(
+                pctx, flow_session_id, page_ordinal)
             return True
         except:
             return False
@@ -203,9 +204,9 @@ class ImageEditPermissionTestMixin(UserPassesTestMixin):
         course_identifier = self.kwargs['course_identifier']
         pctx = CoursePageContext(self.request, course_identifier)
         flow_session_id = self.kwargs.get('flow_session_id')
-        ordinal = self.kwargs.get('ordinal')
+        page_ordinal = self.kwargs.get('page_ordinal')
         return get_page_image_behavior(
-            pctx, flow_session_id, ordinal).may_change_answer
+            pctx, flow_session_id, page_ordinal).may_change_answer
 
 
 class ImageCreateView(LoginRequiredMixin, ImageEditPermissionTestMixin,
@@ -247,13 +248,13 @@ class ImageCreateView(LoginRequiredMixin, ImageEditPermissionTestMixin,
         from course.models import Course
         self.object.course = pctx.course
         flow_session_id = self.kwargs.get("flow_session_id")
-        ordinal = self.kwargs.get("ordinal")
+        page_ordinal = self.kwargs.get("page_ordinal")
 
         if flow_session_id is not None:
-            assert ordinal is not None
+            assert page_ordinal is not None
             from course.models import FlowPageData
             fpd = FlowPageData.objects.get(
-                flow_session=int(flow_session_id), ordinal=int(ordinal))
+                flow_session=int(flow_session_id), page_ordinal=int(page_ordinal))
             self.object.flow_session_id = flow_session_id
             self.object.image_page_id = fpd.page_id
 
@@ -348,7 +349,7 @@ class ImageListView(LoginRequiredMixin, ImageListPermissionTestMixin,
             ).values_list("pk", flat=True))
 
         # {{{ extracting image pks from answer data
-        ordinal = self.kwargs.get("ordinal")
+        page_ordinal = self.kwargs.get("page_ordinal")
 
         from course.models import FlowSession
         flow_session = get_object_or_404(FlowSession, id=int(flow_session_id))
@@ -366,7 +367,7 @@ class ImageListView(LoginRequiredMixin, ImageListPermissionTestMixin,
             repo=pctx.repo,
             course=pctx.course,
             flow_id=flow_session.flow_id,
-            ordinal=int(ordinal),
+            page_ordinal=int(page_ordinal),
             flow_session=flow_session,
             participation=flow_session.participation,
             request=self.request
@@ -520,7 +521,7 @@ def image_crop(pctx, **kwargs):
         raise CropImageError(ugettext('Only Ajax Post is allowed.'))
 
     flow_session_id = kwargs.get("flow_session_id")
-    ordinal = kwargs.get("ordinal")
+    page_ordinal = kwargs.get("page_ordinal")
     pk = kwargs.get("pk")
 
     crop_instance = get_object_or_404(FlowPageImage, pk=pk)
@@ -528,7 +529,7 @@ def image_crop(pctx, **kwargs):
     flow_session = None
 
     if flow_session_id is None:
-        assert ordinal is None
+        assert page_ordinal is None
         # this should happen in sandbox
         if not pctx.has_permission(pperm.use_page_sandbox):
             raise PermissionDenied()
@@ -536,9 +537,9 @@ def image_crop(pctx, **kwargs):
     else:
         from course.models import FlowSession
         flow_session = get_object_or_404(FlowSession, id=flow_session_id)
-        assert ordinal is not None
+        assert page_ordinal is not None
         page_image_behavior = get_page_image_behavior(
-            pctx, flow_session_id, ordinal)
+            pctx, flow_session_id, page_ordinal)
         may_change_answer = page_image_behavior.may_change_answer
 
     course_staff_request = pctx.has_permission(pperm.assign_grade)
@@ -623,7 +624,8 @@ def image_crop(pctx, **kwargs):
 
     if need_adjust_new_instance:
         from course.models import FlowPageData
-        fpd = FlowPageData.objects.get(flow_session=flow_session_id, ordinal=ordinal)
+        fpd = FlowPageData.objects.get(
+            flow_session=flow_session_id, page_ordinal=page_ordinal)
         new_instance.flow_session = flow_session
         new_instance.image_page_id = fpd.page_id
         new_instance.course = pctx.course

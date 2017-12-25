@@ -465,7 +465,27 @@ RELATE_SITE_ANNOUNCEMENT = None
 # Make sure you have generated, translate and compile the message file of your
 # language. If commented, RELATE will use default language 'en-us'.
 
-#LANGUAGE_CODE='en-us'
+#USE_I18N = True
+#LANGUAGE_CODE = 'en-us'
+
+# {{{ course specific language
+
+# Whether enable course-specific language in course setup
+RELATE_ENABLE_COURSE_SPECIFIC_LANG = True
+
+# The allowed languages which can be used for rendering course view. Available
+# COURSE_LANGUAGES can be found in django.conf.global_settings.COURSE_LANGUAGES.
+# If not configured, django.conf.global_settings.COURSE_LANGUAGES will be used.
+
+from django.utils.translation import ugettext_lazy as _
+
+COURSE_LANGUAGES = [
+    ('en', _('English')),
+    ('zh-hans', _('Simplified Chinese')),
+    ('de', _('German')),
+]
+
+# }}}
 
 # {{{ exams and testing
 

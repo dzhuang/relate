@@ -205,7 +205,7 @@
         <tr>
           <td>
             <a
-              {% if page_data.ordinal > 0 %}
+              {% if page_data.page_ordinal > 0 %}
                 href="{% url "relate-grade_flow_page" course.identifier flow_session.id page_data.previous_ordinal %}"
                 class="btn btn-default"
               {% else %}
@@ -227,9 +227,9 @@
             {% trans "Page number" %}
           </td>
           <td>
-            {{ ordinal }}
+            {{ page_ordinal }}
             &middot;
-            <a href="{% url "relate-view_flow_page" course.identifier flow_session.id ordinal %}">{% trans "View in flow" %}</a>
+            <a href="{% url "relate-view_flow_page" course.identifier flow_session.id page_ordinal %}">{% trans "View in flow" %}</a>
           </td>
         </tr>
       </table>
@@ -495,7 +495,7 @@
 
     function generate_past_submission_and_grades_dropdown_content(){
       var jqxhr = $.ajax({
-        url: "{% url "relate-get_prev_grades_dropdown_content" course.identifier flow_session.id ordinal %}"
+        url: "{% url "relate-get_prev_grades_dropdown_content" course.identifier flow_session.id page_ordinal %}"
       }).done(function (result) {
         if(result.result)
         document.getElementById("past-submission-and-grades_dropdown_content").innerHTML = tmpl("tmpl-prev-grades", result.result);

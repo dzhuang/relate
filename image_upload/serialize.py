@@ -113,7 +113,7 @@ def serialize(request, instance, file_attr='image'):
         # else is in sandbox
         handler_kwargs.update({
             'flow_session_id': instance.flow_session_id,
-            'ordinal': instance.get_page_ordinal()})
+            'page_ordinal': instance.get_page_ordinal()})
 
     delete_url = reverse('jfu_delete',
             kwargs=handler_kwargs

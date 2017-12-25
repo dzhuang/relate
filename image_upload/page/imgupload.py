@@ -103,7 +103,7 @@ class ImageUploadForm(StyledForm):
                 "jfu_upload",
                 kwargs={'course_identifier': page_context.course,
                         'flow_session_id': page_context.flow_session.id,
-                        'ordinal': get_ordinal_from_page_context(page_context)
+                        'page_ordinal': get_ordinal_from_page_context(page_context)
                         }
             )
         else:
@@ -414,12 +414,12 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
 
     def form_to_html(self, request, page_context, form, answer_data):
 
-        ordinal = None
+        page_ordinal = None
         in_grading_page = False
         prev_visit_id = None
 
         if not page_context.in_sandbox:
-            ordinal = get_ordinal_from_page_context(page_context)
+            page_ordinal = get_ordinal_from_page_context(page_context)
 
             prev_visit_id = request.GET.get("visit_id", None)
             if prev_visit_id is not None:
@@ -434,7 +434,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                 repo=page_context.repo,
                 course=page_context.course,
                 flow_id=page_context.flow_session.flow_id,
-                ordinal=int(ordinal),
+                page_ordinal=int(page_ordinal),
                 flow_session=page_context.flow_session,
                 participation=page_context.flow_session.participation,
                 request=request
@@ -474,7 +474,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                     args=(
                         page_context.course.identifier,
                         page_context.flow_session.id,
-                        ordinal)
+                        page_ordinal)
                 )
 
                 in_grading_page = grading_page_uri == request.path
@@ -491,7 +491,7 @@ class ImageUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
                    ['image/jpeg', 'image/jpg', 'image/png'],
                'course_identifier': page_context.course,
                "flow_session_id": page_context.flow_session.id,
-               "ordinal": ordinal,
+               "page_ordinal": page_ordinal,
                "IS_COURSE_STAFF":
                    is_course_staff_course_image_request(
                        request, page_context.course),

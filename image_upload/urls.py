@@ -44,7 +44,7 @@ urlpatterns = [
         "/" + COURSE_ID_REGEX +
         "/flow-session"
         "/(?P<flow_session_id>[0-9]+)"
-        "/(?P<ordinal>[0-9]+)"
+        "/(?P<page_ordinal>[0-9]+)"
         "/image/upload/$",
         ImageCreateView.as_view(),
         name='jfu_upload'),
@@ -60,7 +60,7 @@ urlpatterns = [
         "/" + COURSE_ID_REGEX +
         "/flow-session"
         "/(?P<flow_session_id>[0-9]+)"
-        "/(?P<ordinal>[0-9]+)"
+        "/(?P<page_ordinal>[0-9]+)"
         "/image/delete"
         "/(?P<pk>\d+)$",
         ImageDeleteView.as_view(),
@@ -78,7 +78,7 @@ urlpatterns = [
         "/" + COURSE_ID_REGEX +
         "/flow-session"
         "/(?P<flow_session_id>[0-9]+)"
-        "/(?P<ordinal>[0-9]+)"
+        "/(?P<page_ordinal>[0-9]+)"
         "/image/view/$",
         ImageListView.as_view(),
         name='jfu_view'),
@@ -113,7 +113,7 @@ urlpatterns = [
         "/" + COURSE_ID_REGEX +
         "/flow-session"
         "/(?P<flow_session_id>[0-9]+)"
-        "/(?P<ordinal>[0-9]+)"
+        "/(?P<page_ordinal>[0-9]+)"
         "/image/crop"
         "/(?P<pk>\d+)$",
         image_crop,

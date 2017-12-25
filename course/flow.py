@@ -127,8 +127,8 @@ def _adjust_flow_session_page_data_inner(repo, flow_session,
     from course.models import FlowPageData
 
     def remove_page(fpd):
-        if fpd.ordinal is not None:
-            fpd.ordinal = None
+        if fpd.page_ordinal is not None:
+            fpd.page_ordinal = None
             fpd.save()
 
     desc_group_ids = []
@@ -175,7 +175,7 @@ def _adjust_flow_session_page_data_inner(repo, flow_session,
             data = page.initialize_page_data(pctx)
             return FlowPageData(
                     flow_session=flow_session,
-                    ordinal=None,
+                    page_ordinal=None,
                     page_type=new_page_desc.type,
                     group_id=grp.id,
                     page_id=new_page_desc.id,
@@ -183,8 +183,8 @@ def _adjust_flow_session_page_data_inner(repo, flow_session,
                     title=page.title(pctx, data))
 
         def add_page(fpd):
-            if fpd.ordinal != ordinal[0]:
-                fpd.ordinal = ordinal[0]
+            if fpd.page_ordinal != ordinal[0]:
+                fpd.page_ordinal = ordinal[0]
                 fpd.save()
 
             page_desc = find_page_desc(fpd.page_id)
@@ -216,8 +216,8 @@ def _adjust_flow_session_page_data_inner(repo, flow_session,
                     .filter(
                         flow_session=flow_session,
                         group_id=grp.id,
-                        ordinal__isnull=False)
-                    .order_by("ordinal")):
+                        page_ordinal__isnull=False)
+                    .order_by("page_ordinal")):
 
                 if (fpd.page_id in available_page_ids
                         and len(group_pages) < max_page_count):
@@ -280,7 +280,7 @@ def _adjust_flow_session_page_data_inner(repo, flow_session,
             FlowPageData.objects
             .filter(
                 flow_session=flow_session,
-                ordinal__isnull=False)
+                page_ordinal__isnull=False)
             .exclude(group_id__in=desc_group_ids)
             ):
         remove_page(fpd)
@@ -534,14 +534,14 @@ def assemble_page_grades(flow_sessions):
     all_answer_visits = (
         get_multiple_flow_session_graded_answers_qset(flow_sessions)
         .order_by("visit_time")
-        .values("id", "flow_session_id", "page_data__ordinal",
+        .values("id", "flow_session_id", "page_data__page_ordinal",
                 "is_submitted_answer"))
 
     for answer_visit in all_answer_visits:
         fsess_idx = id_to_fsess_idx[answer_visit["flow_session_id"]]
-        ordinal = answer_visit["page_data__ordinal"]
-        if ordinal is not None:
-            answer_visit_ids[fsess_idx][ordinal] = answer_visit["id"]
+        page_ordinal = answer_visit["page_data__page_ordinal"]
+        if page_ordinal is not None:
+            answer_visit_ids[fsess_idx][page_ordinal] = answer_visit["id"]
 
         if not flow_sessions[fsess_idx].in_progress:
             assert answer_visit["is_submitted_answer"] is True
@@ -581,8 +581,8 @@ def assemble_answer_visits(flow_session):
             .order_by("visit_time"))
 
     for page_visit in answer_page_visits:
-        if page_visit.page_data.ordinal is not None:
-            answer_visits[page_visit.page_data.ordinal] = page_visit
+        if page_visit.page_data.page_ordinal is not None:
+            answer_visits[page_visit.page_data.page_ordinal] = page_visit
 
         if not flow_session.in_progress:
             assert page_visit.is_submitted_answer is True
@@ -596,8 +596,8 @@ def get_all_page_data(flow_session):
     return (FlowPageData.objects
             .filter(
                 flow_session=flow_session,
-                ordinal__isnull=False)
-            .order_by("ordinal"))
+                page_ordinal__isnull=False)
+            .order_by("page_ordinal"))
 
 
 def get_interaction_kind(
@@ -611,7 +611,7 @@ def get_interaction_kind(
     ikind = flow_session_interaction_kind.noninteractive
 
     for i, page_data in enumerate(all_page_data):
-        assert i == page_data.ordinal
+        assert i == page_data.page_ordinal
 
         page = instantiate_flow_page_with_ctx(fctx, page_data)
         if page.expects_answer():
@@ -639,7 +639,7 @@ def get_session_answered_page_data(
     is_interactive_flow = False  # type: bool
 
     for i, page_data in enumerate(all_page_data):
-        assert i == page_data.ordinal
+        assert i == page_data.page_ordinal
 
         avisit = answer_visits[i]
         if avisit is not None:
@@ -825,7 +825,7 @@ def gather_grade_info(
     for i, page_data in enumerate(all_page_data):
         page = instantiate_flow_page_with_ctx(fctx, page_data)
 
-        assert i == page_data.ordinal
+        assert i == page_data.page_ordinal
 
         av = answer_visits[i]
 
@@ -937,7 +937,7 @@ def grade_page_visits(
             answer_visit.save()
 
         else:
-            page_data = flow_session.page_data.get(ordinal=i)
+            page_data = flow_session.page_data.get(page_ordinal=i)
             page = instantiate_flow_page_with_ctx(fctx, page_data)
 
             if not page.expects_answer():
@@ -1741,7 +1741,7 @@ def add_buttons_to_form(form, fpctx, flow_session, permissions):
                         css_class="relate-save-button relate-submit-button"))
     else:
         # Only offer 'save and move on' if student will receive no feedback
-        if fpctx.page_data.ordinal + 1 < flow_session.page_count:
+        if fpctx.page_data.page_ordinal + 1 < flow_session.page_count:
             form.helper.add_input(
                     Submit("save_and_next",
                         mark_safe_lazy(
@@ -1784,13 +1784,13 @@ def create_flow_page_visit(request, flow_session, page_data):
 
 
 @course_view
-def view_flow_page(pctx, flow_session_id, ordinal):
+def view_flow_page(pctx, flow_session_id, page_ordinal):
     # type: (CoursePageContext, int, int) -> http.HttpResponse
 
     request = pctx.request
     login_exam_ticket = get_login_exam_ticket(request)
 
-    ordinal = int(ordinal)
+    page_ordinal = int(page_ordinal)
 
     flow_session_id = int(flow_session_id)
     flow_session = get_and_check_flow_session(pctx, flow_session_id)
@@ -1809,10 +1809,10 @@ def view_flow_page(pctx, flow_session_id, ordinal):
             respect_preview=True)
 
     try:
-        fpctx = FlowPageContext(pctx.repo, pctx.course, flow_id, ordinal,
-                participation=pctx.participation,
-                flow_session=flow_session,
-                request=pctx.request)
+        fpctx = FlowPageContext(pctx.repo, pctx.course, flow_id, page_ordinal,
+                                participation=pctx.participation,
+                                flow_session=flow_session,
+                                request=pctx.request)
     except PageOrdinalOutOfRange:
         return redirect("relate-view_flow_page",
                 pctx.course.identifier,
@@ -2055,13 +2055,13 @@ def view_flow_page(pctx, flow_session_id, ordinal):
     from django.db import connection
     with connection.cursor() as c:
         c.execute(
-                "SELECT DISTINCT course_flowpagedata.ordinal "
+                "SELECT DISTINCT course_flowpagedata.page_ordinal "
                 "FROM course_flowpagevisit "
                 "INNER JOIN course_flowpagedata "
                 "ON course_flowpagedata.id = course_flowpagevisit.page_data_id "
                 "WHERE course_flowpagedata.flow_session_id = %s "
                 "AND course_flowpagevisit.answer IS NOT NULL "
-                "ORDER BY course_flowpagedata.ordinal",
+                "ORDER BY course_flowpagedata.page_ordinal",
                 [flow_session.id])
 
         flow_page_ordinals_with_answers = set(row[0] for row in c.fetchall())
@@ -2094,9 +2094,9 @@ def view_flow_page(pctx, flow_session_id, ordinal):
     args = {
         "flow_identifier": fpctx.flow_id,
         "flow_desc": fpctx.flow_desc,
-        "ordinal": fpctx.ordinal,
+        "page_ordinal": fpctx.page_ordinal,
         "page_data": fpctx.page_data,
-        "percentage": int(100*(fpctx.ordinal+1) / flow_session.page_count),
+        "percentage": int(100 * (fpctx.page_ordinal+1) / flow_session.page_count),
         "flow_session": flow_session,
         "all_page_data": all_page_data,
         "flow_page_ordinals_with_answers": flow_page_ordinals_with_answers,
@@ -2182,7 +2182,7 @@ def get_prev_answer_visits_dropdown_content(pctx, flow_session_id, page_ordinal)
     flow_session = get_and_check_flow_session(pctx, int(flow_session_id))
 
     page_data = get_object_or_404(
-        FlowPageData, flow_session=flow_session, ordinal=page_ordinal)
+        FlowPageData, flow_session=flow_session, page_ordinal=page_ordinal)
     prev_answer_visits = get_prev_answer_visits_qset(page_data)
 
     def serialize(obj):
@@ -2319,9 +2319,9 @@ def post_flow_page(
         if (pressed_button == "save_and_next"
                 and not will_receive_feedback(permissions)):
             return redirect("relate-view_flow_page",
-                    fpctx.course.identifier,
-                    flow_session.id,
-                    fpctx.ordinal + 1)
+                            fpctx.course.identifier,
+                            flow_session.id,
+                            fpctx.page_ordinal + 1)
         elif (pressed_button == "save_and_finish"
                 and not will_receive_feedback(permissions)):
             return redirect("relate-finish_flow_session_view",
@@ -2368,16 +2368,16 @@ def post_flow_page(
 # {{{ view: send interaction email to course staffs in flow pages
 
 @course_view
-def send_email_about_flow_page(pctx, flow_session_id, ordinal):
+def send_email_about_flow_page(pctx, flow_session_id, page_ordinal):
 
     # {{{ check if interaction email is allowed for this page.
 
-    ordinal = int(ordinal)
+    page_ordinal = int(page_ordinal)
     flow_session_id = int(flow_session_id)
     flow_session = get_and_check_flow_session(pctx, flow_session_id)
     flow_id = flow_session.flow_id
 
-    fpctx = FlowPageContext(pctx.repo, pctx.course, flow_id, ordinal,
+    fpctx = FlowPageContext(pctx.repo, pctx.course, flow_id, page_ordinal,
                             participation=pctx.participation,
                             flow_session=flow_session,
                             request=pctx.request)
@@ -2408,13 +2408,13 @@ def send_email_about_flow_page(pctx, flow_session_id, ordinal):
         FlowSession, id=int(flow_session_id))
     from course.models import FlowPageData
     page_id = FlowPageData.objects.get(
-        flow_session=flow_session_id, ordinal=ordinal).page_id
+        flow_session=flow_session_id, page_ordinal=page_ordinal).page_id
 
     review_url = reverse(
         "relate-view_flow_page",
         kwargs={'course_identifier': pctx.course.identifier,
                 'flow_session_id': flow_session_id,
-                'ordinal': ordinal
+                'page_ordinal': page_ordinal
                 }
     )
 
@@ -2504,7 +2504,7 @@ def send_email_about_flow_page(pctx, flow_session_id, ordinal):
                       "also receive a copy of the email."))
 
             return redirect("relate-view_flow_page",
-                    pctx.course.identifier, flow_session_id, ordinal)
+                            pctx.course.identifier, flow_session_id, page_ordinal)
 
     else:
         form = FlowPageInteractionEmailForm(review_uri)
@@ -2547,7 +2547,7 @@ class FlowPageInteractionEmailForm(StyledForm):
 # {{{ view: update page bookmark state
 
 @course_view
-def update_page_bookmark_state(pctx, flow_session_id, ordinal):
+def update_page_bookmark_state(pctx, flow_session_id, page_ordinal):
     if pctx.request.method != "POST":
         raise SuspiciousOperation(_("only POST allowed"))
 
@@ -2564,8 +2564,8 @@ def update_page_bookmark_state(pctx, flow_session_id, ordinal):
     bookmark_state = bookmark_state == "1"
 
     fpd = get_object_or_404(FlowPageData.objects,
-            flow_session=flow_session,
-            ordinal=ordinal)
+                            flow_session=flow_session,
+                            page_ordinal=page_ordinal)
 
     fpd.bookmarked = bookmark_state
     fpd.save()
@@ -2941,13 +2941,13 @@ class UnsubmitFlowPageForm(forms.Form):
 
 
 @course_view
-def view_unsubmit_flow_page(pctx, flow_session_id, ordinal):
+def view_unsubmit_flow_page(pctx, flow_session_id, page_ordinal):
     # type: (CoursePageContext, int, int) -> http.HttpResponse
 
     request = pctx.request
     now_datetime = get_now_or_fake_time(request)
 
-    ordinal = int(ordinal)
+    page_ordinal = int(page_ordinal)
 
     flow_session_id = int(flow_session_id)
     try:
@@ -2980,7 +2980,7 @@ def view_unsubmit_flow_page(pctx, flow_session_id, ordinal):
     # }}}
 
     page_data = get_object_or_404(
-            FlowPageData, flow_session=flow_session, ordinal=ordinal)
+            FlowPageData, flow_session=flow_session, page_ordinal=page_ordinal)
 
     visit = get_first_from_qset(
             get_prev_answer_visits_qset(page_data)
@@ -2990,7 +2990,7 @@ def view_unsubmit_flow_page(pctx, flow_session_id, ordinal):
         messages.add_message(request, messages.INFO,
                 _("No prior answers found that could be un-submitted."))
         return redirect("relate-view_flow_page",
-            pctx.course.identifier, flow_session_id, ordinal)
+                        pctx.course.identifier, flow_session_id, page_ordinal)
 
     if request.method == 'POST':
         form = UnsubmitFlowPageForm(request.POST)
@@ -3001,7 +3001,7 @@ def view_unsubmit_flow_page(pctx, flow_session_id, ordinal):
                         _("Flow page changes reallowed. "))
 
             return redirect("relate-view_flow_page",
-                pctx.course.identifier, flow_session_id, ordinal)
+                            pctx.course.identifier, flow_session_id, page_ordinal)
     else:
         form = UnsubmitFlowPageForm()
 

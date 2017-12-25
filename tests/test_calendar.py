@@ -23,7 +23,7 @@ THE SOFTWARE.
 """
 
 import json
-from django.test import TestCase
+from django.test import TestCase, mock
 from django.urls import reverse
 from django.contrib import messages
 from django.utils.timezone import now
@@ -31,10 +31,6 @@ from django.utils.timezone import now
 from course.models import Event
 from .base_test_mixins import (
     SingleCourseTestMixin, FallBackStorageMessageTestMixin)
-try:
-    from unittest import mock
-except:
-    import mock
 
 DATE_TIME_PICKER_TIME_FORMAT = "%Y-%m-%d %H:%M"
 

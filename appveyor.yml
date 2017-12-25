@@ -10,6 +10,7 @@ build: off
 
 cache:
   - '%LOCALAPPDATA%\pip\Cache'
+  - memcached -> appveyor.yml
 
 environment:
   global:
@@ -41,9 +42,9 @@ install:
   # the parent CMD process).
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
 
-#  # We are not using docker-machine, because it need Hardware Virtualization Technology
-#  # to be enabled, which can't be done for Appveyor.
-#  # Ref: https://docs.docker.com/toolbox/toolbox_install_windows/#step-1-check-your-version
+  - appveyor DownloadFile "http://s3.amazonaws.com/downloads.northscale.com/memcached-win64-1.4.4-14.zip" -FileName memcached.zip
+  - 7z x memcached.zip -y
+  - ps: $Memcached = Start-Process memcached\memcached.exe -PassThru
 
   - ECHO "Filesystem root:"
   - ps: "ls \"C:/\""
