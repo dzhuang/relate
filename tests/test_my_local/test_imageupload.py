@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-# coverage run manage.py test tests --local_test_settings test_local_settings.py
-# python manage.py test tests.test_my_local.test_imageupload --local_test_settings test_local_settings.py
+# coverage run manage.py test tests --local_test_settings test_local_settings.py  # noqa
+# python manage.py test tests.test_my_local.test_imageupload --local_test_settings test_local_settings.py  # noqa
 
 from __future__ import division
 
@@ -35,24 +35,14 @@ from six import BytesIO
 
 from unittest import skipIf
 from copy import deepcopy
-from django.urls import reverse, resolve
-from django.core import mail
+from django.urls import reverse
 from django.test import TestCase, mock
 from django.contrib import messages
-
 from django.test.utils import override_settings
-from django.test import SimpleTestCase
-from course.docker.config import (
-    get_docker_client_config, get_relate_runpy_docker_client_config)
 
-from django.core.exceptions import ImproperlyConfigured
-from relate.utils import is_windows_platform, is_osx_platform
 from course.constants import participation_status
 from course.models import FlowSession
 from image_upload.models import FlowPageImage
-
-import docker.tls
-import warnings
 
 from ..base_test_mixins import (
     SINGLE_COURSE_SETUP_LIST, SingleCoursePageTestMixin,
@@ -76,20 +66,26 @@ TEST_IMAGE_TRUNCATED = os.path.join(TEST_IMAGE_FOLDER, "test_truncated.jpg")
 class ImageUploadViewMixin(ImageUploadStorageTestMixin,
                            FallBackStorageMessageTestMixin,
                            SingleCoursePageTestMixin):
-    def get_upload_url_by_page_id(self, page_id, course_identifier=None, flow_session_id=None):
-        page_ordinal = self.get_page_ordinal_via_page_id(page_id, course_identifier, flow_session_id)
-        page_params = self.get_page_params(course_identifier, flow_session_id, page_ordinal)
+    def get_upload_url_by_page_id(self, page_id, course_identifier=None,
+                                  flow_session_id=None):
+        page_ordinal = self.get_page_ordinal_via_page_id(page_id, course_identifier,
+                                                         flow_session_id)
+        page_params = self.get_page_params(course_identifier, flow_session_id,
+                                           page_ordinal)
         return reverse("jfu_upload", kwargs=page_params)
 
-    def get_list_url_by_page_id(self, page_id=None, course_identifier=None, flow_session_id=None):
-        page_ordinal = self.get_page_ordinal_via_page_id(page_id, course_identifier, flow_session_id)
+    def get_list_url_by_page_id(self, page_id=None, course_identifier=None,
+                                flow_session_id=None):
+        page_ordinal = self.get_page_ordinal_via_page_id(page_id, course_identifier,
+                                                         flow_session_id)
         page_params = self.get_page_params(course_identifier, flow_session_id,
                                            page_ordinal)
         return reverse("jfu_view", kwargs=page_params)
 
     def get_delete_url_by_page_id(self, image_pk, page_id=None,
                                   course_identifier=None, flow_session_id=None):
-        page_ordinal = self.get_page_ordinal_via_page_id(page_id, course_identifier, flow_session_id)
+        page_ordinal = self.get_page_ordinal_via_page_id(page_id, course_identifier,
+                                                         flow_session_id)
         page_params = self.get_page_params(course_identifier, flow_session_id,
                                            page_ordinal)
         page_params.update({"pk": image_pk})
@@ -97,15 +93,18 @@ class ImageUploadViewMixin(ImageUploadStorageTestMixin,
 
     def get_crop_url_by_page_id(self, image_pk, page_id=None,
                                   course_identifier=None, flow_session_id=None):
-        page_ordinal = self.get_page_ordinal_via_page_id(page_id, course_identifier, flow_session_id)
+        page_ordinal = self.get_page_ordinal_via_page_id(page_id, course_identifier,
+                                                         flow_session_id)
         page_params = self.get_page_params(course_identifier, flow_session_id,
                                            page_ordinal)
         page_params.update({"pk": image_pk})
         return reverse("image_crop", kwargs=page_params)
 
-    def post_create_flowpageimage_by_page_id(self, page_id, image_path=None, course_identifier=None,
+    def post_create_flowpageimage_by_page_id(self, page_id, image_path=None,
+                                             course_identifier=None,
                                              flow_session_id=None):
-        upload_url = self.get_upload_url_by_page_id(page_id, course_identifier, flow_session_id)
+        upload_url = self.get_upload_url_by_page_id(page_id, course_identifier,
+                                                    flow_session_id)
         if image_path:
             with open(image_path, "rb") as fp:
                 post_data = {
@@ -123,7 +122,8 @@ class ImageUploadViewMixin(ImageUploadStorageTestMixin,
                 HTTP_X_REQUESTED_WITH='XMLHttpRequest')
             return resp
 
-    def post_delete_flowpageimage_by_page_id(self, page_id, image_pk, course_identifier=None,
+    def post_delete_flowpageimage_by_page_id(self, page_id,
+                                             image_pk, course_identifier=None,
                                              flow_session_id=None):
         delete_url = self.get_delete_url_by_page_id(image_pk, page_id,
                                                     course_identifier,
@@ -190,7 +190,8 @@ class ImageUploadCreateViewTest(ImageUploadQuizMixin, TestCase):
         self.assertTrue(image.is_temp_image)
         self.assertTrue(os.path.isfile(image.image.path))
         self.assertEqual(resp_dict["files"][0]["deleteUrl"],
-                         self.get_delete_url_by_page_id(image_pk=1, page_id=page_id))
+                         self.get_delete_url_by_page_id(
+                             image_pk=1, page_id=page_id))
 
     @override_settings(RELATE_JFU_MAX_IMAGE_SIZE=0.0001)
     def test_one_image_upload_size_exceeds(self):
@@ -216,8 +217,8 @@ class ImageUploadCreateViewTest(ImageUploadQuizMixin, TestCase):
             self.c.force_login(user)
         else:
             self.c.logout()
-        resp = self.post_create_flowpageimage_by_page_id(page_id, TEST_IMAGE1,
-                                                         flow_session_id=his_session.pk)
+        resp = self.post_create_flowpageimage_by_page_id(
+            page_id, TEST_IMAGE1, flow_session_id=his_session.pk)
 
         if user is None or user != self.instructor_participation.user:
             self.assertEqual(resp.status_code, 403)
@@ -308,8 +309,8 @@ class ImageUploadCreateViewTest(ImageUploadQuizMixin, TestCase):
     def test_one_image_upload_wrong_course_identifier(self):
         page_id = "one_image"
         page_ordinal = self.get_page_ordinal_via_page_id(page_id)
-        page_params.update({"course_identifier": "non-exist-identifier",
-                            "page_ordinal": str(page_ordinal)})
+        page_params = self.get_page_params(page_ordinal=page_ordinal)
+        page_params.update({"course_identifier": "non-exist-identifier"})
         with open(TEST_IMAGE1, "rb") as fp:
             post_data = {
                 'image': [fp],
@@ -1045,12 +1046,14 @@ class ImageUploadCropViewTest(ImageUploadQuizMixin, TestCase):
 
     def test_get_crop_image_url_403(self):
         page_id = "one_image"
-        resp = self.c.get(self.get_crop_url_by_page_id(self.image1.pk, page_id=page_id))
+        resp = self.c.get(self.get_crop_url_by_page_id(self.image1.pk,
+                                                       page_id=page_id))
         self.assertEqual(resp.status_code, 403)
 
     def test_post_crop_image_url_not_ajax_400(self):
         page_id = "one_image"
-        resp = self.c.get(self.get_crop_url_by_page_id(self.image1.pk, page_id=page_id))
+        resp = self.c.get(self.get_crop_url_by_page_id(self.image1.pk,
+                                                       page_id=page_id))
         self.assertEqual(resp.status_code, 403)
 
         post_data = {"croppedResult": json.dumps(self.crop_data)}

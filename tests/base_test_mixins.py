@@ -41,7 +41,6 @@ from course.models import (
     FlowPageVisit)
 from course.constants import participation_status, user_status
 from course.content import get_course_repo_path
-from bs4 import BeautifulSoup
 
 
 CREATE_SUPERUSER_KWARGS = {
@@ -972,6 +971,20 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
             course.refresh_from_db()
 
         return response
+
+    def update_course_content(self, commit_sha, course=None, **kwargs):
+        # course instead of course_identifier because we need to do
+        # refresh_from_db
+        course = course or self.get_default_course()
+
+        try:
+            commit_sha = commit_sha.decode()
+        except Exception:
+            pass
+
+        course.active_git_commit_sha = commit_sha
+        course.save()
+        course.refresh_from_db()
 
     def get_page_data_by_page_id(
             self, page_id, course_identifier=None, flow_session_id=None):

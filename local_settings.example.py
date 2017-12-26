@@ -31,7 +31,7 @@ RELATE_CUSTOM_BOWER_INSTALLED_APPS = (
     # https://clipboardjs.com/
     "clipboard",
     "marked",
-    "ez-plus"
+    "ez-plus",
 
     # for survey
     'jquery-form',

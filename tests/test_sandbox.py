@@ -22,7 +22,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-import six
 from django.test import TestCase
 from django.urls import reverse
 from .base_test_mixins import SingleCourseTestMixin

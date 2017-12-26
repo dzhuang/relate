@@ -9,24 +9,6 @@ USING_LOCAL_TEST_SETTINGS = True
 # python manage.py test tests.test_my_local --local_test_settings test_local_settings.py
 
 
-# {{{ course specific language
-
-# Whether enable course-specific language in course setup
-RELATE_ENABLE_COURSE_SPECIFIC_LANG = True
-
-# The allowed languages which can be used for rendering course view. Available
-# COURSE_LANGUAGES can be found in django.conf.global_settings.COURSE_LANGUAGES.
-# If not configured, django.conf.global_settings.COURSE_LANGUAGES will be used.
-
-from django.utils.translation import ugettext_lazy as _
-
-COURSE_LANGUAGES = [
-    ('en', _('English')),
-    ('zh-hans', _('Simplified Chinese')),
-    ('de', _('German')),
-]
-
-# }}}
 
 import os, platform
 BASE_DIR = os.path.dirname(__file__)
@@ -207,14 +189,12 @@ else:
 # Btw, do not be tempted to use 'MemcachedCache'--it's unmaintained and
 # broken in Python 33, as of 2016-08-01.
 #
-
 # CACHES = {
-#    'default': {
-#      'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
-#      'LOCATION': '127.0.0.1:11211',
-#    }
-#  }
-
+#     'default': {
+#         'BACKEND': 'django.core.cache.backends.memcached.PyLibMCCache',
+#         'LOCATION': '127.0.0.1:11211',
+#     }
+# }
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -576,7 +556,27 @@ RELATE_SITE_ANNOUNCEMENT = None
 # Make sure you have generated, translate and compile the message file of your
 # language. If commented, RELATE will use default language 'en-us'.
 
-#LANGUAGE_CODE='en-us'
+#USE_I18N = True
+#LANGUAGE_CODE = 'en-us'
+
+# {{{ course specific language
+
+# Whether enable course-specific language in course setup
+RELATE_ENABLE_COURSE_SPECIFIC_LANG = True
+
+# The allowed languages which can be used for rendering course view. Available
+# COURSE_LANGUAGES can be found in django.conf.global_settings.COURSE_LANGUAGES.
+# If not configured, django.conf.global_settings.COURSE_LANGUAGES will be used.
+
+from django.utils.translation import ugettext_lazy as _
+
+COURSE_LANGUAGES = [
+    ('en', _('English')),
+    ('zh-hans', _('Simplified Chinese')),
+    ('de', _('German')),
+]
+
+# }}}
 
 # {{{ exams and testing
 
@@ -628,6 +628,20 @@ if RELATE_SIGN_IN_BY_SAML2_ENABLED:
 
     _BASE_URL = 'https://relate.cs.illinois.edu'
 
+    # see saml2-keygen.sh in this directory
+    _SAML_KEY_FILE = path.join(_BASEDIR, 'saml-config', 'sp-key.pem')
+    _SAML_CERT_FILE = path.join(_BASEDIR, 'saml-config', 'sp-cert.pem')
+
+    SAML_ATTRIBUTE_MAPPING = {
+        'eduPersonPrincipalName': ('username',),
+        'iTrustUIN': ('institutional_id',),
+        'mail': ('email',),
+        'givenName': ('first_name', ),
+        'sn': ('last_name', ),
+    }
+    SAML_DJANGO_USER_MAIN_ATTRIBUTE = 'username'
+    SAML_DJANGO_USER_MAIN_ATTRIBUTE_LOOKUP = '__iexact'
+
     SAML_CONFIG = {
         # full path to the xmlsec1 binary programm
         'xmlsec_binary': '/usr/bin/xmlsec1',
@@ -641,11 +655,13 @@ if RELATE_SIGN_IN_BY_SAML2_ENABLED:
         # change)
         'attribute_map_dir': path.join(_BASEDIR, 'saml-config', 'attribute-maps'),
 
+        'allow_unknown_attributes': True,
+
         # this block states what services we provide
         'service': {
             'sp': {
                 'name': 'RELATE SAML2 SP',
-                'name_id_format': saml2.saml.NAMEID_FORMAT_PERSISTENT,
+                'name_id_format': saml2.saml.NAMEID_FORMAT_TRANSIENT,
                 'endpoints': {
                     # url and binding to the assertion consumer service view
                     # do not change the binding or service name
@@ -704,10 +720,16 @@ if RELATE_SIGN_IN_BY_SAML2_ENABLED:
         # set to 1 to output debugging information
         'debug': 1,
 
-        # certificate
-        # see saml2-keygen.sh in this directory
-        'key_file': path.join(_BASEDIR, 'saml-config', 'sp-key.pem'),  # private part
-        'cert_file': path.join(_BASEDIR, 'saml-config', 'sp-cert.pem'),  # public part
+        # certificate and key
+        'key_file': _SAML_KEY_FILE,
+        'cert_file': _SAML_CERT_FILE,
+
+        'encryption_keypairs': [
+                {
+                    'key_file': _SAML_KEY_FILE,
+                    'cert_file': _SAML_CERT_FILE,
+                    }
+                ],
 
         # own metadata settings
         'contact_person': [

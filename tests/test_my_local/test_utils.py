@@ -1,7 +1,7 @@
 import datetime
 from unittest import TestCase
 from image_upload.utils import (
-    deep_np_to_string, deep_eq, deep_convert_ordereddict, default_fudge)
+    deep_np_to_string, deep_eq, deep_convert_ordereddict)
 import numpy as np
 from collections import OrderedDict
 from django.test import mock
@@ -57,7 +57,8 @@ class DeepEqTest(TestCase):
         d1, d2 = (dt.now(), dt.now() + datetime.timedelta(seconds=4))
         self.assertFalse(deep_eq(d1, d2))
 
-        self.assertTrue(deep_eq(d1, d2, datetime_fudge=datetime.timedelta(seconds=5)))
+        self.assertTrue(deep_eq(d1, d2,
+                                datetime_fudge=datetime.timedelta(seconds=5)))
 
     def test_ordereddict(self):
         from collections import OrderedDict
@@ -214,20 +215,24 @@ class TestDeepConvertOrdereddict(TestCase):
         x = [2, 1, {"b": 1, "a": {"d": 3, "c": 4}}]
         x_converted = deep_convert_ordereddict(x)
 
-        y = [2, 1, OrderedDict([("a", OrderedDict([("c", 4), ("d", 3)])), ("b", 1)])]
+        y = [2, 1, OrderedDict([("a", OrderedDict(
+            [("c", 4), ("d", 3)])), ("b", 1)])]
         self.assertEqual(x_converted, y)
 
-        y = [2, 1, OrderedDict([("a", OrderedDict([("d", 3), ("c", 4)])), ("b", 1)])]
+        y = [2, 1, OrderedDict([("a", OrderedDict(
+            [("d", 3), ("c", 4)])), ("b", 1)])]
         self.assertNotEqual(x_converted, y)
 
     def test_dict_embeded_in_tuple(self):
         x = (2, 1, {"b": 1, "a": {"d": 3, "c": 4}})
         x_converted = deep_convert_ordereddict(x)
 
-        y = (2, 1, OrderedDict([("a", OrderedDict([("c", 4), ("d", 3)])), ("b", 1)]))
+        y = (2, 1, OrderedDict([("a", OrderedDict(
+            [("c", 4), ("d", 3)])), ("b", 1)]))
         self.assertEqual(x_converted, y)
 
-        y = (2, 1, OrderedDict([("a", OrderedDict([("d", 3), ("c", 4)])), ("b", 1)]))
+        y = (2, 1, OrderedDict([("a", OrderedDict(
+            [("d", 3), ("c", 4)])), ("b", 1)]))
         self.assertNotEqual(x_converted, y)
 
     def test_not_deep_eq_raise(self):
