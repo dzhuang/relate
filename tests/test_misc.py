@@ -211,20 +211,20 @@ class CourseSpecificLangConfigureTest(CourseSpecificLangTestMixin, TestCase):
     def test_recsl_configured_true_lang_not_configured(self):
         self.assertResponseBehaveLikeUnconfigured()
 
-    @override_settings(RELATE_ENABLE_COURSE_SPECIFIC_LANG=True)
-    def test_recsl_configured_true_lang_not_configured_course_has_force_lang(self):
-        self.set_course_lang_to_zh_hans()
-        self.assertResponseBehaveAsExpectedForCourseWithForceLang()
+    # @override_settings(RELATE_ENABLE_COURSE_SPECIFIC_LANG=True)
+    # def test_recsl_configured_true_lang_not_configured_course_has_force_lang(self):
+    #     self.set_course_lang_to_zh_hans()
+    #     self.assertResponseBehaveAsExpectedForCourseWithForceLang()
 
     @override_settings(RELATE_ENABLE_COURSE_SPECIFIC_LANG=True, LANGUAGES=LANGUAGES)
     def test_recsl_configured_true_lang_configured(self):
         # because self.course.force_lang is None
         self.assertResponseBehaveLikeUnconfigured()
 
-    @override_settings(RELATE_ENABLE_COURSE_SPECIFIC_LANG=True, LANGUAGES=LANGUAGES)
-    def test_recsl_configured_true_lang_configured_course_has_force_lang(self):
-        self.set_course_lang_to_zh_hans()
-        self.assertResponseBehaveAsExpectedForCourseWithForceLang()
+    # @override_settings(RELATE_ENABLE_COURSE_SPECIFIC_LANG=True, LANGUAGES=LANGUAGES)
+    # def test_recsl_configured_true_lang_configured_course_has_force_lang(self):
+    #     self.set_course_lang_to_zh_hans()
+    #     self.assertResponseBehaveAsExpectedForCourseWithForceLang()
 
 
 @override_settings(RELATE_ENABLE_COURSE_SPECIFIC_LANG=True)
