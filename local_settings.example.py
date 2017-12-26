@@ -451,7 +451,7 @@ RELATE_DOCKER_URL = "unix://var/run/docker.sock"
 RELATE_DOCKER_TLS_CONFIG = None
 
 # Use another ECS instance to host runpy
-USE_ANOTHER_ECS_FOR_RUNPY_DOCKER = True
+USE_ANOTHER_ECS_FOR_RUNPY_DOCKER = False
 
 if USE_ANOTHER_ECS_FOR_RUNPY_DOCKER:
     import docker.tls
@@ -509,11 +509,6 @@ RELATE_DOCKERS = {
     }
 }
 
-if USE_ANOTHER_ECS_FOR_RUNPY_DOCKER:
-    default_docker = RELATE_DOCKERS["default"]
-    default_docker["client_config"]["base_url"] = "http://119.23.140.116:2375"
-    default_docker["local_docker_machine_config"]["enabled"] = False
-    default_docker["execution_host_alias_dict"] = {"119.23.140.116": u"LearningWhat(ECS 10.29.248.41)"}
 
 # Switch to turn on/off runpy, default to True. Setting this to False will
 # Disable the functionality of Runpy code question. A critical check error
@@ -556,25 +551,23 @@ RELATE_SITE_ANNOUNCEMENT = None
 # Make sure you have generated, translate and compile the message file of your
 # language. If commented, RELATE will use default language 'en-us'.
 
-#USE_I18N = True
 #LANGUAGE_CODE = 'en-us'
 
-# {{{ course specific language
+# {{{ course-specific language
 
-# Whether enable course-specific language in course setup
-RELATE_ENABLE_COURSE_SPECIFIC_LANG = True
+# Whether enable course-specific language in course setup, it is False by default
+#RELATE_ENABLE_COURSE_SPECIFIC_LANG = True
 
-# The allowed languages which can be used for rendering course view. Available
-# COURSE_LANGUAGES can be found in django.conf.global_settings.COURSE_LANGUAGES.
-# If not configured, django.conf.global_settings.COURSE_LANGUAGES will be used.
+# It's recommended to configure LANGUAGES settings when
+# RELATE_ENABLE_COURSE_SPECIFIC_LANG is enabled, to filter languages allowed for
+# course-specific languages. The format of languages should be a list/tuple of
+# 2-tuples. If not configured, django.conf.global_settings.LANGUAGES will be used.
 
-from django.utils.translation import ugettext_lazy as _
-
-COURSE_LANGUAGES = [
-    ('en', _('English')),
-    ('zh-hans', _('Simplified Chinese')),
-    ('de', _('German')),
-]
+# LANGUAGES = [
+#     ('en', 'English'),
+#     ('zh-hans', 'Simplified Chinese'),
+#     ('de', 'German'),
+# ]
 
 # }}}
 

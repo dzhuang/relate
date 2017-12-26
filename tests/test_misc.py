@@ -40,8 +40,8 @@ from .test_views import DATE_TIME_PICKER_TIME_FORMAT
 
 LANGUAGES = [
     ('en', _('English')),
-    ('zh-hans', _('Simplified Chinese')),
-    ('de', _('German')),
+    ('ko', _('Korean')),
+    ('fr', _('French')),
 ]
 
 
@@ -64,50 +64,51 @@ VALIDATION_ERROR_LANG_NOT_SUPPORTED_PATTERN = (
 
 class CourseSpecificLangTestMixin(SingleCourseTestMixin, TestCase):
     # {{{ assertion method
-    def response_contains_chinese(self, resp):
-        return "2038年" in resp.content.decode("utf-8")
+    def response_contains_korean(self, resp):
+        # Korean literals for 12th month (December)
+        return "12월" in resp.content.decode("utf-8")
 
     def assertResponseContainsChinese(self, resp):  # noqa
-        self.assertTrue(self.response_contains_chinese(resp))
+        self.assertTrue(self.response_contains_korean(resp))
 
     def assertResponseNotContainsChinese(self, resp):  # noqa
-        self.assertFalse(self.response_contains_chinese(resp))
+        self.assertFalse(self.response_contains_korean(resp))
 
     # }}}
 
     # {{{ common tests
     def resp_info_with_diff_settings(self, url):
-        contains_chinese_result = []
+        contains_korean_result = []
         response_content_language_result = []
 
         with override_settings(USE_I18N=True, LANGUAGE_CODE='en-us'):
             resp = self.c.get(url)
             self.assertEqual(resp.status_code, 200)
-            contains_chinese_result.append(self.response_contains_chinese(resp))
+            contains_korean_result.append(self.response_contains_korean(resp))
             response_content_language_result.append(resp['content-language'])
 
-            resp = self.c.get(url, HTTP_ACCEPT_LANGUAGE='zh-cn')
+            resp = self.c.get(url, HTTP_ACCEPT_LANGUAGE='ko')
             self.assertEqual(resp.status_code, 200)
-            contains_chinese_result.append(self.response_contains_chinese(resp))
+            contains_korean_result.append(self.response_contains_korean(resp))
             response_content_language_result.append(resp['content-language'])
 
         with override_settings(USE_I18N=False):
             resp = self.c.get(url)
             self.assertEqual(resp.status_code, 200)
-            contains_chinese_result.append(self.response_contains_chinese(resp))
+            contains_korean_result.append(self.response_contains_korean(resp))
             response_content_language_result.append(resp['content-language'])
 
-            resp = self.c.get(url, HTTP_ACCEPT_LANGUAGE='zh-cn')
+            resp = self.c.get(url, HTTP_ACCEPT_LANGUAGE='ko')
             self.assertEqual(resp.status_code, 200)
-            contains_chinese_result.append(self.response_contains_chinese(resp))
+            contains_korean_result.append(self.response_contains_korean(resp))
             response_content_language_result.append(resp['content-language'])
 
-        return contains_chinese_result, response_content_language_result
+        return contains_korean_result, response_content_language_result
 
-    def home_resp_contains_chinese_with_diff_settings(self):
+    def home_resp_contains_korean_with_diff_settings(self):
         return self.resp_info_with_diff_settings("/")
 
-    def course_resp_contains_chinese_with_diff_settings(self):
+    def course_resp_contains_korean_with_diff_settings(self):
         return self.resp_info_with_diff_settings(self.course_page_url)
 
     # }}}
@@ -131,28 +132,28 @@ class CourseSpecificLangConfigureTest(CourseSpecificLangTestMixin, TestCase):
         # For each setting combinations, the response behaves the same
         # as before this functionality was introduced
         expected_result = ([False, True, False, True],
-                           ['en', 'zh-hans', 'en', 'zh-hans'])
+                           ['en', 'ko', 'en', 'ko'])
         self.assertEqual(
-            self.home_resp_contains_chinese_with_diff_settings()[0],
+            self.home_resp_contains_korean_with_diff_settings()[0],
             expected_result[0],
             ASSERSION_ERROR_LANGUAGE_PATTERN % "Home"
         )
 
         self.assertEqual(
-            self.home_resp_contains_chinese_with_diff_settings()[1],
+            self.home_resp_contains_korean_with_diff_settings()[1],
             expected_result[1],
             ASSERSION_ERROR_CONTENT_LANGUAGE_PATTERN % "Home"
         )
 
         expected_result = ([False, True, False, True],
-                           ['en', 'zh-hans', 'en', 'zh-hans'])
+                           ['en', 'ko', 'en', 'ko'])
         self.assertEqual(
-            self.course_resp_contains_chinese_with_diff_settings()[0],
+            self.course_resp_contains_korean_with_diff_settings()[0],
             expected_result[0],
             ASSERSION_ERROR_LANGUAGE_PATTERN % "Course"
         )
         self.assertEqual(
-            self.course_resp_contains_chinese_with_diff_settings()[1],
+            self.course_resp_contains_korean_with_diff_settings()[1],
             expected_result[1],
             ASSERSION_ERROR_CONTENT_LANGUAGE_PATTERN % "Course"
         )
@@ -160,34 +161,34 @@ class CourseSpecificLangConfigureTest(CourseSpecificLangTestMixin, TestCase):
     def assertResponseBehaveAsExpectedForCourseWithForceLang(self):  # noqa
         # For each setting combinations, the response behaves as expected
         expected_result = ([False, True, False, True],
-                           ['en', 'zh-hans', 'en', 'zh-hans'])
+                           ['en', 'ko', 'en', 'ko'])
         self.assertEqual(
-            self.home_resp_contains_chinese_with_diff_settings()[0],
+            self.home_resp_contains_korean_with_diff_settings()[0],
             expected_result[0],
             ASSERSION_ERROR_LANGUAGE_PATTERN % "Home"
         )
 
         self.assertEqual(
-            self.home_resp_contains_chinese_with_diff_settings()[1],
+            self.home_resp_contains_korean_with_diff_settings()[1],
             expected_result[1],
             ASSERSION_ERROR_CONTENT_LANGUAGE_PATTERN % "Home"
         )
 
         expected_result = ([True, True, True, True],
-                           ['en', 'zh-hans', 'en', 'zh-hans'])
+                           ['en', 'ko', 'en', 'ko'])
         self.assertEqual(
-            self.course_resp_contains_chinese_with_diff_settings()[0],
+            self.course_resp_contains_korean_with_diff_settings()[0],
             expected_result[0],
             ASSERSION_ERROR_LANGUAGE_PATTERN % "Course"
         )
         self.assertEqual(
-            self.course_resp_contains_chinese_with_diff_settings()[1],
+            self.course_resp_contains_korean_with_diff_settings()[1],
             expected_result[1],
             ASSERSION_ERROR_CONTENT_LANGUAGE_PATTERN % "Course"
         )
 
     def set_course_lang_to_zh_hans(self):
-        self.course.force_lang = "zh-hans"
+        self.course.force_lang = "ko"
         self.course.save()
         self.course.refresh_from_db()
 
@@ -211,20 +212,20 @@ class CourseSpecificLangConfigureTest(CourseSpecificLangTestMixin, TestCase):
     def test_recsl_configured_true_lang_not_configured(self):
         self.assertResponseBehaveLikeUnconfigured()
 
-    # @override_settings(RELATE_ENABLE_COURSE_SPECIFIC_LANG=True)
-    # def test_recsl_configured_true_lang_not_configured_course_has_force_lang(self):
-    #     self.set_course_lang_to_zh_hans()
-    #     self.assertResponseBehaveAsExpectedForCourseWithForceLang()
+    @override_settings(RELATE_ENABLE_COURSE_SPECIFIC_LANG=True)
+    def test_recsl_configured_true_lang_not_configured_course_has_force_lang(self):
+        self.set_course_lang_to_zh_hans()
+        self.assertResponseBehaveAsExpectedForCourseWithForceLang()
 
     @override_settings(RELATE_ENABLE_COURSE_SPECIFIC_LANG=True, LANGUAGES=LANGUAGES)
     def test_recsl_configured_true_lang_configured(self):
         # because self.course.force_lang is None
         self.assertResponseBehaveLikeUnconfigured()
 
-    # @override_settings(RELATE_ENABLE_COURSE_SPECIFIC_LANG=True, LANGUAGES=LANGUAGES)
-    # def test_recsl_configured_true_lang_configured_course_has_force_lang(self):
-    #     self.set_course_lang_to_zh_hans()
-    #     self.assertResponseBehaveAsExpectedForCourseWithForceLang()
+    @override_settings(RELATE_ENABLE_COURSE_SPECIFIC_LANG=True, LANGUAGES=LANGUAGES)
+    def test_recsl_configured_true_lang_configured_course_has_force_lang(self):
+        self.set_course_lang_to_zh_hans()
+        self.assertResponseBehaveAsExpectedForCourseWithForceLang()
 
 
 @override_settings(RELATE_ENABLE_COURSE_SPECIFIC_LANG=True)

@@ -204,10 +204,9 @@ class Course(models.Model):
     force_lang = models.CharField(max_length=200, blank=True, null=True,
             default=None,
             help_text=_(
-                "Which language name is forced to be used for this course. "
-                "For example, 'en', 'de', 'zh-hans'. "
+                "Which language is forced to be used for this course. "
                 "If not set, displayed language will be determined by "
-                "user preference"),
+                "user browser preference"),
             verbose_name=_('Course language forcibly used'))
 
     # {{{ XMPP

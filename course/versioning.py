@@ -52,7 +52,9 @@ from course.models import (
         Participation,
         ParticipationRole)
 
-from course.utils import course_view, render_course_page
+from course.utils import (
+    course_view, render_course_page,
+    get_course_specific_langs_choices, get_available_languages)
 import paramiko
 import paramiko.client
 
@@ -191,6 +193,7 @@ class CourseCreationForm(StyledModelForm):
             "enrollment_required_email_suffix",
             "from_email",
             "notify_email",
+            "force_lang",
             )
         widgets = {
                 "start_date": DateTimePicker(options={"format": "YYYY-MM-DD"}),
@@ -201,9 +204,10 @@ class CourseCreationForm(StyledModelForm):
                 }
         from django.conf import settings
         if getattr(settings, "RELATE_ENABLE_COURSE_SPECIFIC_LANG", False):
-            fields = fields + ("force_lang",)  # type: ignore
             widgets["force_lang"] = (
                 forms.Select(choices=get_course_specific_langs_choices()))
+        else:
+            widgets["force_lang"] = (forms.HiddenInput())
 
     def __init__(self, *args, **kwargs):
         # type: (*Any, **Any) -> None
@@ -226,11 +230,10 @@ class CourseCreationForm(StyledModelForm):
         if not force_lang:
             return ""
 
-        available_langs = [lang[0]
-                          for lang in getattr(settings, "COURSE_LANGUAGES",
-                                              global_settings.LANGUAGES)]
+        if not force_lang.strip():
+            return ""
 
-        if force_lang not in available_langs:
+        if force_lang not in get_available_languages():
             from django.forms import ValidationError as FormValidationError
             raise FormValidationError(_("'%s' is currently not supported "
                                         "as a course specific language at "

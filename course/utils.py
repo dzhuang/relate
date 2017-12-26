@@ -798,9 +798,11 @@ class CoursePageContext(object):
             return
         if self.course.force_lang is not None:
             if action == "activate":
+                self.old_language = translation.get_language()
                 translation.activate(self.course.force_lang)
             else:
-                translation.deactivate()
+                if self.old_language is not None:
+                    translation.activate(self.old_language)
 
     def __enter__(self):
         self._set_course_lang(action="activate")
@@ -1243,6 +1245,18 @@ def will_use_masked_profile_for_email(recipient_email):
         if part.has_permission(pperm.view_participant_masked_profile):
             return True
     return False
+
+
+def get_course_specific_langs_choices():
+    # type: () -> Tuple[Tuple[str, Any], ...]
+    from django.conf import settings
+    return (("", _("(None)")), ) + tuple((k, _(v)) for (k, v) in settings.LANGUAGES)
+
+
+def get_available_languages():
+    # type: () -> List[Text]
+    from django.conf import settings
+    return [lang[0] for lang in settings.LANGUAGES]
 
 
 # {{{ ipynb utilities

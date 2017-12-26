@@ -34,6 +34,9 @@ REQUIRED_CONF_ERROR_PATTERN = (
 INSTANCE_ERROR_PATTERN = "%(location)s must be an instance of %(types)s."
 GENERIC_ERROR_PATTERN = "Error at %(location)s: %(error_type)s: %(error_str)s"
 
+USE_I18N = "USE_I18N"
+LANGUAGES = "LANGUAGES"
+
 EMAIL_CONNECTIONS = "EMAIL_CONNECTIONS"
 RELATE_BASE_URL = "RELATE_BASE_URL"
 RELATE_EMAIL_APPELATION_PRIORITY_LIST = "RELATE_EMAIL_APPELATION_PRIORITY_LIST"
@@ -43,7 +46,6 @@ RELATE_SESSION_RESTART_COOLDOWN_SECONDS = "RELATE_SESSION_RESTART_COOLDOWN_SECON
 RELATE_TICKET_MINUTES_VALID_AFTER_USE = "RELATE_TICKET_MINUTES_VALID_AFTER_USE"
 GIT_ROOT = "GIT_ROOT"
 RELATE_ENABLE_COURSE_SPECIFIC_LANG = "RELATE_ENABLE_COURSE_SPECIFIC_LANG"
-COURSE_LANGUAGES = "COURSE_LANGUAGES"
 RELATE_STARTUP_CHECKS = "RELATE_STARTUP_CHECKS"
 RELATE_STARTUP_CHECKS_EXTRA = "RELATE_STARTUP_CHECKS_EXTRA"
 
@@ -355,63 +357,50 @@ def check_relate_settings(app_configs, **kwargs):
 
     # }}}
 
-    # {{{ check RELATE_ENABLE_COURSE_SPECIFIC_LANG and COURSE_LANGUAGES
-    enable_course_specific_lang = getattr(settings,
-                                          RELATE_ENABLE_COURSE_SPECIFIC_LANG, False)
-    course_languages = None
-    if enable_course_specific_lang:
-        if hasattr(settings, COURSE_LANGUAGES):
-            course_languages = settings.COURSE_LANGUAGES
+    # {{{ check LANGUAGES, why this is not done in django?
 
-    if course_languages is not None:
+    languages = getattr(settings, LANGUAGES, None)
+    if languages is None:
+        if getattr(settings, USE_I18N, False):
+            errors.append(RelateCriticalCheckMessage(
+                msg=("'%s' can't be None when %s is True"
+                     % (LANGUAGES, USE_I18N)),
+                id="relate_languages.E001")
+            )
+    else:
         from django.utils.itercompat import is_iterable
-        if (isinstance(course_languages, six.string_types) or
-                not is_iterable(course_languages)):
+        if (isinstance(languages, six.string_types) or
+                not is_iterable(languages)):
             errors.append(RelateCriticalCheckMessage(
                 msg=(INSTANCE_ERROR_PATTERN
-                     % {"location": COURSE_LANGUAGES,
+                     % {"location": LANGUAGES,
                         "types": "an iterable (e.g., a list or tuple)."}),
-                id="relate_course_languages.E001")
+                id="relate_languages.E002")
             )
         elif any(isinstance(choice, six.string_types) or
                  not is_iterable(choice) or len(choice) != 2
-                 for choice in course_languages):
+                 for choice in languages):
             errors.append(RelateCriticalCheckMessage(
                 msg=("'%s' must be an iterable containing "
                      "(language code, language name) tuples, just like "
                      "the format of LANGUAGES setting ("
                      "https://docs.djangoproject.com/en/dev/ref/settings/"
-                     "#languages)" % COURSE_LANGUAGES),
-                id="relate_course_languages.E002")
+                     "#languages)" % LANGUAGES),
+                id="relate_languages.E003")
             )
     # }}}
 
-    # {{{ check RELATE_DISABLE_CODEHILITE_MARKDOWN_EXTENSION
-    relate_disable_codehilite_markdown_extension = getattr(
-        settings, RELATE_DISABLE_CODEHILITE_MARKDOWN_EXTENSION, None)
-    if relate_disable_codehilite_markdown_extension is not None:
-        if not isinstance(relate_disable_codehilite_markdown_extension, bool):
-            errors.append(
-                Warning(
-                    msg="%(location)s is not a Boolean value: `%(value)s`, "
-                        "assuming True"
-                        % {"location":
-                               RELATE_DISABLE_CODEHILITE_MARKDOWN_EXTENSION,
-                           "value":
-                               repr(relate_disable_codehilite_markdown_extension)},
-                    id="relate_disable_codehilite_markdown_extension.W001"))
-        elif not relate_disable_codehilite_markdown_extension:
-            errors.append(
-                Warning(
-                    msg="%(location)s is set to False "
-                        "(with 'markdown.extensions.codehilite' enabled'), "
-                        "noticing that some pages with code fence markdown "
-                        "might get crashed"
-                        % {"location":
-                               RELATE_DISABLE_CODEHILITE_MARKDOWN_EXTENSION,
-                           "value":
-                               repr(relate_disable_codehilite_markdown_extension)},
-                    id="relate_disable_codehilite_markdown_extension.W002"))
+    # {{{ check RELATE_ENABLE_COURSE_SPECIFIC_LANG and LANGUAGES
+    enable_course_specific_lang = getattr(settings,
+                                          RELATE_ENABLE_COURSE_SPECIFIC_LANG, None)
+    if enable_course_specific_lang:
+        if not isinstance(enable_course_specific_lang, bool):
+            errors.append(RelateCriticalCheckMessage(
+                msg=(INSTANCE_ERROR_PATTERN
+                     % {"location": RELATE_ENABLE_COURSE_SPECIFIC_LANG,
+                        "types": "bool"}),
+                id="relate_course_specific_lang.E001")
+            )
 
     # }}}
 

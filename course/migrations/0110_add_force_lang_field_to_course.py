@@ -15,6 +15,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='course',
             name='force_lang',
-            field=models.CharField(blank=True, default=None, help_text="Which language name is forced to be used for this course. For example, 'en', 'de', 'zh-hans'. If not set, displayed language will be determined by user preference", max_length=200, null=True, verbose_name='Course language forcibly used'),
+            field=models.CharField(blank=True, default=None, help_text="Which language is forced to be used for this course. If not set, displayed language will be determined by user browser preference", max_length=200, null=True, verbose_name='Course language forcibly used'),
         ),
     ]

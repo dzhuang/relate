@@ -26,7 +26,6 @@ import os
 from django.test import SimpleTestCase, mock
 from django.test.utils import override_settings
 from django.utils.translation import ugettext_lazy as _
-from django.conf import settings
 
 
 class CheckRelateSettingsBase(SimpleTestCase):
