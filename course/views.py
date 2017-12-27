@@ -80,7 +80,9 @@ from course.content import get_course_repo
 from course.utils import (  # noqa
         course_view,
         render_course_page,
-        CoursePageContext)
+        CoursePageContext,
+        get_course_specific_langs_choices,
+        get_available_languages)
 
 # {{{ for mypy
 
@@ -106,7 +108,10 @@ def home(request):
     now_datetime = get_now_or_fake_time(request)
 
     current_courses = []
-    past_courses = []
+
+    # added by zd
+    inprogress_courses = []  # type: List[Course]
+    past_courses = []  # type: List[Course]
     for course in Course.objects.filter(listed=True):
         participation = get_participation_for_request(request, course)
 
@@ -122,9 +127,21 @@ def home(request):
         if show:
             if (course.end_date is None
                     or now_datetime.date() <= course.end_date):
-                current_courses.append(course)
+                # current_courses.append(course)
+                # {{{ # added by zd
+                if course.enroll_deadline is None:
+                    current_courses.append(course)
+                else:
+                    if now_datetime.date() <= course.enroll_deadline:
+                        current_courses.append(course)
+                    else:
+                        if participation:
+                            inprogress_courses.append(course)
+                # }}}
             else:
-                past_courses.append(course)
+                # past_courses.append(course)
+                if participation:
+                    past_courses.append(course)
 
     def course_sort_key_minor(course):
         return course.number if course.number is not None else ""
@@ -140,6 +157,7 @@ def home(request):
 
     return render(request, "course/home.html", {
         "current_courses": current_courses,
+        "inprogress_courses": inprogress_courses,  # added by zd
         "past_courses": past_courses,
         })
 
@@ -165,19 +183,50 @@ def check_course_state(course, participation):
 @course_view
 def course_page(pctx):
     # type: (CoursePageContext) -> http.HttpResponse
+    now_datetime = get_now_or_fake_time(pctx.request)
+    jinja_env = {"now": now_datetime}
     from course.content import get_processed_page_chunks, get_course_desc
     page_desc = get_course_desc(pctx.repo, pctx.course, pctx.course_commit_sha)
 
     chunks = get_processed_page_chunks(
             pctx.course, pctx.repo, pctx.course_commit_sha, page_desc,
             pctx.role_identifiers(), get_now_or_fake_time(pctx.request),
-            facilities=pctx.request.relate_facilities)
+            facilities=pctx.request.relate_facilities,
+            jinja_env=jinja_env)  # added by zd
 
     show_enroll_button = (
             pctx.course.accepts_enrollment
             and pctx.participation is None)
 
-    if pctx.request.user.is_authenticated and Participation.objects.filter(
+    course = pctx.course
+    if course.enroll_deadline or course.end_date:
+        do_not_show_up = False
+        message = None
+        if not (pctx.request.user.is_authenticated
+                and
+                    Participation.objects.filter(
+                        course=course,
+                        user=pctx.request.user,
+                        status=participation_status.active).count()):
+            if course.end_date is not None:
+                if now_datetime.date() > course.end_date:
+                    message = _("This course has ended. ")
+                    do_not_show_up = True
+            elif course.enroll_deadline is not None:
+                if now_datetime.date() > course.enroll_deadline:
+                    message = _("Enrollment has expired. ")
+                    do_not_show_up = True
+
+        if do_not_show_up:
+            message = string_concat(
+                message,
+                (_("Access to this course has been closed for "
+                          "non-participants.")))
+            messages.add_message(pctx.request, messages.WARNING, message)
+            show_enroll_button = False
+            chunks = []
+
+    elif pctx.request.user.is_authenticated and Participation.objects.filter(
             user=pctx.request.user,
             course=pctx.course,
             status=participation_status.requested).count():
@@ -706,6 +755,60 @@ def test_flow(pctx):
 # }}}
 
 
+# {{{ adjust exist flow page data
+
+class FlowPageDataAdjustForm(StyledForm):
+    def __init__(self, flow_ids, *args, **kwargs):
+        super(FlowPageDataAdjustForm, self).__init__(*args, **kwargs)
+
+        self.fields["flow_id"] = forms.ChoiceField(
+                choices=[(fid, fid) for fid in flow_ids],
+                required=True,
+                label=_("Flow ID"),
+                widget=Select2Widget())
+
+        self.helper.add_input(
+                Submit(
+                    "warmup",
+                    mark_safe_lazy(
+                        string_concat(
+                            pgettext("Start an activity", "Go"),
+                            " &raquo;")),
+                    ))
+
+
+@course_view
+def batch_adjust_flow_page_data(pctx):
+    if not pctx.has_permission(pperm.test_flow):
+        raise PermissionDenied()
+
+    from course.content import list_flow_ids
+    flow_ids = list_flow_ids(pctx.repo, pctx.course_commit_sha)
+
+    request = pctx.request
+    if request.method == "POST":
+        form = FlowPageDataAdjustForm(flow_ids, request.POST, request.FILES)
+        if "warmup" not in request.POST:
+            raise SuspiciousOperation(_("invalid operation"))
+
+        if form.is_valid():
+            from course.tasks import adjust_flow_session_page_data_batch
+            async_res = adjust_flow_session_page_data_batch.delay(
+                pctx.course.id, form.cleaned_data["flow_id"])
+
+            return redirect("relate-monitor_task", async_res.id)
+
+    else:
+        form = FlowPageDataAdjustForm(flow_ids)
+
+    return render_course_page(pctx, "course/generic-course-form.html", {
+        "form": form,
+        "form_description": _("Batch adjust existing flow page data"),
+    })
+
+# }}}
+
+
 # {{{ flow access exceptions
 
 class ParticipationChoiceField(forms.ModelChoiceField):
@@ -781,8 +884,10 @@ def strify_session_for_exception(session):
 
     from relate.utils import as_local_time, format_datetime_local
     # Translators: %s is the string of the start time of a session.
-    result = (_("started at %s") % format_datetime_local(
-        as_local_time(session.start_time)))
+    result = (_("started at %(start_time)s") % {
+            "start_time": format_datetime_local(
+                as_local_time(session.start_time))}
+              )
 
     if session.access_rules_tag:
         result += " tagged '%s'" % session.access_rules_tag
@@ -1361,8 +1466,34 @@ class EditCourseForm(StyledModelForm):
                 )
         widgets = {
                 "start_date": DateTimePicker(options={"format": "YYYY-MM-DD"}),
-                "end_date": DateTimePicker(options={"format": "YYYY-MM-DD"})
+                "end_date": DateTimePicker(options={"format": "YYYY-MM-DD"}),
+                "enroll_deadline": (
+                    DateTimePicker(
+                        options={"format": "YYYY-MM-DD"})),  # added by zd
                 }
+        from django.conf import settings
+        if not getattr(settings, "RELATE_ENABLE_COURSE_SPECIFIC_LANG", False):
+            widgets["force_lang"] = (forms.HiddenInput())
+        else:
+            widgets["force_lang"] = (
+                forms.Select(choices=get_course_specific_langs_choices()))
+
+    def clean_force_lang(self):
+        force_lang = self.cleaned_data["force_lang"]
+
+        if not force_lang:
+            return ""
+
+        if not force_lang.strip():
+            return ""
+
+        if force_lang not in get_available_languages():
+            from django.forms import ValidationError as FormValidationError
+            raise FormValidationError(_("'%s' is currently not supported "
+                                        "as a course specific language at "
+                                        "this site") % force_lang)
+
+        return force_lang
 
 
 @course_view

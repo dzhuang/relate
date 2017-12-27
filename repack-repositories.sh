@@ -1,7 +1,7 @@
 #! /bin/sh
 
 USER=www-data
-RELATE_GIT_ROOT=/web/relate-git-root
+RELATE_GIT_ROOT=/srv/www/relate/course-git
 
 for i in "$RELATE_GIT_ROOT"/*; do
   echo $i

@@ -5,32 +5,47 @@
   <div class="jumbotron">
     {% trans "RELATE" as RELATE %}
     <h1>{% blocktrans %} Welcome to {{ RELATE }} {% endblocktrans %}</h1>
+      {% comment %}
     <p>{% trans "RELATE is an Environment for Learning And TEaching" %}</p>
     <p>
     <a class="btn btn-lg btn-primary" href="https://github.com/inducer/relate" role="button">{% trans "Learn more" %} &raquo;</a>
     </p>
+      {% endcomment %}
   </div>
 
   {% if current_courses or past_courses %}
     {% if current_courses %}
+      <h2 class="page-header">{% trans "Open courses" %}</h2>
       <div class="row">
         {% for course in current_courses %}
           <div class="col-md-4">
-            <h3>{{course.number}} {{course.time_period}}</h3>
-            <p>{{course.name}}</p>
+            <h3>{{course.name}}</h3>
+            <p>{{course.number}} {{course.time_period}}</p>
+            <p><a class="btn btn-default" href="{% url 'relate-course_page' course.identifier %}" role="button">{% trans "View" %} &raquo;</a></p>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+    {% if inprogress_courses %}
+      <h2 class="page-header">{% trans "My Courses in Progress" %}</h2>
+      <div class="row">
+        {% for course in inprogress_courses %}
+          <div class="col-md-4">
+            <h3>{{course.name}}</h3>
+            <p>{{course.number}} {{course.time_period}}</p>
             <p><a class="btn btn-default" href="{% url 'relate-course_page' course.identifier %}" role="button">{% trans "View" %} &raquo;</a></p>
           </div>
         {% endfor %}
       </div>
     {% endif %}
     {% if past_courses %}
-      <h3>{% trans "Past Courses" %}</h3>
+      <h2 class="page-header">{% trans "My past Courses" %}</h2>
       <table class="table table-condensed">
         <tr>
-          <th>Number</th>
+          <th>{% trans "Course number" %}</th>
           <th></th>
-          <th>Name</th>
-          <th>Time</th>
+          <th>{% trans "Course name" %}</th>
+          <th>{% trans "Time" context "The start and end time of a course" %}</th>
         </tr>
         {% for course in past_courses %}
           <tr

@@ -235,6 +235,30 @@ def format_datetime_local(datetime, format='DATETIME_FORMAT'):
             return formats.date_format(datetime, "DATETIME_FORMAT")
 
 
+def compact_local_datetime_str(datetime, now_datetime, in_python=False):
+    # type: (datetime.datetime, datetime.datetime, bool) -> str
+    if as_local_time(datetime).year == \
+            as_local_time(now_datetime).year:
+        if in_python:
+            return format_datetime_local(as_local_time(datetime),
+                           format="SHORT_DATETIME_FORMAT")
+        else:
+            return (
+                '<span title="%(time)s">%(time_short)s</span>' %
+                {"time": format_datetime_local(as_local_time(datetime),
+                        format="DATETIME_FORMAT"),
+                 "time_short": format_datetime_local(as_local_time(datetime),
+                        format="SHORT_DATETIME_FORMAT")
+                 })
+    else:
+        if in_python:
+            return format_datetime_local(as_local_time(datetime))
+        else:
+            return (
+                '<span title="%(time)s">%(time)s</span>' %
+                {"time": format_datetime_local(as_local_time(datetime))})
+
+
 # {{{ dict_to_struct
 
 class Struct(object):
@@ -352,6 +376,13 @@ if 0:
 
 # {{{ convert django language name to js styled language name
 
+LANG_MAP_EXTRA = {
+        'zh-hans': 'zh-CN',
+        'zh-hant': 'zh-TW',
+        'zh-hk': 'zh-TW',
+        }
+
+
 def to_js_lang_name(dj_lang_name):
     """
     Turns a django language name (en-us) into a js styled language
@@ -359,6 +390,8 @@ def to_js_lang_name(dj_lang_name):
     """
     p = dj_lang_name.find('-')
     if p >= 0:
+        if dj_lang_name.lower() in LANG_MAP_EXTRA:
+            return LANG_MAP_EXTRA[dj_lang_name]
         return dj_lang_name[:p].lower() + '-' + dj_lang_name[p + 1:].upper()
     else:
         return dj_lang_name.lower()
@@ -447,6 +480,22 @@ def force_remove_path(path):
         func(path)
 
     shutil.rmtree(path, onerror=remove_readonly)
+
+
+def is_windows_platform():
+    # type: () -> bool
+    import sys
+    return sys.platform.startswith('win')
+
+
+def is_osx_platform():
+    # type: () -> bool
+    import sys
+    return sys.platform.startswith('darwin')
+
+
+class RELATEDeprecateWarning(PendingDeprecationWarning):
+    pass
 
 
 # vim: foldmethod=marker

@@ -47,7 +47,9 @@ from relate.utils import StyledForm, StyledModelForm, string_concat
 from crispy_forms.layout import Submit
 from bootstrap3_datetime.widgets import DateTimePicker
 
-from course.utils import course_view, render_course_page
+from course.utils import (
+        course_view, render_course_page,
+        get_session_access_rule)
 from course.models import (
         Participation, participation_status,
         GradingOpportunity, GradeChange, GradeStateMachine,
@@ -57,13 +59,15 @@ from course.flow import adjust_flow_session_page_data
 from course.views import get_now_or_fake_time
 from course.constants import (
         participation_permission as pperm,
+        flow_permission
         )
+from course.content import get_flow_desc, get_course_commit_sha
 
 # {{{ for mypy
 
 if False:
     from typing import Tuple, Text, Optional, Any, Iterable, List  # noqa
-    from course.utils import CoursePageContext  # noqa
+    from course.utils import CoursePageContext, FlowSessionAccessRule  # noqa
     from course.content import FlowDesc  # noqa
     from course.models import Course, FlowPageVisitGrade  # noqa
 
@@ -71,6 +75,50 @@ if False:
 
 
 # {{{ student grade book
+
+def get_session_access_rule_by_opp(pctx, opp):
+    # type: (...) -> FlowSessionAccessRule
+    """Return a :class:`FlowSessionAccessRule`
+    """
+    flow_desc = get_flow_desc(pctx.repo, pctx.course, opp.flow_id,
+                              pctx.course_commit_sha)
+    flow_session_qs = FlowSession.objects.filter(
+            course=opp.course, flow_id=opp.flow_id,
+            participation=pctx.participation)
+    now_datetime = get_now_or_fake_time(pctx.request)
+
+    if flow_session_qs.exists():
+        test_flow_session = flow_session_qs[0]
+    else:
+        # There's no session with that participation
+        # so we instantiate a temp session.
+        test_flow_session = FlowSession(
+                course=pctx.course,
+                participation=pctx.participation,
+                user=pctx.request.user,
+                active_git_commit_sha=get_course_commit_sha(
+                        pctx.course, pctx.participation),
+                flow_id=opp.flow_id)
+
+    return get_session_access_rule(
+            test_flow_session, flow_desc, now_datetime)
+
+
+def may_view_opp_by_access_rule(access_rule):
+    # type: (FlowSessionAccessRule) -> bool
+    if flow_permission.cannot_see_in_participant_grade_book \
+            in access_rule.permissions:
+        return False
+    return True
+
+
+def may_view_opp_result_by_access_rule(access_rule):
+    # type: (FlowSessionAccessRule) -> bool
+    if flow_permission.cannot_see_result_in_participant_grade_book \
+            in access_rule.permissions:
+        return False
+    return True
+
 
 @course_view
 def view_participant_grades(pctx, participation_id=None):
@@ -113,6 +161,8 @@ def view_participant_grades(pctx, participation_id=None):
     idx = 0
 
     grade_table = []
+    may_view_result = []
+    zipped_grade_info = []
     for opp in grading_opps:
         if not is_privileged_view:
             if not (opp.shown_in_grade_book
@@ -121,6 +171,10 @@ def view_participant_grades(pctx, participation_id=None):
         else:
             if not opp.shown_in_grade_book:
                 continue
+
+        access_rule = get_session_access_rule_by_opp(pctx, opp)
+        if not may_view_opp_by_access_rule(access_rule):
+            continue
 
         while (
                 idx < len(grade_changes)
@@ -142,9 +196,14 @@ def view_participant_grades(pctx, participation_id=None):
                 GradeInfo(
                     opportunity=opp,
                     grade_state_machine=state_machine))
+        may_view_result.append(
+                may_view_opp_result_by_access_rule(access_rule)
+        )
+
+        zipped_grade_info = zip(grade_table, may_view_result)
 
     return render_course_page(pctx, "course/gradebook-participant.html", {
-        "grade_table": grade_table,
+        "zipped_grade_info": zipped_grade_info,
         "grade_participation": grade_participation,
         "grading_opportunities": grading_opps,
         "grade_state_change_types": grade_state_change_types,
@@ -167,8 +226,36 @@ def view_participant_list(pctx):
             .order_by("id")
             .select_related("user"))
 
+    from course.models import ParticipationPreapproval
+
+    registered_inst_id_list = []
+    registered_provided_name_list = []
+
+    if participations:
+        for parti in participations:
+            if parti.user.institutional_id:
+                registered_inst_id_list.append(parti.user.institutional_id)
+            try:
+                registered_preappr = ParticipationPreapproval.objects\
+                        .exclude(institutional_id__isnull=True)\
+                        .get(course=pctx.course,
+                             institutional_id=parti.user.institutional_id)
+                registered_provided_name_list.append(
+                    registered_preappr.provided_name)
+            except ParticipationPreapproval.DoesNotExist:
+                registered_provided_name_list.append(None)
+
+    participations = zip(participations, registered_provided_name_list)
+
+    unregistered = list(ParticipationPreapproval.objects
+            .filter(course=pctx.course)
+            .exclude(institutional_id__in=registered_inst_id_list)
+            .exclude(provided_name__iexact=None)
+            )
+
     return render_course_page(pctx, "course/gradebook-participant-list.html", {
         "participations": participations,
+        "unregistered": unregistered,
         })
 
 # }}}
@@ -310,7 +397,7 @@ def export_gradebook_csv(pctx):
     else:
         import csv
 
-    fieldnames = ['user_name', 'last_name', 'first_name'] + [
+    fieldnames = ['user_name', 'institutional_id', 'last_name', 'first_name'] + [
             gopp.identifier for gopp in grading_opps]
 
     writer = csv.writer(csvfile)
@@ -320,6 +407,7 @@ def export_gradebook_csv(pctx):
     for participation, grades in zip(participations, grade_table):
         writer.writerow([
             participation.user.username,
+            participation.user.institutional_id,
             participation.user.last_name,
             participation.user.first_name,
             ] + [grade_info.grade_state_machine.stringify_machine_readable_state()
@@ -339,12 +427,18 @@ def export_gradebook_csv(pctx):
 # {{{ grades by grading opportunity
 
 class OpportunitySessionGradeInfo(object):
-    def __init__(self, grade_state_machine, flow_session, grades=None):
-        # type: (GradeStateMachine, Optional[FlowSession], Optional[Any]) ->  None
+    def __init__(self,
+                 grade_state_machine,  # type: GradeStateMachine
+                 flow_session,  # type: Optional[FlowSession]
+                 grades=None,  # type: Optional[Any]
+                 flow_not_completed=False  # type: Optional[bool]
+                 ):
+        # type: (...) ->  None
 
         self.grade_state_machine = grade_state_machine
         self.flow_session = flow_session
         self.grades = grades
+        self.flow_not_completed = flow_not_completed
 
 
 class ModifySessionsForm(StyledForm):
@@ -573,12 +667,22 @@ def view_grades_by_opportunity(pctx, opp_id):
                 fsess_idx += 1
 
             my_flow_sessions = []
+            flow_not_completed = True
             while (
                     fsess_idx < len(flow_sessions) and
                     flow_sessions[fsess_idx].participation is not None and
                     flow_sessions[fsess_idx].participation.pk == participation.pk):
                 my_flow_sessions.append(flow_sessions[fsess_idx])
+                if flow_not_completed:
+                    if not flow_sessions[fsess_idx].in_progress:
+                        flow_not_completed = False
                 fsess_idx += 1
+
+            if not my_flow_sessions:
+                grade_table.append(
+                        (participation, OpportunitySessionGradeInfo(
+                            grade_state_machine=state_machine,
+                            flow_session=None)))
 
             for fsession in my_flow_sessions:
                 total_sessions += 1
@@ -590,9 +694,10 @@ def view_grades_by_opportunity(pctx, opp_id):
                     finished_sessions += 1
 
                 grade_table.append(
-                        (participation, OpportunitySessionGradeInfo(
-                            grade_state_machine=state_machine,
-                            flow_session=fsession)))
+                    (participation, OpportunitySessionGradeInfo(
+                        grade_state_machine=state_machine,
+                        flow_session=fsession,
+                        flow_not_completed=flow_not_completed)))
 
     if view_page_grades and len(grade_table) > 0 and all(
             info.flow_session is not None for _dummy1, info in grade_table):
@@ -823,9 +928,12 @@ def view_single_grade(pctx, participation_id, opportunity_id):
         if not my_grade:
             raise PermissionDenied(_("may not view other people's grades"))
 
+        access_rule = get_session_access_rule_by_opp(pctx, opportunity)
         if not (opportunity.shown_in_grade_book
                 and opportunity.shown_in_participant_grade_book
                 and opportunity.result_shown_in_participant_grade_book
+                and may_view_opp_by_access_rule(access_rule)
+                and may_view_opp_result_by_access_rule(access_rule)
                 ):
             raise PermissionDenied(_("grade has not been released"))
 
@@ -1461,6 +1569,19 @@ def download_all_submissions(pctx, flow_id):
 
             submissions = {}
 
+            from six import StringIO
+            csvfile = StringIO()
+
+            if six.PY2:
+                import unicodecsv as csv
+            else:
+                import csv
+
+            fieldnames = ['full_name', 'institutional_id', 'submission']
+
+            writer = csv.writer(csvfile)
+            writer.writerow(fieldnames)
+
             for visit in visits:
                 page = page_cache.get_page(group_id, page_id,
                         pctx.course_commit_sha)
@@ -1470,17 +1591,26 @@ def download_all_submissions(pctx, flow_id):
                         course=pctx.course,
                         repo=pctx.repo,
                         commit_sha=pctx.course_commit_sha,
-                        flow_session=visit.flow_session)
+                        flow_session=visit.flow_session,
+                        )
 
                 bytes_answer = page.normalized_bytes_answer(
                         grading_page_context, visit.page_data.data,
                         visit.answer)
 
+                username = visit.flow_session.participation.user.get_full_name()
+                if not username:
+                    username = visit.flow_session.participation.user.username
+                institutional_id = (
+                    visit.flow_session.participation.user.institutional_id)
+                if not institutional_id:
+                    institutional_id = ""
+
                 if which_attempt in ["first", "last"]:
-                    key = (visit.flow_session.participation.user.username,)
+                    key = (username, institutional_id)
                 elif which_attempt == "all":
-                    key = (visit.flow_session.participation.user.username,
-                            str(visit.flow_session.id))
+                    key = (username, institutional_id,
+                           str(visit.flow_session.id))
                 else:
                     raise NotImplementedError()
 
@@ -1492,6 +1622,8 @@ def download_all_submissions(pctx, flow_id):
 
                     submissions[key] = (
                             bytes_answer, list(visit.grades.all()))
+
+                    writer.writerow([username, institutional_id, "True"])
 
             from six import BytesIO
             from zipfile import ZipFile
@@ -1525,6 +1657,8 @@ def download_all_submissions(pctx, flow_id):
                                 basename + "-feedback.txt",
                                 "\n".join(feedback_lines))
 
+                subm_zip.writestr(
+                    "submit_summary.csv", csvfile.getvalue().encode("utf-8"))
                 extra_file = request.FILES.get("extra_file")
                 if extra_file is not None:
                     subm_zip.writestr(extra_file.name, extra_file.read())

@@ -1,0 +1,54 @@
+/*空白段落、软回车、不间断空格
+#blankpar, #softenter, #nsspace {
+    color:slateblue;
+    background-color: khaki
+}*/
+
+/*段落前后间距
+#spacebeforeafter1, #spacebeforeafter2{
+    color:slateblue;
+    background-color: khaki
+}*/
+
+
+/*页眉页脚
+#panel_headfoot{
+    color:slateblue;
+    background-color: khaki  
+}*/
+
+/*尾注
+#panel_notice{
+    color:slateblue;
+    background-color: khaki
+}*/
+
+
+/*段落自动编号*/
+.autonumber {
+    color:slateblue;
+    background-color: khaki
+}
+
+/*参考文献自动编号*/
+.litautonumber{
+    color:slateblue;
+    background-color: khaki
+}
+
+/*交叉引用*/
+#panel_crossreference {
+    color:slateblue;
+    background-color: khaki
+}
+
+/*理论分节符数（注释）*/
+#secsep_notice {
+    color:slateblue;
+    background-color: khaki
+}
+
+/*参考文献管理方式*/
+#litermethod{
+	display: none;
+}

@@ -27,6 +27,7 @@ THE SOFTWARE.
 from typing import cast
 
 import six
+import json
 
 from django.db import models
 from django.utils.timezone import now
@@ -116,6 +117,14 @@ class Course(models.Model):
     end_date = models.DateField(
             verbose_name=_('End date'),
             null=True, blank=True)
+    # {{{ added by zd
+    enroll_deadline = models.DateField(
+            verbose_name=_('Enrollment deadline'),
+            help_text=_("After which the course will not be displayed on home "
+            "page, and enrollment will not be allowed. Leave this field blank "
+            "if there's no deadline of enrollment."),
+            null=True, blank=True)
+    # }}}
 
     hidden = models.BooleanField(
             default=True,
@@ -192,6 +201,14 @@ class Course(models.Model):
             "notifications about the course."),
             verbose_name=_('Notify email'))
 
+    force_lang = models.CharField(max_length=200, blank=True, null=True,
+            default=None,
+            help_text=_(
+                "Which language is forced to be used for this course. "
+                "If not set, displayed language will be determined by "
+                "user browser preference"),
+            verbose_name=_('Course language forcibly used'))
+
     # {{{ XMPP
 
     course_xmpp_id = models.CharField(max_length=200, blank=True, null=True,
@@ -232,6 +249,7 @@ class Course(models.Model):
         return reverse("relate-course_page", args=(self.identifier,))
 
     def get_from_email(self):
+        # type: () -> Text
         if settings.RELATE_EMAIL_SMTP_ALLOW_NONAUTHORIZED_SENDER:
             return self.from_email
         else:
@@ -247,6 +265,15 @@ class Course(models.Model):
         else:
             return self.notify_email
 
+    # {{{ added by zd
+    def is_enrollment_expired(self, now_date):
+        if self.enroll_deadline:
+            if self.enroll_deadline >= now_date:
+                return False
+            else:
+                return True
+        return False
+    # }}}
 # }}}
 
 
@@ -279,6 +306,7 @@ class Event(models.Model):
             verbose_name=_('All day'))
 
     shown_in_calendar = models.BooleanField(default=True,
+            help_text=_("Shown in students' calendar"),
             verbose_name=_('Shown in calendar'))
 
     class Meta:
@@ -292,6 +320,18 @@ class Event(models.Model):
             return "%s %s" % (self.kind, self.ordinal)
         else:
             return self.kind
+
+    def save(self, *args, **kwargs):
+        # When ordinal is Null, unique_together failed to identify duplicate entries
+        if not self.ordinal:
+            if not self.pk:
+                object_exist = bool(
+                    Event.objects.filter(
+                        kind=self.kind, ordinal__isnull=True).count())
+                if object_exist:
+                    from django.db import IntegrityError
+                    raise IntegrityError()
+        super(Event, self).save(*args, **kwargs)
 
     if six.PY3:
         __str__ = __unicode__
@@ -528,6 +568,11 @@ class Participation(models.Model):
         # type: (Text, Optional[Text]) -> bool
         return (perm, argument) in self.permissions()
 
+    def is_course_staff(self):
+        # This is used to display roles of a participation in gradebook
+        # if ths participation is instructor or TA
+        return self.has_permission(participation_permission.view_gradebook)
+
     # }}}
 
 
@@ -553,6 +598,8 @@ class ParticipationPreapproval(models.Model):
             verbose_name=_("Role (unused)"),)
     roles = models.ManyToManyField(ParticipationRole, blank=True,
             verbose_name=_("Roles"), related_name="+")
+    provided_name = models.CharField(max_length=254, null=True, blank=True,
+            verbose_name=_('Provided name'))
 
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
             verbose_name=_('Creator'), on_delete=models.SET_NULL)
@@ -936,6 +983,9 @@ class FlowPageData(models.Model):
                 "easily return to pages that still need their attention."),
             verbose_name=_('Bookmarked'))
 
+    data_stringfied = models.CharField(max_length=1000,
+            verbose_name=_('Stringfied data'), null=True, blank=True, db_index=True)
+
     class Meta:
         verbose_name = _("Flow page data")
         verbose_name_plural = _("Flow page data")
@@ -961,6 +1011,14 @@ class FlowPageData(models.Model):
 
     def human_readable_ordinal(self):
         return self.page_ordinal + 1
+
+    def get_stringfied_data(self):
+        return json.dumps(self.data, sort_keys=True)[:1000]
+
+    def save(self, *args, **kwargs):
+        if self.data:
+            self.data_stringfied = self.get_stringfied_data()
+        super(FlowPageData, self).save(*args, **kwargs)
 
 # }}}
 
@@ -1705,7 +1763,7 @@ class GradeStateMachine(object):
         if self.state is None:
             return u"- ∅ -"
         elif self.state == grade_state_change_types.exempt:
-            return "_((exempt))"
+            return _(("exempt"))
         elif self.state == grade_state_change_types.graded:
             if self.valid_percentages:
                 result = "%.1f%%" % self.percentage()

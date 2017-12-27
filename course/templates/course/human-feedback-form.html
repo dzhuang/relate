@@ -1,14 +1,14 @@
 {% load crispy_forms_tags %}
 {% load i18n %}
 
-<div class="well">
-  {% crispy form %}
-</div>
-
 <div class="panel panel-default">
-  <div class="panel-heading">{% trans "Rubric" %}</div>
+  <div class="panel-heading" id="rubric">{% trans "Rubric" %}</div>
   <div class="panel-body">
     {{ rubric|safe }}
   </div>
+</div>
+
+<div class="well">
+  {% crispy form %}
 </div>
 

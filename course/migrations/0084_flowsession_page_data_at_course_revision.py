@@ -3,6 +3,16 @@
 from __future__ import unicode_literals
 
 from django.db import migrations, models
+import json
+
+
+def add_stringfied_pagedata(apps, schema_editor):
+    FlowPageData = apps.get_model("course", "FlowPageData")
+
+    for fpd in FlowPageData.objects.all():
+        if fpd.data:
+            fpd.data_stringfied = json.dumps(fpd.data, sort_keys=True)[:1000]
+            fpd.save()
 
 
 class Migration(migrations.Migration):
@@ -17,4 +27,11 @@ class Migration(migrations.Migration):
             name='page_data_at_course_revision',
             field=models.CharField(blank=True, help_text='Page set-up data is up-to date for this revision of the course material', max_length=200, null=True, verbose_name='Page data at course revision'),
         ),
+        migrations.AddField(
+            model_name='flowpagedata',
+            name='data_stringfied',
+            field=models.CharField(blank=True, db_index=True, max_length=1000,
+                                   null=True, verbose_name='Stringfied data'),
+        ),
+        migrations.RunPython(add_stringfied_pagedata)
     ]

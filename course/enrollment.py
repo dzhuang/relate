@@ -115,18 +115,68 @@ def get_participation_for_request(request, course):
 
 # {{{ get_participation_role_identifiers
 
-def get_participation_role_identifiers(course, participation):
+def _get_participation_role_identifiers(course, participation):
     # type: (Course, Optional[Participation]) -> List[Text]
 
     if participation is None:
-        return (
-                ParticipationRole.objects.filter(
-                    course=course,
-                    is_default_for_unenrolled=True)
-                .values_list("identifier", flat=True))
+        return list(
+            ParticipationRole.objects.filter(
+                course=course,
+                is_default_for_unenrolled=True)
+            .values_list("identifier", flat=True))
 
     else:
         return [r.identifier for r in participation.roles.all()]
+
+
+def get_participation_role_identifiers_cache_key(course, participation):
+    # type: (Course, Optional[Participation]) -> Text
+
+    from course.constants import PARTICIPATION_ROLE_IDENTIFIER_KEY_PATTERN
+    if not participation:
+        participation_str = "None"
+    else:
+        participation_str = str(participation.pk)
+    return (PARTICIPATION_ROLE_IDENTIFIER_KEY_PATTERN
+            % {"course": course.identifier,
+               "participation": participation_str
+               }
+            )
+
+
+def get_participation_role_identifiers(course, participation):
+    # type: (Course, Optional[Participation]) -> List[Text]
+
+    # cached version of _get_participation_role_identifiers
+    from django.core.exceptions import ImproperlyConfigured
+    try:
+        import django.core.cache as cache
+    except ImproperlyConfigured:
+        cache_key = None
+    else:
+        cache_key = get_participation_role_identifiers_cache_key(
+            course, participation)
+
+    if cache_key is None:
+        result = _get_participation_role_identifiers(course, participation)
+        assert isinstance(result, list)
+        return result
+
+    def_cache = cache.caches["default"]
+
+    if len(cache_key) < 240:
+        result = def_cache.get(cache_key)
+        if result is not None:
+            assert isinstance(result, list), cache_key
+            return result
+
+    result = _get_participation_role_identifiers(course, participation)
+    import sys
+    if sys.getsizeof(result) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
+        def_cache.add(cache_key, result, None)
+
+    assert isinstance(result, list)
+    return result
 
 # }}}
 
@@ -196,7 +246,12 @@ def enroll_view(request, course_identifier):
                                  _("Already enrolled. Cannot re-enroll."))
         return redirect("relate-course_page", course_identifier)
 
-    if not course.accepts_enrollment:
+    from course.views import get_now_or_fake_time
+    now_datetime = get_now_or_fake_time(request)
+
+    if (not course.accepts_enrollment
+        or
+            course.is_enrollment_expired(now_datetime.date())):
         messages.add_message(request, messages.ERROR,
                 _("Course is not accepting enrollments."))
         return redirect("relate-course_page", course_identifier)
@@ -579,6 +634,252 @@ def create_preapprovals(pctx):
     return render_course_page(pctx, "course/generic-course-form.html", {
         "form": form,
         "form_description": _("Create Participation Preapprovals"),
+    })
+
+
+class BulkPreapprovalsFormCsv(StyledForm):
+    def __init__(self, course, *args, **kwargs):
+        super(BulkPreapprovalsFormCsv, self).__init__(*args, **kwargs)
+
+        self.fields["roles"] = forms.ModelMultipleChoiceField(
+            queryset=(ParticipationRole.objects.filter(course=course)),
+            label=_("Roles"))
+
+        self.fields["file"] = forms.FileField(
+            required=True, label=_("File"))
+        self.fields["remove_nonexist"] = forms.BooleanField(
+            label=_("Remove users that do not included "
+                    "in the csv file"),
+            required=False,
+            initial=False)
+        self.fields["preapproval_type"] = forms.ChoiceField(
+            choices=(
+                ("institutional_id_with_name",
+                 _("Institutional ID + fullname")),
+            ),
+            initial="institutional_id_with_name",
+            label=_("Preapproval type"))
+        self.fields["csv_header_count"] = forms.IntegerField(
+            required=True, initial=4, label=_("Header Count"))
+        self.fields["inst_id_column"] = forms.IntegerField(
+            help_text=_("1-based column index for the "
+                        "Institutional ID used to locate "
+                        "student record"),
+            min_value=1,
+            initial=1,
+            label=_("Institutional ID column"))
+        self.fields["provided_name_column"] = forms.IntegerField(
+            help_text=_("1-based column index for the "
+                        "full name of the participants"),
+            min_value=1,
+            initial=3,
+            label=_("Full name column"))
+
+        self.helper.add_input(
+            Submit("submit", _("Preapprove")))
+
+    def clean(self):
+        data = super(BulkPreapprovalsFormCsv, self).clean()
+        f = data.get("file")
+        f.seek(0)
+        f_data = f.read().decode("utf-8", errors="replace")
+
+        from six import StringIO
+        file_contents = StringIO(f_data)
+        if file_contents:
+            column_idx_list = [
+                data["inst_id_column"],
+                data["provided_name_column"],
+            ]
+            header_count = data.get("csv_header_count", 0)
+
+            from course.utils import csv_data_importable
+            importable, err_msg = csv_data_importable(
+                    file_contents,
+                    column_idx_list,
+                    header_count)
+
+            if not importable:
+                self.add_error('file', err_msg)
+
+
+def csv_to_preapproval(
+        file_contents, inst_id_column, provided_name_column, header_count):
+    result = []
+    error_lines = []
+    import csv
+
+    total_count = 0
+    line_count = 0
+    spamreader = csv.reader(file_contents)
+    for row in spamreader:
+        line_count += 1
+        if header_count > 0 and line_count <= header_count:
+            continue
+
+        inst_id_str = row[inst_id_column-1].strip()
+        provided_name_str = row[provided_name_column-1].strip()
+
+        total_count += 1
+        result.append(",".join([inst_id_str, provided_name_str]))
+    return total_count, result, error_lines
+
+
+@login_required
+@transaction.atomic
+@course_view
+def create_preapprovals_csv(pctx):
+    if not pctx.has_permission(pperm.preapprove_participation):
+        raise PermissionDenied(_("may not preapprove participation"))
+
+    request = pctx.request
+
+    if request.method == "POST":
+        form = BulkPreapprovalsFormCsv(pctx.course, request.POST, request.FILES)
+        if form.is_valid():
+
+            created_count = 0
+            exist_count = 0
+            pending_approved_count = 0
+            name_updated_count = 0
+
+            roles = form.cleaned_data["roles"]
+            f = request.FILES["file"]
+            f.seek(0)
+            data = f.read().decode("utf-8", errors="replace")
+            inst_id_column = form.cleaned_data["inst_id_column"]
+            header_count = form.cleaned_data["csv_header_count"]
+            provided_name_column = form.cleaned_data["provided_name_column"]
+            remove_nonexist = form.cleaned_data["remove_nonexist"]
+
+            from six import StringIO
+            total_count, csv_valid_data, error_lines = csv_to_preapproval(
+                StringIO(data), inst_id_column, provided_name_column, header_count)
+
+            if csv_valid_data:
+                for ln in csv_valid_data:
+                    ln = ln.strip()
+                    preapp_type = form.cleaned_data["preapproval_type"]
+
+                    if not ln:
+                        continue
+
+                    if preapp_type == "email":
+                        pass
+
+                    elif preapp_type == "institutional_id_with_name":
+
+                        [inst_id, full_name] = ln.split(",")
+
+                        if not (inst_id and full_name):
+                            continue
+
+                        inst_id = inst_id.strip()
+                        full_name = full_name.strip()
+
+                        try:
+                            preapproval = ParticipationPreapproval.objects.get(
+                                course=pctx.course,
+                                institutional_id__iexact=inst_id)
+
+                        except ParticipationPreapproval.DoesNotExist:
+
+                            # approve if inst_id is requesting enrollment
+                            try:
+                                pending = Participation.objects.get(
+                                        course=pctx.course,
+                                        status=participation_status.requested,
+                                        user__institutional_id__iexact=inst_id)
+                                if (pctx.course.preapproval_require_verified_inst_id
+                                    and
+                                        not pending.user.institutional_id_verified):
+                                    raise Participation.DoesNotExist
+
+                            except Participation.DoesNotExist:
+                                pass
+
+                            else:
+                                pending.status = participation_status.active
+                                pending.save()
+                                send_enrollment_decision(
+                                        pending, True, request)
+                                pending_approved_count += 1
+
+                        else:
+                            if (preapproval.provided_name is None
+                                or
+                                    preapproval.provided_name != full_name):
+                                preapproval.provided_name = full_name
+                                preapproval.save()
+                                name_updated_count += 1
+                            else:
+                                exist_count += 1
+                            continue
+
+                        preapproval = ParticipationPreapproval()
+                        preapproval.institutional_id = inst_id
+                        preapproval.provided_name = full_name
+                        preapproval.course = pctx.course
+                        preapproval.creator = request.user
+                        preapproval.save()
+                        preapproval.roles.set(roles)
+
+                        created_count += 1
+
+            if error_lines:
+                messages.add_message(request, messages.ERROR,
+                        "\n".join(error_lines))
+
+            if remove_nonexist:
+                inst_id_list = []
+                n_remove = 0
+                if csv_valid_data:
+                    for ln in csv_valid_data:
+                        ln = ln.strip()
+                        preapp_type = form.cleaned_data["preapproval_type"]
+                        if not ln:
+                            continue
+                        if preapp_type == "email":
+                            pass
+                        elif preapp_type == "institutional_id_with_name":
+                            [inst_id, full_name] = ln.split(",")
+                            inst_id_list.append(inst_id)
+
+                if inst_id_list:
+                    preapproval_tobe_removed = ParticipationPreapproval\
+                        .objects.filter(course=pctx.course)\
+                        .exclude(institutional_id__in=inst_id_list)
+                    n_remove = preapproval_tobe_removed.count()
+                    preapproval_tobe_removed.delete()
+
+                if n_remove:
+                    messages.add_message(
+                        request, messages.INFO,
+                        _(
+                            "%(n_remove)d nonexisting preapprovals deleted, "
+                        )
+                        % {'n_remove': n_remove})
+
+            messages.add_message(request, messages.INFO,
+                    _(
+                        "%(n_created)d preapprovals created, "
+                        "%(n_exist)d already existed, "
+                        "%(n_updated)d name updated, "
+                        "%(n_requested_approved)d pending requests approved.")
+                    % {
+                        'n_created': created_count,
+                        'n_exist': exist_count,
+                        'n_updated': name_updated_count,
+                        'n_requested_approved': pending_approved_count
+                        })
+            return redirect("relate-course_page", pctx.course.identifier)
+
+    else:
+        form = BulkPreapprovalsFormCsv(pctx.course)
+
+    return render_course_page(pctx, "course/generic-course-form.html", {
+        "form": form,
+        "form_description": _("Create Participation Preapprovals from CSV"),
     })
 
 # }}}

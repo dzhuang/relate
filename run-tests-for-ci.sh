@@ -53,6 +53,7 @@ export PATH=`pwd`/.env/local/bin:$PATH
 PIP="${PY_EXE} $(which pip)"
 
 grep -v dnspython requirements.txt > req.txt
+grep -v dnspython requirements-extra.txt > req2.txt
 if [[ "$PY_EXE" = python2* ]]; then
   $PIP install dnspython
   $PIP install mock
@@ -61,6 +62,7 @@ else
 fi
 
 $PIP install -r req.txt
+$PIP install -r req2.txt
 
 cp local_settings.example.py local_settings.py
 

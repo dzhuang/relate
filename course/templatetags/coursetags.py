@@ -93,3 +93,21 @@ def has_permission(participation, arg):
     return has_pperm
 
 # }}}
+
+
+@register.filter(expects_localtime=True, is_safe=True)
+def compact_datetime(value):
+    """Formats a date according to the given format."""
+    if value in (None, ''):
+        return ''
+
+    from relate.utils import format_datetime_local
+    from django.utils.safestring import mark_safe
+
+    return mark_safe(
+        '<span title="%(time)s">%(time_short)s</span>' %
+        {"time": format_datetime_local(value),
+         "time_short": format_datetime_local(
+             value,
+             format="SHORT_DATETIME_FORMAT")
+         })

@@ -7,6 +7,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="shortcut icon" href="{% static "assets/ico/favicon.ico" %}">
 
     <title>{% block title %}{% trans "RELATE" %}{% endblock %}</title>
 
@@ -14,8 +15,10 @@
     <link href="{% static "jquery-ui/themes/smoothness/jquery-ui.css" %}" rel="stylesheet">
 
     <link rel="stylesheet" href="{% static "font-awesome/css/font-awesome.css" %}">
-    <link rel="stylesheet" href="{% static "jstree/dist/themes/default/style.min.css" %}" />
-    <link rel="stylesheet" href="/static/css/style.css" >
+    <link rel="stylesheet" href="{% static "jstree/dist/themes/default/style.min.css" %}">
+    <link rel="stylesheet" href="{% static "css/style.css" %}?rev=2017.11.30">
+    <link rel="stylesheet" href="{% static "css/customized.css" %} " >
+    <noscript><link rel="stylesheet" href="{% static "css/customized-noscript.css" %} "></noscript>
 
     {# Don't be tempted to move all this JS stuff down to the end. #}
     {# The datepicker generates inline JS that relies on this being loaded. #}
@@ -23,6 +26,7 @@
     <script src="{% static "jquery-ui/jquery-ui.js" %}"></script>
     <script src="{% static "bootstrap/dist/js/bootstrap.js" %}"></script>
     <script src="{% static "jstree/dist/jstree.min.js" %}"></script>
+    <link rel="stylesheet" href="{% static "css/ipynb.style.min.css" %}?rev=2017.11.30" >
 
     {{ form.media }}
 
@@ -30,8 +34,8 @@
 
     <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
-      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
-      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+      <script src="{% static "html5shiv/dist/html5shiv.js" %}"></script>
+      <script src="{% static "respond/dest/respond.min.js" %}"></script>
     <![endif]-->
 
     <link href="{% static "video.js/dist/video-js.min.css" %}" rel="stylesheet">
@@ -125,7 +129,7 @@
     </div>
 
     {% block root_container %}
-    <div class="container">
+    <div class="container" id="content-wrapper">
       {% include "base-page-top.html" %}
 
       {% block nav_recommendations %}
@@ -137,10 +141,61 @@
     </div>
     {% endblock %}
 
+    {% block footer %}
+
+<footer class="hidden-xs">
+<!--
+        <div class="container footerWrap">
+            <div class="row">
+
+                <div class="col-xs-14 col-sm-3">
+                    <h4>LearningWhat</h4>
+                        <ul class="list-unstyled">
+                            <li><a href="/#">Home</a></li>
+                            <li><a href="/#">About Us</a></li>
+                        </ul>
+                </div>
+                <div class="col-xs-12 col-sm-3">
+                    <h4>Help &amp; Support</h4>
+                    <ul class="list-unstyled">
+                        <li><a href="/#">FAQ</a></li>
+                        <li><a href="https://github.com/inducer/relate">Relate Project</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+-->
+
+        <div class="subFooter hidden-xs">
+            <div class="container">
+                <div class="row">
+                    <div class="col-xs-12">
+                        <div class="pull-left">
+                        &copy; 2015 <a href="/#" target="_blank">LearningWhat.com</a> &middot;
+                        <a href="/#">{% trans "About Us" %}</a> &middot;
+                        <a href="/#">Licenses</a> &middot;
+                        <a href="/#">Terms &amp; Conditions</a> &middot;
+                        <a href="/#">Privacy Policy</a> &middot;
+                        <a href="https://github.com/inducer/relate">Relate Project</a>  &middot;
+                        <a href="http://www.miibeian.gov.cn/" target="_blank">粤ICP备16022797号</a> &middot;
+                        <a href="http://www.beian.gov.cn/portal/recordIssue" target="_blank" ><img src="{% static "images/gongan-beian.png" %}"/>粤公安网备 44010602000797号</a>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+<!--wrapper-->
+    {% endblock %}
+      
+    {%block footer_extra %}{% endblock %}
+
     {% block page_bottom_javascript_extra %}{% endblock %}
     <!-- JavaScript
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
+    <script src="{% static "js/customized.js" %}"></script>
     <script type="text/javascript"
       src="{% static "MathJax/MathJax.js" %}?config=TeX-AMS-MML_HTMLorMML">
     </script>

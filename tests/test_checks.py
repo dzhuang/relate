@@ -23,12 +23,9 @@ THE SOFTWARE.
 """
 
 import os
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, mock
 from django.test.utils import override_settings
-try:
-    from unittest import mock
-except Exception:
-    import mock
+from django.utils.translation import ugettext_lazy as _
 
 
 class CheckRelateSettingsBase(SimpleTestCase):
@@ -466,3 +463,126 @@ class CheckGitRoot(CheckRelateSettingsBase):
         self.assertEqual(len(result), 2)
         self.assertEqual([r.id for r in result],
                          ["git_root.E004", "git_root.E005"])
+
+
+class CheckRelateCourseLanguages(CheckRelateSettingsBase):
+    VALID_CONF1 = [
+        ('en', _('English')),
+        ('zh-hans', _('Simplified Chinese')),
+        ('de', _('German'))]
+    VALID_CONF2 = (
+        ('en', _('English')),
+        ('zh-hans', _('Simplified Chinese')),
+        ('de', _('German')))
+    VALID_CONF3 = (
+        ('en', 'English'),
+        ('zh-hans', 'Simplified Chinese'),
+        ('de', _('German')))
+    VALID_CONF4 = [('en', ('English',)), ]
+    VALID_CONF5 = (['en', 'English'],)
+    VALID_CONF6 = [(('en',), _('English')), ]
+
+    INVALID_CONF1 = {
+        'en': 'English',
+        'zh-hans': 'Simplified Chinese',
+        'de': _('German')}
+    INVALID_CONF2 = (('en',),)
+    INVALID_CONF3 = [('en',), ([], 'English'), ["1", "2"]]
+    INVALID_CONF4 = "some thing"
+
+    def test_enable_course_specific_lang_instance_false(self):
+        with override_settings(RELATE_ENABLE_COURSE_SPECIFIC_LANG=False):
+            self.assertEqual(self.func(None), [])
+
+    def test_enable_course_specific_lang_instance_true(self):
+        with override_settings(RELATE_ENABLE_COURSE_SPECIFIC_LANG=True):
+            self.assertEqual(self.func(None), [])
+
+    def test_enable_course_specific_lang_instance_not_bool(self):
+        with override_settings(RELATE_ENABLE_COURSE_SPECIFIC_LANG="TrueString"):
+            self.assertEqual([r.id for r in self.func(None)],
+                             ["relate_course_specific_lang.E001"])
+
+    def test_valid(self):
+        with override_settings(LANGUAGES=self.VALID_CONF1):
+            self.assertEqual(self.func(None), [])
+
+        with override_settings(LANGUAGES=self.VALID_CONF2):
+            self.assertEqual(self.func(None), [])
+
+        with override_settings(LANGUAGES=self.VALID_CONF3):
+            self.assertEqual(self.func(None), [])
+
+        with override_settings(LANGUAGES=self.VALID_CONF4):
+            self.assertEqual(self.func(None), [])
+
+        with override_settings(LANGUAGES=self.VALID_CONF5):
+            self.assertEqual(self.func(None), [])
+
+        with override_settings(LANGUAGES=self.VALID_CONF6):
+            self.assertEqual(self.func(None), [])
+
+    def test_languages_none_pass(self):
+        with override_settings(LANGUAGES=None, USE_I18N=False):
+            self.assertEqual(self.func(None), [])
+
+    def test_languages_none_error(self):
+        with override_settings(LANGUAGES=None, USE_I18N=True):
+            self.assertEqual([r.id for r in self.func(None)],
+                             ["relate_languages.E001"])
+
+    def test_lang_not_list_or_tuple(self):
+        with override_settings(LANGUAGES=self.INVALID_CONF1):
+            self.assertEqual([r.id for r in self.func(None)],
+                             ["relate_languages.E003"])
+
+    def test_lang_item_not_2_tuple(self):
+        with override_settings(LANGUAGES=self.INVALID_CONF2):
+            self.assertEqual([r.id for r in self.func(None)],
+                             ["relate_languages.E003"])
+
+    def test_lang_multiple_error(self):
+        with override_settings(LANGUAGES=self.INVALID_CONF3):
+            self.assertEqual([r.id for r in self.func(None)],
+                             ['relate_languages.E003'])
+
+    def test_lang_type_string(self):
+        with override_settings(LANGUAGES=self.INVALID_CONF4):
+            self.assertEqual([r.id for r in self.func(None)],
+                             ["relate_languages.E002"])
+
+
+class CheckRelateDisableCodehiliteMarkdownExtensions(CheckRelateSettingsBase):
+    VALID_CONF = None
+    VALID_CONF_NO_WARNING = True
+
+    WARNING_CONF_NOT_BOOL1 = "some string"
+    WARNING_CONF_NOT_BOOL2 = ["markdown.extensions.codehilite"]
+    WARNING_CONF_FALSE = False
+
+    @override_settings(RELATE_DISABLE_CODEHILITE_MARKDOWN_EXTENSION=VALID_CONF)
+    def test_valid_conf(self):
+        self.assertEqual(self.func(None), [])
+
+    @override_settings(
+        RELATE_DISABLE_CODEHILITE_MARKDOWN_EXTENSION=VALID_CONF_NO_WARNING)
+    def test_valid_conf_no_warning(self):
+        self.assertEqual(self.func(None), [])
+
+    @override_settings(
+        RELATE_DISABLE_CODEHILITE_MARKDOWN_EXTENSION=WARNING_CONF_NOT_BOOL1)
+    def test_warning_conf_not_bool1(self):
+        self.assertEqual([r.id for r in self.func(None)],
+                         ["relate_disable_codehilite_markdown_extension.W001"])
+
+    @override_settings(
+        RELATE_DISABLE_CODEHILITE_MARKDOWN_EXTENSION=WARNING_CONF_NOT_BOOL2)
+    def test_warning_conf_not_bool2(self):
+        self.assertEqual([r.id for r in self.func(None)],
+                         ["relate_disable_codehilite_markdown_extension.W001"])
+
+    @override_settings(
+        RELATE_DISABLE_CODEHILITE_MARKDOWN_EXTENSION=WARNING_CONF_FALSE)
+    def test_warning_conf_false(self):
+        self.assertEqual([r.id for r in self.func(None)],
+                         ["relate_disable_codehilite_markdown_extension.W002"])

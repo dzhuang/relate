@@ -1,0 +1,67 @@
+# submail backend
+django-submail>=1.2.0
+
+
+# For django-ckeditor
+# django-ckeditor
+
+# For postgresql
+## for linux, run "apt-get install libpq-dev" first
+#psycopg2
+
+# For image upload
+## for linux, run "apt-get install libjpeg-dev" first
+pillow
+
+# For generating thumbnail
+django-imagekit
+
+# For serving permissions associated files
+django-sendfile
+
+# For Class Based View mixins
+django-braces
+
+# For jsonview decorator
+django-jsonview
+
+# For markdown in admin
+django-markdownx
+
+# For string parse
+ply
+
+# For serving static files using qiniu cdn
+django-qiniu-storage
+
+# For redis, requiring redis-server
+django-redis
+
+# For mongodb
+django-proxy-storage  # deprecated, should be removed after migrations
+pymongo
+
+# questionnair
+git+https://git.oschina.net/dzhuang/django-survey-formset.git
+
+# debug
+#django-debug-panel
+#django-debug-toolbar
+
+# email
+django-celery-email<2
+
+# atomic write files avoiding race condition
+atomicwrites
+
+# nested-formset
+#django-nested-formset
+
+# questionnaire
+#git+https://git.oschina.net/dzhuang/django_questionnaire.git
+
+# for minify python script
+pyminifier
+
+# for tests of mongodb
+mongomock

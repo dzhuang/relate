@@ -6,7 +6,7 @@ Django settings for RELATE.
 
 if False:
     # for mypy
-    from typing import Callable, Any, Union, Dict  # noqa
+    from typing import Callable, Any, Union, Dict, Optional  # noqa
 
 # Do not change this file. All these settings can be overridden in
 # local_settings.py.
@@ -31,11 +31,16 @@ local_settings = {
         "__file__": _local_settings_file,
         }
 try:
+    # py2.x
     with open(_local_settings_file) as inf:
+        local_settings_contents = inf.read()
+except UnicodeDecodeError:
+    # py3.x
+    with open(_local_settings_file, encoding="utf8") as inf:
         local_settings_contents = inf.read()
 except IOError:
     pass
-else:
+finally:
     exec(compile(local_settings_contents, "local_settings.py", "exec"),
             local_settings)
 
@@ -47,7 +52,6 @@ INSTALLED_APPS = (
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
-    "django.contrib.staticfiles",
     "crispy_forms",
     "jsonfield",
     "bootstrap3_datetime",
@@ -62,6 +66,12 @@ INSTALLED_APPS = (
     "course",
 )
 
+if local_settings.get("RELATE_CUSTOM_INSTALLED_APPS"):  # type: ignore
+    INSTALLED_APPS = INSTALLED_APPS + local_settings["RELATE_CUSTOM_INSTALLED_APPS"]  # type: ignore # noqa
+
+if not local_settings.get("RELATE_STATIC_CDN_ENABLED"):  # type: ignore
+    INSTALLED_APPS = INSTALLED_APPS + ("django.contrib.staticfiles",)  # type: ignore # noqa
+
 if local_settings.get("RELATE_SIGN_IN_BY_SAML2_ENABLED"):
     INSTALLED_APPS = INSTALLED_APPS + ("djangosaml2",)  # type: ignore
 
@@ -70,6 +80,7 @@ if local_settings.get("RELATE_SIGN_IN_BY_SAML2_ENABLED"):
 # {{{ django: middleware
 
 MIDDLEWARE = (
+    # "debug_panel.middleware.DebugPanelMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -84,6 +95,9 @@ MIDDLEWARE = (
     "course.exam.ExamLockdownMiddleware",
     "relate.utils.MaintenanceMiddleware",
 )
+
+if local_settings.get("RELATE_CUSTOM_MIDDLEWARE_CLASS", None):
+    MIDDLEWARE = MIDDLEWARE + local_settings["RELATE_CUSTOM_MIDDLEWARE_CLASS"]  # type: ignore # noqa
 
 # }}}
 
@@ -130,7 +144,11 @@ BOWER_INSTALLED_APPS = (
     "select2#4.0.1",
     "select2-bootstrap-css",
     "blueimp-tmpl",
+    "eonasdan-bootstrap-datetimepicker#latest"
     )
+
+if local_settings.get("RELATE_CUSTOM_BOWER_INSTALLED_APPS", None):
+    BOWER_INSTALLED_APPS = BOWER_INSTALLED_APPS + local_settings["RELATE_CUSTOM_BOWER_INSTALLED_APPS"]   # type: ignore # noqa
 
 CODEMIRROR_PATH = "codemirror"
 
@@ -217,9 +235,9 @@ STATICFILES_DIRS = (
         join(BASE_DIR, "relate", "static"),
         )
 
-STATIC_URL = '/static/'
+STATIC_URL = local_settings.get("STATIC_URL", '/static/')
 
-STATIC_ROOT = join(BASE_DIR, "static")
+STATIC_ROOT = local_settings.get("STATIC_ROOT", join(BASE_DIR, "static"))
 
 # local select2 'static' resources instead of from CDN
 # https://goo.gl/dY6xf7
@@ -255,7 +273,8 @@ for name, val in local_settings.items():
 
 # {{{ celery config
 
-BROKER_URL = 'django://'
+if "BROKER_URL" not in local_settings:
+    BROKER_URL = 'django://'
 
 CELERY_ACCEPT_CONTENT = ['pickle']
 CELERY_TASK_SERIALIZER = 'pickle'

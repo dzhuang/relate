@@ -285,6 +285,12 @@ urlpatterns = [
         name="relate-create_preapprovals"),
     url(r"^course"
         "/" + COURSE_ID_REGEX +
+        "/preapprove/csv"
+        "/$",
+        course.enrollment.create_preapprovals_csv,
+        name="relate-create_preapprovals_csv"),
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
         "/query-participations"
         "/$",
         course.enrollment.query_participations,
@@ -341,6 +347,12 @@ urlpatterns = [
         "/calendar/$",
         course.calendar.view_calendar,
         name="relate-view_calendar"),
+
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/calendar-edit/$",
+        course.calendar.edit_calendar,
+        name="relate-edit_calendar"),
 
     # }}}
 
@@ -443,6 +455,12 @@ urlpatterns = [
         name="relate-test_flow"),
     url(r"^course"
         "/" + COURSE_ID_REGEX +
+        "/adjust-flow"
+        "/$",
+        course.views.batch_adjust_flow_page_data,
+        name="relate-batch_adjust_flow_page_data"),
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
         "/instant-flow"
         "/$",
         course.views.manage_instant_flow_requests,
@@ -533,7 +551,9 @@ urlpatterns = [
     # {{{ django-select2
 
     url(r'^select2/', include('django_select2.urls')),
-
+    url(r"^grading_select2/auto.json$",
+        course.grading.GradingAutoResponseView.as_view(),
+        name="grading_select2-json"),
     #}}}
 
     url(r"^course"
@@ -543,6 +563,19 @@ urlpatterns = [
         name="relate-course_get_flow_session"),
 
     url(r'^admin/', admin.site.urls),
+
+    # {{{ image_upload
+    url(r'^image_upload/', include('image_upload.urls')),
+
+    #}}}
+
+    # {{{ survey
+    url(r'^survey/', include('survey.urls')),
+
+    # }}}
+
+    # markdown with preview support
+    url(r'^markdownx/', include('markdownx.urls')),
 ]
 
 if settings.RELATE_SIGN_IN_BY_SAML2_ENABLED:
@@ -555,5 +588,17 @@ if settings.RELATE_SIGN_IN_BY_SAML2_ENABLED:
             # Keep commented unless debugging SAML2.
             url(r'^saml2-test/', djangosaml2.views.echo_attributes),
             ])
+
+
+from django.conf.urls.static import static
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# if settings.DEBUG:
+#     import debug_toolbar
+#     urlpatterns += [
+#         url(r'^__debug__/', include(debug_toolbar.urls)),
+#     ]
 
 # vim: fdm=marker

@@ -16,6 +16,15 @@
 
   <a href="{% url "relate-edit_participation" course.identifier -1 %}" class="btn btn-default">{% trans "Add participant" %}</a>
 
-  {% include "course/participation-table.html" with participations=participations %}
+  {% include "course/participation-table-with-provided-name.html" with participations=participations %}
 
+<hr>
+
+ {% if unregistered %}
+
+  <h3>{% trans "Unregistered Participants" %}</h3>
+
+  {% include "course/unregistered-participation-table.html" with participations=participations %}
+
+ {% endif %}
 {% endblock %}

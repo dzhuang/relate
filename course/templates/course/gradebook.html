@@ -26,7 +26,8 @@
     </thead>
     <tbody>
       {% for participation, grades in grade_table %}
-      <tr>
+        {% if participation|has_permission:"included_in_grade_statistics" or request.GET.show_excluded %}
+          <tr>
         <td class="headcol"><a href="{% url "relate-view_participant_grades" course.identifier participation.id %}">
             <span class="sensitive">
                 {% if not pperm.view_participant_masked_profile %}
@@ -64,6 +65,7 @@
           </td>
         {% endfor %}
       </tr>
+        {% endif %}
       {% endfor %}
     </tbody>
   </table>

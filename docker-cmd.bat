@@ -1,0 +1,1 @@
+cmd /k docker-server.bat

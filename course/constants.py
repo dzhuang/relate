@@ -376,6 +376,21 @@ class flow_permission:  # noqa
 
         (Optional) If present, the participant can send interaction emails to
         course staffs for questions for each page with that permission.
+
+    .. attribute:: send_submit_notif_email
+
+        (Optional) If present, submission of the flow by the participant will
+        trigger the action of sending a notification email to course staff.
+
+    .. attribute:: cannot_see_in_participant_grade_book
+
+        (Optional) If present, participants won't see this flow in their
+        grade book. It can be used to hide grading opportunities.
+
+    .. attribute:: cannot_see_result_in_participant_grade_book
+
+        (Optional) If present, participants won't see the result of this
+        flow in their grade book and single grade of this flow.
     """
     view = "view"
     end_session = "end_session"
@@ -389,6 +404,11 @@ class flow_permission:  # noqa
     see_session_time = "see_session_time"
     lock_down_as_exam_session = "lock_down_as_exam_session"
     send_email_about_flow_page = "send_email_about_flow_page"
+    send_submit_notif_email = "send_submit_notif_email"
+    cannot_see_in_participant_grade_book =\
+            "cannot_see_in_participant_grade_book"
+    cannot_see_result_in_participant_grade_book =\
+            "cannot_see_result_in_participant_grade_book"
 
 
 FLOW_PERMISSION_CHOICES = (
@@ -422,6 +442,16 @@ FLOW_PERMISSION_CHOICES = (
         (flow_permission.send_email_about_flow_page,
          pgettext_lazy("Flow permission",
                        "Send emails about the flow page to course staff")),
+        (flow_permission.send_submit_notif_email,
+         pgettext_lazy("Flow permission",
+                       "Send flow submission notification email to course"
+                       "staff")),
+        (flow_permission.cannot_see_in_participant_grade_book,
+         pgettext_lazy("Flow permission",
+                       "Cannot see in participant grade book")),
+        (flow_permission.cannot_see_result_in_participant_grade_book,
+         pgettext_lazy("Flow permission",
+                       "Cannot see result in participant grade book")),
         )
 
 # }}}
@@ -431,6 +461,7 @@ class flow_rule_kind:  # noqa
     start = "start"
     access = "access"
     grading = "grading"
+    notify = "notify"
 
 
 FLOW_RULE_KIND_CHOICES = (
@@ -549,5 +580,13 @@ EXAM_TICKET_STATE_CHOICES = (
 
 
 ATTRIBUTES_FILENAME = ".attributes.yml"
+
+DATESPECT_CACHE_KEY_PATTERN = "RELATE:DATESPECT:%(course)s:%(key)s"
+
+PARTICIPATION_ROLE_IDENTIFIER_KEY_PATTERN = (
+    "RELATE_PCPT_ROLE_IDENTIFIER:%(course)s:%(participation)s")
+
+PARTICIPATION_TAG_KEY_PATTERN = (
+    "RELATE_PCPT_TAG:%(participation)s")
 
 # vim: foldmethod=marker

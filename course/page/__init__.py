@@ -24,6 +24,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+from django.conf import settings
 from course.page.base import (
         InvalidPageData,
         PageBase, AnswerFeedback, PageContext, PageBehavior,
@@ -39,6 +40,29 @@ from course.page.code import (
         PythonCodeQuestion, PythonCodeQuestionWithHumanTextFeedback)
 from course.page.upload import FileUploadQuestion
 
+try:
+    settings_custom_page_classes = getattr(
+        settings, "RELATE_CUSTOM_PAGE_CLASSES", None)
+
+    if settings_custom_page_classes:
+        for klass in settings_custom_page_classes:
+            from django.utils.module_loading import import_string  # noqa
+            from course.utils import get_valiated_custom_page_import_exec_str
+            try:
+                exec_string = get_valiated_custom_page_import_exec_str(klass)
+                assert exec_string
+                exec(exec_string)
+            except Exception as e:
+                raise ValueError(
+                    "settings.RELATE_CUSTOM_PAGE_CLASSES: "
+                    "Unable to import custom page class from "
+                    "'%s'.\n%s: %s" % (str(klass), type(e).__name__, str(e))
+                )
+except Exception as e:
+    from django.core.exceptions import AppRegistryNotReady
+    if isinstance(e, AppRegistryNotReady):
+        pass
+
 __all__ = (
         "InvalidPageData",
         "PageBase", "AnswerFeedback", "PageContext", "PageBehavior",
@@ -52,7 +76,8 @@ __all__ = (
         "ChoiceQuestion", "SurveyChoiceQuestion", "MultipleChoiceQuestion",
         "PythonCodeQuestion", "PythonCodeQuestionWithHumanTextFeedback",
         "FileUploadQuestion",
-        )
+)
+
 
 __doc__ = """
 

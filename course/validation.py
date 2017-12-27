@@ -44,7 +44,7 @@ from relate.utils import Struct, string_concat
 # {{{ mypy
 
 if False:
-    from typing import Any, Tuple, Optional, Text, List  # noqa
+    from typing import Any, Tuple, Optional, Text, List, Iterable  # noqa
     from relate.utils import Repo_ish  # noqa
     from course.models import Course  # noqa
 
@@ -144,10 +144,10 @@ def validate_participationtag(vctx, location, participationtag):
 
 def validate_struct(
         vctx,  # type: ValidationContext
-        location,  # type: Text
+        location,  # type: Optional[Text]
         obj,  # type: Any
-        required_attrs,  # type: List[Tuple[Text, Any]]
-        allowed_attrs,  # type: List[Tuple[Text, Any]]
+        required_attrs,  # type: Iterable[Optional[Tuple[Text, Any]]]
+        allowed_attrs,  # type: Iterable[Optional[Tuple[Text, Any]]]
         ):
     # type: (...) -> None
 
@@ -172,6 +172,8 @@ def validate_struct(
             (False, allowed_attrs),
             ]:
         for attr_rec in attr_list:
+            if attr_rec is None:
+                continue
             if isinstance(attr_rec, tuple):
                 attr, allowed_types = attr_rec
             else:
@@ -379,6 +381,11 @@ def validate_page_chunk(vctx, location, chunk):
             allowed_attrs=[
                 ("title", str),
                 ("rules", list),
+                # {{{ added by zd to enable collaps in course page
+                ("collapsible", bool),
+                ("subtitle", str),
+                ("sub_color", str),
+                # }}}
                 ]
             )
 
@@ -845,6 +852,7 @@ def validate_flow_rules(vctx, location, rules):
             allowed_attrs=[
                 # may not start with an underscore
                 ("start", list),
+                ("notify", list),
                 ("grading", list),
                 ("tags", list),
 

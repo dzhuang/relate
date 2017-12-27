@@ -1,0 +1,157 @@
+{% extends 'image_upload/upload-form-wrapper.html' %}
+{% load i18n %}
+{% load static %}
+
+{# example https://github.com/jansarmir/jQuery-File-Upload/blob/d3538f41161f63eb8b5c15c3e1e848f5081044af/basic-plus-cropper.html #}
+
+{% block CSS_BOOTSTRAP %}{# BOOTSTRAP css (Override to keep it empty) #}{% endblock %}
+{% block JS_JQUERY %}{#jQuery (Override to keep it empty) #}{% endblock %}
+{% block CSS_HTML5_SHIM %}{# IE 9 lt already supported (Override to keep it empty) #}{% endblock %}
+
+{% block CSS_JQUERY_FILE_UPLOAD_UI %}
+    {# CSS to style the file input field as button and adjust the Bootstrap progress bars #}
+    {#  CUSTOMIZED VERSION  #}
+    <link rel="stylesheet"
+          href="{% static "css/jquery.fileupload-ui-learningwhat.css" %}?rev=2.4.6">
+    {# CSS adjustments for browsers with JavaScript disabled #}
+    <noscript>
+        <link rel="stylesheet"
+              href="{{ STATIC_URL }}blueimp-file-upload/css/jquery.fileupload-noscript.css">
+    </noscript>
+    <noscript>
+        <link rel="stylesheet"
+              href="{{ STATIC_URL }}blueimp-file-upload/css/jquery.fileupload-ui-noscript.css">
+    </noscript>
+{% endblock %}
+
+{% block CSS_EXTRA %}
+    {% if not IN_GRADE_PAGE %}
+        {{ block.super }}
+        <link rel="stylesheet"
+              href="{% static "css/jquery.fileupload-ui-learningwhat.css" %}?rev=2.4.6">
+    {% else %}
+        <style>
+            @media (min-width: 768px) {
+                .preview img {
+                    max-width: calc(50vw - 162px);
+                }
+
+                #fileupload tbody > * > td:nth-child(1),
+                #fileupload tbody > * > td:nth-child(2) {
+                    padding: 0;
+                }
+            }
+            @media (max-width: 767px) {
+                .preview img {
+                    max-width: calc(100% + 54px);
+                }
+
+                .fileupload-buttonbar .delete {
+                    display: none;
+                }
+            }
+            #fileupload table {
+                margin: 0
+            }
+        </style>
+        {#{{ block.super }}#}
+
+    {% endif %}
+    <link rel="stylesheet" href="{% static "css/imgupload-page.css" %}?rev=2.4.5">
+    <link rel="stylesheet"
+          href="{% static "cropper/dist/cropper.min.css" %}?rev=3.0.0-beta ">
+    <noscript>
+        <link rel="stylesheet" href="{% static "css/imgupload-noscript.css" %}">
+    </noscript>
+    <!--[if lt IE 9]>
+        <link rel="stylesheet" href="{% static "css/imgupload-noscript.css" %} ">
+    <![endif]-->
+{% endblock %}
+
+{% block JS_BOOTSTRAP %}{# BOOTSTRAP js (Override to keep it empty) #}{% endblock %}
+
+{% block UPLOAD_FORM %}
+    <noscript>
+        <div class="alert alert-danger warning noscript"><i
+                class="fa fa-warning"></i> {% trans "This page requires Javascript enabled in your browser. Please refer to <a href='https://www.whatismybrowser.com/guides/how-to-enable-javascript/' target='_blank'> this link </a> to see how to do it." %}<br/>
+        </div>
+    </noscript>
+    <!--[if lte IE 9]>
+        <div class="browser alert alert-danger warning"><i class="fa fa-warning"></i> {% trans "This page requires a modern browser so that it can work properly" %}, {% trans "especially when you want to sort image correctly and enable image editting" %}. {% trans "Chrome/Firefox are prefered browsers. If you want use Internet Explorer, please install one with version higher than 10." %}<br/></div>
+    <![endif]-->
+    {% load i18n crispy_forms_tags %}
+    {% crispy form %}
+{% endblock %}
+
+{% block JS_OPTS %}
+    imageMaxWidth: {{ imageMaxWidth }},
+    imageMaxHeight: {{ imageMaxHeight }},
+    paramName: 'image',
+    loadImageFileTypes: /^image\/(gif|jpeg|png|svg\+xml)$/,
+    sequentialUploads: true,
+    disableImageResize: /Android(?!.*Chrome)|Opera/
+    .test(window.navigator && navigator.userAgent),
+
+    imageCrop: false, // Force cropped images
+    acceptFileTypes: /(\.|\/)(png|gif|jpe?g)$/i,
+    messages: {
+    maxFileSize: '{% trans "File is too big" %}',
+    minFileSize: '{% trans "File is too small" %}',
+    acceptFileTypes: '{% trans "Filetype not allowed" %}',
+    maxNumberOfFiles: '{% blocktrans trimmed %} Max number of files exceeded, only
+    {{ maxNumberOfFiles }} allowed{% endblocktrans %}',
+    uploadedBytes: '{% trans "Uploaded bytes exceed file size" %}',
+    emptyResult: '{% trans "Empty file upload result" %}'
+    },
+    imageOrientation: true,
+    maxNumberOfFiles: {{ maxNumberOfFiles }},
+    previewMaxWidth: {{ previewMaxWidth }},
+    previewMaxHeight: {{ previewMaxHeight }},
+    maxFileSize: {{ maxFileSize }},
+    minFileSize: {{ minFileSize }},
+{% endblock %}
+
+{% block JS_EXTRA %}
+    {{ block.super }}
+    <script src="{% static "jqueryui-touch-punch/jquery.ui.touch-punch.min.js" %} "></script>
+    <script src="{% static "clipboard/dist/clipboard.min.js" %} "></script>
+    <script src="{% url 'javascript-catalog-image-upload' %}?rev=1.0.1"></script>
+    <script src="{% static "cropper/dist/cropper.min.js" %}?rev=3.0.0-beta "></script>
+    <script src="{% static "js/jquery.fileupload-ui-plus.min.js" %}?rev=2.4.8 "></script>
+    <script src="{% static "js/imgupload-page.min.js" %}?rev=2.4.7 "></script>
+
+{#    <script>#}
+{#        // deprecated #}
+{#        new Clipboard('.btn-data-copy');#}
+{#    </script>#}
+    {% if IN_GRADE_PAGE %}
+    <script src="{% static "ez-plus/src/jquery.ez-plus.js" %} "></script>
+    <script>
+
+        function magnify(x) {
+            $(x).ezPlus({
+                zoomType: 'inner',
+                cursor: 'crosshair'
+            });
+        }
+
+        $(document).ready(function () {
+            var pre = $('.latexpage-error pre'),
+                pl = pre.length;
+            for (var i = 0; i < pl; i++) {
+                pre[i].innerHTML = '<span class="line-number"></span>' + pre[i].innerHTML + '<span class="cl"></span>';
+                var num = pre[i].innerHTML.split(/\n/).length;
+                for (var j = 0; j < num; j++) {
+                    var line_num = pre[i].getElementsByTagName('span')[0];
+                    line_num.innerHTML += '<span>' + (j + 1) + '</span>';
+                }
+            }
+        });
+
+    </script>
+    {% endif %}
+
+{% endblock %}
+
+{% block JS_UPLOAD_TEMPLATE %}{% endblock %}
+{% block JS_DOWNLOAD_TEMPLATE %}{% endblock %}

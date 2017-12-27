@@ -2,14 +2,166 @@
 
 # {{{ database and site
 
+USING_LOCAL_TEST_SETTINGS = True
+# test script
+# python manage.py test --local_test_settings test_local_settings.py
+# coverage run manage.py test tests --local_test_settings test_local_settings.py
+# python manage.py test tests.test_my_local --local_test_settings test_local_settings.py
+
+
+
+import os, platform
+BASE_DIR = os.path.dirname(__file__)
+
 SECRET_KEY = '<CHANGE ME TO SOME RANDOM STRING ONCE IN PRODUCTION>'
 
 ALLOWED_HOSTS = [
-        "relate.example.com",
+        "*",
         ]
 
 # Configure the following as url as above.
 RELATE_BASE_URL = "http://YOUR/RELATE/SITE/DOMAIN"
+
+# {{{ my specific
+SENDFILE_URL = '/protected'
+SENDFILE_BACKEND = 'sendfile.backends.development'
+
+# This MUST be different from the value in local_settings.py
+# To prevent your production data from being delete,
+# the folder must be named "test_protected"
+SENDFILE_ROOT = os.path.join(BASE_DIR, 'test_protected')
+
+MEDIA_URL = '/media/'
+
+MEDIA_ROOT = os.path.join(BASE_DIR, "test_media")
+
+RELATE_MONGODB_NAME = "test_learningwhat_mongodb"
+
+# don't configure this for production!
+RELATE_MONGO_CLIENT_PATH = "mongomock.MongoClient"
+
+RELATE_LATEX_SETTINGS = {
+    "latex": {
+        "RELATE_LATEX_DATAURI_MONGO_COLLECTION_NAME":
+            "test_learningwhat_latex_datauri",
+        "RELATE_LATEX_ERROR_MONGO_COLLECTION_NAME":
+            "test_learningwhat_latex_error"
+    },
+    "bin_path": {},
+    "latex_page": {
+        "RELATE_LATEX_PAGE_COLLECTION_NAME":
+            "test_learningwhat_latex_page",
+        "RELATE_LATEX_PAGE_PART_COLLECTION_NAME":
+            "test_learningwhat_latex_page_part",
+        "RELATE_LATEX_PAGE_COMMITSHA_TEMPLATE_PAIR_COLLECTION":
+            "test_learningwhat_latex_page_commitsha_template_pair",
+    }
+}
+
+if platform.system().lower().startswith("win"):
+    # requires ImageMagick >=7.0.1
+    if platform.node() == "Dzhuang-surface":
+        imagemagick_path = r"C:\Program Files\ImageMagick-7.0.7-Q16"
+    else:
+        imagemagick_path = r"D:\Program Files\ImageMagick-7.0.1-Q16"
+    RELATE_LATEX_SETTINGS["bin_path"].update(
+        {"RELATE_IMAGEMAGICK_BIN_DIR": imagemagick_path})
+
+RELATE_CUSTOM_BOWER_INSTALLED_APPS = (
+    "pdf.js=https://github.com/mozilla/pdf.js/releases/download/v1.3.91/pdfjs-1.3.91-dist.zip",
+    "jquery-file-upload",
+    "blueimp-gallery",
+
+    ## IE9 below support of HTML5 elements and media queries
+    "html5shiv",
+    "respond",
+
+    #"jquery-form",
+    "cropper",
+
+    # https://clipboardjs.com/
+    "clipboard",
+    "marked",
+    "ez-plus",
+
+    # for survey
+    'jquery-form',
+    'jcarousel',
+    'bootstrap-datepicker',
+
+    # for sortable table rows in image_upload
+    'jqueryui-touch-punch',
+    )
+
+RELATE_CUSTOM_INSTALLED_APPS = (
+    'django.contrib.sites',
+    'image_upload',
+    'imagekit',
+    "djcelery_email",
+    "survey",
+    "questionnaire",
+    )
+
+SITE_ID = 1
+
+from relate import customized
+RELATE_USER_FULL_NAME_FORMAT_METHOD = customized.format_full_name
+
+RELATE_LATEX_TO_IMAGE_ENABLED = True
+
+RELATE_LATEX_SETTINGS = {
+    "latex": {
+
+    },
+    "bin_path": {
+
+    },
+    "latex_page": {
+
+    }
+}
+
+JINJA2_MACRO = {
+    "latex": "plugins.latex.jinja_tex_to_img_tag"
+}
+
+CHECK = [
+    "plugins.latex.check.latex2image_bin_check"
+]
+
+RELATE_CUSTOM_PAGE_CLASSES = [
+    ("ImageUploadQuestion",
+        "image_upload.page.imgupload.ImageUploadQuestion"),
+    ("LatexRandomImageUploadQuestion",
+        "image_upload.page.latexpage.LatexRandomImageUploadQuestion"),
+    ("LatexRandomCodeQuestion",
+        "image_upload.page.latexpage.LatexRandomCodeQuestion"),
+    ("LatexRandomCodeQuestionWithHumanTextFeedback",
+        "image_upload.page.latexpage.LatexRandomCodeQuestionWithHumanTextFeedback"),
+    ("LatexRandomChoiceQuestion",
+        "image_upload.page.latexpage.LatexRandomChoiceQuestion"),
+    ("LatexRandomMultipleChoiceQuestion",
+        "image_upload.page.latexpage.LatexRandomMultipleChoiceQuestion"),
+    ("LatexRandomCodeTextQuestion",
+        "image_upload.page.latexpage.LatexRandomCodeTextQuestion"),
+    ("LatexRandomCodeInlineMultiQuestion",
+        "image_upload.page.latexpage.LatexRandomCodeInlineMultiQuestion"),
+    ("PythonCodeQuestionWithPageContext",
+        "course.page.code_with_page_context.PythonCodeQuestionWithPageContext"),
+]
+
+import platform
+
+if platform.system().lower().startswith("win"):
+    RELATE_LATEX_SETTINGS["bin_path"].update(
+        {"RELATE_IMAGEMAGICK_BIN_DIR":
+            r"D:\Program Files\ImageMagick-7.0.1-Q16"})
+else:
+    RELATE_LATEX_SETTINGS["bin_path"].update(
+        {"RELATE_LATEX_BIN_DIR":
+            "/usr/local/texlive/2015/bin/x86_64-linux"})
+#}}}
+
 
 # Uncomment this to use a real database. If left commented out, a local SQLite3
 # database will be used, which is not recommended for production use.
@@ -201,6 +353,11 @@ RELATE_SHOW_EDITOR_FORM = True
 
 # }}}
 
+# Whether disable "markdown.extensions.codehilite" when rendering page markdown.
+# Default to True, as enable it sometimes crashes for some pages with code fences.
+# For this reason, there will be a warning when the attribute is set to False when
+# starting the server.
+#RELATE_DISABLE_CODEHILITE_MARKDOWN_EXTENSION = True
 
 # {{{ user full_name format
 
@@ -257,35 +414,124 @@ RELATE_SHOW_EDITOR_FORM = True
 
 # }}}
 
+# {{{ convert LaTeX to image settings
+
+# To enable tex2img functionality, uncomment the following line.
+#RELATE_LATEX_TO_IMAGE_ENABLED = True
+
+# The bin dir of tex compiler and image converter should be
+# correctly configured or RELATE will failed to start.
+#RELATE_LATEX_BIN_PATH = "/usr/local/texlive/2015/bin/x86_64-linux"
+#RELATE_IMAGEMAGICK_BIN_DIR = "/path/to/imagemagic/convert/bin/"
+
+# configure the following only if dvisvgm or dvipng can't be found
+# in sys evn..
+#RELATE_DVISVGM_BIN_DIR = "/path/to/dvisvgm/bin/"
+#RELATE_DVIPNG_BIN_DIR = "/path/to/dvipng/bin/"
+
+# image, especially svg have large file size, files with size
+# exceed the following won't be cached.
+RELATE_IMAGE_CACHE_MAX_BYTES = 65536
+
+# }}}
 
 # {{{ docker
 
 # A string containing the image ID of the docker image to be used to run
 # student Python code. Docker should download the image on first run.
-RELATE_DOCKER_RUNPY_IMAGE = "inducer/relate-runpy-i386"
-
+RELATE_DOCKER_RUNPY_IMAGE = "dzhuang/learning-what-runpy-i386"
+#RELATE_DOCKER_RUNPY_IMAGE = "inducer/relate-runpy-i386"
 # A URL pointing to the Docker command interface which RELATE should use
 # to spawn containers for student code.
+
+# This should be used for local docker on linux
 RELATE_DOCKER_URL = "unix://var/run/docker.sock"
+#RELATE_DOCKER_URL = "http://183.6.143.4:2375"
 
 RELATE_DOCKER_TLS_CONFIG = None
 
-# Example setup for targeting remote Docker instances
-# with TLS authentication:
+# Use another ECS instance to host runpy
+USE_ANOTHER_ECS_FOR_RUNPY_DOCKER = False
 
-# RELATE_DOCKER_URL = "https://relate.cs.illinois.edu:2375"
-#
-# import os.path
-# pki_base_dir = os.path.dirname(__file__)
-#
-# import docker.tls
-# RELATE_DOCKER_TLS_CONFIG = docker.tls.TLSConfig(
-#     client_cert=(
-#         os.path.join(pki_base_dir, "client-cert.pem"),
-#         os.path.join(pki_base_dir, "client-key.pem"),
-#         ),
-#     ca_cert=os.path.join(pki_base_dir, "ca.pem"),
-#     verify=True)
+if USE_ANOTHER_ECS_FOR_RUNPY_DOCKER:
+    import docker.tls
+
+    if "Windows" in platform.system():
+        ca_folder = r"D:\document\client"
+    else:
+        ca_folder = "/home/course/client-tls"
+
+    RELATE_DOCKER_TLS_CONFIG = docker.tls.TLSConfig(
+        client_cert=(
+            os.path.join(ca_folder, "cert.pem"),
+            os.path.join(ca_folder, "key.pem"),
+            ),
+        ca_cert=os.path.join(ca_folder, "ca.pem"),
+        verify=True)
+
+
+RELATE_RUNPY_DOCKER_ENABLED = False
+
+# Docker configurations used by Relate. For runpy Docker (code pages), which requires
+# the "docker_image" (with previous value "RELATE_DOCKER_RUNPY_IMAGE") key, the
+# config name is default to "default". You can switch the name to other by
+# configuring "RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME".
+RELATE_DOCKERS = {
+    "default": {
+        "docker_image": RELATE_DOCKER_RUNPY_IMAGE,
+        "client_config": {
+            "base_url": RELATE_DOCKER_URL,
+            "tls": RELATE_DOCKER_TLS_CONFIG,
+            "timeout": 15,
+            "version": "1.19"
+        },
+        "local_docker_machine_config": {
+            "enabled": True,
+            "config":{
+                "shell": None,
+                "name": "default",
+            },
+        },
+
+        # This is required to be configured for relate runpy docker for running code
+        # quetsions (and other cases when you need to used the
+        # get_connect_ip_and_port_by_container_from_config method),
+        # in cases when your RELATE instance and (runpy) docker-running
+        # instances are not on the same subnet. You must know the private ip and
+        # a correspond public ip (by which the RElATE instance can visit the docker
+        # instance) of each docker-running instances.
+        # Dict format: {private_ip1: public_ip_1, private_ip2, public_ip_2}
+        "private_public_ip_map_dict": {},
+        "execution_host_alias_dict": {},
+    },
+    "other":{
+
+    }
+}
+
+
+# Switch to turn on/off runpy, default to True. Setting this to False will
+# Disable the functionality of Runpy code question. A critical check error
+# will stop the server from start up unless you explicitly set
+# "SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR" (below) to True.
+#RELATE_RUNPY_DOCKER_ENABLED = True
+
+# The config name which will be used for Runpy docker. If not set, "default" will
+# be used.
+# RELATE_RUNPY_DOCKER_CLIENT_CONFIG_NAME = "default"
+
+# If True, submission of code question with RELATE_RUNPY_DOCKER_ENABLED = False
+# won't send email notifications about RunpyDockerNotUsableError. Default to False
+SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR = True
+
+
+# # Note: The following is used to ensure unittests can be run on Windows CI and for
+# # backward compatibility, you should remove them in your local_settings.py if you
+# # want to enable runpy docker functionality.
+import sys
+if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
+    SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR = True
+    #RELATE_RUNPY_DOCKER_ENABLED = False
 
 # }}}
 
@@ -305,7 +551,25 @@ RELATE_SITE_ANNOUNCEMENT = None
 # Make sure you have generated, translate and compile the message file of your
 # language. If commented, RELATE will use default language 'en-us'.
 
-#LANGUAGE_CODE='en-us'
+#LANGUAGE_CODE = 'en-us'
+
+# {{{ course-specific language
+
+# Whether enable course-specific language in course setup, it is False by default
+#RELATE_ENABLE_COURSE_SPECIFIC_LANG = True
+
+# It's recommended to configure LANGUAGES settings when
+# RELATE_ENABLE_COURSE_SPECIFIC_LANG is enabled, to filter languages allowed for
+# course-specific languages. The format of languages should be a list/tuple of
+# 2-tuples. If not configured, django.conf.global_settings.LANGUAGES will be used.
+
+# LANGUAGES = [
+#     ('en', 'English'),
+#     ('zh-hans', 'Simplified Chinese'),
+#     ('de', 'German'),
+# ]
+
+# }}}
 
 # {{{ exams and testing
 

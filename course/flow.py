@@ -78,6 +78,8 @@ from course.utils import (
         get_session_start_rule,
         get_session_access_rule,
         get_session_grading_rule,
+        get_session_notify_rule,  # added by zd
+        get_human_readable_session_grading_rule_desc_or_list,  # added by zd
         FlowSessionGradingRule,
         )
 from course.exam import get_login_exam_ticket
@@ -191,6 +193,14 @@ def _adjust_flow_session_page_data_inner(repo, flow_session,
 
             if fpd.title != title:
                 fpd.title = title
+                fpd.save()
+
+            # Allow to update data if data changed
+            will_update_page_data, new_page_data = (
+                page.update_page_data(pctx, fpd.data))
+            if will_update_page_data:
+                # alert! we must use "update" here, to prevent data loss
+                fpd.data.update(new_page_data)
                 fpd.save()
 
             ordinal[0] += 1
@@ -1148,6 +1158,9 @@ def grade_flow_session(
             if (previous_grade_change.points == gchange.points
                     and previous_grade_change.max_points == gchange.max_points
                     and previous_grade_change.comment == gchange.comment):
+                from django.utils.timezone import now
+                previous_grade_change.grade_time = now()
+                previous_grade_change.save()
                 do_save = False
         else:
             # no previous grade changes
@@ -1442,7 +1455,34 @@ def view_start_flow(pctx, flow_id):
                     grade_aggregation_strategy.max_grade,
                     grade_aggregation_strategy.use_earliest])
 
+        # {{{ added by zd
+        from course.utils import (
+            get_human_readable_flow_may_start_desc_list,
+            get_human_readable_session_grading_rule_desc_or_list)
+        human_readable_flow_may_start_desc_list = (
+            get_human_readable_flow_may_start_desc_list(
+                pctx.course, pctx.participation,
+                flow_id, fctx.flow_desc, now_datetime,
+                facilities=pctx.request.relate_facilities,
+                login_exam_ticket=login_exam_ticket
+            ))
+        human_readable_session_grule_desc_list = (
+            get_human_readable_session_grading_rule_desc_or_list(
+                potential_session,
+                fctx.flow_desc,
+                now_datetime,
+                generate_grule_full_list=True
+            ))
+        # }}}
+
         return render_course_page(pctx, "course/flow-start.html", {
+            # {{{ added by zd
+            "human_readable_flow_may_start_desc_list":
+                human_readable_flow_may_start_desc_list,
+            "human_readable_session_grule_desc_list":
+                human_readable_session_grule_desc_list,
+            "sessions_available_count": session_start_rule.sessions_available_count,
+            # }}}
             "flow_desc": fctx.flow_desc,
             "flow_identifier": flow_id,
 
@@ -1797,6 +1837,9 @@ def view_flow_page(pctx, flow_session_id, page_ordinal):
             grading_rule.grade_identifier is not None
             and
             grading_rule.generates_grade)
+    # {{{ added by zd
+    completed_before = getattr(grading_rule, "completed_before", None)
+    # }}}
     del grading_rule
 
     permissions = fpctx.page.get_modified_permissions_for_page(
@@ -2023,6 +2066,31 @@ def view_flow_page(pctx, flow_session_id, page_ordinal):
 
         flow_page_ordinals_with_answers = set(row[0] for row in c.fetchall())
 
+    # {{{ add by zd to sumbit info reminder in flow page
+    if flow_permission.submit_answer in permissions:
+        flow_page_time_grading_info = ""
+
+        if now_datetime and completed_before:
+            time_delta = completed_before - now_datetime
+
+            if now_datetime < completed_before:
+                human_readable_session_grading_rule_desc = (
+                    get_human_readable_session_grading_rule_desc_or_list(
+                        flow_session, fpctx.flow_desc, now_datetime))
+                flow_page_time_grading_info = (
+                    human_readable_session_grading_rule_desc)
+
+            from datetime import timedelta
+
+            if flow_page_time_grading_info:
+                kwargs = {}
+                if time_delta < timedelta(hours=48):
+                    kwargs["extra_tags"] = 'danger'
+                messages.add_message(request, messages.WARNING,
+                                     flow_page_time_grading_info,
+                                     **kwargs)
+    #}}}
+
     args = {
         "flow_identifier": fpctx.flow_id,
         "flow_desc": fpctx.flow_desc,
@@ -2077,9 +2145,17 @@ def view_flow_page(pctx, flow_session_id, page_ordinal):
         args["max_points"] = fpctx.page.max_points(fpctx.page_data)
         args["page_expect_answer_and_gradable"] = True
 
-    if fpctx.page.is_optional_page:
-        assert not getattr(args, "max_points", None)
-        args["is_optional_page"] = True
+        # fix flow with grade_identifier by not generates_grade
+        if pctx.has_permission(pperm.assign_grade):
+            from course.models import get_flow_grading_opportunity
+            grading_rule = get_session_grading_rule(
+                flow_session, fpctx.flow_desc, now_datetime)
+            if grading_rule.grade_identifier and grading_rule.generates_grade:
+                opportunity = get_flow_grading_opportunity(
+                    pctx.course, flow_session.flow_id, fpctx.flow_desc,
+                    grading_rule.grade_identifier,
+                    grading_rule.grade_aggregation_strategy)
+                args["opportunity"] = opportunity
 
     return render_course_page(
             pctx, "course/flow-page.html", args,
@@ -2620,13 +2696,30 @@ def finish_flow_session_view(pctx, flow_session_id):
                 now_datetime=now_datetime)
 
         # {{{ send notify email if requested
+        notification_list = getattr(fctx.flow_desc, "notify_on_submit", [])
+        notify_rule = None
+        if not notification_list:
+            notify_rule = get_session_notify_rule(
+                flow_session, fctx.flow_desc, now_datetime)
+            if notify_rule.may_send_notification:
+                from course.constants import (
+                    participation_permission as pperm)
+                notification_list = Participation.objects.filter(
+                    course=pctx.course,
+                    roles__permissions__permission=pperm.assign_grade,
+                    roles__identifier="ta",
+                ).values_list("user__email", flat=True)
+                if not notification_list:
+                    notification_list = Participation.objects.filter(
+                        course=pctx.course,
+                        roles__permissions__permission=pperm.assign_grade,
+                        roles__identifier="instructor"
+                    ).values_list("user__email", flat=True)
 
-        if (hasattr(fctx.flow_desc, "notify_on_submit")
-                and fctx.flow_desc.notify_on_submit):
+        if notification_list:
             from course.utils import will_use_masked_profile_for_email
-            staff_email = (
-                fctx.flow_desc.notify_on_submit + [fctx.course.notify_email])
-            use_masked_profile = will_use_masked_profile_for_email(staff_email)
+            use_masked_profile = will_use_masked_profile_for_email(
+                list(notification_list) + [fctx.course.notify_email])
 
             if (grading_rule.grade_identifier
                     and flow_session.participation is not None):
@@ -2646,10 +2739,17 @@ def finish_flow_session_view(pctx, flow_session_id):
                             flow_session.id,
                             0))
 
+            message_in_notification_rule = None
+            if notify_rule:
+                if notify_rule.may_send_notification:
+                    message_in_notification_rule = getattr(
+                        notify_rule, "message", None)
+
             with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
                 from django.template.loader import render_to_string
                 participation = flow_session.participation
                 message = render_to_string("course/submit-notify.txt", {
+                    "extra_message": message_in_notification_rule,
                     "course": fctx.course,
                     "flow_session": flow_session,
                     "use_masked_profile": use_masked_profile,
@@ -2677,7 +2777,7 @@ def finish_flow_session_view(pctx, flow_session_id):
                         message,
                         getattr(settings, "NOTIFICATION_EMAIL_FROM",
                             settings.ROBOT_EMAIL_FROM),
-                        fctx.flow_desc.notify_on_submit)
+                        notification_list)
                 msg.bcc = [fctx.course.notify_email]
 
                 from relate.utils import get_outbound_mail_connection

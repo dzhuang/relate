@@ -29,11 +29,11 @@
           </tr>
           {% for flow_session, session_properties in past_sessions_and_properties %}
             <tr>
-              <td>{{ flow_session.start_time }}</td>
+              <td>{{ flow_session.start_time|compact_datetime }}</td>
               <td>
                 {% include "course/flow-session-state.html" %}
                 {% if not flow_session.in_progress %}
-                  ({{ flow_session.completion_time }})
+                  ({{ flow_session.completion_time|compact_datetime }})
                 {% endif %}
               </td>
               <td>
@@ -45,7 +45,7 @@
               </td>
               <td>
                 {% if session_properties.due %}
-                  {{ session_properties.due }}
+                  {{ session_properties.due|compact_datetime }}
                 {% endif %}
               </td>
               <td>
@@ -89,9 +89,56 @@
       </div>
     {% endif %}
 
+    {% if human_readable_flow_may_start_desc_list or human_readable_session_grule_desc_list %}
+      <div class="alert alert-info">
+      <i class="fa fa-info-circle"></i>
+        {% trans "Important date/time" %}
+        <ul>
+        {% if human_readable_flow_may_start_desc_list %}
+          <li><b>{% trans "Time range allowed to start new sessions" %}</b></li>
+          <ul>
+            {% for desc in human_readable_flow_may_start_desc_list %}
+              <li{% if desc.is_dangerous %} class="text-danger"{% endif %}{% if desc.has_expired %} style="color:#77bbdc"{% endif %}>{% if desc.has_expired %}<del>{% endif %}{{ desc.human_readable_rule|safe }}{% if desc.has_expired %}</del>{% endif %}{% if desc.is_active %} <i class="fa fa-hand-o-left" aria-hidden="true"></i>{% endif %}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+        {% if human_readable_session_grule_desc_list %}
+          <li><b>{% trans "The submission time and grading for a new session" %}</b></li>
+          <ul>
+            {% for desc in human_readable_session_grule_desc_list %}
+              <li{% if desc.is_dangerous %} class="text-danger"{% endif %}{% if desc.has_expired %} style="color:#77bbdc"{% endif %}>{% if desc.has_expired %}<del>{% endif %}{{ desc.human_readable_rule|safe }}{% if desc.is_active %}{% if desc.has_expired %}</del>{% endif %} <i class="fa fa-hand-o-left" aria-hidden="true"></i>{% endif %}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+        </ul>
+      {% if not may_start %}
+        </div>
+      {% endif %}
+    {% endif %}
+
     {% if may_start %}
       {% if new_session_grading_rule.grade_identifier %}
-        <div class="alert alert-info">
+        {% if not human_readable_flow_may_start_desc_list and not human_readable_session_grule_desc_list %}
+            <div class="alert alert-info">
+        {% endif %}
+          <i class="fa fa-info-circle"></i>
+        {% with sessions_available_count|stringformat:"s" as count_str %}
+          {% if sessions_available_count > 2 %}
+              {% with "<strong class='h4'>"|add:count_str|stringformat:"s"|add:"</strong>" as count_html %}
+              {% blocktrans trimmed with n=count_html|safe %}
+                You have {{n}} chances to start a new session.
+              {% endblocktrans %}
+              {% endwith %}
+          {% else %}
+              {% with "<strong class='h4 text-danger'>"|add:count_str|stringformat:"s"|add:"</strong>" as count_html %}
+              {% blocktrans trimmed with n=count_html|safe count counter=sessions_available_count %}
+                You have only {{n}} chance to start a new session.
+                  {% plural %}
+                You have only {{n}} chances to start a new session.
+              {% endblocktrans %}
+              {% endwith %}
+          {% endif %}
+        {% endwith %}
           {% trans "If you start a new session, the following rules will apply:" %}
           <ul>
             {% if new_session_grading_rule.description %}
@@ -103,7 +150,7 @@
             {% endif %}
             {% if new_session_grading_rule.due %}
               <li>
-                  {% blocktrans trimmed with due=new_session_grading_rule.due %}
+                  {% blocktrans trimmed with due=new_session_grading_rule.due|compact_datetime %}
                     Your session will be due on <b>{{ due }}</b>.
                   {% endblocktrans %}
               </li>

@@ -25,10 +25,14 @@ THE SOFTWARE.
 import six
 import tempfile
 import os
+import shutil
+import hashlib
 import datetime
+import memcache
 from copy import deepcopy
 from django.test import Client, override_settings, mock
 from django.urls import reverse, resolve
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ImproperlyConfigured
 
@@ -36,6 +40,8 @@ from course.models import (
     Course, Participation, ParticipationRole, FlowSession, FlowPageData,
     FlowPageVisit)
 from course.constants import participation_status, user_status
+from course.content import get_course_repo_path
+
 
 CREATE_SUPERUSER_KWARGS = {
     "username": "test_admin",
@@ -54,7 +60,7 @@ SINGLE_COURSE_SETUP_LIST = [
             "hidden": False,
             "listed": True,
             "accepts_enrollment": True,
-            "git_source": "git://github.com/inducer/relate-sample",
+            "git_source": "https://code.aliyun.com/dzhuang/my_learningwhat_test_repo.git",  # noqa
             "course_file": "course.yml",
             "events_file": "events.yml",
             "enrollment_approval_required": False,
@@ -144,6 +150,19 @@ NONE_PARTICIPATION_USER_CREATE_KWARG_LIST = [
         "status": user_status.unconfirmed
     }
 ]
+
+try:
+    mc = memcache.Client(['127.0.0.1:11211'])
+except Exception:
+    pass
+
+
+def git_source_url_to_cache_keys(url):
+    url_hash = hashlib.md5(url.encode("utf-8")).hexdigest()
+    return (
+        "test_course:%s" % url_hash,
+        "test_sha:%s" % url_hash
+    )
 
 
 class CourseCreateFailure(Exception):
@@ -377,6 +396,7 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
     @classmethod
     def setUpTestData(cls):  # noqa
         super(CoursesTestMixinBase, cls).setUpTestData()
+        cls.default_flow_params = None
         cls.n_courses = 0
         if cls.courses_attributes_extra_list is not None:
             if (len(cls.courses_attributes_extra_list)
@@ -397,7 +417,7 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
                 assert isinstance(extra_attrs, dict)
                 course_setup_kwargs.update(extra_attrs)
             try:
-                cls.post_create_course(**course_setup_kwargs)
+                cls.create_course(**course_setup_kwargs)
             except Exception:
                 raise
 
@@ -418,17 +438,17 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
                                                  participation_status.active)
                     )
 
-                    # Remove superuser from participation for further test
-                    # such as impersonate in auth module
-                    if role_identifier == "instructor":
-                        try:
-                            superuser_participations = (
-                                Participation.objects.filter(user=cls.superuser))
-                            for sp in superuser_participations:
-                                Participation.delete(sp)
-                        except Participation.DoesNotExist:
-                            pass
-            cls.non_participation_users = get_user_model().objects.none
+            # Remove superuser from participation for further test
+            # such as impersonate in auth module
+            try:
+                superuser_participations = (
+                    Participation.objects.filter(user=cls.superuser))
+                for sp in superuser_participations:
+                    Participation.delete(sp)
+            except Participation.DoesNotExist:
+                pass
+
+            cls.non_participation_users = get_user_model().objects.none()
             if cls.none_participation_user_create_kwarg_list:
                 pks = []
                 for create_user_kwargs in (
@@ -485,13 +505,15 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
 
     @classmethod
     def post_create_course(cls, raise_error=True, **create_course_kwargs):
+        # To speed up, use create_course instead, this is better used for tests
         cls.c.force_login(cls.superuser)
         existing_course_count = Course.objects.count()
         with override_settings(**cls.override_settings_at_post_create_course):
             resp = cls.c.post(
                 reverse("relate-set_up_new_course"), create_course_kwargs)
         if raise_error:
-            if not Course.objects.count() == existing_course_count + 1:
+            all_courses = Course.objects.all()
+            if not all_courses.count() == existing_course_count + 1:
                 error_string = None
                 # most probably the reason course creation form error
                 form_context = resp.context.__getitem__("form")
@@ -513,12 +535,62 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
                 if not error_string:
                     error_string = ("course creation failed for unknown errors")
                 raise CourseCreateFailure(error_string)
+            # the course is created successfully
+            last_course = all_courses.last()
+            assert last_course
+            url_cache_key, commit_sha_cach_key = (
+                git_source_url_to_cache_keys(last_course.git_source))
+            mc.set_multi({url_cache_key: get_course_repo_path(last_course),
+                          commit_sha_cach_key: last_course.active_git_commit_sha},
+                          time=120)
         return resp
 
     @classmethod
+    def create_course(cls, raise_error=True, **create_course_kwargs):
+        has_cached_repo = False
+        repo_cache_key, commit_sha_cach_key = (
+            git_source_url_to_cache_keys(create_course_kwargs["git_source"]))
+        try:
+            exist_course_repo_path = mc.get(repo_cache_key)
+            exist_commit_sha = mc.get(commit_sha_cach_key)
+            if os.path.isdir(exist_course_repo_path):
+                has_cached_repo = bool(exist_course_repo_path and exist_commit_sha)
+            else:
+                has_cached_repo = False
+        except Exception:
+            pass
+
+        if not has_cached_repo:
+            # fall back to post create
+            return cls.post_create_course(
+                raise_error=raise_error, **create_course_kwargs)
+        existing_course_count = Course.objects.count()
+        new_course_repo_path = os.path.join(settings.GIT_ROOT,
+                                        create_course_kwargs["identifier"])
+        shutil.copytree(exist_course_repo_path, new_course_repo_path)
+        create_kwargs = deepcopy(create_course_kwargs)
+        create_kwargs["active_git_commit_sha"] = exist_commit_sha
+        Course.objects.create(**create_kwargs)
+        assert Course.objects.count() == existing_course_count + 1
+
+    @classmethod
+    def get_course_view_url(cls, view_name, course_identifier=None):
+        course_identifier = (
+            course_identifier or cls.get_default_course_identifier())
+        return reverse(view_name, args=[course_identifier])
+
+    @classmethod
+    def get_edit_course_url(cls, course_identifier=None):
+        return cls.get_course_view_url("relate-edit_course", course_identifier)
+
+    @classmethod
+    def post_edit_course(cls, data, course_identifier=None):
+        edit_course_url = cls.get_edit_course_url(course_identifier)
+        return cls.c.post(edit_course_url, data)
+
+    @classmethod
     def get_course_page_url(cls, course_identifier=None):
-        course_identifier = course_identifier or cls.get_default_course_identifier()
-        return reverse("relate-course_page", args=[course_identifier])
+        return cls.get_course_view_url("relate-course_page", course_identifier)
 
     def get_logged_in_user(self):
         try:
@@ -637,14 +709,17 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
         return resp
 
     @classmethod
-    def end_flow(cls, course_identifier, flow_session_id):
+    def end_flow(cls, course_identifier=None, flow_session_id=None):
         """
         Be cautious that this is a classmethod
         """
-        params = {
-            "course_identifier": course_identifier,
-            "flow_session_id": flow_session_id
-        }
+        if cls.default_flow_params is None:
+            raise RuntimeError("There's no started flow_sessions.")
+        params = deepcopy(cls.default_flow_params)
+        if course_identifier:
+            params["course_identifier"] = course_identifier
+        if flow_session_id:
+            params["flow_session_id"] = flow_session_id
         resp = cls.c.post(reverse("relate-finish_flow_session_view",
                                   kwargs=params), {'submit': ['']})
         return resp
@@ -895,6 +970,20 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
             course.refresh_from_db()
 
         return response
+
+    def update_course_content(self, commit_sha, course=None, **kwargs):
+        # course instead of course_identifier because we need to do
+        # refresh_from_db
+        course = course or self.get_default_course()
+
+        try:
+            commit_sha = commit_sha.decode()
+        except Exception:
+            pass
+
+        course.active_git_commit_sha = commit_sha
+        course.save()
+        course.refresh_from_db()
 
     def get_page_data_by_page_id(
             self, page_id, course_identifier=None, flow_session_id=None):

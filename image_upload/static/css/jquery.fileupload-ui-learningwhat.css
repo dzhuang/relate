@@ -1,0 +1,96 @@
+@charset "UTF-8";
+/*
+ * This is a customized version from
+ * jQuery File Upload UI Plugin CSS
+ * https://github.com/blueimp/jQuery-File-Upload
+ *
+ * Copyright 2010, Sebastian Tschan
+ * https://blueimp.net
+ *
+ * Licensed under the MIT license:
+ * http://www.opensource.org/licenses/MIT
+ */
+
+.fileupload-buttonbar .btn,
+.fileupload-buttonbar .toggle {
+    margin-bottom: 5px;
+}
+
+.progress-animated .progress-bar,
+.progress-animated .bar {
+    background: url("../blueimp-gallery/img/progressbar.gif") !important;
+    filter: none;
+}
+
+.fileupload-process {
+    float: right;
+    display: none;
+}
+
+.files .template-download .preview.loading,
+.fileupload-processing .fileupload-process,
+.files .processing .preview {
+    display: block;
+    width: 32px;
+    height: 32px;
+    background: url("../blueimp-gallery/img/loading.gif") center no-repeat;
+    background-size: contain;
+}
+
+.files audio,
+.files video {
+    max-width: 300px;
+}
+
+@media (max-width: 767px) {
+    .fileupload-buttonbar .toggle,
+    .fileupload-buttonbar .btn span,
+    .files .toggle,
+    .files .btn span {
+        display: none;
+    }
+
+    .files .name {
+        width: 80px;
+        word-wrap: break-word;
+    }
+
+    .files audio,
+    .files video {
+        max-width: 80px;
+    }
+
+    .files img,
+    .files canvas {
+        max-width: 100%;
+    }
+
+    #fileupload tbody .template-download td:nth-child(6),
+    #fileupload tbody .template-upload td:nth-child(5),
+    #fileupload tbody .template-upload td:nth-child(6) {
+        padding-left: 0;
+        padding-right: 0;
+    }
+}
+
+@media (max-width: 767px) {
+    #fileupload .btn > span {
+        display: none
+    }
+
+    .fileupload-buttonbar .delete {
+        display: none;
+    }
+
+    #fileupload .progress-extended {
+        display: none;
+    }
+
+}
+
+/* fit blank when loading existing files */
+.fileupload-loading {
+    height: 96px;
+    background: url("../blueimp-gallery/img/loading.gif") center no-repeat;
+    background-size: 96px 96px;
+}

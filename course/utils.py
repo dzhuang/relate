@@ -24,15 +24,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-from typing import cast
+from typing import cast, Iterable  # noqa
 
 import six
 import datetime  # noqa
+import pytz
 
 from django.shortcuts import (  # noqa
         render, get_object_or_404)
 from django import http
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils import translation
 from django.utils.translation import (
         ugettext as _, pgettext_lazy)
 
@@ -55,6 +57,9 @@ from course.page.base import (  # noqa
         PageContext,
         )
 
+MIN_DATETIME = pytz.utc.localize(datetime.datetime.min)
+MAX_DATETIME = pytz.utc.localize(datetime.datetime.max)
+
 # {{{ mypy
 
 if False:
@@ -70,6 +75,9 @@ if False:
             )
 
 # }}}
+
+import re
+CODE_CELL_DIV_ATTRS_RE = re.compile('(<div class="[^>]*code_cell[^>"]*")(>)')
 
 
 def getattr_with_fallback(aggregates, attr_name, default=None):
@@ -94,6 +102,8 @@ class FlowSessionStartRule(FlowSessionRuleBase):
             tag_session=None,  # type: Optional[Text]
             may_start_new_session=None,  # type: Optional[bool]
             may_list_existing_sessions=None,  # type: Optional[bool]
+
+            sessions_available_count=None,  # type: Optional[int]  # added by zd
             default_expiration_mode=None,  # type: Optional[Text]
             ):
         # type: (...) -> None
@@ -101,6 +111,18 @@ class FlowSessionStartRule(FlowSessionRuleBase):
         self.may_start_new_session = may_start_new_session
         self.may_list_existing_sessions = may_list_existing_sessions
         self.default_expiration_mode = default_expiration_mode
+        self.sessions_available_count = sessions_available_count
+
+
+class FlowSessionNotifyRule(FlowSessionRuleBase):
+    def __init__(
+            self,
+            may_send_notification=None,  # type: Optional[bool]
+            message=None,  # type: Optional[Text]
+            ):
+        # type: (...) -> None
+        self.may_send_notification = may_send_notification
+        self.message = message
 
 
 class FlowSessionAccessRule(FlowSessionRuleBase):
@@ -124,6 +146,9 @@ class FlowSessionGradingRule(FlowSessionRuleBase):
             self,
             grade_identifier,  # type: Optional[Text]
             grade_aggregation_strategy,  # type: Text
+
+            # added by zd
+            completed_before,  # type: Optional[datetime.datetime]
             due,  # type: Optional[datetime.datetime]
             generates_grade,  # type: bool
             description=None,  # type: Optional[Text]
@@ -146,6 +171,20 @@ class FlowSessionGradingRule(FlowSessionRuleBase):
         self.max_points = max_points
         self.max_points_enforced_cap = max_points_enforced_cap
         self.bonus_points = bonus_points
+        self.completed_before = completed_before
+
+    def __eq__(self, other):
+        return (
+            self.generates_grade == other.generates_grade
+            and
+            self.credit_percent == other.credit_percent
+            and
+            self.max_points == other.max_points
+            and
+            self.max_points_enforced_cap == other.max_points_enforced_cap
+            and
+            self.bonus_points == other.bonus_points
+        )
 
 
 def _eval_generic_conditions(
@@ -205,6 +244,47 @@ def _eval_generic_session_conditions(
     return True
 
 
+def get_participation_tag_cache_key(participation):
+    # type: (Participation) -> Text
+
+    from course.constants import PARTICIPATION_TAG_KEY_PATTERN
+    return (
+        PARTICIPATION_TAG_KEY_PATTERN % {"participation": str(participation.pk)})
+
+
+def get_participation_tag_set_cached(participation):
+    # type: (Participation) -> List[Text]
+    from django.core.exceptions import ImproperlyConfigured
+    try:
+        import django.core.cache as cache
+    except ImproperlyConfigured:
+        cache_key = None
+    else:
+        cache_key = get_participation_tag_cache_key(participation)
+
+    def_cache = cache.caches["default"]
+
+    if cache_key is None:
+        result = list(set(participation.tags.all().values_list("name", flat=True)))
+        assert isinstance(result, list)
+        return result
+
+    if len(cache_key) < 240:
+        result = def_cache.get(cache_key)
+        if result is not None:
+            assert isinstance(result, list), cache_key
+            return result
+
+    result = list(set(participation.tags.all().values_list("name", flat=True)))
+    import sys
+    from django.conf import settings
+    if sys.getsizeof(result) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
+        def_cache.add(cache_key, result, None)
+
+    assert isinstance(result, list)
+    return result
+
+
 def _eval_participation_tags_conditions(
         rule,  # type: Any
         participation,  # type: Optional[Participation]
@@ -222,7 +302,7 @@ def _eval_participation_tags_conditions(
             # if_has_participation_tags_any or if_has_participation_tags_all
             # is not empty.
             return False
-        ptag_set = set(participation.tags.all().values_list("name", flat=True))
+        ptag_set = set(get_participation_tag_set_cached(participation))
         if not ptag_set:
             return False
         if (participation_tags_any_set
@@ -275,6 +355,22 @@ def get_flow_rules(
     return rules
 
 
+def _get_session_start_rules(
+        flow_desc,  # type: FlowDesc
+        flow_id,  # type: Text
+        now_datetime,  # type: datetime.datetime
+        participation,  # type: Optional[Participation]
+        ):
+    # type: (...) -> List[Any]
+    from relate.utils import dict_to_struct
+    return get_flow_rules(flow_desc, flow_rule_kind.start,
+                          participation, flow_id, now_datetime,
+                          default_rules_desc=[
+                              dict_to_struct(dict(
+                                  may_start_new_session=True,
+                                  may_list_existing_sessions=False))])
+
+
 def get_session_start_rule(
         course,  # type: Course
         participation,  # type: Optional[Participation]
@@ -284,6 +380,7 @@ def get_session_start_rule(
         facilities=None,  # type: Optional[FrozenSet[Text]]
         for_rollover=False,  # type: bool
         login_exam_ticket=None,  # type: Optional[ExamTicket]
+        rules=[],  # type: List[Any]
         ):
     # type: (...) -> FlowSessionStartRule
 
@@ -294,13 +391,13 @@ def get_session_start_rule(
     if facilities is None:
         facilities = frozenset()
 
-    from relate.utils import dict_to_struct
-    rules = get_flow_rules(flow_desc, flow_rule_kind.start,
-            participation, flow_id, now_datetime,
-            default_rules_desc=[
-                dict_to_struct(dict(
-                    may_start_new_session=True,
-                    may_list_existing_sessions=False))])
+    if not rules:
+        rules = _get_session_start_rules(
+            flow_desc, flow_id, now_datetime, participation)
+
+    # {{{ added by zd
+    sessions_available_count = 0
+    # }}}
 
     from course.models import FlowSession  # noqa
     for rule in rules:
@@ -342,7 +439,12 @@ def get_session_start_rule(
                     course=course,
                     flow_id=flow_id).count()
 
-            if session_count >= rule.if_has_fewer_sessions_than:
+            # {{{ added by zd
+            sessions_available_count = (
+                    rule.if_has_fewer_sessions_than - session_count)
+            # }}}
+
+            if sessions_available_count <= 0:
                 continue
 
         if not for_rollover and hasattr(rule, "if_has_fewer_tagged_sessions_than"):
@@ -361,13 +463,32 @@ def get_session_start_rule(
                     rule, "may_start_new_session", True),
                 may_list_existing_sessions=getattr(
                     rule, "may_list_existing_sessions", True),
+                # {{{ added by zd
+                sessions_available_count=sessions_available_count,
+                # }}}
                 default_expiration_mode=getattr(
                     rule, "default_expiration_mode", None),
                 )
 
     return FlowSessionStartRule(
             may_list_existing_sessions=False,
-            may_start_new_session=False)
+            may_start_new_session=False,
+            )
+
+
+def _get_session_access_rules(
+        session,  # type: FlowSession
+        flow_desc,  # type: FlowDesc
+        now_datetime,  # type: datetime.datetime
+        ):
+    # type: (...) -> List[FlowSessionAccessRuleDesc]
+    from relate.utils import dict_to_struct
+    return get_flow_rules(flow_desc, flow_rule_kind.access,
+                           session.participation, session.flow_id, now_datetime,
+                           default_rules_desc=[
+                               dict_to_struct(dict(
+                                   permissions=[flow_permission.view],
+                               ))])
 
 
 def get_session_access_rule(
@@ -376,6 +497,7 @@ def get_session_access_rule(
         now_datetime,  # type: datetime.datetime
         facilities=None,  # type: Optional[FrozenSet[Text]]
         login_exam_ticket=None,  # type: Optional[ExamTicket]
+        rules=[],  # type: List[Any]
         ):
     # type: (...) -> FlowSessionAccessRule
     """Return a :class:`ExistingFlowSessionRule`` to describe
@@ -385,13 +507,8 @@ def get_session_access_rule(
     if facilities is None:
         facilities = frozenset()
 
-    from relate.utils import dict_to_struct
-    rules = get_flow_rules(flow_desc, flow_rule_kind.access,
-            session.participation, session.flow_id, now_datetime,
-            default_rules_desc=[
-                dict_to_struct(dict(
-                    permissions=[flow_permission.view],
-                    ))])  # type: List[FlowSessionAccessRuleDesc]
+    if not rules:
+        rules = _get_session_access_rules(session, flow_desc, now_datetime)
 
     for rule in rules:
         if not _eval_generic_conditions(
@@ -461,25 +578,37 @@ def get_session_access_rule(
     return FlowSessionAccessRule(permissions=frozenset())
 
 
+def _get_session_grading_rules(
+        session,  # type: FlowSession
+        flow_desc,  # type: FlowDesc
+        now_datetime,  # type: datetime.datetime
+        ):
+    # type: (...) -> List[Any]
+    from relate.utils import dict_to_struct
+    return get_flow_rules(flow_desc, flow_rule_kind.grading,
+                          session.participation, session.flow_id, now_datetime,
+                          default_rules_desc=[
+                              dict_to_struct(dict(
+                                  generates_grade=False,
+                              ))])
+
+
 def get_session_grading_rule(
         session,  # type: FlowSession
         flow_desc,  # type: FlowDesc
-        now_datetime  # type: datetime.datetime
+        now_datetime,  # type: datetime.datetime
+        rules=[],  # type: List[Any]
         ):
     # type: (...) -> FlowSessionGradingRule
 
     flow_desc_rules = getattr(flow_desc, "rules", None)
 
-    from relate.utils import dict_to_struct
-    rules = get_flow_rules(flow_desc, flow_rule_kind.grading,
-            session.participation, session.flow_id, now_datetime,
-            default_rules_desc=[
-                dict_to_struct(dict(
-                    generates_grade=False,
-                    ))])
+    if not rules:
+        rules = _get_session_grading_rules(session, flow_desc, now_datetime)
 
     from course.enrollment import get_participation_role_identifiers
     roles = get_participation_role_identifiers(session.course, session.participation)
+    if_completed_before = None
 
     for rule in rules:
         if hasattr(rule, "if_has_role"):
@@ -514,6 +643,7 @@ def get_session_grading_rule(
 
             if completion_time > ds:
                 continue
+            if_completed_before = ds
 
         due = parse_date_spec(session.course, getattr(rule, "due", None))
         if due is not None:
@@ -553,6 +683,8 @@ def get_session_grading_rule(
                 bonus_points=bonus_points,
                 max_points=max_points,
                 max_points_enforced_cap=max_points_enforced_cap,
+
+                completed_before=if_completed_before,     # added by zd
                 )
 
     raise RuntimeError(_("grading rule determination was unable to find "
@@ -659,10 +791,25 @@ class CoursePageContext(object):
         else:
             return (perm, argument) in self.permissions()
 
+    def _set_course_lang(self, action):
+        # type: (Text) -> None
+        from django.conf import settings
+        if not getattr(settings, "RELATE_ENABLE_COURSE_SPECIFIC_LANG", False):
+            return
+        if self.course.force_lang is not None:
+            if action == "activate":
+                self.old_language = translation.get_language()
+                translation.activate(self.course.force_lang)
+            else:
+                if self.old_language is not None:
+                    translation.activate(self.old_language)
+
     def __enter__(self):
+        self._set_course_lang(action="activate")
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        self._set_course_lang(action="deactivate")
         self.repo.close()
 
 
@@ -1098,5 +1245,647 @@ def will_use_masked_profile_for_email(recipient_email):
         if part.has_permission(pperm.view_participant_masked_profile):
             return True
     return False
+
+
+def get_course_specific_langs_choices():
+    # type: () -> Tuple[Tuple[str, Any], ...]
+    from django.conf import settings
+    return (("", _("(None)")), ) + tuple((k, _(v)) for (k, v) in settings.LANGUAGES)
+
+
+def get_available_languages():
+    # type: () -> List[Text]
+    from django.conf import settings
+    return [lang[0] for lang in settings.LANGUAGES]
+
+
+# {{{ ipynb utilities
+
+
+def render_notebook_from_source(
+        ipynb_source, clear_output=False, indices=None, clear_markdown=False):
+    """
+    Get HTML format of ipython notebook so as to be rendered in RELATE flow pages.
+    Note: code fences are unconverted, If converted, the result often looked wired,
+    e.g., https://stackoverflow.com/a/22285406/3437454, because RELATE will reprocess
+    the result again by python-markdown.
+    :param ipynb_source: the :class:`text` read from a ipython notebook.
+    :param clear_output: a :class:`bool` instance, indicating whether existing
+    execution output of code cells should be removed.
+    :param indices: a :class:`list` instance, 0-based indices of notebook cells
+    which are expected to be rendered.
+    :param clear_markdown: a :class:`bool` instance, indicating whether markdown
+    cells will be ignored..
+    :return:
+    """
+    import nbformat
+    from nbformat.reader import parse_json
+    nb_source_dict = parse_json(ipynb_source)
+
+    if indices:
+        nb_source_dict.update(
+            {"cells": [nb_source_dict["cells"][idx] for idx in indices]})
+
+    if clear_markdown:
+        nb_source_dict.update(
+            {"cells": [cell for cell in nb_source_dict["cells"]
+                       if cell['cell_type'] != "markdown"]})
+
+    nb_source_dict.update({"cells": nb_source_dict["cells"]})
+
+    import json
+    ipynb_source = json.dumps(nb_source_dict)
+    notebook = nbformat.reads(ipynb_source, as_version=4)
+
+    from traitlets.config import Config
+    c = Config()
+
+    # This is to prevent execution of arbitrary code from note book
+    c.ExecutePreprocessor.enabled = False
+    if clear_output:
+        c.ClearOutputPreprocessor.enabled = True
+
+    c.CSSHTMLHeaderPreprocessor.enabled = False
+    c.HighlightMagicsPreprocessor.enabled = False
+
+    import os
+    from django.conf import settings
+
+    # Place the template in course template dir
+    template_path = os.path.join(
+        settings.BASE_DIR, "course", "templates", "course", "jinja2")
+    c.TemplateExporter.template_path.append(template_path)
+
+    from nbconvert import HTMLExporter
+    html_exporter = HTMLExporter(
+        config=c,
+        template_file="nbconvert_template.tpl"
+    )
+
+    (body, resources) = html_exporter.from_notebook_node(notebook)
+
+    return body
+
+# }}}
+
+# {{{ added by zd
+
+
+class HumanReadableSessionRuleBase(object):
+    def __init__(
+            self,
+            human_readable_rule,  # type: Text
+            is_active,  # type: bool
+            has_expired=False,  # type: Optional[bool]
+            is_dangerous=False  # type: Optional[bool]
+    ):
+        # type: (...) -> None
+        self.human_readable_rule = human_readable_rule
+        self.is_active = is_active
+        self.has_expired = has_expired
+        self.is_dangerous = is_dangerous
+
+
+class HumanReadableSessionGradingRuleDesc(HumanReadableSessionRuleBase):
+    pass
+
+
+class HumanReadableSessionStartRuleDesc(HumanReadableSessionRuleBase):
+    pass
+
+
+def get_human_readable_flow_may_start_desc_list(
+        course,  # type: Course
+        participation,  # type: Optional[Participation]
+        flow_id,  # type: Text
+        flow_desc,  # type: FlowDesc
+        now_datetime,  # type: datetime.datetime
+        facilities=None,  # type: Optional[FrozenSet[Text]]
+        for_rollover=False,  # type: bool
+        login_exam_ticket=None,  # type: Optional[ExamTicket]
+        ):
+
+    rules = _get_session_start_rules(
+        flow_desc,
+        flow_id,
+        now_datetime,
+        participation
+    )
+
+    time_point_set = set()
+    time_point_set.add(MIN_DATETIME)
+    for rule in rules:
+        if hasattr(rule, "if_before"):
+            time_point_set.add(parse_date_spec(course, rule.if_before))
+        if hasattr(rule, "if_after"):
+            time_point_set.add(parse_date_spec(course, rule.if_after))
+    time_point_list = sorted(list(time_point_set))
+
+    def check_may_start(test_datetime):
+        # type: (datetime.datetime) -> Optional[bool]
+        start_rule = get_session_start_rule(
+            course,
+            participation,
+            flow_id,
+            flow_desc,
+            now_datetime=test_datetime,
+            facilities=facilities,
+            for_rollover=for_rollover,
+            login_exam_ticket=login_exam_ticket,
+            rules=rules
+        )
+        return start_rule.may_start_new_session
+
+    # TODO: list comp
+    may_start_time_check_list = []
+    for t in time_point_list:
+        test_time = t + datetime.timedelta(microseconds=1)
+        may_start = check_may_start(test_time)
+        may_start_time_check_list.append(may_start)
+
+    may_start_time_check_list_zip = list(
+        zip(may_start_time_check_list, time_point_list))
+    may_start_time_check_list_zip_merged = []
+    for i, z in enumerate(may_start_time_check_list_zip):
+        try:
+            if i == 0:
+                may_start_time_check_list_zip_merged.append(z)
+            elif z[0] != may_start_time_check_list_zip[i - 1][0]:
+                may_start_time_check_list_zip_merged.append(z)
+        except IndexError:
+            may_start_time_check_list_zip_merged.append(z)
+
+    srule_time_range_list = []
+    for i, z in enumerate(may_start_time_check_list_zip_merged):
+        if z[0] is True:
+            start = may_start_time_check_list_zip_merged[i][1]
+            try:
+                end = may_start_time_check_list_zip_merged[i + 1][1]
+            except IndexError:
+                end = MAX_DATETIME
+
+            rule_is_active = False
+            if start <= now_datetime <= end:
+                rule_is_active = True
+            srule_time_range_list.append((start, end, rule_is_active))
+
+    human_readable_srule_list = []
+    if srule_time_range_list:
+        from relate.utils import compact_local_datetime_str
+        for srule_tuple in srule_time_range_list:
+            srule_str = ""
+            start = srule_tuple[0]
+            end = srule_tuple[1]
+            rule_is_active = srule_tuple[2]
+            if start != MIN_DATETIME and end != MAX_DATETIME:
+                if now_datetime > start:
+                    srule_str = _("Before <b>%(end)s</b>.") % {
+                        "end": compact_local_datetime_str(end, now_datetime)
+                    }
+                else:
+                    srule_str = _("From <b>%(start)s</b> to <b>%(end)s</b>.") % {
+                        "start": compact_local_datetime_str(start, now_datetime),
+                        "end": compact_local_datetime_str(end, now_datetime)
+                    }
+            elif start == MIN_DATETIME and end != MAX_DATETIME:
+                srule_str = _("Before <b>%(end)s</b>.") % {
+                    "end": compact_local_datetime_str(end, now_datetime)
+                }
+            elif start != MIN_DATETIME and end == MAX_DATETIME:
+                srule_str = _("After <b>%(start)s</b>.") % {
+                    "start": compact_local_datetime_str(start, now_datetime)
+                }
+            else:
+                continue
+
+            if srule_str:
+                human_readable_srule_list.append(
+                    HumanReadableSessionStartRuleDesc(
+                        human_readable_rule=srule_str,
+                        is_active=rule_is_active,
+                        has_expired=now_datetime > end,
+                    )
+                )
+
+        last_srule = srule_time_range_list[-1]
+        last_end = last_srule[1]
+        if last_end != MAX_DATETIME:
+            human_readable_srule_list.append(
+                HumanReadableSessionStartRuleDesc(
+                    human_readable_rule=(
+                        _("No new sessions are allowed to be started "
+                          "since <b>%s</b>.")
+                        % compact_local_datetime_str(last_end, now_datetime)),
+                    is_active=now_datetime > last_end,
+                    has_expired=False,
+                    is_dangerous=True
+                )
+            )
+
+    return human_readable_srule_list
+
+
+def get_human_readable_session_grading_rule_desc_or_list(
+        session,  # type: FlowSession
+        flow_desc,  # type: FlowDesc
+        now_datetime,  # type: datetime.datetime
+        generate_grule_full_list=False,  # type: bool
+        ):
+
+    rules = _get_session_grading_rules(
+        session,
+        flow_desc,
+        now_datetime,
+    )
+
+    time_point_set = set()
+    time_point_set.add(MIN_DATETIME)
+    for rule in rules:
+        if hasattr(rule, "if_before"):
+            time_point_set.add(
+                parse_date_spec(session.course, rule.if_before))
+        if hasattr(rule, "if_after"):
+            time_point_set.add(
+                parse_date_spec(session.course, rule.if_after))
+        if hasattr(rule, "if_started_before"):
+            time_point_set.add(
+                parse_date_spec(session.course, rule.if_started_before))
+        if hasattr(rule, "if_completed_before"):
+            time_point_set.add(
+                parse_date_spec(session.course, rule.if_completed_before))
+    time_point_list = sorted(list(time_point_set))
+
+    def get_test_grading_rule(test_datetime):
+        # type: (datetime.datetime) -> FlowSessionGradingRule
+        grading_rule = get_session_grading_rule(
+            session=session,
+            flow_desc=flow_desc,
+            now_datetime=test_datetime,
+            rules=rules
+        )
+        return grading_rule
+
+    grule_list = []
+    for t in time_point_list:
+        test_time = t + datetime.timedelta(microseconds=1)
+        grule = get_test_grading_rule(test_time)
+        grule_list.append(grule)
+
+    grule_zip = list(zip(grule_list, time_point_list))
+    grule_zip_merged = []
+    for i, z in enumerate(grule_zip):
+        try:
+            if i == 0:
+                grule_zip_merged.append(z)
+            elif z[0] != grule_zip[i-1][0]:
+                grule_zip_merged.append(z)
+        except IndexError:
+            grule_zip_merged.append(z)
+
+    grule_time_range_list = []
+    for i, z in enumerate(grule_zip_merged):
+        if z[0].generates_grade:
+            start = grule_zip_merged[i][1]
+            if now_datetime < start and not generate_grule_full_list:
+                continue
+            try:
+                end = grule_zip_merged[i + 1][1]
+                next_rule = grule_zip_merged[i + 1][0]
+            except IndexError:
+                end = MAX_DATETIME
+                next_rule = FlowSessionGradingRule(
+                    grade_identifier=None,
+                    grade_aggregation_strategy="",
+                    completed_before=None,
+                    due=None,
+                    generates_grade=False,
+                    credit_percent=0,
+                )
+
+            rule_is_active = False
+            if start <= now_datetime <= end:
+                rule_is_active = True
+            if ((not generate_grule_full_list and rule_is_active)
+                or
+                    generate_grule_full_list):
+                grule_time_range_list.append(
+                    (start, end, z[0], next_rule, rule_is_active))
+
+    human_readable_grule_list = []
+    if grule_time_range_list:
+        from relate.utils import compact_local_datetime_str
+        from django.utils.timesince import timeuntil
+        for grule_tuple in grule_time_range_list:
+            start = grule_tuple[0]
+            end = grule_tuple[1]
+            grule = grule_tuple[2]
+            next_rule = grule_tuple[3]
+            rule_is_active = grule_tuple[4]
+            is_dangerous = False
+            has_expired = False
+
+            started_before = getattr(grule, "if_started_before", "")
+            if started_before:
+                started_before = (
+                    string_concat(
+                        "(",
+                        _("started before %s"),
+                        ")"
+                    ) % compact_local_datetime_str(
+                        started_before, now_datetime))
+
+            credit_expected = None
+
+            if grule.credit_percent:
+                credit_expected = (
+                    _("<b>%(credit_percent)d%%</b> of the grade")
+                    % {"credit_percent": grule.credit_percent}
+                )
+            if grule.max_points:
+                max_points = grule.max_points
+                if grule.max_points_enforced_cap:
+                    max_points = min(max_points, grule.max_points_enforced_cap)
+                credit_expected = (
+                    _(" at most <b>%(max_points)d</b> points")
+                    % {"max_points": max_points}
+                )
+            if grule.bonus_points:
+                credit_expected += (
+                    _("(including %(bonus_points)s bonus points)")
+                    % {"bonus_points": grule.bonus_points}
+                )
+
+            if end != MAX_DATETIME:
+                if now_datetime > end:
+                    has_expired = True
+                if not credit_expected:
+                    if not generate_grule_full_list:
+                        flow_page_grading_info = (
+                            string_concat(
+                                _("This session will <b>NOT</b> "
+                                  "receive grade "
+                                  "if submitted before "
+                                  "%(completed_before)s."), " ")
+                            % {
+                                "completed_before": compact_local_datetime_str(
+                                    end, now_datetime)})
+                    else:
+                        flow_page_grading_info = (
+                            string_concat(
+                                _("A new session"
+                                  "%(started_before)s "
+                                  "will <b>NOT</b> "
+                                  "receive grade "
+                                  "if submitted before "
+                                  "<b>%(completed_before)s</b>."), " ")
+                            % {
+                                "started_before": started_before,
+                                "completed_before": compact_local_datetime_str(
+                                    end, now_datetime)})
+                else:
+                    if not generate_grule_full_list:
+                        flow_page_grading_info = (
+                            string_concat(
+                                _("You have <b>%(time_remain)s</b> (before <b>"
+                                  "%(completed_before)s</b>) to submit "
+                                  "this session to "
+                                  "get %(credit_expected)s."), " ") %
+                            {
+                                "time_remain": timeuntil(end, now_datetime),
+                                "completed_before": compact_local_datetime_str(
+                                    end, now_datetime),
+                                "credit_expected": credit_expected})
+                    else:
+                        flow_page_grading_info = (
+                            string_concat(
+                                _("A new session"
+                                  "%(started_before)s "
+                                  "will get %(credit_expected)s"
+                                  "if submmited before <b>"
+                                  "%(completed_before)s</b>."),
+                                " ") %
+                            {
+                                "started_before": started_before,
+                                "completed_before": compact_local_datetime_str(
+                                    end, now_datetime),
+                                "credit_expected": credit_expected})
+            else:
+                if not credit_expected:
+                    is_dangerous = True
+                    if not generate_grule_full_list:
+                        flow_page_grading_info = (
+                            string_concat(
+                                _("This session will <b>NOT</b> "
+                                  "receive grade."), " ")
+                        )
+                    else:
+                        if start != MIN_DATETIME:
+                            flow_page_grading_info = (
+                                string_concat(
+                                    _("A new session"
+                                      "%(started_before)s will <b>NOT</b> "
+                                      "receive grade "
+                                      "since <b>%(start_time)s</b>."), " ")
+                                % {
+                                    "started_before": started_before,
+                                    "start_time": compact_local_datetime_str(
+                                        start, now_datetime)}
+                            )
+                        else:
+                            flow_page_grading_info = (
+                                string_concat(
+                                    _("A new session"
+                                      "%(started_before)s will <b>NOT</b> "
+                                      "receive grade."
+                                      ), " ")
+                                % {
+                                    "started_before": started_before}
+                            )
+                else:
+                    if not generate_grule_full_list:
+                        flow_page_grading_info = (
+                            string_concat(
+                                _("This session will get "
+                                  "<b>%(credit_expected)s</b> "
+                                  "if submitted."), " ") %
+                            {
+                                "credit_expected": credit_expected})
+                    else:
+                        if start != MIN_DATETIME:
+                            flow_page_grading_info = (
+                                string_concat(
+                                    _("A new session"
+                                      "%(started_before)s submitted "
+                                      "after <b>%(start_time)s</b> "
+                                      "will get "
+                                      "<b>%(credit_expected)s</b>"
+                                      "."), " ") %
+                                {
+                                    "started_before": started_before,
+                                    "credit_expected": credit_expected,
+                                    "start_time": compact_local_datetime_str(
+                                        start, now_datetime)})
+                        else:
+                            flow_page_grading_info = (
+                                string_concat(
+                                    _("A new session"
+                                      "%(started_before)s submitted will get "
+                                      "<b>%(credit_expected)s</b>."
+                                      ),
+                                    " ") %
+                                {
+                                    "started_before": started_before,
+                                    "credit_expected": credit_expected})
+
+            if (not next_rule.generates_grade
+                or
+                        next_rule.credit_percent == 0
+                or
+                        next_rule.max_points == 0
+                or
+                        next_rule.max_points_enforced_cap == 0):
+                if not generate_grule_full_list:
+                    flow_page_grading_info += (
+                        _("Afterward, this session will <b>NOT</b> receive grade.")
+                        + " ")
+                    return flow_page_grading_info
+
+            else:
+                if not generate_grule_full_list:
+                    credit_expected_next = None
+
+                    if next_rule.credit_percent:
+                        credit_expected_next = (
+                            _("<b>%(credit_percent)d%%</b> of the grade")
+                            % {"credit_percent": next_rule.credit_percent}
+                        )
+                    if next_rule.max_points:
+                        max_points_next = grule.max_points
+                        if grule.max_points_enforced_cap:
+                            max_points_next = min(
+                                max_points_next, grule.max_points_enforced_cap)
+                            credit_expected_next = (
+                                _(" at most <b>%(max_points)d%</b> points")
+                                % {"max_points": max_points_next}
+                            )
+                    if next_rule.bonus_points:
+                        credit_expected_next += (
+                            _("(including %(bonus_points)s bonus points)")
+                            % {"bonus_points": next_rule.bonus_points}
+                        )
+
+                    flow_page_grading_info += (
+                        string_concat(_("Afterward this session will receive no "
+                                        "more than %(credit_expected_next)s."),
+                                      " ")
+                        % {"credit_expected_next": credit_expected_next})
+
+                    return flow_page_grading_info
+
+            if flow_page_grading_info:
+                human_readable_grule_list.append(
+                    HumanReadableSessionGradingRuleDesc(
+                        human_readable_rule=flow_page_grading_info,
+                        is_active=rule_is_active,
+                        has_expired=has_expired,
+                        is_dangerous=is_dangerous)
+                )
+
+    return human_readable_grule_list
+
+# }}}
+
+
+# {{{ added by zd to generate stringified rules in flow start page
+def get_session_notify_rule(
+        session,  # type: FlowSession
+        flow_desc,  # type: FlowDesc
+        now_datetime,  # type: datetime.datetime
+        facilities=None,  # type: Optional[FrozenSet[Text]]
+        login_exam_ticket=None,  # type: Optional[ExamTicket]
+        ):
+    # type: (...) -> FlowSessionNotifyRule
+    """Return a :class:`FlowSessionNotifyRule` if submission of
+    a session is expected to send notification else *None*.
+    """
+
+    if facilities is None:
+        facilities = frozenset()
+
+    from relate.utils import dict_to_struct
+    rules = get_flow_rules(flow_desc, flow_rule_kind.notify,
+            session.participation, session.flow_id, now_datetime,
+            default_rules_desc=[
+                dict_to_struct(dict(
+                    notify=False,
+                    ))])
+
+    from course.enrollment import get_participation_role_identifiers
+    roles = get_participation_role_identifiers(session.course, session.participation)
+    session_notify_rule = None
+
+    for rule in rules:
+        if not _eval_generic_conditions(
+                rule, session.course, session.participation,
+                now_datetime, flow_id=session.flow_id,
+                login_exam_ticket=login_exam_ticket):
+            continue
+
+        if not _eval_generic_session_conditions(rule, session, now_datetime):
+            continue
+
+        if hasattr(rule, "if_has_role"):
+            if all(role not in rule.if_has_role for role in roles):
+                continue
+
+        if hasattr(rule, "if_in_facility"):
+            if rule.if_in_facility not in facilities:
+                continue
+
+        if not getattr(rule, "will_notify", False):
+            continue
+
+        if session_notify_rule is None:
+            return FlowSessionNotifyRule(
+                    may_send_notification=True,
+                    message=getattr(rule, "message", None)
+                    )
+
+    return FlowSessionNotifyRule(may_send_notification=False,
+                                 message=None)
+
+# }}}
+
+
+def get_valiated_custom_page_import_exec_str(klass, validate_only=False):
+    # type: (Union[Text, List, Tuple], Optional[bool]) -> Optional[Text]
+    if isinstance(klass, (list, tuple)) and len(klass) == 1:
+        klass, = cast(Iterable, klass)
+    if isinstance(klass, str):
+        dotted_path = klass
+        klass_name = klass.rsplit('.', 1)[1]
+    elif isinstance(klass, (list, tuple)):
+        try:
+            klass_name, dotted_path = cast(Iterable, klass)
+        except ValueError:
+            raise ValueError("The length of %s should be 2" % repr(klass))
+    else:
+        raise ValueError(
+            "'%s' is not an instance of str, list or tuple" % str(klass))
+    if not klass_name == dotted_path.rsplit(".", 1)[1]:
+        raise ValueError('"%s" is not included in the full path of "%s"' % (
+            klass_name, dotted_path))
+
+    exec_string = compile(
+        "%s = import_string('%s')" % (klass_name, dotted_path),
+        '<string>', 'exec')
+
+    if not validate_only:
+        return exec_string
+
+    from django.utils.module_loading import import_string  # noqa
+    exec(exec_string)
+    return  # type: ignore
+
 
 # vim: foldmethod=marker

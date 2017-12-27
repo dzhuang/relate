@@ -143,6 +143,16 @@ class FlowSessionAccessRuleDesc(Struct):
     message = None  # type: Text
 
 
+class FlowSessionNotifyRuleDesc(Struct):
+    if_after = None  # type: Date_ish
+    if_before = None  # type: Date_ish
+    if_has_role = None  # type: list
+    if_in_facility = None  # type: Text
+    if_signed_in_with_matching_exam_ticket = None  # type: bool
+    will_notify = None  # type: bool
+    message = None  # type: Text
+
+
 class FlowSessionGradingRuleDesc(Struct):
     grade_identifier = None  # type: Optional[Text]
     grade_aggregation_strategy = None  # type: Optional[Text]
@@ -151,6 +161,7 @@ class FlowSessionGradingRuleDesc(Struct):
 class FlowRulesDesc(Struct):
     start = None  # type: List[FlowSessionStartRuleDesc]
     access = None  # type: List[FlowSessionAccessRuleDesc]
+    notify = None  # type: List[FlowSessionNotifyRuleDesc]
     grading = None  # type: List[FlowSessionGradingRuleDesc]
     grade_identifier = None  # type: Optional[Text]
     grade_aggregation_strategy = None  # type: Optional[Text]
@@ -879,6 +890,7 @@ def expand_markup(
         repo,  # type: Repo_ish
         commit_sha,  # type: bytes
         text,  # type: Text
+        validate_only=False,  # type: bool
         use_jinja=True,  # type: bool
         jinja_env={},  # type: Dict
         ):
@@ -894,12 +906,60 @@ def expand_markup(
         env = Environment(
                 loader=GitTemplateLoader(repo, commit_sha),
                 undefined=StrictUndefined)
+
+        def render_notebook_cells(ipynb_path, indices=None, clear_output=False,
+                                  clear_markdown=False):
+            try:
+                ipynb_source = get_repo_blob_data_cached(repo, ipynb_path,
+                                                         commit_sha).decode()
+
+                from course.utils import render_notebook_from_source
+                return render_notebook_from_source(
+                    ipynb_source,
+                    clear_output=clear_output,
+                    indices=indices,
+                    clear_markdown=clear_markdown,
+                )
+            except ObjectDoesNotExist:
+                raise
+
         template = env.from_string(text)
-        text = template.render(**jinja_env)
+        kwargs = {}
+        if jinja_env:
+            kwargs.update(jinja_env)
+
+        kwargs["render_notebook_cells"] = render_notebook_cells
+
+        from relate.utils import as_local_time
+
+        def parse_date_spec_jinja(datespec):
+            return as_local_time(parse_date_spec(course, datespec))
+
+        kwargs["parse_date_spec"] = parse_date_spec_jinja
+
+        settings_jinja_macro = getattr(settings, "JINJA2_MACRO", None)
+        if settings_jinja_macro:
+            from django.utils.module_loading import import_string
+            for key, value in settings_jinja_macro.items():
+                kwargs[key] = import_string(value)
+
+        text = template.render(**kwargs)
 
     # }}}
 
     return text
+
+
+def unwrap_relate_tmp_pre_tag(html_string):
+    # type: (Text) -> (Text)
+
+    from lxml.html import fromstring, tostring
+    tree = fromstring(html_string)
+
+    for node in tree.iterdescendants("pre"):
+        if "relate_tmp_pre" in node.attrib.get("class", ""):
+            node.drop_tag()
+    return tostring(tree, encoding="unicode")
 
 
 def markup_to_html(
@@ -913,6 +973,11 @@ def markup_to_html(
         jinja_env={},  # type: Dict
         ):
     # type: (...) -> Text
+
+    disable_codehilite = bool(
+        getattr(settings,
+                "RELATE_DISABLE_CODEHILITE_MARKDOWN_EXTENSION", True))
+
     if course is not None and not jinja_env:
         try:
             import django.core.cache as cache
@@ -920,9 +985,12 @@ def markup_to_html(
             cache_key = None
         else:
             import hashlib
-            cache_key = ("markup:v7:%s:%d:%s:%s"
-                    % (CACHE_KEY_ROOT, course.id, str(commit_sha),
-                        hashlib.md5(text.encode("utf-8")).hexdigest()))
+            cache_key = ("markup:v6:%s:%d:%s:%s%s"
+                    % (CACHE_KEY_ROOT,
+                       course.id, str(commit_sha),
+                       hashlib.md5(text.encode("utf-8")).hexdigest(),
+                       ":NOCODEHILITE" if disable_codehilite else ""
+                       ))
 
             def_cache = cache.caches["default"]
             result = def_cache.get(cache_key)
@@ -936,7 +1004,8 @@ def markup_to_html(
         cache_key = None
 
     text = expand_markup(
-            course, repo, commit_sha, text, use_jinja=use_jinja, jinja_env=jinja_env)
+            course, repo, commit_sha, text, validate_only=validate_only,
+            use_jinja=use_jinja, jinja_env=jinja_env)
 
     if reverse_func is None:
         from django.urls import reverse
@@ -947,14 +1016,29 @@ def markup_to_html(
 
     from course.mdx_mathjax import MathJaxExtension
     import markdown
+
+    extensions = [
+        LinkFixerExtension(course, commit_sha, reverse_func=reverse_func),
+        MathJaxExtension(),
+        "markdown.extensions.extra",
+    ]
+
+    if not disable_codehilite:
+        # Note: no matter whether disable_codehilite, the code in
+        # the rendered ipython notebook will be highlighted.
+        # "css_class=highlight" is to ensure that, when codehilite extension
+        # is enabled, code out side of notebook uses the same html class
+        # attribute as the default highlight class (i.e., `highlight`)
+        # used by rendered ipynb notebook cells, Thus we don't need to
+        # make 2 copies of css for the highlight.
+        extensions += ["markdown.extensions.codehilite(css_class=highlight)"]
+
     result = markdown.markdown(text,
-        extensions=[
-            LinkFixerExtension(course, commit_sha, reverse_func=reverse_func),
-            MathJaxExtension(),
-            "markdown.extensions.extra",
-            "markdown.extensions.codehilite",
-            ],
+        extensions=extensions,
         output_format="html5")
+
+    if result.strip():
+        result = unwrap_relate_tmp_pre_tag(result)
 
     assert isinstance(result, six.text_type)
     if cache_key is not None:
@@ -1087,7 +1171,7 @@ DATESPEC_POSTPROCESSORS = [
         ]  # type: List[Any]
 
 
-def parse_date_spec(
+def _parse_date_spec(
         course,  # type: Optional[Course]
         datespec,  # type: Union[Text, datetime.date, datetime.datetime]
         vctx=None,  # type: Optional[ValidationContext]
@@ -1214,6 +1298,71 @@ def parse_date_spec(
     return apply_postprocs(result)
 
 
+def parse_date_spec(
+        course,  # type: Optional[Course]
+        datespec,  # type: Union[Text, datetime.date, datetime.datetime]
+        vctx=None,  # type: Optional[ValidationContext]
+        location=None,  # type: Optional[Text]
+        ):
+    # type: (...)  -> datetime.datetime
+
+    if datespec is None:
+        return None
+    if course is None:
+        return now()
+    if vctx is not None:
+        return _parse_date_spec(course, datespec, vctx, location)
+
+    if isinstance(datespec, six.text_type):
+        from six.moves.urllib.parse import quote_plus
+        from course.constants import DATESPECT_CACHE_KEY_PATTERN
+        cache_key = DATESPECT_CACHE_KEY_PATTERN % {
+            "course": course.identifier,
+            "key": quote_plus(datespec)
+        }  # type: Optional[Text]
+    else:
+        cache_key = None
+
+    try:
+        import django.core.cache as cache
+    except ImproperlyConfigured:
+        cache_key = None
+
+    def_cache = cache.caches["default"]
+    if not hasattr(def_cache, "delete_pattern"):
+        cache_key = None
+
+    if cache_key is None:
+        result = _parse_date_spec(course, datespec)
+        if result:
+            assert isinstance(result, datetime.datetime)
+        return result
+
+    from bson import json_util
+    import json
+
+    result_json = None
+    # Memcache is apparently limited to 250 characters.
+    if len(cache_key) < 240:
+        result_json = def_cache.get(cache_key)
+    if result_json is not None:
+        assert isinstance(result_json, six.text_type), cache_key
+        result = json.loads(result_json, object_hook=json_util.object_hook)
+        if result:
+            assert isinstance(result, datetime.datetime)
+        return result
+
+    result = _parse_date_spec(course, datespec)
+    result_json = json.dumps(result, default=json_util.default)
+
+    if len(result_json) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
+        def_cache.add(cache_key, result_json, None)
+
+    if result:
+        assert isinstance(result, datetime.datetime)
+
+    return result
+
 # }}}
 
 
@@ -1276,6 +1425,43 @@ def compute_chunk_weight_and_shown(
     return 0, True
 
 
+def get_collapsible_chunk_content(
+        chunk,  # type: ChunkDesc
+        content,  # type: Text
+        subtitle=None,  # type: Optional[Text]
+        sub_color=None,  # type: Optional[Text]
+        ):
+    # type: (...) -> Text
+
+    subtitle_str = ""
+    if subtitle:
+        subtitle_str = (
+            u'<span style="font-size:x-small; %(sub_color)s">'
+            '(%(subtitle)s)</span>' % {
+                "subtitle": subtitle,
+                "sub_color": "color: %s" if sub_color else ""})
+
+    s = (
+        u'<div class="panel panel-default" style="margin-bottom:0" '
+        'markdown="block"><div class="panel-heading" >'
+        '<h3 class="panel-title">'
+        '<a data-toggle="collapse" href="#%(id)s_accordion">'
+        '%(title)s%(subtitle)s'
+        '</a></h3></div>'
+        '<div id="%(id)s_accordion" class="panel-collapse collapse" '
+        'markdown="block">'
+        '<div class="panel-body" markdown="block">'
+        '%(content)s'
+        '</div></div></div>' % {
+            "id": chunk.id,  # type: ignore
+            "title": chunk.title,
+            "subtitle": subtitle_str,
+            "content": content
+        })
+
+    return s
+
+
 def get_processed_page_chunks(
         course,  # type: Course
         repo,  # type: Repo_ish
@@ -1284,6 +1470,7 @@ def get_processed_page_chunks(
         roles,  # type: List[Text]
         now_datetime,  # type: datetime.datetime
         facilities,  # type: FrozenSet[Text]
+        jinja_env={},  # type: Dict
         ):
     # type: (...) -> List[ChunkDesc]
     for chunk in page_desc.chunks:
@@ -1291,9 +1478,19 @@ def get_processed_page_chunks(
                 compute_chunk_weight_and_shown(
                         course, chunk, roles, now_datetime,
                         facilities)
-        chunk.html_content = markup_to_html(course, repo, commit_sha, chunk.content)
+        chunk.html_content = markup_to_html(
+            course, repo, commit_sha, chunk.content,
+            jinja_env=jinja_env
+        )
         if not hasattr(chunk, "title"):
             chunk.title = extract_title_from_markup(chunk.content)
+
+        collapsible = getattr(chunk, "collapsible", False)
+        if collapsible:
+            subtitle = getattr(chunk, "subtitle", None)
+            sub_color = getattr(chunk, "sub_color", "black")
+            chunk.html_content = get_collapsible_chunk_content(
+                chunk, chunk.html_content, subtitle, sub_color)
 
     page_desc.chunks.sort(key=lambda chunk: chunk.weight, reverse=True)
 

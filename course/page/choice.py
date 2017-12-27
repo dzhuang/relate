@@ -37,6 +37,14 @@ from course.page.base import (
 from course.content import remove_prefix
 from course.validation import validate_markup, ValidationError
 
+# {{{ mypy
+
+if False:
+    from typing import Dict  # noqa
+    from course.utils import PageContext  # noqa
+
+# }}}
+
 
 class ChoiceAnswerForm(StyledForm):
     def __init__(self, field, *args, **kwargs):
@@ -136,8 +144,9 @@ class ChoiceQuestionBase(PageBaseWithTitle, PageBaseWithValue):
         return markup_to_html(page_context, self.page_desc.prompt)
 
     def initialize_page_data(self, page_context):
+        # type: (PageContext) -> Dict
         import random
-        perm = list(range(len(self.page_desc.choices)))
+        perm = list(range(len(self.page_desc.choices)))  # type: ignore
         if getattr(self.page_desc, "shuffle", False):
             random.shuffle(perm)
 

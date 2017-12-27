@@ -2,7 +2,6 @@
 *~
 .*.sw[opn]
 .sw[ophijklm]
-local_settings.py
 *.sqlite3
 *.py[co]
 .sw[opn]
@@ -23,3 +22,6 @@ saml_config.py
 git-roots
 
 .mypy_cache
+/media/CACHE
+/protected
+

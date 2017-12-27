@@ -57,7 +57,7 @@
           {% else %}
              data-order=""
           {% endif %}
-          >{{ opp.due_time }}</td>
+          >{{ opp.due_time|compact_datetime }}</td>
         <td class="datacol">
           {% if opp.shown_in_participant_grade_book and opp.result_shown_in_participant_grade_book %}
             <i class="fa fa-check-square-o"></i>
