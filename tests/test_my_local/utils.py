@@ -1,9 +1,10 @@
 from django.conf import settings
 from tempfile import mkdtemp
 
+
 def _skip_test():
 
-    mongo_db_name =  getattr(settings, "RELATE_MONGODB_NAME", None)
+    mongo_db_name = getattr(settings, "RELATE_MONGODB_NAME", None)
     if not mongo_db_name:
         # Because this will use default name, DANGEROUS
         return True
@@ -28,8 +29,8 @@ def _skip_test():
 
     return False
 
-skip_test = _skip_test()
 
+skip_test = _skip_test()
 
 SKIP_LOCAL_TEST_REASON = "These are tests for local test"
 

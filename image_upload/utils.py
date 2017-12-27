@@ -41,7 +41,7 @@ from course.constants import participation_permission as pperm
 from course.utils import CoursePageContext
 from image_upload.views import COURSE_STAFF_IMAGE_PERMISSION
 import numpy as np
-from numpy.core import numeric
+from numpy.core import numeric  # noqa
 
 
 default_fudge = datetime.timedelta(seconds=0, microseconds=0, days=0)
@@ -55,8 +55,9 @@ JINJA_TEX_TEMPLATE_INBLOCK_LATEX_CALL_RE = (
     re.compile("{%\s*call\s*latex[^}]*}((?:.|\n)*?){%\s*endcall"))
 
 if False:
-    from typing import Text, Any  # noqa
+    from typing import Text, Any, Optional, Dict, Iterable, Union  # noqa
     from course.utils import PageContext  # noqa
+    from course.models import Participation  # noqa
 
 
 # {{{  widget used in admin
@@ -204,6 +205,7 @@ def strip_template_comments(source):
 
 
 def is_course_staff_participation(participation):
+    # type: (Optional[Participation]) -> bool
     if not participation:
         return False
 
@@ -224,6 +226,7 @@ def is_course_staff_course_image_request(request, course):
 
 
 def deep_np_to_string(layer):
+    # type: (Any) -> Any
     # convert embeded numpy ndarray to string(bytes string)
     # while retain the original data structure
     to_ret = layer
@@ -251,6 +254,7 @@ def deep_np_to_string(layer):
 
 
 def deep_convert_ordereddict(layer):
+    # type: (Any) -> Any
     to_ret = layer
     if isinstance(layer, dict):
         from collections import OrderedDict
@@ -286,6 +290,8 @@ def deep_convert_ordereddict(layer):
 
 
 def deep_eq(_v1, _v2, datetime_fudge=default_fudge, _assert=False):
+    # type: (Any, Any, Any, bool) -> bool
+
     """
     Modified from https://gist.github.com/samuraisam/901117
     Tests for deep equality between two python data structures recursing
@@ -307,12 +313,14 @@ def deep_eq(_v1, _v2, datetime_fudge=default_fudge, _assert=False):
                                  _assert=_assert)
 
     def _check_assert(R, a, b, reason=''):
+        # type: (Any, Any, Any, Optional[Text]) -> bool
         if _assert and not R:
             assert 0, "an assertion has failed in deep_eq (%s) %s != %s" % (
                 reason, str(a), str(b))
         return R
 
     def _deep_dict_eq(d1, d2):
+        # type: ignore
         k1, k2 = (sorted(d1.keys()), sorted(d2.keys()))
         if k1 != k2:  # keys should be exactly equal
             return _check_assert(False, k1, k2, "keys")
@@ -322,6 +330,7 @@ def deep_eq(_v1, _v2, datetime_fudge=default_fudge, _assert=False):
                                          len(k1)), d1, d2, "dictionaries")
 
     def _deep_iter_eq(l1, l2):
+        # type: ignore
         if len(l1) != len(l2):
             return _check_assert(False, l1, l2, "lengths")
         return _check_assert(operator.eq(sum(_deep_eq(v1, v2)
@@ -329,6 +338,7 @@ def deep_eq(_v1, _v2, datetime_fudge=default_fudge, _assert=False):
                                          len(l1)), l1, l2, "iterables")
 
     def _deep_nd_eq(np1, np2):
+        # type: ignore
         if isinstance(np1, np.matrix) or isinstance(np2, np.matrix):
             if not (isinstance(np1, np.matrix)
                     and isinstance(np2, np.matrix)):
@@ -359,6 +369,7 @@ def deep_eq(_v1, _v2, datetime_fudge=default_fudge, _assert=False):
                 raise
 
     def op(a, b):
+        # type: (Any, Any) -> bool
         _op = operator.eq
         if type(a) == datetime.datetime and type(b) == datetime.datetime:
             s = datetime_fudge.seconds
@@ -377,17 +388,17 @@ def deep_eq(_v1, _v2, datetime_fudge=default_fudge, _assert=False):
         pass
     else:
         if isinstance(_v1, dict):
-            op = _deep_dict_eq
+            op = _deep_dict_eq  # type: ignore
         else:
             if isinstance(_v1, np.ndarray):
                 c1, c2 = _v1, _v2
-                op = _deep_nd_eq
+                op = _deep_nd_eq  # type: ignore
             else:
                 try:
                     c1, c2 = (list(iter(_v1)), list(iter(_v2)))
                 except TypeError:
                     c1, c2 = _v1, _v2
                 else:
-                    op = _deep_iter_eq
+                    op = _deep_iter_eq  # type: ignore
 
     return op(c1, c2)

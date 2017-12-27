@@ -39,10 +39,11 @@ from plugins.latex.utils import get_latex_cache
 
 # {{{ mypy
 if False:
-    from typing import Text, Any, Dict, Tuple, Union, Optional  # noqa
+    from typing import Text, Any, Dict, Tuple, Union, Optional, List  # noqa
     from course.utils import PageContext  # noqa
     from pymongo import MongoClient  # noqa
     from pymongo.collection import Collection  # noqa
+    from course.validation import ValidationContext  # noqa
 # }}}
 
 
@@ -71,7 +72,7 @@ from image_upload.utils import deep_eq, deep_convert_ordereddict, deep_np_to_str
 
 
 def _debug_print(s):
-
+    # type: (Text) -> None
     # debugging switch
     debug = False
 
@@ -90,6 +91,7 @@ DB = get_mongo_db()
 
 
 def make_latex_page_key(key_making_string_md5):
+    # type: (Text) -> Text
     return ("latexpage:%s:%s"
             % (CACHE_VERSION,
                key_making_string_md5))
@@ -182,20 +184,21 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         return []
 
     def __init__(self, vctx, location, page_desc):
+        # type: (Optional[ValidationContext], Optional[Text], Struct) -> None
         super(LatexRandomQuestionBase, self).__init__(vctx, location, page_desc)
 
         if vctx is not None and hasattr(page_desc, "data_files"):
             # {{{ validate random_question_data_file
-            if page_desc.random_question_data_file not in page_desc.data_files:
+            if page_desc.random_question_data_file not in page_desc.data_files:  # type: ignore  # noqa
                 raise ValidationError(
                     string_concat(
                         "%s: " % location,
                         _("'%s' should be listed in 'data_files'")
-                        % page_desc.random_question_data_file))
+                        % page_desc.random_question_data_file))  # type: ignore
 
             repo_bytes_data = get_repo_blob_data_cached(
                 vctx.repo,
-                page_desc.random_question_data_file,
+                page_desc.random_question_data_file,  # type: ignore
                 vctx.commit_sha)
             bio = BytesIO(repo_bytes_data)
             try:
@@ -204,46 +207,58 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             except TypeError:
                 # py2
                 repo_data_loaded = pickle.load(bio)
+            except Exception as e:
+                if isinstance(e, ValueError):
+                    if six.PY2 and "unsupported pickle protocol: 3" in str(e):
+                        raise ValidationError(
+                            string_concat(
+                                "%s: " % location,
+                                _("'%s' was pickle dumped using protocol 3 "
+                                  "(under python3), it should be dumped with "
+                                  "'protocol=2' parameters")
+                                % page_desc.random_question_data_file))  # type: ignore  # noqa
+                raise ValidationError(
+                    "%s: %s: %s" % (location, type(e).__name__, str(e)))
             if not isinstance(repo_data_loaded, (list, tuple)):
                 raise ValidationError(
                     string_concat(
                         "%s: " % location,
                         _("'%s' must be dumped from a list or tuple")
-                        % page_desc.random_question_data_file))
+                        % page_desc.random_question_data_file))  # type: ignore
             n_data = len(repo_data_loaded)
             if n_data == 0:
                 raise ValidationError(
                     string_concat(
                         "%s: " % location,
                         _("'%s' seems to be empty, that's not valid")
-                        % page_desc.random_question_data_file))
+                        % page_desc.random_question_data_file))  # type: ignore
             # }}}
 
             if hasattr(page_desc, "cache_key_files"):
-                for cf in page_desc.cache_key_files:
-                    if cf not in page_desc.data_files:
+                for cf in page_desc.cache_key_files:  # type: ignore
+                    if cf not in page_desc.data_files:  # type: ignore
                         raise ValidationError(
                             string_concat(
                                 location,
                                 ": ",
                                 _("'%s' should be listed in 'data_files'")
                                 % cf))
-                    if (page_desc.random_question_data_file
-                            in page_desc.cache_key_files):
+                    if (page_desc.random_question_data_file  # type: ignore
+                            in page_desc.cache_key_files):  # type: ignore
                         vctx.add_warning(
                             location,
                             _("'%s' is not expected in "
                               "'cache_key_files' as it will not "
                               "be used for building cache")
-                            % page_desc.random_question_data_file)
+                            % page_desc.random_question_data_file)  # type: ignore
 
             if hasattr(page_desc, "excluded_cache_key_files"):
-                for cf in page_desc.excluded_cache_key_files:
-                    if cf not in page_desc.data_files:
+                for cf in page_desc.excluded_cache_key_files:  # type: ignore
+                    if cf not in page_desc.data_files:  # type: ignore
                         vctx.add_warning(location, "'%s' is not in 'data_files'"
                                               % cf)
 
-            for data_file in page_desc.data_files:
+            for data_file in page_desc.data_files:  # type: ignore
                 try:
                     if not isinstance(data_file, str):
                         # This seems never happened
@@ -287,16 +302,16 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     % self.__class__.__name__
                 )
             else:
-                if page_desc.runpy_file not in page_desc.data_files:
+                if page_desc.runpy_file not in page_desc.data_files:  # type: ignore
                     raise ValidationError(
                         string_concat(
                             "%s: " % location,
                             _("'%s' should be listed in 'data_files'")
-                            % page_desc.runpy_file))
+                            % page_desc.runpy_file))  # type: ignore
 
                 try:
                     runpy_file = get_repo_blob_data_cached(
-                        vctx.repo, page_desc.runpy_file,
+                        vctx.repo, page_desc.runpy_file,  # type: ignore
                         vctx.commit_sha)
                     compile(runpy_file, '<runpy file>', 'exec')
                     del runpy_file
@@ -304,10 +319,10 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     raise ValidationError(
                         string_concat("%s: " % location,
                                       _("'%s' is not a valid Python script file.")
-                                      % page_desc.runpy_file))
+                                      % page_desc.runpy_file))  # type: ignore
 
-            if hasattr(page_desc, "cache_key_attrs"):
-                for attr in page_desc.cache_key_attrs:
+            if hasattr(page_desc, "cache_key_attrs"):  # type: ignore
+                for attr in page_desc.cache_key_attrs:  # type: ignore
                     if not hasattr(page_desc, attr):
                         raise ValidationError("%s: attribute '%s' not found"
                                               % (location, attr))
@@ -317,14 +332,14 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         # These files/attrs are used to generate rendered body and correct answer
 
-        self.cache_key_files = self.initialize_cache_key_file_attrs(page_desc)
+        self.cache_key_files = self.initialize_cache_key_file_attrs(page_desc)  # type: ignore  # noqa
         self.cache_key_attrs = self.initialize_cache_key_attrs(page_desc)
 
-        self.runpy_context = {}
+        self.runpy_context = {}  # type: Dict
         if (hasattr(page_desc, "runpy_file")
                 or hasattr(page_desc, "full_process_code")):
             if getattr(page_desc, "runpy_context", None):
-                self.runpy_context = struct_to_dict(page_desc.runpy_context)
+                self.runpy_context = struct_to_dict(page_desc.runpy_context)  # type: ignore  # noqa
 
         self.will_receive_grade = getattr(page_desc, "will_receive_grade", True)
         self.is_page_desc_updated = False
@@ -332,6 +347,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         self.is_warming_up = False
 
     def initialize_cache_key_file_attrs(self, page_desc):
+        # type: (Struct) -> List
         # generate file lists that will be used to make cache key
         cache_key_files_set = set(getattr(
             page_desc, "cache_key_files", getattr(page_desc, "data_files")))
@@ -339,13 +355,14 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             page_desc, "excluded_cache_key_files", []))
 
         # Exclude question data file for building cache
-        excluded_cache_key_file_set.update([page_desc.random_question_data_file])
+        excluded_cache_key_file_set.update([page_desc.random_question_data_file])  # type: ignore  # noqa
         cache_key_files_set.difference_update(excluded_cache_key_file_set)
 
         # In case order changed across repo and across runs
         return sorted(list(cache_key_files_set))
 
     def initialize_cache_key_attrs(self, page_desc):
+        # type: (Struct) -> List
         # generate attribute list that will be used to make cache key
         cache_key_attrs = getattr(page_desc, "cache_key_attrs", [])
 
@@ -363,6 +380,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         return sorted(cache_key_attrs)
 
     def get_updated_page_desc(self, page_context, new_page_desc_dict):
+        # type: (PageContext, Dict) -> Struct
         if self.is_page_desc_updated:
             return self.page_desc
 
@@ -375,6 +393,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         return dict_to_struct(page_desc_dict)
 
     def update_page_desc(self, page_context, page_data):
+        # type: (PageContext, Dict) -> None
         if self.is_page_desc_updated:
             return
         if self.error_updating_page_desc is not None:
@@ -384,13 +403,14 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             page_context, page_data)
 
         if success:
+            assert isinstance(result, dict)
             new_desc = self.get_updated_page_desc(page_context,
                                                   new_page_desc_dict=result)
 
             super(LatexRandomQuestionBase, self).__init__(None, None, new_desc)
             self.is_page_desc_updated = True
         else:
-            self.error_updating_page_desc = result
+            assert result is not None
             assert not self.is_page_desc_updated
             self.error_updating_page_desc = string_concat(
                 "<p class='latexpage-error alert alert-danger'>",
@@ -456,6 +476,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         return self.will_receive_grade
 
     def generate_new_page_data(self, page_context, question_data):
+        # type: (PageContext, Text) -> Dict[Text, Text]
         commit_sha = page_context.commit_sha.decode()
         new_template_hash = self.generate_template_hash(page_context)
         new_hash_id = (
@@ -707,7 +728,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         # get random question_data
         repo_bytes_data = get_repo_blob_data_cached(
             page_context.repo,
-            self.page_desc.random_question_data_file,
+            self.page_desc.random_question_data_file,  # type: ignore
             page_context.commit_sha)
         bio = BytesIO(repo_bytes_data)
         try:
@@ -764,8 +785,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
             self.update_page_desc(page_context, page_data)
 
-            self.body(page_context, page_data)
-            self.correct_answer(page_context, page_data,
+            self.body(page_context, page_data)  # type: ignore
+            self.correct_answer(page_context, page_data,  # type: ignore
                                 answer_data=None, grade_data=None)
 
         self.is_warming_up = False
@@ -875,6 +896,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             debug_print("===result is found in page mongo===!")
             success = True
 
+        from image_upload.utils import is_course_staff_participation
+
         if result is None:
             debug_print("!!!!!! runpy !!!!!!")
             try:
@@ -893,7 +916,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
                 assert all_process_attribute_parts
 
-                new_page_desc_dict = {}
+                new_page_desc_dict = {}  # type: Dict
                 for part in all_process_attribute_parts:
                     success, result = self.jinja_runpy(
                         page_context,
@@ -901,6 +924,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                         "%s_process_code" % part,
                         **runpy_kwargs)
                     if success:
+                        assert result is not None
                         if isinstance(result, dict):
                             for k in result.keys():
                                 # this should result from the full part
@@ -918,12 +942,14 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                         raise RuntimeError(result)
                 result = new_page_desc_dict
             except Exception as e:
-                from image_upload.utils import is_course_staff_participation
                 if page_context.in_sandbox or is_course_staff_participation(
                         page_context.flow_session.participation):
                     error_msg = "".join(format_exc())
                 else:
                     error_msg = "%s: %s" % (type(e).__name__, str(e))
+
+                if not error_msg.strip():
+                    error_msg = _("Failed for unkown reason.")
 
                 return False, error_msg
 
@@ -945,7 +971,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     "<pre>%s</pre></div>"
                     % "".join(format_exc()))
 
-                from image_upload.utils import is_course_staff_participation
                 if page_context.in_sandbox or is_course_staff_participation(
                         page_context.flow_session.participation):
                     error_msg += extra_error_msg
@@ -998,6 +1023,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         return super(LatexRandomQuestionBase, self).body(page_context, page_data)
 
     def send_error_notification_email(self, page_context, message):
+        # type: (PageContext, Text) -> None
         if not (getattr(settings, "DEBUG") or not page_context.in_sandbox):
             return
         from django.core.mail import EmailMessage
@@ -1021,6 +1047,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             msg.send()
 
     def get_error_notification_email_messages(self, page_context, error_msg):
+        # type: (PageContext, Text) -> Text
         from django.utils import translation
         from relate.utils import local_now, format_datetime_local
         with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
@@ -1031,7 +1058,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     "site": getattr(settings, "RELATE_BASE_URL"),
                     "username":
                         page_context.flow_session.participation.user.username,
-                    "page_id": self.page_desc.id,
+                    "page_id": self.page_desc.id,  # type: ignore
                     "course": page_context.course,
                     "error_message": error_msg,
                     "review_uri": page_context.page_uri,
@@ -1040,54 +1067,58 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             return message
 
     def get_run_jinja_req(self, page_context, question_data, code_name, **kwargs):
+        # type: (PageContext, Any, Text, **Any) -> Dict
 
         assert question_data
         run_jinja_req = {"compile_only": False}
 
         def transfer_attr_to(name, from_name=None):
+            # type: (Text, Optional[Text]) -> None
             if from_name:
                 if (from_name == "full_process_code"
                     and
                         hasattr(self.page_desc, "runpy_file")):
-                    run_jinja_req[name] = (
+                    run_jinja_req[name] = (  # type: ignore
                         "runpy_context = %s\n" % repr(self.runpy_context))
-                    run_jinja_req[name] += (
+                    run_jinja_req[name] += (  # type: ignore
                         "exec(data_files['%s'].decode('utf-8'))"
-                        % self.page_desc.runpy_file)
+                        % self.page_desc.runpy_file)  # type: ignore
                 elif hasattr(self.page_desc, from_name):
                     run_jinja_req[name] = getattr(self.page_desc, from_name)
             else:
                 assert hasattr(self.page_desc, name)
                 run_jinja_req[name] = getattr(self.page_desc, name)
 
-        run_jinja_req["user_code"] = ""
+        run_jinja_req["user_code"] = ""  # type: ignore
         transfer_attr_to("setup_code", from_name=code_name)
         assert run_jinja_req["setup_code"]
 
         common_code_name = kwargs.pop("common_code_name", None)
-        if (common_code_name is not None
-                and getattr(self.page_desc, common_code_name, "")):
-            run_jinja_req["setup_code"] = (
-                u"%s\n%s" % (
-                    getattr(self.page_desc, common_code_name, ""),
-                    run_jinja_req["setup_code"]))
+        common_code = None
 
-        run_jinja_req["data_files"] = {}
+        if common_code_name is not None:
+            common_code = getattr(self.page_desc, common_code_name, "")
 
-        for data_file in self.page_desc.data_files:
-            if data_file != self.page_desc.random_question_data_file:
-                run_jinja_req["data_files"][data_file] = \
+        if common_code is not None:
+            run_jinja_req["setup_code"] = (  # type: ignore
+                u"%s\n%s" % (common_code, run_jinja_req["setup_code"]))
+
+        run_jinja_req["data_files"] = {}  # type: ignore
+
+        for data_file in self.page_desc.data_files:  # type: ignore
+            if data_file != self.page_desc.random_question_data_file:  # type: ignore  # noqa
+                run_jinja_req["data_files"][data_file] = (  # type: ignore
                     b64encode(
                         get_repo_blob_data_cached(
                             page_context.repo, data_file,
-                            page_context.commit_sha)).decode()
+                            page_context.commit_sha)).decode())
 
-        run_jinja_req["data_files"]["question_data"] = question_data
+        run_jinja_req["data_files"]["question_data"] = question_data  # type: ignore  # noqa
         return run_jinja_req
 
     def jinja_runpy(
             self, page_context, question_data, code_name, **kwargs):
-        # type: (Any, Any, Text, Dict) -> Tuple[bool, Any]
+        # type: (Any, Any, Text, **Any) -> Tuple[bool, Any]
         # {{{ request run
 
         # print("------------------runpy--------------------")
@@ -1141,7 +1172,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
             if (not page_context.in_sandbox
                 and
-                    not is_nuisance_failure(response_dict)):
+                    not is_nuisance_failure(response_dict)):  # type: ignore
 
                 message = self.get_error_notification_email_messages(page_context,
                                                                      error_msg)
@@ -1178,33 +1209,33 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         from relate.utils import dict_to_struct
         response = dict_to_struct(response_dict)
 
-        if response.result == "success":
+        if response.result == "success":  # type:ignore
             # > 1 because there will be execution time
             if (code_name == "full_process_code"
                 and
                     hasattr(response, "feedback")
                 and
-                        len(response.feedback) > 1):
+                        len(response.feedback) > 1):  # type:ignore
 
                 try:
                     import json
-                    result_dict = json.loads(response.feedback[0])
+                    result_dict = json.loads(response.feedback[0])  # type:ignore
                 except Exception as e:
                     error_msg = "".join(format_exc())
-                    response.result = "uncaught_error"
-                    response.traceback = error_msg
+                    response.result = "uncaught_error"  # type:ignore
+                    response.traceback = error_msg  # type:ignore
                 else:
                     assert result_dict
                     return True, result_dict
 
-            elif hasattr(response, "stdout") and response.stdout:
-                return True, response.stdout
+            elif hasattr(response, "stdout") and response.stdout:  # type:ignore
+                return True, response.stdout  # type:ignore
             else:
-                response.result = "uncaught_error"
-                response.traceback = (
+                response.result = "uncaught_error"  # type:ignore
+                response.traceback = (  # type:ignore
                     _("'%s' expects output, while got None") % code_name)
 
-        if response.result in [
+        if response.result in [  # type:ignore
                 "uncaught_error",
                 "setup_compile_error",
                 "setup_error",
@@ -1228,14 +1259,14 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                     _("This is the problematic code"),
                     ":"
                     "<pre>%s</pre></p>"]) % escape(run_jinja_req["setup_code"]))
-                if hasattr(response, "traceback") and response.traceback:
+                if hasattr(response, "traceback") and response.traceback:  # type:ignore  # noqa
                     feedback_bits.append("".join([
                         "<p>",
                         _("This is the exception traceback"),
                         ":"
-                        "<pre>%s</pre></p>"]) % escape(response.traceback))
+                        "<pre>%s</pre></p>"]) % escape(response.traceback))  # type:ignore  # noqa
 
-        elif response.result == "timeout":
+        elif response.result == "timeout":  # type:ignore
             success = False
             feedback_bits.append("".join([
                 "<p>",
@@ -1247,7 +1278,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             )
         else:
             success = False
-            error_msg = repr(response.result)
+            error_msg = repr(response.result)  # type:ignore
             feedback_bits.append("".join([
                 "<p>",
                 error_msg,

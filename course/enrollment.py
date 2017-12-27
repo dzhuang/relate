@@ -757,11 +757,11 @@ def create_preapprovals_csv(pctx):
                 StringIO(data), inst_id_column, provided_name_column, header_count)
 
             if csv_valid_data:
-                for l in csv_valid_data:
-                    l = l.strip()
+                for ln in csv_valid_data:
+                    ln = ln.strip()
                     preapp_type = form.cleaned_data["preapproval_type"]
 
-                    if not l:
+                    if not ln:
                         continue
 
                     if preapp_type == "email":
@@ -769,7 +769,7 @@ def create_preapprovals_csv(pctx):
 
                     elif preapp_type == "institutional_id_with_name":
 
-                        [inst_id, full_name] = l.split(",")
+                        [inst_id, full_name] = ln.split(",")
 
                         if not (inst_id and full_name):
                             continue
@@ -834,15 +834,15 @@ def create_preapprovals_csv(pctx):
                 inst_id_list = []
                 n_remove = 0
                 if csv_valid_data:
-                    for l in csv_valid_data:
-                        l = l.strip()
+                    for ln in csv_valid_data:
+                        ln = ln.strip()
                         preapp_type = form.cleaned_data["preapproval_type"]
-                        if not l:
+                        if not ln:
                             continue
                         if preapp_type == "email":
                             pass
                         elif preapp_type == "institutional_id_with_name":
-                            [inst_id, full_name] = l.split(",")
+                            [inst_id, full_name] = ln.split(",")
                             inst_id_list.append(inst_id)
 
                 if inst_id_list:

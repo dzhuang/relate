@@ -60,7 +60,7 @@ SINGLE_COURSE_SETUP_LIST = [
             "hidden": False,
             "listed": True,
             "accepts_enrollment": True,
-            "git_source": "https://code.aliyun.com/dzhuang/my_learningwhat_test_repo.git",
+            "git_source": "https://code.aliyun.com/dzhuang/my_learningwhat_test_repo.git",  # noqa
             "course_file": "course.yml",
             "events_file": "events.yml",
             "enrollment_approval_required": False,

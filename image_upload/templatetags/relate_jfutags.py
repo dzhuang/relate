@@ -1,6 +1,6 @@
-from django.template.context_processors import csrf
 from django.core.urlresolvers import reverse
-from django.template import Library, Context, loader
+from django.template import Library
+from django.shortcuts import render
 
 register = Library()
 
@@ -23,13 +23,13 @@ def jfu(
     Any additionally supplied positional and keyword arguments are directly
     forwarded to the named custom upload-handling URL.
     """
-    context.update({
+    ctx = context.push()
+    ctx.update({
         'JQ_OPEN': '{%',
         'JQ_CLOSE': '%}',
-        'upload_handler_url': reverse(
+        'upload_handler_url': (reverse(
             upload_handler_name, args=args, kwargs=kwargs
-        ),
-    })
+        ))})
 
     # The uploaded results are not displayed by default. To display the
     # uploaded results, pass the name of the view url to context.
@@ -37,10 +37,7 @@ def jfu(
     if context.get('prev_visit_id', None):
         uploaded_view_url += "?visit_id=%s" % context['prev_visit_id']
 
-    # Use the request context variable, injected
-    # by django.core.context_processors.request,
-    # to generate the CSRF token.
-    context['uploaded_view_url'] = uploaded_view_url
-    context.update(csrf(context.get('request')))
-    t = loader.get_template(template_name)
-    return t.render(Context(context))
+    ctx['uploaded_view_url'] = uploaded_view_url
+    ctx['form'] = context.get("form")
+    request = context.request
+    return render(request, template_name, context=ctx)

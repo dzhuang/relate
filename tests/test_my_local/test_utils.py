@@ -6,6 +6,7 @@ import numpy as np
 from collections import OrderedDict
 from django.test import mock
 
+
 class DeepEqTest(TestCase):
 
     def test_dict(self):
@@ -65,12 +66,12 @@ class DeepEqTest(TestCase):
         x11, y11 = ({'a': 'b', 'c': 'd'}, OrderedDict({'c': 'd', 'a': 'b'}))
         self.assertTrue(deep_eq(x11, y11))
 
-        x12, y12 = ({'a': 'b', 'c': [{'a':1, 'b':2}]},
-                    OrderedDict({'c': [{'b':2, 'a':1}], 'a': 'b'}))
+        x12, y12 = ({'a': 'b', 'c': [{'a': 1, 'b': 2}]},
+                    OrderedDict({'c': [{'b': 2, 'a': 1}], 'a': 'b'}))
         self.assertTrue(deep_eq(x12, y12))
 
-        x13, y13 = ({'a': 'b', 'c': [{'a':2, 'b':2}]},
-                    OrderedDict({'c': [{'b':2, 'a':1}], 'a': 'b'}))
+        x13, y13 = ({'a': 'b', 'c': [{'a': 2, 'b': 2}]},
+                    OrderedDict({'c': [{'b': 2, 'a': 1}], 'a': 'b'}))
         self.assertFalse(deep_eq(x13, y13))
 
     def test_numpy_array(self):
@@ -108,9 +109,9 @@ class DeepEqTest(TestCase):
 
     def test_numpy_matrix(self):
         x = np.matrix(
-             [[  0,  95, 170],
-              [  0,   0,   0],
-              [  0,   0,   1]])
+             [[0,  95, 170],
+              [0,   0,   0],
+              [0,   0,   1]])
         y = np.matrix(
                 [[0, 95, 170],
                  [0, 0, 0],
@@ -125,7 +126,7 @@ class DeepEqTest(TestCase):
                  [0, 0, 1]])
 
         self.assertFalse(deep_eq(x, y))
-        with self.assertRaises(AssertionError) as e:
+        with self.assertRaises(AssertionError):
             deep_eq(x, y, _assert=True)
 
     def test_numpy_matrix_with_nan(self):

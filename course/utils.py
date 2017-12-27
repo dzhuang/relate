@@ -1360,7 +1360,7 @@ def get_human_readable_flow_may_start_desc_list(
         flow_id,  # type: Text
         flow_desc,  # type: FlowDesc
         now_datetime,  # type: datetime.datetime
-        facilities=None,  # type: Optional[Frozenset[Text]]
+        facilities=None,  # type: Optional[FrozenSet[Text]]
         for_rollover=False,  # type: bool
         login_exam_ticket=None,  # type: Optional[ExamTicket]
         ):
@@ -1801,7 +1801,7 @@ def get_session_notify_rule(
         session,  # type: FlowSession
         flow_desc,  # type: FlowDesc
         now_datetime,  # type: datetime.datetime
-        facilities=None,  # type: Optional[Frozenset[Text]]
+        facilities=None,  # type: Optional[FrozenSet[Text]]
         login_exam_ticket=None,  # type: Optional[ExamTicket]
         ):
     # type: (...) -> FlowSessionNotifyRule
@@ -1885,7 +1885,7 @@ def get_valiated_custom_page_import_exec_str(klass, validate_only=False):
 
     from django.utils.module_loading import import_string  # noqa
     exec(exec_string)
-    return
+    return  # type: ignore
 
 
 # vim: foldmethod=marker

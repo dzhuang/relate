@@ -488,104 +488,68 @@ class CheckRelateCourseLanguages(CheckRelateSettingsBase):
         'de': _('German')}
     INVALID_CONF2 = (('en',),)
     INVALID_CONF3 = [('en',), ([], 'English'), ["1", "2"]]
+    INVALID_CONF4 = "some thing"
 
-    @override_settings(RELATE_ENABLE_COURSE_SPECIFIC_LANG=False)
-    def test_relate_enable_course_specific_lang_not_enabled(self):
-        with override_settings(COURSE_LANGUAGES=self.VALID_CONF1):
+    def test_enable_course_specific_lang_instance_false(self):
+        with override_settings(RELATE_ENABLE_COURSE_SPECIFIC_LANG=False):
             self.assertEqual(self.func(None), [])
 
-        with override_settings(COURSE_LANGUAGES=self.VALID_CONF2):
+    def test_enable_course_specific_lang_instance_true(self):
+        with override_settings(RELATE_ENABLE_COURSE_SPECIFIC_LANG=True):
             self.assertEqual(self.func(None), [])
 
-        with override_settings(COURSE_LANGUAGES=self.VALID_CONF3):
-            self.assertEqual(self.func(None), [])
+    def test_enable_course_specific_lang_instance_not_bool(self):
+        with override_settings(RELATE_ENABLE_COURSE_SPECIFIC_LANG="TrueString"):
+            self.assertEqual([r.id for r in self.func(None)],
+                             ["relate_course_specific_lang.E001"])
 
-        with override_settings(COURSE_LANGUAGES=self.INVALID_CONF1):
-            self.assertEqual(self.func(None), [])
-
-        with override_settings(COURSE_LANGUAGES=self.VALID_CONF5):
-            self.assertEqual(self.func(None), [])
-
-        with override_settings(COURSE_LANGUAGES=self.INVALID_CONF2):
-            self.assertEqual(self.func(None), [])
-
-        with override_settings(COURSE_LANGUAGES=self.VALID_CONF6):
-            self.assertEqual(self.func(None), [])
-
-        with override_settings(COURSE_LANGUAGES=self.VALID_CONF4):
-            self.assertEqual(self.func(None), [])
-
-        with override_settings(COURSE_LANGUAGES=self.INVALID_CONF3):
-            self.assertEqual(self.func(None), [])
-
-    @override_settings()
-    def test_relate_enable_course_specific_lang_not_configured(self):
-        del settings.RELATE_ENABLE_COURSE_SPECIFIC_LANG
-
-        with override_settings(COURSE_LANGUAGES=self.VALID_CONF1):
-            self.assertEqual(self.func(None), [])
-
-        with override_settings(COURSE_LANGUAGES=self.VALID_CONF2):
-            self.assertEqual(self.func(None), [])
-
-        with override_settings(COURSE_LANGUAGES=self.VALID_CONF3):
-            self.assertEqual(self.func(None), [])
-
-        with override_settings(COURSE_LANGUAGES=self.INVALID_CONF1):
-            self.assertEqual(self.func(None), [])
-
-        with override_settings(COURSE_LANGUAGES=self.VALID_CONF5):
-            self.assertEqual(self.func(None), [])
-
-        with override_settings(COURSE_LANGUAGES=self.INVALID_CONF2):
-            self.assertEqual(self.func(None), [])
-
-        with override_settings(COURSE_LANGUAGES=self.VALID_CONF6):
-            self.assertEqual(self.func(None), [])
-
-        with override_settings(COURSE_LANGUAGES=self.VALID_CONF4):
-            self.assertEqual(self.func(None), [])
-
-        with override_settings(COURSE_LANGUAGES=self.INVALID_CONF3):
-            self.assertEqual(self.func(None), [])
-
-    @override_settings(RELATE_ENABLE_COURSE_SPECIFIC_LANG=True)
     def test_valid(self):
-        with override_settings(COURSE_LANGUAGES=self.VALID_CONF1):
+        with override_settings(LANGUAGES=self.VALID_CONF1):
             self.assertEqual(self.func(None), [])
 
-        with override_settings(COURSE_LANGUAGES=self.VALID_CONF2):
+        with override_settings(LANGUAGES=self.VALID_CONF2):
             self.assertEqual(self.func(None), [])
 
-        with override_settings(COURSE_LANGUAGES=self.VALID_CONF3):
+        with override_settings(LANGUAGES=self.VALID_CONF3):
             self.assertEqual(self.func(None), [])
 
-        with override_settings(COURSE_LANGUAGES=self.VALID_CONF4):
+        with override_settings(LANGUAGES=self.VALID_CONF4):
             self.assertEqual(self.func(None), [])
 
-        with override_settings(COURSE_LANGUAGES=self.VALID_CONF5):
+        with override_settings(LANGUAGES=self.VALID_CONF5):
             self.assertEqual(self.func(None), [])
 
-        with override_settings(COURSE_LANGUAGES=self.VALID_CONF6):
+        with override_settings(LANGUAGES=self.VALID_CONF6):
             self.assertEqual(self.func(None), [])
 
-    @override_settings(RELATE_ENABLE_COURSE_SPECIFIC_LANG=True)
+    def test_languages_none_pass(self):
+        with override_settings(LANGUAGES=None, USE_I18N=False):
+            self.assertEqual(self.func(None), [])
+
+    def test_languages_none_error(self):
+        with override_settings(LANGUAGES=None, USE_I18N=True):
+            self.assertEqual([r.id for r in self.func(None)],
+                             ["relate_languages.E001"])
+
     def test_lang_not_list_or_tuple(self):
-        with override_settings(COURSE_LANGUAGES=self.INVALID_CONF1):
+        with override_settings(LANGUAGES=self.INVALID_CONF1):
             self.assertEqual([r.id for r in self.func(None)],
-                             ["relate_course_languages.E002"])
+                             ["relate_languages.E003"])
 
-    @override_settings(RELATE_ENABLE_COURSE_SPECIFIC_LANG=True)
     def test_lang_item_not_2_tuple(self):
-        with override_settings(COURSE_LANGUAGES=self.INVALID_CONF2):
+        with override_settings(LANGUAGES=self.INVALID_CONF2):
             self.assertEqual([r.id for r in self.func(None)],
-                             ["relate_course_languages.E002"])
+                             ["relate_languages.E003"])
 
-    @override_settings(RELATE_ENABLE_COURSE_SPECIFIC_LANG=True)
     def test_lang_multiple_error(self):
-        with override_settings(COURSE_LANGUAGES=self.INVALID_CONF3):
+        with override_settings(LANGUAGES=self.INVALID_CONF3):
             self.assertEqual([r.id for r in self.func(None)],
-                             ['relate_course_languages.E002'])
+                             ['relate_languages.E003'])
+
+    def test_lang_type_string(self):
+        with override_settings(LANGUAGES=self.INVALID_CONF4):
+            self.assertEqual([r.id for r in self.func(None)],
+                             ["relate_languages.E002"])
 
 
 class CheckRelateDisableCodehiliteMarkdownExtensions(CheckRelateSettingsBase):

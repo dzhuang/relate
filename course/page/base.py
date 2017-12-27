@@ -51,6 +51,7 @@ if False:
             FlowSession
             )
     from course.content import Repo_ish  # noqa
+    from course.validation import ValidationContext  # noqa
 
 # }}}
 
@@ -295,6 +296,7 @@ class PageBase(object):
     """
 
     def __init__(self, vctx, location, page_desc):
+        # type: (Optional[ValidationContext], Optional[Text], Struct) -> None
         """
         :arg vctx: a :class:`course.validation.ValidationContext`, or None
             if no validation is desired
@@ -318,7 +320,7 @@ class PageBase(object):
                     validate_struct(
                             vctx,
                             ar_loc,
-                            page_desc.access_rules,
+                            page_desc.access_rules,  # type: ignore
                             required_attrs=(),
                             allowed_attrs=(
                                 ("add_permissions", list),
@@ -327,8 +329,8 @@ class PageBase(object):
 
                     from course.validation import validate_flow_permission
                     for attr in ["add_permissions", "remove_permissions"]:
-                        if hasattr(page_desc.access_rules, attr):
-                            for perm in getattr(page_desc.access_rules, attr):
+                        if hasattr(page_desc.access_rules, attr):  # type: ignore
+                            for perm in getattr(page_desc.access_rules, attr):  # type: ignore  # noqa
                                 validate_flow_permission(
                                         vctx,
                                         "%s: %s" % (ar_loc, attr),
@@ -349,6 +351,7 @@ class PageBase(object):
             self.id = id
 
     def required_attrs(self):
+        # type: () -> Tuple[Tuple[Text, Any], ...]
         """Required attributes, as accepted by
         :func:`course.validation.validate_struct`.
         Subclasses should only add to, not remove entries from this.
@@ -360,6 +363,7 @@ class PageBase(object):
             )
 
     def allowed_attrs(self):
+        # type: () -> Tuple[Tuple[Text, Any], ...]
         """Allowed attributes, as accepted by
         :func:`course.validation.validate_struct`.
         Subclasses should only add to, not remove entries from this.
@@ -375,12 +379,12 @@ class PageBase(object):
         rw_permissions = set(permissions)
 
         if hasattr(self.page_desc, "access_rules"):
-            if hasattr(self.page_desc.access_rules, "add_permissions"):
-                for perm in self.page_desc.access_rules.add_permissions:
+            if hasattr(self.page_desc.access_rules, "add_permissions"):  # type: ignore  # noqa
+                for perm in self.page_desc.access_rules.add_permissions:  # type: ignore  # noqa
                     rw_permissions.add(perm)
 
-            if hasattr(self.page_desc.access_rules, "remove_permissions"):
-                for perm in self.page_desc.access_rules.remove_permissions:
+            if hasattr(self.page_desc.access_rules, "remove_permissions"):  # type: ignore  # noqa
+                for perm in self.page_desc.access_rules.remove_permissions:  # type: ignore  # noqa
                     if perm in rw_permissions:
                         rw_permissions.remove(perm)
 
@@ -702,11 +706,12 @@ class PageBase(object):
 
 class PageBaseWithTitle(PageBase):
     def __init__(self, vctx, location, page_desc):
+        # type: (Optional[ValidationContext], Optional[Text], Struct) -> None
         super(PageBaseWithTitle, self).__init__(vctx, location, page_desc)
 
         title = None
         try:
-            title = self.page_desc.title
+            title = self.page_desc.title  # type: ignore
         except AttributeError:
             pass
 
@@ -737,6 +742,7 @@ class PageBaseWithTitle(PageBase):
                 )
 
     def markup_body_for_title(self):
+        # type: () -> Text
         raise NotImplementedError()
 
     def title(self, page_context, page_data):
@@ -745,6 +751,7 @@ class PageBaseWithTitle(PageBase):
 
 class PageBaseWithValue(PageBase):
     def __init__(self, vctx, location, page_desc):
+        # type: (Optional[ValidationContext], Optional[Text], Struct) -> None
         super(PageBaseWithValue, self).__init__(vctx, location, page_desc)
 
         if vctx is not None:

@@ -80,6 +80,7 @@ INIT_PAGE_DATA_PATH = "image_upload.page.latexpage.LatexRandomQuestionBase.initi
 COMMIT_SHA_WITH_SAME_CONTENT = b"bec3b0ecd020bb8a4a105c3132c1c7f77acfda23"
 COMMIT_SHA_WITH_DIFFERENT_CONTENT = b"ee23f686d5e650fcdd590205d66e18800ae3a3f6"
 
+
 class LatexPageMixin(SingleCoursePageTestMixin, FallBackStorageMessageTestMixin):
     courses_setup_list = MY_SINGLE_COURSE_SETUP_LIST
     flow_id = RANDOM_FLOW
@@ -252,7 +253,8 @@ class LatexPageTest(LatexPageMixin, SubprocessRunpyContainerMixin, TestCase):
 @skipIf(skip_test, SKIP_LOCAL_TEST_REASON)
 @override_settings(
     CACHE_BACKEND='dummy:///')
-class LatexPageWithMacroTest(LatexPageMixin, LocmemBackendTestsMixin, SubprocessRunpyContainerMixin, TestCase):
+class LatexPageWithMacroTest(LatexPageMixin, LocmemBackendTestsMixin,
+                             SubprocessRunpyContainerMixin, TestCase):
     courses_setup_list = MY_SINGLE_COURSE_SETUP_LIST
     flow_id = RANDOM_WITH_LATEX_MACRO
 
@@ -345,7 +347,8 @@ class LatexPageOldStyleFullTest(LatexPageMixin, LocmemBackendTestsMixin,
         page_id = "single_full_failure"
         resp = self.c.get(self.get_page_url_by_page_id(page_id))
         self.assertEqual(resp.status_code, 200)
-        self.assertContains(resp, "The page failed to be rendered. Sorry about that.")
+        self.assertContains(
+            resp, "The page failed to be rendered. Sorry about that.")
         self.assertNotContains(resp, "This is the problematic code")
         self.assertNotContains(resp, "This is the exception traceback")
         self.assertEqual(len(mail.outbox), 1)
@@ -388,7 +391,7 @@ class LatexPageOldStyleFullTest(LatexPageMixin, LocmemBackendTestsMixin,
 @override_settings(
     CACHE_BACKEND='dummy:///')
 class LatexPageOldStylePartsTest(
-        LatexPageMixin, LocmemBackendTestsMixin, 
+        LatexPageMixin, LocmemBackendTestsMixin,
         SubprocessRunpyContainerMixin, TestCase):
     courses_setup_list = MY_SINGLE_COURSE_SETUP_LIST
     flow_id = RANDOM_OLD_FLOW
@@ -463,6 +466,7 @@ class LatexPageSandboxTest(SingleCoursePageSandboxTestBaseMixin, LatexPageMixin,
                            SubprocessRunpyContainerMixin, TestCase):
     courses_setup_list = MY_SINGLE_COURSE_SETUP_LIST
     flow_id = RANDOM_ALL_SAME
+
     def test_latexpage_sandbox_preview_success(self):
         resp = self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_PAGE)
@@ -577,7 +581,7 @@ class LatexPageSandboxTest(SingleCoursePageSandboxTestBaseMixin, LatexPageMixin,
         with mock.patch(RUNPY_WITH_RETRIES_PATH) as mock_runpy:
             answer_data = {'blank1': ["9.1"]}
             resp = self.get_page_sandbox_submit_answer_response(
-                markup_content=latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS,
+                markup_content=latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS,  # noqa
                 answer_data=answer_data)
 
             self.assertEqual(mock_runpy.call_count, 0)
@@ -754,7 +758,6 @@ class LatexPageSandboxTest(SingleCoursePageSandboxTestBaseMixin, LatexPageMixin,
             resp, "'runpy_context' is configured with neither "
                   "'runpy_file' nor 'full_process_code' configured "
                   "it will be neglected.")
-
 
     def test_latexpage_sandbox_assert_fail_validation_in_update_page_desc(self):
         # this will validate updated_page_desc via super.__init__()
@@ -951,25 +954,6 @@ class LatexPageSandboxTest(SingleCoursePageSandboxTestBaseMixin, LatexPageMixin,
             resp, "LatexRandomCodeQuestion not using attribute "
                   "'runpy_file' is for debug only, it should not be used "
                   "in production.")
-fake_jinja_runpy_success_return_value = {
-    'answer_explanation': (
-        '\n\n\nOne answer: $9$\n'),
-    'question': (
-        '\n'),
-    'answers': (
-        '\n'
-        '\n'
-        'blank1:\n'
-        '    type: ShortAnswer\n'
-        '    width: 10em\n'
-        '    correct_answer:\n'
-        '    - type: float\n'
-        '      rtol: 0.01\n'
-        '      atol: 0.01\n'
-        '      value: "9"\n'
-        '\n'),
-    'prompt': ""
-}
 
 
 # force_right_wrapper wrong identation
@@ -1145,7 +1129,7 @@ class LatexPageInitalPageDataTest(LatexPageMixin,
         self.assertEqual(self.get_variant_page_mongo_items_count(), 1)
 
         self.update_course_content(COMMIT_SHA_WITH_SAME_CONTENT)
-        with mock.patch(RUNPY_WITH_RETRIES_PATH) as mock_runpy:
+        with mock.patch(RUNPY_WITH_RETRIES_PATH):
             self.c.get(self.get_page_url_by_page_id(self.page_id))
 
         self.assertEqual(self.get_variant_page_commitsha_mongo_items_count(), 1)
@@ -1228,10 +1212,7 @@ class LatexPageInitalPageDataTest(LatexPageMixin,
         # then we manually changed the mongo data
         page_sha_collection().update_one(
             {"_id": ObjectId(template_hash_id)},
-            {"$set": {
-                current_commit_sha: mongo_fake_changed_template_hash}
-            }
-        )
+            {"$set": {current_commit_sha: mongo_fake_changed_template_hash}})
 
         # then we switch back to original commit_sha
         self.update_course_content(current_commit_sha)
@@ -1631,7 +1612,7 @@ class LatexPageRunpyFailureTest(
         with mock.patch(
                 RUNPY_WITH_RETRIES_PATH,
         ) as mock_runpy:
-            resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
+            self.c.get(self.get_page_url_by_page_id(self.page_id))
             self.assertEqual(mock_runpy.call_count, 1)
 
     def test_switch_to_course_commit_sha_with_bad_result(self):
@@ -1676,7 +1657,7 @@ class LatexPageRunpyFailureTest(
     #         self.assertEqual(resp.status_code, 200)
     #         self.assertEqual(mock_jinja_runpy.call_count, 1)
     #
-    #         self.assertEqual(self.get_variant_page_commitsha_mongo_items_count(), 2)
+    #         self.assertEqual(self.get_variant_page_commitsha_mongo_items_count(), 2)  # noqa
     #         self.assertEqual(self.get_variant_page_mongo_items_count(), 1)
     #
     #         self.assertEqual(len(mail.outbox), 1)
@@ -1781,8 +1762,7 @@ class LatexPageRunpyFailureTest(
         ) as mock_runpy:
             expected_error_str = ("This is an error raised with "
                                   "request_python_run_with_retries")
-            mock_runpy.side_effect=RuntimeError(
-                expected_error_str)
+            mock_runpy.side_effect = RuntimeError(expected_error_str)
 
             resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
             self.assertEqual(resp.status_code, 200)
@@ -1825,8 +1805,7 @@ class LatexPageRunpyFailureTest(
         ) as mock_runpy:
             expected_error_str = ("This is an unknown error raised with "
                                   "request_python_run_with_retries")
-            mock_runpy.return_value={
-                "result": expected_error_str}
+            mock_runpy.return_value = {"result": expected_error_str}
 
             resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
             self.assertEqual(resp.status_code, 200)
@@ -1862,8 +1841,8 @@ class LatexPageRunpyFailureTest(
 @override_settings(
     CACHE_BACKEND='dummy:///')
 class LatexPageSandboxFlowCombineTest(
-    SingleCoursePageSandboxTestBaseMixin, LatexPageMixin,
-    LocmemBackendTestsMixin, SubprocessRunpyContainerMixin, TestCase):
+        SingleCoursePageSandboxTestBaseMixin, LatexPageMixin,
+        LocmemBackendTestsMixin, SubprocessRunpyContainerMixin, TestCase):
     courses_setup_list = MY_SINGLE_COURSE_SETUP_LIST
     flow_id = RANDOM_ALL_SAME
 

@@ -301,8 +301,8 @@ class ImageUploadCreateViewTest(ImageUploadQuizMixin, TestCase):
         self.assertEqual(resp.status_code, 200)
         expected_error = (
             "Sorry, the image is corrupted during "
-             "handling. That should be solved by "
-             "a re-uploading.")
+            "handling. That should be solved by "
+            "a re-uploading.")
         resp_dict = json.loads(resp.content.decode())
         self.assertEqual(resp_dict["error"], expected_error)
 
@@ -374,7 +374,8 @@ class ImageUploadCreateViewTest(ImageUploadQuizMixin, TestCase):
 
     def test_one_image_upload_trancated(self):
         page_id = "one_image"
-        resp = self.post_create_flowpageimage_by_page_id(page_id, TEST_IMAGE_TRUNCATED)
+        resp = self.post_create_flowpageimage_by_page_id(page_id,
+                                                         TEST_IMAGE_TRUNCATED)
         self.assertEqual(resp.status_code, 200)
         resp_dict = json.loads(resp.content.decode())
         self.assertIsNone(resp_dict.get("error"))
@@ -547,7 +548,7 @@ class ImageUploadPageTest(ImageUploadQuizMixin, TestCase):
 
     def test_get_image_grade_page(self):
         page_id = "one_image"
-        grade_page_url =  self.get_page_grading_url_by_page_id(page_id)
+        grade_page_url = self.get_page_grading_url_by_page_id(page_id)
         self.c.force_login(self.ta_participation.user)
         resp = self.c.get(grade_page_url)
         self.assertEqual(resp.status_code, 200)
@@ -929,7 +930,7 @@ class ImageUploadListViewTest(ImageUploadQuizMixin, TestCase):
     def test_page_list_view_visit_id_not_int(self):
         page_id = "two_images"
         list_page_url = self.get_list_url_by_page_id(page_id=page_id)
-        resp =  self.c.get(list_page_url + "?visit_id=abcd")
+        resp = self.c.get(list_page_url + "?visit_id=abcd")
         self.assertEqual(resp.status_code, 400)
 
     def test_page_list_view_visit_id(self):
@@ -1032,8 +1033,8 @@ class ImageUploadCropViewTest(ImageUploadQuizMixin, TestCase):
     @property
     def crop_data(self):
         return (
-            {"x":0,"y":0,"width":20,"height":19,
-             "rotate":0,"scaleX":1,"scaleY":1})
+            {"x": 0, "y": 0, "width": 20, "height": 19,
+             "rotate": 0, "scaleX": 1, "scaleY": 1})
 
     def test_crop_temp_image(self):
         page_id = "one_image"
@@ -1354,8 +1355,8 @@ class ImageUploadSandboxViewTest(ImageUploadViewMixin,
     def test_sandbox_list_images_403(self):
         self.post_sandbox_create_flowpageimage(TEST_IMAGE1)
         self.post_sandbox_create_flowpageimage(TEST_IMAGE2)
-        image_pks = FlowPageImage.objects.all ().values_list ("pk", flat=True)
-        image_pks_str = ",".join ([str (pk) for pk in image_pks])
+        image_pks = FlowPageImage.objects.all().values_list("pk", flat=True)
+        image_pks_str = ",".join([str(pk) for pk in image_pks])
 
         answer_data = {"hidden_answer": [image_pks_str]}
         self.get_page_sandbox_submit_answer_response(
@@ -1410,8 +1411,8 @@ class ImageUploadSandboxViewTest(ImageUploadViewMixin,
 
         resp = self.post_sandbox_crop_flowpageimage(
             FlowPageImage.objects.first().pk,
-            crop_data={"x": 0,"y": 0, "width":20, "height":19,
-                       "rotate": 0, "scaleX": 1,"scaleY": 1})
+            crop_data={"x": 0, "y": 0, "width": 20, "height": 19,
+                       "rotate": 0, "scaleX": 1, "scaleY": 1})
         return resp
 
     def test_sandbox_crop_image_staff(self):

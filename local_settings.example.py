@@ -470,7 +470,7 @@ if USE_ANOTHER_ECS_FOR_RUNPY_DOCKER:
         verify=True)
 
 
-RELATE_RUNPY_DOCKER_ENABLED = True
+RELATE_RUNPY_DOCKER_ENABLED = False
 
 # Docker configurations used by Relate. For runpy Docker (code pages), which requires
 # the "docker_image" (with previous value "RELATE_DOCKER_RUNPY_IMAGE") key, the
@@ -522,7 +522,7 @@ RELATE_DOCKERS = {
 
 # If True, submission of code question with RELATE_RUNPY_DOCKER_ENABLED = False
 # won't send email notifications about RunpyDockerNotUsableError. Default to False
-#SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR = False
+SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR = True
 
 
 # # Note: The following is used to ensure unittests can be run on Windows CI and for

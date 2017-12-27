@@ -1050,6 +1050,7 @@ def get_config_by_name(docker_config_name):
 
 
 def get_relate_runpy_docker_client_config(silence_if_not_usable=False):  # noqa
+    # type: (bool) -> Optional[Docker_client_config_ish]
     from django.conf import settings
     runpy_enabled = getattr(settings, RELATE_RUNPY_DOCKER_ENABLED, True)
     if not runpy_enabled:

@@ -24,21 +24,19 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-import six
 import json
 import jinja2
 
 from django.utils.html import escape
 from django.utils.translation import ugettext as _
-from relate.utils import string_concat
 from django.utils import translation
 from django.conf import settings
 
 from course.page.base import (
-        markup_to_html, AnswerFeedback, get_auto_feedback,
+        markup_to_html,
         get_editor_interaction_mode)
 from course.page.code import (
-    PythonCodeQuestion, PythonCodeForm, request_python_run_with_retries,
+    PythonCodeQuestion, PythonCodeForm,
     is_nuisance_failure
 )
 
@@ -156,9 +154,9 @@ class PythonCodeQuestionWithPageContext(PythonCodeQuestion):
                 for i, item in enumerate(response_dict["feedback"]):
                     try:
                         suspective_reason_dict = json.loads(item)
-                        suspective_reason = suspective_reason_dict["suspective_reason"]
+                        suspective_reason = suspective_reason_dict["suspective_reason"]  # noqa
                         response_dict["feedback"].pop(i)
-                    except:
+                    except Exception:
                         pass
 
                 for i, item in enumerate(response_dict["feedback"]):
@@ -172,7 +170,7 @@ class PythonCodeQuestionWithPageContext(PythonCodeQuestion):
                                if suspective_reason else "")
                         )
                         from relate.utils import local_now, format_datetime_local
-                        with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
+                        with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):  # noqa
                             from django.template.loader import render_to_string
                             message = render_to_string(
                                 "course/broken-code-question-email.txt", {
@@ -222,7 +220,7 @@ class PythonCodeQuestionWithPageContext(PythonCodeQuestion):
 
         correctness, feedback_bits, bulk_feedback_bits = (
             super(PythonCodeQuestionWithPageContext, self)
-                .process_correctness_and_feedback_bits_from_response_dict(
+            .process_correctness_and_feedback_bits_from_response_dict(
                 page_context, answer_data, response_dict))
 
         if adjusted_correctness is not None:

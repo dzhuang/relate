@@ -146,7 +146,7 @@ class ChoiceQuestionBase(PageBaseWithTitle, PageBaseWithValue):
     def initialize_page_data(self, page_context):
         # type: (PageContext) -> Dict
         import random
-        perm = list(range(len(self.page_desc.choices)))
+        perm = list(range(len(self.page_desc.choices)))  # type: ignore
         if getattr(self.page_desc, "shuffle", False):
             random.shuffle(perm)
 

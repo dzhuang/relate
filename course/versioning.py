@@ -29,7 +29,6 @@ import six
 from django.shortcuts import (  # noqa
         render, get_object_or_404, redirect)
 from django.contrib import messages
-from django.conf import settings, global_settings
 import django.forms as forms
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
@@ -165,12 +164,6 @@ def get_dulwich_client_and_remote_path_from_course(course):
 
 
 # {{{ new course setup
-
-def get_course_specific_langs_choices():
-    # type: () -> Tuple[Tuple[Text, Any], ...]
-    return (("", _("(None)")), ) + tuple(
-        getattr(settings, "COURSE_LANGUAGES", global_settings.LANGUAGES))
-
 
 class CourseCreationForm(StyledModelForm):
     class Meta:

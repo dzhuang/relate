@@ -44,7 +44,7 @@ from relate.utils import Struct, string_concat
 # {{{ mypy
 
 if False:
-    from typing import Any, Tuple, Optional, Text, List  # noqa
+    from typing import Any, Tuple, Optional, Text, List, Iterable  # noqa
     from relate.utils import Repo_ish  # noqa
     from course.models import Course  # noqa
 
@@ -144,10 +144,10 @@ def validate_participationtag(vctx, location, participationtag):
 
 def validate_struct(
         vctx,  # type: ValidationContext
-        location,  # type: Text
+        location,  # type: Optional[Text]
         obj,  # type: Any
-        required_attrs,  # type: List[Tuple[Text, Any]]
-        allowed_attrs,  # type: List[Tuple[Text, Any]]
+        required_attrs,  # type: Iterable[Optional[Tuple[Text, Any]]]
+        allowed_attrs,  # type: Iterable[Optional[Tuple[Text, Any]]]
         ):
     # type: (...) -> None
 
@@ -172,6 +172,8 @@ def validate_struct(
             (False, allowed_attrs),
             ]:
         for attr_rec in attr_list:
+            if attr_rec is None:
+                continue
             if isinstance(attr_rec, tuple):
                 attr, allowed_types = attr_rec
             else:

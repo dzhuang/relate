@@ -43,6 +43,14 @@ from course.page.base import (
         get_editor_interaction_mode)
 from course.constants import flow_permission
 
+# {{{ mypy
+if False:
+    from typing import Text, Any, Dict, Tuple, Union, Optional  # noqa
+    from course.utils import PageContext  # noqa
+    from pymongo import MongoClient  # noqa
+    from pymongo.collection import Collection  # noqa
+# }}}
+
 from traceback import format_exc
 # DEBUGGING SWITCH:
 # True for 'spawn containers' (normal operation)
@@ -84,6 +92,7 @@ class InvalidPingResponse(RuntimeError):
 
 
 def request_python_run(run_req, run_timeout, image=None):
+    # type: (Dict, int, Optional[Text]) -> Dict
     import json
     from six.moves import http_client
     import socket
@@ -93,9 +102,11 @@ def request_python_run(run_req, run_timeout, image=None):
     debug = False
     if debug:
         def debug_print(s):
+            # type: (Text) -> None
             print(s)
     else:
         def debug_print(s):
+            # type: (Text) -> None
             pass
 
     docker_timeout = 15
@@ -135,7 +146,7 @@ def request_python_run(run_req, run_timeout, image=None):
     try:
         if client_config:
             docker_cnx, container_id, connect_host_ip, port = (
-                client_config.get_client_and_container_connection_info(
+                client_config.get_client_and_container_connection_info(  # type: ignore  # noqa
                     default_port=port, default_connect_host_ip=connect_host_ip))
 
         from time import time, sleep
@@ -144,16 +155,18 @@ def request_python_run(run_req, run_timeout, image=None):
         # {{{ ping until response received
 
         def check_timeout():
-                if time() - start_time < docker_timeout:
-                    sleep(0.1)
-                    # and retry
-                else:
-                    return {
-                            "result": "uncaught_error",
-                            "message": "Timeout waiting for container.",
-                            "traceback": "".join(format_exc()),
-                            "exec_host": connect_host_ip,
-                            }
+            # type: () -> Optional[Dict]
+            if time() - start_time < docker_timeout:
+                sleep(0.1)
+                # and retry
+            else:
+                return {
+                        "result": "uncaught_error",
+                        "message": "Timeout waiting for container.",
+                        "traceback": "".join(format_exc()),
+                        "exec_host": connect_host_ip,
+                        }
+            return None
 
         while True:
             try:
@@ -196,7 +209,6 @@ def request_python_run(run_req, run_timeout, image=None):
 
             json_run_req = json.dumps(run_req).encode("utf-8")
 
-            from time import time
             start_time = time()
 
             debug_print("BEFPOST")
@@ -239,6 +251,7 @@ def request_python_run(run_req, run_timeout, image=None):
 
 
 def is_nuisance_failure(result):
+    # type: (Dict) -> bool
     if result["result"] != "uncaught_error":
         return False
 
@@ -268,6 +281,7 @@ def is_nuisance_failure(result):
 
 
 def request_python_run_with_retries(run_req, run_timeout, image=None, retry_count=3):
+    # type: (Dict, int, Optional[Text], int) -> Dict[Text, Any]
     while True:
         result = request_python_run(run_req, run_timeout, image=image)
 
@@ -605,15 +619,11 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                             page_context.repo, data_file,
                             page_context.commit_sha).data).decode()
 
-                if (
-                                "question_data" not in run_req["data_files"]
-                        and
-                                page_data
-                        and
-                            page_data.get("question_data", None)
-                ):
-                    run_req["data_files"]["question_data"] = \
-                        page_data["question_data"]
+                if ("question_data" not in run_req["data_files"]
+                        and page_data
+                        and page_data.get("question_data", None)):
+                    run_req["data_files"]["question_data"] = (
+                                            page_data["question_data"])
         try:
             response_dict = request_python_run_with_retries(
                 run_req,
@@ -653,11 +663,11 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
         feedback_bits = []
         # {{{ send email if the grading code broke
         if response_dict["result"] in [
-            "uncaught_error",
-            "setup_compile_error",
-            "setup_error",
-            "test_compile_error",
-            "test_error"]:
+                "uncaught_error",
+                "setup_compile_error",
+                "setup_error",
+                "test_compile_error",
+                "test_error"]:
             error_msg_parts = ["RESULT: %s" % response_dict["result"]]
             for key, val in sorted(response_dict.items()):
                 if (key not in ["result", "figures"]
@@ -687,19 +697,17 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                     "time": format_datetime_local(local_now())
                 })
 
-                if (
-                            not page_context.in_sandbox
-                        and
-                            not is_nuisance_failure(response_dict)):
+                if (not page_context.in_sandbox
+                        and not is_nuisance_failure(response_dict)):
                     try:
                         from django.core.mail import EmailMessage
                         msg = EmailMessage("".join(["[%s:%s] ",
                                                     _(
-                                                        "code question execution failed")])
+                                                        "code question execution failed")])  # noqa
                                            % (
                                                page_context.course.identifier,
                                                page_context.flow_session.flow_id
-                                               if page_context.flow_session is not None
+                                               if page_context.flow_session is not None  # noqa
                                                else _("<unknown flow>")),
                                            message,
                                            settings.ROBOT_EMAIL_FROM,
@@ -768,11 +776,11 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                       "Docker runpy is currently not enabled for this site."),
                     "</p>"])])
         elif response.result in [
-            "uncaught_error",
-            "setup_compile_error",
-            "setup_error",
-            "test_compile_error",
-            "test_error"]:
+                "uncaught_error",
+                "setup_compile_error",
+                "setup_error",
+                "test_compile_error",
+                "test_error"]:
             feedback_bits.append("".join([
                 "<p>",
                 _(
@@ -848,7 +856,7 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
             try:
                 client_config = get_relate_runpy_docker_client_config(
                     silence_if_not_usable=silence_for_not_usable)
-            except:
+            except Exception:
                 client_config = None
 
             if client_config:

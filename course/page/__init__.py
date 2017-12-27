@@ -62,8 +62,6 @@ except Exception as e:
     from django.core.exceptions import AppRegistryNotReady
     if isinstance(e, AppRegistryNotReady):
         pass
-    else:
-        raise
 
 __all__ = (
         "InvalidPageData",

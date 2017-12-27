@@ -26,7 +26,7 @@ THE SOFTWARE.
 
 try:
     from test.support import EnvironmentVarGuard  # noqa
-except:
+except ImportError:
     from test.test_support import EnvironmentVarGuard  # noqa
 
 from unittest import skipIf

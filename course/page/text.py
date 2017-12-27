@@ -475,7 +475,7 @@ class FloatListWithWrapperMatcher(TextAnswerMatcher):
             try:
                 self.matcher_desc.rtol = \
                         float_or_sympy_evalf(matcher_desc.rtol)
-            except:
+            except Exception:
                 raise ValidationError(
                         string_concat(
                             "%s: 'rtol' ",
@@ -493,7 +493,7 @@ class FloatListWithWrapperMatcher(TextAnswerMatcher):
             try:
                 self.matcher_desc.atol = \
                         float_or_sympy_evalf(matcher_desc.atol)
-            except:
+            except Exception:
                 raise ValidationError(
                         string_concat(
                             "%s: 'atol' ",
@@ -614,7 +614,7 @@ class FloatListWithWrapperMatcher(TextAnswerMatcher):
 
         try:
             value_list = value.split(",")
-        except:
+        except Exception:
             raise ValidationError(
                 string_concat(
                     "%s: 'value' ",
@@ -630,7 +630,7 @@ class FloatListWithWrapperMatcher(TextAnswerMatcher):
                     % location)
             try:
                 float_or_sympy_evalf(v)
-            except:
+            except Exception:
                 raise ValidationError(
                     string_concat(
                         "%s: 'value' ",
@@ -705,7 +705,7 @@ class FloatListWithWrapperMatcher(TextAnswerMatcher):
 
         try:
             value_list = value.split(",")
-        except:
+        except Exception:
             raise forms.ValidationError(
                 string_concat(
                     ugettext("Error"), ": ",
@@ -723,7 +723,7 @@ class FloatListWithWrapperMatcher(TextAnswerMatcher):
                     % value)
             try:
                 float_or_sympy_evalf(v)
-            except:
+            except Exception:
                 tp, e, _ = sys.exc_info()
                 if (tp.__name__ == "TypeError"
                     and
