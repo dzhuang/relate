@@ -32,7 +32,7 @@ from django.core.exceptions import ImproperlyConfigured
 REQUIRED_CONF_ERROR_PATTERN = (
     "You must configure %(location)s for RELATE to run properly.")
 INSTANCE_ERROR_PATTERN = "%(location)s must be an instance of %(types)s."
-GENERIC_ERROR_PATTERN = "Error at %(location)s: %(error_type)s: %(error_str)s"
+GENERIC_ERROR_PATTERN = "Error in '%(location)s': %(error_type)s: %(error_str)s"
 
 USE_I18N = "USE_I18N"
 LANGUAGES = "LANGUAGES"
@@ -45,7 +45,6 @@ RELATE_MAINTENANCE_MODE_EXCEPTIONS = "RELATE_MAINTENANCE_MODE_EXCEPTIONS"
 RELATE_SESSION_RESTART_COOLDOWN_SECONDS = "RELATE_SESSION_RESTART_COOLDOWN_SECONDS"
 RELATE_TICKET_MINUTES_VALID_AFTER_USE = "RELATE_TICKET_MINUTES_VALID_AFTER_USE"
 GIT_ROOT = "GIT_ROOT"
-RELATE_ENABLE_COURSE_SPECIFIC_LANG = "RELATE_ENABLE_COURSE_SPECIFIC_LANG"
 RELATE_STARTUP_CHECKS = "RELATE_STARTUP_CHECKS"
 RELATE_STARTUP_CHECKS_EXTRA = "RELATE_STARTUP_CHECKS_EXTRA"
 
@@ -357,6 +356,51 @@ def check_relate_settings(app_configs, **kwargs):
 
     # }}}
 
+    # {{{ check LANGUAGES, why this is not done in django?
+
+    languages = settings.LANGUAGES
+
+    from django.utils.itercompat import is_iterable
+
+    if (isinstance(languages, six.string_types) or
+            not is_iterable(languages)):
+        errors.append(RelateCriticalCheckMessage(
+            msg=(INSTANCE_ERROR_PATTERN
+                 % {"location": LANGUAGES,
+                    "types": "an iterable (e.g., a list or tuple)."}),
+            id="relate_languages.E001")
+        )
+    else:
+        if any(isinstance(choice, six.string_types) or
+                       not is_iterable(choice) or len(choice) != 2
+               for choice in languages):
+            errors.append(RelateCriticalCheckMessage(
+                msg=("'%s' must be an iterable containing "
+                     "(language code, language description) tuples, just "
+                     "like the format of LANGUAGES setting ("
+                     "https://docs.djangoproject.com/en/dev/ref/settings/"
+                     "#languages)" % LANGUAGES),
+                id="relate_languages.E002")
+            )
+        else:
+            from collections import OrderedDict
+            all_options = (
+                ((settings.LANGUAGE_CODE, None),) + tuple(settings.LANGUAGES))
+            filtered_options_dict = OrderedDict(all_options)
+            all_lang_codes = [lang_code for lang_code, lang_descr in all_options]
+            for lang_code in filtered_options_dict.keys():
+                if all_lang_codes.count(lang_code) > 1:
+                    errors.append(Warning(
+                        msg=(
+                            "Duplicate language entries were found in "
+                            "settings.LANGUAGES for '%s', '%s' will be used "
+                            "as its language_description"
+                            % (lang_code, filtered_options_dict[lang_code])),
+                        id="relate_languages.W001"
+                    ))
+
+    # }}}
+
     # {{{ check RELATE_DISABLE_CODEHILITE_MARKDOWN_EXTENSION
     relate_disable_codehilite_markdown_extension = getattr(
         settings, RELATE_DISABLE_CODEHILITE_MARKDOWN_EXTENSION, None)
@@ -385,53 +429,6 @@ def check_relate_settings(app_configs, **kwargs):
                     id="relate_disable_codehilite_markdown_extension.W002"))
     # }}}
 
-    # {{{ check LANGUAGES, why this is not done in django?
-
-    languages = getattr(settings, LANGUAGES, None)
-    if languages is None:
-        if getattr(settings, USE_I18N, False):
-            errors.append(RelateCriticalCheckMessage(
-                msg=("'%s' can't be None when %s is True"
-                     % (LANGUAGES, USE_I18N)),
-                id="relate_languages.E001")
-            )
-    else:
-        from django.utils.itercompat import is_iterable
-        if (isinstance(languages, six.string_types) or
-                not is_iterable(languages)):
-            errors.append(RelateCriticalCheckMessage(
-                msg=(INSTANCE_ERROR_PATTERN
-                     % {"location": LANGUAGES,
-                        "types": "an iterable (e.g., a list or tuple)."}),
-                id="relate_languages.E002")
-            )
-        elif any(isinstance(choice, six.string_types) or
-                 not is_iterable(choice) or len(choice) != 2
-                 for choice in languages):
-            errors.append(RelateCriticalCheckMessage(
-                msg=("'%s' must be an iterable containing "
-                     "(language code, language name) tuples, just like "
-                     "the format of LANGUAGES setting ("
-                     "https://docs.djangoproject.com/en/dev/ref/settings/"
-                     "#languages)" % LANGUAGES),
-                id="relate_languages.E003")
-            )
-    # }}}
-
-    # {{{ check RELATE_ENABLE_COURSE_SPECIFIC_LANG and LANGUAGES
-    enable_course_specific_lang = getattr(settings,
-                                          RELATE_ENABLE_COURSE_SPECIFIC_LANG, None)
-    if enable_course_specific_lang:
-        if not isinstance(enable_course_specific_lang, bool):
-            errors.append(RelateCriticalCheckMessage(
-                msg=(INSTANCE_ERROR_PATTERN
-                     % {"location": RELATE_ENABLE_COURSE_SPECIFIC_LANG,
-                        "types": "bool"}),
-                id="relate_course_specific_lang.E001")
-            )
-
-    # }}}
-
     return errors
 
 
@@ -444,7 +441,7 @@ def register_startup_checks_extra():
     Register extra checks provided by user.
     Here we will have to raise error for Exceptions, as that can not be done
     via check: all checks, including check_relate_settings, will only be
-    executed after AppConfig.ready() is done.
+    executed after self.ready() is done.
     """
     startup_checks_extra = getattr(settings, RELATE_STARTUP_CHECKS_EXTRA, None)
     if startup_checks_extra:

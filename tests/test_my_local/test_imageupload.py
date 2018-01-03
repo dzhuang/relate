@@ -1137,7 +1137,7 @@ class ImageUploadCropViewTest(ImageUploadQuizMixin, TestCase):
         new_course_kwargs = deepcopy(self.courses_setup_list[0]["course"])
         new_course_kwargs["identifier"] = course_identifier
         self.c.force_login(self.instructor_participation.user)
-        self.create_course(**new_course_kwargs)
+        self.create_course(new_course_kwargs)
         from course.models import Course
         new_course = Course.objects.all().order_by("-pk")[0]
         self.create_participation(new_course, self.student_participation.user,

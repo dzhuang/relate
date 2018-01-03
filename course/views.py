@@ -81,8 +81,7 @@ from course.utils import (  # noqa
         course_view,
         render_course_page,
         CoursePageContext,
-        get_course_specific_langs_choices,
-        get_available_languages)
+        get_course_specific_language_choices)
 
 # {{{ for mypy
 
@@ -1467,33 +1466,9 @@ class EditCourseForm(StyledModelForm):
         widgets = {
                 "start_date": DateTimePicker(options={"format": "YYYY-MM-DD"}),
                 "end_date": DateTimePicker(options={"format": "YYYY-MM-DD"}),
-                "enroll_deadline": (
-                    DateTimePicker(
-                        options={"format": "YYYY-MM-DD"})),  # added by zd
+                "force_lang": forms.Select(
+                    choices=get_course_specific_language_choices()),
                 }
-        from django.conf import settings
-        if not getattr(settings, "RELATE_ENABLE_COURSE_SPECIFIC_LANG", False):
-            widgets["force_lang"] = (forms.HiddenInput())
-        else:
-            widgets["force_lang"] = (
-                forms.Select(choices=get_course_specific_langs_choices()))
-
-    def clean_force_lang(self):
-        force_lang = self.cleaned_data["force_lang"]
-
-        if not force_lang:
-            return ""
-
-        if not force_lang.strip():
-            return ""
-
-        if force_lang not in get_available_languages():
-            from django.forms import ValidationError as FormValidationError
-            raise FormValidationError(_("'%s' is currently not supported "
-                                        "as a course specific language at "
-                                        "this site") % force_lang)
-
-        return force_lang
 
 
 @course_view
@@ -1506,7 +1481,19 @@ def edit_course(pctx):
     if request.method == 'POST':
         form = EditCourseForm(request.POST, instance=pctx.course)
         if form.is_valid():
-            form.save()
+            if form.has_changed():
+                form.save()
+                messages.add_message(
+                    request, messages.SUCCESS,
+                    _("Successfully updated course settings."))
+            else:
+                messages.add_message(
+                    request, messages.INFO,
+                    _("No change was made on the settings."))
+
+        else:
+            messages.add_message(request, messages.ERROR,
+                                 _("Failed to update course settings."))
 
     else:
         form = EditCourseForm(instance=pctx.course)

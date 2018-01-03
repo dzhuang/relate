@@ -466,8 +466,11 @@ class CheckGitRoot(CheckRelateSettingsBase):
 
 
 class CheckRelateCourseLanguages(CheckRelateSettingsBase):
+    # For this tests to pass, LANGUAGE_CODE, LANGUAGES, USE_I18N in
+    # local_settings.example.py should not be configured
+
     VALID_CONF1 = [
-        ('en', _('English')),
+        ('en', _('my English')),
         ('zh-hans', _('Simplified Chinese')),
         ('de', _('German'))]
     VALID_CONF2 = (
@@ -478,6 +481,13 @@ class CheckRelateCourseLanguages(CheckRelateSettingsBase):
         ('en', 'English'),
         ('zh-hans', 'Simplified Chinese'),
         ('de', _('German')))
+
+    VALID_WITH_WARNNING_CONF = (
+        ('en', 'English'),
+        ('zh-hans', 'Simplified Chinese'),
+        ('zh-hans', 'my Simplified Chinese'),
+        ('de', _('German')))
+
     VALID_CONF4 = [('en', ('English',)), ]
     VALID_CONF5 = (['en', 'English'],)
     VALID_CONF6 = [(('en',), _('English')), ]
@@ -489,19 +499,6 @@ class CheckRelateCourseLanguages(CheckRelateSettingsBase):
     INVALID_CONF2 = (('en',),)
     INVALID_CONF3 = [('en',), ([], 'English'), ["1", "2"]]
     INVALID_CONF4 = "some thing"
-
-    def test_enable_course_specific_lang_instance_false(self):
-        with override_settings(RELATE_ENABLE_COURSE_SPECIFIC_LANG=False):
-            self.assertEqual(self.func(None), [])
-
-    def test_enable_course_specific_lang_instance_true(self):
-        with override_settings(RELATE_ENABLE_COURSE_SPECIFIC_LANG=True):
-            self.assertEqual(self.func(None), [])
-
-    def test_enable_course_specific_lang_instance_not_bool(self):
-        with override_settings(RELATE_ENABLE_COURSE_SPECIFIC_LANG="TrueString"):
-            self.assertEqual([r.id for r in self.func(None)],
-                             ["relate_course_specific_lang.E001"])
 
     def test_valid(self):
         with override_settings(LANGUAGES=self.VALID_CONF1):
@@ -522,67 +519,53 @@ class CheckRelateCourseLanguages(CheckRelateSettingsBase):
         with override_settings(LANGUAGES=self.VALID_CONF6):
             self.assertEqual(self.func(None), [])
 
-    def test_languages_none_pass(self):
-        with override_settings(LANGUAGES=None, USE_I18N=False):
-            self.assertEqual(self.func(None), [])
-
-    def test_languages_none_error(self):
-        with override_settings(LANGUAGES=None, USE_I18N=True):
-            self.assertEqual([r.id for r in self.func(None)],
-                             ["relate_languages.E001"])
-
     def test_lang_not_list_or_tuple(self):
         with override_settings(LANGUAGES=self.INVALID_CONF1):
             self.assertEqual([r.id for r in self.func(None)],
-                             ["relate_languages.E003"])
+                             ["relate_languages.E002"])
 
     def test_lang_item_not_2_tuple(self):
         with override_settings(LANGUAGES=self.INVALID_CONF2):
             self.assertEqual([r.id for r in self.func(None)],
-                             ["relate_languages.E003"])
+                             ["relate_languages.E002"])
 
     def test_lang_multiple_error(self):
         with override_settings(LANGUAGES=self.INVALID_CONF3):
             self.assertEqual([r.id for r in self.func(None)],
-                             ['relate_languages.E003'])
+                             ['relate_languages.E002'])
 
     def test_lang_type_string(self):
         with override_settings(LANGUAGES=self.INVALID_CONF4):
             self.assertEqual([r.id for r in self.func(None)],
-                             ["relate_languages.E002"])
+                             ["relate_languages.E001"])
 
+    def test_item_having_same_lang_code_with_settings_language_code(self):
+        with override_settings(LANGUAGES=self.VALID_CONF1, LANGUAGE_CODE="en"):
+            self.assertEqual([r.id for r in self.func(None)],
+                             ["relate_languages.W001"])
 
-class CheckRelateDisableCodehiliteMarkdownExtensions(CheckRelateSettingsBase):
-    VALID_CONF = None
-    VALID_CONF_NO_WARNING = True
+            # 'my English' is used for language description of 'en'
+            # instead of 'English'
+            self.assertEqual([r.msg for r in self.func(None)],
+                             ["Duplicate language entries were found in "
+                             "settings.LANGUAGES for 'en', 'my English' "
+                             "will be used as its language_description"])
 
-    WARNING_CONF_NOT_BOOL1 = "some string"
-    WARNING_CONF_NOT_BOOL2 = ["markdown.extensions.codehilite"]
-    WARNING_CONF_FALSE = False
+    def test_item_duplicated_inside_settings_languages(self):
+        with override_settings(LANGUAGES=self.VALID_WITH_WARNNING_CONF):
+            self.assertEqual([r.id for r in self.func(None)],
+                             ["relate_languages.W001"])
+            # 'my Simplified Chinese' is used for language description of 'zh-hans'
+            # instead of 'Simplified Chinese'
+            self.assertEqual([r.msg for r in self.func(None)],
+                             ["Duplicate language entries were found in "
+                             "settings.LANGUAGES for 'zh-hans', 'my Simplified "
+                              "Chinese' will be used as its "
+                              "language_description"])
 
-    @override_settings(RELATE_DISABLE_CODEHILITE_MARKDOWN_EXTENSION=VALID_CONF)
-    def test_valid_conf(self):
-        self.assertEqual(self.func(None), [])
-
-    @override_settings(
-        RELATE_DISABLE_CODEHILITE_MARKDOWN_EXTENSION=VALID_CONF_NO_WARNING)
-    def test_valid_conf_no_warning(self):
-        self.assertEqual(self.func(None), [])
-
-    @override_settings(
-        RELATE_DISABLE_CODEHILITE_MARKDOWN_EXTENSION=WARNING_CONF_NOT_BOOL1)
-    def test_warning_conf_not_bool1(self):
-        self.assertEqual([r.id for r in self.func(None)],
-                         ["relate_disable_codehilite_markdown_extension.W001"])
-
-    @override_settings(
-        RELATE_DISABLE_CODEHILITE_MARKDOWN_EXTENSION=WARNING_CONF_NOT_BOOL2)
-    def test_warning_conf_not_bool2(self):
-        self.assertEqual([r.id for r in self.func(None)],
-                         ["relate_disable_codehilite_markdown_extension.W001"])
-
-    @override_settings(
-        RELATE_DISABLE_CODEHILITE_MARKDOWN_EXTENSION=WARNING_CONF_FALSE)
-    def test_warning_conf_false(self):
-        self.assertEqual([r.id for r in self.func(None)],
-                         ["relate_disable_codehilite_markdown_extension.W002"])
+    def test_item_duplicated_mixed(self):
+        with override_settings(LANGUAGES=self.VALID_WITH_WARNNING_CONF,
+                               LANGUAGE_CODE="en"):
+            self.assertEqual([r.id for r in self.func(None)],
+                             ["relate_languages.W001",
+                              "relate_languages.W001"])

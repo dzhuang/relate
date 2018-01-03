@@ -75,6 +75,19 @@ from yamlfield.fields import YAMLField
 
 # {{{ course
 
+def validate_course_specific_language(value):
+    # type: (Text) -> None
+    if not value.strip():
+        # the default value is ""
+        return
+    if value not in (
+                [lang_code for lang_code, lang_descr in settings.LANGUAGES]
+                + [settings.LANGUAGE_CODE]):
+        raise ValidationError(
+            _("'%s' is currently not supported as a course specific "
+              "language at this site.") % value)
+
+
 class Course(models.Model):
     identifier = models.CharField(max_length=200, unique=True,
             help_text=_("A course identifier. Alphanumeric with dashes, "
@@ -138,7 +151,7 @@ class Course(models.Model):
             default=True,
             verbose_name=_('Accepts enrollment'))
 
-    git_source = models.CharField(max_length=200, blank=True,
+    git_source = models.CharField(max_length=200, blank=False,
             help_text=_("A Git URL from which to pull course updates. "
             "If you're just starting out, enter "
             "<tt>git://github.com/inducer/relate-sample</tt> "
@@ -202,11 +215,10 @@ class Course(models.Model):
             verbose_name=_('Notify email'))
 
     force_lang = models.CharField(max_length=200, blank=True, null=True,
-            default=None,
+            default="",
+            validators=[validate_course_specific_language],
             help_text=_(
-                "Which language is forced to be used for this course. "
-                "If not set, displayed language will be determined by "
-                "user browser preference"),
+                "Which language is forced to be used for this course."),
             verbose_name=_('Course language forcibly used'))
 
     # {{{ XMPP
@@ -245,6 +257,10 @@ class Course(models.Model):
     if six.PY3:
         __str__ = __unicode__
 
+    def clean(self):
+        if self.force_lang:
+            self.force_lang = self.force_lang.strip()
+
     def get_absolute_url(self):
         return reverse("relate-course_page", args=(self.identifier,))
 
@@ -264,6 +280,10 @@ class Course(models.Model):
             return self.from_email
         else:
             return self.notify_email
+
+    def save(self, *args, **kwargs):
+        self.full_clean()  # performs regular validation then clean()
+        super(Course, self).save(*args, **kwargs)
 
     # {{{ added by zd
     def is_enrollment_expired(self, now_date):
