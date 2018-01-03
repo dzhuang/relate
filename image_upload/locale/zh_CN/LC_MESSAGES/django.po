@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-10-17 14:00+0800\n"
+"POT-Creation-Date: 2018-01-03 15:01+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -148,6 +148,41 @@ msgstr "'%s'应该放在'data_files'中"
 
 #, python-format
 msgid ""
+"'%s' was pickle dumped using protocol 3 (under python3), it should be dumped "
+"with 'protocol=2' parameters"
+msgstr ""
+"'%s'使用的是protocol 3(在Python3下)进行的pickle dump, 它应该使用'protocol=2'进行dump."
+
+#, python-format
+msgid "'%s' must be dumped from a list or tuple"
+msgstr ""
+"'%s'必须dump成一个list或tuple"
+
+#, python-format
+msgid "'%s' seems to be empty, that's not valid"
+msgstr "'%s'看上去是空的，这不是有效的"
+
+#, python-format
+msgid ""
+"'%s' is not expected in 'cache_key_files' as it will not be used for "
+"building cache"
+msgstr ""
+"'%s'不应该出现在'cache_key_files'中，它不会用来生成cache"
+
+msgid ""
+"'runpy_context' is configured with neither 'runpy_file' nor "
+"'full_process_code' configured it will be neglected."
+msgstr ""
+"在'runpy_file'和'full_process_code'都未配置时，'runpy_context'进行的配置不会被使用."
+
+#, python-format
+msgid ""
+"'%s' must be configured when neither 'runpy_file' nor 'full_processing_code' "
+"is configured."
+msgstr "'%s'必须在'runpy_file'和'full_process_code'都未配置时配置."
+
+#, python-format
+msgid ""
 "%s not using attribute 'runpy_file' is for debug only, it should not be used "
 "in production."
 msgstr "%s未使用'runpy_file'属性时只应用于debug，不应用于生产环境."
@@ -155,6 +190,30 @@ msgstr "%s未使用'runpy_file'属性时只应用于debug，不应用于生产�
 #, python-format
 msgid "'%s' is not a valid Python script file."
 msgstr "'%s'不是一个有效的Python代码文件."
+
+msgid "Error: "
+msgstr "错误: "
+
+msgid ""
+"The page failed to be rendered. Sorry about that. The staff has been "
+"informed, and it will be fixed as soon as possible."
+msgstr ""
+"页面加载失败. 非常抱歉！课程管理人员应已经收到通知，这个问题将会尽快被修复."
+
+msgid ""
+"The page data stored in the database was found to be invalid for the page as "
+"given in the course content. Likely the course content was changed in an "
+"incompatible way (say, by adding an option to a choice question) without "
+"changing the question ID. The precise error encountered was the following: "
+msgstr ""
+
+msgid "'question_data' is missing in page_data."
+msgstr ""
+"page_data中少了'question_data'."
+
+msgid "Failed for unkown reason."
+msgstr ""
+"因为未知的原因失效."
 
 #, python-format
 msgid "LaTex page failed in user %(user)s's session"
@@ -176,11 +235,9 @@ msgstr "请发邮件给课程管理员，邮件中包含与错误相关的以下
 msgid "The original failure message follows:"
 msgstr "原始的错误信息如下:"
 
-msgid ""
-"The page failed to be rendered. Sorry about that. The staff has been "
-"informed, and it will be fixed as soon as possible."
-msgstr ""
-"页面加载失败. 非常抱歉！课程管理人员应已经收到通知，这个问题将会尽快被修复."
+#, python-format
+msgid "'%s' expects output, while got None"
+msgstr "'%s'应有输出，但没有得到"
 
 msgid "This is the problematic code"
 msgstr "导致问题的代码如下:"
@@ -192,21 +249,6 @@ msgid ""
 "The page failed to be rendered due to timeout, please try to reload the page "
 "in a while."
 msgstr "页面因超时加载失败，请稍等片刻再刷新."
-
-msgid "Your code produced the following plots"
-msgstr "你的代码生成了以下的图形"
-
-msgid "Figure"
-msgstr ""
-
-msgid "A correct answer is"
-msgstr "参考答案："
-
-msgid "Error: "
-msgstr "错误: "
-
-msgid "The template failed to render, the log follows:"
-msgstr "模板无法加载，以下为日志: "
 
 #, python-format
 msgid "Created at %s"
@@ -407,3 +449,12 @@ msgstr "发生错误，请重新上传图片"
 
 msgid "Done!"
 msgstr "完成!"
+
+#~ msgid "Your code produced the following plots"
+#~ msgstr "你的代码生成了以下的图形"
+
+#~ msgid "A correct answer is"
+#~ msgstr "参考答案："
+
+#~ msgid "The template failed to render, the log follows:"
+#~ msgstr "模板无法加载，以下为日志: "

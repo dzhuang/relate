@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-10-17 14:01+0800\n"
+"POT-Creation-Date: 2018-01-03 15:01+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -1905,6 +1905,11 @@ msgstr "信息已发送. "
 msgid "Send instant message"
 msgstr "发送即时信息"
 
+#, python-format
+msgid ""
+"'%s' is currently not supported as a course specific language at this site."
+msgstr "'本站目前不支持'%s'作为课程专用语言."
+
 msgid ""
 "A course identifier. Alphanumeric with dashes, no spaces. This is visible in "
 "URLs and determines the location on your file system where the course's git "
@@ -2060,6 +2065,12 @@ msgstr "这个电子邮件地址用于接收关于本课程的事务通知. "
 
 msgid "Notify email"
 msgstr "接收通知的邮箱"
+
+msgid "Which language is forced to be used for this course."
+msgstr "本课程的页面将强制使用哪种语言. "
+
+msgid "Course language forcibly used"
+msgstr "课程强制使用的语言"
 
 msgid ""
 "(Required only if the instant message feature is desired.) The Jabber/XMPP "
@@ -2338,8 +2349,8 @@ msgstr "flow \"%(flow_id)s\"中匿名的session %(session_id)d "
 msgid "%(user)s's session %(session_id)d on '%(flow_id)s'"
 msgstr "%(user)s在flow \"%(flow_id)s\"的session %(session_id)d"
 
-msgid "Ordinal"
-msgstr "序号"
+msgid "Page ordinal"
+msgstr "页面序号"
 
 msgid "Page type as indicated in course content"
 msgstr "课程内容中所确定的Page类型"
@@ -2371,7 +2382,7 @@ msgstr "flow page的数据"
 
 #, python-format
 msgid ""
-"Data for page '%(group_id)s/%(page_id)s' (page_ordinal %(page_ordinal)s) in %"
+"Data for page '%(group_id)s/%(page_id)s' (page ordinal %(page_ordinal)s) in %"
 "(flow_session)s"
 msgstr ""
 "%(flow_session)s中page %(group_id)s/%(page_id)s(序号为%(page_ordinal)s)的数据"
@@ -3044,6 +3055,10 @@ msgid "the value of human_feedback_percentage must be between 0 and 100"
 msgstr "'human_feedback_percentage'必须在0到100内."
 
 #, python-format
+msgid "There are suspective behavior with submission of this code question%s"
+msgstr "该代码问题的提交存在可疑行为%s"
+
+#, python-format
 msgid "unknown embedded question type '%(type)s'"
 msgstr "未知的嵌入型问题类型\"%(type)s\""
 
@@ -3299,6 +3314,10 @@ msgstr "%d个session已重新计算评分. "
 msgid "%d sessions regraded."
 msgstr "%d个session已重新评分. "
 
+#, python-format
+msgid "%d sessions adjusted."
+msgstr "%d个session已调整. "
+
 msgid "Analytics"
 msgstr "分析统计"
 
@@ -3516,6 +3535,9 @@ msgstr "Markup沙箱"
 
 msgid "Test flow"
 msgstr "测试flow"
+
+msgid "Batch adjust flow page data"
+msgstr "批量调整flow page的数据"
 
 msgid "Edit events (admin)"
 msgstr "编辑event (admin)"
@@ -4697,6 +4719,11 @@ msgid ""
 msgstr ""
 "错误: 需导入的列中含有非ASCII字符. 请将CSV文件转换为utf8格式后再尝试导入."
 
+msgid ""
+"disabled (i.e., displayed language is determined by user's browser "
+"preference)"
+msgstr "未启用(即，页面显示的语言取决于用户的浏览器偏好)"
+
 #, python-format
 msgid "Before <b>%(end)s</b>."
 msgstr "<b>%(end)s</b>之前."
@@ -4721,8 +4748,9 @@ msgstr "%s前开始的"
 msgid "<b>%(credit_percent)d%%</b> of the grade"
 msgstr "应得分的<b>%(credit_percent)d%%</b>"
 
-msgid " at most <b>%(max_points)d%</b> points"
-msgstr "最多不超过<b>%(max_points)d%</b>分"
+#, python-format
+msgid " at most <b>%(max_points)d</b> points"
+msgstr "最多不超过<b>%(max_points)d</b>分"
 
 #, python-format
 msgid "(including %(bonus_points)s bonus points)"
@@ -5051,9 +5079,6 @@ msgstr "警告："
 msgid "Validate and create"
 msgstr "验证并创建课程"
 
-msgid "Git source must be specified"
-msgstr "必须设定git源"
-
 msgid ""
 "No refs found in remote repository (i.e. no master branch, no HEAD). This "
 "looks very much like a blank repository. Please create course.yml in the "
@@ -5237,6 +5262,9 @@ msgstr "前往"
 msgid "Test Flow"
 msgstr "测试flow"
 
+msgid "Batch adjust existing flow page data"
+msgstr "批量调整已存在的flow page数据"
+
 msgid "Select participant for whom exception is to be granted."
 msgstr "选择需要给予破例的用户. "
 
@@ -5378,6 +5406,15 @@ msgstr "只有课务人员可以使用这个工具"
 #, python-format
 msgid "%(current)d out of %(total)d items processed."
 msgstr "%(current)d个(共计%(total)d个)已经处理."
+
+msgid "Successfully updated course settings."
+msgstr "成功更新课程设置."
+
+msgid "No change was made on the settings."
+msgstr "课程设置未变化."
+
+msgid "Failed to update course settings."
+msgstr "课程设置更新失败."
 
 msgid "Edit Course"
 msgstr "编辑课程"
@@ -5586,6 +5623,30 @@ msgstr "退出登录"
 
 msgid "User Profile"
 msgstr "用户信息"
+
+msgid "English"
+msgstr "英语"
+
+msgid "Simplified Chinese"
+msgstr "简体中文"
+
+msgid "German"
+msgstr "德语"
+
+msgid "my English"
+msgstr ""
+
+msgid "Korean"
+msgstr ""
+
+msgid "French"
+msgstr ""
+
+#~ msgid "Ordinal"
+#~ msgstr "序号"
+
+#~ msgid "Git source must be specified"
+#~ msgstr "必须设定git源"
 
 #~ msgid "Reset"
 #~ msgstr "重置"
