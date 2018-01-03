@@ -4,8 +4,7 @@
 {% block content %}
   <div class="alert alert-info">
     <i class="fa fa-info-circle"></i>
-    {% trans "RELATE" as RELATE %}
-    {% blocktrans trimmed %}
+    {% blocktrans trimmed with RELATE=settings.RELATE_BRAND %}
     {{ RELATE }} is currently in maintenance mode. Sorry for the interruption,
     we'll be back shortly.
     {% endblocktrans %}

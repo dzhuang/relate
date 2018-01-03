@@ -171,8 +171,8 @@ class PythonCodeQuestionWithPageContext(PythonCodeQuestion):
                         )
                         from relate.utils import local_now, format_datetime_local
                         with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):  # noqa
-                            from django.template.loader import render_to_string
-                            message = render_to_string(
+                            from relate.utils import render_email_template
+                            message = render_email_template(
                                 "course/broken-code-question-email.txt", {
                                     "site": getattr(settings, "RELATE_BASE_URL"),
                                     "page_id": self.page_desc.id,

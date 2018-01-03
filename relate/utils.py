@@ -164,8 +164,10 @@ class MaintenanceMiddleware(object):
 
 
 def settings_context_processor(request):
+    from django_settings_export import settings_export
+    context = settings_export(request)
     from django.conf import settings
-    return {
+    context.update({
         "student_sign_in_view": "relate-sign_in_choice",
         "relate_sign_in_by_email_enabled":
         settings.RELATE_SIGN_IN_BY_EMAIL_ENABLED,
@@ -179,7 +181,8 @@ def settings_context_processor(request):
         settings.RELATE_SIGN_IN_BY_SAML2_ENABLED,
         "maintenance_mode": is_maintenance_mode(request),
         "site_announcement": getattr(settings, "RELATE_SITE_ANNOUNCEMENT", None),
-        }
+        })
+    return context
 
 
 def as_local_time(dtm):
@@ -497,5 +500,21 @@ def is_osx_platform():
 class RELATEDeprecateWarning(PendingDeprecationWarning):
     pass
 
+
+def get_relate_brand():
+    from django.conf import settings
+    from django.utils.translation import ugettext_lazy as _
+    return getattr(settings, "RELATE_BRAND", _("RELATE"))
+
+
+RELATE_BRAND = get_relate_brand()
+
+
+def render_email_template(template_name, context=None, request=None, using=None):
+    if context is None:
+        context = {}
+    context.update({"RELATE": RELATE_BRAND})
+    from django.template.loader import render_to_string
+    return render_to_string(template_name, context, request, using)
 
 # vim: foldmethod=marker

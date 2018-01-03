@@ -11,12 +11,25 @@ if False:
 # Do not change this file. All these settings can be overridden in
 # local_settings.py.
 
-from django.conf.global_settings import STATICFILES_FINDERS
+from django.conf.global_settings import STATICFILES_FINDERS, gettext_noop
+from django.utils.safestring import mark_safe
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
 from os.path import join
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+
+RELATE_BRAND = "RELATE"
+
+RELATE_SITE_SLOGAN = mark_safe("""
+<p>%s</p>
+<p>
+<a class="btn btn-lg btn-primary"
+ href="https://github.com/inducer/relate" role="button">
+ %s &raquo;</a>
+</p>
+""" % (gettext_noop("RELATE is an Environment for Learning And TEaching"),
+       gettext_noop("Learn more")))
 
 RELATE_EMAIL_SMTP_ALLOW_NONAUTHORIZED_SENDER = True
 
@@ -171,6 +184,11 @@ RELATE_EXTRA_CONTEXT_PROCESSORS = (
             )
 
 # }}}
+
+SETTINGS_EXPORT = [
+    'RELATE_BRAND',
+    'RELATE_SITE_SLOGAN',
+]
 
 CRISPY_TEMPLATE_PACK = "bootstrap3"
 

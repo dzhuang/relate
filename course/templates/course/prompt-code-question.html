@@ -15,11 +15,11 @@
     <div id="grading-setup-code" class="panel-collapse collapse">
      <div class="panel-body">
        <p>
-         {% blocktrans trimmed %}
+         {% blocktrans trimmed with RELATE=settings.RELATE_BRAND %}
            This is the code that is used to set up the problem and produce
            test data for your submission. It is reproduced here for your
            information, or if you would like to run your submission outside
-           of RELATE.
+           of {{ RELATE }}.
            You should <em>not</em> copy/paste this code into the
            code box below. This code is run automatically
            'behind the scenes' before your submitted code.
@@ -44,10 +44,10 @@
     <div id="grading-test-code" class="panel-collapse collapse">
      <div class="panel-body">
        <p>
-         {% blocktrans trimmed %}
+         {% blocktrans trimmed with RELATE=settings.RELATE_BRAND %}
            This is the code that is used to generate feedback for your
            submission. It is reproduced here for your information, or
-           if you would like to run your submission outside of RELATE.
+           if you would like to run your submission outside of {{ RELATE }}.
            You should <em>not</em> copy/paste this code into the
            code box below. This code is run automatically
            'behind the scenes' after your submitted code.

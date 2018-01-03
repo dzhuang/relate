@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="shortcut icon" href="{% static "assets/ico/favicon.ico" %}">
 
-    <title>{% block title %}{% trans "RELATE" %}{% endblock %}</title>
+    <title>{% block title %}{{ settings.RELATE_BRAND }}{% endblock %}</title>
 
     <link href="{% static "bootstrap/dist/css/bootstrap.css" %}" rel="stylesheet">
     <link href="{% static "jquery-ui/themes/smoothness/jquery-ui.css" %}" rel="stylesheet">
@@ -57,7 +57,7 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="{%block brand_link %}/{% endblock %}">{%block brand %}{% trans "RELATE" %}{% endblock %}</a>
+          <a class="navbar-brand" href="{%block brand_link %}/{% endblock %}">{%block brand %}{{ settings.RELATE_BRAND }}{% endblock %}</a>
         </div>
         <div class="navbar-collapse collapse">
           {% if not maintenance_mode %}

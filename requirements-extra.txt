@@ -65,3 +65,6 @@ pyminifier
 
 # for tests of mongodb
 mongomock
+
+# site brand and slogan
+django-settings-export

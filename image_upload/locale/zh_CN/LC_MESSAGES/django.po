@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2018-01-03 15:01+0800\n"
+"POT-Creation-Date: 2018-01-03 17:52+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -151,12 +151,12 @@ msgid ""
 "'%s' was pickle dumped using protocol 3 (under python3), it should be dumped "
 "with 'protocol=2' parameters"
 msgstr ""
-"'%s'使用的是protocol 3(在Python3下)进行的pickle dump, 它应该使用'protocol=2'进行dump."
+"'%s'使用的是protocol 3(在Python3下)进行的pickle dump, 它应该使"
+"用'protocol=2'进行dump."
 
 #, python-format
 msgid "'%s' must be dumped from a list or tuple"
-msgstr ""
-"'%s'必须dump成一个list或tuple"
+msgstr "'%s'必须dump成一个list或tuple"
 
 #, python-format
 msgid "'%s' seems to be empty, that's not valid"
@@ -166,14 +166,14 @@ msgstr "'%s'看上去是空的，这不是有效的"
 msgid ""
 "'%s' is not expected in 'cache_key_files' as it will not be used for "
 "building cache"
-msgstr ""
-"'%s'不应该出现在'cache_key_files'中，它不会用来生成cache"
+msgstr "'%s'不应该出现在'cache_key_files'中，它不会用来生成cache"
 
 msgid ""
 "'runpy_context' is configured with neither 'runpy_file' nor "
 "'full_process_code' configured it will be neglected."
 msgstr ""
-"在'runpy_file'和'full_process_code'都未配置时，'runpy_context'进行的配置不会被使用."
+"在'runpy_file'和'full_process_code'都未配置时，'runpy_context'进行的配置不会"
+"被使用."
 
 #, python-format
 msgid ""
@@ -208,12 +208,10 @@ msgid ""
 msgstr ""
 
 msgid "'question_data' is missing in page_data."
-msgstr ""
-"page_data中少了'question_data'."
+msgstr "page_data中少了'question_data'."
 
 msgid "Failed for unkown reason."
-msgstr ""
-"因为未知的原因失效."
+msgstr "因为未知的原因失效."
 
 #, python-format
 msgid "LaTex page failed in user %(user)s's session"
@@ -288,9 +286,6 @@ msgstr ""
 "-------------------\n"
 "%(error_message)s\n"
 "-------------------\n"
-
-msgid "RELATE"
-msgstr "LearningWhat"
 
 msgid "View in grade page"
 msgstr "在评分界面中查看"
@@ -450,11 +445,3 @@ msgstr "发生错误，请重新上传图片"
 msgid "Done!"
 msgstr "完成!"
 
-#~ msgid "Your code produced the following plots"
-#~ msgstr "你的代码生成了以下的图形"
-
-#~ msgid "A correct answer is"
-#~ msgstr "参考答案："
-
-#~ msgid "The template failed to render, the log follows:"
-#~ msgstr "模板无法加载，以下为日志: "

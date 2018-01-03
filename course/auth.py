@@ -65,7 +65,7 @@ from course.models import Participation, ParticipationRole, AuthenticationToken 
 from accounts.models import User
 from course.utils import render_course_page, course_view
 
-from relate.utils import StyledForm, StyledModelForm, string_concat
+from relate.utils import StyledForm, StyledModelForm, string_concat, RELATE_BRAND
 from django_select2.forms import ModelSelect2Widget
 
 if False:
@@ -504,8 +504,8 @@ def sign_up(request):
                 user.sign_in_key = make_sign_in_key(user)
                 user.save()
 
-                from django.template.loader import render_to_string
-                message = render_to_string("course/sign-in-email.txt", {
+                from relate.utils import render_email_template
+                message = render_email_template("course/sign-in-email.txt", {
                     "user": user,
                     "sign_in_uri": request.build_absolute_uri(
                         reverse(
@@ -518,7 +518,7 @@ def sign_up(request):
 
                 from django.core.mail import EmailMessage
                 msg = EmailMessage(
-                        string_concat("[", _("RELATE"), "] ",
+                        string_concat("[", RELATE_BRAND, "] ",
                                      _("Verify your email")),
                         message,
                         getattr(settings, "NO_REPLY_EMAIL_FROM",
@@ -625,8 +625,8 @@ def reset_password(request, field="email"):
                     user.sign_in_key = make_sign_in_key(user)
                     user.save()
 
-                    from django.template.loader import render_to_string
-                    message = render_to_string("course/sign-in-email.txt", {
+                    from relate.utils import render_email_template
+                    message = render_email_template("course/sign-in-email.txt", {
                         "user": user,
                         "sign_in_uri": request.build_absolute_uri(
                             reverse(
@@ -637,7 +637,7 @@ def reset_password(request, field="email"):
                         })
                     from django.core.mail import EmailMessage
                     msg = EmailMessage(
-                            string_concat("[", _("RELATE"), "] ",
+                            string_concat("[", RELATE_BRAND, "] ",
                                          _("Password reset")),
                             message,
                             getattr(settings, "NO_REPLY_EMAIL_FROM",
@@ -669,7 +669,7 @@ def reset_password(request, field="email"):
         "field": field,
         "form_description":
             _("Password reset on %(site_name)s")
-            % {"site_name": _("RELATE")},
+            % {"site_name": RELATE_BRAND},
         "form": form
         })
 
@@ -746,7 +746,7 @@ def reset_password_stage2(request, user_id, sign_in_key):
     return render(request, "generic-form.html", {
         "form_description":
             _("Password reset on %(site_name)s")
-            % {"site_name": _("RELATE")},
+            % {"site_name": RELATE_BRAND},
         "form": form
         })
 
@@ -791,8 +791,8 @@ def sign_in_by_email(request):
             user.sign_in_key = make_sign_in_key(user)
             user.save()
 
-            from django.template.loader import render_to_string
-            message = render_to_string("course/sign-in-email.txt", {
+            from relate.utils import render_email_template
+            message = render_email_template("course/sign-in-email.txt", {
                 "user": user,
                 "sign_in_uri": request.build_absolute_uri(
                     reverse(
@@ -802,7 +802,7 @@ def sign_in_by_email(request):
                 })
             from django.core.mail import EmailMessage
             msg = EmailMessage(
-                    _("Your %(RELATE)s sign-in link") % {"RELATE": _("RELATE")},
+                    _("Your %(RELATE)s sign-in link") % {"RELATE": RELATE_BRAND},
                     message,
                     getattr(settings, "NO_REPLY_EMAIL_FROM",
                             settings.ROBOT_EMAIL_FROM),

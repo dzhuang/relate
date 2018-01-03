@@ -1051,8 +1051,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         from django.utils import translation
         from relate.utils import local_now, format_datetime_local
         with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
-            from django.template.loader import render_to_string
-            message = render_to_string(
+            from relate.utils import render_email_template
+            message = render_email_template(
                 "image_upload/broken-random-latex-question-email.txt",
                 {
                     "site": getattr(settings, "RELATE_BASE_URL"),
