@@ -16,11 +16,18 @@ BASE_DIR = os.path.dirname(__file__)
 SECRET_KEY = '<CHANGE ME TO SOME RANDOM STRING ONCE IN PRODUCTION>'
 
 ALLOWED_HOSTS = [
-        "*",
         ]
 
 # Configure the following as url as above.
 RELATE_BASE_URL = "http://YOUR/RELATE/SITE/DOMAIN"
+
+from django.conf.global_settings import gettext_noop  # noqa
+
+# Uncomment this to configure the site name of your relate instance.
+# If not configured, "RELATE" will be used as default value.
+# Use gettext_noop() if you want it to be discovered as an i18n literal
+# for translation.
+#RELATE_CUTOMIZED_SITE_NAME = gettext_noop("My RELATE")
 
 # {{{ my specific
 SENDFILE_URL = '/protected'
@@ -414,8 +421,33 @@ RELATE_SHOW_EDITOR_FORM = True
 
 # }}}
 
-# {{{ convert LaTeX to image settings
+# {{{ overriding built-in templates
+# Uncomment the following to enable templates overriding. It should be configured
+# as a list/tuple of path(s).
+# For example, if you the templates are in a folder named "my_templates" in the
+# root dir of the project, with base.html (project template), course_base.html,
+# and sign-in-email.txt (app templates) etc., are the templates you want to
+# override, the structure of the files should look like:
+#    ...
+#    relate/
+#    local_settings.py
+#    my_templates/
+#        base.html
+#        ...
+#        templates/
+#            course/
+#                course_base.html
+#                sign-in-email.txt
+#                ...
+#
 
+# import os.path
+# RELATE_OVERRIDE_TEMPLATES_DIRS = [os.path.join(os.path.dirname(__file__), "my_templates"),
+#                      os.path.join(os.path.dirname(__file__), "my_other_templates")]
+
+# }}}
+
+# {{{ convert LaTeX to image settings
 # To enable tex2img functionality, uncomment the following line.
 #RELATE_LATEX_TO_IMAGE_ENABLED = True
 

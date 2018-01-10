@@ -29,12 +29,14 @@ import six
 import datetime
 
 import django.forms as forms
+from django.utils.translation import ugettext_lazy as _
 import dulwich.repo
 
 from typing import Union
 
 if False:
     from typing import Text, List, Dict, Tuple, Optional, Any  # noqa
+    from django.http import HttpRequest  # noqa
 
 # {{{ string_concat compatibility for Django >= 1.11
 
@@ -163,11 +165,24 @@ class MaintenanceMiddleware(object):
 # }}}
 
 
-def settings_context_processor(request):
-    from django_settings_export import settings_export
-    context = settings_export(request)
+def get_site_name():
+    # type: () -> Text
     from django.conf import settings
-    context.update({
+    return getattr(settings, "RELATE_SITE_NAME", "RELATE")
+
+
+def render_email_template(template_name, context=None, request=None, using=None):
+    # type: (Text, Optional[Dict], Optional[HttpRequest], Optional[bool]) -> Text
+    if context is None:
+        context = {}
+    context.update({"relate_site_name": _(get_site_name())})
+    from django.template.loader import render_to_string
+    return render_to_string(template_name, context, request, using)
+
+
+def settings_context_processor(request):
+    from django.conf import settings
+    return {
         "student_sign_in_view": "relate-sign_in_choice",
         "relate_sign_in_by_email_enabled":
         settings.RELATE_SIGN_IN_BY_EMAIL_ENABLED,
@@ -181,8 +196,8 @@ def settings_context_processor(request):
         settings.RELATE_SIGN_IN_BY_SAML2_ENABLED,
         "maintenance_mode": is_maintenance_mode(request),
         "site_announcement": getattr(settings, "RELATE_SITE_ANNOUNCEMENT", None),
-        })
-    return context
+        "relate_site_name": _(get_site_name())
+        }
 
 
 def as_local_time(dtm):
@@ -484,7 +499,6 @@ def force_remove_path(path):
 
     shutil.rmtree(path, onerror=remove_readonly)
 
-
 def is_windows_platform():
     # type: () -> bool
     import sys
@@ -500,21 +514,5 @@ def is_osx_platform():
 class RELATEDeprecateWarning(PendingDeprecationWarning):
     pass
 
-
-def get_relate_brand():
-    from django.conf import settings
-    from django.utils.translation import ugettext_lazy as _
-    return getattr(settings, "RELATE_BRAND", _("RELATE"))
-
-
-RELATE_BRAND = get_relate_brand()
-
-
-def render_email_template(template_name, context=None, request=None, using=None):
-    if context is None:
-        context = {}
-    context.update({"RELATE": RELATE_BRAND})
-    from django.template.loader import render_to_string
-    return render_to_string(template_name, context, request, using)
 
 # vim: foldmethod=marker

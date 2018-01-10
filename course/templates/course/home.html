@@ -2,11 +2,18 @@
 {% load i18n %}
 
 {% block content %}
+  {% block cover %}
   <div class="jumbotron">
-    {{ settings.RELATE_SITE_SLOGAN }}
+    <h1>{% blocktrans with RELATE=relate_site_name %} Welcome to {{ RELATE }} {% endblocktrans %}</h1>
+    <p>{% trans "RELATE is an Environment for Learning And TEaching" %}</p>
+    <p>
+    <a class="btn btn-lg btn-primary" href="https://github.com/inducer/relate" role="button">{% trans "Learn more" %} &raquo;</a>
+    </p>
   </div>
-
+  {% endblock %}
+  {% block course_list %}
   {% if current_courses or past_courses %}
+    {% block current_course_list %}
     {% if current_courses %}
       <h2 class="page-header">{% trans "Open courses" %}</h2>
       <div class="row">
@@ -19,20 +26,10 @@
         {% endfor %}
       </div>
     {% endif %}
-    {% if inprogress_courses %}
-      <h2 class="page-header">{% trans "My Courses in Progress" %}</h2>
-      <div class="row">
-        {% for course in inprogress_courses %}
-          <div class="col-md-4">
-            <h3>{{course.name}}</h3>
-            <p>{{course.number}} {{course.time_period}}</p>
-            <p><a class="btn btn-default" href="{% url 'relate-course_page' course.identifier %}" role="button">{% trans "View" %} &raquo;</a></p>
-          </div>
-        {% endfor %}
-      </div>
-    {% endif %}
+    {% endblock %}
     {% if past_courses %}
-      <h2 class="page-header">{% trans "My past Courses" %}</h2>
+      {% block past_course_list %}
+      <h3>{% trans "Past Courses" %}</h3>
       <table class="table table-condensed">
         <tr>
           <th>{% trans "Course number" %}</th>
@@ -53,9 +50,10 @@
           </tr>
         {% endfor %}
       </table>
+      {% endblock %}
     {% endif %}
   {% else %}
-    {% blocktrans trimmed with RELATE=settings.RELATE_BRAND %} There are no courses hosted on this {{ RELATE }} site. {% endblocktrans %}
+    {% blocktrans trimmed with RELATE=relate_site_name %} There are no courses hosted on this {{ RELATE }} site. {% endblocktrans %}
     {% if not user.is_authenticated %}
       {% url "relate-sign_in_by_user_pw" as relate-sign_in_by_user_pw %}
       {% blocktrans trimmed %}
@@ -67,4 +65,5 @@
     <hr>
     <a class="btn btn-primary" href="{% url 'relate-set_up_new_course' %}"" role="button">{% trans "Set up new course" %} &raquo;</a></p>
   {% endif %}
+  {% endblock %}
 {% endblock %}

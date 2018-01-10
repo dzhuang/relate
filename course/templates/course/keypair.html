@@ -5,8 +5,8 @@
   <h1>{% trans "SSH Key Pair" %}</h1>
 
   <p><b>{% trans "Private key:" %}</b></p>
-  <p>{% blocktrans trimmed with RELATE=settings.RELATE_BRAND %}
-    Copy and paste this block of text into the 'private key' field in {{ RELATE }}.
+  <p>{% blocktrans trimmed %}
+    Copy and paste this block of text into the 'private key' field in {{ relate_site_name }}.
   {% endblocktrans %}</p>
   <pre>{{ public_key }}</pre>
 

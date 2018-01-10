@@ -12,24 +12,11 @@ if False:
 # local_settings.py.
 
 from django.conf.global_settings import STATICFILES_FINDERS, gettext_noop
-from django.utils.safestring import mark_safe
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
 from os.path import join
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-
-RELATE_BRAND = "RELATE"
-
-RELATE_SITE_SLOGAN = mark_safe("""
-<p>%s</p>
-<p>
-<a class="btn btn-lg btn-primary"
- href="https://github.com/inducer/relate" role="button">
- %s &raquo;</a>
-</p>
-""" % (gettext_noop("RELATE is an Environment for Learning And TEaching"),
-       gettext_noop("Learn more")))
 
 RELATE_EMAIL_SMTP_ALLOW_NONAUTHORIZED_SENDER = True
 
@@ -79,12 +66,6 @@ INSTALLED_APPS = (
     "course",
 )
 
-if local_settings.get("RELATE_CUSTOM_INSTALLED_APPS"):  # type: ignore
-    INSTALLED_APPS = INSTALLED_APPS + local_settings["RELATE_CUSTOM_INSTALLED_APPS"]  # type: ignore # noqa
-
-if not local_settings.get("RELATE_STATIC_CDN_ENABLED"):  # type: ignore
-    INSTALLED_APPS = INSTALLED_APPS + ("django.contrib.staticfiles",)  # type: ignore # noqa
-
 if local_settings.get("RELATE_SIGN_IN_BY_SAML2_ENABLED"):
     INSTALLED_APPS = INSTALLED_APPS + ("djangosaml2",)  # type: ignore
 
@@ -93,7 +74,6 @@ if local_settings.get("RELATE_SIGN_IN_BY_SAML2_ENABLED"):
 # {{{ django: middleware
 
 MIDDLEWARE = (
-    # "debug_panel.middleware.DebugPanelMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -108,9 +88,6 @@ MIDDLEWARE = (
     "course.exam.ExamLockdownMiddleware",
     "relate.utils.MaintenanceMiddleware",
 )
-
-if local_settings.get("RELATE_CUSTOM_MIDDLEWARE_CLASS", None):
-    MIDDLEWARE = MIDDLEWARE + local_settings["RELATE_CUSTOM_MIDDLEWARE_CLASS"]  # type: ignore # noqa
 
 # }}}
 
@@ -157,11 +134,7 @@ BOWER_INSTALLED_APPS = (
     "select2#4.0.1",
     "select2-bootstrap-css",
     "blueimp-tmpl",
-    "eonasdan-bootstrap-datetimepicker#latest"
     )
-
-if local_settings.get("RELATE_CUSTOM_BOWER_INSTALLED_APPS", None):
-    BOWER_INSTALLED_APPS = BOWER_INSTALLED_APPS + local_settings["RELATE_CUSTOM_BOWER_INSTALLED_APPS"]   # type: ignore # noqa
 
 CODEMIRROR_PATH = "codemirror"
 
@@ -184,11 +157,6 @@ RELATE_EXTRA_CONTEXT_PROCESSORS = (
             )
 
 # }}}
-
-SETTINGS_EXPORT = [
-    'RELATE_BRAND',
-    'RELATE_SITE_SLOGAN',
-]
 
 CRISPY_TEMPLATE_PACK = "bootstrap3"
 
@@ -214,6 +182,12 @@ TEMPLATES = [
             }
     },
 ]
+
+RELATE_OVERRIDE_TEMPLATES_DIRS = (
+    local_settings.get("RELATE_OVERRIDE_TEMPLATES_DIRS", []))
+if RELATE_OVERRIDE_TEMPLATES_DIRS:
+    TEMPLATES[0]["DIRS"] = (
+        tuple(RELATE_OVERRIDE_TEMPLATES_DIRS) + TEMPLATES[0]["DIRS"])   # type: ignore  # noqa
 
 # }}}
 
@@ -253,9 +227,7 @@ STATICFILES_DIRS = (
         join(BASE_DIR, "relate", "static"),
         )
 
-STATIC_URL = local_settings.get("STATIC_URL", '/static/')
 
-STATIC_ROOT = local_settings.get("STATIC_ROOT", join(BASE_DIR, "static"))
 
 # local select2 'static' resources instead of from CDN
 # https://goo.gl/dY6xf7
@@ -289,9 +261,14 @@ for name, val in local_settings.items():
     if not name.startswith("_"):
         globals()[name] = val
 
+RELATE_SITE_NAME = gettext_noop("RELATE")
+RELATE_CUTOMIZED_SITE_NAME = local_settings.get("RELATE_CUTOMIZED_SITE_NAME")
+if RELATE_CUTOMIZED_SITE_NAME is not None and RELATE_CUTOMIZED_SITE_NAME.strip():
+    RELATE_SITE_NAME = RELATE_CUTOMIZED_SITE_NAME
+
 # {{{ celery config
 
-if "BROKER_URL" not in local_settings:
+if "BROKER_URL" not in globals():
     BROKER_URL = 'django://'
 
 CELERY_ACCEPT_CONTENT = ['pickle']
