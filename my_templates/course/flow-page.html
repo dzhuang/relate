@@ -222,7 +222,7 @@
       {# {{{ expiration mode #}
 
       {% if flow_session.in_progress and expiration_mode_choice_count > 1 and not viewing_prior_version %}
-        <div class="flow-session-expiration-panel">
+      <div class="flow-session-expiration-panel" data-toggle="tooltip"  title="<p>{% trans 'Always neglect these options and use <b>End session</b> instead when you finish the session before deadline, or you will lose credit !!!' %} </p><p> {% trans 'These options will be activated <b>only</b> when you forget to end the session, or you want to roll over the session. Both options will reduce your credit ! ' %}</p>" >
           <span id="expiration_mode_change_progress">
           </span>
           <label for="id_expiration_mode">
@@ -235,6 +235,11 @@
               <option value="{{ key }}"
                   {% if key == expiration_mode %}
                     selected
+                  {% endif %}
+                  {% if key == "end" %}
+                      title="({% trans 'Default' %}) {% trans 'When hit deadline, this session is going to be ended (manually by the tutor) and graded. However, if you have any activity after deadline while before it is ended and graded, the session will be treated as a roll-over session, which will reduce your credit.' %}"
+                  {% elif key == "roll_over" %}
+                      title="{% trans 'When hit deadline, this session will be roll-overed, remember that you are likely get a lower credit.' %}"
                   {% endif %}
               >{{ val }}</option>
             {% endfor %}
@@ -339,8 +344,13 @@
 
   {# }}} #}
 
-  {{ body|safe }}
+  <div>
+  <style scoped>
+      @import url({%  static "css/body-scoped.css" %});
+  </style>
 
+    {{ body|safe }}
+  </div>
   {# {{{ form #}
 
   {% if form_html %}
@@ -383,7 +393,7 @@
     </div>
   {% elif show_answer and correct_answer %}
     {# show only correct answer, without indication of correctness #}
-    <div class="well">
+    <div class="well"  id="correcteness-feedback">
       <p>{{ correct_answer|safe }}</p>
     </div>
   {% endif %}
@@ -394,68 +404,71 @@
 
   <script type="text/javascript">
 
-    function activate_change_listening()
-    {
-      var input_changed = false;
+  if (typeof activate_change_listening !== "function")
+  {
+        function activate_change_listening()
+        {
+          var input_changed = false;
 
-      // {{{ listen for codemirror changes
+          // {{{ listen for codemirror changes
 
-      function on_cm_change(cm, change_obj)
-      {
-        input_changed = true;
-      }
-
-      $("div.CodeMirror").each(
-          function ()
+          function on_cm_change(cm, change_obj)
           {
-            var cm = this.CodeMirror;
-            cm.on("change", on_cm_change);
-          });
+            input_changed = true;
+          }
 
-      // }}}
+          $("div.CodeMirror").each(
+              function ()
+              {
+                var cm = this.CodeMirror;
+                cm.on("change", on_cm_change);
+              });
 
-      // {{{ listen for other input changes
+          // }}}
 
-      function on_input_change(evt)
-      {
-        input_changed = true;
-      }
+          // {{{ listen for other input changes
 
-      $(":checkbox").on("change", on_input_change);
-      $(":radio").on("change", on_input_change);
-      $(":text").on("change", on_input_change);
-      $(":file").on("change", on_input_change);
-      $("textarea").on("change", on_input_change);
-
-      // }}}
-
-      $(window).on('beforeunload',
-          function()
+          function on_input_change(evt)
           {
-            if (input_changed)
-              return "{% trans 'You have unsaved changes on this page.' %}";
-          });
+            input_changed = true;
+          }
 
-      function before_submit(evt)
-      {
-        input_changed = false;
+          $(":checkbox").on("change", on_input_change);
+          $(":radio").on("change", on_input_change);
+          $(":text").on("change", on_input_change);
+          $(":file").on("change", on_input_change);
+          $("textarea").on("change", on_input_change);
 
-        // We can't simply set "disabled" on the submitting button here.
-        // Otherwise the browser will simply remove that button from the POST
-        // data.
+          // }}}
 
-        $(".relate-save-button").each(
-            function()
-            {
-              var clone = $(this).clone();
-              $(clone).attr("disabled", "1");
-              $(this).after(clone);
-              $(this).hide();
-            });
-      }
+          $(window).on('beforeunload',
+              function()
+              {
+                if (input_changed)
+                  return "{% trans 'You have unsaved changes on this page.' %}";
+              });
 
-      $(".relate-interaction-container form").on("submit", before_submit);
-    }
+          function before_submit(evt)
+          {
+            input_changed = false;
+
+            // We can't simply set "disabled" on the submitting button here.
+            // Otherwise the browser will simply remove that button from the POST
+            // data.
+
+            $(".relate-save-button").each(
+                function()
+                {
+                  var clone = $(this).clone();
+                  $(clone).attr("disabled", "1");
+                  $(this).after(clone);
+                  $(this).hide();
+                });
+          }
+
+          $(".relate-interaction-container form").on("submit", before_submit);
+        }
+  }
 
     $(document).ready(activate_change_listening);
   </script>

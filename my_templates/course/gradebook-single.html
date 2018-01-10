@@ -30,7 +30,7 @@
     </tr>
     {% if opportunity.due_time != None %}
       <tr>
-        <td>{% trans "Due" %}</td><td><tt>{{ opportunity.due_time }}</tt></td>
+        <td>{% trans "Due" %}</td><td><tt>{{ opportunity.due_time|compact_datetime }}</tt></td>
       </tr>
     {% endif %}
     {% if opportunity.flow_id %}
@@ -79,7 +79,7 @@
       <tbody>
         {% for gchange in grade_changes %}
         <tr>
-          <td>{{ gchange.grade_time }}</td>
+          <td>{{ gchange.grade_time|compact_datetime }}</td>
           <td>
             {% if gchange.is_superseded %}<s>{% endif %}
             {{ gchange.get_state_desc }}
@@ -172,23 +172,26 @@
                 </p>
                 <p>
                   {# Translators: means "Started at", which followed by a time string#}
-                  <b>{% trans "Started" %}:</b> {{ flow_session.start_time }}
+                  <b>{% trans "Started" %}:</b> {{ flow_session.start_time|compact_datetime }}
                 </p>
                 {% if not flow_session.in_progress %}
                   <p>
                     {# Translators: means "Completed at", which followed by a time string#}
-                    <b>{% trans "Completed" %}:</b> {{ flow_session.completion_time }}
+                    <b>{% trans "Completed" %}:</b> {{ flow_session.completion_time|compact_datetime }}
                   </p>
                   <p>
                     {# Translators: means "Last activity at", which followed by a time string#}
-                    <b>{% trans "Last activity" %}:</b> {{ flow_session.last_activity }}
+                    <b>{% trans "Last activity" %}:</b> {{ flow_session.last_activity|compact_datetime }}
                   </p>
                 {% endif %}
+                <p>
+                  <a href="{% url "relate-view_flow_page" course.identifier flow_session.id 0 %}" target="_blank">{% trans "View in flow" %}</a>
+                </p>
               </td>
 
               <td>
                 {% if session_properties.due %}
-                  {{ session_properties.due }}
+                  {{ session_properties.due|compact_datetime }}
                 {% endif %}
               </td>
 
