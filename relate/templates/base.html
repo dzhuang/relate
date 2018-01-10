@@ -7,7 +7,6 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="shortcut icon" href="{% static "assets/ico/favicon.ico" %}">
 
     <title>{% block title %}{{ relate_site_name }}{% endblock %}</title>
 
@@ -16,10 +15,8 @@
     <link href="{% static "jquery-ui/themes/smoothness/jquery-ui.css" %}" rel="stylesheet">
 
     <link rel="stylesheet" href="{% static "font-awesome/css/font-awesome.css" %}">
-    <link rel="stylesheet" href="{% static "jstree/dist/themes/default/style.min.css" %}">
-    <link rel="stylesheet" href="{% static "css/style.css" %}?rev=2017.11.30">
-    <link rel="stylesheet" href="{% static "css/customized.css" %} " >
-    <noscript><link rel="stylesheet" href="{% static "css/customized-noscript.css" %} "></noscript>
+    <link rel="stylesheet" href="{% static "jstree/dist/themes/default/style.min.css" %}" />
+    <link rel="stylesheet" href="/static/css/style.css" >
 
     {# Don't be tempted to move all this JS stuff down to the end. #}
     {# The datepicker generates inline JS that relies on this being loaded. #}
@@ -27,7 +24,6 @@
     <script src="{% static "jquery-ui/jquery-ui.js" %}"></script>
     <script src="{% static "bootstrap/dist/js/bootstrap.js" %}"></script>
     <script src="{% static "jstree/dist/jstree.min.js" %}"></script>
-    <link rel="stylesheet" href="{% static "css/ipynb.style.min.css" %}?rev=2017.11.30" >
     {% endblock %}
 
     {{ form.media }}
@@ -36,8 +32,8 @@
 
     <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
-      <script src="{% static "html5shiv/dist/html5shiv.js" %}"></script>
-      <script src="{% static "respond/dest/respond.min.js" %}"></script>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
     <![endif]-->
 
     <link href="{% static "video.js/dist/video-js.min.css" %}" rel="stylesheet">
@@ -134,7 +130,7 @@
     {% block pre_root_container %}{% endblock %}
 
     {% block root_container %}
-    <div class="container" id="content-wrapper">
+    <div class="container">
       {% block base_page_top %}{% include "base-page-top.html" %}{% endblock %}
 
       {% block nav_recommendations %}
@@ -155,7 +151,6 @@
     <!-- JavaScript
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
-    <script src="{% static "js/customized.js" %}"></script>
     <script type="text/javascript"
       src="{% static "MathJax/MathJax.js" %}?config=TeX-AMS-MML_HTMLorMML">
     </script>

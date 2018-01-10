@@ -16,6 +16,7 @@ BASE_DIR = os.path.dirname(__file__)
 SECRET_KEY = '<CHANGE ME TO SOME RANDOM STRING ONCE IN PRODUCTION>'
 
 ALLOWED_HOSTS = [
+        "relate.example.com",
         ]
 
 # Configure the following as url as above.
