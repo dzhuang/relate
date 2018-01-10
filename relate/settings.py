@@ -6,7 +6,7 @@ Django settings for RELATE.
 
 if False:
     # for mypy
-    from typing import Callable, Any, Union, Dict, Optional  # noqa
+    from typing import Callable, Any, Union, Dict  # noqa
 
 # Do not change this file. All these settings can be overridden in
 # local_settings.py.
@@ -52,6 +52,7 @@ INSTALLED_APPS = (
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
+    "django.contrib.staticfiles",
     "crispy_forms",
     "jsonfield",
     "bootstrap3_datetime",
@@ -227,7 +228,9 @@ STATICFILES_DIRS = (
         join(BASE_DIR, "relate", "static"),
         )
 
+STATIC_URL = '/static/'
 
+STATIC_ROOT = join(BASE_DIR, "static")
 
 # local select2 'static' resources instead of from CDN
 # https://goo.gl/dY6xf7

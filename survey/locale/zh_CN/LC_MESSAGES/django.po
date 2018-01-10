@@ -195,7 +195,6 @@ msgctxt "real name of a user"
 msgid "Name"
 msgstr "姓名"
 
-
 msgid "User"
 msgstr "用户"
 

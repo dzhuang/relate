@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2018-01-03 17:52+0800\n"
+"POT-Creation-Date: 2018-01-10 14:54+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -348,8 +348,11 @@ msgstr "登录链接无效, 您可能使用了一个旧邮件中的链接？"
 msgid "invalid sign-in token"
 msgstr "登录链接无效"
 
+msgid "Account does not exist."
+msgstr "该帐户不存在. "
+
 msgid "Account disabled."
-msgstr "帐户已禁用. "
+msgstr "该帐户已禁用. "
 
 msgid ""
 "Successfully signed in. Please complete your registration information below."
@@ -402,6 +405,9 @@ msgstr "您的输入不匹配."
 
 msgid "Profile data saved."
 msgstr "用户信息已更新. "
+
+msgid "You've already signed out."
+msgstr "您已经登出网站. "
 
 msgid "Create"
 msgstr "创建"
@@ -3469,12 +3475,6 @@ msgstr "成绩管理"
 msgid "Analytics Overview"
 msgstr "分析总览"
 
-msgid "Course Statistics"
-msgstr "课程统计"
-
-msgid "Create Course Statistics"
-msgstr "创建课程统计"
-
 msgid "Grade Book"
 msgstr "成绩册"
 
@@ -3533,14 +3533,8 @@ msgstr "Markup沙箱"
 msgid "Test flow"
 msgstr "测试flow"
 
-msgid "Batch adjust flow page data"
-msgstr "批量调整flow page的数据"
-
-msgid "Edit events (admin)"
-msgstr "编辑event (admin)"
-
-msgid "Edit events (calendar)"
-msgstr "编辑event (日历)"
+msgid "Edit events"
+msgstr "编辑event"
 
 msgctxt "menu item"
 msgid "Instructor"
@@ -4413,21 +4407,21 @@ msgstr "(对于人工评分的问题，没有可用的评分分布信息.)"
 msgid "Total"
 msgstr "总计"
 
-msgid "Open courses"
-msgstr "开放课程"
+#, python-format
+msgid " Welcome to %(RELATE)s "
+msgstr "欢迎来到%(RELATE)s"
+
+msgid "RELATE is an Environment for Learning And TEaching"
+msgstr ""
+
+msgid "Learn more"
+msgstr "更多信息"
 
 msgid "View"
 msgstr "查看"
 
-msgid "My Courses in Progress"
-msgstr "我正在学习的课程"
-
-msgid "My past Courses"
-msgstr "我以往学习的课程"
-
-msgctxt "The start and end time of a course"
-msgid "Time"
-msgstr "时间"
+msgid "Past Courses"
+msgstr "以往的课程"
 
 #, python-format
 msgid "There are no courses hosted on this %(RELATE)s site."
@@ -5417,8 +5411,39 @@ msgstr "课程设置更新失败."
 msgid "Edit Course"
 msgstr "编辑课程"
 
-msgid "Welcome to %s"
-msgstr "欢迎来到%s "
+msgid "LearningWhat"
+msgstr ""
+
+msgid "About Us"
+msgstr "关于我们"
+
+msgid "Course Statistics"
+msgstr "课程统计"
+
+msgid "Create Course Statistics"
+msgstr "创建课程统计"
+
+msgid "Batch adjust flow page data"
+msgstr "批量调整flow page的数据"
+
+msgid "Edit events (admin)"
+msgstr "编辑event (admin)"
+
+msgid "Edit events (calendar)"
+msgstr "编辑event (日历)"
+
+msgid "Open courses"
+msgstr "开放课程"
+
+msgid "My Courses in Progress"
+msgstr "我正在学习的课程"
+
+msgid "My past Courses"
+msgstr "我以往学习的课程"
+
+msgctxt "The start and end time of a course"
+msgid "Time"
+msgstr "时间"
 
 msgid "'compiler' must be specified."
 msgstr "必须指定compiler"
@@ -5475,10 +5500,7 @@ msgstr "未提供LaTex源代码. "
 msgid "Error executing"
 msgstr "执行错误"
 
-msgid "RELATE is an Environment for Learning And TEaching"
-msgstr ""
-
-msgid "Learn more"
+msgid "RELATE"
 msgstr ""
 
 msgid "403 Forbidden"
@@ -5584,9 +5606,6 @@ msgstr "登录用户： %(username)s"
 msgid "(impersonated)"
 msgstr "(正在模拟用户)"
 
-msgid "About Us"
-msgstr "关于我们"
-
 msgid "Institutional Login (SAML2)"
 msgstr "用机构密码登录(SAML2)"
 
@@ -5632,9 +5651,6 @@ msgstr "退出登录"
 
 msgid "User Profile"
 msgstr "用户信息"
-
-msgid "RELATE"
-msgstr ""
 
 msgid "English"
 msgstr "英语"

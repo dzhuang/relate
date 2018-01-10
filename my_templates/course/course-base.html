@@ -1,24 +1,16 @@
-{% extends "base.html" %}
+{% extends "course/course-base.html" %}
 {% load i18n %}
 
 {% block title %}
-  {{ course.number}}:
+  {{ course.name}}:
   {{ course.time_period}}
   -
   {{ relate_site_name }}
 {% endblock %}
 
 {% block brand %}
-  {{ course.number}}
+  {{ course.name}}
   {{ course.time_period}}
-{% endblock %}
-
-{% block brand_link %}
-  {% if not relate_exam_lockdown %}
-    {% url "relate-course_page" course.identifier %}
-  {% else %}
-    #
-  {% endif %}
 {% endblock %}
 
 {% block navbar %}
@@ -53,13 +45,19 @@
     <a href="#" class="dropdown-toggle" data-toggle="dropdown">{% trans "Grading" context "menu item" %}<b class="caret"></b></a>
     <ul class="dropdown-menu">
       {% if pperm.view_analytics %}
-        <li><a href="{% url "relate-flow_list" course.identifier %}">{% trans "Analytics Overview" %}</a></li>
+        <li><a href="{% url "relate-flow_list" course.identifier %}" target="_blank">{% trans "Analytics Overview" %}</a></li>
       {% endif %}
 
       {% if pperm.view_gradebook %}
         <li role="presentation" class="divider"></li>
+        <li><a href="{% url "relate-survey_list" course.identifier %}" target="_blank">{% trans "Course Statistics" %}</a></li>
+          {% if user.is_staff %}
+              <li><a href="{% url "relate-survey_create" course.identifier %}" target="_blank">{% trans "Create Course Statistics" %}</a></li>
+{#              <li><a href="{% url "relate-survey_create_generic" %}" target="_blank">{% trans "Create Generic Statistics" %}</a></li>#}
+          {% endif %}
+        <li role="presentation" class="divider"></li>
         <li role="presentation" class="dropdown-header">{% trans "Grade Book" %}</li>
-        <li><a href="{% url "relate-view_participant_list" course.identifier %}">{% trans "List of Participants" %}</a></li>
+        <li><a href="{% url "relate-view_participant_list" course.identifier %}" target="_blank">{% trans "List of Participants" %}</a></li>
         <li><a href="{% url "relate-view_grading_opportunity_list" course.identifier %}">{% trans "List of Grading Opportunities" %}</a></li>
         <li><a href="{% url "relate-view_gradebook" course.identifier %}">{% trans "Grade book" %}</a></li>
         {% if pperm.batch_export_grade %}
@@ -67,7 +65,7 @@
         {% endif %}
       {% endif %}
       {% if pperm.batch_import_grade %}
-        <li><a href="{% url "relate-import_grades" course.identifier %}">{% trans "Import Grades" %}</a></li>
+        <li><a href="{% url "relate-import_grades" course.identifier %}" target="_blank">{% trans "Import Grades" %}</a></li>
       {% endif %}
       {% if pperm.batch_regrade_flow_session %}
         <li role="presentation" class="divider"></li>
@@ -77,7 +75,7 @@
       {% if pperm.grant_exception %}
         <li role="presentation" class="divider"></li>
         <li role="presentation" class="dropdown-header">{% trans "Exceptions" %}</li>
-        <li><a href="{% url "relate-grant_exception" course.identifier %}">{% trans "Grant exception" %}</a></li>
+        <li><a href="{% url "relate-grant_exception" course.identifier %}" target="_blank">{% trans "Grant exception" %}</a></li>
         {% if user.is_staff %}
           <li><a href="{% url "admin:course_flowruleexception_changelist" %}?participation__course__id__exact={{ course.id }}" target="_blank">{% trans "Show exceptions" %}</a></li>
         {% endif %}
@@ -104,33 +102,35 @@
     <ul class="dropdown-menu">
 
       {% if pperm.preview_content or pperm.update_content %}
-        <li><a href="{% url "relate-update_course" course.identifier %}">{% trans "Retrieve/preview new course revisions" %}</a></li>
+        <li><a href="{% url "relate-update_course" course.identifier %}" target="_blank">{% trans "Retrieve/preview new course revisions" %}</a></li>
       {% endif %}
 
       {% if pperm.edit_course %}
-        <li><a href="{% url "relate-edit_course" course.identifier %}">{% trans "Edit course" %}</a></li>
+        <li><a href="{% url "relate-edit_course" course.identifier %}" target="_blank">{% trans "Edit course" %}</a></li>
       {% endif %}
 
       <li role="presentation" class="divider"></li>
       <li role="presentation" class="dropdown-header">{% trans "Content creation" %}</li>
       {% if pperm.use_page_sandbox %}
-        <li><a href="{% url "relate-view_page_sandbox" course.identifier %}">{% trans "Page sandbox" %}</a></li>
+        <li><a href="{% url "relate-view_page_sandbox" course.identifier %}" target="_blank">{% trans "Page sandbox" %}</a></li>
       {% endif %}
       {% if pperm.use_markup_sandbox %}
-        <li><a href="{% url "relate-view_markup_sandbox" course.identifier %}">{% trans "Markup sandbox" %}</a></li>
+        <li><a href="{% url "relate-view_markup_sandbox" course.identifier %}" target="_blank">{% trans "Markup sandbox" %}</a></li>
       {% endif %}
 
       {% if pperm.test_flow %}
         <li role="presentation" class="divider"></li>
         <li><a href="{% url "relate-test_flow" course.identifier %}">{% trans "Test flow" %}</a></li>
+        <li><a href="{% url "relate-batch_adjust_flow_page_data" course.identifier %}">{% trans "Batch adjust flow page data" %}</a></li>
       {% endif %}
 
       {% if pperm.edit_events %}
         <li role="presentation" class="divider"></li>
         <li role="presentation" class="dropdown-header">{% trans "Calendar" %}</li>
-        {% if user.is_staff %}
-          <li><a href="{% url "admin:course_event_changelist" %}?course__id__exact={{ course.id }}" target="_blank">{% trans "Edit events" %}</a></li>
+        {% if user.is_superuser %}
+          <li><a href="{% url "admin:course_event_changelist" %}?course__id__exact={{ course.id }}" target="_blank">{% trans "Edit events (admin)" %}</a></li>
         {% endif %}
+        <li><a href="{% url "relate-edit_calendar" course.identifier %}">{% trans "Edit events (calendar)" %}</a></li>
         <li><a href="{% url "relate-create_recurring_events" course.identifier %}">{% trans "Create recurring events" %}</a></li>
         <li><a href="{% url "relate-renumber_events" course.identifier %}">{% trans "Renumber events" %}</a></li>
       {% endif %}
@@ -146,7 +146,8 @@
             <ul class="dropdown-menu">
               <li role="presentation" class="dropdown-header">{% trans "Participation" %}</li>
               {% if pperm.preapprove_participation %}
-                <li><a href="{% url "relate-create_preapprovals" course.identifier %}">{% trans "Preapprove enrollments" context "menu item" %}</a></li>
+                <li><a href="{% url "relate-create_preapprovals" course.identifier %}" target="_blank">{% trans "Preapprove enrollments" context "menu item" %}</a></li>
+                <li><a href="{% url "relate-create_preapprovals_csv" course.identifier %}" target="_blank">{% trans "Preapprove enrollments" context "menu item" %}csv</a></li>
               {% endif %}
               {% if pperm.query_participation %}
                 <li><a href="{% url "relate-query_participations" course.identifier %}">{% trans "Query participations" context "menu item" %}</a></li>
@@ -161,37 +162,5 @@
             </ul>
           </li>
       {% endif %}
-  {% endif %}
-{% endblock %}
-
-{% block preview_status %}
-  {% if participation.preview_git_commit_sha %}
-    <li>
-      <a style="font-weight: bold" href="{% url "relate-update_course" course.identifier %}"
-        role="button">[{% trans "Preview" %}]</a>
-    </li>
-  {% endif %}
-{% endblock %}
-
-{% block nav_recommendations %}
-  {% if instant_flow_requests %}
-    <div class="alert alert-info">
-      <i class='fa fa-info-circle'></i>
-      {% if num_instant_flow_requests == 1 %}
-        {% trans "There is an interactive activity going on right now." %}
-        {% for i, req in instant_flow_requests %}
-          <a class="btn btn-primary"
-            href="{% url "relate-view_start_flow" course.identifier req.flow_id %}"
-            role="button"><b>{% trans "Go to activity" %} &raquo;</b></a>
-        {% endfor %}
-      {% else %}
-        {% trans "There are some interactive activities going on right now." %}
-        {% for i, req in instant_flow_requests %}
-          <a class="btn btn-primary"
-            href="{% url "relate-view_start_flow" course.identifier req.flow_id %}"
-            role="button"><b>{% trans "Go to activity" %} {{ i }} &raquo;</b></a>
-        {% endfor %}
-      {% endif %}
-    </div>
   {% endif %}
 {% endblock %}
