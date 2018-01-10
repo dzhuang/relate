@@ -19,6 +19,54 @@ ALLOWED_HOSTS = [
         "relate.example.com",
         ]
 
+INSTALLED_APPS = [
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "crispy_forms",
+    "jsonfield",
+    "bootstrap3_datetime",
+    "djangobower",
+    "django_select2",
+
+    # message queue
+    "djcelery",
+    "kombu.transport.django",
+
+    "accounts",
+    "course",
+]
+
+
+# {{{ overriding built-in templates
+# Uncomment the following to enable templates overriding. It should be configured
+# as a list/tuple of path(s).
+# For example, if you the templates are in a folder named "my_templates" in the
+# root dir of the project, with base.html (project template), course_base.html,
+# and sign-in-email.txt (app templates) etc., are the templates you want to
+# override, the structure of the files should look like:
+#    ...
+#    relate/
+#    local_settings.py
+#    my_templates/
+#        base.html
+#        ...
+#        templates/
+#            course/
+#                course_base.html
+#                sign-in-email.txt
+#                ...
+#
+
+import os.path
+RELATE_OVERRIDE_TEMPLATES_DIRS = [
+    os.path.join(os.path.dirname(__file__), "my_templates"),
+]
+
+# }}}
+
 # Configure the following as url as above.
 RELATE_BASE_URL = "http://YOUR/RELATE/SITE/DOMAIN"
 
@@ -48,23 +96,6 @@ RELATE_MONGODB_NAME = "test_learningwhat_mongodb"
 # don't configure this for production!
 RELATE_MONGO_CLIENT_PATH = "mongomock.MongoClient"
 
-RELATE_LATEX_SETTINGS = {
-    "latex": {
-        "RELATE_LATEX_DATAURI_MONGO_COLLECTION_NAME":
-            "test_learningwhat_latex_datauri",
-        "RELATE_LATEX_ERROR_MONGO_COLLECTION_NAME":
-            "test_learningwhat_latex_error"
-    },
-    "bin_path": {},
-    "latex_page": {
-        "RELATE_LATEX_PAGE_COLLECTION_NAME":
-            "test_learningwhat_latex_page",
-        "RELATE_LATEX_PAGE_PART_COLLECTION_NAME":
-            "test_learningwhat_latex_page_part",
-        "RELATE_LATEX_PAGE_COMMITSHA_TEMPLATE_PAIR_COLLECTION":
-            "test_learningwhat_latex_page_commitsha_template_pair",
-    }
-}
 
 if platform.system().lower().startswith("win"):
     # requires ImageMagick >=7.0.1
@@ -72,10 +103,27 @@ if platform.system().lower().startswith("win"):
         imagemagick_path = r"C:\Program Files\ImageMagick-7.0.7-Q16"
     else:
         imagemagick_path = r"D:\Program Files\ImageMagick-7.0.1-Q16"
-    RELATE_LATEX_SETTINGS["bin_path"].update(
-        {"RELATE_IMAGEMAGICK_BIN_DIR": imagemagick_path})
 
-RELATE_CUSTOM_BOWER_INSTALLED_APPS = (
+BOWER_INSTALLED_APPS = [
+    "bootstrap#3.3.4",
+    "fontawesome#4.4.0",
+    "videojs#5.6.0",
+    "MathJax",
+    "codemirror#5.2.0",
+    "fullcalendar#2.3.1",
+    "jqueryui",
+    "datatables.net",
+    "datatables-i18n",
+    "datatables.net-bs",
+    "datatables.net-fixedcolumns",
+    "datatables.net-fixedcolumns-bs",
+    "jstree#3.2.1",
+    "select2#4.0.1",
+    "select2-bootstrap-css",
+    "blueimp-tmpl",
+    ]
+
+RELATE_CUSTOM_BOWER_INSTALLED_APPS = [
     "pdf.js=https://github.com/mozilla/pdf.js/releases/download/v1.3.91/pdfjs-1.3.91-dist.zip",
     "jquery-file-upload",
     "blueimp-gallery",
@@ -99,16 +147,10 @@ RELATE_CUSTOM_BOWER_INSTALLED_APPS = (
 
     # for sortable table rows in image_upload
     'jqueryui-touch-punch',
-    )
+    ]
 
-RELATE_CUSTOM_INSTALLED_APPS = (
-    'django.contrib.sites',
-    'image_upload',
-    'imagekit',
-    "djcelery_email",
-    "survey",
-    "questionnaire",
-    )
+BOWER_INSTALLED_APPS += RELATE_CUSTOM_BOWER_INSTALLED_APPS
+BOWER_INSTALLED_APPS = tuple(BOWER_INSTALLED_APPS)
 
 SITE_ID = 1
 
@@ -128,6 +170,35 @@ RELATE_LATEX_SETTINGS = {
 
     }
 }
+
+RELATE_STATIC_CDN_ENABLED = False
+if not platform.system().lower().startswith("win"):
+    RELATE_STATIC_CDN_ENABLED = True
+    INSTALLED_APPS.append('qiniustorage')
+    STATICFILES_LOCATION = ""
+    STATIC_ROOT = STATICFILES_LOCATION
+    STATIC_URL = "https://staticssl.learningwhat.com/"
+
+    STATICFILES_STORAGE = 'qiniustorage.backends.QiniuStorage'
+    QINIU_ACCESS_KEY = "fo2y-tdYA_o86ZtN_Y47B7ODhkoas_gCyn0hKTiG"
+    QINIU_SECRET_KEY =	"faoXSHfW4LfGi3SEEZvpfFZXExCLAsmuiOC0uwGJ"
+    QINIU_BUCKET_NAME = "relatessl"
+    QINIU_SECURE_URL = True
+
+else:
+    INSTALLED_APPS.append("django.contrib.staticfiles")
+
+INSTALLED_APPS += [
+    'django.contrib.sites',
+    'image_upload',
+    # "jfu",
+    'imagekit',
+    "djcelery_email",
+    "survey",
+    "questionnaire",
+    ]
+
+INSTALLED_APPS = tuple(INSTALLED_APPS)
 
 JINJA2_MACRO = {
     "latex": "plugins.latex.jinja_tex_to_img_tag"
