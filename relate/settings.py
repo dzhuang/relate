@@ -17,6 +17,7 @@ from django.conf.global_settings import STATICFILES_FINDERS, gettext_noop
 import os
 from os.path import join
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+print(BASE_DIR)
 
 RELATE_EMAIL_SMTP_ALLOW_NONAUTHORIZED_SENDER = True
 

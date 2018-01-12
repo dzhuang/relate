@@ -238,6 +238,11 @@ div.progress:hover  span.stats-percentage{
 }
 
 @media (max-width: 767px) {
+
+    h1, h2, h3, p {
+        overflow-wrap: break-word;
+    }
+
     .grading-page-student-work.container > div {
         margin-left: 5px;
         margin-right: 5px;
@@ -305,6 +310,173 @@ div.progress:hover  span.stats-percentage{
   margin-bottom: 3px;
 }
 
+
+#content-wrapper {
+  padding-bottom: 30px;
+}
+
+/*********************************************************
+    My customization
+*********************************************************/
+
+
+h1,
+.h1 {
+  font-family: "Microsoft YaHei" ! important;
+/*  font-size: 28px;*/
+}
+h2,
+.h2 {
+  font-family: "Microsoft YaHei" ! important;
+/*  font-size: 24px;*/
+}
+h3,
+.h3 {
+  font-family: "Microsoft YaHei" ! important;
+/*  font-size: 21px;*/
+}
+h4,
+.h4 {
+  font-family: "Microsoft YaHei" ! important;
+/*  font-size: 19px;*/
+}
+
+
+/*display A4 pdf*/
+.embed-responsive-a4 {
+  padding-bottom: 141.4285714285714%;
+}
+
+.embed-responsive-a4-col-md-8 {
+  padding-bottom: 94.28571428571429%;
+}
+
+.embed-responsive-4by3-col-md-8 {
+  padding-bottom: 50%;
+}
+
+.embed-responsive-16by9-col-md-8 {
+  padding-bottom: 37.5%;
+}
+
+/* {{{ footer */
+
+/*********************************************************
+    FOOTER
+*********************************************************/
+
+
+
+html {
+  position: relative;
+  min-height: 100%;
+    width: 100%;
+}
+body {
+  /* Margin bottom by footer height */
+  margin-bottom: 30px;
+}
+footer {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  /* Set the fixed height of the footer here */
+  height: 30px;
+}
+
+
+footer {
+    background-color: #eee;
+    border-top: 1px solid #ddd;
+    color: #777;
+    font-size: 14px;
+}
+/*
+footer .footerWrap {
+    padding-top: 20px;
+    padding-bottom: 15px;
+}
+*/
+footer h4 {
+    border-bottom: 1px dotted #bbb;
+    font-family: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 18px;
+    font-weight: 400;
+    margin: 0 0 10px;
+    padding-bottom: 10px;
+}
+footer ul {
+    margin: 0;
+}
+footer ul li {
+    margin-bottom: 5px;
+}
+footer a {
+    color: #888;
+}
+footer a:hover,
+footer a:focus {
+    color: #222;
+}
+footer .subFooter {
+    color: #777777;
+    font-size: 12px;
+    padding: 12px 0;
+    background-color: #e5e5e5;
+    border-top: 1px solid #ddd;
+    height: 40px;
+}
+footer .subFooter a {
+    color: #777;
+}
+footer .subFooter a:hover,
+footer .subFooter a:focus {
+    color: #222;
+}
+footer .subFooter ul{
+    list-style: none outside none;
+    margin: 0;
+    padding: 0;
+}
+footer .subFooter ul > li {
+    float: left;
+}
+footer .subFooter ul > li {
+    display: block;
+    position: relative;
+    margin: 0;
+}
+footer .subFooter ul > li a {
+    margin-left: 15px;
+}
+
+
+/*
+    footer .footerWrap ul {
+        margin-bottom: 30px;
+    }
+    footer .subFooter .left, footer .subFooter .right {
+        float: none;
+    }
+    footer .subFooter .right {
+        margin-top: 10px;
+    }
+    footer .subFooter .right a {
+        display: block;
+        margin-bottom: 4px;
+    }
+    
+    #content-wrapper {
+        padding-bottom: 30px;
+    }
+    
+    footer .subFooter {
+        height: 60px;
+    }
+*/
+
+
+/* }}} */
 
 /* Uncomment to blur out identifiable/grade-related data. Useful for demos on live data. */
 /*

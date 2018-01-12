@@ -499,6 +499,7 @@ def force_remove_path(path):
 
     shutil.rmtree(path, onerror=remove_readonly)
 
+
 def is_windows_platform():
     # type: () -> bool
     import sys

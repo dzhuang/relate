@@ -100,8 +100,6 @@
     .fileUploadCompactInfo > p {
         overflow-wrap: break-word;
     }
-    }
-
 
     [class*=" fa-sort"] {
         display: inline-block;
