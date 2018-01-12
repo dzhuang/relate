@@ -506,10 +506,9 @@ RELATE_SHOW_EDITOR_FORM = True
 #    my_templates/
 #        base.html
 #        ...
-#        templates/
-#            course/
-#                course_base.html
-#                sign-in-email.txt
+#        course/
+#            course_base.html
+#            sign-in-email.txt
 #                ...
 #
 
