@@ -40,7 +40,7 @@ from django.contrib.auth import (get_user_model, REDIRECT_FIELD_NAME,
         login as auth_login, logout as auth_logout)
 from django.contrib.auth.forms import \
         AuthenticationForm as AuthenticationFormBase
-from django.contrib.auth.decorators import user_passes_test
+from django.contrib.auth.decorators import user_passes_test, login_required
 from django.urls import reverse
 from django.contrib.auth.validators import ASCIIUsernameValidator
 from django.utils.http import is_safe_url
@@ -872,17 +872,17 @@ def sign_in_stage2_with_token(request, user_id, sign_in_key):
 
 # {{{ user profile
 
+def is_inst_id_editable_before_validation():
+    # type: () -> bool
+    return getattr(
+        settings, "RELATE_EDITABLE_INST_ID_BEFORE_VERIFICATION", True)
+
+
 class UserForm(StyledModelForm):
     institutional_id_confirm = forms.CharField(
             max_length=100,
             label=_("Institutional ID Confirmation"),
             required=False)
-    no_institutional_id = forms.BooleanField(
-            label=_("I have no Institutional ID"),
-            help_text=_("Check the checkbox if you are not a student "
-                        "or you forget your institutional id."),
-            required=False,
-            initial=False)
 
     class Meta:
         model = get_user_model()
@@ -890,15 +890,19 @@ class UserForm(StyledModelForm):
                 "editor_mode")
 
     def __init__(self, *args, **kwargs):
-        self.is_inst_id_locked = is_inst_id_locked =\
-                kwargs.pop('is_inst_id_locked')
+        self.is_inst_id_locked = kwargs.pop('is_inst_id_locked')
         super(UserForm, self).__init__(*args, **kwargs)
 
-        self.helper.layout = Layout(
-                Div("last_name", "first_name", css_class="well"),
-                Div("institutional_id", css_class="well"),
-                Div("editor_mode", css_class="well")
-                )
+        if self.instance.name_verified:
+            self.fields["first_name"].disabled = True
+            self.fields["last_name"].disabled = True
+
+        if self.is_inst_id_locked:
+            self.fields["institutional_id"].disabled = True
+            self.fields["institutional_id_confirm"].disabled = True
+        else:
+            self.fields["institutional_id_confirm"].initial = (
+                self.instance.institutional_id)
 
         self.fields["institutional_id"].help_text = (
                 _("The unique ID your university or school provided, "
@@ -907,30 +911,30 @@ class UserForm(StyledModelForm):
                     "<b>Once %(submitted_or_verified)s, it cannot be "
                     "changed</b>.")
                 % {"submitted_or_verified":
-                    getattr(settings,
-                            "RELATE_EDITABLE_INST_ID_BEFORE_VERIFICATION",
-                            True)
-                    and _("verified") or _("submitted")})
+                   is_inst_id_editable_before_validation()
+                   and _("verified") or _("submitted")})
 
-        def adjust_layout(is_inst_id_locked):
-            if not is_inst_id_locked:
-                self.helper.layout[1].insert(1, "institutional_id_confirm")
-                self.helper.layout[1].insert(0, "no_institutional_id")
-                self.fields["institutional_id_confirm"].initial = \
-                        self.instance.institutional_id
-            else:
-                self.fields["institutional_id"].widget.\
-                        attrs['disabled'] = True
-            if not settings.RELATE_SHOW_INST_ID_FORM:
-                self.helper.layout[1].css_class = 'well hidden'
-            if not settings.RELATE_SHOW_EDITOR_FORM:
-                self.helper.layout[2].css_class = 'well hidden'
+        # {{ build layout
+        name_fields_layout = ["last_name", "first_name"]
+        fields_layout = [Div(*name_fields_layout, css_class="well")]
 
-        if self.instance.name_verified:
-            self.fields["first_name"].widget.attrs['disabled'] = True
-            self.fields["last_name"].widget.attrs['disabled'] = True
+        if getattr(settings, "RELATE_SHOW_INST_ID_FORM", True):
+            inst_field_group_layout = ["institutional_id"]
+            if not self.is_inst_id_locked:
+                inst_field_group_layout.append("institutional_id_confirm")
+            fields_layout.append(Div(*inst_field_group_layout, css_class="well",
+                                     css_id="institutional_id_block"))
+        else:
+            # This is needed for django-crispy-form version < 1.7
+            self.fields["institutional_id"].widget = forms.HiddenInput()
 
-        adjust_layout(is_inst_id_locked)
+        if getattr(settings, "RELATE_SHOW_EDITOR_FORM", True):
+            fields_layout.append(Div("editor_mode", css_class="well"))
+        else:
+            # This is needed for django-crispy-form version < 1.7
+            self.fields["editor_mode"].widget = forms.HiddenInput()
+
+        self.helper.layout = Layout(*fields_layout)
 
         self.helper.add_input(
                 Submit("submit_user", _("Update")))
@@ -940,60 +944,10 @@ class UserForm(StyledModelForm):
                        onclick=(
                            "window.location.href=%s"
                            % reverse("relate-logout"))))
-
-    @property
-    def changed_data(self):
-        data = super(UserForm, self).changed_data
-        may_not_change_field = []
-        if self.instance.name_verified:
-            may_not_change_field += ["first_name", "last_name"]
-
-        if self.is_inst_id_locked:
-            may_not_change_field.append("institutional_id")
-
-        changed_data = []
-        for name in self.Meta.fields:
-            if name in data and name not in may_not_change_field:
-                changed_data.append(name)
-        return changed_data
-
-    def clean_institutional_id(self):
-        inst_id = self.cleaned_data['institutional_id']
-
-        if inst_id is not None:
-            inst_id = inst_id.strip()
-
-        if self.is_inst_id_locked:
-            # Disabled fields are not part of form submit--so simply
-            # assume old value. At the same time, prevent smuggled-in
-            # POST parameters.
-            return self.instance.institutional_id
-        else:
-            return inst_id
-
-    def clean_first_name(self):
-        first_name = self.cleaned_data['first_name']
-        if self.instance.name_verified:
-            # Disabled fields are not part of form submit--so simply
-            # assume old value. At the same time, prevent smuggled-in
-            # POST parameters.
-            return self.instance.first_name
-        else:
-            return first_name
-
-    def clean_last_name(self):
-        last_name = self.cleaned_data['last_name']
-        if self.instance.name_verified:
-            # Disabled fields are not part of form submit--so simply
-            # assume old value. At the same time, prevent smuggled-in
-            # POST parameters.
-            return self.instance.last_name
-        else:
-            return last_name
+        # }}}
 
     def clean_institutional_id_confirm(self):
-        inst_id_confirmed = self.cleaned_data.get(
-                "institutional_id_confirm")
+        inst_id_confirmed = self.cleaned_data.get("institutional_id_confirm")
 
         if not self.is_inst_id_locked:
             inst_id = self.cleaned_data.get("institutional_id")
@@ -1004,19 +958,22 @@ class UserForm(StyledModelForm):
         return inst_id_confirmed
 
 
+@login_required
 def user_profile(request):
-    if not request.user.is_authenticated:
-        raise PermissionDenied()
-
     user_form = None
 
     def is_inst_id_locked(user):
-        if getattr(settings,
-                   "RELATE_EDITABLE_INST_ID_BEFORE_VERIFICATION", True):
+        if is_inst_id_editable_before_validation():
             return True if (user.institutional_id
                     and user.institutional_id_verified) else False
         else:
             return True if user.institutional_id else False
+
+    def is_requesting_inst_id():
+        return not is_inst_id_locked(request.user) and (
+            request.GET.get("first_login")
+            or (request.GET.get("set_inst_id")
+                and request.GET.get("referer")))
 
     if request.method == "POST":
         if "submit_user" in request.POST:
@@ -1038,13 +995,15 @@ def user_profile(request):
 
                 if request.GET.get("first_login"):
                     return redirect("relate-home")
+
                 if (request.GET.get("set_inst_id")
                         and request.GET.get("referer")):
                     return redirect(request.GET["referer"])
 
                 user_form = UserForm(
-                        instance=request.user,
-                        is_inst_id_locked=is_inst_id_locked(request.user))
+                    instance=request.user,
+                    is_inst_id_locked=is_inst_id_locked(request.user),
+                )
 
     if user_form is None:
         request.user.refresh_from_db()
@@ -1052,19 +1011,14 @@ def user_profile(request):
             instance=request.user,
             is_inst_id_locked=is_inst_id_locked(request.user),
         )
-    if is_inst_id_locked(request.user):
-        user_form.fields['institutional_id'].widget.attrs['disabled'] = True
-        user_form.fields['institutional_id_confirm'].widget.attrs['disabled'] = True
 
     return render(request, "user-profile-form.html", {
         "form": user_form,
         "form_description": _("User Profile"),
-        "is_inst_id_locked": is_inst_id_locked(request.user),
-        "enable_inst_id_if_not_locked": (
-            request.GET.get("first_login")
-            or (request.GET.get("set_inst_id")
-                and request.GET.get("referer"))
-            ),
+        "is_requesting_inst_id": is_requesting_inst_id(),
+        "enable_profile_form_js": (
+            not is_inst_id_locked(request.user) and
+            getattr(settings, "RELATE_SHOW_INST_ID_FORM", True))
         })
 
 # }}}
