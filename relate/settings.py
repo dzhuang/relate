@@ -297,9 +297,10 @@ if "CELERY_RESULT_BACKEND" not in globals():
 
 # }}}
 
-LOCALE_PATHS = (
-    BASE_DIR + '/locale',
-)
+if "LOCALE_PATHS" not in globals():
+    LOCALE_PATHS = (
+        BASE_DIR + '/locale',
+    )
 
 # {{{ saml2
 
