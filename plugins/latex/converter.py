@@ -169,6 +169,8 @@ class TexCompilerBase(CommandBase):
 class Latexmk(TexCompilerBase):
     name = "latexmk"
     cmd = "latexmk"
+    
+    # This also require perl, ActivePerl is recommended
     required_version = "4.39"
 
 
