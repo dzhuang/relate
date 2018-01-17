@@ -156,6 +156,7 @@ def view_participant_grades(pctx, participation_id=None):
                 "grade_time")
             .select_related("participation")
             .select_related("participation__user")
+            .select_related("flow_session")
             .select_related("opportunity"))
 
     idx = 0
@@ -319,6 +320,7 @@ def get_grade_table(course):
                 "grade_time")
             .select_related("participation")
             .select_related("participation__user")
+            .select_related("flow_session")
             .select_related("opportunity"))
 
     idx = 0
@@ -613,6 +615,7 @@ def view_grades_by_opportunity(pctx, opp_id):
                 "grade_time")
             .select_related("participation")
             .select_related("participation__user")
+            .select_related("flow_session")
             .select_related("opportunity"))
 
     if opportunity.flow_id:
@@ -861,6 +864,7 @@ def average_grade(opportunity):
                 "participation__id",
                 "grade_time")
             .select_related("participation")
+            .select_related("flow_session")
             .select_related("opportunity"))
 
     grades = []
@@ -1024,6 +1028,7 @@ def view_single_grade(pctx, participation_id, opportunity_id):
             .select_related("participation")
             .select_related("participation__user")
             .select_related("creator")
+            .select_related("flow_session")
             .select_related("opportunity"))
 
     state_machine = GradeStateMachine()
