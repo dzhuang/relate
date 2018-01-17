@@ -1645,13 +1645,15 @@ class GradeChange(models.Model):
             return self.grade_time == other.grade_time
         else:
             # if both objects have a flow_session
-            return self.flow_session.completion_time == other.completion_time
+            return (self.flow_session.completion_time
+                    == other.flow_session.completion_time)
 
     def __gt__(self, other):
         if not (self.flow_session and other.flow_session):
             return self.grade_time > other.grade_time
         else:
-            return self.flow_session.completion_time > other.completion_time
+            return (self.flow_session.completion_time
+                    > other.flow_session.completion_time)
     # }}}
 
 # }}}
