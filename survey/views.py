@@ -405,7 +405,7 @@ class FillParticipationSurvey(FormView):
     def get_form_kwargs(self):
         kwargs = super(FillParticipationSurvey, self).get_form_kwargs()
         self.survey_pk = self.kwargs['survey_pk']
-        self.survey = CourseSurvey.objects.get(pk=self.survey_pk)
+        self.survey = get_object_or_404(CourseSurvey, pk=self.survey_pk)
         self.questionnaire_pk = self.survey.questionnaire.pk
         self.participation_id = self.kwargs['participation_id']
         self.participation = Participation.objects.get(id=self.participation_id)
@@ -584,7 +584,7 @@ class SingleSurveyQuestionView(FormView):
         self.participation_id = participation_id = self.kwargs['participation_id']
         question_pk = self.kwargs['question_pk']
 
-        self.survey = CourseSurvey.objects.get(pk=self.survey_pk)
+        self.survey = get_object_or_404(CourseSurvey, pk=self.survey_pk)
         self.question = Question.objects.get(pk=question_pk)
         self.participation = Participation.objects.get(id=self.participation_id)
 
