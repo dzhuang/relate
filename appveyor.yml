@@ -67,7 +67,7 @@ install:
   - ps: "if ($env:PYTHON -like '*Python2*') { pip install dnspython mock} else { pip install dnspython3 }"
 
 before_test:
-  - "%CMD_IN_ENV% pip install coverage"
+  - "%CMD_IN_ENV% pip install coverage factory_boy"
 
   # Make sure i18n literals marked correctly
   - "python manage.py makemessages --no-location"

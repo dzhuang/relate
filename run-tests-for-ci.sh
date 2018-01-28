@@ -52,13 +52,13 @@ export PATH=`pwd`/.env/local/bin:$PATH
 
 PIP="${PY_EXE} $(which pip)"
 
-grep -v dnspython requirements.txt > req.txt
 grep -v dnspython requirements-extra.txt > req2.txt
 if [[ "$PY_EXE" = python2* ]]; then
-  $PIP install dnspython
+  grep -Ev "django>|django=" requirements.txt > req.txt
+  $PIP install "django<2"
   $PIP install mock
 else
-  $PIP install dnspython3
+  cp requirements.txt req.txt
 fi
 
 $PIP install -r req.txt
@@ -69,7 +69,7 @@ cp local_settings.example.py local_settings.py
 # Make sure i18n literals marked correctly
 ${PY_EXE} manage.py makemessages --no-location
 
-$PIP install codecov
+$PIP install codecov factory_boy
 coverage run manage.py test tests/
 coverage report -m
 codecov

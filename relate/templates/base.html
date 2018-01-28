@@ -54,7 +54,7 @@
     {% block lte_ie9_warning %}
       <!--[if lte IE 9]>
         <div class="browser alert alert-danger warning"><i class="fa fa-warning"></i>
-          {% trans "This website may not be compatible with your outdated Internet Explorer version. If you want use Internet Explorer, please install one with version higher than 10." %}
+          {% trans "This website may not be compatible with your outdated Internet Explorer version. If you want use Internet Explorer, please install one with version 10 or higher." %}
         </div>
       <![endif]-->
     {% endblock %}
@@ -83,6 +83,10 @@
                     <ul class="dropdown-menu">
                       {% if user.is_staff %}
                         <li><a href="/admin" target="_blank">{% trans "Admin site" %}</a></li>
+                        <li role="presentation" class="divider"></li>
+                      {% endif %}
+                      {% if user.is_superuser or pperm.use_admin_interface %}
+                        <li><a href="{% url 'relate-purge_page_view_data' %}" target="_blank">{% trans "Purge page view data" %}</a></li>
                         <li role="presentation" class="divider"></li>
                       {% endif %}
                       {% if perms.course.can_issue_exam_tickets %}
