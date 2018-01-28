@@ -42,7 +42,7 @@ import pprint
 
 from django.conf import settings
 from django.core import mail
-from django.test import TestCase, mock
+from django.test import TestCase
 from django.test.utils import override_settings
 from django.core.exceptions import ImproperlyConfigured
 from course.models import FlowSession
@@ -52,17 +52,19 @@ from image_upload.page.latexpage import (
     get_latex_page_mongo_collection as latex_page_collection,
     get_latex_page_commitsha_template_pair_collection as page_sha_collection)
 
-from ..base_test_mixins import (
+from tests.base_test_mixins import (
     SingleCoursePageTestMixin, FallBackStorageMessageTestMixin,
     SubprocessRunpyContainerMixin, improperly_configured_cache_patch)
 
-from .utils import skip_test, SKIP_LOCAL_TEST_REASON
-from ..utils import LocmemBackendTestsMixin
-from ..test_pages import MESSAGE_ANSWER_SAVED_TEXT, MESSAGE_ANSWER_FAILED_SAVE_TEXT
-from ..test_sandbox import (
+from tests.utils import LocmemBackendTestsMixin, mock
+from tests.test_my_local.utils import skip_test, SKIP_LOCAL_TEST_REASON
+from tests.test_pages import (
+    MESSAGE_ANSWER_SAVED_TEXT, MESSAGE_ANSWER_FAILED_SAVE_TEXT)
+from tests.test_sandbox import (
     SingleCoursePageSandboxTestBaseMixin, PAGE_WARNINGS, PAGE_ERRORS)
-from .sources import latex_sandbox
-from .test_imageupload import MY_SINGLE_COURSE_SETUP_LIST
+from tests.test_my_local.sources import latex_sandbox
+from tests.test_my_local.test_imageupload import MY_SINGLE_COURSE_SETUP_LIST
+
 
 source_dir = os.path.join(os.path.dirname(__file__), "sources")
 

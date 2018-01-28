@@ -24,25 +24,25 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+import docker.tls
+import warnings
+from copy import deepcopy
+
 try:
     from test.support import EnvironmentVarGuard  # noqa
 except ImportError:
     from test.test_support import EnvironmentVarGuard  # noqa
 
 from unittest import skipIf
-from copy import deepcopy
 from django.conf import settings
 from django.core import mail
-
 from django.test.utils import override_settings
-from django.test import SimpleTestCase, mock
+from django.test import SimpleTestCase, TestCase
+from django.core.exceptions import ImproperlyConfigured
+
+from relate.utils import is_windows_platform, is_osx_platform
 from course.docker.config import (
     get_docker_client_config, get_relate_runpy_docker_client_config)
-
-from django.core.exceptions import ImproperlyConfigured
-from relate.utils import is_windows_platform, is_osx_platform
-import docker.tls
-import warnings
 
 from course.docker.config import (  # noqa
     DEFAULT_DOCKER_RUNPY_CONFIG_ALIAS,
@@ -64,9 +64,9 @@ from course.docker.config import (  # noqa
 
     RunpyDockerClientConfigNameIsNoneWarning,
 )
-from django.test import TestCase
-from .base_test_mixins import SingleCoursePageTestMixin
-from .test_pages import QUIZ_FLOW_ID
+from tests.utils import mock
+from tests.base_test_mixins import SingleCoursePageTestMixin
+from tests.test_pages import QUIZ_FLOW_ID
 
 # Switch for test locally
 Debug = False

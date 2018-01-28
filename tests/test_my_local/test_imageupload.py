@@ -29,12 +29,11 @@ THE SOFTWARE.
 
 import os
 import json
-from .utils import skip_test, SKIP_LOCAL_TEST_REASON
 import zipfile
+from copy import deepcopy
 from six import BytesIO
 
 from unittest import skipIf
-from copy import deepcopy
 from django.urls import reverse
 from django.test import TestCase, mock
 from django.contrib import messages
@@ -44,14 +43,16 @@ from course.constants import participation_status
 from course.models import FlowSession
 from image_upload.models import FlowPageImage
 
-from ..base_test_mixins import (
+from tests.test_my_local.utils import skip_test, SKIP_LOCAL_TEST_REASON
+from tests.base_test_mixins import (
     SINGLE_COURSE_SETUP_LIST, SingleCoursePageTestMixin,
     FallBackStorageMessageTestMixin, NONE_PARTICIPATION_USER_CREATE_KWARG_LIST,
 )
 
-from ..test_pages import MESSAGE_ANSWER_SAVED_TEXT, MESSAGE_ANSWER_FAILED_SAVE_TEXT
-from ..test_sandbox import SingleCoursePageSandboxTestBaseMixin
-from .mixins import ImageUploadStorageTestMixin
+from tests.test_pages import (
+    MESSAGE_ANSWER_SAVED_TEXT, MESSAGE_ANSWER_FAILED_SAVE_TEXT)
+from tests.test_sandbox import SingleCoursePageSandboxTestBaseMixin
+from tests.test_my_local.mixins import ImageUploadStorageTestMixin
 
 MY_SINGLE_COURSE_SETUP_LIST = deepcopy(SINGLE_COURSE_SETUP_LIST)
 MY_SINGLE_COURSE_SETUP_LIST[0]["course"]["git_source"] = (

@@ -1,10 +1,11 @@
 import datetime
+from collections import OrderedDict
+import numpy as np
+
 from unittest import TestCase
 from image_upload.utils import (
     deep_np_to_string, deep_eq, deep_convert_ordereddict)
-import numpy as np
-from collections import OrderedDict
-from django.test import mock
+from tests.utils import mock
 
 
 class DeepEqTest(TestCase):

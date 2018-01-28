@@ -1,8 +1,10 @@
 import os
 from django.test import override_settings
 from django.conf import settings
-from .utils import get_test_media_folder
+
 from relate.utils import force_remove_path
+
+from tests.test_my_local.utils import get_test_media_folder
 
 
 class ImageUploadStorageTestMixin(object):
