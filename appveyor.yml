@@ -59,15 +59,25 @@ install:
 
 
 before_test:
-  - "%CMD_IN_ENV% pip install coverage factory_boy"
+  - "%CMD_IN_ENV% pip install coverage codecov factory_boy"
 
   # Make sure i18n literals marked correctly
   - "python manage.py makemessages --no-location"
 
 test_script:
+  # This block of commands enable tracking of coverage for any
+  # subprocesses launched by tests
+  - "SET BUILD_DIR=%cd%"
+  - "SET COVERAGE_PROCESS_START=%BUILD_DIR%\\coveragerc"
+  - "copy %BUILD_DIR%\\setup.cfg %COVERAGE_PROCESS_START%"
+  - "echo data_file=%BUILD_DIR%\\.coverage >> %COVERAGE_PROCESS_START%"
+  - python -c "from distutils.sysconfig import get_python_lib; import os; FILE=open(os.path.join(get_python_lib(),'run_coverage_at_startup.pth'), 'w'); FILE.write('import coverage; coverage.process_startup()'); FILE.close()"
+
   # Run the project tests
-  - "%CMD_IN_ENV% coverage run manage.py test tests/"
+  - "%CMD_IN_ENV% coverage run --parallel-mode --concurrency=multiprocessing --rcfile=setup.cfg manage.py test tests/"
 
 after_test:
-  - "%CMD_IN_ENV% pip install codecov"
-  - "%CMD_IN_ENV% codecov -X gcov"
+  - "cd %BUILD_DIR%"
+  - dir .cov*
+  - "coverage combine %BUILD_DIR%"
+  - codecov -X gcov
