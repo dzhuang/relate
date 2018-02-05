@@ -64,7 +64,7 @@ before_test:
   - "%CMD_IN_ENV% pip install coverage factory_boy"
 
   # Make sure i18n literals marked correctly
-  - "python manage.py makemessages --no-location"
+  - "python manage.py makemessages --no-location  --ignore=req.txt"
 
 test_script:
   # Run the project tests
