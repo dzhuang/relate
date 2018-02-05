@@ -711,15 +711,9 @@ def view_reopen_session(pctx, flow_session_id, opportunity_id):
             now_datetime = local_now()
 
             session.append_comment(
-                    ugettext("Session reopened at %s by %s, "
-                        "previous completion time was '%s': "
-                        "%s.") % (
-                            format_datetime_local(now_datetime),
-                            pctx.request.user,
-                            format_datetime_local(
-                                as_local_time(session.completion_time)),
-                            form.cleaned_data["comment"]
-                            ))
+                    ugettext("Session reopened at %(abc)s by %s, "
+                        "previous completion time was: "
+                        "") % (,))
             session.save()
 
             from course.flow import reopen_session

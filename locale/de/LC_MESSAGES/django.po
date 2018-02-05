@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2018-02-05 12:46+0800\n"
+"POT-Creation-Date: 2018-02-05 13:10+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -91,7 +91,7 @@ msgid "Designates whether the user can log into this admin site."
 msgstr "Bestimmt, ob der Benutzer sich bei die Admin-Seite anmelden kann"
 
 #: .\accounts\models.py:84 .\course\auth.py:563 .\course\enrollment.py:445
-#: .\course\grades.py:1037 .\course\models.py:577
+#: .\course\grades.py:1031 .\course\models.py:577
 #: .\course\templates\course\participation-table.html:19
 #: .\relate\templates\reset-passwd-form.html:20
 msgid "Institutional ID"
@@ -215,7 +215,7 @@ msgstr "Flow-ID"
 msgid "not in use"
 msgstr "nicht verwendet"
 
-#: .\course\admin.py:594 .\course\grades.py:1353 .\course\models.py:967
+#: .\course\admin.py:594 .\course\grades.py:1347 .\course\models.py:967
 msgid "Page ID"
 msgstr "Seiten-ID"
 
@@ -446,7 +446,7 @@ msgid "Password confirmation"
 msgstr "Passwort-Bestätigung"
 
 #: .\course\auth.py:699 .\course\auth.py:957 .\course\enrollment.py:982
-#: .\course\grades.py:1569 .\course\versioning.py:493 .\course\views.py:1356
+#: .\course\grades.py:1563 .\course\versioning.py:493 .\course\views.py:1356
 msgid "Update"
 msgstr "Aktualisieren"
 
@@ -2018,7 +2018,7 @@ msgstr ""
 msgid "must be enrolled to view grades"
 msgstr ""
 
-#: .\course\grades.py:89 .\course\grades.py:824
+#: .\course\grades.py:89 .\course\grades.py:818
 msgid "may not view other people's grades"
 msgstr ""
 
@@ -2111,95 +2111,94 @@ msgid "Cannot reopen a session that's already in progress."
 msgstr ""
 
 #: .\course\grades.py:714
-#, python-format
-msgid "Session reopened at %s by %s, previous completion time was '%s': %s."
+msgid "Session reopened at %(abc)s by %s, previous completion time was: "
 msgstr ""
 
-#: .\course\grades.py:739
+#: .\course\grades.py:733
 msgid "Reopen session"
 msgstr "Sitzung wieder öffnen"
 
-#: .\course\grades.py:805
+#: .\course\grades.py:799
 msgid "participation does not match course"
 msgstr ""
 
-#: .\course\grades.py:815
+#: .\course\grades.py:809
 msgid "This grade is not shown in the grade book."
 msgstr "Diese Note wird nicht im Notenbuch gezeigt."
 
-#: .\course\grades.py:818
+#: .\course\grades.py:812
 msgid "This grade is not shown in the student grade book."
 msgstr "Diese Note wird nicht im Teilnehmer-Notenbuch gezeigt."
 
-#: .\course\grades.py:830
+#: .\course\grades.py:824
 msgid "grade has not been released"
 msgstr ""
 
-#: .\course\grades.py:843
+#: .\course\grades.py:837
 msgid "unknown action"
 msgstr ""
 
-#: .\course\grades.py:866
+#: .\course\grades.py:860
 #, fuzzy
 #| msgid "Session ended."
 msgid "Session deadline imposed."
 msgstr "Sitzung beendet."
 
-#: .\course\grades.py:876
+#: .\course\grades.py:870
 msgid "Session ended."
 msgstr "Sitzung beendet."
 
-#: .\course\grades.py:885
+#: .\course\grades.py:879
 msgid "Session regraded."
 msgstr "Sitzung neu benotet."
 
-#: .\course\grades.py:894
+#: .\course\grades.py:888
 msgid "Session grade recalculated."
 msgstr "Sitzungs-Note neu berechnet."
 
-#: .\course\grades.py:897
+#: .\course\grades.py:891
 msgid "invalid session operation"
 msgstr ""
 
-#: .\course\grades.py:903 .\course\grades.py:1300 .\course\utils.py:1109
+#: .\course\grades.py:897 .\course\grades.py:1294 .\course\utils.py:1109
 #: .\course\versioning.py:579
 msgctxt "Starting of Error message"
 msgid "Error"
 msgstr "Fehler"
 
-#: .\course\grades.py:1014
+#: .\course\grades.py:1008
 #, python-format
 msgid ""
 "Click to <a href='%s' target='_blank'>create</a> a new grading opportunity. "
 "Reload this form when done."
 msgstr ""
 
-#: .\course\grades.py:1018
+#: .\course\grades.py:1012
 msgctxt "Field name in Import grades form"
 msgid "Grading opportunity"
 msgstr ""
 
-#: .\course\grades.py:1023 .\course\models.py:1545
+#: .\course\grades.py:1017 .\course\models.py:1545
 msgid "Attempt ID"
 msgstr ""
 
-#: .\course\grades.py:1025
+#: .\course\grades.py:1019
 msgid "File"
 msgstr ""
 
-#: .\course\grades.py:1029
+#: .\course\grades.py:1023
 msgid "CSV with Header"
 msgstr ""
 
-#: .\course\grades.py:1032
+#: .\course\grades.py:1026
 msgid "Format"
 msgstr ""
 
-#: .\course\grades.py:1036
+#: .\course\grades.py:1030
 msgid "Email or NetID"
 msgstr ""
 
-#: .\course\grades.py:1039
+#: .\course\grades.py:1033
 #, fuzzy
 #| msgid "User status"
 msgid "User attribute"
@@ -2207,196 +2206,196 @@ msgstr "Benutzer-Status"
 
 #. Translators: the following strings are for the format
 #. informatioin for a CSV file to be imported.
-#: .\course\grades.py:1044
+#: .\course\grades.py:1038
 msgid ""
 "1-based column index for the user attribute selected above to locate student "
 "record"
 msgstr ""
 
-#: .\course\grades.py:1047
+#: .\course\grades.py:1041
 msgid "User attribute column"
 msgstr ""
 
-#: .\course\grades.py:1049
+#: .\course\grades.py:1043
 msgid "1-based column index for the (numerical) grade"
 msgstr ""
 
-#: .\course\grades.py:1051
+#: .\course\grades.py:1045
 msgid "Points column"
 msgstr "Spaltennr. mit Punktzahl"
 
-#: .\course\grades.py:1053
+#: .\course\grades.py:1047
 msgid "1-based column index for further (textual) feedback"
 msgstr ""
 
-#: .\course\grades.py:1055
+#: .\course\grades.py:1049
 msgid "Feedback column"
 msgstr "Spaltennr mit Punktzahl"
 
 #. Translators: "Max point" refers to full credit in points.
-#: .\course\grades.py:1059 .\course\models.py:1141 .\course\models.py:1551
+#: .\course\grades.py:1053 .\course\models.py:1141 .\course\models.py:1551
 msgid "Max points"
 msgstr "Maximal-Punktzahl"
 
-#: .\course\grades.py:1061 .\course\sandbox.py:99
+#: .\course\grades.py:1055 .\course\sandbox.py:99
 #: .\course\templates\course\course-base.html:171
 #: .\course\templates\course\grade-import-preview.html:15
 #: .\course\versioning.py:499
 msgid "Preview"
 msgstr "Vorschau"
 
-#: .\course\grades.py:1062
+#: .\course\grades.py:1056
 msgid "Import"
 msgstr "Importieren"
 
 #. Translators: use institutional_id_string to find user
 #. (participant).
-#: .\course\grades.py:1106
+#: .\course\grades.py:1100
 #, python-format
 msgid "no participant found with institutional ID '%(inst_id_string)s'"
 msgstr ""
 
-#: .\course\grades.py:1111
+#: .\course\grades.py:1105
 #, python-format
 msgid ""
 "more than one participant found with institutional ID '%(inst_id_string)s'"
 msgstr ""
 
 #. Translators: use id_string to find user (participant).
-#: .\course\grades.py:1146
+#: .\course\grades.py:1140
 #, python-format
 msgid "no participant found for '%(id_string)s'"
 msgstr ""
 
-#: .\course\grades.py:1150
+#: .\course\grades.py:1144
 #, python-format
 msgid "more than one participant found for '%(id_string)s'"
 msgstr ""
 
-#: .\course\grades.py:1197
+#: .\course\grades.py:1191
 #, python-format
 msgid "Unknown user attribute '%(attr_type)s'"
 msgstr ""
 
-#: .\course\grades.py:1234 .\course\templates\course\grade-flow-page.html:452
+#: .\course\grades.py:1228 .\course\templates\course\grade-flow-page.html:452
 #, fuzzy
 #| msgid "point"
 #| msgid_plural "points"
 msgid "points"
 msgstr "Punkt"
 
-#: .\course\grades.py:1236
+#: .\course\grades.py:1230
 #, fuzzy
 #| msgid "Max points"
 msgid "max_points"
 msgstr "Maximal-Punktzahl"
 
-#: .\course\grades.py:1238
+#: .\course\grades.py:1232
 #, fuzzy
 #| msgid "Comment"
 msgid "comment"
 msgstr "Kommentar"
 
-#: .\course\grades.py:1244
+#: .\course\grades.py:1238
 #, fuzzy
 #| msgid "Update"
 msgid "updated"
 msgstr "Aktualisieren"
 
-#: .\course\grades.py:1265
+#: .\course\grades.py:1259
 msgid "may not batch-import grades"
 msgstr ""
 
-#: .\course\grades.py:1308
+#: .\course\grades.py:1302
 #, python-format
 msgid "%(total)d grades found, %(unchaged)d unchanged."
 msgstr "%(total)d Noten gefunden, %(unchaged)d unverändert."
 
-#: .\course\grades.py:1322
+#: .\course\grades.py:1316
 #, python-format
 msgid "%d grades imported."
 msgstr "%d Noten importiert."
 
-#: .\course\grades.py:1335
+#: .\course\grades.py:1329
 msgid "Import Grade Data"
 msgstr "Notendaten importieren"
 
-#: .\course\grades.py:1356
+#: .\course\grades.py:1350
 msgid "Least recent attempt"
 msgstr ""
 
-#: .\course\grades.py:1357
+#: .\course\grades.py:1351
 msgid "Most recent attempt"
 msgstr ""
 
-#: .\course\grades.py:1358
+#: .\course\grades.py:1352
 msgid "All attempts"
 msgstr "Alle Versuche"
 
-#: .\course\grades.py:1360
+#: .\course\grades.py:1354
 msgid "Attempts to include."
 msgstr ""
 
-#: .\course\grades.py:1362
+#: .\course\grades.py:1356
 msgid "Every submission to the page counts as an attempt."
 msgstr ""
 
-#: .\course\grades.py:1366
+#: .\course\grades.py:1360
 msgid "Only download sessions tagged with this rules tag."
 msgstr ""
 
-#: .\course\grades.py:1367
+#: .\course\grades.py:1361
 msgid "Restrict to rules tag"
 msgstr ""
 
-#: .\course\grades.py:1371
+#: .\course\grades.py:1365
 msgid "Only download submissions from non-in-progress sessions"
 msgstr ""
 
-#: .\course\grades.py:1373
+#: .\course\grades.py:1367
 #, fuzzy
 #| msgid "in progress"
 msgid "Non-in-progress only"
 msgstr "im Gange"
 
-#: .\course\grades.py:1377
+#: .\course\grades.py:1371
 msgid "Include provided feedback as text file in zip"
 msgstr ""
 
-#: .\course\grades.py:1378
+#: .\course\grades.py:1372
 msgid "Include feedback"
 msgstr ""
 
-#: .\course\grades.py:1380
+#: .\course\grades.py:1374
 msgid "Additional File"
 msgstr ""
 
-#: .\course\grades.py:1382
+#: .\course\grades.py:1376
 msgid ""
 "If given, the uploaded file will be included in the zip archive. If the "
 "produced archive is to be used for plagiarism detection, then this may be "
 "used to include the reference solution."
 msgstr ""
 
-#: .\course\grades.py:1390
+#: .\course\grades.py:1384
 msgid "Download"
 msgstr ""
 
-#: .\course\grades.py:1396 .\course\im.py:162
+#: .\course\grades.py:1390 .\course\im.py:162
 #, fuzzy
 #| msgid "Past submissions"
 msgid "may not batch-download submissions"
 msgstr "Vergangene Sitzungen"
 
-#: .\course\grades.py:1409 .\course\grades.py:1413
+#: .\course\grades.py:1403 .\course\grades.py:1407
 msgid "ALL"
 msgstr ""
 
-#: .\course\grades.py:1548
+#: .\course\grades.py:1542
 msgid "Download All Submissions in Zip file"
 msgstr ""
 
-#: .\course\grades.py:1617
+#: .\course\grades.py:1611
 #, fuzzy
 #| msgid "Grading opportunity"
 msgid "Edit Grading Opportunity"

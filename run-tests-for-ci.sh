@@ -67,10 +67,10 @@ cp local_settings.example.py local_settings.py
 # Make sure i18n literals marked correctly
 ${PY_EXE} manage.py makemessages --no-location > output.txt
 
-if [[ -n $(grep "warning: " output.txt) ]] || [[ -n $(grep "msgid" output.txt) ]]; then
+if [[ -n $(grep "warning: " output.txt) ]] || [[ -n $(grep "msgid" output.txt) ]] || [[ -n $(grep "CommandError" output.txt) ]]; then
     echo "Command 'python manage.py makemessages' failed with the following info:"
     echo ""
-    grep --color -E '^|warning: |error: ' output.txt
+    grep --color -E '^|warning: |CommandError: ' output.txt
     exit 1;
 fi
 
