@@ -65,7 +65,14 @@ $PIP install -r req.txt
 cp local_settings.example.py local_settings.py
 
 # Make sure i18n literals marked correctly
-${PY_EXE} manage.py makemessages --no-location
+${PY_EXE} manage.py makemessages --no-location > output.txt
+
+if [[ -n $(grep "Warning: " output.txt) ]] || [[ -n $(grep "Error: " output.txt) ]]; then
+    echo "makemessage failed with the following info:"
+    echo ""
+    grep --color -E '^|warning: |error: ' output.txt
+    exit 1;
+fi
 
 $PIP install codecov factory_boy
 coverage run manage.py test tests/
