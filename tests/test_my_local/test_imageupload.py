@@ -49,7 +49,7 @@ from tests.base_test_mixins import (
     FallBackStorageMessageTestMixin, NONE_PARTICIPATION_USER_CREATE_KWARG_LIST,
 )
 
-from tests.test_pages import (
+from tests.test_pages.test_generic import (
     MESSAGE_ANSWER_SAVED_TEXT, MESSAGE_ANSWER_FAILED_SAVE_TEXT)
 from tests.test_sandbox import SingleCoursePageSandboxTestBaseMixin
 from tests.test_my_local.mixins import ImageUploadStorageTestMixin

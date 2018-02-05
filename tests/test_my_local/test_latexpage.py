@@ -58,7 +58,7 @@ from tests.base_test_mixins import (
 
 from tests.utils import LocmemBackendTestsMixin, mock
 from tests.test_my_local.utils import skip_test, SKIP_LOCAL_TEST_REASON
-from tests.test_pages import (
+from tests.test_pages.test_generic import (
     MESSAGE_ANSWER_SAVED_TEXT, MESSAGE_ANSWER_FAILED_SAVE_TEXT)
 from tests.test_sandbox import (
     SingleCoursePageSandboxTestBaseMixin, PAGE_WARNINGS, PAGE_ERRORS)
