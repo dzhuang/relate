@@ -30,16 +30,14 @@ from course.utils import get_course_specific_language_choices
 from tests.utils import mock
 from django import VERSION as DJANGO_VERSION
 
-if DJANGO_VERSION < (2, 0):
+if DJANGO_VERSION >= (2, 0):
+    REAL_TRANSLATION_FUNCTION_TO_MOCK = (
+        "django.utils.translation.gettext")
+    real_trans_side_effect = lambda x: x  # noqa
+else:
     REAL_TRANSLATION_FUNCTION_TO_MOCK = (
         "django.utils.translation.trans_real.do_translate")
     real_trans_side_effect = lambda x, y: x  # noqa
-else:
-    # "do_translate(message, translation_function)" was refactored to
-    # "gettext(message)" since Django >= 2.0
-    REAL_TRANSLATION_FUNCTION_TO_MOCK = (
-        "django.utils.translation._trans.gettext")
-    real_trans_side_effect = lambda x: x  # noqa
 
 
 class GetCourseSpecificLanguageChoicesTest(SimpleTestCase):
