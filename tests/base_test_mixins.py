@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+import sys
 import six
 import tempfile
 import os
@@ -1413,22 +1414,29 @@ class SubprocessRunpyContainerMixin(object):
         python_executable = os.getenv("PY_EXE")
 
         if not python_executable:
-            import sys
             python_executable = sys.executable
 
         import subprocess
+
         args = [python_executable,
                 os.path.abspath(
                     os.path.join(
                         os.path.dirname(__file__), os.pardir,
                         "docker-image-run-py", "runpy")),
                 ]
-        cls.faked_container_process = subprocess.Popen(
-            args,
-            stdout=subprocess.DEVNULL,
+        kwargs = {
+            "stdout": subprocess.DEVNULL,
 
             # because runpy prints to stderr
-            stderr=subprocess.DEVNULL
+            "stderr": subprocess.DEVNULL
+        }
+        if not sys.platform.startswith("win"):
+            # https://stackoverflow.com/a/4791612/3437454
+            kwargs["preexec_fn"] = os.setsid
+
+        cls.faked_container_process = subprocess.Popen(
+            args,
+            **kwargs,
         )
 
         cls.faked_container_patch.start()
@@ -1438,6 +1446,10 @@ class SubprocessRunpyContainerMixin(object):
         super(SubprocessRunpyContainerMixin, cls).tearDownClass()
         cls.faked_container_patch.stop()
         cls.faked_container_process.kill()
+        if not sys.platform.startswith("win"):
+            # https://stackoverflow.com/a/4791612/3437454
+            import signal
+            os.killpg(os.getpgid(cls.faked_container_process.pid), signal.SIGTERM)
 
 
 def improperly_configured_cache_patch():
