@@ -1395,7 +1395,8 @@ class FallBackStorageMessageTestMixin(object):
 class SubprocessRunpyContainerMixin(object):
     """
     This mixin is used to fake a runpy container, only needed when
-    the TestCase include test(s) for code questions
+    the TestCase include test(s) for code questions. The subprocess
+    should be stopped automatically after the TestCase finishes.
     """
     @classmethod
     def setUpClass(cls):  # noqa
@@ -1432,12 +1433,6 @@ class SubprocessRunpyContainerMixin(object):
         )
 
         cls.faked_container_patch.start()
-
-    @classmethod
-    def tearDownClass(cls):  # noqa
-        super(SubprocessRunpyContainerMixin, cls).tearDownClass()
-        cls.faked_container_patch.stop()
-        cls.faked_container_process.kill()
 
 
 def improperly_configured_cache_patch():
