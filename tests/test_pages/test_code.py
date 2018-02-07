@@ -25,9 +25,6 @@ THE SOFTWARE.
 from django.test import TestCase
 from course.constants import MAX_EXTRA_CREDIT_FACTOR
 
-from tests.base_test_mixins import (  # noqa
-    SubprocessRunpyContainerMixin
-)
 from tests.test_sandbox import (
     SingleCoursePageSandboxTestBaseMixin, PAGE_ERRORS
 )
@@ -81,8 +78,7 @@ correct_code: |
 """  # noqa
 
 
-class CodeQuestionTest(SingleCoursePageSandboxTestBaseMixin,
-                       SubprocessRunpyContainerMixin, TestCase):
+class CodeQuestionTest(SingleCoursePageSandboxTestBaseMixin, TestCase):
 
     # {{{ https://github.com/inducer/relate/pull/448
     def test_max_auto_feedback_points_not_configured(self):

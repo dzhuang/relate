@@ -29,8 +29,7 @@ from django.urls import resolve
 from django.core import mail
 from course.models import FlowSession
 from tests.base_test_mixins import (
-    SingleCoursePageTestMixin, FallBackStorageMessageTestMixin,
-    SubprocessRunpyContainerMixin)
+    SingleCoursePageTestMixin, FallBackStorageMessageTestMixin)
 from tests.utils import LocmemBackendTestsMixin
 
 QUIZ_FLOW_ID = "quiz-test"
@@ -598,8 +597,7 @@ class SingleCourseQuizPageGradeInterfaceTest(LocmemBackendTestsMixin,
 
 
 class SingleCourseQuizPageCodeQuestionTest(
-            SingleCoursePageTestMixin, FallBackStorageMessageTestMixin,
-            SubprocessRunpyContainerMixin, TestCase):
+            SingleCoursePageTestMixin, FallBackStorageMessageTestMixin, TestCase):
     flow_id = QUIZ_FLOW_ID
 
     @classmethod

@@ -270,7 +270,55 @@ class ResponseContextMixin(object):
             print("\n-------no value for context %s----------" % context_name)
 
 
-class SuperuserCreateMixin(ResponseContextMixin):
+class SubprocessRunpyContainerMixin(object):
+    """
+    This mixin is used to fake a runpy container, only needed when
+    the TestCase include test(s) for code questions
+    """
+    @classmethod
+    def setUpClass(cls):  # noqa
+        if six.PY2:
+            from unittest import SkipTest
+            raise SkipTest("In process fake container is configured for "
+                           "PY3 only, since currently runpy docker only "
+                           "provide PY3 envrionment")
+
+        super(SubprocessRunpyContainerMixin, cls).setUpClass()
+        cls.faked_container_patch = mock.patch(
+            "course.page.code.SPAWN_CONTAINERS_FOR_RUNPY", False)
+        cls.faked_container_patch.start()
+
+        python_executable = os.getenv("PY_EXE")
+
+        if not python_executable:
+            import sys
+            python_executable = sys.executable
+
+        import subprocess
+        args = [python_executable,
+                os.path.abspath(
+                    os.path.join(
+                        os.path.dirname(__file__), os.pardir,
+                        "docker-image-run-py", "runpy")),
+                ]
+        cls.faked_container_process = subprocess.Popen(
+            args,
+            stdout=subprocess.DEVNULL,
+
+            # because runpy prints to stderr
+            stderr=subprocess.DEVNULL
+        )
+
+        cls.faked_container_patch.start()
+
+    @classmethod
+    def tearDownClass(cls):  # noqa
+        super(SubprocessRunpyContainerMixin, cls).tearDownClass()
+        cls.faked_container_patch.stop()
+        cls.faked_container_process.kill()
+
+
+class SuperuserCreateMixin(ResponseContextMixin, SubprocessRunpyContainerMixin):
     create_superuser_kwargs = CREATE_SUPERUSER_KWARGS
 
     @classmethod
@@ -1390,54 +1438,6 @@ class FallBackStorageMessageTestMixin(object):
             print("-----------message end-------------\n")
         except KeyError:
             print("\n-------no message----------")
-
-
-class SubprocessRunpyContainerMixin(object):
-    """
-    This mixin is used to fake a runpy container, only needed when
-    the TestCase include test(s) for code questions
-    """
-    @classmethod
-    def setUpClass(cls):  # noqa
-        if six.PY2:
-            from unittest import SkipTest
-            raise SkipTest("In process fake container is configured for "
-                           "PY3 only, since currently runpy docker only "
-                           "provide PY3 envrionment")
-
-        super(SubprocessRunpyContainerMixin, cls).setUpClass()
-        cls.faked_container_patch = mock.patch(
-            "course.page.code.SPAWN_CONTAINERS_FOR_RUNPY", False)
-        cls.faked_container_patch.start()
-
-        python_executable = os.getenv("PY_EXE")
-
-        if not python_executable:
-            import sys
-            python_executable = sys.executable
-
-        import subprocess
-        args = [python_executable,
-                os.path.abspath(
-                    os.path.join(
-                        os.path.dirname(__file__), os.pardir,
-                        "docker-image-run-py", "runpy")),
-                ]
-        cls.faked_container_process = subprocess.Popen(
-            args,
-            stdout=subprocess.DEVNULL,
-
-            # because runpy prints to stderr
-            stderr=subprocess.DEVNULL
-        )
-
-        cls.faked_container_patch.start()
-
-    @classmethod
-    def tearDownClass(cls):  # noqa
-        super(SubprocessRunpyContainerMixin, cls).tearDownClass()
-        cls.faked_container_patch.stop()
-        cls.faked_container_process.kill()
 
 
 def improperly_configured_cache_patch():
