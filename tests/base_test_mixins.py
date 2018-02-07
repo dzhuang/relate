@@ -1321,6 +1321,7 @@ class FallBackStorageMessageTestMixin(object):
         self.settings_override.enable()
 
     def tearDown(self):  # noqa
+        super(FallBackStorageMessageTestMixin, self).tearDown()
         self.settings_override.disable()
 
     def get_listed_storage_from_response(self, response):
@@ -1395,8 +1396,7 @@ class FallBackStorageMessageTestMixin(object):
 class SubprocessRunpyContainerMixin(object):
     """
     This mixin is used to fake a runpy container, only needed when
-    the TestCase include test(s) for code questions. The subprocess
-    should be stopped automatically after the TestCase finishes.
+    the TestCase include test(s) for code questions
     """
     @classmethod
     def setUpClass(cls):  # noqa
@@ -1433,6 +1433,12 @@ class SubprocessRunpyContainerMixin(object):
         )
 
         cls.faked_container_patch.start()
+
+    @classmethod
+    def tearDownClass(cls):  # noqa
+        cls.faked_container_patch.stop()
+        cls.faked_container_process.kill()
+        super(SubprocessRunpyContainerMixin, cls).tearDownClass()
 
 
 def improperly_configured_cache_patch():
