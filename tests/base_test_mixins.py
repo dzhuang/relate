@@ -448,6 +448,11 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
     courses_attributes_extra_list = None
     override_settings_at_post_create_course = {}
 
+    # Whether force the course content to be created by post, if not
+    # if the course repo is cached, create course repo from cache.
+    # The difference is that, the post created course need to be validated.
+    force_post_create_course_content = False
+
     @classmethod
     def setUpTestData(cls):  # noqa
         super(CoursesTestMixinBase, cls).setUpTestData()
@@ -606,17 +611,19 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
     @classmethod
     def create_course(cls, create_course_kwargs, raise_error=True):
         has_cached_repo = False
-        repo_cache_key, commit_sha_cach_key = (
-            git_source_url_to_cache_keys(create_course_kwargs["git_source"]))
-        try:
-            exist_course_repo_path = mc.get(repo_cache_key)
-            exist_commit_sha = mc.get(commit_sha_cach_key)
-            if os.path.isdir(exist_course_repo_path):
-                has_cached_repo = bool(exist_course_repo_path and exist_commit_sha)
-            else:
-                has_cached_repo = False
-        except Exception:
-            pass
+        if not cls.force_post_create_course_content:
+            repo_cache_key, commit_sha_cach_key = (
+                git_source_url_to_cache_keys(create_course_kwargs["git_source"]))
+            try:
+                exist_course_repo_path = mc.get(repo_cache_key)
+                exist_commit_sha = mc.get(commit_sha_cach_key)
+                if os.path.isdir(exist_course_repo_path):
+                    has_cached_repo = (
+                        bool(exist_course_repo_path and exist_commit_sha))
+                else:
+                    has_cached_repo = False
+            except Exception:
+                pass
 
         if not has_cached_repo:
             # fall back to post create
