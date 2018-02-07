@@ -1433,12 +1433,6 @@ class SubprocessRunpyContainerMixin(object):
 
         cls.faked_container_patch.start()
 
-    @classmethod
-    def tearDownClass(cls):  # noqa
-        super(SubprocessRunpyContainerMixin, cls).tearDownClass()
-        cls.faked_container_patch.stop()
-        cls.faked_container_process.kill()
-
 
 def improperly_configured_cache_patch():
     # can be used as context manager or decorator
