@@ -295,6 +295,18 @@ RELATE_SHOW_EDITOR_FORM = True
 
 # }}}
 
+# TODO: add docs
+
+RELATE_CSV_SETTINGS = {
+    "GRADEBOOK_EXPORT":{
+        "fields_choices":(
+            ['username', 'last_name', 'first_name'],
+            ['username', 'last_name', 'first_name', 'institutional_id'],
+        ),
+        "encodings": ["utf_8_sig"]
+    }
+}
+
 # {{{ docker
 
 # A string containing the image ID of the docker image to be used to run

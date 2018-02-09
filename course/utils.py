@@ -36,6 +36,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.utils import translation
 from django.utils.translation import (
         ugettext as _, pgettext_lazy)
+from django.utils.functional import cached_property
 
 from codemirror import CodeMirrorTextarea, CodeMirrorJavascript
 
@@ -1293,5 +1294,83 @@ class IpynbJinjaMacro(RelateJinjaMacroBase):
         return body
 
 # }}}
+
+
+class RelateCsvHander(object):
+    # Tests ref tests.template_backends.test_django.DjangoTemplatesTests
+    @cached_property
+    def _csv_settings(self):
+        from django.conf import settings
+        csv_settings = getattr(settings, "RELATE_CSV_SETTINGS", {})
+        csv_settings = self._update_gradebook_csv_export_setting(csv_settings)
+
+        from relate.utils import dict_to_struct
+        return dict_to_struct(csv_settings)
+
+    def _update_gradebook_csv_export_setting(self, setting):
+        setting = setting.copy()
+        gradebook_export_settings = setting.get("GRADEBOOK_EXPORT", {})
+        gradebook_export_settings.setdefault(
+            "fields_choices", (
+                (['username', 'last_name', 'first_name'],)))
+
+        default_encoding = "utf-8"
+        gradebook_export_settings.setdefault("encodings", [default_encoding])
+        if "utf-8" not in gradebook_export_settings["encodings"]:
+            gradebook_export_settings["encodings"].append(default_encoding)
+
+        setting.setdefault(
+            "GRADEBOOK_EXPORT", gradebook_export_settings)
+        return setting
+
+    @cached_property
+    def export_csv_fields_choices(self):
+        return self._csv_settings.GRADEBOOK_EXPORT.fields_choices
+
+    @cached_property
+    def export_csv_fieldss_options(self):
+        options = []
+        check_errors = []
+        for fields_choice in self.export_csv_fields_choices:
+            fields_verbose_names, errors = (
+                self.validate_and_get_user_fields_verbose_name(fields_choice))
+
+            assert len(fields_choice) == len(fields_verbose_names)
+            options.append(
+                (",".join(fields_choice), ", ".join(fields_verbose_names)))
+            check_errors.extend(errors)
+
+        # This is for start check
+        if check_errors:
+            from django.core.exceptions import ImproperlyConfigured
+            raise ImproperlyConfigured(
+                "; ".join(["%s: %s" % (type(e).__name__, str(e))
+                           for e in check_errors])
+            )
+
+        return tuple(options)
+
+    def validate_and_get_user_fields_verbose_name(self, fields):
+        # type: (Iterable[Text]) -> Tuple[List[Text], List[Exception]]
+
+        from django.contrib.auth import get_user_model
+        from django.utils.encoding import force_text
+
+        errors = []
+        fields_verbose_names = []
+        for item in fields:
+            try:
+                fields_verbose_names.append(
+                    force_text(
+                        get_user_model()._meta.get_field(item).verbose_name))
+            except Exception as e:
+                errors.append(e)
+
+        return fields_verbose_names, errors
+
+    @cached_property
+    def export_csv_encodings(self):
+        return self._csv_settings.GRADEBOOK_EXPORT.encodings
+
 
 # vim: foldmethod=marker

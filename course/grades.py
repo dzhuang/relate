@@ -47,7 +47,7 @@ from relate.utils import StyledForm, StyledModelForm, string_concat
 from crispy_forms.layout import Submit
 from bootstrap3_datetime.widgets import DateTimePicker
 
-from course.utils import course_view, render_course_page
+from course.utils import course_view, render_course_page, RelateCsvHander
 from course.models import (
         Participation, participation_status,
         GradingOpportunity, GradeChange, GradeStateMachine,
@@ -59,10 +59,12 @@ from course.constants import (
         participation_permission as pperm,
         )
 
+csv_handler = RelateCsvHander()
+
 # {{{ for mypy
 
 if False:
-    from typing import Tuple, Text, Optional, Any, Iterable, List  # noqa
+    from typing import Tuple, Text, Optional, Any, Iterable, List, Union, Dict  # noqa
     from course.utils import CoursePageContext  # noqa
     from course.content import FlowDesc  # noqa
     from course.models import Course, FlowPageVisitGrade  # noqa
@@ -203,8 +205,17 @@ class GradeInfo:
         self.grade_state_machine = grade_state_machine
 
 
-def get_grade_table(course):
-    # type: (Course) -> Tuple[List[Participation], List[GradingOpportunity], List[List[GradeInfo]]]  # noqa
+def get_grade_table(course, excluded_roles=None):
+    # type: (Course, Optional[List[Text]]) -> Tuple[List[Participation], List[GradingOpportunity], List[List[GradeInfo]]]  # noqa
+
+    participations_exlcude_kwargs = {}  # type: Dict
+    grade_changes_exclude_kwargs = {}  # type: Dict
+    if excluded_roles:
+        assert isinstance(excluded_roles, (list, tuple))
+        participations_exlcude_kwargs = {
+            "roles__identifier__in": excluded_roles}
+        grade_changes_exclude_kwargs = {
+            "participation__roles__identifier__in": excluded_roles}
 
     # NOTE: It's important that these queries are sorted consistently,
     # also consistently with the code below.
@@ -219,6 +230,7 @@ def get_grade_table(course):
             .filter(
                 course=course,
                 status=participation_status.active)
+            .exclude(**participations_exlcude_kwargs)
             .order_by("id")
             .select_related("user"))
 
@@ -226,6 +238,7 @@ def get_grade_table(course):
             .filter(
                 opportunity__course=course,
                 opportunity__shown_in_grade_book=True)
+            .exclude(**grade_changes_exclude_kwargs)
             .order_by(
                 "participation__id",
                 "opportunity__identifier",
@@ -295,43 +308,187 @@ def view_gradebook(pctx):
         })
 
 
+class ExportGradeBookForm(StyledForm):
+    def __init__(self, user_info_fields_options, prefered_encodings=None,
+                 *args, **kwargs):
+        # type: (Tuple[Any, ...], Optional[Union[Iterable[Text]]], *Any, **Any) -> None  # noqa
+        super(ExportGradeBookForm, self).__init__(*args, **kwargs)
+
+        self.fields["user_info_fields"] = forms.ChoiceField(
+            choices=(user_info_fields_options),
+            initial=user_info_fields_options[0],
+            label=_("User Fields to Export"),
+        )
+
+        self.fields["exclude_instructors"] = forms.BooleanField(
+            required=False,
+            initial=True,
+            label=_("Exclude Grades of Instructors")
+        )
+
+        self.fields["exclude_tas"] = forms.BooleanField(
+            required=False,
+            initial=True,
+            label=_("Exclude Grades of Teaching assistants")
+        )
+
+        self.fields["zero_for_none"] = forms.BooleanField(
+            required=False,
+            initial=True,
+            label=_("Use 0 for `NONE` points")
+        )
+
+        self.fields["maximum_points"] = forms.FloatField(
+            required=True,
+            initial=100,
+            label=_("Maximum allowed points")
+        )
+
+        self.fields["minimum_points"] = forms.FloatField(
+            required=True,
+            initial=0,
+            label=_("Minimum points")
+        )
+
+        self.fields["round_digits"] = forms.IntegerField(
+            required=True,
+            min_value=0,
+            initial=2,
+            max_value=4,
+            label=_("Round Digits")
+        )
+
+        if len(user_info_fields_options) == 1:
+            self.fields["user_info_fields"].widget = forms.HiddenInput()
+
+        if prefered_encodings is not None:
+            encoding_choices = []
+            for i, ecd in enumerate(prefered_encodings):
+                desc = ecd
+                if i == 0:
+                    desc = string_concat(_("Default"), " ('%s')" % ecd)
+                encoding_choices.append((ecd, desc))
+            if "utf-8" not in prefered_encodings:
+                encoding_choices.append(('utf-8', 'utf-8'))
+
+            self.fields["encoding_used"] = forms.ChoiceField(
+                choices=tuple(encoding_choices),
+                label=_("Using Encoding"),
+                help_text=_(
+                    "The encoding used for the exported file."),
+            )
+
+        self.helper.add_input(Submit("download", _("Download")))
+
+    def clean(self):
+        super(ExportGradeBookForm, self).clean()
+        maximum_points = self.cleaned_data["maximum_points"]
+        minimum_points = self.cleaned_data["minimum_points"]
+        if not maximum_points > minimum_points:
+            raise forms.ValidationError(
+                _("'maximum_points' must be greater than 'minimum_points'."))
+
+        return self.cleaned_data
+
+    def clean_user_info_fields(self):
+        user_info_fields_str = self.cleaned_data["user_info_fields"]
+        user_info_fields = user_info_fields_str.split(",")
+        return user_info_fields
+
+
 @course_view
 def export_gradebook_csv(pctx):
     if not pctx.has_permission(pperm.batch_export_grade):
         raise PermissionDenied(_("may not batch-export grades"))
 
-    participations, grading_opps, grade_table = get_grade_table(pctx.course)
+    request = pctx.request
 
-    from six import StringIO
-    csvfile = StringIO()
+    prefered_encodings = csv_handler.export_csv_encodings
+    user_info_fields = csv_handler.export_csv_fieldss_options
 
-    if six.PY2:
-        import unicodecsv as csv
+    if request.method == "POST":
+        form = ExportGradeBookForm(
+            user_info_fields, prefered_encodings, request.POST)
+
+        if form.is_valid():
+            excluded_roles = []
+            if form.cleaned_data["exclude_instructors"]:
+                excluded_roles.append("instructor")
+            if form.cleaned_data["exclude_tas"]:
+                excluded_roles.append("ta")
+
+            encoding_used = form.cleaned_data["encoding_used"]
+
+            participations, grading_opps, grade_table = (
+                get_grade_table(pctx.course, excluded_roles))
+
+            from six import StringIO
+            csvfile = StringIO()
+
+            if six.PY2:
+                import unicodecsv as csv
+            else:
+                import csv
+
+            info_fields = form.cleaned_data["user_info_fields"]
+
+            user_info_fields_verbose_names = (
+                csv_handler.validate_and_get_user_fields_verbose_name(
+                    info_fields)[0])
+
+            fieldnames = user_info_fields_verbose_names + [
+                    gopp.identifier for gopp in grading_opps]
+
+            writer = csv.writer(csvfile)
+
+            writer.writerow(fieldnames)
+
+            alias_for_none = None
+            if form.cleaned_data["zero_for_none"]:
+                alias_for_none = "0"
+
+            def callback_for_percentage(percentage):
+                maximum_points = form.cleaned_data["maximum_points"]
+                minimum_points = form.cleaned_data["minimum_points"]
+                round_digits = form.cleaned_data["round_digits"]
+                assert maximum_points >= minimum_points
+
+                if percentage > maximum_points:
+                    percentage = maximum_points
+                if percentage < minimum_points:
+                    percentage = minimum_points
+                return round(percentage, round_digits)
+
+            def get_user_info_from_info_fields(user, info_fields):
+                result = []
+                for attr in info_fields:
+                    value = getattr(user, attr, "None")
+                    result.append(value)
+                return result
+
+            for participation, grades in zip(participations, grade_table):
+                writer.writerow(
+                    get_user_info_from_info_fields(participation.user, info_fields)
+                    + [grade_info.grade_state_machine.stringify_machine_readable_state(  # noqa
+                        alias_for_none=alias_for_none,
+                        callback_for_percentage=callback_for_percentage)
+                        for grade_info in grades])
+
+            response = http.HttpResponse(
+                    csvfile.getvalue().encode(encoding_used),
+                    content_type="text/plain; charset=utf-8")
+            response['Content-Disposition'] = (
+                    'attachment; filename="grades-%s.csv"'
+                    % pctx.course.identifier)
+            return response
+
     else:
-        import csv
+        form = ExportGradeBookForm(user_info_fields, prefered_encodings)
 
-    fieldnames = ['user_name', 'last_name', 'first_name'] + [
-            gopp.identifier for gopp in grading_opps]
-
-    writer = csv.writer(csvfile)
-
-    writer.writerow(fieldnames)
-
-    for participation, grades in zip(participations, grade_table):
-        writer.writerow([
-            participation.user.username,
-            participation.user.last_name,
-            participation.user.first_name,
-            ] + [grade_info.grade_state_machine.stringify_machine_readable_state()
-                for grade_info in grades])
-
-    response = http.HttpResponse(
-            csvfile.getvalue().encode("utf-8"),
-            content_type="text/plain; charset=utf-8")
-    response['Content-Disposition'] = (
-            'attachment; filename="grades-%s.csv"'
-            % pctx.course.identifier)
-    return response
+    return render_course_page(pctx, "course/generic-course-form.html", {
+        "form": form,
+        "form_description": _("Export Gradebook as a CSV File")
+        })
 
 # }}}
 
