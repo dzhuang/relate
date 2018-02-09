@@ -120,4 +120,7 @@ IPython
 # For parsing and edit html
 lxml
 
+# detecting slowest tests
+django-slowtests
+
 # vim: foldmethod=marker
