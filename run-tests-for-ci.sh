@@ -75,6 +75,6 @@ if [[ -n $(grep "msgid" output.txt) ]]; then
 fi
 
 $PIP install codecov factory_boy
-coverage run manage.py test tests/
+coverage run manage.py test tests/ -v 2
 coverage report -m
 codecov
