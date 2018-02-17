@@ -24,4 +24,5 @@ matrix:
   - python: "3.6"
     env: Mypy=true PY_EXE=python3.6
 script:
+  - export COVERAGE_PROCESS_START=.coveragerc
   - bash ./run-travis-ci.sh

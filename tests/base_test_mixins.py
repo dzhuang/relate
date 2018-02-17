@@ -1529,8 +1529,12 @@ class SubprocessRunpyContainerMixin(object):
             # finished. However, On nix platforms, these lines resulted in test
             # failure when there were more than one TestCases which were using
             # this mixin.
+            import atexit
             cls.faked_container_patch.stop()
+
+            atexit.register(cls.faked_container_process.kill)
             cls.faked_container_process.kill()
+            print("here")
 
 
 def improperly_configured_cache_patch():

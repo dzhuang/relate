@@ -74,7 +74,8 @@ if [[ -n $(grep "msgid" output.txt) ]]; then
     exit 1;
 fi
 
-$PIP install codecov factory_boy
+$PIP install codecov factory_boy coverage_enable_subprocess
 coverage run manage.py test tests/
+coverage combine
 coverage report -m
 codecov
