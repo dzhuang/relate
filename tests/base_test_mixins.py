@@ -1487,11 +1487,15 @@ class SubprocessRunpyContainerMixin(object):
     """
     @classmethod
     def setUpClass(cls):  # noqa
+        from unittest import SkipTest
         if six.PY2:
-            from unittest import SkipTest
             raise SkipTest("In process fake container is configured for "
                            "PY3 only, since currently runpy docker only "
                            "provide PY3 envrionment")
+
+        if sys.platform.startswith("win"):
+            raise SkipTest("In process fake container is configured for "
+                           "Windows only, for getting coverage data.")
 
         super(SubprocessRunpyContainerMixin, cls).setUpClass()
         cls.faked_container_patch = mock.patch(
@@ -1501,7 +1505,6 @@ class SubprocessRunpyContainerMixin(object):
         python_executable = os.getenv("PY_EXE")
 
         if not python_executable:
-            import sys
             python_executable = sys.executable
 
         import subprocess
@@ -1516,7 +1519,10 @@ class SubprocessRunpyContainerMixin(object):
             stdout=subprocess.DEVNULL,
 
             # because runpy prints to stderr
-            stderr=subprocess.DEVNULL
+            stderr=subprocess.DEVNULL,
+
+            shell=True,
+            preexec_fn=os.setsid
         )
 
         cls.faked_container_patch.start()
@@ -1524,17 +1530,9 @@ class SubprocessRunpyContainerMixin(object):
     @classmethod
     def tearDownClass(cls):  # noqa
         super(SubprocessRunpyContainerMixin, cls).tearDownClass()
-        if sys.platform.startswith("win"):
-            # Without these lines, tests on Appveyor hanged when all tests
-            # finished. However, On nix platforms, these lines resulted in test
-            # failure when there were more than one TestCases which were using
-            # this mixin.
-            import atexit
-            cls.faked_container_patch.stop()
 
-            atexit.register(cls.faked_container_process.kill)
-            cls.faked_container_process.kill()
-            print("here")
+        import signal
+        cls.faked_container_process.send_signal(signal.SIGINT)
 
 
 def improperly_configured_cache_patch():
