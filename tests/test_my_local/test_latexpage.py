@@ -165,7 +165,7 @@ class LatexPageMixin(SingleCoursePageTestMixin, FallBackStorageMessageTestMixin)
 @skipIf(skip_test, SKIP_LOCAL_TEST_REASON)
 @override_settings(
     CACHE_BACKEND='dummy:///')
-class LatexPageTest(LatexPageMixin, SubprocessRunpyContainerMixin, TestCase):
+class LatexPageTest(SubprocessRunpyContainerMixin, LatexPageMixin, TestCase):
     courses_setup_list = MY_SINGLE_COURSE_SETUP_LIST
     flow_id = RANDOM_FLOW
 
@@ -255,8 +255,8 @@ class LatexPageTest(LatexPageMixin, SubprocessRunpyContainerMixin, TestCase):
 @skipIf(skip_test, SKIP_LOCAL_TEST_REASON)
 @override_settings(
     CACHE_BACKEND='dummy:///')
-class LatexPageWithMacroTest(LatexPageMixin, LocmemBackendTestsMixin,
-                             SubprocessRunpyContainerMixin, TestCase):
+class LatexPageWithMacroTest(SubprocessRunpyContainerMixin, LatexPageMixin,
+                             LocmemBackendTestsMixin, TestCase):
     courses_setup_list = MY_SINGLE_COURSE_SETUP_LIST
     flow_id = RANDOM_WITH_LATEX_MACRO
 
@@ -296,8 +296,8 @@ class LatexPageWithMacroTest(LatexPageMixin, LocmemBackendTestsMixin,
 @skipIf(skip_test, SKIP_LOCAL_TEST_REASON)
 @override_settings(
     CACHE_BACKEND='dummy:///')
-class LatexPageOldStyleFullTest(LatexPageMixin, LocmemBackendTestsMixin,
-                                SubprocessRunpyContainerMixin, TestCase):
+class LatexPageOldStyleFullTest(SubprocessRunpyContainerMixin, LatexPageMixin,
+                                LocmemBackendTestsMixin, TestCase):
     courses_setup_list = MY_SINGLE_COURSE_SETUP_LIST
     flow_id = RANDOM_OLD_FULL
 
@@ -392,9 +392,8 @@ class LatexPageOldStyleFullTest(LatexPageMixin, LocmemBackendTestsMixin,
 @skipIf(skip_test, SKIP_LOCAL_TEST_REASON)
 @override_settings(
     CACHE_BACKEND='dummy:///')
-class LatexPageOldStylePartsTest(
-        LatexPageMixin, LocmemBackendTestsMixin,
-        SubprocessRunpyContainerMixin, TestCase):
+class LatexPageOldStylePartsTest(SubprocessRunpyContainerMixin, LatexPageMixin,
+                                 LocmemBackendTestsMixin, TestCase):
     courses_setup_list = MY_SINGLE_COURSE_SETUP_LIST
     flow_id = RANDOM_OLD_FLOW
 
@@ -463,9 +462,9 @@ class LatexPageOldStylePartsTest(
 @skipIf(skip_test, SKIP_LOCAL_TEST_REASON)
 @override_settings(
     CACHE_BACKEND='dummy:///')
-class LatexPageSandboxTest(SingleCoursePageSandboxTestBaseMixin, LatexPageMixin,
-                           LocmemBackendTestsMixin,
-                           SubprocessRunpyContainerMixin, TestCase):
+class LatexPageSandboxTest(SubprocessRunpyContainerMixin,
+                           SingleCoursePageSandboxTestBaseMixin, LatexPageMixin,
+                           LocmemBackendTestsMixin, TestCase):
     courses_setup_list = MY_SINGLE_COURSE_SETUP_LIST
     flow_id = RANDOM_ALL_SAME
 
@@ -983,7 +982,7 @@ fake_jinja_runpy_success_bad_formatted_return_value = {
 @skipIf(skip_test, SKIP_LOCAL_TEST_REASON)
 @override_settings(
     CACHE_BACKEND='dummy:///')
-class LatexPageCacheTest(LatexPageMixin, SubprocessRunpyContainerMixin, TestCase):
+class LatexPageCacheTest(SubprocessRunpyContainerMixin, LatexPageMixin, TestCase):
     courses_setup_list = MY_SINGLE_COURSE_SETUP_LIST
     flow_id = RANDOM_FLOW
     page_id = "rand1"
@@ -1045,8 +1044,8 @@ class LatexPageCacheTest(LatexPageMixin, SubprocessRunpyContainerMixin, TestCase
 @skipIf(skip_test, SKIP_LOCAL_TEST_REASON)
 @override_settings(
     CACHE_BACKEND='dummy:///')
-class LatexPageInitalPageDataTest(LatexPageMixin,
-                                  SubprocessRunpyContainerMixin, TestCase):
+class LatexPageInitalPageDataTest(SubprocessRunpyContainerMixin, LatexPageMixin,
+                                  TestCase):
     courses_setup_list = MY_SINGLE_COURSE_SETUP_LIST
     flow_id = RANDOM_FLOW
     page_id = "rand1"
@@ -1578,11 +1577,10 @@ class LatexPageInitalPageDataTest(LatexPageMixin,
 @skipIf(skip_test, SKIP_LOCAL_TEST_REASON)
 @override_settings(
     CACHE_BACKEND='dummy:///')
-class LatexPageRunpyFailureTest(
-        LatexPageMixin, SingleCoursePageSandboxTestBaseMixin,
-        LocmemBackendTestsMixin,
-        SubprocessRunpyContainerMixin,
-        TestCase):
+class LatexPageRunpyFailureTest(SubprocessRunpyContainerMixin,
+                                LatexPageMixin,
+                                SingleCoursePageSandboxTestBaseMixin,
+                                LocmemBackendTestsMixin, TestCase):
     courses_setup_list = MY_SINGLE_COURSE_SETUP_LIST
     flow_id = RANDOM_FLOW
     page_id = "rand1"
@@ -1843,8 +1841,8 @@ class LatexPageRunpyFailureTest(
 @override_settings(
     CACHE_BACKEND='dummy:///')
 class LatexPageSandboxFlowCombineTest(
-        SingleCoursePageSandboxTestBaseMixin, LatexPageMixin,
-        LocmemBackendTestsMixin, SubprocessRunpyContainerMixin, TestCase):
+        SubprocessRunpyContainerMixin, SingleCoursePageSandboxTestBaseMixin,
+        LatexPageMixin, LocmemBackendTestsMixin, TestCase):
     courses_setup_list = MY_SINGLE_COURSE_SETUP_LIST
     flow_id = RANDOM_ALL_SAME
 
