@@ -472,7 +472,7 @@ class LatexPageSandboxTest(SubprocessRunpyContainerMixin,
         resp = self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_PAGE)
         self.assertEqual(resp.status_code, 200)
-        self.assertSandboxHaveValidPage(resp)
+        self.assertSandboxHasValidPage(resp)
         self.assertResponseContextIsNone(resp, PAGE_ERRORS)
         self.assertResponseContextEqual(resp, PAGE_WARNINGS, [])
         self.assertContains(resp, u"<h1>random question test</h1>", count=1)
@@ -485,7 +485,7 @@ class LatexPageSandboxTest(SubprocessRunpyContainerMixin,
         resp = self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_PAGE)
         self.assertEqual(resp.status_code, 200)
-        self.assertSandboxHaveValidPage(resp)
+        self.assertSandboxHasValidPage(resp)
         self.assertResponseContextIsNone(resp, PAGE_ERRORS)
         self.assertResponseContextEqual(resp, PAGE_WARNINGS, [])
         self.assertContains(resp, u"<h1>random question test</h1>", count=1)
@@ -496,7 +496,7 @@ class LatexPageSandboxTest(SubprocessRunpyContainerMixin,
         resp = self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_PAGE_WITH_MARKDOWN)
         self.assertEqual(resp.status_code, 200)
-        self.assertSandboxHaveValidPage(resp)
+        self.assertSandboxHasValidPage(resp)
         self.assertResponseContextIsNone(resp, PAGE_ERRORS)
         self.assertResponseContextEqual(resp, PAGE_WARNINGS, [])
         self.assertContains(
@@ -524,7 +524,7 @@ class LatexPageSandboxTest(SubprocessRunpyContainerMixin,
         resp = self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS_MULTIPLE_DATA)
         self.assertEqual(resp.status_code, 200)
-        self.assertSandboxHaveValidPage(resp)
+        self.assertSandboxHasValidPage(resp)
         self.assertResponseContextIsNone(resp, PAGE_ERRORS)
         self.assertSandboxWarningTextContain(
             resp, "LatexRandomCodeInlineMultiQuestion not using attribute "
@@ -645,7 +645,7 @@ class LatexPageSandboxTest(SubprocessRunpyContainerMixin,
         resp = self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_FULL_PROCESS_CODE)
         self.assertEqual(resp.status_code, 200)
-        self.assertSandboxHaveValidPage(resp)
+        self.assertSandboxHasValidPage(resp)
         self.assertResponseContextIsNone(resp, PAGE_ERRORS)
         self.assertSandboxWarningTextContain(
             resp, "LatexRandomCodeInlineMultiQuestion not using attribute "
@@ -689,7 +689,7 @@ class LatexPageSandboxTest(SubprocessRunpyContainerMixin,
         resp = self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_RANDOM_DATA_FILE_AS_CACHEKEY_FILE)
         self.assertEqual(resp.status_code, 200)
-        self.assertSandboxHaveValidPage(resp)
+        self.assertSandboxHasValidPage(resp)
         expected_warning_text = (
             "'question-data/random-page-test/test_data_01.bin' "
             "is not expected in 'cache_key_files' as "
@@ -718,7 +718,7 @@ class LatexPageSandboxTest(SubprocessRunpyContainerMixin,
         resp = self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_MISSING_EXCLUDED_CACHEKEY_FILE)
         self.assertEqual(resp.status_code, 200)
-        self.assertSandboxHaveValidPage(resp)
+        self.assertSandboxHasValidPage(resp)
         self.assertResponseContextIsNone(resp, PAGE_ERRORS)
         self.assertSandboxWarningTextContain(
             resp, "'foo' is not in 'data_files'")
@@ -753,7 +753,7 @@ class LatexPageSandboxTest(SubprocessRunpyContainerMixin,
             self.assertEqual(mock_runpy.call_count, 0)
 
         self.assertEqual(resp.status_code, 200)
-        self.assertSandboxHaveValidPage(resp)
+        self.assertSandboxHasValidPage(resp)
         self.assertResponseContextIsNone(resp, PAGE_ERRORS)
         self.assertSandboxWarningTextContain(
             resp, "'runpy_context' is configured with neither "
@@ -805,7 +805,7 @@ class LatexPageSandboxTest(SubprocessRunpyContainerMixin,
         resp = self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_PAGE_WARMUP_BY_SANDBOX)
         self.assertEqual(resp.status_code, 200)
-        self.assertSandboxHaveValidPage(resp)
+        self.assertSandboxHasValidPage(resp)
         self.assertEqual(self.get_variant_page_mongo_items_count(), 2)
         self.assertResponseContextIsNone(resp, PAGE_ERRORS)
         self.assertResponseContextEqual(resp, PAGE_WARNINGS, [])
@@ -817,7 +817,7 @@ class LatexPageSandboxTest(SubprocessRunpyContainerMixin,
         resp = self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_PAGE_WARMUP_BY_SANDBOX)
         self.assertEqual(resp.status_code, 200)
-        self.assertSandboxHaveValidPage(resp)
+        self.assertSandboxHasValidPage(resp)
         self.assertEqual(self.get_variant_page_mongo_items_count(), 2)
         self.assertResponseContextIsNone(resp, PAGE_ERRORS)
         self.assertResponseContextEqual(resp, PAGE_WARNINGS, [])
@@ -843,7 +843,7 @@ class LatexPageSandboxTest(SubprocessRunpyContainerMixin,
         resp = self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_PAGE_NO_WARMUP_BY_SANDBOX)
         self.assertEqual(resp.status_code, 200)
-        self.assertSandboxHaveValidPage(resp)
+        self.assertSandboxHasValidPage(resp)
         self.assertEqual(self.get_variant_page_mongo_items_count(), 1)
         self.assertResponseContextIsNone(resp, PAGE_ERRORS)
         self.assertResponseContextEqual(resp, PAGE_WARNINGS, [])
@@ -934,7 +934,7 @@ class LatexPageSandboxTest(SubprocessRunpyContainerMixin,
         resp = self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_WITH_RUNPY_CONTEXT)
         self.assertEqual(resp.status_code, 200)
-        self.assertSandboxHaveValidPage(resp)
+        self.assertSandboxHasValidPage(resp)
         self.assertResponseContextIsNone(resp, PAGE_ERRORS)
         self.assertResponseContextEqual(resp, PAGE_WARNINGS, [])
         self.c.logout()
@@ -949,7 +949,7 @@ class LatexPageSandboxTest(SubprocessRunpyContainerMixin,
         resp = self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_CODE_QUESTION)
         self.assertEqual(resp.status_code, 200)
-        self.assertSandboxHaveValidPage(resp)
+        self.assertSandboxHasValidPage(resp)
         self.assertResponseContextIsNone(resp, PAGE_ERRORS)
         self.assertSandboxWarningTextContain(
             resp, "LatexRandomCodeQuestion not using attribute "
@@ -1859,7 +1859,7 @@ class LatexPageSandboxFlowCombineTest(
         resp = self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_PAGE_WARMUP_BY_SANDBOX)
         self.assertEqual(resp.status_code, 200)
-        self.assertSandboxHaveValidPage(resp)
+        self.assertSandboxHasValidPage(resp)
         self.assertEqual(self.get_variant_page_mongo_items_count(), 2)
         self.assertResponseContextIsNone(resp, PAGE_ERRORS)
         self.assertResponseContextEqual(resp, PAGE_WARNINGS, [])
