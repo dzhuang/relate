@@ -901,6 +901,26 @@ def average_grade(opportunity):
         return None, 0
 
 
+def get_single_grade_changes_and_state_machine(opportunity, participation):
+    # type: (GradingOpportunity, Participation) -> Tuple[List[GradeChange], GradeStateMachine]  # noqa
+
+    grade_changes = list(
+        GradeChange.objects.filter(
+            opportunity=opportunity,
+            participation=participation)
+        .order_by("grade_time")
+        .select_related("participation")
+        .select_related("participation__user")
+        .select_related("creator")
+        .select_related("flow_session")
+        .select_related("opportunity"))
+
+    state_machine = GradeStateMachine()
+    state_machine.consume(grade_changes, set_is_superseded=True)
+
+    return grade_changes, state_machine
+
+
 @course_view
 def view_single_grade(pctx, participation_id, opportunity_id):
     # type: (CoursePageContext, Text, Text) -> http.HttpResponse
@@ -946,6 +966,7 @@ def view_single_grade(pctx, participation_id, opportunity_id):
     request = pctx.request
     if pctx.request.method == "POST":
         action_re = re.compile("^([a-z]+)_([0-9]+)$")
+        action_match = None
         for key in request.POST.keys():
             action_match = action_re.match(key)
             if action_match:
@@ -1020,19 +1041,8 @@ def view_single_grade(pctx, participation_id, opportunity_id):
 
     # }}}
 
-    grade_changes = list(GradeChange.objects
-            .filter(
-                opportunity=opportunity,
-                participation=participation)
-            .order_by("grade_time")
-            .select_related("participation")
-            .select_related("participation__user")
-            .select_related("creator")
-            .select_related("flow_session")
-            .select_related("opportunity"))
-
-    state_machine = GradeStateMachine()
-    state_machine.consume(grade_changes, set_is_superseded=True)
+    grade_changes, state_machine = (
+        get_single_grade_changes_and_state_machine(opportunity, participation))
 
     if opportunity.flow_id:
         flow_sessions = list(FlowSession.objects

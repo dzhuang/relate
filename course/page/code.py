@@ -85,6 +85,7 @@ class PythonCodeForm(StyledForm):
 
 
 RUNPY_PORT = 9941
+DOCKER_TIMEOUT = 15
 
 
 class InvalidPingResponse(RuntimeError):
@@ -108,8 +109,6 @@ def request_python_run(run_req, run_timeout, image=None):
         def debug_print(s):
             # type: (Text) -> None
             pass
-
-    docker_timeout = 15
 
     container_id = None
     connect_host_ip = 'localhost'
@@ -155,18 +154,16 @@ def request_python_run(run_req, run_timeout, image=None):
         # {{{ ping until response received
 
         def check_timeout():
-            # type: () -> Optional[Dict]
-            if time() - start_time < docker_timeout:
-                sleep(0.1)
-                # and retry
-            else:
-                return {
-                        "result": "uncaught_error",
-                        "message": "Timeout waiting for container.",
-                        "traceback": "".join(format_exc()),
-                        "exec_host": connect_host_ip,
-                        }
-            return None
+                if time() - start_time < DOCKER_TIMEOUT:
+                    sleep(0.1)
+                    # and retry
+                else:
+                    return {
+                            "result": "uncaught_error",
+                            "message": "Timeout waiting for container.",
+                            "traceback": "".join(format_exc()),
+                            "exec_host": connect_host_ip,
+                            }
 
         while True:
             try:
@@ -255,16 +252,15 @@ def is_nuisance_failure(result):
     if result["result"] != "uncaught_error":
         return False
 
-    if ("traceback" in result
-            and "BadStatusLine" in result["traceback"]):
-
-        # Occasionally, we fail to send a POST to the container, even after
-        # the inital ping GET succeeded, for (for now) mysterious reasons.
-        # Just try again.
-
-        return True
-
     if "traceback" in result:
+        if "BadStatusLine" in result["traceback"]:
+
+            # Occasionally, we fail to send a POST to the container, even after
+            # the inital ping GET succeeded, for (for now) mysterious reasons.
+            # Just try again.
+
+            return True
+
         if "bind: address already in use" in result["traceback"]:
             # https://github.com/docker/docker/issues/8714
 
@@ -480,8 +476,11 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                     from course.content import get_repo_blob
                     get_repo_blob(vctx.repo, data_file, vctx.commit_sha)
                 except ObjectDoesNotExist:
-                    raise ValidationError("%s: data file '%s' not found"
-                            % (location, data_file))
+                    raise ValidationError(
+                        string_concat(
+                            "%(location)s: ",
+                            _("data file '%(file)s' not found"))
+                        % {"location": location, "file": data_file})
 
         if not getattr(page_desc, "single_submission", False) and vctx is not None:
             is_multi_submit = False
@@ -661,6 +660,21 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
 
         user_code = answer_data["answer"]
         feedback_bits = []
+        correctness = None
+
+        if "points" in response_dict:
+            correctness = response_dict["points"]
+            try:
+                feedback_bits.append(
+                        "<p><b>%s</b></p>"
+                        % get_auto_feedback(correctness))
+            except Exception as e:
+                correctness = None
+                response_dict["result"] = "setup_error"
+                response_dict["message"] = (
+                    "%s: %s" % (type(e).__name__, str(e))
+                )
+
         # {{{ send email if the grading code broke
         if response_dict["result"] in [
                 "uncaught_error",
@@ -759,13 +773,6 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
         from relate.utils import dict_to_struct
         response = dict_to_struct(response_dict)
         bulk_feedback_bits = []
-        if hasattr(response, "points"):
-            correctness = response.points
-            feedback_bits.append(
-                "<p><b>%s</b></p>"
-                % get_auto_feedback(correctness))
-        else:
-            correctness = None
         if response.result == "success":
             pass
         elif response.result == "docker_runpy_not_enabled":
@@ -944,6 +951,9 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                         ], value)
                     else:
                         return False
+
+                if not isinstance(s, six.text_type):
+                    return _("(Non-string in 'HTML' output filtered out)")
 
                 return bleach.clean(s,
                                     tags=bleach.ALLOWED_TAGS + ["audio", "video",

@@ -22,7 +22,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+import sys
 import six
+import re
 import tempfile
 import os
 import shutil
@@ -159,6 +161,9 @@ except Exception:
     pass
 
 
+SELECT2_HTML_FIELD_ID_SEARCH_PATTERN = re.compile(r'data-field_id="([^"]+)"')
+
+
 def git_source_url_to_cache_keys(url):
     url_hash = hashlib.md5(url.encode("utf-8")).hexdigest()
     return (
@@ -193,9 +198,9 @@ class ResponseContextMixin(object):
         else:
             self.assertIsNone(value)
 
-    def assertResponseContextIsNotNone(self, resp, context_name):  # noqa
+    def assertResponseContextIsNotNone(self, resp, context_name, msg=""):  # noqa
         value = self.get_response_context_value_by_name(resp, context_name)
-        self.assertIsNotNone(value)
+        self.assertIsNotNone(value, msg)
 
     def assertResponseContextEqual(self, resp, context_name, expected_value):  # noqa
         value = self.get_response_context_value_by_name(resp, context_name)
@@ -219,10 +224,21 @@ class ResponseContextMixin(object):
         return self.get_response_context_value_by_name(response, "feedback")
 
     def assertResponseContextAnswerFeedbackContainsFeedback(  # noqa
+            self, response, expected_feedback,
+            include_bulk_feedback=True):
+        answer_feedback = self.get_response_context_answer_feedback(response)
+        feedback_str = answer_feedback.feedback
+        if include_bulk_feedback:
+            feedback_str += answer_feedback.bulk_feedback
+
+        self.assertTrue(hasattr(answer_feedback, "feedback"))
+        self.assertIn(expected_feedback, feedback_str)
+
+    def assertResponseContextAnswerFeedbackNotContainsFeedback(  # noqa
                                         self, response, expected_feedback):
         answer_feedback = self.get_response_context_answer_feedback(response)
         self.assertTrue(hasattr(answer_feedback, "feedback"))
-        self.assertIn(expected_feedback, answer_feedback.feedback)
+        self.assertNotIn(expected_feedback, answer_feedback.feedback)
 
     def assertResponseContextAnswerFeedbackCorrectnessEquals(  # noqa
                                         self, response, expected_correctness):
@@ -235,6 +251,9 @@ class ResponseContextMixin(object):
             else:
                 self.assertIsNone(answer_feedback.correctness)
         else:
+            if answer_feedback.correctness is None:
+                return self.fail("The returned correctness is None, not %s"
+                          % expected_correctness)
             self.assertTrue(
                 abs(float(answer_feedback.correctness)
                     - float(str(expected_correctness))) < ATOL,
@@ -269,6 +288,35 @@ class ResponseContextMixin(object):
         except AssertionError:
             print("\n-------no value for context %s----------" % context_name)
 
+    def get_select2_field_id_from_response(self, response,
+                                           form_context_name="form"):
+        self.assertResponseContextIsNotNone(
+            response, form_context_name,
+            "The response doesn't contain a context named '%s'"
+            % form_context_name)
+        form_str = str(response.context[form_context_name])
+        m = SELECT2_HTML_FIELD_ID_SEARCH_PATTERN.search(form_str)
+        assert m, "pattern not found in %s" % form_str
+        return m.group(1)
+
+    def select2_get_request(self, field_id, term=None,
+                            select2_urlname='django_select2-json'):
+
+        select2_url = reverse(select2_urlname)
+        params = {"field_id": field_id}
+        if term is not None:
+            assert isinstance(term, six.string_types)
+            term = term.strip()
+            if term:
+                params["term"] = term
+
+        return self.c.get(select2_url, params,
+                          HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
+    def get_select2_response_data(self, response, key="results"):
+        import json
+        return json.loads(response.content.decode('utf-8'))[key]
+
 
 class SuperuserCreateMixin(ResponseContextMixin):
     create_superuser_kwargs = CREATE_SUPERUSER_KWARGS
@@ -283,10 +331,6 @@ class SuperuserCreateMixin(ResponseContextMixin):
             override_settings(GIT_ROOT=tempfile.mkdtemp()))
         cls.settings_git_root_override.enable()
         super(SuperuserCreateMixin, cls).setUpTestData()
-
-    @classmethod
-    def tearDownClass(cls):  # noqa
-        super(SuperuserCreateMixin, cls).tearDownClass()
 
     @classmethod
     def create_superuser(cls):
@@ -339,18 +383,51 @@ class SuperuserCreateMixin(ResponseContextMixin):
         return self.c.post(
             self.get_stop_impersonate_view_url(), data, follow=follow)
 
-    def get_reset_password_url(self, use_instid=False):
+    def get_confirm_stop_impersonate_view_url(self):
+        return reverse("relate-confirm_stop_impersonating")
+
+    def get_confirm_stop_impersonate(self, follow=True):
+        return self.c.get(
+            self.get_confirm_stop_impersonate_view_url(), follow=follow)
+
+    def post_confirm_stop_impersonate(self, follow=True):
+        return self.c.post(
+            self.get_confirm_stop_impersonate_view_url(), {}, follow=follow)
+
+    @classmethod
+    def get_reset_password_url(cls, use_instid=False):
         kwargs = {}
         if use_instid:
             kwargs["field"] = "instid"
         return reverse("relate-reset_password", kwargs=kwargs)
 
-    def get_reset_password(self, use_instid=False):
-        return self.c.get(self.get_reset_password_url(use_instid))
+    @classmethod
+    def get_reset_password(cls, use_instid=False):
+        return cls.c.get(cls.get_reset_password_url(use_instid))
 
-    def post_reset_password(self, data, use_instid=False):
-        return self.c.post(self.get_reset_password_url(use_instid),
-                           data=data)
+    @classmethod
+    def post_reset_password(cls, data, use_instid=False):
+        return cls.c.post(cls.get_reset_password_url(use_instid),
+                          data=data)
+
+    def get_reset_password_stage2_url(self, user_id, sign_in_key, **kwargs):
+        url = reverse("relate-reset_password_stage2", args=(user_id, sign_in_key))
+        querystring = kwargs.pop("querystring", None)
+        if querystring is not None:
+            assert isinstance(querystring, dict)
+            url += ("?%s"
+                    % "&".join(
+                        ["%s=%s" % (k, v)
+                         for (k, v) in six.iteritems(querystring)]))
+        return url
+
+    def get_reset_password_stage2(self, user_id, sign_in_key, **kwargs):
+        return self.c.get(self.get_reset_password_stage2_url(
+            user_id=user_id, sign_in_key=sign_in_key, **kwargs))
+
+    def post_reset_password_stage2(self, user_id, sign_in_key, data, **kwargs):
+        return self.c.post(self.get_reset_password_stage2_url(
+            user_id=user_id, sign_in_key=sign_in_key, **kwargs), data=data)
 
     def get_fake_time_url(self):
         return reverse("relate-set_fake_time")
@@ -414,8 +491,15 @@ class SuperuserCreateMixin(ResponseContextMixin):
     def assertFormErrorLoose(self, response, error, form_name="form"):  # noqa
         """Assert that error is found in response.context['form'] errors"""
         import itertools
-        form_errors = list(
-            itertools.chain(*response.context[form_name].errors.values()))
+        try:
+            form_errors = list(
+                itertools.chain(*response.context[form_name].errors.values()))
+        except TypeError:
+            form_errors = None
+        if error is not None and form_errors is None:
+            self.fail("%(form_name)s have no errors")
+        elif error is None and form_errors is None:
+            return
         self.assertIn(str(error), form_errors)
 
 
@@ -514,11 +598,6 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
                     get_user_model().objects.filter(pk__in=pks))
 
         cls.course_qset = Course.objects.all()
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.c.logout()
-        super(CoursesTestMixinBase, cls).tearDownClass()
 
     @classmethod
     def create_user(cls, create_user_kwargs):
@@ -1331,11 +1410,9 @@ class FallBackStorageMessageTestMixin(object):
 
     def setUp(self):  # noqa
         super(FallBackStorageMessageTestMixin, self).setUp()
-        self.settings_override = override_settings(MESSAGE_STORAGE=self.storage)
-        self.settings_override.enable()
-
-    def tearDown(self):  # noqa
-        self.settings_override.disable()
+        self.msg_settings_override = override_settings(MESSAGE_STORAGE=self.storage)
+        self.msg_settings_override.enable()
+        self.addCleanup(self.msg_settings_override.disable)
 
     def get_listed_storage_from_response(self, response):
         return list(self.get_response_context_value_by_name(response, 'messages'))
@@ -1420,14 +1497,10 @@ class SubprocessRunpyContainerMixin(object):
                            "provide PY3 envrionment")
 
         super(SubprocessRunpyContainerMixin, cls).setUpClass()
-        cls.faked_container_patch = mock.patch(
-            "course.page.code.SPAWN_CONTAINERS_FOR_RUNPY", False)
-        cls.faked_container_patch.start()
 
         python_executable = os.getenv("PY_EXE")
 
         if not python_executable:
-            import sys
             python_executable = sys.executable
 
         import subprocess
@@ -1445,13 +1518,28 @@ class SubprocessRunpyContainerMixin(object):
             stderr=subprocess.DEVNULL
         )
 
-        cls.faked_container_patch.start()
+    def setUp(self):
+        super(SubprocessRunpyContainerMixin, self).setUp()
+        self.faked_container_patch = mock.patch(
+            "course.page.code.SPAWN_CONTAINERS_FOR_RUNPY", False)
+        self.faked_container_patch.start()
+        self.addCleanup(self.faked_container_patch.stop)
 
     @classmethod
     def tearDownClass(cls):  # noqa
         super(SubprocessRunpyContainerMixin, cls).tearDownClass()
-        cls.faked_container_patch.stop()
-        cls.faked_container_process.kill()
+
+        from course.page.code import SPAWN_CONTAINERS_FOR_RUNPY
+        # Make sure SPAWN_CONTAINERS_FOR_RUNPY is reset to True
+        assert SPAWN_CONTAINERS_FOR_RUNPY
+        if sys.platform.startswith("win"):
+            # Without these lines, tests on Appveyor hanged when all tests
+            # finished.
+            # However, On nix platforms, these lines resulted in test
+            # failure when there were more than one TestCases which were using
+            # this mixin. So we don't kill the subprocess, and it won't bring
+            # bad side effects to remainder tests.
+            cls.faked_container_process.kill()
 
 
 def improperly_configured_cache_patch():

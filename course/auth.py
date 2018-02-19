@@ -196,7 +196,7 @@ class ImpersonateForm(StyledForm):
                 queryset=qset,
                 required=True,
                 help_text=_("Select user to impersonate."),
-                widget=UserSearchWidget(),
+                widget=UserSearchWidget(queryset=qset),
                 label=_("User"))
 
         self.fields["add_impersonation_header"] = forms.BooleanField(
@@ -234,17 +234,12 @@ def impersonate(request):
         if form.is_valid():
             impersonee = form.cleaned_data["user"]
 
-            if impersonable_user_qset.filter(
-                    pk=cast(User, impersonee).pk).count():
-                request.session['impersonate_id'] = impersonee.id
-                request.session['relate_impersonation_header'] = form.cleaned_data[
-                        "add_impersonation_header"]
+            request.session['impersonate_id'] = impersonee.id
+            request.session['relate_impersonation_header'] = form.cleaned_data[
+                    "add_impersonation_header"]
 
-                # Because we'll likely no longer have access to this page.
-                return redirect("relate-home")
-            else:
-                messages.add_message(request, messages.ERROR,
-                        _("Impersonating that user is not allowed."))
+            # Because we'll likely no longer have access to this page.
+            return redirect("relate-home")
 
     else:
         form = ImpersonateForm(impersonable_qset=qset)
@@ -733,6 +728,9 @@ def reset_password_stage2(request, user_id, sign_in_key):
             from django.contrib.auth import authenticate, login
             user = authenticate(user_id=int(user_id), token=sign_in_key)
             if user is None:
+                messages.add_message(request, messages.ERROR,
+                     _("Invalid sign-in token. Perhaps you've used an old token "
+                     "email?"))
                 raise PermissionDenied(_("invalid sign-in token"))
 
             if not user.is_active:

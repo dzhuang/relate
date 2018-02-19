@@ -73,6 +73,7 @@ if False:
             FlowSession,
             FlowPageData,
             )
+    from course.content import Repo_ish  # noqa
 
 # }}}
 
@@ -1218,7 +1219,33 @@ def csv_data_importable(file_contents, column_idx_list, header_count):
     import csv
     spamreader = csv.reader(file_contents)
     n_header_row = 0
-    for row in spamreader:
+    try:
+        if six.PY2:
+            row0 = spamreader.next()
+        else:
+            row0 = spamreader.__next__()
+    except Exception as e:
+        err_msg = type(e).__name__
+        err_str = str(e)
+        if err_msg == "Error":
+            err_msg = ""
+        else:
+            err_msg += ": "
+        err_msg += err_str
+
+        if "line contains NULL byte" in err_str:
+            err_msg = err_msg.rstrip(".") + ". "
+            err_msg += _("Are you sure the file is a CSV file other "
+                         "than a Microsoft Excel file?")
+
+        return False, (
+            string_concat(
+                pgettext_lazy("Starting of Error message", "Error"),
+                ": %s" % err_msg))
+
+    from itertools import chain
+
+    for row in chain([row0], spamreader):
         n_header_row += 1
         if n_header_row <= header_count:
             continue
@@ -1268,117 +1295,6 @@ def will_use_masked_profile_for_email(recipient_email):
 def get_course_specific_language_choices():
     # type: () -> Tuple[Tuple[str, Any], ...]
 
-    from django.conf import settings
-    from collections import OrderedDict
-
-    all_options = ((settings.LANGUAGE_CODE, None),) + tuple(settings.LANGUAGES)
-    filtered_options_dict = OrderedDict(all_options)
-
-    def get_default_option():
-        # type: () -> Tuple[Text, Text]
-        # For the default language used, if USE_I18N is True, display
-        # "Disabled". Otherwise display its lang info.
-        if not settings.USE_I18N:
-            formatted_descr = (
-                get_formatted_options(settings.LANGUAGE_CODE, None)[1])
-        else:
-            formatted_descr = _("disabled (i.e., displayed language is "
-                                "determined by user's browser preference)")
-        return "", string_concat("%s: " % _("Default"), formatted_descr)
-
-    def get_formatted_options(lang_code, lang_descr):
-        # type: (Text, Optional[Text]) -> Tuple[Text, Text]
-        if lang_descr is None:
-            lang_descr = OrderedDict(settings.LANGUAGES).get(lang_code)
-            if lang_descr is None:
-                try:
-                    lang_info = translation.get_language_info(lang_code)
-                    lang_descr = lang_info["name_translated"]
-                except KeyError:
-                    return (lang_code.strip(), lang_code)
-
-        return (lang_code.strip(),
-                string_concat(_(lang_descr), " (%s)" % lang_code))
-
-    filtered_options = (
-        [get_default_option()]
-        + [get_formatted_options(k, v)
-           for k, v in six.iteritems(filtered_options_dict)])
-
-    # filtered_options[1] is the option for settings.LANGUAGE_CODE
-    # it's already displayed when settings.USE_I18N is False
-    if not settings.USE_I18N:
-        filtered_options.pop(1)
-
-    return tuple(filtered_options)
-
-
-def render_notebook_from_source(
-        ipynb_source, clear_output=False, indices=None, clear_markdown=False):
-    """
-    Get HTML format of ipython notebook so as to be rendered in RELATE flow pages.
-    Note: code fences are unconverted, If converted, the result often looked wired,
-    e.g., https://stackoverflow.com/a/22285406/3437454, because RELATE will reprocess
-    the result again by python-markdown.
-    :param ipynb_source: the :class:`text` read from a ipython notebook.
-    :param clear_output: a :class:`bool` instance, indicating whether existing
-    execution output of code cells should be removed.
-    :param indices: a :class:`list` instance, 0-based indices of notebook cells
-    which are expected to be rendered.
-    :param clear_markdown: a :class:`bool` instance, indicating whether markdown
-    cells will be ignored..
-    :return:
-    """
-    import nbformat
-    from nbformat.reader import parse_json
-    nb_source_dict = parse_json(ipynb_source)
-
-    if indices:
-        nb_source_dict.update(
-            {"cells": [nb_source_dict["cells"][idx] for idx in indices]})
-
-    if clear_markdown:
-        nb_source_dict.update(
-            {"cells": [cell for cell in nb_source_dict["cells"]
-                       if cell['cell_type'] != "markdown"]})
-
-    nb_source_dict.update({"cells": nb_source_dict["cells"]})
-
-    import json
-    ipynb_source = json.dumps(nb_source_dict)
-    notebook = nbformat.reads(ipynb_source, as_version=4)
-
-    from traitlets.config import Config
-    c = Config()
-
-    # This is to prevent execution of arbitrary code from note book
-    c.ExecutePreprocessor.enabled = False
-    if clear_output:
-        c.ClearOutputPreprocessor.enabled = True
-
-    c.CSSHTMLHeaderPreprocessor.enabled = False
-    c.HighlightMagicsPreprocessor.enabled = False
-
-    import os
-    from django.conf import settings
-
-    # Place the template in course template dir
-    template_path = os.path.join(
-        settings.BASE_DIR, "course", "templates", "course", "jinja2")
-    c.TemplateExporter.template_path.append(template_path)
-
-    from nbconvert import HTMLExporter
-    html_exporter = HTMLExporter(
-        config=c,
-        template_file="nbconvert_template.tpl"
-    )
-
-    (body, resources) = html_exporter.from_notebook_node(notebook)
-
-    return body
-
-# }}}
-
 # {{{ added by zd
 
 
@@ -1404,6 +1320,116 @@ class HumanReadableSessionGradingRuleDesc(HumanReadableSessionRuleBase):
 class HumanReadableSessionStartRuleDesc(HumanReadableSessionRuleBase):
     pass
 
+    return tuple(filtered_options)
+
+
+class RelateJinjaMacroBase(object):
+    def __init__(self, course, repo, commit_sha):
+        # type: (Optional[Course], Repo_ish, bytes) -> None
+        self.course = course
+        self.repo = repo
+        self.commit_sha = commit_sha
+
+    @property
+    def name(self):
+        # The name of the method used in the template
+        raise NotImplementedError()
+
+    def __call__(self, *args, **kwargs):
+        # type: (*Any, **Any) -> Text
+        raise NotImplementedError()
+
+
+# {{{ ipynb utilities
+
+class IpynbJinjaMacro(RelateJinjaMacroBase):
+    name = "render_notebook_cells"
+
+    def _render_notebook_cells(self, ipynb_path, indices=None, clear_output=False,
+                 clear_markdown=False, **kwargs):
+        # type: (Text, Optional[Any], Optional[bool], Optional[bool], **Any) -> Text
+        from course.content import get_repo_blob_data_cached
+        try:
+            ipynb_source = get_repo_blob_data_cached(self.repo, ipynb_path,
+                                                     self.commit_sha).decode()
+
+            return self._render_notebook_from_source(
+                ipynb_source,
+                indices=indices,
+                clear_output=clear_output,
+                clear_markdown=clear_markdown,
+                **kwargs
+            )
+        except ObjectDoesNotExist:
+            raise
+
+    __call__ = _render_notebook_cells  # type: ignore
+
+    def _render_notebook_from_source(
+            self, ipynb_source, indices=None,
+            clear_output=False, clear_markdown=False, **kwargs):
+        # type: (Text, Optional[Any], Optional[bool], Optional[bool], **Any) -> Text
+        """
+        Get HTML format of ipython notebook so as to be rendered in RELATE flow
+        pages.
+        :param ipynb_source: the :class:`text` read from a ipython notebook.
+        :param indices: a :class:`list` instance, 0-based indices of notebook cells
+        which are expected to be rendered.
+        :param clear_output: a :class:`bool` instance, indicating whether existing
+        execution output of code cells should be removed.
+        :param clear_markdown: a :class:`bool` instance, indicating whether markdown
+        cells will be ignored..
+        :return:
+        """
+        import nbformat
+        from nbformat.reader import parse_json
+        nb_source_dict = parse_json(ipynb_source)
+
+        if indices:
+            nb_source_dict.update(
+                {"cells": [nb_source_dict["cells"][idx] for idx in indices]})
+
+        if clear_markdown:
+            nb_source_dict.update(
+                {"cells": [cell for cell in nb_source_dict["cells"]
+                           if cell['cell_type'] != "markdown"]})
+
+        nb_source_dict.update({"cells": nb_source_dict["cells"]})
+
+        import json
+        ipynb_source = json.dumps(nb_source_dict)
+        notebook = nbformat.reads(ipynb_source, as_version=4)
+
+        from traitlets.config import Config
+        c = Config()
+
+        # This is to prevent execution of arbitrary code from note book
+        c.ExecutePreprocessor.enabled = False
+        if clear_output:
+            c.ClearOutputPreprocessor.enabled = True
+
+        c.CSSHTMLHeaderPreprocessor.enabled = False
+        c.HighlightMagicsPreprocessor.enabled = False
+
+        import os
+        from django.conf import settings
+
+        # Place the template in course template dir
+        template_path = os.path.join(
+            settings.BASE_DIR, "course", "templates", "course", "jinja2")
+        c.TemplateExporter.template_path.append(template_path)
+
+        from nbconvert import HTMLExporter
+        html_exporter = HTMLExporter(
+            config=c,
+            template_file="nbconvert_template.tpl"
+        )
+
+        (body, resources) = html_exporter.from_notebook_node(notebook)
+
+        return body
+
+# }}}
 
 def get_human_readable_flow_may_start_desc_list(
         course,  # type: Course
