@@ -1295,30 +1295,47 @@ def will_use_masked_profile_for_email(recipient_email):
 def get_course_specific_language_choices():
     # type: () -> Tuple[Tuple[str, Any], ...]
 
-# {{{ added by zd
+    from django.conf import settings
+    from collections import OrderedDict
 
+    all_options = ((settings.LANGUAGE_CODE, None),) + tuple(settings.LANGUAGES)
+    filtered_options_dict = OrderedDict(all_options)
 
-class HumanReadableSessionRuleBase(object):
-    def __init__(
-            self,
-            human_readable_rule,  # type: Text
-            is_active,  # type: bool
-            has_expired=False,  # type: Optional[bool]
-            is_dangerous=False  # type: Optional[bool]
-    ):
-        # type: (...) -> None
-        self.human_readable_rule = human_readable_rule
-        self.is_active = is_active
-        self.has_expired = has_expired
-        self.is_dangerous = is_dangerous
+    def get_default_option():
+        # type: () -> Tuple[Text, Text]
+        # For the default language used, if USE_I18N is True, display
+        # "Disabled". Otherwise display its lang info.
+        if not settings.USE_I18N:
+            formatted_descr = (
+                get_formatted_options(settings.LANGUAGE_CODE, None)[1])
+        else:
+            formatted_descr = _("disabled (i.e., displayed language is "
+                                "determined by user's browser preference)")
+        return "", string_concat("%s: " % _("Default"), formatted_descr)
 
+    def get_formatted_options(lang_code, lang_descr):
+        # type: (Text, Optional[Text]) -> Tuple[Text, Text]
+        if lang_descr is None:
+            lang_descr = OrderedDict(settings.LANGUAGES).get(lang_code)
+            if lang_descr is None:
+                try:
+                    lang_info = translation.get_language_info(lang_code)
+                    lang_descr = lang_info["name_translated"]
+                except KeyError:
+                    return (lang_code.strip(), lang_code)
 
-class HumanReadableSessionGradingRuleDesc(HumanReadableSessionRuleBase):
-    pass
+        return (lang_code.strip(),
+                string_concat(_(lang_descr), " (%s)" % lang_code))
 
+    filtered_options = (
+        [get_default_option()]
+        + [get_formatted_options(k, v)
+           for k, v in six.iteritems(filtered_options_dict)])
 
-class HumanReadableSessionStartRuleDesc(HumanReadableSessionRuleBase):
-    pass
+    # filtered_options[1] is the option for settings.LANGUAGE_CODE
+    # it's already displayed when settings.USE_I18N is False
+    if not settings.USE_I18N:
+        filtered_options.pop(1)
 
     return tuple(filtered_options)
 
@@ -1430,6 +1447,33 @@ class IpynbJinjaMacro(RelateJinjaMacroBase):
         return body
 
 # }}}
+
+
+# {{{ added by zd
+
+
+class HumanReadableSessionRuleBase(object):
+    def __init__(
+            self,
+            human_readable_rule,  # type: Text
+            is_active,  # type: bool
+            has_expired=False,  # type: Optional[bool]
+            is_dangerous=False  # type: Optional[bool]
+    ):
+        # type: (...) -> None
+        self.human_readable_rule = human_readable_rule
+        self.is_active = is_active
+        self.has_expired = has_expired
+        self.is_dangerous = is_dangerous
+
+
+class HumanReadableSessionGradingRuleDesc(HumanReadableSessionRuleBase):
+    pass
+
+
+class HumanReadableSessionStartRuleDesc(HumanReadableSessionRuleBase):
+    pass
+
 
 def get_human_readable_flow_may_start_desc_list(
         course,  # type: Course

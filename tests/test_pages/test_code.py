@@ -24,7 +24,7 @@ THE SOFTWARE.
 
 import six
 import unittest
-from unittest import skipIf
+from unittest import skipIf, SkipTest
 from django.test import TestCase, override_settings
 
 from docker.errors import APIError as DockerAPIError
@@ -567,6 +567,9 @@ class CodeQuestionTest(SingleCoursePageSandboxTestBaseMixin,
 class RequestPythonRunWithRetriesTest(unittest.TestCase):
     # Testing course.page.code.request_python_run_with_retries,
     # adding tests for use cases that didn't cover in other tests
+
+    def setUp(self):
+        raise SkipTest("This is upstream tests.")
 
     @override_settings(RELATE_DOCKER_RUNPY_IMAGE="some_other_image")
     def test_image_none(self):
