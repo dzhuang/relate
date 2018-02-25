@@ -680,7 +680,7 @@ class LatexPageSandboxTest(SubprocessRunpyContainerMixin,
         resp = self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_DATA_FILES_MISSING_RAND_QUES_DATA_FILE)
         self.assertEqual(resp.status_code, 200)
-        self.assertSandboxNotHaveValidPage(resp)
+        self.assertSandboxNotHasValidPage(resp)
         self.assertResponseContextContains(
             resp, PAGE_ERRORS,
             "'foo' should be listed in 'data_files'")
@@ -700,7 +700,7 @@ class LatexPageSandboxTest(SubprocessRunpyContainerMixin,
         resp = self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_PAGE_NO_RANDOM_DATA_FILE)
         self.assertEqual(resp.status_code, 200)
-        self.assertSandboxNotHaveValidPage(resp)
+        self.assertSandboxNotHasValidPage(resp)
         self.assertResponseContextContains(
             resp, PAGE_ERRORS,
             "attribute 'random_question_data_file' missing")
@@ -709,7 +709,7 @@ class LatexPageSandboxTest(SubprocessRunpyContainerMixin,
         resp = self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_MISSING_CACHEKEY_FILE)
         self.assertEqual(resp.status_code, 200)
-        self.assertSandboxNotHaveValidPage(resp)
+        self.assertSandboxNotHasValidPage(resp)
         self.assertResponseContextContains(
             resp, PAGE_ERRORS,
             "'foo' should be listed in 'data_files'")
@@ -727,7 +727,7 @@ class LatexPageSandboxTest(SubprocessRunpyContainerMixin,
         resp = self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_DATA_FILE_NOT_FOUND)
         self.assertEqual(resp.status_code, 200)
-        self.assertSandboxNotHaveValidPage(resp)
+        self.assertSandboxNotHasValidPage(resp)
         self.assertResponseContextContains(
             resp, PAGE_ERRORS, "data file 'foo' not found")
 
@@ -735,7 +735,7 @@ class LatexPageSandboxTest(SubprocessRunpyContainerMixin,
         resp = self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_DATA_FILES_MISSING_RUNPY_FILE)
         self.assertEqual(resp.status_code, 200)
-        self.assertSandboxNotHaveValidPage(resp)
+        self.assertSandboxNotHasValidPage(resp)
         self.assertResponseContextContains(
             resp, PAGE_ERRORS,
             "'foo' should be listed in 'data_files'")
@@ -776,7 +776,7 @@ class LatexPageSandboxTest(SubprocessRunpyContainerMixin,
         resp = self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_MISSING_RUNPY_FILE_AND_MISSING_ATTR)
         self.assertEqual(resp.status_code, 200)
-        self.assertSandboxNotHaveValidPage(resp)
+        self.assertSandboxNotHasValidPage(resp)
         self.assertResponseContextContains(
             resp, PAGE_ERRORS, "'answers_process_code' must be "
                                "configured when neither 'runpy_file' nor "
@@ -786,7 +786,7 @@ class LatexPageSandboxTest(SubprocessRunpyContainerMixin,
         resp = self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_RUNPY_FILE_NOT_EXECUTABLE)
         self.assertEqual(resp.status_code, 200)
-        self.assertSandboxNotHaveValidPage(resp)
+        self.assertSandboxNotHasValidPage(resp)
         self.assertResponseContextContains(
             resp, PAGE_ERRORS,
             "'question-data/random-page-test/test_template.tex' "
@@ -797,7 +797,7 @@ class LatexPageSandboxTest(SubprocessRunpyContainerMixin,
         resp = self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_MISSING_CACHEKEY_ATTRIBUTE)
         self.assertEqual(resp.status_code, 200)
-        self.assertSandboxNotHaveValidPage(resp)
+        self.assertSandboxNotHasValidPage(resp)
         self.assertResponseContextContains(
             resp, PAGE_ERRORS, " attribute 'excluded_cache_key_files' not found")  # noqa
 
@@ -852,7 +852,7 @@ class LatexPageSandboxTest(SubprocessRunpyContainerMixin,
         resp = self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_NOT_LIST_DATA)
         self.assertEqual(resp.status_code, 200)
-        self.assertSandboxNotHaveValidPage(resp)
+        self.assertSandboxNotHasValidPage(resp)
         self.assertResponseContextContains(
             resp, PAGE_ERRORS, ("'question-data/random-page-test/"
                                 "zero_length_set.bin' must "
@@ -862,7 +862,7 @@ class LatexPageSandboxTest(SubprocessRunpyContainerMixin,
         resp = self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_EMPTY_LIST_DATA)
         self.assertEqual(resp.status_code, 200)
-        self.assertSandboxNotHaveValidPage(resp)
+        self.assertSandboxNotHasValidPage(resp)
         self.assertResponseContextContains(
             resp, PAGE_ERRORS, ("'question-data/random-page-test/"
                                 "zero_length_list.bin'"
