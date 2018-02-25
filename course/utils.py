@@ -29,6 +29,7 @@ from typing import cast, Iterable  # noqa
 import six
 import datetime  # noqa
 import pytz
+import markdown
 
 from django.shortcuts import (  # noqa
         render, get_object_or_404)
@@ -37,8 +38,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.utils import translation
 from django.utils.translation import (
         ugettext as _, pgettext_lazy)
-
-from codemirror import CodeMirrorTextarea, CodeMirrorJavascript
 
 from relate.utils import string_concat
 from course.content import (
@@ -74,6 +73,8 @@ if False:
             FlowPageData,
             )
     from course.content import Repo_ish  # noqa
+    from codemirror import CodeMirrorTextarea  # noqa
+
 
 # }}}
 
@@ -1066,6 +1067,9 @@ def get_codemirror_widget(
         read_only=False,  # type: bool
         ):
     # type: (...) ->  CodeMirrorTextarea
+
+    from codemirror import CodeMirrorTextarea, CodeMirrorJavascript  # noqa
+
     theme = "default"
     if read_only:
         theme += " relate-readonly"
@@ -1429,11 +1433,12 @@ class IpynbJinjaMacro(RelateJinjaMacroBase):
         c.HighlightMagicsPreprocessor.enabled = False
 
         import os
-        from django.conf import settings
 
         # Place the template in course template dir
+        import course
         template_path = os.path.join(
-            settings.BASE_DIR, "course", "templates", "course", "jinja2")
+                os.path.dirname(course.__file__),
+                "templates", "course", "jinja2")
         c.TemplateExporter.template_path.append(template_path)
 
         from nbconvert import HTMLExporter
@@ -1445,6 +1450,22 @@ class IpynbJinjaMacro(RelateJinjaMacroBase):
         (body, resources) = html_exporter.from_notebook_node(notebook)
 
         return body
+
+
+NBCONVERT_PRE_OPEN_RE = re.compile(r"<pre\s*>\s*<relate_ipynb\s*>")
+NBCONVERT_PRE_CLOSE_RE = re.compile(r"</relate_ipynb\s*>\s*</pre\s*>")
+
+
+class NBConvertHTMLPostprocessor(markdown.postprocessors.Postprocessor):
+    def run(self, text):
+        text = NBCONVERT_PRE_OPEN_RE.sub("", text)
+        text = NBCONVERT_PRE_CLOSE_RE.sub("", text)
+        return text
+
+
+class NBConvertExtension(markdown.Extension):
+    def extendMarkdown(self, md, md_globals):  # noqa
+        md.postprocessors['relate_nbconvert'] = NBConvertHTMLPostprocessor(md)
 
 # }}}
 
@@ -2008,5 +2029,18 @@ def get_valiated_custom_page_import_exec_str(klass, validate_only=False):
     exec(exec_string)
     return  # type: ignore
 
+
+def get_custom_page_types_stop_support_deadline():
+    # type: () -> Optional[datetime.datetime]
+    from django.conf import settings
+    custom_page_types_removed_deadline = getattr(
+        settings, "RELATE_CUSTOM_PAGE_TYPES_REMOVED_DEADLINE",
+        datetime.datetime(2019, 1, 1, 0, 0, 0, 0))
+
+    if custom_page_types_removed_deadline is None:
+        return None
+
+    from relate.utils import localize_datetime
+    return localize_datetime(custom_page_types_removed_deadline)
 
 # vim: foldmethod=marker
