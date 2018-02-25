@@ -603,7 +603,7 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
         transfer_attr("setup_code")
         transfer_attr("names_for_user")
         transfer_attr("names_from_user")
-        run_req["test_code"] = self.get_test_code()
+        run_req["test_code"] = self.get_test_code(page_context)
 
         if hasattr(self.page_desc, "data_files"):
             run_req["data_files"] = {}
