@@ -1150,11 +1150,19 @@ def grade_flow_session(
         gchange.flow_session = flow_session
         gchange.comment = comment
 
+        gchange.effective_time = None
+        if grading_rule.use_last_activity_as_completion_time:
+            gchange.effective_time = flow_session.last_activity()
+
+        if gchange.effective_time is None:
+            gchange.effective_time = flow_session.completion_time
+
+        assert gchange.effective_time is not None
+
         previous_grade_changes = list(GradeChange.objects
                 .filter(
                     opportunity=gchange.opportunity,
                     participation=gchange.participation,
-                    state=gchange.state,
                     attempt_id=gchange.attempt_id,
                     flow_session=gchange.flow_session)
                 .order_by("-grade_time")
@@ -1166,10 +1174,10 @@ def grade_flow_session(
             previous_grade_change, = previous_grade_changes
             if (previous_grade_change.points == gchange.points
                     and previous_grade_change.max_points == gchange.max_points
-                    and previous_grade_change.comment == gchange.comment):
-                from django.utils.timezone import now
-                previous_grade_change.grade_time = now()
-                previous_grade_change.save()
+                    and previous_grade_change.comment == gchange.comment
+                    and previous_grade_change.state == gchange.state
+                    and previous_grade_change.effective_time ==
+                    gchange.effective_time):
                 do_save = False
         else:
             # no previous grade changes
@@ -1202,6 +1210,7 @@ def reopen_session(
         session,  # type: FlowSession
         force=False,  # type: bool
         suppress_log=False,  # type: bool
+        generate_grade_change=True,  # type: bool
         unsubmit_pages=False,  # type: bool
         ):
     # type: (...) -> None
@@ -1229,6 +1238,25 @@ def reopen_session(
 
         session.completion_time = None
         session.save()
+
+        if generate_grade_change:
+            last_gchanges = (
+                GradeChange.objects.filter(flow_session=session)
+                .order_by("-grade_time")[:1])
+
+            if last_gchanges.count():
+                last_gchange, = last_gchanges
+                last_gchange.pk = None
+                last_gchange.points = None
+                last_gchange.creator = None
+                last_gchange.comment = None
+
+                from course.models import grade_state_change_types
+                last_gchange.state = grade_state_change_types.do_over
+
+                from django.utils.timezone import now
+                last_gchange.grade_time = now()
+                last_gchange.save()
 
         if unsubmit_pages:
             answer_visits = assemble_answer_visits(session)
@@ -1328,7 +1356,8 @@ def regrade_session(
                         })
             session.save()
 
-            reopen_session(now_datetime, session, force=True, suppress_log=True)
+            reopen_session(now_datetime, session, force=True, suppress_log=True,
+                           generate_grade_change=False)
             finish_flow_session_standalone(
                     repo, course, session, force_regrade=True,
                     now_datetime=prev_completion_time,
@@ -1358,7 +1387,8 @@ def recalculate_session_grade(repo, course, session):
                     })
         session.save()
 
-        reopen_session(now_datetime, session, force=True, suppress_log=True)
+        reopen_session(now_datetime, session, force=True, suppress_log=True,
+                       generate_grade_change=False)
         finish_flow_session_standalone(
                 repo, course, session, force_regrade=False,
                 now_datetime=prev_completion_time,
@@ -2165,6 +2195,10 @@ def view_flow_page(pctx, flow_session_id, page_ordinal):
                     grading_rule.grade_identifier,
                     grading_rule.grade_aggregation_strategy)
                 args["opportunity"] = opportunity
+
+    if fpctx.page.is_optional_page:
+        assert not getattr(args, "max_points", None)
+        args["is_optional_page"] = True
 
     return render_course_page(
             pctx, "course/flow-page.html", args,

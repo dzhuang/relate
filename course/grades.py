@@ -169,9 +169,6 @@ def view_participant_grades(pctx, participation_id=None):
             if not (opp.shown_in_grade_book
                     and opp.shown_in_participant_grade_book):
                 continue
-        else:
-            if not opp.shown_in_grade_book:
-                continue
 
         access_rule = get_session_access_rule_by_opp(pctx, opp)
         if not may_view_opp_by_access_rule(access_rule):

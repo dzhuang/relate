@@ -31,7 +31,7 @@ from django.dispatch import receiver
 from accounts.models import User
 from course.models import (
         Course, Participation, participation_status,
-        ParticipationPreapproval,
+        ParticipationPreapproval, FlowSession, GradeChange,
         Event, ParticipationRole, ParticipationTag
         )
 
