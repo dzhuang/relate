@@ -332,5 +332,43 @@ def remove_participation_roles_cache(
     def_cache.delete_many(cache_keys)
     return
 
+
+@receiver(post_delete, sender=FlowSession)
+@transaction.atomic
+def create_exempt_grade_change_when_delete_session(sender, instance, **kwargs):
+    # type: (Any, FlowSession, **Any) -> None
+
+    # FIXME: `exempt` is not designed to be used in ths way.
+    """
+    Create a :class:`GradeChange` entry with state "exempt" for the attempt_id
+    of that flow_session, after deleting a flow session from admin. We are
+    strongly against modifying data through admin, but this is helpful for
+    debugging when developing.
+    """
+    from course.flow import get_flow_session_attempt_id
+    last_gchanges = (
+        GradeChange.objects
+        # query using flow_session=instance will fail.
+        .filter(attempt_id=get_flow_session_attempt_id(instance))
+        .order_by("-grade_time")[:1])
+
+    if not last_gchanges.count():
+        return
+
+    last_gchange, = last_gchanges
+
+    from course.constants import grade_state_change_types
+
+    last_gchange.pk = None
+    last_gchange.points = None
+    last_gchange.flow_session = None
+    last_gchange.creator = None
+    last_gchange.comment = None
+
+    from django.utils.timezone import now
+    last_gchange.grade_time = now()
+    last_gchange.state = grade_state_change_types.exempt
+    last_gchange.save()
+
 # }}}
 # vim: foldmethod=marker
