@@ -9,13 +9,13 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2018-01-03 17:52+0800\n"
+"POT-Creation-Date: 2018-02-26 11:50+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
+"Language: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: \n"
 
 msgid "Survey Title"
 msgstr "调查标题"
@@ -37,8 +37,8 @@ msgstr "课程统计"
 
 #, python-format
 msgid ""
-"Survey '(%(title)s)' for %(course)s using %(questionnare_title)s created at %"
-"(time)s"
+"Survey '(%(title)s)' for %(course)s using %(questionnare_title)s created at "
+"%(time)s"
 msgstr ""
 "课程%(course)s中的调查'(%(title)s)'使用名称为\"%(questionnare_title)s\"的问"
 "卷，创建于%(time)s"
@@ -102,8 +102,8 @@ msgstr "预览问卷"
 
 #, python-format
 msgid ""
-"Full survey \"%(survey_title)s\" of Participant %(fullname)s(%"
-"(institutional_id)s)"
+"Full survey \"%(survey_title)s\" of Participant "
+"%(fullname)s(%(institutional_id)s)"
 msgstr "完整问卷:%(survey_title)s -- %(fullname)s(%(institutional_id)s)"
 
 #, fuzzy, python-format
