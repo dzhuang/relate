@@ -80,6 +80,7 @@ if False:
 
 
 def get_prev_visit_grades(
+            course_identifier,  # type: Text
             flow_session_id,  # type: int
             page_ordinal,  # type: int
             reversed_on_visit_time_and_grade_time=False  # type: Optional[bool]
@@ -92,7 +93,8 @@ def get_prev_visit_grades(
             .filter(
                 visit__flow_session_id=flow_session_id,
                 visit__page_data__page_ordinal=page_ordinal,
-                visit__is_submitted_answer=True)
+                visit__is_submitted_answer=True,
+                visit__flow_session__course__identifier=course_identifier)
             .order_by(*order_by_args)
             .select_related("visit"))
 
@@ -106,18 +108,16 @@ def get_prev_grades_dropdown_content(pctx, flow_session_id, page_ordinal):
     if not request.is_ajax() or request.method != "GET":
         raise PermissionDenied()
 
-    try:
-        page_ordinal = int(page_ordinal)
-        flow_session_id = int(flow_session_id)
-    except ValueError:
-        raise http.Http404()
-
     if not pctx.participation:
         raise PermissionDenied(_("may not view grade book"))
     if not pctx.participation.has_permission(pperm.view_gradebook):
         raise PermissionDenied(_("may not view grade book"))
 
-    prev_grades = get_prev_visit_grades(flow_session_id, page_ordinal, True)
+    page_ordinal = int(page_ordinal)
+    flow_session_id = int(flow_session_id)
+
+    prev_grades = get_prev_visit_grades(pctx.course_identifier,
+                                        flow_session_id, page_ordinal, True)
 
     def serialize(obj):
         return {
@@ -635,7 +635,8 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
     assert fpctx.page is not None
     assert fpctx.page_context is not None
 
-    prev_grades = get_prev_visit_grades(flow_session_id, page_ordinal)
+    prev_grades = get_prev_visit_grades(pctx.course_identifier, flow_session_id,
+                                        page_ordinal)
 
     # {{{ reproduce student view
 
