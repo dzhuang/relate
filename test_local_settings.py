@@ -63,7 +63,7 @@ if platform.system().lower().startswith("win"):
     if platform.node() == "Dzhuang-surface":
         imagemagick_path = r"C:\Program Files\ImageMagick-7.0.7-Q16"
     else:
-        imagemagick_path = r"D:\Program Files\ImageMagick-7.0.1-Q16"
+        imagemagick_path = r"D:\Program Files\ImageMagick-7.0.7-Q8"
     RELATE_LATEX_SETTINGS["bin_path"].update(
         {"RELATE_IMAGEMAGICK_BIN_DIR": imagemagick_path})
 
@@ -155,7 +155,7 @@ import platform
 if platform.system().lower().startswith("win"):
     RELATE_LATEX_SETTINGS["bin_path"].update(
         {"RELATE_IMAGEMAGICK_BIN_DIR":
-            r"D:\Program Files\ImageMagick-7.0.1-Q16"})
+            r"D:\Program Files\ImageMagick-7.0.7-Q8"})
 else:
     RELATE_LATEX_SETTINGS["bin_path"].update(
         {"RELATE_LATEX_BIN_DIR":
