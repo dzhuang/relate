@@ -1027,8 +1027,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         if not (getattr(settings, "DEBUG") or not page_context.in_sandbox):
             return
         from django.core.mail import EmailMessage
-        from django.utils import translation
-        with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
+        from course.utils import LanguageOverride
+        with LanguageOverride(page_context.course):
             msg = EmailMessage(
                 "".join(["[%(course)s] ",
                          _("LaTex page failed in "
@@ -1048,9 +1048,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
     def get_error_notification_email_messages(self, page_context, error_msg):
         # type: (PageContext, Text) -> Text
-        from django.utils import translation
         from relate.utils import local_now, format_datetime_local
-        with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):
+        from course.utils import LanguageOverride
+        with LanguageOverride(page_context.course):
             from relate.utils import render_email_template
             message = render_email_template(
                 "image_upload/broken-random-latex-question-email.txt",

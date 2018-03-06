@@ -29,7 +29,6 @@ import jinja2
 
 from django.utils.html import escape
 from django.utils.translation import ugettext as _
-from django.utils import translation
 from django.conf import settings
 
 from course.page.base import (
@@ -170,7 +169,8 @@ class PythonCodeQuestionWithPageContext(PythonCodeQuestion):
                                if suspective_reason else "")
                         )
                         from relate.utils import local_now, format_datetime_local
-                        with translation.override(settings.RELATE_ADMIN_EMAIL_LOCALE):  # noqa
+                        from course.utils import LanguageOverride
+                        with LanguageOverride(page_context.course):
                             from relate.utils import render_email_template
                             message = render_email_template(
                                 "course/broken-code-question-email.txt", {
