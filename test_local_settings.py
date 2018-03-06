@@ -58,15 +58,6 @@ RELATE_LATEX_SETTINGS = {
     }
 }
 
-if platform.system().lower().startswith("win"):
-    # requires ImageMagick >=7.0.1
-    if platform.node() == "Dzhuang-surface":
-        imagemagick_path = r"C:\Program Files\ImageMagick-7.0.7-Q16"
-    else:
-        imagemagick_path = r"D:\Program Files\ImageMagick-7.0.7-Q8"
-    RELATE_LATEX_SETTINGS["bin_path"].update(
-        {"RELATE_IMAGEMAGICK_BIN_DIR": imagemagick_path})
-
 RELATE_CUSTOM_BOWER_INSTALLED_APPS = (
     "pdf.js=https://github.com/mozilla/pdf.js/releases/download/v1.3.91/pdfjs-1.3.91-dist.zip",
     "jquery-file-upload",
@@ -152,11 +143,7 @@ RELATE_CUSTOM_PAGE_CLASSES = [
 
 import platform
 
-if platform.system().lower().startswith("win"):
-    RELATE_LATEX_SETTINGS["bin_path"].update(
-        {"RELATE_IMAGEMAGICK_BIN_DIR":
-            r"D:\Program Files\ImageMagick-7.0.7-Q8"})
-else:
+if not platform.system().lower().startswith("win"):
     RELATE_LATEX_SETTINGS["bin_path"].update(
         {"RELATE_LATEX_BIN_DIR":
             "/usr/local/texlive/2015/bin/x86_64-linux"})
@@ -422,6 +409,8 @@ RELATE_SHOW_EDITOR_FORM = True
 # The bin dir of tex compiler and image converter should be
 # correctly configured or RELATE will failed to start.
 #RELATE_LATEX_BIN_PATH = "/usr/local/texlive/2015/bin/x86_64-linux"
+
+# Optional
 #RELATE_IMAGEMAGICK_BIN_DIR = "/path/to/imagemagic/convert/bin/"
 
 # configure the following only if dvisvgm or dvipng can't be found

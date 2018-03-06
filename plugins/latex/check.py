@@ -48,7 +48,7 @@ def latex2image_bin_check(app_configs, **kwargs):
     instance_list = [cls() for cls in klass]
     errors = []
     for instance in instance_list:
-        error = instance.check()
-        if error:
-            errors.append(error)
+        check_errors = instance.check()
+        if check_errors:
+            errors.extend(check_errors)
     return errors

@@ -31,6 +31,7 @@ import shutil
 import re
 from hashlib import md5
 from pymongo.errors import DuplicateKeyError
+from wand.image import Image as wand_image
 
 from django.core.management.base import CommandError
 from django.core.exceptions import ImproperlyConfigured
@@ -54,6 +55,7 @@ if False:
     from typing import Text, Optional, Any, List  # noqa
     from pymongo import MongoClient  # noqa
     from pymongo.collection import Collection  # noqa
+    from django.core.checks.messages import CheckMessage  # noqa
 
 DB = get_mongo_db()
 latex_settings = settings.RELATE_LATEX_SETTINGS
@@ -106,14 +108,22 @@ class CommandBase(object):
         """
         raise NotImplementedError
 
-    required_version = ""  # type: Text
+    min_version = None  # type: Optional[Text]
+    max_version = None  # type: Optional[Text]
     bin_path = ""  # type: Text
 
+    def __init__(self):
+        # type: () -> None
+        self.bin_path = self.get_bin_path()
+
+    def get_bin_path(self, check_only=False):
+        raise NotImplementedError
+
     def check(self):
-        # type: () -> Text
-        error = ""
-        out = ""
-        strerror = ""
+        # type: () -> List[CheckMessage]
+        errors = []
+
+        self.bin_path = self.get_bin_path(check_only=True)
 
         try:
             out, err, status = popen_wrapper(
@@ -121,49 +131,75 @@ class CommandBase(object):
                 stdout_encoding=DEFAULT_LOCALE_ENCODING
             )
         except CommandError as e:
-            strerror = e.__str__()
+            errors.append(RelateCriticalCheckMessage(
+                msg=e.__str__(),
+                hint=("Unable to run '%(cmd)s with '--version'. Is "
+                      "%(tool)s installed or has its "
+                      "path correctly configured "
+                      "in local_settings.py?") % {
+                         "cmd": self.cmd,
+                         "tool": self.name,
+                     },
+                obj=self.name,
+                id="%s_E001" % self.name.lower()
+            ))
+            return errors
 
         m = re.search(r'(\d+)\.(\d+)\.?(\d+)?', out)
 
         if not m:
-            error = RelateCriticalCheckMessage(
-                strerror,
-                hint=("Unable to run '%(cmd)s'. Is "
-                      "%(tool)s installed or has its "
-                      "path correctly configured "
-                      "in local_settings.py?") % {
-                    "cmd": self.cmd,
-                    "tool": self.name,
-                },
-                obj=self.name
-            )
-        elif self.required_version:
+            errors.append(RelateCriticalCheckMessage(
+                msg="\n".join([out, err]),
+                hint=("Unable find the version of '%(cmd)s'. Is "
+                      "%(tool)s installed with the correct version?"
+                      ) % {
+                         "cmd": self.cmd,
+                         "tool": self.name,
+                     },
+                obj=self.name,
+                id = "%s_E002" % self.name.lower()
+            ))
+        else:
             version = ".".join(d for d in m.groups() if d)
             from pkg_resources import parse_version
-            if parse_version(version) < parse_version(self.required_version):
-                error = RelateCriticalCheckMessage(
-                    "Version outdated",
-                    hint=("'%(tool)s' with version "
-                          ">=%(required)s is required, "
-                          "current version is %(version)s"
-                          ) % {
-                        "tool": self.name,
-                        "required": self.required_version,
-                        "version": version},
-                    obj=self.name
-                )
-        return error
+            if self.min_version:
+                if parse_version(version) < parse_version(self.min_version):
+                    errors.append(RelateCriticalCheckMessage(
+                        "Version outdated",
+                        hint=("'%(tool)s' with version "
+                              ">=%(required)s is required, "
+                              "current version is %(version)s"
+                              ) % {
+                                 "tool": self.name,
+                                 "required": self.min_version,
+                                 "version": version},
+                        obj=self.name,
+                        id="%s_E003" % self.name.lower()
+                    ))
+            elif self.max_version:
+                if parse_version(version) >= parse_version(self.max_version):
+                    errors.append(RelateCriticalCheckMessage(
+                        "Version not supported",
+                        hint=("'%(tool)s' with version "
+                              "< %(max_version)s is required, "
+                              "current version is %(version)s"
+                              ) % {
+                                 "tool": self.name,
+                                 "max_version": self.max_version,
+                                 "version": version},
+                        obj=self.name,
+                        id="%s_E004" % self.name.lower()
+                    ))
+        return errors
 
 
 class TexCompilerBase(CommandBase):
-    def __init__(self):
-        # type: () -> None
-        self.bin_path_dir = latex_settings["bin_path"].get(
+    def get_bin_path(self, check_only=False):
+        bin_path_dir = latex_settings["bin_path"].get(
             "RELATE_%s_BIN_DIR" % self.name.upper(),
             latex_settings["bin_path"].get("RELATE_LATEX_BIN_DIR", "")
         )
-        self.bin_path = os.path.join(
-            self.bin_path_dir, self.cmd.lower())
+        return os.path.join(bin_path_dir, self.cmd.lower())
 
 
 class Latexmk(TexCompilerBase):
@@ -171,7 +207,7 @@ class Latexmk(TexCompilerBase):
     cmd = "latexmk"
     
     # This also require perl, ActivePerl is recommended
-    required_version = "4.39"
+    min_version = "4.39"
 
 
 class LatexCompiler(TexCompilerBase):
@@ -249,28 +285,37 @@ class XeLatex(LatexCompiler):
         self.latexmk_prog_repl = "-%s=%s" % ("pdflatex", self.bin_path)
 
 
-class Imageconverter(CommandBase):
+class ImageConverter(CommandBase):
 
     @property
     def output_format(self):
         # type: () -> Text
         raise NotImplementedError
 
-    def __init__(self):
-        # type: () -> None
+    def get_bin_path(self, check_only=False):
         bin_path_dir = latex_settings["bin_path"].get(
             "RELATE_%s_BIN_DIR" % self.name.upper(),
             "")
-        self.bin_path = os.path.join(bin_path_dir,
-                                     self.cmd.lower())
+        return os.path.join(bin_path_dir, self.cmd.lower())
 
-    def get_converter_cmdline(
+    def do_convert(self, compiled_file_path, image_path, working_dir):
+        cmdline = self._get_convert_cmdline(
+            compiled_file_path, image_path)
+
+        _output, error, status = popen_wrapper(
+            cmdline,
+            cwd=working_dir
+        )
+
+        return status == 0, error
+
+    def _get_convert_cmdline(
             self, input_filepath, output_filepath):
         # type: (Text, Text) -> List[Text]
         raise NotImplementedError
 
 
-class Dvipng(TexCompilerBase, Imageconverter):
+class Dvipng(TexCompilerBase, ImageConverter):
     # Inheritate TexCompilerBase's bin_path
     # since dvipng is usually installed in
     # latex compilers' bin dir.
@@ -278,7 +323,7 @@ class Dvipng(TexCompilerBase, Imageconverter):
     cmd = "dvipng"
     output_format = "png"
 
-    def get_converter_cmdline(
+    def _get_convert_cmdline(
             self, input_filepath, output_filepath):
         # type: (Text, Text) -> List[Text]
         return [self.bin_path,
@@ -289,7 +334,7 @@ class Dvipng(TexCompilerBase, Imageconverter):
                 input_filepath]
 
 
-class Dvisvg(TexCompilerBase, Imageconverter):
+class Dvisvg(TexCompilerBase, ImageConverter):
     # Inheritate TexCompilerBase's bin_path
     # since dvisvgm is usually installed in
     # latex compilers' bin dir.
@@ -297,7 +342,7 @@ class Dvisvg(TexCompilerBase, Imageconverter):
     cmd = "dvisvgm"
     output_format = "svg"
 
-    def get_converter_cmdline(
+    def _get_convert_cmdline(
             self, input_filepath, output_filepath):
         # type: (Text, Text) -> List[Text]
         return[self.bin_path,
@@ -306,21 +351,45 @@ class Dvisvg(TexCompilerBase, Imageconverter):
             input_filepath]
 
 
-class ImageMagick(Imageconverter):
+class ImageMagick(ImageConverter):
     name = "ImageMagick"
     cmd = "convert"
     output_format = "png"
 
-    def get_converter_cmdline(
-            self, input_filepath, output_filepath):
-        # type: (Text, Text) -> List[Text]
-        return [self.bin_path,
-                '-density', '96',
-                '-quality', '85',
-                '-trim',
-                input_filepath,
-                output_filepath
-                ]
+    # https://github.com/dahlia/wand/issues/316
+    max_version = "7"
+
+    def get_bin_path(self, check_only=False):
+        bin_path_dir = latex_settings["bin_path"].get(
+            "RELATE_%s_BIN_DIR" % self.name.upper(), "")
+        if bin_path_dir:
+            os.environ.setdefault("MAGICK_HOME", bin_path_dir)
+        else:
+            if check_only and sys.platform.startswith("win"):
+                from wand.api import library_paths
+                for p in library_paths():
+                    if p[0]:
+                        bin_path_dir = os.path.dirname(p[0])
+                        break
+
+        return os.path.join(bin_path_dir, self.cmd.lower())
+
+    def do_convert(self, compiled_file_path, image_path, working_dir):
+        success = True
+        error = ""
+        try:
+            # resolution is density in ImageMagick, density=96 and quality=85
+            # is google image resolution for images.
+            with wand_image(filename=compiled_file_path, resolution=96) as original:
+                with original.convert(self.output_format) as converted:
+                    # converted.compression_quality = 85
+                    converted.trim()
+                    converted.save(filename=image_path)
+        except Exception as e:
+            success = False
+            error = "%s: %s" % (type(e).__name__, str(e))
+
+        return success, error
 
 # }}}
 
@@ -368,7 +437,7 @@ class Tex2ImgBase(object):
 
     @property
     def converter(self):
-        # type: () -> Imageconverter
+        # type: () -> ImageConverter
         """
         :return: an instance of `Imageconverter`
         """
@@ -412,11 +481,6 @@ class Tex2ImgBase(object):
     def get_compiler_cmdline(self, tex_path):
         # type: (Text) -> List[Text]
         return self.compiler.get_latexmk_subpro_cmdline(tex_path)
-
-    def get_converter_cmdline(self, input_path, output_path):
-        # type: (Text, Text) -> List[Text]
-        return self.converter.get_converter_cmdline(
-            input_path, output_path)
 
     def _remove_working_dir(self):
         # type: () -> None
@@ -525,15 +589,10 @@ class Tex2ImgBase(object):
             self.compiled_ext,
             self.image_ext)
 
-        cmdline = self.get_converter_cmdline(
-            compiled_file_path, image_path)
+        convert_sucess, error = self.converter.do_convert(
+            compiled_file_path, image_path, self.working_dir)
 
-        output, error, status = popen_wrapper(
-            cmdline,
-            cwd=self.working_dir
-        )
-
-        if status != 0:
+        if not convert_sucess:
             self._remove_working_dir()
             raise RuntimeError(error)
 
@@ -551,9 +610,6 @@ class Tex2ImgBase(object):
 
         try:
             datauri = get_image_datauri(image_path)
-
-        except OSError:
-            raise RuntimeError(error)
         finally:
             self._remove_working_dir()
 
