@@ -796,10 +796,10 @@ class InlineMultiQuestion(TextQuestionBase, PageBaseWithValue):
         # for correct render of question with more than one
         # paragraph, remove heading <p> tags and change </p>
         # to line break.
-        return markup_to_html(page_context, markup_to_html(
+        return markup_to_html(
                 page_context,
                 self.page_desc.question,
-                ).replace("<p>", "").replace("</p>", "<br/>"))
+                ).replace("<p>", "").replace("</p>", "<br/>")
 
     def get_dict_for_form(self, page_context, page_data):
         remainder_html = self.get_question(page_context, page_data)
