@@ -272,40 +272,58 @@ class GetCurrentLanguageJsLangNameTest(TestCase):
         from django.template.utils import EngineHandler
         self.engines = EngineHandler()
 
-    def test_get_current_js_lang_name_tag(self):
+    def test_get_current_datatable_js_lang_name_tag(self):
         with override_settings(LANGUAGE_CODE="en-us"):
             template = self.engines["django"].from_string(
-                "{% get_current_js_lang_name as LANG %}{{LANG}}")
+                "{% get_current_datatable_js_lang_name as LANG %}{{LANG}}")
             text = template.render()
             self.assertEqual(text, "English")
 
         with override_settings(LANGUAGE_CODE="de"):
             template = self.engines["django"].from_string(
-                "{% get_current_js_lang_name as LANG %}{{LANG}}")
+                "{% get_current_datatable_js_lang_name as LANG %}{{LANG}}")
             text = template.render()
             self.assertEqual(text, "German")
 
-    def test_get_current_js_lang_name_tag_failed(self):
+        with override_settings(LANGUAGE_CODE="unknow_locale"):
+            template = self.engines["django"].from_string(
+                "{% get_current_datatable_js_lang_name as LANG %}{{LANG}}")
+            text = template.render()
+            self.assertEqual(text, "English")
+
+        with override_settings(LANGUAGE_CODE="zh-hans"):
+            template = self.engines["django"].from_string(
+                "{% get_current_datatable_js_lang_name as LANG %}{{LANG}}")
+            text = template.render()
+            self.assertEqual(text, "Chinese")
+
+        with override_settings(LANGUAGE_CODE="zh-hant"):
+            template = self.engines["django"].from_string(
+                "{% get_current_datatable_js_lang_name as LANG %}{{LANG}}")
+            text = template.render()
+            self.assertEqual(text, "Chinese-traditional")
+
+    def test_get_current_datatable_js_lang_name_tag_failed(self):
         from django.template import TemplateSyntaxError
-        msg = ("'get_current_js_lang_name' requires 'as variable' "
-               "(got [u'get_current_js_lang_name'])")
+        msg = ("'get_current_datatable_js_lang_name' requires 'as variable' "
+               "(got [u'get_current_datatable_js_lang_name'])")
 
         if six.PY3:
             msg = msg.replace("u'", "'")
 
         with self.assertRaisesMessage(TemplateSyntaxError, expected_message=msg):
             self.engines["django"].from_string(
-                "{% get_current_js_lang_name %}")
+                "{% get_current_datatable_js_lang_name %}")
 
-        msg = ("'get_current_js_lang_name' requires 'as variable' "
-               "(got [u'get_current_js_lang_name', u'AS', u'LANG'])")
+        msg = ("'get_current_datatable_js_lang_name' requires 'as variable' "
+               "(got [u'get_current_datatable_js_lang_name', u'AS', u'LANG'])")
 
         if six.PY3:
             msg = msg.replace("u'", "'")
 
         with self.assertRaisesMessage(TemplateSyntaxError, expected_message=msg):
             self.engines["django"].from_string(
-                "{% get_current_js_lang_name AS LANG %}{{LANG}}")
+                "{% get_current_datatable_js_lang_name AS LANG %}{{LANG}}")
 
 
 class HasPermissionTemplateFilterTest(SingleCourseTestMixin, TestCase):

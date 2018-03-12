@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import pycountry
 
 __copyright__ = "Copyright (C) 2016 Dong Zhuang, Andreas Kloeckner"
 
@@ -24,14 +25,32 @@ THE SOFTWARE.
 
 from django.template import Library, Node, TemplateSyntaxError
 from django.utils import translation
-from relate.utils import to_datatables_lang_name
 
 register = Library()
 
 # {{{ get language_code in JS traditional naming format
 
 
-class GetCurrentLanguageJsFmtNode(Node):
+def to_datatables_lang_name(dj_lang_name):
+    """
+    Turns a Django language name (en-us) into the correspnding DataTables.net
+    i18n lang name.
+    """
+    # The mapping is crap, we use a special case table to fix it.
+    mapping = {"zh-hans": "Chinese",
+               "zh-hant": "Chinese-traditional"}
+
+    if dj_lang_name in mapping:
+        return mapping[dj_lang_name]
+    else:
+        primary = dj_lang_name.split('-')[0]
+        try:
+            return pycountry.languages.get(alpha_2=primary).name
+        except LookupError:
+            return "English"
+
+
+class GetCurrentLanguageDataTableJsFmtNode(Node):
     def __init__(self, variable):
         self.variable = variable
 
@@ -41,8 +60,8 @@ class GetCurrentLanguageJsFmtNode(Node):
         return ''
 
 
-@register.tag("get_current_js_lang_name")
-def do_get_current_js_lang_name(parser, token):
+@register.tag("get_current_datatable_js_lang_name")
+def do_get_current_datatable_js_lang_name(parser, token):
     """
     This will store the current language in the context, in js lang format.
     This is different with built-in do_get_current_language, which returns
@@ -61,9 +80,9 @@ def do_get_current_js_lang_name(parser, token):
     # accept variable as arguments
     args = token.contents.split()
     if len(args) != 3 or args[1] != 'as':
-        raise TemplateSyntaxError("'get_current_js_lang_name' requires "
+        raise TemplateSyntaxError("'get_current_datatable_js_lang_name' requires "
                 "'as variable' (got %r)" % args)
-    return GetCurrentLanguageJsFmtNode(args[2])
+    return GetCurrentLanguageDataTableJsFmtNode(args[2])
 
 # }}}
 
@@ -93,3 +112,5 @@ def has_permission(participation, arg):
     return has_pperm
 
 # }}}
+
+# vim: foldmethod=marker
