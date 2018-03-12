@@ -6,8 +6,7 @@
 *.py[co]
 .sw[opn]
 doc/_build
-components
-bower_components
+node_modules
 
 setuptools-[0-9]*
 virtualenv-[0-9]*

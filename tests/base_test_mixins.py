@@ -526,9 +526,15 @@ class SuperuserCreateMixin(ResponseContextMixin):
 
         if form_errors is None or not form_errors:
             if errors:
-                self.fail("%(form_name)s have no errors")
+                self.fail("%s has no error" % form_name)
             else:
                 return
+
+        if form_errors:
+            if not errors:
+                self.fail("%s unexpectedly has following errors: %s"
+                          % (form_name, repr(form_errors)))
+
         for err in errors:
             self.assertIn(err, form_errors)
 
@@ -543,11 +549,14 @@ def get_flow_page_ordinal_from_page_id(flow_session_id, page_id):
     return flow_page_data.page_ordinal
 
 
-def get_flow_page_id_from_page_ordinal(flow_session_id, page_ordinal):
+def get_flow_page_id_from_page_ordinal(flow_session_id, page_ordinal,
+                                       with_group_id=False):
     flow_page_data = FlowPageData.objects.get(
         flow_session__id=flow_session_id,
         page_ordinal=page_ordinal
     )
+    if with_group_id:
+        return flow_page_data.page_id, flow_page_data.group_id
     return flow_page_data.page_id
 
 # }}}
@@ -931,6 +940,15 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
         return (
             get_flow_page_ordinal_from_page_id(
                 flow_params["flow_session_id"], page_id))
+
+    def get_page_id_via_page_oridnal(
+            self, page_ordinal, course_identifier=None, flow_session_id=None,
+            with_group_id=False):
+        flow_params = self.get_flow_params(course_identifier, flow_session_id)
+        return (
+            get_flow_page_id_from_page_ordinal(
+                flow_params["flow_session_id"], page_ordinal,
+                with_group_id=with_group_id))
 
     def get_page_view_url_by_ordinal(
             self, viewname, page_ordinal, course_identifier=None,

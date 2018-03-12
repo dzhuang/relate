@@ -11,7 +11,11 @@ old_render = GetCurrentLanguageNode.render
 
 
 def new_render(cls, context):
-    from relate.utils import LANG_MAP_EXTRA
+    LANG_MAP_EXTRA = {
+        'zh-hans': 'zh-CN',
+        'zh-hant': 'zh-TW',
+        'zh-hk': 'zh-TW',
+    }
     lang = translation.get_language()
     if lang in LANG_MAP_EXTRA:
         lang = LANG_MAP_EXTRA[lang].lower()

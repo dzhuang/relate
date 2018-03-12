@@ -31,6 +31,7 @@ import datetime
 import django.forms as forms
 from django.utils.translation import ugettext_lazy as _
 import dulwich.repo
+import pycountry
 
 from typing import Union
 
@@ -394,25 +395,23 @@ if 0:
 
 # {{{ convert django language name to js styled language name
 
-LANG_MAP_EXTRA = {
-        'zh-hans': 'zh-CN',
-        'zh-hant': 'zh-TW',
-        'zh-hk': 'zh-TW',
-        }
-
-
-def to_js_lang_name(dj_lang_name):
+def to_datatables_lang_name(dj_lang_name):
     """
-    Turns a django language name (en-us) into a js styled language
-    name (en-US).
+    Turns a Django language name (en-us) into the correspnding DataTables.net
+    i18n lang name.
     """
-    p = dj_lang_name.find('-')
-    if p >= 0:
-        if dj_lang_name.lower() in LANG_MAP_EXTRA:
-            return LANG_MAP_EXTRA[dj_lang_name]
-        return dj_lang_name[:p].lower() + '-' + dj_lang_name[p + 1:].upper()
+    # The mapping is crap, we use a special case table to fix it.
+    mapping = {"zh-hans": "Chinese",
+               "zh-hant": "Chinese-traditional"}
+
+    if dj_lang_name in mapping:
+        return mapping[dj_lang_name]
     else:
-        return dj_lang_name.lower()
+        primary = dj_lang_name.split('-')[0]
+        try:
+            return pycountry.languages.get(alpha_2=primary).name
+        except LookupError:
+            return "English"
 
 # }}}
 
