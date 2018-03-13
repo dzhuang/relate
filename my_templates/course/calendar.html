@@ -1,21 +1,7 @@
-{% extends "course/course-base.html" %}
+{% extends "course/calendar.html" %}
 {% load i18n %}
 
 {% load static %}
-
-{% block title %}
-  {{ course.number}}
-  {% trans "Calendar" %} - {{ relate_site_name }}
-{% endblock %}
-
-{% block head_assets_extra %}
-  <link rel='stylesheet' href='{% static "fullcalendar/dist/fullcalendar.css" %}' />
-  <script src='{% static "moment/moment.js" %}'></script>
-  <script src='{% static "fullcalendar/dist/fullcalendar.js" %}'></script>
-  {# load calendar with local language #}
-  {% get_current_language as LANGUAGE_CODE %}
-  <script src='{% static "fullcalendar/dist/lang/" %}{{ LANGUAGE_CODE }}.js'></script>
-{% endblock %}
 
 {% block content %}
   <h1>{{ course.number}} {% trans "Calendar" %}</h1>
