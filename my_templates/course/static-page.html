@@ -1,4 +1,4 @@
-{% extends "course/course-base.html" %}
+{% extends "course/static-page.html" %}
 {% load i18n %}
 
 {% block page_navbar %}
@@ -15,14 +15,3 @@
   </li>
 {% endif %}
 {% endblock %}
-
-{% block content %}
-  {% block page_content_advisories %}
-  {% endblock %}
-
-  {% for chunk in chunks %}
-  <a id="{{chunk.id}}"></a>
-    {{chunk.html_content|safe}}
-  {% endfor %}
-{% endblock %}
-

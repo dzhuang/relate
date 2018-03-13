@@ -1,16 +1,8 @@
-{% extends "course/course-base.html" %}
+{% extends "course/gradebook-opp-list.html" %}
 
 {% load i18n %}
 
 {% load static %}
-
-{% block title %}
-  {% trans "List of Grading Opportunities" %} - {{ relate_site_name }}
-{% endblock %}
-
-{% block header_extra %}
-  {% include "datatables-header.html" %}
-{% endblock %}
 
 {% block content %}
   <h1>{% trans "List of Grading Opportunities" %}</h1>
@@ -69,15 +61,4 @@
       {% endfor %}
     </tbody>
   </table>
-
-  {% get_current_js_lang_name as LANG %}
-  <script type="text/javascript">
-    var tbl = $("table.gradebook-opportunities").dataTable({
-        "scrollCollapse": true,
-        "paging": false,
-        "ordering": true,
-        "language": {url: '{% static "datatables-i18n/i18n/" %}{{LANG}}.json'},
-    } );
-  </script>
-
 {% endblock %}

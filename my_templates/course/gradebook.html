@@ -1,13 +1,5 @@
-{% extends "course/course-base.html" %}
+{% extends "course/gradebook.html" %}
 {% load i18n %}
-
-{% block title %}
-  {% trans "Grade book" %} - {{ relate_site_name }}
-{% endblock %}
-
-{% block header_extra %}
-  {% include "datatables-header.html" %}
-{% endblock %}
 
 {% block content %}
   <h1>{% trans "Grade book" %}</h1>
@@ -69,19 +61,4 @@
       {% endfor %}
     </tbody>
   </table>
-
-  {% load static %}
-  {% get_current_js_lang_name as LANG %}
-  <script type="text/javascript">
-    var tbl = $("table.gradebook").dataTable({
-        "scrollX": true,
-        "scrollCollapse": true,
-        "paging": true,
-        "ordering": true,
-        "columnDefs": [{ type: 'name', targets: 1 }],
-        "language": {url: '{% static "datatables-i18n/i18n/" %}{{LANG}}.json'},
-    } );
-    new $.fn.dataTable.FixedColumns(tbl);
-  </script>
-
 {% endblock %}

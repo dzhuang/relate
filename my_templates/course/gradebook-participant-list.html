@@ -1,15 +1,7 @@
-{% extends "course/course-base.html" %}
+{% extends "course/gradebook-participant-list.html" %}
 {% load i18n %}
 
 {% load static %}
-
-{% block title %}
-  {% trans "List of Participants" %} - {{ relate_site_name }}
-{% endblock %}
-
-{% block header_extra %}
-  {% include "datatables-header.html" %}
-{% endblock %}
 
 {% block content %}
   <h1>{% trans "List of Participants" %}</h1>

@@ -1,17 +1,8 @@
-{% extends "course/course-base.html" %}
+{% extends "course/gradebook-by-opp.html" %}
 {% load i18n %}
 
 {% load crispy_forms_tags %}
 {% load static %}
-
-{% block title %}
-  {% trans "Grade book" %}: {{ opportunity.name }} - {{ relate_site_name }}
-{% endblock %}
-
-{% block header_extra %}
-  {% include "datatables-header.html" %}
-{% endblock %}
-
 
 {% block content %}
   <h1>{% trans "Grade book" %}: {{ opportunity.name }} </h1>
@@ -257,29 +248,4 @@
       {% endfor %}
     </tbody>
   </table>
-
-  {% get_current_js_lang_name as LANG %}
-  <script type="text/javascript">
-    var tbl = $("table.gradebook-by-opportunity").dataTable({
-        "scrollX": true,
-        "scrollCollapse": true,
-        "paging": false,
-        "ordering": true,
-        "columnDefs": [{ type: 'name', targets: 1 }],
-        "language": {url: '{% static "datatables-i18n/i18n/" %}{{LANG}}.json'},
-        "fnInitComplete": function(oSettings, json) {
-          $(".dataTables_filter").children()[0].insertAdjacentHTML(
-              "afterend",
-              ' <label type="button" id="show_excluded" class="btn active "' +
-              'title="{% trans "show excluded participations" %}"'
-              + ' data-noskip-text="hello" '
-              + ' data-toggle="button" aria-pressed="true" autocomplete="off">'
-              + "<i class='fa fa-user-secret fa-2x text-success' aria-hidden='true'></i>"
-              + '</label>'
-          );
-        }
-    } );
-    new $.fn.dataTable.FixedColumns(tbl);
-  </script>
-
 {% endblock %}
