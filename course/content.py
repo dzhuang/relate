@@ -996,6 +996,7 @@ def markup_to_html(
 
 
 TITLE_RE = re.compile(r"^\#+\s*(\w.*)", re.UNICODE)
+TAG_RE = re.compile(r'<[^>]+>')
 
 
 def extract_title_from_markup(markup_text):
@@ -1005,7 +1006,7 @@ def extract_title_from_markup(markup_text):
     for ln in lines[:10]:
         match = TITLE_RE.match(ln)
         if match is not None:
-            return match.group(1)
+            return TAG_RE.sub('', match.group(1))
 
     return None
 
