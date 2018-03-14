@@ -859,7 +859,9 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                 graded_visitgrade_qset,
                 PageGradedInfoSearchWidget(
                     attrs={
-                        'data-placeholder': graded_box_widget_placeholder}),
+                        'data-placeholder': graded_box_widget_placeholder},
+                    queryset=graded_visitgrade_qset
+                ),
             )
 
             if need_manual_grading:
@@ -880,7 +882,9 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                             attrs={
                                 'data-placeholder':
                                     _("Pages ungraded or graded but not released, "
-                                      "ordered by user's last name.")}),
+                                      "ordered by user's last name.")},
+                            queryset=ungraded_pagedata_qset
+                        ),
                     )
 
         elif is_survey_page:
@@ -894,7 +898,9 @@ def grade_flow_page(pctx, flow_session_id, page_ordinal):
                     attrs={
                         'data-placeholder':
                             _("Pages, "
-                              "ordered by user's last name.")}),
+                              "ordered by user's last name.")},
+                    queryset=pagedata_qset
+                ),
             )
 
     navigation_boxes = tuple(
