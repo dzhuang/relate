@@ -25,6 +25,7 @@ THE SOFTWARE.
 """
 
 import six
+import re
 
 import django.forms as forms
 
@@ -763,6 +764,8 @@ class PageBase(object):
 
 # {{{ utility base classes
 
+TAG_RE = re.compile(r'<[^>]+>')
+
 
 class PageBaseWithTitle(PageBase):
     def __init__(self, vctx, location, page_desc):
@@ -793,6 +796,9 @@ class PageBaseWithTitle(PageBase):
                         "%s: ",
                         _("no title found in body or title attribute"))
                     % (location))
+
+        from markdown import markdown
+        title = TAG_RE.sub('', markdown(title))
 
         self._title = title
 
