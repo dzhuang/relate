@@ -30,10 +30,11 @@ from course.page.base import (
     create_default_point_scale, HumanTextFeedbackForm
 )
 
+from tests.base_test_mixins import SingleCoursePageTestMixin
 from tests.test_sandbox import (
     SingleCoursePageSandboxTestBaseMixin, PAGE_ERRORS
 )
-from tests.base_test_mixins import SingleCoursePageTestMixin
+from tests.test_grading import SingleCourseQuizPageGradeInterfaceTestMixin
 from tests.utils import mock
 
 SANDBOX_TITLE_PATTERN = "<title>[SB] %s - RELATE </title>"
@@ -206,7 +207,7 @@ def make_page_data_side_effect_has_data(self):
     return {"data": "foo"}
 
 
-class PageBaseTest(SingleCoursePageSandboxTestBaseMixin, TestCase):
+class PageBaseDeprecationTest(SingleCoursePageSandboxTestBaseMixin, TestCase):
 
     def test_deprecated_make_page_data_has_warning(self):
         with mock.patch("course.page.text.TextQuestionBase.make_page_data",
@@ -268,12 +269,12 @@ def post_form_side_effect(self, page_context, page_data, post_data, files_data):
         widget_type=getattr(self.page_desc, "widget", None))
 
 
-class PageBaseGradeDeprecateTest(SingleCoursePageTestMixin, TestCase):
+class PageBaseGradeDeprecationTest(SingleCoursePageTestMixin, TestCase):
 
     flow_id = "quiz-test"
 
     def setUp(self):
-        super(PageBaseGradeDeprecateTest, self).setUp()
+        super(PageBaseGradeDeprecationTest, self).setUp()
         self.c.force_login(self.student_participation.user)
         self.start_flow(flow_id=self.flow_id)
 
@@ -354,6 +355,41 @@ class PageBaseGradeDeprecateTest(SingleCoursePageTestMixin, TestCase):
 
         self.assertEqual(self.end_flow().status_code, 200)
         self.assertSessionScoreEqual(5)
+
+
+def grading_form_to_html_side_effect_super(
+        self, request, page_context, grading_form, grade_data):
+    from course.page.base import PageBaseWithHumanTextFeedback
+    return (
+        super(
+            PageBaseWithHumanTextFeedback, self
+        ).grading_form_to_html(
+            request, page_context, grading_form, grade_data))
+
+
+class PageBaseGradingFormToHtmlTest(SingleCourseQuizPageGradeInterfaceTestMixin,
+                                    TestCase):
+    flow_id = "quiz-test"
+
+    @classmethod
+    def setUpTestData(cls):  # noqa
+        super(PageBaseGradingFormToHtmlTest, cls).setUpTestData()
+        cls.end_flow()
+
+    def test_base_class_grading_form_to_html(self):
+        page_id = "anyup"
+        with mock.patch(
+                "course.page.base.PageBaseWithHumanTextFeedback"
+                ".grading_form_to_html", autospec=True
+        ) as mock_grading_form_to_html:
+            mock_grading_form_to_html.side_effect = (
+                grading_form_to_html_side_effect_super)
+
+            with self.temporarily_switch_to_user(
+                    self.instructor_participation.user):
+
+                resp = self.c.get(self.get_page_grading_url_by_page_id(page_id))
+                self.assertEqual(resp.status_code, 200)
 
 
 class PageBaseWithValueTest(SingleCoursePageSandboxTestBaseMixin, TestCase):

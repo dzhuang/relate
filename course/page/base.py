@@ -662,10 +662,12 @@ class PageBase(object):
         # type: (...) -> Text
         """Returns an HTML rendering of *grading_form*."""
 
+        # http://bit.ly/2GxzWr1
         from crispy_forms.utils import render_crispy_form
-        from django.template import RequestContext
-        context = RequestContext(request, {})
-        return render_crispy_form(grading_form, context=context)
+        from django.template.context_processors import csrf
+        ctx = {}  # type: Dict
+        ctx.update(csrf(request))
+        return render_crispy_form(grading_form, context=ctx)
 
     # }}}
 

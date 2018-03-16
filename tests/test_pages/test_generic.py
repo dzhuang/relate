@@ -93,7 +93,7 @@ class SingleCourseQuizPageTest(SingleCoursePageTestMixin,
             for i in range(page_count):
                 page_id, group_id = (
                     self.get_page_id_via_page_oridnal(i, with_group_id=True))
-                with self.subTest(page_id=page_id):
+                with self.subTest(page_id=page_id, name="analytics page test"):
                     resp = self.c.get(self.get_page_url_by_page_id(page_id=page_id))
                     self.assertEqual(resp.status_code, 200)
                     if page_id not in ["age_group", "fear", "welcome"]:
@@ -105,6 +105,18 @@ class SingleCourseQuizPageTest(SingleCoursePageTestMixin,
                         flow_id=self.flow_id, group_id=group_id,
                         page_id=page_id)
                     self.assertEqual(resp.status_code, 200)
+
+                with self.subTest(page_id=page_id,
+                                  name="download submission test"):
+                    group_page_id = "%s/%s" % (group_id, page_id)
+
+                    # ensure download submissions work when no answer_data
+                    resp = self.post_download_all_submissions_by_group_page_id(
+                        group_page_id=group_page_id, flow_id=self.flow_id)
+                    self.assertEqual(resp.status_code, 200)
+                    prefix, zip_file = resp["Content-Disposition"].split('=')
+                    self.assertEqual(prefix, "attachment; filename")
+                    self.assertEqual(resp.get('Content-Type'), "application/zip")
 
     def test_quiz_text(self):
         resp = self.post_answer_by_ordinal(1, {"answer": ['0.5']})
