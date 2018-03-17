@@ -1,4 +1,4 @@
-django>=1.10,<1.12
+django>=1.10,<2.1
 
 # Automatically renders Django forms in a pretty, Bootstrap-compatible way.
 django-crispy-forms>=1.5.1
@@ -71,9 +71,8 @@ python-memcached
 # }}}
 
 # {{{ A task queue, used to execute long-running tasks
-celery<4
-# kombu 4 removes the Django ORM transport
-kombu<4
+celery==4.1.0
+django-celery-results==1.0.1
 
 django-celery
 
