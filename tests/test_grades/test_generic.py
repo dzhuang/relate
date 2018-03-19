@@ -26,19 +26,18 @@ import six
 from django.urls import reverse, NoReverseMatch
 from django.test import TestCase
 from unittest import skipIf
-from tests.base_test_mixins import SingleCoursePageTestMixin
 
 from course.models import (
     Participation, GradingOpportunity, FlowSession,
     FlowRuleException
 )
 
+from tests.base_test_mixins import SingleCoursePageTestMixin
+
 
 class GradeTestMixin(SingleCoursePageTestMixin):
     # This serve as a base test cases for other grade tests to subclass
     # Nice little tricks :)
-    flow_id = "quiz-test"
-
     @classmethod
     def setUpTestData(cls):  # noqa
         super(GradeTestMixin, cls).setUpTestData()
@@ -134,7 +133,8 @@ class GradeTestMixin(SingleCoursePageTestMixin):
         self.assertEqual(FlowSession.objects.all().count(),
                          len(self.flow_session_ids))
 
-    # Seems just show the answer
+    # Just show the grading interfaces of the unanswered pages
+    # the answered pages are tested in tests.teat_pages.test_generic
     def test_view_grade_flow_page(self):
         params = {"course_identifier": self.course.identifier,
                   "flow_session_id": self.flow_session_ids[0]}
@@ -406,8 +406,6 @@ class GradeThreeQuizTakerTest(GradeTestMixin, TestCase):
 
 @skipIf(six.PY2, "PY2 doesn't support subTest")
 class GradePermissionsTests(SingleCoursePageTestMixin, TestCase):
-    flow_id = "quiz-test"
-
     @classmethod
     def setUpTestData(cls):  # noqa
         super(GradePermissionsTests, cls).setUpTestData()

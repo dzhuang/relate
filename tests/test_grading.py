@@ -22,19 +22,20 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-import os
-
 from django.core import mail
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
-from tests.base_test_mixins import SingleCoursePageTestMixin
-from tests.test_pages import QUIZ_FLOW_ID
+from course.models import ParticipationPermission
+from course.constants import participation_permission as pperm
+
+from tests.base_test_mixins import SingleCourseQuizPageTestMixin
 from tests import factories
+from tests.utils import mock
 
 
-class SingleCourseQuizPageGradeInterfaceTestMixin(SingleCoursePageTestMixin):
+class SingleCourseQuizPageGradeInterfaceTestMixin(SingleCourseQuizPageTestMixin):
 
-    flow_id = QUIZ_FLOW_ID
+    page_id = "anyup"
 
     @classmethod
     def setUpTestData(cls):  # noqa
@@ -42,21 +43,7 @@ class SingleCourseQuizPageGradeInterfaceTestMixin(SingleCoursePageTestMixin):
         cls.c.force_login(cls.student_participation.user)
         cls.start_flow(cls.flow_id)
         cls.this_flow_session_id = cls.default_flow_params["flow_session_id"]
-        cls.any_up_page_id = "anyup"
-        cls.submit_any_upload_question()
-
-    def submit_any_upload_question_null(self):
-        return self.post_answer_by_page_id(
-            "anyup", {"uploaded_file": []})
-
-    @classmethod
-    def submit_any_upload_question(cls):
-        with open(
-                os.path.join(os.path.dirname(__file__),
-                             'fixtures', 'test_file.txt'), 'rb') as fp:
-            answer_data = {"uploaded_file": fp}
-            return cls.post_answer_by_page_id_class(
-                cls.any_up_page_id, answer_data, **cls.default_flow_params)
+        cls.submit_page_answer_by_page_id_and_test(cls.page_id)
 
 
 class SingleCourseQuizPageGradeInterfaceTest(
@@ -67,121 +54,270 @@ class SingleCourseQuizPageGradeInterfaceTest(
         super(SingleCourseQuizPageGradeInterfaceTest, cls).setUpTestData()
         cls.end_flow()
 
-    def setUp(self):  # noqa
-        # This is needed to ensure student is logged in to submit page or end flow.
-        self.c.force_login(self.student_participation.user)
-
     def test_post_grades(self):
-        grade_data = {
-            "grade_percent": ["100"],
-            "released": ["on"]
-        }
-        resp = self.post_grade_by_page_id(self.any_up_page_id, grade_data)
-        self.assertTrue(resp.status_code, 200)
-        self.assertSessionScoreEqual(5)
+        self.submit_page_human_grading_by_page_id_and_test(self.page_id)
 
         grade_data = {
-            "grade_points": ["4"],
+            "grade_points": "4",
             "released": []
         }
-        resp = self.post_grade_by_page_id(self.any_up_page_id, grade_data)
-        self.assertTrue(resp.status_code, 200)
-
-        self.assertSessionScoreEqual(None)
+        self.submit_page_human_grading_by_page_id_and_test(
+            self.page_id, grade_data=grade_data, expected_grades=None)
 
         grade_data = {
-            "grade_points": ["4"],
-            "released": ["on"]
+            "grade_points": "4",
+            "released": "on"
         }
-        resp = self.post_grade_by_page_id(self.any_up_page_id, grade_data)
-        self.assertTrue(resp.status_code, 200)
-
-        self.assertSessionScoreEqual(4)
-
-    def test_post_grades_success(self):
-        grade_data = {
-            "grade_percent": ["100"],
-            "released": ['on']
-        }
-
-        resp = self.post_grade_by_page_id(self.any_up_page_id, grade_data)
-        self.assertTrue(resp.status_code, 200)
-
-        self.assertSessionScoreEqual(5)
+        self.submit_page_human_grading_by_page_id_and_test(
+            self.page_id, grade_data=grade_data, expected_grades=4)
 
     def test_post_grades_huge_points_failure(self):
         grade_data = {
-            "grade_percent": ["2000"],
-            "released": ['on']
+            "grade_percent": "2000",
+            "released": 'on'
         }
 
-        resp = self.post_grade_by_page_id(self.any_up_page_id, grade_data)
-        self.assertTrue(resp.status_code, 200)
+        resp = self.submit_page_human_grading_by_page_id_and_test(
+            self.page_id, grade_data=grade_data, expected_grades=None)
 
         # value exceeded allowed
         self.assertResponseContextContains(
             resp, "grading_form_html",
             "Ensure this value is less than or equal to")
 
-        self.assertSessionScoreEqual(None)
-
     def test_post_grades_forbidden(self):
-        grade_data = {
-            "grade_percent": ["100"],
-            "released": ['on']
-        }
-
         # with self.student_participation.user logged in
-        resp = self.post_grade_by_page_id(self.any_up_page_id, grade_data,
-                                          force_login_instructor=False)
-        self.assertTrue(resp.status_code, 403)
-
-        self.assertSessionScoreEqual(None)
+        self.submit_page_human_grading_by_page_id_and_test(
+            self.page_id, expected_grades=None,
+            force_login_instructor=False, expected_post_grading_status_code=403)
 
     def test_feedback_and_notify(self):
-        grade_data = {
-            "grade_percent": ["100"],
-            "released": ['on'],
-            "feedback_text": ['test feedback']
+        grade_data_extra_kwargs = {
+            "feedback_text": 'test feedback'
         }
 
-        self.post_grade_by_page_id(self.any_up_page_id, grade_data)
+        self.submit_page_human_grading_by_page_id_and_test(
+            self.page_id, grade_data_extra_kwargs=grade_data_extra_kwargs)
         self.assertEqual(len(mail.outbox), 0)
 
-        grade_data["notify"] = ["on"]
-        self.post_grade_by_page_id(self.any_up_page_id, grade_data)
+        grade_data_extra_kwargs["notify"] = "on"
+        self.submit_page_human_grading_by_page_id_and_test(
+            self.page_id, grade_data_extra_kwargs=grade_data_extra_kwargs)
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].reply_to, [])
 
+        # Instructor also get the feedback email
+        self.assertIn(self.course.notify_email, mail.outbox[0].recipients())
+
+        # make sure the name (appellation) is in the email body, not the masked one
+        self.assertIn(
+            self.student_participation.user.get_email_appellation(),
+            mail.outbox[0].body)
+        self.assertNotIn(
+            self.student_participation.user.get_masked_profile(),
+            mail.outbox[0].body)
+        self.assertNotIn(
+            "Dear user",
+            mail.outbox[0].body)
+
+    def test_feedback_and_notify_instructor_pperm_masked_profile(self):
+
+        # add view_participant_masked_profile pperm to instructor
+        pp = ParticipationPermission(
+            participation=self.instructor_participation,
+            permission=pperm.view_participant_masked_profile
+        )
+        pp.save()
+        self.instructor_participation.individual_permissions.set([pp])
+
+        grade_data_extra_kwargs = {
+            "feedback_text": 'test feedback',
+            "notify": "on"}
+        self.submit_page_human_grading_by_page_id_and_test(
+            self.page_id, grade_data_extra_kwargs=grade_data_extra_kwargs)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].reply_to, [])
+
+        # Instructor also get the feedback email
+        self.assertIn(self.course.notify_email, mail.outbox[0].recipients())
+
+        # make sure the name (appellation) not in the email body, not the masked one
+        self.assertNotIn(
+            self.student_participation.user.get_email_appellation(),
+            mail.outbox[0].body)
+        self.assertNotIn(
+            self.student_participation.user.get_masked_profile(),
+            mail.outbox[0].body)
+        self.assertIn("Dear user", mail.outbox[0].body)
+
+    @override_settings(
+        EMAIL_CONNECTIONS={
+            "grader_feedback": {
+                'backend': 'tests.resource.MyFakeEmailBackend',
+            },
+        },
+        GRADER_FEEDBACK_EMAIL_FROM="my_feedback_from_email@example.com"
+    )
+    def test_feedback_notify_with_grader_feedback_connection(self):
+        grade_data_extra_kwargs = {
+            "feedback_text": 'test feedback',
+            "notify": "on"
+        }
+
+        from django.core.mail import get_connection
+        connection = get_connection(
+            backend='django.core.mail.backends.locmem.EmailBackend')
+
+        with mock.patch("django.core.mail.get_connection") as mock_get_connection:
+            mock_get_connection.return_value = connection
+            self.submit_page_human_grading_by_page_id_and_test(
+                self.page_id, grade_data_extra_kwargs=grade_data_extra_kwargs)
+            self.assertEqual(len(mail.outbox), 1)
+            self.assertEqual(mail.outbox[0].from_email,
+                             "my_feedback_from_email@example.com")
+            self.assertEqual(
+                mock_get_connection.call_args[1]["backend"],
+                "tests.resource.MyFakeEmailBackend"
+            )
+
+        # make sure the name (appellation) is in the email body, not the masked one
+        self.assertIn(
+            self.student_participation.user.get_email_appellation(),
+            mail.outbox[0].body)
+        self.assertNotIn(
+            self.student_participation.user.get_masked_profile(),
+            mail.outbox[0].body)
+        self.assertNotIn(
+            "Dear user",
+            mail.outbox[0].body)
+
     def test_feedback_email_may_reply(self):
-        grade_data = {
-            "grade_percent": ["100"],
-            "released": ['on'],
-            "feedback_text": ['test feedback'],
-            "notify": ["on"],
-            "may_reply": ["on"]
+        grade_data_extra_kwargs = {
+            "feedback_text": 'test feedback',
+            "may_reply": "on",
+            "notify": "on"
         }
 
         with self.temporarily_switch_to_user(self.ta_participation.user):
-            self.post_grade_by_page_id(self.any_up_page_id, grade_data,
-                                       force_login_instructor=False)
+            self.submit_page_human_grading_by_page_id_and_test(
+                self.page_id, grade_data_extra_kwargs=grade_data_extra_kwargs,
+                force_login_instructor=False)
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].reply_to,
                          [self.ta_participation.user.email])
 
+        # Instructor also get the feedback email
+        self.assertIn(self.course.notify_email, mail.outbox[0].recipients())
+
+        # make sure the name (appellation) is in the email body, not the masked one
+        self.assertIn(
+            self.student_participation.user.get_email_appellation(),
+            mail.outbox[0].body)
+        self.assertNotIn(
+            self.student_participation.user.get_masked_profile(),
+            mail.outbox[0].body)
+        self.assertNotIn(
+            "Dear user",
+            mail.outbox[0].body)
+
     def test_notes_and_notify(self):
-        grade_data = {
-            "grade_percent": ["100"],
-            "released": ['on'],
-            "notes": ['test notes']
+        grade_data_extra_kwargs = {
+            "notes": 'test notes'
         }
 
-        self.post_grade_by_page_id(self.any_up_page_id, grade_data)
-        self.assertEqual(len(mail.outbox), 0)
+        with self.temporarily_switch_to_user(self.ta_participation.user):
+            self.submit_page_human_grading_by_page_id_and_test(
+                self.page_id, grade_data_extra_kwargs=grade_data_extra_kwargs,
+                force_login_instructor=False)
+            self.assertEqual(len(mail.outbox), 0)
 
-        grade_data["notify_instructor"] = ["on"]
-        self.post_grade_by_page_id(self.any_up_page_id, grade_data)
+            grade_data_extra_kwargs["notify_instructor"] = "on"
+            self.submit_page_human_grading_by_page_id_and_test(
+                self.page_id, grade_data_extra_kwargs=grade_data_extra_kwargs,
+                force_login_instructor=False)
+            self.assertEqual(len(mail.outbox), 1)
+        self.assertIn(self.course.notify_email, mail.outbox[0].recipients())
+
+        # make sure the name (appellation) is in the email body, not the masked one
+        self.assertIn(
+            self.student_participation.user.get_email_appellation(),
+            mail.outbox[0].body)
+        self.assertNotIn(
+            self.student_participation.user.get_masked_profile(),
+            mail.outbox[0].body)
+
+    def test_notes_and_notify_ta_pperm_masked_profile(self):
+
+        # add view_participant_masked_profile pperm to ta
+        pp = ParticipationPermission(
+            participation=self.ta_participation,
+            permission=pperm.view_participant_masked_profile
+        )
+        pp.save()
+        self.ta_participation.individual_permissions.set([pp])
+
+        grade_data_extra_kwargs = {
+            "notes": 'test notes',
+            "notify_instructor": "on"}
+
+        with self.temporarily_switch_to_user(self.ta_participation.user):
+            self.submit_page_human_grading_by_page_id_and_test(
+                self.page_id, grade_data_extra_kwargs=grade_data_extra_kwargs,
+                force_login_instructor=False)
         self.assertEqual(len(mail.outbox), 1)
+        self.assertIn(self.course.notify_email, mail.outbox[0].recipients())
+
+        # make sure the name (appellation) not in the email body,
+        # the masked one is used instead
+        self.assertNotIn(
+            self.student_participation.user.get_email_appellation(),
+            mail.outbox[0].body)
+        self.assertIn(
+            self.student_participation.user.get_masked_profile(),
+            mail.outbox[0].body)
+
+    @override_settings(
+        EMAIL_CONNECTIONS={
+            "grader_feedback": {
+                'backend': 'tests.resource.MyFakeEmailBackend',
+            },
+        },
+        GRADER_FEEDBACK_EMAIL_FROM="my_feedback_from_email@example.com"
+    )
+    def test_notes_and_notify_with_grader_feedback_connection(self):
+        grade_data_extra_kwargs = {
+            "notes": 'test notes',
+            "notify_instructor": "on"
+        }
+
+        from django.core.mail import get_connection
+        connection = get_connection(
+            backend='django.core.mail.backends.locmem.EmailBackend')
+
+        with mock.patch("django.core.mail.get_connection") as mock_get_connection:
+            mock_get_connection.return_value = connection
+            with self.temporarily_switch_to_user(self.ta_participation.user):
+                self.submit_page_human_grading_by_page_id_and_test(
+                    self.page_id, grade_data_extra_kwargs=grade_data_extra_kwargs,
+                    force_login_instructor=False)
+
+            self.assertEqual(len(mail.outbox), 1)
+
+        self.assertIn(self.course.notify_email, mail.outbox[0].recipients())
+        self.assertEqual(mail.outbox[0].from_email,
+                         "my_feedback_from_email@example.com")
+        self.assertEqual(
+            mock_get_connection.call_args[1]["backend"],
+            "tests.resource.MyFakeEmailBackend"
+        )
+
+        # make sure the name (appellation) is in the email body, not the masked one
+        self.assertIn(
+            self.student_participation.user.get_email_appellation(),
+            mail.outbox[0].body)
+        self.assertNotIn(
+            self.student_participation.user.get_masked_profile(),
+            mail.outbox[0].body)
 
     # {{{ tests on grading history dropdown
     def test_grade_history_failure_no_perm(self):
@@ -225,40 +361,33 @@ class SingleCourseQuizPageGradeInterfaceTestExtra(
 
     def test_post_grades_history(self):
         # This submission failed
-        resp = self.submit_any_upload_question_null()
+        resp, _ = self.submit_page_answer_by_page_id_and_test(
+            self.page_id, answer_data={"uploaded_file": []})
         self.assertFormErrorLoose(resp, "This field is required.")
 
         # 2nd submission succeeded
-        resp = self.submit_any_upload_question()
+        self.submit_page_answer_by_page_id_and_test(self.page_id, do_grading=False)
         self.end_flow()
 
-        grade_data = {
-            "grade_percent": ["100"],
-            "released": ["on"]
-        }
-        resp = self.post_grade_by_page_id(self.any_up_page_id, grade_data)
-        self.assertTrue(resp.status_code, 200)
-        self.assertSessionScoreEqual(5)
+        self.submit_page_human_grading_by_page_id_and_test(self.page_id)
 
-        ordinal = self.get_page_ordinal_via_page_id(self.any_up_page_id)
+        ordinal = self.get_page_ordinal_via_page_id(self.page_id)
         self.assertGradeHistoryItemsCount(page_ordinal=ordinal, expected_count=3)
 
         grade_data = {
-            "grade_points": ["4"],
+            "grade_points": "4",
             "released": []
         }
-        resp = self.post_grade_by_page_id(self.any_up_page_id, grade_data)
-        self.assertTrue(resp.status_code, 200)
-        self.assertSessionScoreEqual(None)
+        self.submit_page_human_grading_by_page_id_and_test(
+            self.page_id, grade_data=grade_data, expected_grades=None)
         self.assertGradeHistoryItemsCount(page_ordinal=ordinal, expected_count=4)
 
         grade_data = {
-            "grade_points": ["4"],
-            "released": ["on"]
+            "grade_points": "4",
+            "released": "on"
         }
-        resp = self.post_grade_by_page_id(self.any_up_page_id, grade_data)
-        self.assertTrue(resp.status_code, 200)
-        self.assertSessionScoreEqual(4)
+        self.submit_page_human_grading_by_page_id_and_test(
+            self.page_id, grade_data=grade_data, expected_grades=4)
         self.assertGradeHistoryItemsCount(page_ordinal=ordinal,
                                           expected_count=5)
 
