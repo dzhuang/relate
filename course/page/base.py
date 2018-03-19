@@ -25,7 +25,6 @@ THE SOFTWARE.
 """
 
 import six
-import re
 
 import django.forms as forms
 
@@ -767,8 +766,6 @@ class PageBase(object):
 
 
 # {{{ utility base classes
-
-TAG_RE = re.compile(r'<[^>]+>')
 
 
 class PageBaseWithTitle(PageBase):

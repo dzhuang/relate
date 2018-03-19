@@ -271,8 +271,6 @@ class NbconvertRenderTestMixin(SingleCoursePageSandboxTestBaseMixin):
 
 class NbconvertRenderTest(NbconvertRenderTestMixin, TestCase):
 
-    # todo: add backtick test
-
     @classmethod
     def setUpTestData(cls):  # noqa
         super(NbconvertRenderTest, cls).setUpTestData()

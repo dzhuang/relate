@@ -66,7 +66,7 @@ from course.docker.config import (  # noqa
 )
 from tests.utils import mock
 from tests.base_test_mixins import SingleCoursePageTestMixin
-from tests.test_pages import QUIZ_FLOW_ID
+from tests.contants import QUIZ_FLOW_ID
 
 # Switch for test locally
 Debug = False
@@ -634,7 +634,6 @@ class RealRunpyDockerCheck(RealDockerTestMixin, SimpleTestCase):
 )
 class RealDockerCodePageTest(SingleCoursePageTestMixin,
                              RealDockerTestMixin, TestCase):
-    flow_id = QUIZ_FLOW_ID
     page_id = "addition"
 
     def setUp(self):  # noqa
@@ -752,7 +751,6 @@ DOCKER_RUNPY_NOT_ENABLED_ERROR = {
     EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend'
 )
 class CodePageTestOther(SingleCoursePageTestMixin, TestCase):
-    flow_id = QUIZ_FLOW_ID
     page_id = "addition"
 
     def setUp(self):  # noqa
