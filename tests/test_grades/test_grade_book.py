@@ -40,7 +40,7 @@ from tests.utils import mock  # noqa
 from tests.base_test_mixins import SingleCoursePageTestMixin
 from tests import factories as fctr
 from tests.factories import GradeChangeFactory as GCFactory
-from tests.test_pages import QUIZ_FLOW_ID
+from tests.contants import QUIZ_FLOW_ID
 
 
 def get_session_grading_rule_use_last_activity_as_cmplt_time_side_effect(
@@ -803,7 +803,7 @@ class ViewParticipantGradesTest(GradeBookTestMixin, TestCase):
                       state=g_state.graded))
 
     def test_view_my_grade(self):
-        with self.temporarily_switch_to_user(self.ptcp):
+        with self.temporarily_switch_to_user(self.ptcp.user):
             resp = self.get_view_my_grades()
             self.assertEqual(resp.status_code, 200)
             grade_table = self.get_response_context_value_by_name(

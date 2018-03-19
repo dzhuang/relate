@@ -232,7 +232,7 @@ msgstr ""
 #: .\relate\templates\admin\base_site.html:5 .\relate\templates\base.html:15
 #: .\relate\templates\base.html.py:61 .\relate\templates\maintenance.html:6
 msgid "RELATE"
-msgstr "LearningWhat"
+msgstr ""
 
 #: .\course\auth.py:366
 msgid "Verify your email"

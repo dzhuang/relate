@@ -38,6 +38,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ImproperlyConfigured
 
+from tests.contants import QUIZ_FLOW_ID, TEST_PAGE_TUPLE
 from tests.utils import mock
 from course.models import (
     Course, Participation, ParticipationRole, FlowSession, FlowPageData,
@@ -45,7 +46,7 @@ from course.models import (
 from course.constants import participation_status, user_status
 from course.content import get_course_repo_path
 
-ATOL = 1e-05
+CORRECTNESS_ATOL = 1e-05
 
 CREATE_SUPERUSER_KWARGS = {
     "username": "test_admin",
@@ -79,7 +80,7 @@ SINGLE_COURSE_SETUP_LIST = [
                     "username": "test_instructor",
                     "password": "test_instructor",
                     "email": "test_instructor@example.com",
-                    "first_name": "Test",
+                    "first_name": "Test_ins",
                     "last_name": "Instructor"},
                 "status": participation_status.active
             },
@@ -89,7 +90,7 @@ SINGLE_COURSE_SETUP_LIST = [
                     "username": "test_ta",
                     "password": "test",
                     "email": "test_ta@example.com",
-                    "first_name": "Test",
+                    "first_name": "Test_ta",
                     "last_name": "TA"},
                 "status": participation_status.active
             },
@@ -99,7 +100,7 @@ SINGLE_COURSE_SETUP_LIST = [
                     "username": "test_student",
                     "password": "test",
                     "email": "test_student@example.com",
-                    "first_name": "Test",
+                    "first_name": "Test_stu",
                     "last_name": "Student"},
                 "status": participation_status.active
             }
@@ -279,7 +280,7 @@ class ResponseContextMixin(object):
                           % expected_correctness)
             self.assertTrue(
                 abs(float(answer_feedback.correctness)
-                    - float(str(expected_correctness))) < ATOL,
+                    - float(str(expected_correctness))) < CORRECTNESS_ATOL,
                 "%s does not equal %s"
                 % (str(answer_feedback.correctness)[:5],
                    str(expected_correctness)[:5]))
@@ -360,62 +361,78 @@ class SuperuserCreateMixin(ResponseContextMixin):
         return get_user_model().objects.create_superuser(
                                                 **cls.create_superuser_kwargs)
 
-    def get_sign_up_view_url(self):
+    @classmethod
+    def get_sign_up_view_url(cls):
         return reverse("relate-sign_up")
 
-    def get_sign_up(self, follow=True):
-        return self.c.get(self.get_sign_up_view_url(), follow=follow)
+    @classmethod
+    def get_sign_up(cls, follow=True):
+        return cls.c.get(cls.get_sign_up_view_url(), follow=follow)
 
-    def post_sign_up(self, data, follow=True):
-        return self.c.post(self.get_sign_up_view_url(), data, follow=follow)
+    @classmethod
+    def post_sign_up(cls, data, follow=True):
+        return cls.c.post(cls.get_sign_up_view_url(), data, follow=follow)
 
-    def get_profile_view_url(self):
+    @classmethod
+    def get_profile_view_url(cls):
         return reverse("relate-user_profile")
 
-    def get_profile(self, follow=True):
-        return self.c.get(self.get_profile_view_url(), follow=follow)
+    @classmethod
+    def get_profile(cls, follow=True):
+        return cls.c.get(cls.get_profile_view_url(), follow=follow)
 
-    def post_profile(self, data, follow=True):
+    @classmethod
+    def post_profile(cls, data, follow=True):
         data.update({"submit_user": [""]})
-        return self.c.post(self.get_profile_view_url(), data, follow=follow)
+        return cls.c.post(cls.get_profile_view_url(), data, follow=follow)
 
-    def post_signout(self, data, follow=True):
-        return self.c.post(self.get_sign_up_view_url(), data, follow=follow)
+    @classmethod
+    def post_signout(cls, data, follow=True):
+        return cls.c.post(cls.get_sign_up_view_url(), data, follow=follow)
 
-    def get_impersonate_view_url(self):
+    @classmethod
+    def get_impersonate_view_url(cls):
         return reverse("relate-impersonate")
 
-    def get_stop_impersonate_view_url(self):
+    @classmethod
+    def get_stop_impersonate_view_url(cls):
         return reverse("relate-stop_impersonating")
 
-    def get_impersonate(self):
-        return self.c.get(self.get_impersonate_view_url())
+    @classmethod
+    def get_impersonate(cls):
+        return cls.c.get(cls.get_impersonate_view_url())
 
-    def post_impersonate(self, impersonatee, follow=True):
+    @classmethod
+    def post_impersonate(cls, impersonatee, follow=True):
         data = {"add_impersonation_header": ["on"],
                 "submit": [''],
                 }
         data["user"] = [str(impersonatee.pk)]
-        return self.c.post(self.get_impersonate_view_url(), data, follow=follow)
+        return cls.c.post(cls.get_impersonate_view_url(), data, follow=follow)
 
-    def get_stop_impersonate(self, follow=True):
-        return self.c.get(self.get_stop_impersonate_view_url(), follow=follow)
+    @classmethod
+    def get_stop_impersonate(cls, follow=True):
+        return cls.c.get(cls.get_stop_impersonate_view_url(), follow=follow)
 
-    def post_stop_impersonate(self, follow=True):
+    @classmethod
+    def post_stop_impersonate(cls, follow=True):
         data = {"submit": ['']}
-        return self.c.post(
-            self.get_stop_impersonate_view_url(), data, follow=follow)
+        return cls.c.post(
+            cls.get_stop_impersonate_view_url(), data, follow=follow)
 
-    def get_confirm_stop_impersonate_view_url(self):
+    @classmethod
+    def get_confirm_stop_impersonate_view_url(cls):
         return reverse("relate-confirm_stop_impersonating")
 
-    def get_confirm_stop_impersonate(self, follow=True):
-        return self.c.get(
-            self.get_confirm_stop_impersonate_view_url(), follow=follow)
+    @classmethod
+    def get_confirm_stop_impersonate(cls, follow=True):
+        return cls.c.get(
+            cls.get_confirm_stop_impersonate_view_url(), follow=follow)
 
-    def post_confirm_stop_impersonate(self, follow=True):
-        return self.c.post(
-            self.get_confirm_stop_impersonate_view_url(), {}, follow=follow)
+    @classmethod
+    def post_confirm_stop_impersonate(cls, follow=True):
+        return cls.c.post(
+            cls.get_confirm_stop_impersonate_view_url(), {}, follow=follow)
 
     @classmethod
     def get_reset_password_url(cls, use_instid=False):
@@ -452,14 +469,17 @@ class SuperuserCreateMixin(ResponseContextMixin):
         return self.c.post(self.get_reset_password_stage2_url(
             user_id=user_id, sign_in_key=sign_in_key, **kwargs), data=data)
 
-    def get_fake_time_url(self):
+    @classmethod
+    def get_fake_time_url(cls):
         return reverse("relate-set_fake_time")
 
-    def get_set_fake_time(self):
-        return self.c.get(self.get_fake_time_url())
+    @classmethod
+    def get_set_fake_time(cls):
+        return cls.c.get(cls.get_fake_time_url())
 
-    def post_set_fake_time(self, data, follow=True):
-        return self.c.post(self.get_fake_time_url(), data, follow=follow)
+    @classmethod
+    def post_set_fake_time(cls, data, follow=True):
+        return cls.c.post(cls.get_fake_time_url(), data, follow=follow)
 
     def assertSessionFakeTimeEqual(self, session, expected_date_time):  # noqa
         fake_time_timestamp = session.get("relate_fake_time", None)
@@ -475,17 +495,21 @@ class SuperuserCreateMixin(ResponseContextMixin):
     def assertSessionFakeTimeIsNone(self, session):  # noqa
         self.assertSessionFakeTimeEqual(session, None)
 
-    def get_set_pretend_facilities_url(self):
+    @classmethod
+    def get_set_pretend_facilities_url(cls):
         return reverse("relate-set_pretend_facilities")
 
-    def get_set_pretend_facilities(self):
-        return self.c.get(self.get_set_pretend_facilities_url())
+    @classmethod
+    def get_set_pretend_facilities(cls):
+        return cls.c.get(cls.get_set_pretend_facilities_url())
 
-    def post_set_pretend_facilities(self, data, follow=True):
-        return self.c.post(self.get_set_pretend_facilities_url(), data,
-                           follow=follow)
+    @classmethod
+    def post_set_pretend_facilities(cls, data, follow=True):
+        return cls.c.post(cls.get_set_pretend_facilities_url(), data,
+                          follow=follow)
 
-    def force_remove_all_course_dir(self):
+    @classmethod
+    def force_remove_all_course_dir(cls):
         # This is only necessary for courses which are created test wise,
         # not class wise.
         from relate.utils import force_remove_path
@@ -782,9 +806,10 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
     def get_course_page_url(cls, course_identifier=None):
         return cls.get_course_view_url("relate-course_page", course_identifier)
 
-    def get_logged_in_user(self):
+    @classmethod
+    def get_logged_in_user(cls):
         try:
-            logged_in_user_id = self.c.session['_auth_user_id']
+            logged_in_user_id = cls.c.session['_auth_user_id']
             from django.contrib.auth import get_user_model
             logged_in_user = get_user_model().objects.get(
                 pk=int(logged_in_user_id))
@@ -792,18 +817,18 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
             logged_in_user = None
         return logged_in_user
 
-    def temporarily_switch_to_user(self, switch_to):
-        _self = self
+    @classmethod
+    def temporarily_switch_to_user(cls, switch_to):
 
         from functools import wraps
 
         class ClientUserSwitcher(object):
             def __init__(self, switch_to):
-                self.client = _self.c
+                self.client = cls.c
                 if isinstance(switch_to, Participation):
                     switch_to = switch_to.user
                 self.switch_to = switch_to
-                self.logged_in_user = _self.get_logged_in_user()
+                self.logged_in_user = cls.get_logged_in_user()
 
             def __enter__(self):
                 if self.logged_in_user == self.switch_to:
@@ -846,7 +871,8 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
                 "testcases with more than one courses")
         raise NotImplementedError
 
-    def get_latest_session_id(self, course_identifier):
+    @classmethod
+    def get_latest_session_id(cls, course_identifier):
         flow_session_qset = FlowSession.objects.filter(
             course__identifier=course_identifier).order_by('-pk')[:1]
         if flow_session_qset:
@@ -854,14 +880,16 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
         else:
             return None
 
-    def get_default_flow_session_id(self, course_identifier):
+    @classmethod
+    def get_default_flow_session_id(cls, course_identifier):
         raise NotImplementedError
 
     @classmethod
     def update_default_flow_session_id(cls, course_identifier):
         raise NotImplementedError
 
-    def get_default_instructor_user(self, course_identifier):
+    @classmethod
+    def get_default_instructor_user(cls, course_identifier):
         return Participation.objects.filter(
             course__identifier=course_identifier,
             roles__identifier="instructor",
@@ -916,96 +944,108 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
                                   kwargs=params), {'submit': ['']})
         return resp
 
-    def get_flow_params(self, course_identifier=None, flow_session_id=None):
+    @classmethod
+    def get_flow_params(cls, course_identifier=None, flow_session_id=None):
         course_identifier = (
-            course_identifier or self.get_default_course_identifier())
+                course_identifier or cls.get_default_course_identifier())
         if flow_session_id is None:
-            flow_session_id = self.get_default_flow_session_id(course_identifier)
+            flow_session_id = cls.get_default_flow_session_id(course_identifier)
         return {
             "course_identifier": course_identifier,
             "flow_session_id": flow_session_id
         }
 
-    def get_page_params(self, course_identifier=None, flow_session_id=None,
+    @classmethod
+    def get_page_params(cls, course_identifier=None, flow_session_id=None,
                         page_ordinal=None):
-        page_params = self.get_flow_params(course_identifier, flow_session_id)
+        page_params = cls.get_flow_params(course_identifier, flow_session_id)
         if page_ordinal is None:
             page_ordinal = 0
         page_params.update({"page_ordinal": page_ordinal})
         return page_params
 
+    @classmethod
     def get_page_ordinal_via_page_id(
-            self, page_id, course_identifier=None, flow_session_id=None):
-        flow_params = self.get_flow_params(course_identifier, flow_session_id)
+            cls, page_id, course_identifier=None, flow_session_id=None):
+        flow_params = cls.get_flow_params(course_identifier, flow_session_id)
         return (
             get_flow_page_ordinal_from_page_id(
                 flow_params["flow_session_id"], page_id))
 
+    @classmethod
     def get_page_id_via_page_oridnal(
-            self, page_ordinal, course_identifier=None, flow_session_id=None,
+            cls, page_ordinal, course_identifier=None, flow_session_id=None,
             with_group_id=False):
-        flow_params = self.get_flow_params(course_identifier, flow_session_id)
+        flow_params = cls.get_flow_params(course_identifier, flow_session_id)
         return (
             get_flow_page_id_from_page_ordinal(
                 flow_params["flow_session_id"], page_ordinal,
                 with_group_id=with_group_id))
 
+    @classmethod
     def get_page_view_url_by_ordinal(
-            self, viewname, page_ordinal, course_identifier=None,
+            cls, viewname, page_ordinal, course_identifier=None,
             flow_session_id=None):
-        page_params = self.get_page_params(
+        page_params = cls.get_page_params(
             course_identifier, flow_session_id, page_ordinal)
         return reverse(viewname, kwargs=page_params)
 
+    @classmethod
     def get_page_view_url_by_page_id(
-            self, viewname, page_id, course_identifier=None, flow_session_id=None):
-        page_ordinal = self.get_page_ordinal_via_page_id(
+            cls, viewname, page_id, course_identifier=None, flow_session_id=None):
+        page_ordinal = cls.get_page_ordinal_via_page_id(
             page_id, course_identifier, flow_session_id)
-        return self.get_page_view_url_by_ordinal(
+        return cls.get_page_view_url_by_ordinal(
             viewname, page_ordinal, course_identifier, flow_session_id)
 
+    @classmethod
     def get_page_url_by_ordinal(
-            self, page_ordinal, course_identifier=None, flow_session_id=None):
-        return self.get_page_view_url_by_ordinal(
+            cls, page_ordinal, course_identifier=None, flow_session_id=None):
+        return cls.get_page_view_url_by_ordinal(
             "relate-view_flow_page",
             page_ordinal, course_identifier, flow_session_id)
 
+    @classmethod
     def get_page_url_by_page_id(
-            self, page_id, course_identifier=None, flow_session_id=None):
-        page_ordinal = self.get_page_ordinal_via_page_id(
+            cls, page_id, course_identifier=None, flow_session_id=None):
+        page_ordinal = cls.get_page_ordinal_via_page_id(
             page_id, course_identifier, flow_session_id)
-        return self.get_page_url_by_ordinal(
+        return cls.get_page_url_by_ordinal(
             page_ordinal, course_identifier, flow_session_id)
 
+    @classmethod
     def get_page_grading_url_by_ordinal(
-            self, page_ordinal, course_identifier=None, flow_session_id=None):
-        return self.get_page_view_url_by_ordinal(
+            cls, page_ordinal, course_identifier=None, flow_session_id=None):
+        return cls.get_page_view_url_by_ordinal(
             "relate-grade_flow_page",
             page_ordinal, course_identifier, flow_session_id)
 
+    @classmethod
     def get_page_grading_url_by_page_id(
-            self, page_id, course_identifier=None, flow_session_id=None):
-        page_ordinal = self.get_page_ordinal_via_page_id(
+            cls, page_id, course_identifier=None, flow_session_id=None):
+        page_ordinal = cls.get_page_ordinal_via_page_id(
             page_id, course_identifier, flow_session_id)
-        return self.get_page_grading_url_by_ordinal(
+        return cls.get_page_grading_url_by_ordinal(
             page_ordinal, course_identifier, flow_session_id)
 
+    @classmethod
     def post_answer_by_ordinal(
-            self, page_ordinal, answer_data,
+            cls, page_ordinal, answer_data,
             course_identifier=None, flow_session_id=None):
         submit_data = answer_data
         submit_data.update({"submit": ["Submit final answer"]})
-        resp = self.c.post(
-            self.get_page_url_by_ordinal(
+        resp = cls.c.post(
+            cls.get_page_url_by_ordinal(
                 page_ordinal, course_identifier, flow_session_id),
             submit_data)
         return resp
 
-    def post_answer_by_page_id(self, page_id, answer_data,
+    @classmethod
+    def post_answer_by_page_id(cls, page_id, answer_data,
                                course_identifier=None, flow_session_id=None):
-        page_ordinal = self.get_page_ordinal_via_page_id(
+        page_ordinal = cls.get_page_ordinal_via_page_id(
             page_id, course_identifier, flow_session_id)
-        return self.post_answer_by_ordinal(
+        return cls.post_answer_by_ordinal(
             page_ordinal, answer_data, course_identifier, flow_session_id)
 
     @classmethod
@@ -1029,73 +1069,80 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
         return cls.post_answer_by_ordinal_class(page_ordinal, answer_data,
                                                 course_identifier, flow_session_id)
 
-    def post_grade_by_ordinal(self, page_ordinal, grade_data,
+    @classmethod
+    def post_grade_by_ordinal(cls, page_ordinal, grade_data,
                               course_identifier=None, flow_session_id=None,
                               force_login_instructor=True):
         post_data = {"submit": [""]}
         post_data.update(grade_data)
 
-        page_params = self.get_page_params(
+        page_params = cls.get_page_params(
             course_identifier, flow_session_id, page_ordinal)
 
-        force_login_user = self.get_logged_in_user()
+        force_login_user = cls.get_logged_in_user()
         if force_login_instructor:
-            force_login_user = self.get_default_instructor_user(
+            force_login_user = cls.get_default_instructor_user(
                 page_params["course_identifier"])
 
-        with self.temporarily_switch_to_user(force_login_user):
-            response = self.c.post(
-                self.get_page_grading_url_by_ordinal(**page_params),
+        with cls.temporarily_switch_to_user(force_login_user):
+            response = cls.c.post(
+                cls.get_page_grading_url_by_ordinal(**page_params),
                 data=post_data,
                 follow=True)
         return response
 
-    def post_grade_by_page_id(self, page_id, grade_data,
+    @classmethod
+    def post_grade_by_page_id(cls, page_id, grade_data,
                               course_identifier=None, flow_session_id=None,
                               force_login_instructor=True):
-        page_ordinal = self.get_page_ordinal_via_page_id(
+        page_ordinal = cls.get_page_ordinal_via_page_id(
             page_id, course_identifier, flow_session_id)
 
-        return self.post_grade_by_ordinal(
+        return cls.post_grade_by_ordinal(
             page_ordinal, grade_data, course_identifier,
             flow_session_id, force_login_instructor)
 
+    @classmethod
     def assertSessionScoreEqual(  # noqa
-            self, expect_score, course_identifier=None, flow_session_id=None):
+            cls, expected_score, course_identifier=None, flow_session_id=None):
         if flow_session_id is None:
-            flow_params = self.get_flow_params(course_identifier, flow_session_id)
+            flow_params = cls.get_flow_params(course_identifier, flow_session_id)
             flow_session_id = flow_params["flow_session_id"]
         flow_session = FlowSession.objects.get(id=flow_session_id)
-        if expect_score is not None:
+        if expected_score is not None:
             from decimal import Decimal
-            self.assertEqual(flow_session.points, Decimal(str(expect_score)))
+            assert flow_session.points == Decimal(str(expected_score))
         else:
-            self.assertIsNone(flow_session.points)
+            assert flow_session.points is None
 
+    @classmethod
     def get_page_submit_history_url_by_ordinal(
-            self, page_ordinal, course_identifier=None, flow_session_id=None):
-        return self.get_page_view_url_by_ordinal(
+            cls, page_ordinal, course_identifier=None, flow_session_id=None):
+        return cls.get_page_view_url_by_ordinal(
             "relate-get_prev_answer_visits_dropdown_content",
             page_ordinal, course_identifier, flow_session_id)
 
+    @classmethod
     def get_page_grade_history_url_by_ordinal(
-            self, page_ordinal, course_identifier=None, flow_session_id=None):
-        return self.get_page_view_url_by_ordinal(
+            cls, page_ordinal, course_identifier=None, flow_session_id=None):
+        return cls.get_page_view_url_by_ordinal(
             "relate-get_prev_grades_dropdown_content",
             page_ordinal, course_identifier, flow_session_id)
 
+    @classmethod
     def get_page_submit_history_by_ordinal(
-            self, page_ordinal, course_identifier=None, flow_session_id=None):
-        resp = self.c.get(
-            self.get_page_submit_history_url_by_ordinal(
+            cls, page_ordinal, course_identifier=None, flow_session_id=None):
+        resp = cls.c.get(
+            cls.get_page_submit_history_url_by_ordinal(
                 page_ordinal, course_identifier, flow_session_id),
             HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         return resp
 
+    @classmethod
     def get_page_grade_history_by_ordinal(
-            self, page_ordinal, course_identifier=None, flow_session_id=None):
-        resp = self.c.get(
-            self.get_page_grade_history_url_by_ordinal(
+            cls, page_ordinal, course_identifier=None, flow_session_id=None):
+        resp = cls.c.get(
+            cls.get_page_grade_history_url_by_ordinal(
                 page_ordinal, course_identifier, flow_session_id),
             HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         return resp
@@ -1131,17 +1178,20 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
         result = json.loads(resp.content.decode())["result"]
         self.assertEqual(len(result), expected_count)
 
-    def get_update_course_url(self, course_identifier=None):
+    @classmethod
+    def get_update_course_url(cls, course_identifier=None):
         if course_identifier is None:
-            course_identifier = self.get_default_course_identifier()
+            course_identifier = cls.get_default_course_identifier()
         return reverse("relate-update_course", args=[course_identifier])
 
-    def get_course_commit_sha(self, participation, course=None):
-        course = course or self.get_default_course()
+    @classmethod
+    def get_course_commit_sha(cls, participation, course=None):
+        course = course or cls.get_default_course()
         from course.content import get_course_commit_sha
         return get_course_commit_sha(course, participation)
 
-    def post_update_course_content(self, commit_sha,
+    @classmethod
+    def post_update_course_content(cls, commit_sha,
                                    fetch_update=False,
                                    prevent_discarding_revisions=True,
                                    force_login_instructor=True,
@@ -1149,7 +1199,7 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
                                    ):
         # course instead of course_identifier because we need to do
         # refresh_from_db
-        course = course or self.get_default_course()
+        course = course or cls.get_default_course()
 
         try:
             commit_sha = commit_sha.decode()
@@ -1168,42 +1218,30 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
 
         force_login_user = None
         if force_login_instructor:
-            force_login_user = self.get_default_instructor_user(course.identifier)
+            force_login_user = cls.get_default_instructor_user(course.identifier)
 
-        with self.temporarily_switch_to_user(force_login_user):
-            response = self.c.post(
-                self.get_update_course_url(course.identifier), data)
+        with cls.temporarily_switch_to_user(force_login_user):
+            response = cls.c.post(
+                cls.get_update_course_url(course.identifier), data)
             course.refresh_from_db()
 
         return response
 
-    def update_course_content(self, commit_sha, course=None, **kwargs):
-        # course instead of course_identifier because we need to do
-        # refresh_from_db
-        course = course or self.get_default_course()
-
-        try:
-            commit_sha = commit_sha.decode()
-        except Exception:
-            pass
-
-        course.active_git_commit_sha = commit_sha
-        course.save()
-        course.refresh_from_db()
-
+    @classmethod
     def get_page_data_by_page_id(
-            self, page_id, course_identifier=None, flow_session_id=None):
-        flow_params = self.get_flow_params(course_identifier, flow_session_id)
+            cls, page_id, course_identifier=None, flow_session_id=None):
+        flow_params = cls.get_flow_params(course_identifier, flow_session_id)
         return FlowPageData.objects.get(
             flow_session_id=flow_params["flow_session_id"], page_id=page_id)
 
-    def get_page_visits(self, course_identifier=None,
+    @classmethod
+    def get_page_visits(cls, course_identifier=None,
                         flow_session_id=None, page_ordinal=None, page_id=None,
                         **kwargs):
         query_kwargs = {}
         if kwargs.get("answer_visit", False):
             query_kwargs.update({"answer__isnull": False})
-        flow_params = self.get_flow_params(course_identifier, flow_session_id)
+        flow_params = cls.get_flow_params(course_identifier, flow_session_id)
         query_kwargs.update({"flow_session_id": flow_params["flow_session_id"]})
         if page_ordinal is not None:
             query_kwargs.update({"page_data__page_ordinal": page_ordinal})
@@ -1211,34 +1249,38 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
             query_kwargs.update({"page_data__page_id": page_id})
         return FlowPageVisit.objects.filter(**query_kwargs)
 
-    def get_last_answer_visit(self, course_identifier=None,
+    @classmethod
+    def get_last_answer_visit(cls, course_identifier=None,
                               flow_session_id=None, page_ordinal=None,
                               page_id=None, assert_not_none=True):
-        result_qset = self.get_page_visits(course_identifier,
-                                           flow_session_id, page_ordinal, page_id,
-                                           answer_visit=True).order_by('-pk')[:1]
+        result_qset = cls.get_page_visits(course_identifier,
+                                          flow_session_id, page_ordinal, page_id,
+                                          answer_visit=True).order_by('-pk')[:1]
         if result_qset:
             result = result_qset[0]
         else:
             result = None
         if assert_not_none:
-            self.assertIsNotNone(result, "The query returns None")
+            assert result is not None, "The query returns None"
         return result
 
-    def download_all_submissions_url(self, flow_id, course_identifier):
+    @classmethod
+    def download_all_submissions_url(cls, flow_id, course_identifier):
         params = {"course_identifier": course_identifier,
                   "flow_id": flow_id}
         return reverse("relate-download_all_submissions", kwargs=params)
 
-    def get_download_all_submissions(self, flow_id, course_identifier=None):
+    @classmethod
+    def get_download_all_submissions(cls, flow_id, course_identifier=None):
         if course_identifier is None:
-            course_identifier = self.get_default_course_identifier()
+            course_identifier = cls.get_default_course_identifier()
 
-        return self.c.get(
-            self.download_all_submissions_url(flow_id, course_identifier))
+        return cls.c.get(
+            cls.download_all_submissions_url(flow_id, course_identifier))
 
+    @classmethod
     def post_download_all_submissions_by_group_page_id(
-            self, group_page_id, flow_id, course_identifier=None, **kwargs):
+            cls, group_page_id, flow_id, course_identifier=None, **kwargs):
         """
         :param group_page_id: format: group_id/page_id
         :param flow_id:
@@ -1247,7 +1289,7 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
         :return: response
         """
         if course_identifier is None:
-            course_identifier = self.get_default_course_identifier()
+            course_identifier = cls.get_default_course_identifier()
 
         data = {'restrict_to_rules_tag': '<<<ALL>>>',
                 'which_attempt': 'last',
@@ -1257,22 +1299,23 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
 
         data.update(kwargs)
 
-        return self.c.post(
-            self.download_all_submissions_url(flow_id, course_identifier),
+        return cls.c.post(
+            cls.download_all_submissions_url(flow_id, course_identifier),
             data=data
         )
 
-    def get_flow_page_analytics(self, flow_id, group_id, page_id,
+    @classmethod
+    def get_flow_page_analytics(cls, flow_id, group_id, page_id,
                                 course_identifier=None):
         if course_identifier is None:
-            course_identifier = self.get_default_course_identifier()
+            course_identifier = cls.get_default_course_identifier()
 
         params = {"course_identifier": course_identifier,
                   "flow_id": flow_id,
                   "group_id": group_id,
                   "page_id": page_id}
 
-        return self.c.get(reverse("relate-page_analytics", kwargs=params))
+        return cls.c.get(reverse("relate-page_analytics", kwargs=params))
 
     # {{{ grades view
     def view_participant_grades_url(self, participation_id, course_identifier=None):
@@ -1432,19 +1475,18 @@ class SingleCoursePageTestMixin(SingleCourseTestMixin):
     # This serves as cache
     _default_session_id = None
 
-    @property
-    def flow_id(self):
-        raise NotImplementedError
+    flow_id = QUIZ_FLOW_ID
 
     @classmethod
     def update_default_flow_session_id(cls, course_identifier):
         cls._default_session_id = cls.default_flow_params["flow_session_id"]
 
-    def get_default_flow_session_id(self, course_identifier):
-        if self._default_session_id is not None:
-            return self._default_session_id
-        self._default_session_id = self.get_latest_session_id(course_identifier)
-        return self._default_session_id
+    @classmethod
+    def get_default_flow_session_id(cls, course_identifier):
+        if cls._default_session_id is not None:
+            return cls._default_session_id
+        cls._default_session_id = cls.get_latest_session_id(course_identifier)
+        return cls._default_session_id
 
 
 class TwoCoursePageTestMixin(TwoCourseTestMixin):
@@ -1455,19 +1497,20 @@ class TwoCoursePageTestMixin(TwoCourseTestMixin):
     def flow_id(self):
         raise NotImplementedError
 
-    def get_default_flow_session_id(self, course_identifier):
-        if course_identifier == self.course1.identifier:
-            if self._course1_default_session_id is not None:
-                return self._course1_default_session_id
-            self._course1_default_session_id = (
-                self.get_last_session_id(course_identifier))
-            return self._course1_default_session_id
-        if course_identifier == self.course2.identifier:
-            if self._course2_default_session_id is not None:
-                return self._course2_default_session_id
-            self._course2_default_session_id = (
-                self.get_last_session_id(course_identifier))
-            return self._course2_default_session_id
+    @classmethod
+    def get_default_flow_session_id(cls, course_identifier):
+        if course_identifier == cls.course1.identifier:
+            if cls._course1_default_session_id is not None:
+                return cls._course1_default_session_id
+            cls._course1_default_session_id = (
+                cls.get_last_session_id(course_identifier))
+            return cls._course1_default_session_id
+        if course_identifier == cls.course2.identifier:
+            if cls._course2_default_session_id is not None:
+                return cls._course2_default_session_id
+            cls._course2_default_session_id = (
+                cls.get_last_session_id(course_identifier))
+            return cls._course2_default_session_id
 
     @classmethod
     def update_default_flow_session_id(cls, course_identifier):
@@ -1476,6 +1519,301 @@ class TwoCoursePageTestMixin(TwoCourseTestMixin):
             cls._course1_default_session_id = new_session_id
         elif course_identifier == cls.course2.identifier:
             cls._course2_default_session_id = new_session_id
+
+
+class SingleCourseQuizPageTestMixin(SingleCoursePageTestMixin):
+
+    skip_code_question = True
+
+    @classmethod
+    def ensure_grading_ui_get(cls, page_id):
+        with cls.temporarily_switch_to_user(cls.instructor_participation.user):
+            url = cls.get_page_grading_url_by_page_id(page_id)
+            resp = cls.c.get(url)
+            assert resp.status_code == 200
+
+    @classmethod
+    def ensure_analytic_page_get(cls, group_id, page_id):
+        with cls.temporarily_switch_to_user(cls.instructor_participation.user):
+            resp = cls.get_flow_page_analytics(
+                flow_id=cls.flow_id, group_id=group_id,
+                page_id=page_id)
+            assert resp.status_code == 200
+
+    @classmethod
+    def ensure_download_submission(
+            cls, group_id, page_id, dl_file_extension=None):
+        with cls.temporarily_switch_to_user(cls.instructor_participation.user):
+            group_page_id = "%s/%s" % (group_id, page_id)
+            resp = cls.post_download_all_submissions_by_group_page_id(
+                group_page_id=group_page_id, flow_id=cls.flow_id)
+            assert resp.status_code == 200
+            prefix, zip_file = resp["Content-Disposition"].split('=')
+            assert prefix == "attachment; filename"
+            assert resp.get('Content-Type') == "application/zip"
+            if dl_file_extension:
+                buf = six.BytesIO(resp.content)
+                import zipfile
+                with zipfile.ZipFile(buf, 'r') as zf:
+                    assert zf.testzip() is None
+                    # todo: make more assertions in terms of file content
+
+                    for f in zf.filelist:
+                        assert f.file_size > 0
+
+                    assert len([f for f in zf.filelist if
+                             f.filename.endswith(dl_file_extension)]) > 0
+
+    @classmethod
+    def submit_page_answer_by_ordinal_and_test(
+            cls, page_ordinal, use_correct_answer=True, answer_data=None,
+            skip_code_question=True,
+            expected_grades=None, expected_post_answer_status_code=200,
+            do_grading=False, do_human_grade=False, grade_data=None,
+            grade_data_extra_kwargs=None,
+            dl_file_extension=None,
+            ensure_grading_ui_get_before_grading=False,
+            ensure_grading_ui_get_after_grading=False,
+            ensure_analytic_page_get_before_submission=False,
+            ensure_analytic_page_get_after_submission=False,
+            ensure_analytic_page_get_before_grading=False,
+            ensure_analytic_page_get_after_grading=False,
+            ensure_download_before_submission=False,
+            ensure_download_after_submission=False,
+            ensure_download_before_grading=False,
+            ensure_download_after_grading=False):
+        page_id = cls.get_page_id_via_page_oridnal(page_ordinal)
+
+        return cls.submit_page_answer_by_page_id_and_test(
+            page_id, use_correct_answer,
+            answer_data, skip_code_question, expected_grades,
+            expected_post_answer_status_code,
+            do_grading, do_human_grade,
+            grade_data, grade_data_extra_kwargs, dl_file_extension,
+            ensure_grading_ui_get_before_grading,
+            ensure_grading_ui_get_after_grading,
+            ensure_analytic_page_get_before_submission,
+            ensure_analytic_page_get_after_submission,
+            ensure_analytic_page_get_before_grading,
+            ensure_analytic_page_get_after_grading,
+            ensure_download_before_submission,
+            ensure_download_after_submission,
+            ensure_download_before_grading,
+            ensure_download_after_grading)
+
+    @classmethod
+    def submit_page_answer_by_page_id_and_test(
+            cls, page_id, use_correct_answer=True, answer_data=None,
+            skip_code_question=True,
+            expected_grades=None, expected_post_answer_status_code=200,
+            do_grading=False, do_human_grade=False, grade_data=None,
+            grade_data_extra_kwargs=None,
+            dl_file_extension=None,
+            ensure_grading_ui_get_before_grading=False,
+            ensure_grading_ui_get_after_grading=False,
+            ensure_analytic_page_get_before_submission=False,
+            ensure_analytic_page_get_after_submission=False,
+            ensure_analytic_page_get_before_grading=False,
+            ensure_analytic_page_get_after_grading=False,
+            ensure_download_before_submission=False,
+            ensure_download_after_submission=False,
+            ensure_download_before_grading=False,
+            ensure_download_after_grading=False):
+
+        if answer_data is not None:
+            assert isinstance(answer_data, dict)
+            use_correct_answer = False
+
+        submit_answer_response = None
+        post_grade_response = None
+
+        for page_tuple in TEST_PAGE_TUPLE:
+            if skip_code_question and page_tuple.need_runpy:
+                continue
+            if page_id == page_tuple.page_id:
+                group_id = page_tuple.group_id
+                if ensure_grading_ui_get_before_grading:
+                    cls.ensure_grading_ui_get(page_id)
+
+                if ensure_analytic_page_get_before_submission:
+                    cls.ensure_analytic_page_get(group_id, page_id)
+
+                if ensure_download_before_submission:
+                    cls.ensure_download_submission(group_id, page_id)
+
+                if page_tuple.correct_answer is not None:
+
+                    if answer_data is None:
+                        answer_data = page_tuple.correct_answer
+
+                    if page_id in ["anyup", "proof"]:
+                        file_path = answer_data["uploaded_file"]
+                        if not file_path:
+                            # submitting an empty answer
+                            submit_answer_response = (
+                                cls.post_answer_by_page_id(page_id, answer_data))
+                        else:
+                            if isinstance(file_path, list):
+                                file_path, = file_path
+
+                            file_path = file_path.strip()
+                            with open(file_path, 'rb') as fp:
+                                answer_data = {"uploaded_file": fp}
+                                submit_answer_response = (
+                                    cls.post_answer_by_page_id(
+                                        page_id, answer_data))
+                    else:
+                        submit_answer_response = (
+                            cls.post_answer_by_page_id(page_id, answer_data))
+
+                    assert (submit_answer_response.status_code
+                            == expected_post_answer_status_code)
+
+                    if ensure_analytic_page_get_after_submission:
+                        cls.ensure_analytic_page_get(group_id, page_id)
+
+                    if ensure_download_after_submission:
+                        cls.ensure_download_submission(
+                            group_id, page_id)
+
+                if not do_grading:
+                    break
+
+                assert cls.end_flow().status_code == 200
+
+                if ensure_analytic_page_get_before_grading:
+                    cls.ensure_analytic_page_get(group_id, page_id)
+
+                if ensure_download_before_grading:
+                    cls.ensure_download_submission(group_id, page_id)
+
+                if page_tuple.correct_answer is not None:
+                    if use_correct_answer:
+                        expected_grades = page_tuple.full_points
+
+                    if page_tuple.need_human_grade:
+                        if not do_human_grade:
+                            cls.assertSessionScoreEqual(None)
+                            break
+                        if grade_data is not None:
+                            assert isinstance(grade_data, dict)
+                        else:
+                            grade_data = page_tuple.grade_data.copy()
+
+                        if grade_data_extra_kwargs:
+                            assert isinstance(grade_data_extra_kwargs, dict)
+                            grade_data.update(grade_data_extra_kwargs)
+
+                        post_grade_response = cls.post_grade_by_page_id(
+                            page_id, grade_data)
+                    cls.assertSessionScoreEqual(expected_grades)
+
+                    if not dl_file_extension:
+                        dl_file_extension = page_tuple.dl_file_extension
+
+                    if ensure_download_after_grading:
+                        cls.ensure_download_submission(
+                            group_id, page_id,
+                            dl_file_extension=page_tuple.dl_file_extension)
+
+                if ensure_analytic_page_get_after_grading:
+                    cls.ensure_analytic_page_get(group_id, page_id)
+
+                if ensure_grading_ui_get_after_grading:
+                    cls.ensure_grading_ui_get(page_id)
+
+        return submit_answer_response, post_grade_response
+
+    def default_submit_page_answer_by_page_id_and_test(self, page_id,
+                                                       answer_data=None,
+                                                       expected_grade=None,
+                                                       do_grading=True,
+                                                       grade_data=None,
+                                                       grade_data_extra_kwargs=None,
+                                                       ):
+        return self.submit_page_answer_by_page_id_and_test(
+            page_id, answer_data=answer_data,
+            skip_code_question=self.skip_code_question,
+            expected_grades=expected_grade, expected_post_answer_status_code=200,
+            do_grading=do_grading, do_human_grade=True, grade_data=grade_data,
+            grade_data_extra_kwargs=grade_data_extra_kwargs,
+            ensure_grading_ui_get_before_grading=True,
+            ensure_grading_ui_get_after_grading=True,
+            ensure_analytic_page_get_before_submission=True,
+            ensure_analytic_page_get_after_submission=True,
+            ensure_analytic_page_get_before_grading=True,
+            ensure_analytic_page_get_after_grading=True,
+            ensure_download_before_submission=True,
+            ensure_download_after_submission=True,
+            ensure_download_before_grading=True,
+            ensure_download_after_grading=True)
+
+    @classmethod
+    def submit_page_human_grading_by_page_id_and_test(
+            cls, page_id,
+            expected_post_grading_status_code=200,
+            grade_data=None, expected_grades=None,
+            grade_data_extra_kwargs=None,
+            force_login_instructor=True,
+            ensure_grading_ui_get_before_grading=False,
+            ensure_grading_ui_get_after_grading=False,
+            ensure_analytic_page_get_before_grading=False,
+            ensure_analytic_page_get_after_grading=False,
+            ensure_download_before_grading=False,
+            ensure_download_after_grading=False):
+
+        post_grade_response = None
+
+        for page_tuple in TEST_PAGE_TUPLE:
+            if page_id == page_tuple.page_id:
+                group_id = page_tuple.group_id
+                if ensure_grading_ui_get_before_grading:
+                    cls.ensure_grading_ui_get(page_id)
+
+                if ensure_analytic_page_get_before_grading:
+                    cls.ensure_analytic_page_get(group_id, page_id)
+
+                if ensure_download_before_grading:
+                    cls.ensure_download_submission(group_id, page_id)
+
+                if not page_tuple.need_human_grade:
+                    break
+
+                assign_full_grades = True
+
+                if grade_data is not None:
+                    assert isinstance(grade_data, dict)
+                    assign_full_grades = False
+                else:
+                    grade_data = page_tuple.grade_data.copy()
+
+                if assign_full_grades:
+                    expected_grades = page_tuple.full_points
+
+                if grade_data_extra_kwargs:
+                    assert isinstance(grade_data_extra_kwargs, dict)
+                    grade_data.update(grade_data_extra_kwargs)
+
+                post_grade_response = cls.post_grade_by_page_id(
+                    page_id, grade_data,
+                    force_login_instructor=force_login_instructor)
+
+                assert (post_grade_response.status_code
+                        == expected_post_grading_status_code)
+
+                if post_grade_response.status_code == 200:
+                    cls.assertSessionScoreEqual(expected_grades)
+
+                if ensure_download_after_grading:
+                    cls.ensure_download_submission(group_id, page_id)
+
+                if ensure_analytic_page_get_after_grading:
+                    cls.ensure_analytic_page_get(group_id, page_id)
+
+                if ensure_grading_ui_get_after_grading:
+                    cls.ensure_grading_ui_get(page_id)
+
+        return post_grade_response
 
 
 class FallBackStorageMessageTestMixin(object):

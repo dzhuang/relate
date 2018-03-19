@@ -22,7 +22,7 @@ Python 3.6:
   variables:
     CODECOV_TOKEN: "a0ed9aa4-e4d9-4b24-bf50-0d54e407bd92"
 
-Python 3.6:
+Python 3.6 CLI Tool:
   script:
   - "PY_EXE=python3.6 bash ./test-command-line-tool.sh python3.6"
   tags:

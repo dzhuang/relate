@@ -590,7 +590,7 @@ def update_course(pctx):
 
         form = GitUpdateForm(may_update, previewing, repo,
                 {
-                    "new_sha": repo.head(),
+                    "new_sha": repo.head().decode(),
                     "prevent_discarding_revisions": True,
                     })
 

@@ -61,10 +61,10 @@ from tests.test_my_local.utils import skip_test, SKIP_LOCAL_TEST_REASON
 from tests.test_pages.test_generic import (
     MESSAGE_ANSWER_SAVED_TEXT, MESSAGE_ANSWER_FAILED_SAVE_TEXT)
 from tests.test_sandbox import (
-    SingleCoursePageSandboxTestBaseMixin, PAGE_WARNINGS, PAGE_ERRORS)
+    SingleCoursePageSandboxTestBaseMixin)
+from tests.contants import PAGE_WARNINGS, PAGE_ERRORS
 from tests.test_my_local.sources import latex_sandbox
 from tests.test_my_local.test_imageupload import MY_SINGLE_COURSE_SETUP_LIST
-
 
 source_dir = os.path.join(os.path.dirname(__file__), "sources")
 
@@ -558,7 +558,7 @@ class LatexPageSandboxTest(SubprocessRunpyContainerMixin,
         self.c.force_login(self.instructor_participation.user)
 
         self.clear_cache()
-        self.update_course_content(COMMIT_SHA_WITH_SAME_CONTENT)
+        self.post_update_course_content(COMMIT_SHA_WITH_SAME_CONTENT)
 
         self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_OLD_STYLE_WITH_PARTS_MULTIPLE_DATA)
@@ -1129,7 +1129,7 @@ class LatexPageInitalPageDataTest(SubprocessRunpyContainerMixin, LatexPageMixin,
         self.assertEqual(self.get_variant_page_commitsha_mongo_items_count(), 1)
         self.assertEqual(self.get_variant_page_mongo_items_count(), 1)
 
-        self.update_course_content(COMMIT_SHA_WITH_SAME_CONTENT)
+        self.post_update_course_content(COMMIT_SHA_WITH_SAME_CONTENT)
         with mock.patch(RUNPY_WITH_RETRIES_PATH):
             self.c.get(self.get_page_url_by_page_id(self.page_id))
 
@@ -1152,7 +1152,7 @@ class LatexPageInitalPageDataTest(SubprocessRunpyContainerMixin, LatexPageMixin,
             self, mock_generate_hash):
         # when commit_sha changed, template_hash is regenerated only once.
         self.clear_cache()
-        self.update_course_content(COMMIT_SHA_WITH_SAME_CONTENT)
+        self.post_update_course_content(COMMIT_SHA_WITH_SAME_CONTENT)
         self.c.get(self.get_page_url_by_page_id(self.page_id))
         self.assertEqual(mock_generate_hash.call_count, 1)
         self.c.get(self.get_page_url_by_page_id("rand"))
@@ -1166,7 +1166,7 @@ class LatexPageInitalPageDataTest(SubprocessRunpyContainerMixin, LatexPageMixin,
         original_question_data = page_data.data["question_data"]
         del page_data.data["question_data"]
         page_data.save()
-        self.update_course_content(COMMIT_SHA_WITH_SAME_CONTENT)
+        self.post_update_course_content(COMMIT_SHA_WITH_SAME_CONTENT)
         self.c.get(self.get_page_url_by_page_id(self.page_id))
         new_page_data = self.get_page_data_by_page_id(self.page_id)
         self.assertEqual(new_page_data.data["question_data"],
@@ -1178,7 +1178,7 @@ class LatexPageInitalPageDataTest(SubprocessRunpyContainerMixin, LatexPageMixin,
         page_data = self.get_page_data_by_page_id(self.page_id)
         del page_data.data["question_data"]
         page_data.save()
-        self.update_course_content(COMMIT_SHA_WITH_SAME_CONTENT)
+        self.post_update_course_content(COMMIT_SHA_WITH_SAME_CONTENT)
         self.c.get(self.get_page_url_by_page_id(self.page_id))
 
         self.assertEqual(mock_initialize_page_data.call_count, 1)
@@ -1189,7 +1189,7 @@ class LatexPageInitalPageDataTest(SubprocessRunpyContainerMixin, LatexPageMixin,
         page_data = self.get_page_data_by_page_id(self.page_id)
         page_data.data["template_hash_id"] = invalid_template_hash_id
         page_data.save()
-        self.update_course_content(COMMIT_SHA_WITH_SAME_CONTENT)
+        self.post_update_course_content(COMMIT_SHA_WITH_SAME_CONTENT)
         resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
         self.assertEqual(resp.status_code, 200)
         new_page_data = self.get_page_data_by_page_id(self.page_id)
@@ -1207,7 +1207,7 @@ class LatexPageInitalPageDataTest(SubprocessRunpyContainerMixin, LatexPageMixin,
         mongo_fake_changed_template_hash = template_hash + "_change"
 
         # switch to another commit_sha
-        self.update_course_content(COMMIT_SHA_WITH_SAME_CONTENT)
+        self.post_update_course_content(COMMIT_SHA_WITH_SAME_CONTENT)
         self.c.get(self.get_page_url_by_page_id(self.page_id))
 
         # then we manually changed the mongo data
@@ -1216,7 +1216,7 @@ class LatexPageInitalPageDataTest(SubprocessRunpyContainerMixin, LatexPageMixin,
             {"$set": {current_commit_sha: mongo_fake_changed_template_hash}})
 
         # then we switch back to original commit_sha
-        self.update_course_content(current_commit_sha)
+        self.post_update_course_content(current_commit_sha)
         resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
         self.assertEqual(resp.status_code, 200)
 
@@ -1237,11 +1237,11 @@ class LatexPageInitalPageDataTest(SubprocessRunpyContainerMixin, LatexPageMixin,
         template_hash = original_page_data.data["template_hash"]
 
         # switch to another commit_sha
-        self.update_course_content(COMMIT_SHA_WITH_SAME_CONTENT)
+        self.post_update_course_content(COMMIT_SHA_WITH_SAME_CONTENT)
         self.c.get(self.get_page_url_by_page_id(self.page_id))
 
         # then we switch back to original commit_sha
-        self.update_course_content(current_commit_sha)
+        self.post_update_course_content(current_commit_sha)
 
         # manually change page data
         current_page_data = self.get_page_data_by_page_id(self.page_id)
@@ -1267,7 +1267,7 @@ class LatexPageInitalPageDataTest(SubprocessRunpyContainerMixin, LatexPageMixin,
         del page_data.data["template_hash"]
         del page_data.data["template_hash_id"]
         page_data.save()
-        self.update_course_content(COMMIT_SHA_WITH_SAME_CONTENT)
+        self.post_update_course_content(COMMIT_SHA_WITH_SAME_CONTENT)
         self.c.get(self.get_page_url_by_page_id(self.page_id))
         new_page_data = self.get_page_data_by_page_id(self.page_id)
         self.assertEqual(new_page_data.data["template_hash"],
@@ -1288,7 +1288,7 @@ class LatexPageInitalPageDataTest(SubprocessRunpyContainerMixin, LatexPageMixin,
         del page_data.data["template_hash"]
         del page_data.data["template_hash_id"]
         page_data.save()
-        self.update_course_content(COMMIT_SHA_WITH_SAME_CONTENT)
+        self.post_update_course_content(COMMIT_SHA_WITH_SAME_CONTENT)
         self.c.get(self.get_page_url_by_page_id(self.page_id))
         # one for generate template_hash for all other questions, one for this page
         # only
@@ -1307,7 +1307,7 @@ class LatexPageInitalPageDataTest(SubprocessRunpyContainerMixin, LatexPageMixin,
             {"%s_next" % new_commit_sha: {"$exists": True}})
         self.assertIsNone(redirected_entry)
 
-        self.update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
+        self.post_update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
 
         with mock.patch(
                 INIT_PAGE_DATA_PATH, autospec=True) as mock_initialize_page_data:
@@ -1326,7 +1326,7 @@ class LatexPageInitalPageDataTest(SubprocessRunpyContainerMixin, LatexPageMixin,
             {"%s_next" % new_commit_sha: {"$exists": True}})
         self.assertIsNone(redirected_entry)
 
-        self.update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
+        self.post_update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
         self.c.get(self.get_page_url_by_page_id(self.page_id))
         self.assertEqual(self.get_variant_page_commitsha_mongo_items_count(), 2)
         self.assertEqual(self.get_variant_page_mongo_items_count(), 2)
@@ -1395,17 +1395,17 @@ class LatexPageInitalPageDataTest(SubprocessRunpyContainerMixin, LatexPageMixin,
         f = FlowSession.objects.last()
         current_commit_sha = f.active_git_commit_sha
 
-        self.update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
+        self.post_update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
         self.c.get(self.get_page_url_by_page_id(self.page_id))
         self.assertEqual(self.get_variant_page_commitsha_mongo_items_count(), 2)
         self.assertEqual(self.get_variant_page_mongo_items_count(), 2)
 
-        self.update_course_content(current_commit_sha)
+        self.post_update_course_content(current_commit_sha)
         self.c.get(self.get_page_url_by_page_id(self.page_id))
         self.assertEqual(self.get_variant_page_commitsha_mongo_items_count(), 2)
         self.assertEqual(self.get_variant_page_mongo_items_count(), 2)
 
-        self.update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
+        self.post_update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
         self.c.get(self.get_page_url_by_page_id(self.page_id))
         self.assertEqual(self.get_variant_page_commitsha_mongo_items_count(), 2)
         self.assertEqual(self.get_variant_page_mongo_items_count(), 2)
@@ -1415,12 +1415,12 @@ class LatexPageInitalPageDataTest(SubprocessRunpyContainerMixin, LatexPageMixin,
         current_commit_sha = f.active_git_commit_sha
 
         # first, make sure the redirect_id is generated
-        self.update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
+        self.post_update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
         self.c.get(self.get_page_url_by_page_id(self.page_id))
         self.assertEqual(self.get_variant_page_commitsha_mongo_items_count(), 2)
         self.assertEqual(self.get_variant_page_mongo_items_count(), 2)
 
-        self.update_course_content(current_commit_sha)
+        self.post_update_course_content(current_commit_sha)
         self.c.get(self.get_page_url_by_page_id(self.page_id))
         self.assertEqual(self.get_variant_page_commitsha_mongo_items_count(), 2)
         self.assertEqual(self.get_variant_page_mongo_items_count(), 2)
@@ -1452,15 +1452,15 @@ class LatexPageInitalPageDataTest(SubprocessRunpyContainerMixin, LatexPageMixin,
 
         # {{{ navigate to different commit_sha, make sure
         # the redirect data is updated
-        self.update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
+        self.post_update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
         resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
         self.assertEqual(resp.status_code, 200)
 
-        self.update_course_content(current_commit_sha)
+        self.post_update_course_content(current_commit_sha)
         resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
         self.assertEqual(resp.status_code, 200)
 
-        self.update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
+        self.post_update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
         resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
         self.assertEqual(resp.status_code, 200)
         # }}}
@@ -1489,12 +1489,12 @@ class LatexPageInitalPageDataTest(SubprocessRunpyContainerMixin, LatexPageMixin,
         current_commit_sha = f.active_git_commit_sha
 
         # first, make sure the redirect_id is generated
-        self.update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
+        self.post_update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
         self.c.get(self.get_page_url_by_page_id(self.page_id))
         self.assertEqual(self.get_variant_page_commitsha_mongo_items_count(), 2)
         self.assertEqual(self.get_variant_page_mongo_items_count(), 2)
 
-        self.update_course_content(current_commit_sha)
+        self.post_update_course_content(current_commit_sha)
         self.c.get(self.get_page_url_by_page_id(self.page_id))
         self.assertEqual(self.get_variant_page_commitsha_mongo_items_count(), 2)
         self.assertEqual(self.get_variant_page_mongo_items_count(), 2)
@@ -1524,15 +1524,15 @@ class LatexPageInitalPageDataTest(SubprocessRunpyContainerMixin, LatexPageMixin,
 
         # {{{ navigate to different commit_sha, make sure
         #  the redirect data is updated
-        self.update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
+        self.post_update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
         resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
         self.assertEqual(resp.status_code, 200)
 
-        self.update_course_content(current_commit_sha)
+        self.post_update_course_content(current_commit_sha)
         resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
         self.assertEqual(resp.status_code, 200)
 
-        self.update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
+        self.post_update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
         resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
         self.assertEqual(resp.status_code, 200)
         # }}}
@@ -1564,7 +1564,7 @@ class LatexPageInitalPageDataTest(SubprocessRunpyContainerMixin, LatexPageMixin,
             self):
 
         self.clear_cache()
-        self.update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
+        self.post_update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
 
         with mock.patch(RUNPY_WITH_RETRIES_PATH) as mock_runpy:
             resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
@@ -1595,7 +1595,7 @@ class LatexPageRunpyFailureTest(SubprocessRunpyContainerMixin,
         # this is not a failure test, but to ensure new doc is created in mongo
         # page collection
         self.clear_cache()
-        self.update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
+        self.post_update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
         resp = self.c.get(self.get_page_url_by_page_id(self.page_id))
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(self.get_variant_page_commitsha_mongo_items_count(), 2)
@@ -1606,7 +1606,7 @@ class LatexPageRunpyFailureTest(SubprocessRunpyContainerMixin,
         # this is not a failure test, but to ensure new doc is created in mongo
         # page collection
         self.clear_cache()
-        self.update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
+        self.post_update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
         self.assertEqual(len(mail.outbox), 0)
         self.assertEqual(self.get_variant_page_mongo_items_count(), 1)
         with mock.patch(
@@ -1617,7 +1617,7 @@ class LatexPageRunpyFailureTest(SubprocessRunpyContainerMixin,
 
     def test_switch_to_course_commit_sha_with_bad_result(self):
         self.clear_cache()
-        self.update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
+        self.post_update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
         self.assertEqual(len(mail.outbox), 0)
 
         with mock.patch(
@@ -1644,7 +1644,7 @@ class LatexPageRunpyFailureTest(SubprocessRunpyContainerMixin,
 
     # def test_runpy_raised_error(self):
     #     self.clear_cache()
-    #     self.update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
+    #     self.post_update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
     #     self.assertEqual(len(mail.outbox), 0)
     #
     #     with mock.patch(
@@ -1665,7 +1665,7 @@ class LatexPageRunpyFailureTest(SubprocessRunpyContainerMixin,
 
     def test_switch_to_failure_course_commit_sha(self):
         self.clear_cache()
-        self.update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
+        self.post_update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
         self.assertEqual(len(mail.outbox), 0)
 
         expected_error_str = ("Jinja runpy just failed to "
@@ -1708,7 +1708,7 @@ class LatexPageRunpyFailureTest(SubprocessRunpyContainerMixin,
 
     def test_switch_to_python_run_timeout(self):
         self.clear_cache()
-        self.update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
+        self.post_update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
         self.assertEqual(len(mail.outbox), 0)
 
         expected_error_str = "The page failed to be rendered due to timeout"
@@ -1753,7 +1753,7 @@ class LatexPageRunpyFailureTest(SubprocessRunpyContainerMixin,
 
     def test_switch_to_failure_course_commit_sha_raise_uncaught_error(self):
         self.clear_cache()
-        self.update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
+        self.post_update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
         self.assertEqual(len(mail.outbox), 0)
 
         with mock.patch(
@@ -1796,7 +1796,7 @@ class LatexPageRunpyFailureTest(SubprocessRunpyContainerMixin,
     def test_runpy_raise_other_unknown_error(self):
         self.assertEqual(len(mail.outbox), 0)
         self.clear_cache()
-        self.update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
+        self.post_update_course_content(COMMIT_SHA_WITH_DIFFERENT_CONTENT)
         self.assertEqual(len(mail.outbox), 0)
 
         with mock.patch(
@@ -1855,7 +1855,7 @@ class LatexPageSandboxFlowCombineTest(
         self.c.force_login(self.instructor_participation.user)
 
         self.clear_cache()
-        self.update_course_content(COMMIT_SHA_WITH_SAME_CONTENT)
+        self.post_update_course_content(COMMIT_SHA_WITH_SAME_CONTENT)
         resp = self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_PAGE_WARMUP_BY_SANDBOX)
         self.assertEqual(resp.status_code, 200)
@@ -1889,14 +1889,14 @@ class LatexPageSandboxFlowCombineTest(
         original pages won't do a new runpy (no new mongo page entry will be created)
         """
         self.clear_cache()
-        self.update_course_content(COMMIT_SHA_WITH_SAME_CONTENT)
+        self.post_update_course_content(COMMIT_SHA_WITH_SAME_CONTENT)
 
         self.clear_cache()
-        # self.update_course_content(COMMIT_SHA_WITH_SAME_CONTENT)
+        # self.post_update_course_content(COMMIT_SHA_WITH_SAME_CONTENT)
         self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_PAGE_WARMUP_BY_SANDBOX)
 
-        self.update_course_content(COMMIT_SHA_WITH_SAME_CONTENT, fetch_update=True)
+        self.post_update_course_content(COMMIT_SHA_WITH_SAME_CONTENT, fetch_update=True)
 
         self.start_flow(self.flow_id)
 
@@ -1919,7 +1919,7 @@ class LatexPageSandboxFlowCombineTest(
         """
         def get_commit_sha_template_hash(hash):
             self.clear_cache()
-            self.update_course_content(hash)
+            self.post_update_course_content(hash)
             for page_id in ["rand%i" % i
                             for i in range(7)]:
                 resp = self.c.get(self.get_page_url_by_page_id(page_id))
