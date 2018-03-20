@@ -1029,9 +1029,14 @@ class InlineMultiQuestionTest(SingleCoursePageSandboxTestBaseMixin, TestCase):
         resp = self.get_page_sandbox_preview_response(markdown)
         self.assertEqual(resp.status_code, 200)
         self.assertSandboxHasValidPage(resp)
+
+        from course.content import get_course_commit_sha
         self.assertContains(
-            resp, '<img src="/course/test-course/media/4124e0c23e369d6709a6'
-                  '70398167cb9c2fe52d35/images/classroom.jpeg">', html=True)
+            resp,
+            '<img src="/course/test-course/media/%s/images/classroom.jpeg">'
+            % get_course_commit_sha(
+                self.course, self.instructor_participation).decode(),
+            html=True)
 
 
 class InlineMultiPageUpdateTest(SingleCourseQuizPageTestMixin, TestCase):
