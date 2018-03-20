@@ -90,7 +90,7 @@ class ValidateFlowPageTest(SingleCourseTestMixin,
         with override_settings(
                 RELATE_CUSTOM_PAGE_TYPES_REMOVED_DEADLINE=deadline):
             resp = self.post_update_course_content(
-                commit_sha=self.commit_sha_deprecated)
+                commit_sha=self.commit_sha_deprecated, assert_success=False)
             self.assertEqual(resp.status_code, 200)
             expected_message = (
                 self.expired_error_message_pattern

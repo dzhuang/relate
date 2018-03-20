@@ -1227,8 +1227,7 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
             course.refresh_from_db()
 
         if assert_success:
-            from course.content import get_course_commit_sha
-            current_commit_sha = get_course_commit_sha(
+            current_commit_sha = cls.get_course_commit_sha(
                 course, cls.instructor_participation).decode()
             assert current_commit_sha == commit_sha
 

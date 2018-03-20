@@ -46,7 +46,6 @@ from django.test import TestCase
 from django.test.utils import override_settings
 from django.core.exceptions import ImproperlyConfigured
 from course.models import FlowSession
-from course.content import get_course_commit_sha
 
 from image_upload.page.latexpage import (
     get_latex_page_mongo_collection as latex_page_collection,
@@ -1199,8 +1198,8 @@ class LatexPageInitalPageDataTest(SubprocessRunpyContainerMixin, LatexPageMixin,
     def test_commit_sha_changed_content_not_changed_mongo_template_hash_manualy_changed(self):  # noqa
         # simulate that the template_hash in mongo entry is manually changed
         original_page_data = self.get_page_data_by_page_id(self.page_id)
-        current_commit_sha = get_course_commit_sha(
-            self.course, self.student_participation).decode()
+        current_commit_sha = self.get_course_commit_sha(
+            self.student_participation).decode()
 
         template_hash_id = original_page_data.data["template_hash_id"]
         template_hash = original_page_data.data["template_hash"]
@@ -1865,19 +1864,19 @@ class LatexPageSandboxFlowCombineTest(
         self.assertResponseContextEqual(resp, PAGE_WARNINGS, [])
 
     def test_get_current_commit_sha(self):
-        current_commit_sha = get_course_commit_sha(
-            self.course, self.instructor_participation)
+        current_commit_sha = self.get_course_commit_sha(
+            self.instructor_participation)
 
         self.post_update_course_content(COMMIT_SHA_WITH_SAME_CONTENT)
-        new_commit_sha = get_course_commit_sha(
-            self.course, self.instructor_participation)
+        new_commit_sha = self.get_course_commit_sha(
+            self.instructor_participation)
 
         self.assertNotEqual(current_commit_sha, new_commit_sha)
 
         self.post_update_course_content(COMMIT_SHA_WITH_SAME_CONTENT,
-                                        fetch_update=True)
-        new_commit_sha = get_course_commit_sha(
-            self.course, self.instructor_participation)
+                                        fetch_update=True, assert_success=False)
+        new_commit_sha = self.get_course_commit_sha(
+            self.instructor_participation)
 
         self.assertEqual(current_commit_sha, new_commit_sha)
 
@@ -1896,7 +1895,9 @@ class LatexPageSandboxFlowCombineTest(
         self.get_page_sandbox_preview_response(
             latex_sandbox.LATEX_BLANK_FILLING_PAGE_WARMUP_BY_SANDBOX)
 
-        self.post_update_course_content(COMMIT_SHA_WITH_SAME_CONTENT, fetch_update=True)
+        self.post_update_course_content(COMMIT_SHA_WITH_SAME_CONTENT,
+                                        fetch_update=True,
+                                        assert_success=False)
 
         self.start_flow(self.flow_id)
 

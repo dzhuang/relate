@@ -1030,12 +1030,10 @@ class InlineMultiQuestionTest(SingleCoursePageSandboxTestBaseMixin, TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertSandboxHasValidPage(resp)
 
-        from course.content import get_course_commit_sha
         self.assertContains(
             resp,
             '<img src="/course/test-course/media/%s/images/classroom.jpeg">'
-            % get_course_commit_sha(
-                self.course, self.instructor_participation).decode(),
+            % self.get_course_commit_sha(self.instructor_participation).decode(),
             html=True)
 
 
