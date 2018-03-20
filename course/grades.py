@@ -397,7 +397,7 @@ def export_gradebook_csv(pctx):
         import csv
 
     fieldnames = ['user_name', 'institutional_id', 'last_name', 'first_name'] + [
-            gopp.identifier for gopp in grading_opps]
+            gopp.identifier for gopp in grading_opps] * 2
 
     writer = csv.writer(csvfile)
 
@@ -409,7 +409,10 @@ def export_gradebook_csv(pctx):
             participation.user.institutional_id,
             participation.user.last_name,
             participation.user.first_name,
-            ] + [grade_info.grade_state_machine.stringify_machine_readable_state()
+            ]
+            + [grade_info.grade_state_machine.stringify_machine_readable_state()
+                for grade_info in grades]
+            + [grade_info.grade_state_machine.stringify_machine_readable_actual_points()  # noqa
                 for grade_info in grades])
 
     response = http.HttpResponse(
@@ -876,9 +879,10 @@ def average_grade(opportunity):
         state_machine = GradeStateMachine()
         state_machine.consume(my_grade_changes)
 
-        percentage = state_machine.percentage()
-        if percentage is not None:
-            grades.append(percentage)
+        percentage_info = state_machine.percentage_info()
+        if percentage_info is not None:
+            if percentage_info.percentage is not None:
+                grades.append(percentage_info.percentage)
 
         del my_grade_changes[:]
 

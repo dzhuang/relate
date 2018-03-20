@@ -1120,6 +1120,9 @@ def grade_flow_session(
                     'point': points})
         points = points * grading_rule.credit_percent / 100
 
+    if grading_rule.credit_percent is not None:
+        flow_session.credit_percentage = grading_rule.credit_percent
+
     flow_session.points = points
     flow_session.max_points = grade_info.max_points
 
@@ -1145,6 +1148,7 @@ def grade_flow_session(
         gchange.state = grade_state_change_types.graded
         gchange.attempt_id = get_flow_session_attempt_id(flow_session)
         gchange.points = points
+        gchange.credit_percentage = flow_session.credit_percentage
         gchange.max_points = grade_info.max_points
         # creator left as NULL
         gchange.flow_session = flow_session

@@ -104,6 +104,7 @@ class FlowSessionFactory(factory.django.DjangoModelFactory):
     start_time = factory.LazyFunction(now)
     in_progress = False
     expiration_mode = constants.flow_session_expiration_mode.end
+    credit_percentage = 100
 
 
 class GradingOpportunityFactory(factory.django.DjangoModelFactory):
@@ -175,6 +176,9 @@ class GradeChangeFactory(factory.django.DjangoModelFactory):
         lambda x: (
                 x.flow_session.last_activity() or x.flow_session.completion_time)
         if x.flow_session is not None else None)
+    credit_percentage = factory.lazy_attribute(
+        lambda x: x.flow_session.credit_percentage
+        if x.flow_session is not None else 100)
 
 
 class ParticipationPreapprovalFactory(factory.django.DjangoModelFactory):
