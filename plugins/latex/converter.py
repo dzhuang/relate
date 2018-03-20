@@ -211,10 +211,11 @@ class Latexmk(TexCompilerBase):
 
 
 class LatexCompiler(TexCompilerBase):
-    latexmk_option = (
-        '-latexoption="-no-shell-escape '
-        '-interaction=batchmode -halt-on-error "'
-    )
+    latexmk_option = [
+        '-latexoption="-no-shell-escape"',
+        '-interaction=nonstopmode',
+        '-halt-on-error'
+    ]
 
     @property
     def output_format(self):
@@ -242,13 +243,15 @@ class LatexCompiler(TexCompilerBase):
     def get_latexmk_subpro_cmdline(self, input_path):
         # type: (Text) -> List[Text]
         latexmk = Latexmk()
-        return [
+        args = [
             latexmk.bin_path,
             "-%s" % self.output_format,
             self.latexmk_prog_repl,
-            self.latexmk_option,
-            input_path
         ]
+        args.extend(self.latexmk_option)
+        args.append(input_path)
+
+        return args
 
 
 class Latex(LatexCompiler):
