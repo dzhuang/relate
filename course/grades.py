@@ -48,7 +48,7 @@ from crispy_forms.layout import Submit
 from bootstrap3_datetime.widgets import DateTimePicker
 
 from course.utils import (
-        course_view, render_course_page,
+        course_view, render_course_page, RelateCSVSettingsInitializer,
         get_session_access_rule)
 from course.models import (
         Participation, participation_status,
@@ -58,15 +58,17 @@ from course.models import (
 from course.flow import adjust_flow_session_page_data
 from course.views import get_now_or_fake_time
 from course.constants import (
-        participation_permission as pperm,
+        participation_permission as pperm, MAX_EXTRA_CREDIT_FACTOR,
         flow_permission
         )
 from course.content import get_flow_desc, get_course_commit_sha
 
+csv_settings = RelateCSVSettingsInitializer()
+
 # {{{ for mypy
 
 if False:
-    from typing import Tuple, Text, Optional, Any, Iterable, List  # noqa
+    from typing import Tuple, Text, Optional, Any, Iterable, List, Union, Dict  # noqa
     from course.utils import CoursePageContext, FlowSessionAccessRule  # noqa
     from course.content import FlowDesc  # noqa
     from course.models import Course, FlowPageVisitGrade  # noqa
@@ -288,8 +290,17 @@ class GradeInfo:
         self.grade_state_machine = grade_state_machine
 
 
-def get_grade_table(course):
-    # type: (Course) -> Tuple[List[Participation], List[GradingOpportunity], List[List[GradeInfo]]]  # noqa
+def get_grade_table(course, excluded_pperm=None):
+    # type: (Course, Optional[List[Text]]) -> Tuple[List[Participation], List[GradingOpportunity], List[List[GradeInfo]]]  # noqa
+
+    participations_exlcude_kwargs = {}  # type: Dict
+    grade_changes_exclude_kwargs = {}  # type: Dict
+    if excluded_pperm:
+        assert isinstance(excluded_pperm, (list, tuple))
+        participations_exlcude_kwargs = {
+            "roles__permissions__permission__in": excluded_pperm}
+        grade_changes_exclude_kwargs = {
+            "participation__roles__permissions__permission__in": excluded_pperm}
 
     # NOTE: It's important that these queries are sorted consistently,
     # also consistently with the code below.
@@ -304,6 +315,7 @@ def get_grade_table(course):
             .filter(
                 course=course,
                 status=participation_status.active)
+            .exclude(**participations_exlcude_kwargs)
             .order_by("id")
             .select_related("user"))
 
@@ -311,6 +323,7 @@ def get_grade_table(course):
             .filter(
                 opportunity__course=course,
                 opportunity__shown_in_grade_book=True)
+            .exclude(**grade_changes_exclude_kwargs)
             .order_by(
                 "participation__id",
                 "opportunity__identifier",
@@ -381,47 +394,234 @@ def view_gradebook(pctx):
         })
 
 
+class ExportGradeBookForm(StyledForm):
+    def __init__(self, *args, **kwargs):
+        # type: (*Any, **Any) -> None
+        super(ExportGradeBookForm, self).__init__(*args, **kwargs)
+
+        self.fields["user_info_fields"] = forms.ChoiceField(
+            choices=(csv_settings.export_csv_fields_options),
+            initial=csv_settings.export_csv_fields_options[0],
+            label=_("User Attributes to Export"),
+        )
+
+        self.fields["percentage_mode"] = forms.ChoiceField(
+            choices=(("graded_percentage", _("Graded percentage")),
+                     ("actual_percentage", _("Actual percentage")),
+                     ("mixed_mode", _("Mixed mode"))),
+            label=_("Percentage download mode"),
+            help_text=_(
+                "Which set of percentages will be downloaded")
+        )
+
+        self.fields["exclude_course_staff"] = forms.BooleanField(
+            required=False,
+            initial=True,
+            label=_("Exclude Course Staff"),
+            help_text=_(
+                "If selected, grades of course staff (participations who "
+                "have '%(permission)s' permissions) will be excluded."
+                % {"permission": pperm.assign_grade}),
+        )
+
+        self.fields["zero_for_state_none"] = forms.BooleanField(
+            required=False,
+            initial=False,
+            label=_("0 percentage for state 'NONE'"),
+            help_text=string_concat(_(
+                "Use 0 percentage for opportunities with grade state `NONE`, "
+                "'NONE' here means there're no grades generated for the "
+                "opportunity of that user."),
+                " ",
+                _("Note: this won't be affected by \"Maximum percentage value\" "
+                  "and \"Minimum percentage value\" below."))
+        )
+
+        self.fields["zero_for_graded_none"] = forms.BooleanField(
+            required=False,
+            initial=True,
+            label=_("0 percentage for graded 'NONE'"),
+            help_text=string_concat(
+                _("Use 0 percentage for graded opportunities which have "
+                  "`NONE` points."),
+                " ",
+                _("Note: this won't be affected by \"Maximum percentage\" "
+                  "and \"Minimum percentage\" below."))
+        )
+
+        self.fields["maximum_percentage"] = forms.FloatField(
+            required=True,
+            min_value=0,
+            max_value=100 * MAX_EXTRA_CREDIT_FACTOR,
+            initial=100,
+            label=_("Maximum percentage"),
+            help_text=_("Percentages which are higher than this value will "
+                        "be replaced this value"),
+        )
+
+        self.fields["minimum_percentage"] = forms.FloatField(
+            required=True,
+            initial=0,
+            min_value=0,
+            max_value=100 * MAX_EXTRA_CREDIT_FACTOR,
+            label=_("Minimum percentage"),
+            help_text=_("Percentages which are lower than this value will "
+                        "be replaced this value"),
+        )
+
+        self.fields["round_digits"] = forms.IntegerField(
+            required=True,
+            min_value=0,
+            initial=0,
+            max_value=2,
+            help_text=_("Round percentages to N digits"),
+        )
+
+        self.fields["encoding_used"] = forms.ChoiceField(
+            choices=tuple(csv_settings.export_csv_encodings_options),
+            label=_("Using Encoding"),
+            initial=csv_settings.export_csv_encodings_options[0],
+            help_text=_(
+                "The <a href='https://docs.python.org/3/library/codecs.html"
+                "#encodings-and-unicode'>encoding</a> used for the exported "
+                "csv file."),
+        )
+
+        if len(csv_settings.export_csv_fields_options) == 1:
+            self.fields["user_info_fields"].widget = forms.HiddenInput()
+
+        if len(csv_settings.export_csv_encodings_options) == 1:
+            self.fields["encoding_used"].widget = forms.HiddenInput()
+
+        self.helper.add_input(Submit("download", _("Download")))
+
+    def clean_user_info_fields(self):
+        user_info_fields_str = self.cleaned_data["user_info_fields"]
+        user_info_fields = user_info_fields_str.split(",")
+        return user_info_fields
+
+    def clean(self):
+        data = super(ExportGradeBookForm, self).clean()
+        minimum_percentage = data.get("minimum_percentage")
+        maximum_percentage = data.get("maximum_percentage")
+        if minimum_percentage is not None and maximum_percentage is not None:
+            if maximum_percentage <= minimum_percentage:
+                self.add_error(
+                    'maximum_percentage',
+                    _("'maximum_percentage' must be greater than "
+                      "'minimum_percentage'."))
+
+
 @course_view
 def export_gradebook_csv(pctx):
     if not pctx.has_permission(pperm.batch_export_grade):
         raise PermissionDenied(_("may not batch-export grades"))
 
-    participations, grading_opps, grade_table = get_grade_table(pctx.course)
+    request = pctx.request
 
-    from six import StringIO
-    csvfile = StringIO()
+    if request.method == "POST":
+        form = ExportGradeBookForm(request.POST)
 
-    if six.PY2:
-        import unicodecsv as csv
+        if form.is_valid():
+            excluding_pperm = None
+            if form.cleaned_data["exclude_course_staff"]:
+                excluding_pperm = [pperm.assign_grade]
+
+            encoding_used = form.cleaned_data["encoding_used"]
+
+            participations, grading_opps, grade_table = (
+                get_grade_table(pctx.course, excluding_pperm))
+
+            from six import StringIO
+            csvfile = StringIO()
+
+            if six.PY2:
+                import unicodecsv as csv
+            else:
+                import csv
+
+            info_fields = form.cleaned_data["user_info_fields"]
+
+            percentage_mode = (
+                form.cleaned_data["percentage_mode"])
+
+            user_info_fields_verbose_names = (
+                csv_settings.get_user_fields_verbose_names(info_fields))
+
+            fieldnames = user_info_fields_verbose_names + [
+                gopp.identifier for gopp in grading_opps]
+
+            writer = csv.writer(csvfile)
+
+            writer.writerow(fieldnames)
+
+            alias_for_state_none = None
+            if form.cleaned_data["zero_for_state_none"]:
+                alias_for_state_none = "0"
+
+            alias_for_graded_none = None
+            if form.cleaned_data["zero_for_graded_none"]:
+                alias_for_graded_none = "0"
+
+            def callback_for_percentage(percentage):
+                maximum_percentage = form.cleaned_data["maximum_percentage"]
+                minimum_percentage = form.cleaned_data["minimum_percentage"]
+                round_digits = form.cleaned_data["round_digits"]
+                assert maximum_percentage > minimum_percentage
+
+                if percentage > maximum_percentage:
+                    percentage = maximum_percentage
+                elif percentage < minimum_percentage:
+                    percentage = minimum_percentage
+                if round_digits == 0:
+                    return str(int(round(percentage, 0)))
+                return '{0:.{1}f}'.format(
+                    round(percentage, round_digits), round_digits)
+
+            def get_user_info_from_info_fields(user, info_fields):
+                result = []
+                for attr in info_fields:
+                    if attr == "full_name":
+                        value = user.get_full_name(allow_blank=True,
+                                                   force_verbose_blank=False)
+                    else:
+                        value = getattr(user, attr, "None")
+                    result.append(str(value))
+                return result
+
+            use_actual_percentage = False
+            mixed_percentage_mode = False
+            if percentage_mode == "actual_percentage":
+                use_actual_percentage = True
+            elif percentage_mode == "mixed_mode":
+                mixed_percentage_mode = True
+
+            for participation, grades in zip(participations, grade_table):
+                info = (get_user_info_from_info_fields(participation.user, info_fields)
+                        + [grade_info.grade_state_machine.stringify_machine_readable_state(  # noqa
+                        alias_for_state_none=alias_for_state_none,
+                        alias_for_graded_none=alias_for_graded_none,
+                        callback_for_percentage=callback_for_percentage,
+                        use_actual_percentage=use_actual_percentage,
+                        mixed_percentage_mode=mixed_percentage_mode)
+                        for grade_info in grades])
+                writer.writerow(info)
+
+            response = http.HttpResponse(
+                    csvfile.getvalue().encode(encoding_used),
+                    content_type="text/plain; charset=utf-8")
+            response['Content-Disposition'] = (
+                    'attachment; filename="grades-%s.csv"'
+                    % pctx.course.identifier)
+            return response
+
     else:
-        import csv
+        form = ExportGradeBookForm()
 
-    fieldnames = ['user_name', 'institutional_id', 'last_name', 'first_name'] + [
-            gopp.identifier for gopp in grading_opps] * 2
-
-    writer = csv.writer(csvfile)
-
-    writer.writerow(fieldnames)
-
-    for participation, grades in zip(participations, grade_table):
-        writer.writerow([
-            participation.user.username,
-            participation.user.institutional_id,
-            participation.user.last_name,
-            participation.user.first_name,
-            ]
-            + [grade_info.grade_state_machine.stringify_machine_readable_state()
-                for grade_info in grades]
-            + [grade_info.grade_state_machine.stringify_machine_readable_actual_points()  # noqa
-                for grade_info in grades])
-
-    response = http.HttpResponse(
-            csvfile.getvalue().encode("utf-8"),
-            content_type="text/plain; charset=utf-8")
-    response['Content-Disposition'] = (
-            'attachment; filename="grades-%s.csv"'
-            % pctx.course.identifier)
-    return response
+    return render_course_page(pctx, "course/generic-course-form.html", {
+        "form": form,
+        "form_description": _("Export Gradebook as a CSV File")
+        })
 
 # }}}
 
@@ -470,6 +670,9 @@ class ModifySessionsForm(StyledForm):
                 Submit("regrade", _("Regrade ended sessions")))
         self.helper.add_input(
                 Submit("recalculate", _("Recalculate grades of ended sessions")))
+        self.helper.add_input(
+                Submit("update_credit_percentage",
+                       _("Update credit percentage")))
 
 
 RULE_TAG_NONE_STRING = "<<<NONE>>>"
@@ -544,6 +747,12 @@ def view_grades_by_opportunity(pctx, opp_id):
                         pperm.batch_recalculate_flow_session_grade):
                     raise PermissionDenied(_("may not batch-recalculate grades"))
 
+            elif "update_credit_percentage" in request.POST:
+                op = "update_credit_percentage"
+                if not pctx.has_permission(
+                        pperm.batch_recalculate_flow_session_grade):
+                    raise PermissionDenied(_("may not batch-recalculate grades"))
+
             else:
                 raise SuspiciousOperation(_("invalid operation"))
 
@@ -558,7 +767,8 @@ def view_grades_by_opportunity(pctx, opp_id):
                         expire_in_progress_sessions,
                         finish_in_progress_sessions,
                         regrade_flow_sessions,
-                        recalculate_ended_sessions)
+                        recalculate_ended_sessions,
+                        update_credit_percentage_of_ended_sessions)
 
                 if op == "expire":
                     async_res = expire_in_progress_sessions.delay(
@@ -585,6 +795,13 @@ def view_grades_by_opportunity(pctx, opp_id):
 
                 elif op == "recalculate":
                     async_res = recalculate_ended_sessions.delay(
+                            pctx.course.id, opportunity.flow_id,
+                            rule_tag)
+
+                    return redirect("relate-monitor_task", async_res.id)
+
+                elif op == "update_credit_percentage":
+                    async_res = update_credit_percentage_of_ended_sessions.delay(
                             pctx.course.id, opportunity.flow_id,
                             rule_tag)
 
@@ -879,7 +1096,7 @@ def average_grade(opportunity):
         state_machine = GradeStateMachine()
         state_machine.consume(my_grade_changes)
 
-        percentage_info = state_machine.percentage_info()
+        percentage_info = state_machine.packed_percentage()
         if percentage_info is not None:
             if percentage_info.percentage is not None:
                 grades.append(percentage_info.percentage)
@@ -966,7 +1183,7 @@ def view_single_grade(pctx, participation_id, opportunity_id):
 
     request = pctx.request
     if pctx.request.method == "POST":
-        action_re = re.compile("^([a-z]+)_([0-9]+)$")
+        action_re = re.compile("^([_a-z]+)_([0-9]+)$")
         action_match = None
         for key in request.POST.keys():
             action_match = action_re.match(key)
@@ -1027,6 +1244,15 @@ def view_single_grade(pctx, participation_id, opportunity_id):
                 messages.add_message(pctx.request, messages.SUCCESS,
                         _("Session grade recalculated."))
 
+            elif op == "update_credit_percentage":
+                if not pctx.has_permission(pperm.recalculate_flow_session_grade):
+                    raise PermissionDenied()
+
+                recalculate_session_grade(
+                        pctx.repo, pctx.course, session,
+                    update_credit_percentage_only=True)
+                messages.add_message(pctx.request, messages.SUCCESS,
+                        _("Session credit percentage updated."))
             else:
                 raise SuspiciousOperation(_("invalid session operation"))
 

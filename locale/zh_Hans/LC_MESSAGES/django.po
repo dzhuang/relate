@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2018-02-26 11:50+0800\n"
+"POT-Creation-Date: 2018-03-20 23:59+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language: \n"
@@ -1558,8 +1558,96 @@ msgstr "不允许查看其他人的成绩"
 msgid "may not view grade book"
 msgstr "不允许查看成绩册"
 
+msgid "User Attributes to Export"
+msgstr "将导出的用户属性"
+
+msgid "Graded percentage"
+msgstr "用于评分的百分比"
+
+msgid "Actual percentage"
+msgstr "实际的百分比"
+
+msgid "Mixed mode"
+msgstr "混合模式"
+
+msgid "Percentage download mode"
+msgstr "百分比下载模式"
+
+msgid "Which set of percentages will be downloaded"
+msgstr "下载哪一种百分比"
+
+msgid "Exclude Course Staff"
+msgstr "剔除课务的成绩"
+
+#, python-format
+msgid ""
+"If selected, grades of course staff (participations who have "
+"'%(permission)s' permissions) will be excluded."
+msgstr "如果勾选，课务人员(有'%(permission)s权限的参与者)的成绩将不会被导出"
+
+msgid "0 percentage for state 'NONE'"
+msgstr "将'NONE'状态替换为0"
+
+msgid ""
+"Use 0 percentage for opportunities with grade state `NONE`, 'NONE' here "
+"means there're no grades generated for the opportunity of that user."
+msgstr ""
+"将评分状态为'0'的得分机会的百分比设为0, 这里的'NONE'表示，该用户在这个得分机"
+"会上没有产生评分结果."
+
+msgid ""
+"Note: this won't be affected by \"Maximum percentage value\" and \"Minimum "
+"percentage value\" below."
+msgstr "注意：这不会被下面的\"最高百分比\"和\"最低百分比\"数值影响."
+
+msgid "0 percentage for graded 'NONE'"
+msgstr "将已经评分的状态'NONE'替换为0"
+
+msgid "Use 0 percentage for graded opportunities which have `NONE` points."
+msgstr "使用0表示已经评分且评分状态为'NONE'的结果"
+
+msgid ""
+"Note: this won't be affected by \"Maximum percentage\" and \"Minimum "
+"percentage\" below."
+msgstr "注意：这不会被下面的\"最高百分比\"和\"最低百分比\"数值影响."
+
+msgid "Maximum percentage"
+msgstr "最高百分比"
+
+msgid ""
+"Percentages which are higher than this value will be replaced this value"
+msgstr "高于此百分比的值将被替换为这个值."
+
+msgid "Minimum percentage"
+msgstr "最低百分比"
+
+msgid "Percentages which are lower than this value will be replaced this value"
+msgstr "低于此百分比的值将被替换为这个值"
+
+msgid "Round percentages to N digits"
+msgstr "对百分比取N位小数"
+
+msgid "Using Encoding"
+msgstr "使用的encoding"
+
+msgid ""
+"The <a href='https://docs.python.org/3/library/codecs.html#encodings-and-"
+"unicode'>encoding</a> used for the exported csv file."
+msgstr ""
+"在导出csv时使用的<a href='https://docs.python.org/3/library/codecs."
+"html#encodings-and-unicode'>encoding</a>."
+
+msgid "Download"
+msgstr "下载"
+
+msgid "'maximum_percentage' must be greater than 'minimum_percentage'."
+msgstr "'最高百分比'应高于'最低百分比'"
+
 msgid "may not batch-export grades"
 msgstr "不允许批量导出成绩"
+
+msgid "Export Gradebook as a CSV File"
+msgstr "将成绩册导出为CSV文件"
 
 msgid "Session tag"
 msgstr ""
@@ -1581,6 +1669,9 @@ msgstr "为已经结束的session重新评分"
 
 msgid "Recalculate grades of ended sessions"
 msgstr "重新计算已结束session的评分"
+
+msgid "Update credit percentage"
+msgstr "更新评分的百分比标准"
 
 msgid "opportunity from wrong course"
 msgstr "机会与课程不符"
@@ -1652,6 +1743,9 @@ msgstr "该session已重新评分. "
 
 msgid "Session grade recalculated."
 msgstr "该session评分已重新计算. "
+
+msgid "Session credit percentage updated."
+msgstr "该session的评分百分比已更新. "
 
 msgid "invalid session operation"
 msgstr "无效的session操作"
@@ -1809,9 +1903,6 @@ msgid ""
 "produced archive is to be used for plagiarism detection, then this may be "
 "used to include the reference solution."
 msgstr ""
-
-msgid "Download"
-msgstr "下载"
 
 msgid "may not batch-download submissions"
 msgstr "下载批量下载提交的内容"
@@ -2352,6 +2443,9 @@ msgstr "过期模式"
 msgid "Points"
 msgstr "分值"
 
+msgid "Credit percentage"
+msgstr "评分的百分比"
+
 msgid "Max point"
 msgstr "满分"
 
@@ -2823,11 +2917,14 @@ msgstr ""
 
 #, python-format
 msgid ""
-"PageBaseWithTitle subclass '%s' does not implement markdown_body_for_title()"
-msgstr "PageBaseWithTitle的子类\"%s\"未使用markdown_body_for_title()方法"
+"PageBaseWithTitle subclass '%s' does not implement markup_body_for_title()"
+msgstr "PageBaseWithTitle的子类\"%s\"未使用markup_body_for_title()方法"
 
 msgid "no title found in body or title attribute"
 msgstr "没有在body中找到title，也没有title属性"
+
+msgid "the rendered title is an empty string"
+msgstr "渲染得到的title为空值"
 
 msgid "Attribute 'value' should be removed when 'is_optional_page' is True."
 msgstr "当'is_optional_page'为True时，不允许设定'value'."
@@ -3117,8 +3214,9 @@ msgstr "该代码问题的提交存在可疑行为%s"
 msgid "unknown embedded question type '%(type)s'"
 msgstr "未知的嵌入型问题类型\"%(type)s\""
 
-msgid "must be struct"
-msgstr "必须是一个struct型的数据"
+#, python-format
+msgid "Embedded question '%s' must be a struct"
+msgstr "嵌入问题 '%s' 必须是一个struct."
 
 #, python-format
 msgid "unrecogonized width attribute string: '%(width_attr)s'"
@@ -3163,24 +3261,16 @@ msgid ""
 msgstr "一个有效的名称应以字母开头，允许包含数字和下划线, 不允许有空格. "
 
 #, python-format
-msgid "invalid embedded question name %s. "
-msgstr "无效的嵌入型问题名称%s. "
-
-#, python-format
 msgid "embedded question name %s not unique."
 msgstr "嵌入问题的名称%s不是唯一的."
-
-#, python-format
-msgid "correct answer(s) not provided for question %s."
-msgstr "未为问题%s提供正确答案. "
 
 #, python-format
 msgid "redundant answers %s provided for non-existing question(s)."
 msgstr "为不存在的问题提供了多余的答案%s. "
 
 #, python-format
-msgid "have unpaired '%s'."
-msgstr "有未配对的\"%s\"."
+msgid "question has unpaired '%s'."
+msgstr "问题中有未配对的\"%s\"."
 
 #, python-format
 msgid "page must be of type '%s'"
@@ -3364,6 +3454,10 @@ msgstr "%d个session已结束. "
 #, python-format
 msgid "Grades recalculated for %d sessions."
 msgstr "%d个session已重新计算评分. "
+
+#, python-format
+msgid "Updated credit percentages for  %d sessions."
+msgstr "更新了%d个session的评分百分比. "
 
 #, python-format
 msgid "%d sessions regraded."
@@ -4763,6 +4857,9 @@ msgid ""
 "Afterward this session will receive no more than %(credit_expected_next)s."
 msgstr "之后，该session的得分不会超过%(credit_expected_next)s."
 
+msgid "Full name"
+msgstr "全名"
+
 msgid "invalid identifier"
 msgstr "无效的identifier"
 
@@ -5399,6 +5496,9 @@ msgid ""
 msgstr ""
 "%s设定了淘汰的'txt_maximum_megabytes'属性, 请使用'txt_maximum_megabytes'"
 
+msgid "Purge page view data"
+msgstr "删除page浏览数据"
+
 msgid "About Us"
 msgstr "关于我们"
 
@@ -5520,14 +5620,43 @@ msgstr "本Session中的下一页"
 msgid "Submit and next ungraded session"
 msgstr "并转下一个未评分session"
 
+msgid ""
+"<p> \"Impose deadline (Expire sessions)\" will find all sessions for this "
+"flow that match the selected session tag and, depending on the session's "
+"selected choice of action at the deadline (aka its \"expiration mode\"), "
+"either end the session or roll it over to the now-current set of grading "
+"rules. (The \"session tag\" corresponds to session tags you may have defined "
+"in your access rules.) </p> <p> \"Regrade ended sessions\" will rerun the "
+"grading code on all submissions that are no longer in progress. If the flow "
+"involved code questions, this may be a long-running operation. </p> <p> "
+"\"Recalculate grades of ended sessions\", by contrast, will not try to "
+"redetermine the correctness of the answers provided by the participant. "
+"Instead, it will merely use the already available correctness information to "
+"recompute the grade achieved, taking into account possible changes in the "
+"grading rules. </p> <p> \"Update credit percentage\" is only for backward "
+"compatibility, for old sessions which has \"credit_percentage\" attribute "
+"(which is not 100) in grading rules. This won't generate flow session "
+"comments and won't change the grade status (percentages) in the gradebook. </"
+"p>"
+msgstr ""
+"<p><strong>\"实施截止(使session过期)\"</strong>时, 所有符合选择的session tag"
+"的session, 根据采取的行动选择(即该Session的\"过期模式\"), 要么将被终止，要么"
+"将被延期并采取当前时间点的评分规则. (\"Session tag\"项对应于您在该session中定"
+"义的访问规则(access rules)中.</p><p><strong>\"为已经结束的session重新评分\"</"
+"strong>将会重新运行评分代码, 对所有不在进行中的session进行重新评分. 如果该"
+"flow中有代码问题(code question), 这个操作过程可能会很漫长.</p><p>而<strong>"
+"\"重新计算已结束session的评分\"</strong>, 并不会考察学员已提交的回答正确与"
+"否, 它只是使用已有的正确性信息重新计算该flow取得的分数, 这通常在修改了得分规"
+"则时使用.</p><p><strong>\"更新得分百分比\"</strong>只是一个后向兼容功能，针对"
+"的是旧的、在\"grading\"规则中设置了\"credit_percentage\"(且其值不为100)的"
+"session. 使用此功能时，成绩册中的session不会生成评论，也不会改变评分的状态.</"
+"p>"
+
 msgid "Session id"
 msgstr ""
 
 msgid "not started"
 msgstr "未开始"
-
-msgid "show excluded participations"
-msgstr "显示默认不显示的课程参与"
 
 msgid "Unregistered Participants"
 msgstr "尚未注册的参与者列表"
@@ -5705,9 +5834,6 @@ msgstr "高级管理"
 msgid "Admin site"
 msgstr "管理网站"
 
-msgid "Purge page view data"
-msgstr "删除page浏览数据"
-
 msgid "Issue exam tickets"
 msgstr "发布测验ticket"
 
@@ -5788,4 +5914,7 @@ msgid "Korean"
 msgstr ""
 
 msgid "French"
+msgstr ""
+
+msgid "whatever"
 msgstr ""

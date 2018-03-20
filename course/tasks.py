@@ -136,6 +136,39 @@ def recalculate_ended_sessions(self, course_id, flow_id, rule_tag):
 
 
 @shared_task(bind=True)
+def update_credit_percentage_of_ended_sessions(self, course_id, flow_id, rule_tag):
+    course = Course.objects.get(id=course_id)
+    repo = get_course_repo(course)
+
+    sessions = (FlowSession.objects
+            .filter(
+                course=course,
+                flow_id=flow_id,
+                participation__isnull=False,
+                access_rules_tag=rule_tag,
+                in_progress=False,
+                ))
+
+    nsessions = sessions.count()
+    count = 0
+
+    from course.flow import recalculate_session_grade
+    for session in sessions:
+        recalculate_session_grade(repo, course, session,
+                                  update_credit_percentage_only=True)
+        count += 1
+
+        self.update_state(
+                state='PROGRESS',
+                meta={'current': count, 'total': nsessions})
+
+    repo.close()
+
+    return {"message":
+                _("Updated credit percentages for  %d sessions.") % count}
+
+
+@shared_task(bind=True)
 def regrade_flow_sessions(self, course_id, flow_id, access_rules_tag, inprog_value):
     course = Course.objects.get(id=course_id)
     repo = get_course_repo(course)

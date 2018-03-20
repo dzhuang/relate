@@ -968,7 +968,8 @@ def grade_page_visits(
 
 @retry_transaction_decorator()
 def finish_flow_session(fctx, flow_session, grading_rule,
-        force_regrade=False, now_datetime=None, respect_preview=True):
+        force_regrade=False, now_datetime=None, respect_preview=True,
+        update_credit_percentage_only=False):
     """
     :returns: :class:`GradeInfo`
     """
@@ -1008,7 +1009,8 @@ def finish_flow_session(fctx, flow_session, grading_rule,
     flow_session.save()
 
     return grade_flow_session(fctx, flow_session, grading_rule,
-            answer_visits)
+            answer_visits,
+            update_credit_percentage_only=update_credit_percentage_only)
 
 
 def expire_flow_session(
@@ -1093,7 +1095,8 @@ def grade_flow_session(
         fctx,  # type: FlowContext
         flow_session,  # type: FlowSession
         grading_rule,  # type: FlowSessionGradingRule
-        answer_visits=None,  # type: Optional[List[Optional[FlowPageVisit]]]
+        answer_visits=None,  # type: Optional[List[Optional[FlowPageVisit]]],
+        update_credit_percentage_only=False,  # type: Optional[bool]
         ):
     # type: (...) -> GradeInfo
 
@@ -1122,11 +1125,15 @@ def grade_flow_session(
 
     if grading_rule.credit_percent is not None:
         flow_session.credit_percentage = grading_rule.credit_percent
+    else:
+        flow_session.credit_percentage = 100
 
     flow_session.points = points
     flow_session.max_points = grade_info.max_points
 
-    flow_session.append_comment(comment)
+    if not update_credit_percentage_only:
+        flow_session.append_comment(comment)
+
     flow_session.save()
 
     # Need to save grade record even if no grade is available yet, because
@@ -1176,19 +1183,31 @@ def grade_flow_session(
         do_save = True
         if previous_grade_changes:
             previous_grade_change, = previous_grade_changes
-            if (previous_grade_change.points == gchange.points
-                    and previous_grade_change.max_points == gchange.max_points
-                    and previous_grade_change.comment == gchange.comment
-                    and previous_grade_change.state == gchange.state
-                    and previous_grade_change.effective_time ==
-                    gchange.effective_time):
+            if update_credit_percentage_only:
+                if (previous_grade_change.credit_percentage !=
+                        gchange.credit_percentage):
+                    previous_grade_change.credit_percentage = \
+                        gchange.credit_percentage
+                    previous_grade_change.save()
                 do_save = False
+            else:
+                if (previous_grade_change.points == gchange.points
+                        and previous_grade_change.max_points == gchange.max_points
+                        and previous_grade_change.comment == gchange.comment
+                        and previous_grade_change.state == gchange.state
+                        and previous_grade_change.effective_time ==
+                        gchange.effective_time
+                        and previous_grade_change.credit_percentage ==
+                        gchange.credit_percentage):
+                            do_save = False
+
         else:
             # no previous grade changes
             if points is None:
                 do_save = False
 
         if do_save:
+            assert not update_credit_percentage_only
             gchange.save()
 
     return grade_info
@@ -1277,7 +1296,8 @@ def finish_flow_session_standalone(
         force_regrade=False,  # type: bool
         now_datetime=None,  # type: Optional[datetime.datetime]
         past_due_only=False,  # type: bool
-        respect_preview=True,  # type:bool
+        respect_preview=True,  # type:bool,
+        update_credit_percentage_only=False,  # type: bool,
         ):
     # type: (...) -> bool
 
@@ -1306,7 +1326,8 @@ def finish_flow_session_standalone(
     finish_flow_session(fctx, session, grading_rule,
             force_regrade=force_regrade,
             now_datetime=now_datetime_filled,
-            respect_preview=respect_preview)
+            respect_preview=respect_preview,
+            update_credit_percentage_only=update_credit_percentage_only)
 
     return True
 
@@ -1368,8 +1389,9 @@ def regrade_session(
                     respect_preview=False)
 
 
-def recalculate_session_grade(repo, course, session):
-    # type: (Repo_ish, Course, FlowSession) -> None
+def recalculate_session_grade(repo, course, session,
+                              update_credit_percentage_only=False):
+    # type: (Repo_ish, Course, FlowSession, bool, bool) -> None
 
     """Only redoes the final grade determination without regrading
     individual pages.
@@ -1385,10 +1407,11 @@ def recalculate_session_grade(repo, course, session):
 
     with transaction.atomic():
         now_datetime = local_now()
-        session.append_comment(
-                _("Session grade recomputed at %(time)s.") % {
-                    'time': format_datetime_local(now_datetime)
-                    })
+        if not update_credit_percentage_only:
+            session.append_comment(
+                    _("Session grade recomputed at %(time)s.") % {
+                        'time': format_datetime_local(now_datetime)
+                        })
         session.save()
 
         reopen_session(now_datetime, session, force=True, suppress_log=True,
@@ -1396,7 +1419,8 @@ def recalculate_session_grade(repo, course, session):
         finish_flow_session_standalone(
                 repo, course, session, force_regrade=False,
                 now_datetime=prev_completion_time,
-                respect_preview=False)
+                respect_preview=False,
+                update_credit_percentage_only=update_credit_percentage_only)
 
 # }}}
 

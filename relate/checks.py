@@ -494,6 +494,12 @@ def check_relate_settings(app_configs, **kwargs):
 
     # }}}
 
+    # check RELATE_CSV_SETTINGS
+    from course.utils import RelateCSVSettingsInitializer
+    csv_settings = RelateCSVSettingsInitializer()
+    errors.extend(csv_settings.check())
+
+
     # {{{ check RELATE_CUSTOM_PAGE_TYPES_REMOVED_DEADLINE
     relate_custom_page_types_removed_deadline = getattr(
         settings, RELATE_CUSTOM_PAGE_TYPES_REMOVED_DEADLINE, None)

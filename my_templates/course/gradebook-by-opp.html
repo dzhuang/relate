@@ -25,6 +25,8 @@
     <tr>
       <td>{% trans "Flow" %}</td>
       <td>
+        <a href="{% url "relate-view_gradebook" course.identifier %}"> <i class="fa fa-level-up"></i> {% trans "Grade book" %}</a>
+        &middot;
         <a href="{% url "relate-view_start_flow" course.identifier opportunity.flow_id %}"><tt>{{ opportunity.flow_id }}</tt> {% trans "(Start page)" %}</a>
       </td>
     </tr>
@@ -98,6 +100,12 @@
         information to recompute the grade achieved, taking into account
         possible changes in the grading rules.
         </p>
+
+        <p>
+          "Update credit percentage" is only for backward compatibility, for old sessions which
+          has "credit_percentage" attribute (which is not 100) in grading rules. This won't
+          generate flow session comments and won't change the grade status (percentages) in the gradebook.
+        </p>
       {% endblocktrans %}
       </div>
     </div>
@@ -141,7 +149,7 @@
               {% endif %}
           >
             <th class="headcol">
-              <a href="{% url "relate-view_single_grade" course.identifier participation.id opportunity.id %}"><span class="sensitive">
+              <a href="{% url "relate-view_participant_grades" course.identifier participation.id %}"><span class="sensitive">
                   {% if not pperm.view_participant_masked_profile %}
                       {{ participation.user.username }}
                   {% else %}
@@ -242,7 +250,7 @@
               >
 
               <a href="{% url "relate-view_single_grade" course.identifier participation.id opportunity.id %}"
-                 ><span class="sensitive">{{ grade_info.grade_state_machine.stringify_state }}</span></a>
+                 ><span class="sensitive">{{ grade_info.grade_state_machine.stringify_state_privileged }}</span></a>
             </td>
           </tr>
       {% endfor %}

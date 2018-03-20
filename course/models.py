@@ -918,7 +918,7 @@ class FlowSession(models.Model):
             blank=True, null=True,
             verbose_name=_('Points'))
     credit_percentage = models.DecimalField(max_digits=10, decimal_places=2,
-            default=100, blank=False, null=True,
+            blank=True, null=True,
             verbose_name=_('Credit percentage'))
     max_points = models.DecimalField(max_digits=10, decimal_places=2,
             blank=True, null=True,
@@ -1616,7 +1616,7 @@ class GradeChange(models.Model):
             verbose_name=_('Points'))
 
     credit_percentage = models.DecimalField(max_digits=10, decimal_places=2,
-            default=100, blank=False, null=True,
+            blank=True, null=True,
             verbose_name=_('Credit percentage'))
 
     max_points = models.DecimalField(max_digits=10, decimal_places=2,
@@ -1664,16 +1664,6 @@ class GradeChange(models.Model):
         if self.opportunity.course != self.participation.course:
             raise ValidationError(_("Participation and opportunity must live "
                     "in the same course"))
-
-    # def percentage(self):
-    #     # type: () -> Optional[float]
-    #
-    #     if (self.max_points is not None
-    #             and self.points is not None
-    #             and self.max_points != 0):
-    #         return 100*self.points/self.max_points
-    #     else:
-    #         return None
 
     def percentage_info(self):
         # type: () -> PercentageInfo
@@ -1874,7 +1864,7 @@ class GradeStateMachine(object):
 
         return self
 
-    def percentage_info(self):
+    def packed_percentage(self):
         # type: () -> Optional[GradeChangePercentageInfo]
 
         """
@@ -1926,51 +1916,109 @@ class GradeStateMachine(object):
             raise ValueError(
                     _("invalid grade aggregation strategy '%s'") % strategy)
 
-    def stringify_state(self):
+    def _stringify_state(self, is_privileged_view=False):
         if self.state is None:
             return u"- ∅ -"
         elif self.state == grade_state_change_types.exempt:
             return "_((exempt))"
         elif self.state == grade_state_change_types.graded:
             assert self.valid_percentage_infos
-            result = ("%.2f%%" % self.percentage_info().percentage
-                      if self.percentage_info().percentage is not None
+            result = ("%.2f%%" % self.packed_percentage().percentage
+                      if self.packed_percentage().percentage is not None
                       else u"- ∅ -")
-            if len(self.valid_percentage_infos) > 1:
-                result += " (/%d)" % len(self.valid_percentage_infos)
+
+            has_different_actual_percentage = False
+
+            if is_privileged_view:
+                has_different_actual_percentage = (
+                        self.packed_percentage().actual_percentage is not None and
+                        self.packed_percentage().percentage !=
+                        self.packed_percentage().actual_percentage
+                )
+            has_multiple_valid_percentages = (
+                bool(len(self.valid_percentage_infos) > 1))
+            if has_multiple_valid_percentages or has_different_actual_percentage:
+                result += " ("
+                if has_different_actual_percentage:
+                    result += "%.2f%%" % self.packed_percentage().actual_percentage
+                    if has_multiple_valid_percentages:
+                        result += " "
+                if has_multiple_valid_percentages:
+                    result += "/%d" % len(self.valid_percentage_infos)
+                result += ")"
             return result
         else:
             return "_((other state))"
 
-    def stringify_machine_readable_actual_points(self):
-        if self.state is None:
-            return 0
-        elif self.state == grade_state_change_types.exempt:
-            return 0
-        elif self.state == grade_state_change_types.graded:
-            assert self.valid_percentage_infos
-            return ("%.3f" % self.percentage_info().actual_percentage
-                    if self.percentage_info().actual_percentage is not None else 0)
-        else:
-            return u"OTHER_STATE"
+    def stringify_state_privileged(self):
+        return self._stringify_state(is_privileged_view=True)
 
-    def stringify_machine_readable_state(self):
+    def stringify_state(self):
+        return self._stringify_state(is_privileged_view=False)
+
+    def _stringify_machine_readable_state(self, alias_for_state_none=None,
+                                          alias_for_graded_none=None,
+                                          callback_for_percentage=None,
+                                          mixed_percentage_mode=False,
+                                          use_actual_percentage=False):
+        if alias_for_state_none is None:
+            alias_for_state_none = u"NONE"
+
+        if alias_for_graded_none is None:
+            alias_for_graded_none = u"NONE"
+
+        if callback_for_percentage is None:
+            callback_for_percentage = (
+                lambda x: "%.3f" % x)  # noqa
+
         if self.state is None:
-            return u"NONE"
+            return alias_for_state_none
         elif self.state == grade_state_change_types.exempt:
             return "EXEMPT"
         elif self.state == grade_state_change_types.graded:
             assert self.valid_percentage_infos
-            return ("%.3f" % self.percentage_info().percentage
-                    if self.percentage_info().percentage is not None else u"NONE")
+            if self.packed_percentage().percentage is None:
+                return alias_for_graded_none
+            assert self.packed_percentage().actual_percentage is not None
+            actual_percentage_str= callback_for_percentage(
+                self.packed_percentage().actual_percentage)
+            graded_percentage_str = callback_for_percentage(
+                self.packed_percentage().percentage)
+            if (graded_percentage_str == actual_percentage_str):
+                mixed_percentage_mode = False
+            if not mixed_percentage_mode:
+                if use_actual_percentage:
+                    return actual_percentage_str
+                else:
+                    return graded_percentage_str
+            else:
+                return "%s(%s)" % (graded_percentage_str, actual_percentage_str)
         else:
             return u"OTHER_STATE"
+
+    def stringify_machine_readable_state(self, alias_for_state_none=None,
+                                         alias_for_graded_none=None,
+                                         callback_for_percentage=None,
+                                         mixed_percentage_mode=False,
+                                         use_actual_percentage=False):
+        return self._stringify_machine_readable_state(
+            alias_for_state_none, alias_for_graded_none, callback_for_percentage,
+            mixed_percentage_mode=mixed_percentage_mode,
+            use_actual_percentage=use_actual_percentage)
+
+    def percentage_value(self):
+        if self.state == grade_state_change_types.graded:
+            assert self.valid_percentage_infos
+            return (self.packed_percentage().percentage
+                    if self.packed_percentage().percentage is not None else 0)
+        else:
+            return 0
 
     def stringify_percentage(self):
         if self.state == grade_state_change_types.graded:
             assert self.valid_percentage_infos
-            return ("%.2f" % self.percentage_info().percentage
-                    if self.percentage_info().percentage is not None else u"")
+            return ("%.2f" % self.packed_percentage().percentage
+                    if self.packed_percentage().percentage is not None else u"")
         else:
             return ""
 # }}}

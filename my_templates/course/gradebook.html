@@ -46,14 +46,14 @@
         {% endif %}
         {% for grade_info in grades reversed %}
           <td class="datacol"
-            {% if grade_info.grade_state_machine.percentage != None %}
-            data-order="{{ grade_info.grade_state_machine.percentage }}"
+            {% if grade_info.grade_state_machine.percentage_value != None %}
+            data-order="{{ grade_info.grade_state_machine.percentage_value }}"
             {% else %}
             data-order="-1"
             {% endif %}
                       >
             <a href="{% url "relate-view_single_grade" course.identifier participation.id grade_info.opportunity.id %}"
-               ><span class="sensitive">{{ grade_info.grade_state_machine.stringify_state }}</span></a>
+               ><span class="sensitive">{{ grade_info.grade_state_machine.stringify_state_privileged }}</span></a>
           </td>
         {% endfor %}
       </tr>

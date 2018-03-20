@@ -5,6 +5,26 @@ from __future__ import unicode_literals
 from django.db import migrations, models
 
 
+def set_default_credit_percentages(apps, schema_editor):
+    GradeChange = apps.get_model("course", "GradeChange")  # noqa
+    target_grade_changes = (
+        GradeChange.objects.all())
+
+    FlowSession = apps.get_model("course", "FlowSession")  # noqa
+    target_flow_sessions = FlowSession.objects.filter(
+        in_progress=False,
+        max_points__isnull=False,
+        points__isnull=False
+    )
+    for fs in target_flow_sessions:
+        fs.credit_percentage = 100
+        fs.save()
+
+    for gc in target_grade_changes:
+        gc.credit_percentage = 100
+        gc.save()
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -15,11 +35,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='flowsession',
             name='credit_percentage',
-            field=models.DecimalField(decimal_places=2, default=100, max_digits=10, null=True, verbose_name='Credit percentage'),
+            field=models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True, verbose_name='Credit percentage'),
         ),
         migrations.AddField(
             model_name='gradechange',
             name='credit_percentage',
-            field=models.DecimalField(decimal_places=2, default=100, max_digits=10, null=True, verbose_name='Credit percentage'),
+            field=models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True, verbose_name='Credit percentage'),
         ),
+        migrations.RunPython(set_default_credit_percentages),
     ]

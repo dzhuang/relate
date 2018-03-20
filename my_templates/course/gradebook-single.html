@@ -18,7 +18,9 @@
       <td>
         <span class="sensitive">
             {% if not pperm.view_participant_masked_profile %}
+              <a href="{% url "relate-view_participant_grades" course.identifier participation.id %}">
                 {{ grade_participation.user.get_full_name }} ({{ grade_participation.user.username }})
+              </a>
             {% else %}
                 {{ grade_participation.user.get_masked_profile }}{% if grade_participation.user == request.user %}(<strong>{% trans "ME" %}</strong>){% endif %}
             {% endif %}
@@ -38,6 +40,8 @@
       <td>{% trans "Flow" %}</td>
       <td>
         {% if show_privileged_info %}
+          <a href="{% url "relate-view_gradebook" course.identifier %}"> <i class="fa fa-level-up"></i> {% trans "Grade book" %}</a>
+          &middot;
           <a href="{% url "relate-view_grades_by_opportunity" course.identifier opportunity.id %}"><i class="fa fa-level-up"></i> <tt>{{ opportunity.flow_id }}</tt></a>
           &middot;
         {% endif %}
@@ -306,6 +310,10 @@
                       <button type="submit" name="recalculate_{{flow_session.id}}"
                         class="btn btn-primary btn-xs relate-btn-xs-vert-spaced">
                         {% trans "Recalculate grade" %}
+                      </button>
+                      <button type="submit" name="update_credit_percentage_{{flow_session.id}}"
+                        class="btn btn-primary btn-xs relate-btn-xs-vert-spaced">
+                        {% trans "Update credit percentage" %}
                       </button>
                     {% endif %}
                   {% endif %}
