@@ -25,7 +25,7 @@ THE SOFTWARE.
 """
 
 from django.conf.urls import url
-from django.views.i18n import javascript_catalog
+from django.views.i18n import JavaScriptCatalog
 
 from course.constants import COURSE_ID_REGEX
 
@@ -129,8 +129,7 @@ urlpatterns = [
 
     url(r"^jsi18n"
         "/image_upload/$",
-        javascript_catalog,
-        js_info_dict_image_upload,
+        JavaScriptCatalog.as_view(**js_info_dict_image_upload),
         name='javascript-catalog-image-upload'),
 
     ]

@@ -31,7 +31,7 @@ from django.utils.translation import (
     ugettext_lazy as _, pgettext)
 from six.moves.urllib.parse import parse_qsl, urlparse
 from django.contrib.admin.templatetags.admin_urls import add_preserved_filters
-from django.core.urlresolvers import Resolver404, get_script_prefix, resolve, reverse
+from django.urls import Resolver404, get_script_prefix, resolve, reverse
 from django.contrib.admin.views.main import ChangeList
 from django.http import HttpResponseRedirect
 
@@ -318,7 +318,7 @@ class FlowPageImageAdmin(admin.ModelAdmin):
         if callable(self.view_on_site):
             return self.view_on_site(obj)
         elif self.view_on_site and hasattr(obj, 'get_absolute_url'):
-            from django.core.urlresolvers import reverse
+            from django.urls import reverse
 
             try:
                 page_ordinal = obj.get_page_ordinal()

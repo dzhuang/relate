@@ -121,7 +121,7 @@ class QuestionQuerySet(models.QuerySet):
                 choice_text_str = choice.text.encode('utf-8')
                 # Text choice list composition[choice_text, question_pk ]
                 choice_question_list.append([choice_text_str, question.id])
-                question_result[choice_text_str+'_count'] = q.count()
+                question_result[choice_text_str + '_count'] = q.count()
                 choices_dates_list = self._filter_choices_by_dates(q
                                                                    .values('date')
                                                                    .order_by('date'))
@@ -211,7 +211,8 @@ class QuestionQuerySet(models.QuerySet):
             try:
                 rslt['satisfaction_total'] = round(
                     (float(total / (
-                        question.answer_set.answers_rating().count() * 5)))*100, 1)
+                            question.answer_set.answers_rating().count() * 5))) * 100,
+                    1)
             except ZeroDivisionError:
                 rslt['satisfaction_total'] = 0
             rslt['total'] = question.answer_set.answers_rating().count()
@@ -220,7 +221,7 @@ class QuestionQuerySet(models.QuerySet):
             rslt['good_count'] = question.answer_set.answers_rating_good().count()
             if not question.required:
                 rslt['not_responding'] = (
-                    question.answer_set.count() - (
+                        question.answer_set.count() - (
                         rslt['poor_count']
                         + rslt['ok_count']
                         + rslt['good_count']))
@@ -300,7 +301,7 @@ class Question(models.Model):
                                    default=False,
                                    help_text=_('The users are required to answer'),
                                    )
-    questionnaire = models.ForeignKey(Questionnaire)
+    questionnaire = models.ForeignKey(Questionnaire, on_delete=models.CASCADE)
     type = models.CharField(verbose_name=_('Type of answer'),
                             max_length=200,
                             blank=False,
@@ -334,7 +335,7 @@ class Question(models.Model):
 
 
 class Choice(models.Model):
-    question = models.ForeignKey(Question)
+    question = models.ForeignKey(Question, on_delete=models.CASCADE)
     text = models.CharField(verbose_name=_('Text choice'),
                             max_length=200,
                             )
@@ -376,18 +377,20 @@ class AnswerQuerySet(models.QuerySet):
 
 class Answer(models.Model):
     user = models.ForeignKey(
-            settings.AUTH_USER_MODEL,
-            help_text=_('The user who supplied this answer'),)
+        settings.AUTH_USER_MODEL,
+        help_text=_('The user who supplied this answer'),
+        on_delete=models.CASCADE)
     question = models.ForeignKey(
-            Question,
-            help_text=_('The question that this is an answer to'),)
+        Question,
+        help_text=_('The question that this is an answer to'),
+        on_delete=models.CASCADE)
     answer = JSONField(
-            verbose_name=_('Answer'),
-            blank=True,
-            help_text=_('The text answer related to the question'),)
+        verbose_name=_('Answer'),
+        blank=True,
+        help_text=_('The text answer related to the question'), )
     date = models.DateField(
-            verbose_name=_("Date"),
-            default=datetime.date.today)
+        verbose_name=_("Date"),
+        default=datetime.date.today)
     objects = AnswerQuerySet.as_manager()
 
     def __unicode__(self):

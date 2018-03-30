@@ -30,7 +30,7 @@ import django.forms as forms
 from django.utils.translation import ugettext as _, string_concat
 from django.template.loader import render_to_string
 from django.db import transaction
-from django.core.urlresolvers import reverse, NoReverseMatch
+from django.urls import reverse, NoReverseMatch
 from django.core.exceptions import ObjectDoesNotExist
 
 from relate.utils import StyledForm
