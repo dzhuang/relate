@@ -878,7 +878,7 @@ class ViewParticipantGradesTest(GradeBookTestMixin, TestCase):
             self.assertEqual(resp.status_code, 200)
             grade_table = self.get_response_context_value_by_name(
                 resp, "grade_table")
-            self.assertEqual((len(grade_table)), 2)
+            self.assertEqual((len(list(grade_table))), 2)
             self.assertEqual([g_info.opportunity.identifier
                               for g_info in grade_table],
                              [fctr.DEFAULT_GRADE_IDENTIFIER,
@@ -905,7 +905,7 @@ class ViewParticipantGradesTest(GradeBookTestMixin, TestCase):
             self.assertEqual(resp.status_code, 200)
             grade_table = self.get_response_context_value_by_name(
                 resp, "grade_table")
-            self.assertEqual((len(grade_table)), 3)
+            self.assertEqual((len(list(grade_table))), 3)
             self.assertEqual([g_info.opportunity.identifier
                               for g_info in grade_table],
                              ['all_hidden_in_ptcp_gradebook',

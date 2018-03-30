@@ -79,11 +79,15 @@ if False:
 # {{{ student grade book
 
 def get_session_access_rule_by_opp(pctx, opp):
-    # type: (...) -> FlowSessionAccessRule
+    # type: (...) -> Optional[FlowSessionAccessRule]
     """Return a :class:`FlowSessionAccessRule`
     """
-    flow_desc = get_flow_desc(pctx.repo, pctx.course, opp.flow_id,
-                              pctx.course_commit_sha)
+    try:
+        flow_desc = get_flow_desc(pctx.repo, pctx.course, opp.flow_id,
+                                  pctx.course_commit_sha)
+    except ObjectDoesNotExist:
+        return None
+
     flow_session_qs = FlowSession.objects.filter(
             course=opp.course, flow_id=opp.flow_id,
             participation=pctx.participation)
@@ -107,7 +111,11 @@ def get_session_access_rule_by_opp(pctx, opp):
 
 
 def may_view_opp_by_access_rule(access_rule):
-    # type: (FlowSessionAccessRule) -> bool
+    # type: (Optional[FlowSessionAccessRule]) -> bool
+
+    if not access_rule:
+        return False
+
     if flow_permission.cannot_see_in_participant_grade_book \
             in access_rule.permissions:
         return False
@@ -115,7 +123,10 @@ def may_view_opp_by_access_rule(access_rule):
 
 
 def may_view_opp_result_by_access_rule(access_rule):
-    # type: (FlowSessionAccessRule) -> bool
+    # type: (Optional[FlowSessionAccessRule]) -> bool
+    if not access_rule:
+        return False
+
     if flow_permission.cannot_see_result_in_participant_grade_book \
             in access_rule.permissions:
         return False
@@ -203,7 +214,7 @@ def view_participant_grades(pctx, participation_id=None):
         zipped_grade_info = zip(grade_table, may_view_result)
 
     return render_course_page(pctx, "course/gradebook-participant.html", {
-        "zipped_grade_info": zipped_grade_info,
+        "grade_table": zipped_grade_info,
         "grade_participation": grade_participation,
         "grading_opportunities": grading_opps,
         "grade_state_change_types": grade_state_change_types,

@@ -53,7 +53,7 @@
       <th>{% trans "Date" %}</th>
     </thead>
     <tbody>
-      {% for grade_info, may_view_result in zipped_grade_info %}
+      {% for grade_info, may_view_result in grade_table %}
       {% with grade_info.grade_state_machine as gsm %}
       <tr>
         <td data-order="{{ grade_info.opportunity.identifier }}">{{ grade_info.opportunity.name }}</td>
