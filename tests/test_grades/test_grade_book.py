@@ -714,7 +714,7 @@ class GradesChangeStateMachineTest(GradeBookTestMixin, TestCase):
         # With use_last_activity_as_completion_time = True, if a flow session has
         # no last_activity, the expected effective_time of the new gchange should
         # be the completion time of the related flow_session.
-        with self.temporarily_switch_to_user(self.ptcp):
+        with self.temporarily_switch_to_user(self.ptcp.user):
             self.start_flow(QUIZ_FLOW_ID)
             self.assertEqual(models.GradeChange.objects.count(), 0)
 
@@ -736,7 +736,7 @@ class GradesChangeStateMachineTest(GradeBookTestMixin, TestCase):
         # With use_last_activity_as_completion_time = True, if a flow session HAS
         # last_activity, the expected effective_time of the new gchange should be
         # the last_activity() of the related flow_session.
-        with self.temporarily_switch_to_user(self.instructor_participation):
+        with self.temporarily_switch_to_user(self.instructor_participation.user):
             self.start_flow(QUIZ_FLOW_ID)
 
             # create a flow page visit, then there should be last_activity() for
@@ -771,7 +771,7 @@ class GradesChangeStateMachineTest(GradeBookTestMixin, TestCase):
         # With use_last_activity_as_completion_time = False, if a flow session has
         # no last_activity, the expected effective_time of the new gchange should
         # be the completion time of the related flow_session.
-        with self.temporarily_switch_to_user(self.ptcp):
+        with self.temporarily_switch_to_user(self.ptcp.user):
             self.start_flow(QUIZ_FLOW_ID)
             self.assertEqual(models.GradeChange.objects.count(), 0)
 
@@ -789,7 +789,7 @@ class GradesChangeStateMachineTest(GradeBookTestMixin, TestCase):
         # With use_last_activity_as_completion_time = False, even if a flow session
         # HAS last_activity, the expected effective_time of the new gchange should
         # be the completion_time of the related flow_session.
-        with self.temporarily_switch_to_user(self.instructor_participation):
+        with self.temporarily_switch_to_user(self.instructor_participation.user):
             self.start_flow(QUIZ_FLOW_ID)
 
             # create a flow page visit, then there should be last_activity() for

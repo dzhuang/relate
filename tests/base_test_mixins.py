@@ -825,8 +825,6 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
         class ClientUserSwitcher(object):
             def __init__(self, switch_to):
                 self.client = cls.c
-                if isinstance(switch_to, Participation):
-                    switch_to = switch_to.user
                 self.switch_to = switch_to
                 self.logged_in_user = cls.get_logged_in_user()
 
@@ -1227,8 +1225,9 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
             course.refresh_from_db()
 
         if assert_success:
+            print(course, cls.instructor_participation)
             current_commit_sha = cls.get_course_commit_sha(
-                course, cls.instructor_participation).decode()
+                course=course, participation=cls.instructor_participation).decode()
             assert current_commit_sha == commit_sha
 
         return response
