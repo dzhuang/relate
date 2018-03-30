@@ -833,6 +833,13 @@ class PageBaseWithValue(PageBase):
                         _("Attribute 'value' should be removed when "
                           "'is_optional_page' is True.")))
 
+            if hasattr(page_desc, "value") and page_desc.value < 0:
+                raise ValidationError(
+                    string_concat(
+                        location,
+                        _("Attribute 'value' expects a non-negative value, "
+                          "got %s instead") % str(page_desc.value)))
+
     def allowed_attrs(self):
         return super(PageBaseWithValue, self).allowed_attrs() + (
                 ("value", (int, float)),
@@ -879,8 +886,9 @@ class TextInputWithButtons(forms.TextInput):
         self.button_values = button_values
         super(TextInputWithButtons, self).__init__(*args, **kwargs)
 
-    def render(self, name, value, attrs=None):
-        html = super(TextInputWithButtons, self).render(name, value, attrs)
+    def render(self, name, value, attrs=None, renderer=None):
+        html = super(TextInputWithButtons, self).render(name, value, attrs,
+                                                        renderer)
         from django.utils.html import format_html, mark_safe, escapejs
         id = attrs["id"]
 

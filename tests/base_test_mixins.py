@@ -543,8 +543,8 @@ class SuperuserCreateMixin(ResponseContextMixin):
         if not isinstance(errors, (list, tuple)):
             errors = [errors]
         try:
-            form_errors = list(
-                itertools.chain(*response.context[form_name].errors.values()))
+            form_errors = ". ".join(list(
+                itertools.chain(*response.context[form_name].errors.values())))
         except TypeError:
             form_errors = None
 
@@ -1407,7 +1407,7 @@ class SingleCourseTestMixin(CoursesTestMixinBase):
 
 
 class TwoCourseTestMixin(CoursesTestMixinBase):
-    courses_setup_list = []
+    courses_setup_list = TWO_COURSE_SETUP_LIST
 
     @classmethod
     def setUpTestData(cls):  # noqa
@@ -1548,7 +1548,8 @@ class SingleCourseQuizPageTestMixin(SingleCoursePageTestMixin):
 
     @classmethod
     def ensure_download_submission(
-            cls, group_id, page_id, dl_file_extension=None):
+            cls, group_id, page_id, dl_file_extension=None,
+            file_with_ext_count=None):
         with cls.temporarily_switch_to_user(cls.instructor_participation.user):
             group_page_id = "%s/%s" % (group_id, page_id)
             resp = cls.post_download_all_submissions_by_group_page_id(
@@ -1567,8 +1568,14 @@ class SingleCourseQuizPageTestMixin(SingleCoursePageTestMixin):
                     for f in zf.filelist:
                         assert f.file_size > 0
 
-                    assert len([f for f in zf.filelist if
-                             f.filename.endswith(dl_file_extension)]) > 0
+                    if file_with_ext_count is None:
+                        assert len([f for f in zf.filelist if
+                                 f.filename.endswith(dl_file_extension)]) > 0
+                    else:
+                        assert (
+                                len([f for f in zf.filelist if
+                                     f.filename.endswith(dl_file_extension)])
+                                == file_with_ext_count)
 
     @classmethod
     def submit_page_answer_by_ordinal_and_test(
@@ -1587,7 +1594,8 @@ class SingleCourseQuizPageTestMixin(SingleCoursePageTestMixin):
             ensure_download_before_submission=False,
             ensure_download_after_submission=False,
             ensure_download_before_grading=False,
-            ensure_download_after_grading=False):
+            ensure_download_after_grading=False,
+            dl_file_with_ext_count=None):
         page_id = cls.get_page_id_via_page_oridnal(page_ordinal)
 
         return cls.submit_page_answer_by_page_id_and_test(
@@ -1605,7 +1613,8 @@ class SingleCourseQuizPageTestMixin(SingleCoursePageTestMixin):
             ensure_download_before_submission,
             ensure_download_after_submission,
             ensure_download_before_grading,
-            ensure_download_after_grading)
+            ensure_download_after_grading,
+            dl_file_with_ext_count)
 
     @classmethod
     def submit_page_answer_by_page_id_and_test(
@@ -1624,7 +1633,8 @@ class SingleCourseQuizPageTestMixin(SingleCoursePageTestMixin):
             ensure_download_before_submission=False,
             ensure_download_after_submission=False,
             ensure_download_before_grading=False,
-            ensure_download_after_grading=False):
+            ensure_download_after_grading=False,
+            dl_file_with_ext_count=None):
 
         if answer_data is not None:
             assert isinstance(answer_data, dict)
@@ -1672,15 +1682,20 @@ class SingleCourseQuizPageTestMixin(SingleCoursePageTestMixin):
                         submit_answer_response = (
                             cls.post_answer_by_page_id(page_id, answer_data))
 
+                    # Fixed #514
+                    # https://github.com/inducer/relate/issues/514
+                    submit_answer_response.context["form"].as_p()
+
                     assert (submit_answer_response.status_code
-                            == expected_post_answer_status_code)
+                            == expected_post_answer_status_code), (
+                            "%s != %s" % (submit_answer_response.status_code,
+                                          expected_post_answer_status_code))
 
                     if ensure_analytic_page_get_after_submission:
                         cls.ensure_analytic_page_get(group_id, page_id)
 
                     if ensure_download_after_submission:
-                        cls.ensure_download_submission(
-                            group_id, page_id)
+                        cls.ensure_download_submission(group_id, page_id)
 
                 if not do_grading:
                     break
@@ -1720,7 +1735,8 @@ class SingleCourseQuizPageTestMixin(SingleCoursePageTestMixin):
                     if ensure_download_after_grading:
                         cls.ensure_download_submission(
                             group_id, page_id,
-                            dl_file_extension=page_tuple.dl_file_extension)
+                            dl_file_extension=dl_file_extension,
+                            file_with_ext_count=dl_file_with_ext_count)
 
                 if ensure_analytic_page_get_after_grading:
                     cls.ensure_analytic_page_get(group_id, page_id)
