@@ -35,7 +35,7 @@ from six import BytesIO
 
 from unittest import skipIf
 from django.urls import reverse
-from django.test import TestCase, mock
+from django.test import TestCase
 from django.contrib import messages
 from django.test.utils import override_settings
 
@@ -48,6 +48,7 @@ from tests.base_test_mixins import (
     SINGLE_COURSE_SETUP_LIST, SingleCoursePageTestMixin,
     FallBackStorageMessageTestMixin, NONE_PARTICIPATION_USER_CREATE_KWARG_LIST,
 )
+from tests.utils import mock
 
 from tests.test_pages.test_generic import (
     MESSAGE_ANSWER_SAVED_TEXT, MESSAGE_ANSWER_FAILED_SAVE_TEXT)
