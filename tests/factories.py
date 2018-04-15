@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+import six
 import pytz
 from datetime import datetime
 
@@ -35,7 +36,7 @@ from course import models
 from course import constants
 
 from tests.base_test_mixins import SINGLE_COURSE_SETUP_LIST
-from tests.contants import QUIZ_FLOW_ID
+from tests.constants import QUIZ_FLOW_ID
 
 DEFAULT_COURSE_IDENTIFIER = SINGLE_COURSE_SETUP_LIST[0]["course"]["identifier"]
 DEFAULT_FLOW_ID = QUIZ_FLOW_ID
@@ -55,23 +56,24 @@ class UserFactory(factory.django.DjangoModelFactory):
         model = get_user_model()
 
     username = factory.Sequence(lambda n: "testuser_%03d" % n)
-    email = factory.Sequence(lambda n: "test_factory_%03d@exmaple.com" % n)
+    email = factory.Sequence(lambda n: "test_factory_%03d@example.com" % n)
     status = constants.user_status.active
     password = factory.Sequence(lambda n: "password_%03d" % n)
+    institutional_id = factory.Sequence(lambda n: "institutional_id%03d" % n)
 
 
 class CourseFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = models.Course
-        django_get_or_create = ('identifier',)
+        django_get_or_create = ('identifier', 'git_source')
 
     identifier = DEFAULT_COURSE_IDENTIFIER
     name = "test-course"
     number = factory.Sequence(lambda n: "%03d" % n)
     time_period = "Spring"
     git_source = SINGLE_COURSE_SETUP_LIST[0]["course"]["git_source"]
-    notify_email = factory.Sequence(lambda n: "test_notify_%03d@exmaple.com" % n)
-    from_email = factory.Sequence(lambda n: "test_from_%03d@exmaple.com" % n)
+    notify_email = factory.Sequence(lambda n: "test_notify_%03d@example.com" % n)
+    from_email = factory.Sequence(lambda n: "test_from_%03d@example.com" % n)
     active_git_commit_sha = "some_sha"
 
 
@@ -98,9 +100,35 @@ class ParticipationFactory(factory.django.DjangoModelFactory):
         if not create:
             # Simple build, do nothing.
             return
-        else:
-            role = ParticipationRoleFactory(course=self.course)
-            self.roles.set([role])
+
+        if extracted:
+            for role in extracted:
+                if isinstance(role, six.string_types):
+                    role = ParticipationRoleFactory(
+                        course=self.course, identifier=role)
+                else:
+                    assert isinstance(role, models.ParticipationRole)
+                self.roles.add(role)
+            return
+
+        role = ParticipationRoleFactory(course=self.course)
+        self.roles.set([role])
+
+    @factory.post_generation
+    def tags(self, create, extracted, **kwargs):
+        if not create:
+            # Simple build, do nothing.
+            return
+
+        if extracted:
+            for tag in extracted:
+                if isinstance(tag, six.string_types):
+                    tag = ParticipationTagFactory(
+                        course=self.course, name=tag)
+                else:
+                    assert isinstance(tag, models.ParticipationTag)
+                self.tags.add(tag)
+            return
 
 
 class ParticipationTagFactory(factory.django.DjangoModelFactory):
@@ -109,7 +137,7 @@ class ParticipationTagFactory(factory.django.DjangoModelFactory):
         django_get_or_create = ('course', 'name', 'shown_to_participant')
 
     course = factory.SubFactory(CourseFactory)
-    name = "tag1"
+    name = fuzzy.FuzzyText()
     shown_to_participant = True
 
 
@@ -165,7 +193,8 @@ class FlowPageVisitFactory(factory.django.DjangoModelFactory):
     flow_session = factory.lazy_attribute(lambda x: x.page_data.flow_session)
     visit_time = factory.LazyFunction(now)
     user = factory.lazy_attribute(
-        lambda x: x.page_data.flow_session.participation.user)
+        lambda x: x.page_data.flow_session.participation.user
+        if x.page_data.flow_session.participation is not None else None)
     answer = None
 
 
@@ -175,6 +204,7 @@ class FlowPageVisitGradeFactory(factory.django.DjangoModelFactory):
 
     visit = factory.SubFactory(FlowPageVisitFactory)
     grade_time = factory.lazy_attribute(lambda x: x.visit.visit_time)
+    correctness = None
 
 
 class EventFactory(factory.django.DjangoModelFactory):
@@ -225,6 +255,15 @@ class ParticipationPreapprovalFactory(factory.django.DjangoModelFactory):
         if not create:
             # Simple build, do nothing.
             return
+        if extracted:
+            for role in extracted:
+                if isinstance(role, six.string_types):
+                    role = ParticipationRoleFactory(
+                        course=self.course, identifier=role)
+                else:
+                    assert isinstance(role, models.ParticipationRole)
+                self.roles.set([role])
+                return
         else:
             role = ParticipationRoleFactory(course=self.course)
             self.roles.set([role])
@@ -337,7 +376,7 @@ class ExamTicketFactory(factory.django.DjangoModelFactory):
 
     creation_time = now()
     state = constants.exam_ticket_states.valid
-    code = "my_exam_ticket"
+    code = fuzzy.FuzzyText()
     valid_start_time = fuzzy.FuzzyDateTime(
         datetime(2019, 1, 1, tzinfo=pytz.UTC),
         datetime(2019, 1, 31, tzinfo=pytz.UTC))

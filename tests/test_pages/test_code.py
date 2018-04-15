@@ -39,7 +39,7 @@ from course.utils import FlowPageContext, CoursePageContext
 
 from course.constants import MAX_EXTRA_CREDIT_FACTOR
 
-from tests.contants import MESSAGE_ANSWER_SAVED_TEXT, PAGE_ERRORS
+from tests.constants import MESSAGE_ANSWER_SAVED_TEXT, PAGE_ERRORS
 
 from tests.base_test_mixins import (
     SubprocessRunpyContainerMixin, SingleCoursePageTestMixin,
@@ -92,13 +92,7 @@ class SingleCourseQuizPageCodeQuestionTest(
     @classmethod
     def setUpTestData(cls):  # noqa
         super(SingleCourseQuizPageCodeQuestionTest, cls).setUpTestData()
-        cls.c.force_login(cls.student_participation.user)
         cls.start_flow(cls.flow_id)
-
-    def setUp(self):  # noqa
-        super(SingleCourseQuizPageCodeQuestionTest, self).setUp()
-        # This is needed to ensure student is logged in
-        self.c.force_login(self.student_participation.user)
 
     def test_code_page_correct(self):
         page_id = "addition"
@@ -611,11 +605,11 @@ class CodeQuestionTest(SingleCoursePageSandboxTestBaseMixin,
     def test_exechost_ip(self):
         with mock.patch("socket.gethostbyaddr") as mock_get_host:
             ip = "192.168.1.100"
-            resovled = "example.com"
-            mock_get_host.side_effect = lambda x: (resovled, [], [])
+            resolved = "example.com"
+            mock_get_host.side_effect = lambda x: (resolved, [], [])
             self.assert_runpy_result_and_response(
                 "user_error",
-                execpted_msgs="Your code ran on %s" % resovled,
+                execpted_msgs="Your code ran on %s" % resolved,
                 exec_host=ip
             )
 
@@ -1338,6 +1332,12 @@ class IsNuisanceFailureTest(unittest.TestCase):
                       "\nhttp.client.RemoteDisconnected: \nfoo"}
         self.assertTrue(is_nuisance_failure(result))
 
+    def test_no_route_to_host(self):
+        result = {"result": "uncaught_error",
+                  "traceback":
+                      "\n[Errno 113] No route to host: \nfoo"}
+        self.assertTrue(is_nuisance_failure(result))
+
 
 class CodeQuestionWithHumanTextFeedbackSpecialCase(
         SingleCoursePageTestMixin, SubprocessRunpyContainerMixin, TestCase):
@@ -1349,12 +1349,10 @@ class CodeQuestionWithHumanTextFeedbackSpecialCase(
     @classmethod
     def setUpTestData(cls):  # noqa
         super(CodeQuestionWithHumanTextFeedbackSpecialCase, cls).setUpTestData()
-        cls.c.force_login(cls.student_participation.user)
         cls.start_flow(cls.flow_id)
 
     def setUp(self):  # noqa
         super(CodeQuestionWithHumanTextFeedbackSpecialCase, self).setUp()
-        self.c.force_login(self.student_participation.user)
         self.rf = RequestFactory()
 
     def get_grade_feedback(self, answer_data, page_value,

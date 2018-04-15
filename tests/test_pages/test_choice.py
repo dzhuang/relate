@@ -31,7 +31,7 @@ from tests.base_test_mixins import SingleCoursePageTestMixin
 from tests.test_sandbox import (
     SingleCoursePageSandboxTestBaseMixin
 )
-from tests.contants import PAGE_ERRORS
+from tests.constants import PAGE_ERRORS
 from tests.utils import mock
 
 # The last item is within a pair of backticks
@@ -669,7 +669,6 @@ class BrokenPageDataTest(SingleCoursePageTestMixin, TestCase):
     @classmethod
     def setUpTestData(cls):  # noqa
         super(BrokenPageDataTest, cls).setUpTestData()
-        cls.c.force_login(cls.student_participation.user)
         cls.start_flow(cls.flow_id)
         cls.end_flow()
         from course.models import FlowPageData

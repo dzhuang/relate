@@ -31,7 +31,7 @@ from tests.base_test_mixins import SingleCourseQuizPageTestMixin
 from tests.test_sandbox import (
     SingleCoursePageSandboxTestBaseMixin
 )
-from tests.contants import PAGE_ERRORS
+from tests.constants import PAGE_ERRORS
 from tests.utils import mock
 
 INLINE_MULTI_MARKDOWN_SINGLE = """
@@ -1063,7 +1063,6 @@ class InlineMultiPageUpdateTest(SingleCourseQuizPageTestMixin, TestCase):
 
     def setUp(self):
         super(InlineMultiPageUpdateTest, self).setUp()
-        self.c.force_login(self.student_participation.user)
 
     def test_quiz_inline_not_show_correctness(self):
         self.start_flow(self.flow_id)

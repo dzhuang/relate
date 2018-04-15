@@ -37,7 +37,7 @@ from course.page.base import (
     AnswerFeedback, get_auto_feedback,
     validate_point_count, InvalidFeedbackPointsError)
 
-from tests.contants import (
+from tests.constants import (
     MESSAGE_ANSWER_SAVED_TEXT,
     MESSAGE_ANSWER_FAILED_SAVE_TEXT, TEST_TEXT_FILE_PATH, TEST_PDF_FILE_PATH,
     TEST_HGTEXT_MARKDOWN_ANSWER_WRONG, TEST_HGTEXT_MARKDOWN_ANSWER_TYPE_WRONG)
@@ -54,15 +54,9 @@ class SingleCourseQuizPageTest(SingleCourseQuizPageTestMixin,
     @classmethod
     def setUpTestData(cls):  # noqa
         super(SingleCourseQuizPageTest, cls).setUpTestData()
-        cls.c.force_login(cls.student_participation.user)
 
         # cls.default_flow_params will only be available after a flow is started
         cls.start_flow(cls.flow_id)
-
-    def setUp(self):  # noqa
-        super(SingleCourseQuizPageTest, self).setUp()
-        # This is needed to ensure student is logged in
-        self.c.force_login(self.student_participation.user)
 
     # view all pages
     def test_view_all_flow_pages(self):
@@ -189,7 +183,6 @@ class SingleCourseQuizPageTest(SingleCourseQuizPageTestMixin,
         self.assertSubmitHistoryItemsCount(page_ordinal, expected_count=1)
 
         self.assertEqual(self.end_flow().status_code, 200)
-        self.end_flow()
         self.assertSessionScoreEqual(0)
 
     def test_quiz_multi_choice_proportion_rule_partial(self):
@@ -385,7 +378,6 @@ class SingleCourseQuizPageTest(SingleCourseQuizPageTestMixin,
 
         # Make sure the page is rendered with 0 max_points
         self.assertResponseContextEqual(submit_answer_response, "max_points", 0)
-        self.end_flow()
 
         # The answer is wrong, there should also be zero score.
         self.assertSessionScoreEqual(0)

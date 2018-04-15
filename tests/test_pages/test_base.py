@@ -37,7 +37,7 @@ from tests.base_test_mixins import SingleCourseQuizPageTestMixin
 from tests.test_sandbox import (
     SingleCoursePageSandboxTestBaseMixin
 )
-from tests.contants import PAGE_ERRORS
+from tests.constants import PAGE_ERRORS
 from tests.test_grading import SingleCourseQuizPageGradeInterfaceTestMixin
 from tests.utils import mock
 
@@ -186,12 +186,7 @@ class PageBaseAPITest(SingleCourseQuizPageTestMixin, TestCase):
     @classmethod
     def setUpTestData(cls):  # noqa
         super(PageBaseAPITest, cls).setUpTestData()
-        cls.c.force_login(cls.student_participation.user)
         cls.start_flow(cls.flow_id)
-
-    def setUp(self):
-        super(PageBaseAPITest, self).setUp()
-        self.c.force_login(self.student_participation.user)
 
     def test_correctness(self):
         self.submit_page_answer_by_page_id_and_test(self.page_id)
@@ -483,7 +478,6 @@ def post_form_side_effect(self, page_context, page_data, post_data, files_data):
 class PageBaseGradeDeprecationTest(SingleCourseQuizPageTestMixin, TestCase):
     def setUp(self):
         super(PageBaseGradeDeprecationTest, self).setUp()
-        self.c.force_login(self.student_participation.user)
         self.start_flow(flow_id=self.flow_id)
 
     def test_update_grade_data_from_grading_form(self):

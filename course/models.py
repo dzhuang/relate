@@ -1939,7 +1939,7 @@ class GradeStateMachine(object):
         if self.state is None:
             return u"- ∅ -"
         elif self.state == grade_state_change_types.exempt:
-            return "_((exempt))"
+            return _("(exempt)")
         elif self.state == grade_state_change_types.graded:
             assert self.valid_percentage_infos
             result = ("%.2f%%" % self.packed_percentage().percentage
@@ -1967,7 +1967,7 @@ class GradeStateMachine(object):
                 result += ")"
             return result
         else:
-            return "_((other state))"
+            return _("(other state)")
 
     def stringify_state_privileged(self):
         return self._stringify_state(is_privileged_view=True)
