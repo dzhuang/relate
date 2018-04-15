@@ -160,7 +160,6 @@ class PythonCodeQuestionWithPageContext(PythonCodeQuestion):
 
                 for i, item in enumerate(response_dict["feedback"]):
                     if "suspective_behavior" in item:
-                        print("here!!!")
                         error_message = _(
                             "There are suspective "
                             "behavior with submission of "

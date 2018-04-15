@@ -197,7 +197,6 @@ def participationtag_changed_handler(sender, **kwargs):
     pk_set = kwargs.pop('pk_set', None)
     action = kwargs.pop('action', None)
     reverse = kwargs.pop("reverse")
-    print(instance, pk_set, action, reverse)
     if isinstance(instance, Participation):
         if action in ["post_add", "post_remove"] and not reverse:
             changed_ptag_pk_list = list(
@@ -206,7 +205,6 @@ def participationtag_changed_handler(sender, **kwargs):
             for pk in changed_ptag_pk_list:
                 pass
                 remove_participationtag_cache(pk, participation=instance)
-                print(instance, pk_set, action, reverse)
 
 
 @receiver(post_save, sender=ParticipationTag)

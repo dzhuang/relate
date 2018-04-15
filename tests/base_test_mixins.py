@@ -1368,12 +1368,6 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
                 cls.get_update_course_url(course.identifier), data)
             course.refresh_from_db()
 
-        if assert_success:
-            print(course, cls.instructor_participation)
-            current_commit_sha = cls.get_course_commit_sha(
-                course=course, participation=cls.instructor_participation).decode()
-            assert current_commit_sha == commit_sha
-
         return response
 
     @classmethod
@@ -1467,6 +1461,7 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
         return cls.c.get(reverse("relate-page_analytics", kwargs=params))
 
     # {{{ hack getting session rules
+
     default_session_start_rule = {
         "tag_session": None,
         "may_start_new_session": True,
