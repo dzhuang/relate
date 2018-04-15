@@ -98,7 +98,11 @@ COMMIT_SHA_MAP = {
 class HackRepoMixin(object):
 
     # This is need to for correctly getting other blobs
-    fallback_commit_sha = b"4124e0c23e369d6709a670398167cb9c2fe52d35"
+
+    #
+    # fallback_commit_sha = b"4124e0c23e369d6709a670398167cb9c2fe52d35"  # upstream
+
+    fallback_commit_sha = b"103f345ae52a2b275cf774baf2cf976aa6d86dfc"
 
     @classmethod
     def setUpTestData(cls):  # noqa
