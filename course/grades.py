@@ -90,17 +90,23 @@ def view_participant_grades(pctx, participation_id=None):
 
     # NOTE: It's important that these two queries are sorted consistently,
     # also consistently with the code below.
+
+    gopp_extra_filter_kwargs = {}
+    if not is_privileged_view:
+        gopp_extra_filter_kwargs = {"shown_in_participant_grade_book": True}
+
     grading_opps = list((GradingOpportunity.objects
             .filter(
                 course=pctx.course,
                 shown_in_grade_book=True,
+                **gopp_extra_filter_kwargs
                 )
             .order_by("identifier")))
 
     grade_changes = list(GradeChange.objects
             .filter(
                 participation=grade_participation,
-                opportunity__course=pctx.course,
+                opportunity__pk__in=[gopp.pk for gopp in grading_opps],
                 opportunity__shown_in_grade_book=True)
             .order_by(
                 "participation__id",
@@ -114,20 +120,6 @@ def view_participant_grades(pctx, participation_id=None):
 
     grade_table = []
     for opp in grading_opps:
-        if not is_privileged_view:
-            if not (opp.shown_in_grade_book
-                    and opp.shown_in_participant_grade_book):
-                continue
-        else:
-            if not opp.shown_in_grade_book:
-                continue
-
-        while (
-                idx < len(grade_changes)
-                and grade_changes[idx].opportunity.identifier < opp.identifier
-                ):
-            idx += 1
-
         my_grade_changes = []
         while (
                 idx < len(grade_changes)
@@ -238,19 +230,9 @@ def get_grade_table(course):
 
     grade_table = []
     for participation in participations:
-        while (
-                idx < len(grade_changes)
-                and grade_changes[idx].participation.id < participation.id):
-            idx += 1
 
         grade_row = []
         for opp in grading_opps:
-            while (
-                    idx < len(grade_changes)
-                    and grade_changes[idx].participation.pk == participation.pk
-                    and grade_changes[idx].opportunity.identifier < opp.identifier
-                    ):
-                idx += 1
 
             my_grade_changes = []
             while (
@@ -487,15 +469,13 @@ def view_grades_by_opportunity(pctx, opp_id):
 
                     return redirect("relate-monitor_task", async_res.id)
 
-                elif op == "recalculate":
+                else:
+                    assert op == "recalculate"
                     async_res = recalculate_ended_sessions.delay(
                             pctx.course.id, opportunity.flow_id,
                             rule_tag)
 
                     return redirect("relate-monitor_task", async_res.id)
-
-                else:
-                    raise SuspiciousOperation("invalid operation")
 
         else:
             batch_session_ops_form = ModifySessionsForm(session_rule_tags)
@@ -825,6 +805,9 @@ def view_single_grade(pctx, participation_id, opportunity_id):
         raise SuspiciousOperation(_("participation does not match course"))
 
     opportunity = get_object_or_404(GradingOpportunity, id=int(opportunity_id))
+
+    if pctx.course != opportunity.course:
+        raise SuspiciousOperation(_("opportunity from wrong course"))
 
     my_grade = participation == pctx.participation
     is_privileged_view = pctx.has_permission(pperm.view_gradebook)
