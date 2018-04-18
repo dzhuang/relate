@@ -24,6 +24,7 @@ THE SOFTWARE.
 
 import os
 import json
+import unittest
 from django.test import TestCase, RequestFactory
 from django.core.exceptions import ObjectDoesNotExist
 
@@ -620,5 +621,213 @@ class GetRepoBlobTest(SingleCourseTestMixin, TestCase):
             expected_error_msg = (
                     "resource '%s' is a directory, not a file" % full_name)
             self.assertIn(expected_error_msg, str(cm.exception))
+
+
+class GitTemplateLoaderTest(SingleCourseTestMixin, TestCase):
+    # test content.GitTemplateLoader
+    def setUp(self):
+        super(GitTemplateLoaderTest, self).setUp()
+        rf = RequestFactory()
+        request = rf.get(self.course_page_url)
+        request.user = self.instructor_participation.user
+        from course.utils import CoursePageContext
+        self.pctx = CoursePageContext(request, self.course.identifier)
+
+    def test_object_not_found(self):
+        environment = mock.MagicMock()
+        template = mock.MagicMock()
+        with self.pctx.repo as repo:
+            loader = content.GitTemplateLoader(
+                repo, self.course.active_git_commit_sha)
+            with mock.patch(
+                    "course.content.get_repo_blob_data_cached",
+                    side_effect=ObjectDoesNotExist):
+                with self.assertRaises(content.TemplateNotFound):
+                    loader.get_source(environment=environment,
+                                      template=template)
+
+    def test_get_source_uptodate(self):
+        environment = mock.MagicMock()
+        template = mock.MagicMock()
+        with self.pctx.repo as repo:
+            with mock.patch(
+                    "course.content.get_repo_blob_data_cached",
+                    return_value=b"blahblah"):
+                        loader = content.GitTemplateLoader(
+                            repo, self.course.active_git_commit_sha)
+                        _, __, uptodate = loader.get_source(environment=environment,
+                                                            template=template)
+                        self.assertFalse(uptodate())
+
+
+class YamlBlockEscapingFileSystemLoaderTest(SingleCourseTestMixin, TestCase):
+    # test content.YamlBlockEscapingFileSystemLoader
+    pass
+
+
+class GetYamlFromRepoTest(SingleCourseTestMixin, TestCase):
+    # test content.get_yaml_from_repo
+    def setUp(self):
+        super(GetYamlFromRepoTest, self).setUp()
+        rf = RequestFactory()
+        request = rf.get(self.course_page_url)
+        request.user = self.instructor_participation.user
+        from course.utils import CoursePageContext
+        self.pctx = CoursePageContext(request, self.course.identifier)
+
+    def test_file_uses_tab_in_indentation(self):
+        fake_yaml_bytestream = "\tabcd\n".encode()
+
+        class _Blob(object):
+            def __init__(self):
+                self.data = fake_yaml_bytestream
+
+        with mock.patch("course.content.get_repo_blob") as mock_get_repo_blob:
+            mock_get_repo_blob.return_value = _Blob()
+            with self.assertRaises(ValueError) as cm:
+                with self.pctx.repo as repo:
+                    content.get_yaml_from_repo(
+                        repo, "course.yml",
+                        self.course.active_git_commit_sha.encode())
+
+            expected_error_msg = (
+                "File uses tabs in indentation. "
+                "This is not allowed.")
+
+            self.assertIn(expected_error_msg, str(cm.exception))
+
+
+class AttrToStringTest(unittest.TestCase):
+    # test content._attr_to_string
+    def test(self):
+        self.assertEqual(content._attr_to_string("disabled", None), "disabled")
+        self.assertEqual(content._attr_to_string(
+            "id", "\"abc\""), "id='\"abc\"'")
+        self.assertEqual(content._attr_to_string("id", "abc"), "id=\"abc\"")
+
+
+MARKDOWN_WITH_LINK_FRAGMENT = """
+type: Page
+id: frag
+content: |
+
+    # Test frag in path
+
+    [A static page](staticpage:test#abcd)
+    <a href="blablabla">
+"""
+
+MARKDOWN_WITH_INVALID_LINK = """
+type: Page
+id: frag
+content: |
+
+    # Test frag in path
+
+    [A static page](course:test#abcd)
+"""
+
+MARKDOWN_WITH_URL_STARTS_WITH_COURSE = """
+type: Page
+id: frag
+content: |
+
+    # Test course link
+
+    [A static page](course:another-course)
+"""
+
+MARKDOWN_WITH_URL_STARTS_WITH_CALENDAR = """
+type: Page
+id: frag
+content: |
+
+    # Test calendar link
+
+    [A static page](calendar:)
+"""
+
+MARKDOWN_WITH_IMG_SRC = """
+type: Page
+id: frag
+content: |
+
+    # Test img with or without src
+
+    ![alt text](https://raw.githubusercontent.com/inducer/relate/master/doc/images/screenshot.png "Example")
+
+    <img src="repo:images/cc.png">
+"""  # noqa
+
+MARKDOWN_WITH_OBJECT_DATA = """
+type: Page
+id: frag
+content: |
+
+    # Test object data
+
+    <object width="400" height="400" data="helloworld.swf">
+    <object data="repo:images/cc.png">
+"""
+
+
+class LinkFixerTreeprocessorTest(SingleCoursePageSandboxTestBaseMixin, TestCase):
+    def test_embedded_raw_block1(self):
+        markdown = MARKDOWN_WITH_LINK_FRAGMENT
+        expected_literal = [
+            '/course/test-course/page/test/#abcd', '<a href="blablabla">']
+
+        resp = self.get_page_sandbox_preview_response(markdown)
+        self.assertSandboxHasValidPage(resp)
+        self.assertResponseContextContains(
+            resp, "body", expected_literal, in_bulk=True)
+
+    def test_invalid_relate_url(self):
+        markdown = MARKDOWN_WITH_INVALID_LINK
+        expected_literal = (
+            "data:text/plain;base64,SW52YWxpZCBjaGFyYWN0ZXIgaW4gUkVMQVR"
+            "FIFVSTDogY291cnNlOnRlc3QjYWJjZA==")
+        resp = self.get_page_sandbox_preview_response(markdown)
+        self.assertSandboxHasValidPage(resp)
+        self.assertResponseContextContains(resp, "body", expected_literal)
+
+    def test_url_starts_with_course(self):
+        another_course = factories.CourseFactory(identifier="another-course")
+
+        markdown = MARKDOWN_WITH_URL_STARTS_WITH_COURSE
+        resp = self.get_page_sandbox_preview_response(markdown)
+        self.assertSandboxHasValidPage(resp)
+        self.assertResponseContextContains(
+            resp, "body", self.get_course_page_url(another_course.identifier))
+
+    def test_url_starts_with_calendar(self):
+        markdown = MARKDOWN_WITH_URL_STARTS_WITH_CALENDAR
+        resp = self.get_page_sandbox_preview_response(markdown)
+        self.assertSandboxHasValidPage(resp)
+        self.assertResponseContextContains(
+            resp, "body", self.get_course_calender_url())
+
+    def test_url_with_object_data(self):
+        markdown = MARKDOWN_WITH_OBJECT_DATA
+        resp = self.get_page_sandbox_preview_response(markdown)
+        self.assertSandboxHasValidPage(resp)
+        self.assertResponseContextContains(
+            resp, "body",
+            ['data="helloworld.swf"',
+             "/course/test-course/file-version/%s/images/cc.png"
+             % self.course.active_git_commit_sha], in_bulk=True)
+
+    def test_url_with_img_src(self):
+        markdown = MARKDOWN_WITH_IMG_SRC
+        resp = self.get_page_sandbox_preview_response(markdown)
+        self.assertSandboxHasValidPage(resp)
+        expected_value = [
+            "https://raw.githubusercontent.com/inducer/relate/master/"
+            "doc/images/screenshot.png",
+            "/course/test-course/file-version/%s/images/cc.png"
+            % self.course.active_git_commit_sha
+        ]
+        self.assertResponseContextContains(
+            resp, "body", expected_value=expected_value, in_bulk=True)
 
 # vim: fdm=marker
