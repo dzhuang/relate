@@ -25,6 +25,7 @@ THE SOFTWARE.
 import six
 import datetime
 import unittest
+from celery import states, uuid
 
 from django.test import TestCase, RequestFactory
 from django.test.utils import override_settings
@@ -32,6 +33,7 @@ from django.urls import reverse
 from django.utils.timezone import now, timedelta
 from django import http
 
+from relate.celery import app
 from relate.utils import as_local_time
 
 from course import views, constants, models
@@ -57,7 +59,8 @@ RELATE_FACILITIES = {
 }
 
 
-class TestSetFakeTime(SingleCourseTestMixin, TestCase):
+class SetFakeTimeTest(SingleCourseTestMixin, TestCase):
+    # test views.set_fake_time
     fake_time = datetime.datetime(2038, 12, 31, 0, 0, 0, 0)
     set_fake_time_data = {"time": fake_time.strftime(DATE_TIME_PICKER_TIME_FORMAT),
                           "set": ['']}
@@ -141,6 +144,33 @@ class TestSetFakeTime(SingleCourseTestMixin, TestCase):
 
                 # fake failed
                 self.assertSessionFakeTimeIsNone(self.c.session)
+
+
+class GetNowOrFakeTimeTest(unittest.TestCase):
+    # test views.get_now_or_fake_time
+    mock_now_value = mock.MagicMock()
+
+    def setUp(self):
+        fake_get_fake_time = mock.patch("course.views.get_fake_time")
+        self.mock_get_fake_time = fake_get_fake_time.start()
+        self.addCleanup(fake_get_fake_time.stop)
+        fake_now = mock.patch("django.utils.timezone.now")
+        self.mock_now = fake_now.start()
+        self.mock_now.return_value = self.mock_now_value
+        self.addCleanup(fake_now.stop)
+        rf = RequestFactory()
+        self.request = rf.get("/")
+
+    def test_fake_time_is_none(self):
+        self.mock_get_fake_time.return_value = None
+        self.assertEqual(
+            views.get_now_or_fake_time(self.request), self.mock_now_value)
+
+    def test_fake_time_is_not_none(self):
+        mock_fake_time = mock.MagicMock()
+        self.mock_get_fake_time.return_value = mock_fake_time
+        self.assertEqual(
+            views.get_now_or_fake_time(self.request), mock_fake_time)
 
 
 @override_settings(RELATE_FACILITIES=RELATE_FACILITIES)
@@ -1103,7 +1133,6 @@ class GrantExceptionTestMixin(MockAddMessageMixing, SingleCoursePageTestMixin):
 
     def get_grant_exception_view(
             self, course_identifier=None, force_login_instructor=True):
-        course_identifier or self.get_default_course_identifier()
 
         if not force_login_instructor:
             u = self.get_logged_in_user()
@@ -1115,7 +1144,6 @@ class GrantExceptionTestMixin(MockAddMessageMixing, SingleCoursePageTestMixin):
 
     def post_grant_exception_view(
             self, data, course_identifier=None, force_login_instructor=True):
-        course_identifier or self.get_default_course_identifier()
 
         if not force_login_instructor:
             u = self.get_logged_in_user()
@@ -1140,7 +1168,6 @@ class GrantExceptionTestMixin(MockAddMessageMixing, SingleCoursePageTestMixin):
     def get_grant_exception_stage_2_view(
             self, participation_id=None, flow_id=None, course_identifier=None,
             force_login_instructor=True):
-        course_identifier or self.get_default_course_identifier()
         participation_id = participation_id or self.student_participation.id
         flow_id = flow_id or self.flow_id
 
@@ -1158,7 +1185,6 @@ class GrantExceptionTestMixin(MockAddMessageMixing, SingleCoursePageTestMixin):
             course_identifier=None,
             force_login_instructor=True):
 
-        course_identifier or self.get_default_course_identifier()
         participation_id = participation_id or self.student_participation.id
         flow_id = flow_id or self.flow_id
         if not force_login_instructor:
@@ -1191,7 +1217,6 @@ class GrantExceptionTestMixin(MockAddMessageMixing, SingleCoursePageTestMixin):
             self, session_id=None, participation_id=None, flow_id=None,
             course_identifier=None,
             force_login_instructor=True):
-        course_identifier or self.get_default_course_identifier()
         session_id = session_id or self.fs.pk
         participation_id = participation_id or self.student_participation.id
         flow_id = flow_id or self.flow_id
@@ -1209,7 +1234,6 @@ class GrantExceptionTestMixin(MockAddMessageMixing, SingleCoursePageTestMixin):
             self, data, session_id=None, participation_id=None, flow_id=None,
             course_identifier=None,
             force_login_instructor=True):
-        course_identifier or self.get_default_course_identifier()
         session_id = session_id or self.fs.pk
         participation_id = participation_id or self.student_participation.id
         flow_id = flow_id or self.flow_id
@@ -2120,5 +2144,207 @@ class GrantExceptionStage3Test(GrantExceptionTestMixin, TestCase):
             self.assertEqual(models.FlowRuleException.objects.count(), 0)
             self.assertEqual(self.mock_validate_session_access_rule.call_count, 0)
             self.assertEqual(self.mock_validate_session_grading_rule.call_count, 0)
+
+
+# {{{ test views.monitor_task
+
+PYTRACEBACK = """\
+Traceback (most recent call last):
+  File "foo.py", line 2, in foofunc
+    don't matter
+  File "bar.py", line 3, in barfunc
+    don't matter
+Doesn't matter: really!\
+"""
+
+
+class MonitorTaskTest(SingleCourseTestMixin, TestCase):
+    # test views.monitor_task
+    def mock_task(self, name, state, result, traceback=None):
+        return {
+            'id': uuid(), 'name': name, 'state': state,
+            'result': result, 'traceback': traceback,
+        }
+
+    def save_result(self, app, task):
+        traceback = task.get('traceback') or 'Some traceback'
+        state = task['state']
+        if state == states.SUCCESS:
+            app.backend.mark_as_done(task['id'], task['result'])
+        elif state == states.RETRY:
+            app.backend.mark_as_retry(
+                task['id'], task['result'], traceback=traceback,
+            )
+        elif state == states.FAILURE:
+            app.backend.mark_as_failure(
+                task['id'], task['result'], traceback=traceback)
+        elif state == states.REVOKED:
+            app.backend.mark_as_revoked(
+                task_id=task['id'], reason="blabla", state=state)
+        elif state == states.STARTED:
+            app.backend.mark_as_started(task['id'], **task['result'])
+        else:
+            app.backend.store_result(
+                task['id'], task['result'], state,
+            )
+
+    def get_monitor_url(self, task_id):
+        from django.urls import reverse
+        return reverse("relate-monitor_task", kwargs={"task_id": task_id})
+
+    def get_monitor_view(self, task_id):
+        return self.c.get(self.get_monitor_url(task_id))
+
+    def test_user_not_authenticated(self):
+        message = "This is good!"
+        task = self.mock_task('task', states.SUCCESS, {"message": message})
+        self.save_result(app, task)
+        with self.temporarily_switch_to_user(None):
+            resp = self.get_monitor_view(task['id'])
+        self.assertEqual(resp.status_code, 302)
+
+    def test_state_success(self):
+        message = "This is good!"
+        task = self.mock_task('task', states.SUCCESS, {"message": message})
+        self.save_result(app, task)
+        resp = self.get_monitor_view(task['id'])
+        self.assertEqual(resp.status_code, 200)
+        self.assertResponseContextEqual(resp, "state", task['state'])
+        self.assertResponseContextEqual(resp, "progress_statement", message)
+        self.assertResponseContextIsNone(resp, "progress_percent")
+        self.assertResponseContextIsNone(resp, "traceback")
+
+    def test_state_success_result_not_dict(self):
+        task = self.mock_task('task', states.SUCCESS, "This is good!")
+        self.save_result(app, task)
+        resp = self.get_monitor_view(task['id'])
+        self.assertEqual(resp.status_code, 200)
+        self.assertResponseContextEqual(resp, "state", task['state'])
+        self.assertResponseContextIsNone(resp, "progress_percent")
+        self.assertResponseContextIsNone(resp, "progress_statement")
+        self.assertResponseContextIsNone(resp, "traceback")
+
+    def test_state_success_result_contains_no_message(self):
+        task = self.mock_task('task', states.SUCCESS, {"log": "This is good!"})
+        self.save_result(app, task)
+        resp = self.get_monitor_view(task['id'])
+        self.assertEqual(resp.status_code, 200)
+        self.assertResponseContextEqual(resp, "state", task['state'])
+        self.assertResponseContextIsNone(resp, "progress_percent")
+        self.assertResponseContextIsNone(resp, "progress_statement")
+        self.assertResponseContextIsNone(resp, "traceback")
+
+    def test_state_progress(self):
+        task = self.mock_task("progressing", "PROGRESS",
+                         {'current': 20, 'total': 40})
+        self.save_result(app, task)
+        resp = self.get_monitor_view(task['id'])
+        self.assertEqual(resp.status_code, 200)
+        self.assertResponseContextEqual(resp, "state", task['state'])
+        self.assertResponseContextEqual(resp, "progress_percent", 50)
+        self.assertResponseContextEqual(
+            resp, "progress_statement", "20 out of 40 items processed.")
+        self.assertResponseContextIsNone(resp, "traceback")
+
+    def test_state_progress_total_zero(self):
+        task = self.mock_task("progressing", "PROGRESS",
+                         {'current': 0, 'total': 0})
+        self.save_result(app, task)
+        resp = self.get_monitor_view(task['id'])
+        self.assertEqual(resp.status_code, 200)
+        self.assertResponseContextEqual(resp, "state", task['state'])
+        self.assertResponseContextIsNone(resp, "progress_percent")
+        self.assertResponseContextEqual(
+            resp, "progress_statement", "0 out of 0 items processed.")
+        self.assertResponseContextIsNone(resp, "traceback")
+
+    def test_state_failure(self):
+        self.instructor_participation.user.is_staff = True
+        self.instructor_participation.user.save()
+        task = self.mock_task("failure", states.FAILURE,
+                              KeyError("foo"),
+                              PYTRACEBACK)
+        self.save_result(app, task)
+        with self.temporarily_switch_to_user(self.superuser):
+            resp = self.get_monitor_view(task['id'])
+        self.assertEqual(resp.status_code, 200)
+        self.assertResponseContextEqual(resp, "state", task['state'])
+        self.assertResponseContextIsNone(resp, "progress_percent")
+        self.assertResponseContextIsNone(resp, "progress_statement")
+        self.assertResponseContextEqual(resp, "traceback", PYTRACEBACK)
+
+    def test_state_failure_request_user_not_staff(self):
+        task = self.mock_task("failure", states.FAILURE,
+                              KeyError("foo"),
+                              PYTRACEBACK)
+        self.save_result(app, task)
+        resp = self.get_monitor_view(task['id'])
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertResponseContextEqual(resp, "state", task['state'])
+        self.assertResponseContextIsNone(resp, "progress_percent")
+        self.assertResponseContextIsNone(resp, "progress_statement")
+        self.assertResponseContextIsNone(resp, "traceback")
+
+    def test_pending(self):
+        state = states.PENDING
+        task = self.mock_task("task", state,
+                              {'current': 20, 'total': 40})
+        self.save_result(app, task)
+        resp = self.get_monitor_view(task['id'])
+        self.assertEqual(resp.status_code, 200)
+        self.assertResponseContextEqual(resp, "state", state)
+        self.assertResponseContextIsNone(resp, "progress_percent")
+        self.assertResponseContextIsNone(resp, "progress_statement")
+        self.assertResponseContextIsNone(resp, "traceback")
+
+    def test_received(self):
+        state = states.RECEIVED
+        task = self.mock_task("task", state,
+                              {'current': 20, 'total': 40})
+        self.save_result(app, task)
+        resp = self.get_monitor_view(task['id'])
+        self.assertEqual(resp.status_code, 200)
+        self.assertResponseContextEqual(resp, "state", state)
+        self.assertResponseContextIsNone(resp, "progress_percent")
+        self.assertResponseContextIsNone(resp, "progress_statement")
+        self.assertResponseContextIsNone(resp, "traceback")
+
+    def test_started(self):
+        state = states.STARTED
+        task = self.mock_task("task", state,
+                              {'foo': "foo", 'bar': "bar"})
+        self.save_result(app, task)
+        resp = self.get_monitor_view(task['id'])
+        self.assertEqual(resp.status_code, 200)
+        self.assertResponseContextEqual(resp, "state", state)
+        self.assertResponseContextIsNone(resp, "progress_percent")
+        self.assertResponseContextIsNone(resp, "progress_statement")
+        self.assertResponseContextIsNone(resp, "traceback")
+
+    def test_retry(self):
+        state = states.RETRY
+        task = self.mock_task("task", state,
+                              KeyError())
+        self.save_result(app, task)
+        resp = self.get_monitor_view(task['id'])
+        self.assertEqual(resp.status_code, 200)
+        self.assertResponseContextEqual(resp, "state", state)
+        self.assertResponseContextIsNone(resp, "progress_percent")
+        self.assertResponseContextIsNone(resp, "progress_statement")
+        self.assertResponseContextIsNone(resp, "traceback")
+
+    def test_revoked(self):
+        state = states.REVOKED
+        task = self.mock_task("task", state, {})
+        self.save_result(app, task)
+        resp = self.get_monitor_view(task['id'])
+        self.assertEqual(resp.status_code, 200)
+        self.assertResponseContextEqual(resp, "state", state)
+        self.assertResponseContextIsNone(resp, "progress_percent")
+        self.assertResponseContextIsNone(resp, "progress_statement")
+        self.assertResponseContextIsNone(resp, "traceback")
+
+# }}}
 
 # vim: fdm=marker

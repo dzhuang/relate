@@ -1336,6 +1336,7 @@ def generate_ssh_keypair(request):
 @login_required
 def monitor_task(request, task_id):
     from celery.result import AsyncResult
+    from celery import states
     async_res = AsyncResult(task_id)
 
     progress_percent = None
@@ -1352,13 +1353,13 @@ def monitor_task(request, task_id):
                 _("%(current)d out of %(total)d items processed.")
                 % {"current": current, "total": total})
 
-    if async_res.state == "SUCCESS":
+    if async_res.state == states.SUCCESS:
         if (isinstance(async_res.result, dict)
                 and "message" in async_res.result):
             progress_statement = async_res.result["message"]
 
     traceback = None
-    if request.user.is_staff and async_res.state == "FAILURE":
+    if request.user.is_staff and async_res.state == states.FAILURE:
         traceback = async_res.traceback
 
     return render(request, "course/task-monitor.html", {
