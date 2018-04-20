@@ -224,7 +224,11 @@ def get_repo_blob(repo, full_name, commit_sha, allow_tree=True):
 
     dul_repo, full_name = get_true_repo_and_path(repo, full_name)
 
-    names = os.path.normpath(full_name).split(os.sep)
+    if sys.platform.lower().startswith("win"):
+        # https://github.com/inducer/relate/pull/556
+        names = os.path.normpath(full_name).split(os.sep)
+    else:
+        names = list(os.path.split(full_name))
 
     # Allow non-ASCII file name
     full_name_bytes = full_name.encode('utf-8')
