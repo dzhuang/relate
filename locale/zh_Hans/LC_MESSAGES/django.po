@@ -642,7 +642,7 @@ msgstr "评分 "
 
 msgctxt "Participation permission"
 msgid "View grader stats"
-msgstr "查看得分统计"
+msgstr "查看评分者统计"
 
 msgctxt "Participation permission"
 msgid "Batch-import grades"
@@ -1964,7 +1964,7 @@ msgid "this session"
 msgstr "这个session"
 
 msgid "may not view grader stats"
-msgstr "不允许查看得分统计"
+msgstr "不允许查看评分者统计"
 
 msgctxt "Instant message"
 msgid "Message"
@@ -4311,7 +4311,7 @@ msgid "View analytics"
 msgstr "查看分析统计"
 
 msgid "View grader statistics"
-msgstr "查看得分统计"
+msgstr "查看评分者统计"
 
 msgid "View page grades"
 msgstr "查看页面得分"
@@ -4475,10 +4475,10 @@ msgid "Recalculate grade"
 msgstr "重新计算评分"
 
 msgid "Grader Statistics"
-msgstr "评分统计"
+msgstr "评分者统计"
 
 msgid "Grader Statistics: "
-msgstr "评分统计"
+msgstr "评分者统计"
 
 msgid ""
 "(No information about grading work distribution for human-graded problems "
