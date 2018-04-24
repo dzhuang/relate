@@ -1721,6 +1721,8 @@ class GradeStateMachine(object):
         # applies to *all* grade changes
         self._last_grade_change_time = None
 
+        self.percentage_info = GradeChangePercentageInfo(None, None)
+
     def _clear_grades(self):
         # type: () -> None
 
@@ -1881,16 +1883,18 @@ class GradeStateMachine(object):
 
             # }}}
 
+        self._calulate_percentage()
+
         return self
 
-    def packed_percentage(self):
-        # type: () -> Optional[GradeChangePercentageInfo]
+    def _calulate_percentage(self):
+        # type: () -> None
 
         """
-        :return: a ::class:`GradeChangePercentageInfo`, or *None*
+        :return: a ::class:`GradeChangePercentageInfo` object
         """
         if self.opportunity is None or not self.valid_percentage_infos:
-            return None
+            return
 
         strategy = self.opportunity.aggregation_strategy
 
@@ -1898,7 +1902,7 @@ class GradeStateMachine(object):
                         grade_aggregation_strategy.min_grade,
                         grade_aggregation_strategy.avg_grade]:
             numeric_percentages = [p.percentage for p in self.valid_percentage_infos
-                                   if p is not None]
+                                   if p.percentage is not None]
             numeric_actual_percentages = [
                 p.actual_percentage for p in self.valid_percentage_infos
                 if p.actual_percentage is not None]
@@ -1908,29 +1912,26 @@ class GradeStateMachine(object):
                 if strategy == grade_aggregation_strategy.max_grade:
                     percentage = max(numeric_percentages)
                     actual_percentage = max(numeric_actual_percentages)
-                    return GradeChangePercentageInfo(percentage, actual_percentage)
+                    self.percentage_info = GradeChangePercentageInfo(
+                        percentage, actual_percentage)
                 elif strategy == grade_aggregation_strategy.min_grade:
                     percentage = min(numeric_percentages)
                     actual_percentage = min(numeric_actual_percentages)
-                    return GradeChangePercentageInfo(percentage, actual_percentage)
+                    self.percentage_info = GradeChangePercentageInfo(
+                        percentage, actual_percentage)
                 else:
                     assert strategy == grade_aggregation_strategy.avg_grade
                     percentage = (sum(numeric_percentages) / len(
                         self.valid_percentage_infos))
                     actual_percentage = (sum(numeric_actual_percentages) / len(
                         self.valid_percentage_infos))
-                    return GradeChangePercentageInfo(percentage, actual_percentage)
+                    self.percentage_info = GradeChangePercentageInfo(
+                        percentage, actual_percentage)
 
-            else:
-                return None
         elif strategy == grade_aggregation_strategy.use_earliest:
-            return (
-                None if not self.valid_percentage_infos
-                else self.valid_percentage_infos[0])
+            self.percentage_info = self.valid_percentage_infos[0]
         elif strategy == grade_aggregation_strategy.use_latest:
-            return (
-                None if not self.valid_percentage_infos
-                else self.valid_percentage_infos[-1])
+            self.percentage_info = self.valid_percentage_infos[-1]
         else:
             raise ValueError(
                     _("invalid grade aggregation strategy '%s'") % strategy)
@@ -1942,24 +1943,24 @@ class GradeStateMachine(object):
             return _("(exempt)")
         elif self.state == grade_state_change_types.graded:
             assert self.valid_percentage_infos
-            result = ("%.2f%%" % self.packed_percentage().percentage
-                      if self.packed_percentage().percentage is not None
+            result = ("%.2f%%" % self.percentage_info.percentage
+                      if self.percentage_info.percentage is not None
                       else u"- ∅ -")
 
             has_different_actual_percentage = False
 
             if is_privileged_view:
                 has_different_actual_percentage = (
-                        self.packed_percentage().actual_percentage is not None and
-                        self.packed_percentage().percentage !=
-                        self.packed_percentage().actual_percentage
+                        self.percentage_info.actual_percentage is not None and
+                        self.percentage_info.percentage !=
+                        self.percentage_info.actual_percentage
                 )
             has_multiple_valid_percentages = (
                 bool(len(self.valid_percentage_infos) > 1))
             if has_multiple_valid_percentages or has_different_actual_percentage:
                 result += " ("
                 if has_different_actual_percentage:
-                    result += "%.2f%%" % self.packed_percentage().actual_percentage
+                    result += "%.2f%%" % self.percentage_info.actual_percentage
                     if has_multiple_valid_percentages:
                         result += " "
                 if has_multiple_valid_percentages:
@@ -1996,13 +1997,13 @@ class GradeStateMachine(object):
             return "EXEMPT"
         elif self.state == grade_state_change_types.graded:
             assert self.valid_percentage_infos
-            if self.packed_percentage().percentage is None:
+            if self.percentage_info.percentage is None:
                 return alias_for_graded_none
-            assert self.packed_percentage().actual_percentage is not None
+            assert self.percentage_info.actual_percentage is not None
             actual_percentage_str= callback_for_percentage(
-                self.packed_percentage().actual_percentage)
+                self.percentage_info.actual_percentage)
             graded_percentage_str = callback_for_percentage(
-                self.packed_percentage().percentage)
+                self.percentage_info.percentage)
             if (graded_percentage_str == actual_percentage_str):
                 mixed_percentage_mode = False
             if not mixed_percentage_mode:
@@ -2028,16 +2029,16 @@ class GradeStateMachine(object):
     def percentage_value(self):
         if self.state == grade_state_change_types.graded:
             assert self.valid_percentage_infos
-            return (self.packed_percentage().percentage
-                    if self.packed_percentage().percentage is not None else 0)
+            return (self.percentage_info.percentage
+                    if self.percentage_info.percentage is not None else 0)
         else:
             return 0
 
     def stringify_percentage(self):
         if self.state == grade_state_change_types.graded:
             assert self.valid_percentage_infos
-            return ("%.2f" % self.packed_percentage().percentage
-                    if self.packed_percentage().percentage is not None else u"")
+            return ("%.2f" % self.percentage_info.percentage
+                    if self.percentage_info.percentage is not None else u"")
         else:
             return ""
 # }}}

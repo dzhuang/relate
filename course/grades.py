@@ -1112,7 +1112,7 @@ def average_grade(opportunity):
         state_machine = GradeStateMachine()
         state_machine.consume(my_grade_changes)
 
-        percentage_info = state_machine.packed_percentage()
+        percentage_info = state_machine._calulate_percentage()
         if percentage_info is not None:
             if percentage_info.percentage is not None:
                 grades.append(percentage_info.percentage)
