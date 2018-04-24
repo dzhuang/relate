@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2018-03-20 23:59+0800\n"
+"POT-Creation-Date: 2018-04-20 16:43+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language: \n"
@@ -161,6 +161,9 @@ msgstr "Role必须与participation从属于同一课程. "
 
 msgid "Roles"
 msgstr "在课程中的角色"
+
+msgid "Tags"
+msgstr "标签"
 
 msgctxt "real name of a user"
 msgid "Name"
@@ -930,6 +933,11 @@ msgstr "page \"%(group_id)s/%(page_id)s\" (在flow \"%(flow_id)s\"中)"
 msgid "repo page class must conist of two dotted components (invalid: '%s')"
 msgstr "repo类型的page必须包括两个dotted组件 (无效: \"%s\")"
 
+#, python-format
+msgid ""
+"Preview revision '%s' does not exist--showing active course content instead."
+msgstr "预览 '%s' 不存在 -- 所以这里显示课程的内容"
+
 msgid ""
 "You have previously sent the enrollment request. Re-sending the request is "
 "not allowed."
@@ -958,6 +966,9 @@ msgstr "您的电子邮件地址尚未确定, 请先确定邮件再继续. "
 msgid "Enrollment not allowed. Please use your '%s' email to enroll."
 msgstr "不允许加入, 请使用您的电子邮件\"%s\"申请加入课程. "
 
+msgid "Successfully enrolled."
+msgstr "成功加入课程"
+
 msgid "New enrollment request"
 msgstr "新的加入课程申请"
 
@@ -965,9 +976,6 @@ msgid ""
 "Enrollment request sent. You will receive notifcation by email once your "
 "request has been acted upon."
 msgstr "加入课程的申请已经发送, 如果您的要求被批准, 您将会收到邮件通知. "
-
-msgid "Successfully enrolled."
-msgstr "成功加入课程"
 
 msgid "A participation already exists. Enrollment attempt aborted."
 msgstr "该课程参与已经存在，加入课程申请的请求被放弃."
@@ -1089,6 +1097,9 @@ msgstr "列表"
 
 msgid "Apply operation"
 msgstr "应用操作"
+
+msgid "Name contains invalid characters."
+msgstr "名称包含无效字符. "
 
 msgid "may not query participations"
 msgstr "不允许查询课程参与"
@@ -1382,11 +1393,6 @@ msgstr "保存回答并继续"
 
 msgid "Save answer and finish"
 msgstr "保存回答并结束"
-
-msgid ""
-"No in-progress session record found for this flow. Redirected to flow start "
-"page."
-msgstr "本flow没有找到正在进行中的session, 跳转到flow的起始页面. "
 
 msgid "not allowed to view flow"
 msgstr "不允许查看该flow"
@@ -1832,10 +1838,6 @@ msgstr "用\"%(id_string)s\"找不到参与者"
 msgid "more than one participant found for '%(id_string)s'"
 msgstr "用\"%(id_string)s\"找到超过1个参与者"
 
-#, python-format
-msgid "Unknown user attribute '%(attr_type)s'"
-msgstr "未知的用户属性 '%(attr_type)s'"
-
 msgid "points"
 msgstr "得分"
 
@@ -2243,8 +2245,9 @@ msgstr "课程参与tag的名称"
 msgid "Shown to pariticpant"
 msgstr "向学员显示"
 
-msgid "Name contains invalid characters."
-msgstr "名称包含无效字符. "
+#, python-format
+msgid "'%s' contains invalid characters."
+msgstr "'%s'包含无效字符. "
 
 msgid "Participation tag"
 msgstr "课程参与标签"
@@ -2294,6 +2297,11 @@ msgstr "参数"
 msgid "Role"
 msgstr "在课程中的角色"
 
+#. Translators: permissions for roles
+#, python-format
+msgid "%(permission)s for %(role)s"
+msgstr "%(role)s的权限%(permission)s"
+
 msgid "Participation role permission"
 msgstr "参与课程的权限"
 
@@ -2320,9 +2328,6 @@ msgstr "时间乘数"
 
 msgid "Preview git commit SHA"
 msgstr "预览的git commit SHA"
-
-msgid "Tags"
-msgstr "标签"
 
 msgid "Notes"
 msgstr "注释"
@@ -2359,6 +2364,10 @@ msgstr "电子邮件%(email)s在课程%(course)s中的预批准"
 #, python-format
 msgid "Institutional ID %(inst_id)s in %(course)s"
 msgstr "学号%(inst_id)s在课程%(course)s中的预批准"
+
+#, python-format
+msgid "Preapproval with pk %(pk)s in %(course)s"
+msgstr "在课程%(course)s中的预批准，序号为%(pk)s"
 
 msgid "Participation preapproval"
 msgstr "用户加入课程预批准"
@@ -2662,17 +2671,22 @@ msgstr "生效"
 
 #. Translators: For FlowRuleException
 #, python-format
-msgid "%(kind)s exception for '%(user)s' to '%(flow_id)s'in '%(course)s'"
-msgstr "在课程%(course)s的%(flow_id)s中, 给予%(user)s破例的类型%(kind)s"
+msgid ""
+"%(kind)s exception %(exception_id)s for '%(user)s' to '%(flow_id)s' in "
+"'%(course)s'"
+msgstr ""
+"在课程%(course)s的%(flow_id)s中给予%(user)s的，类型为%(kind)s序号"
+"为%(exception_id)s的破例"
+
+#. Translators: the rule refers to FlowRuleException rule
+msgid "invalid exception rule kind"
+msgstr "无效的破例类型"
 
 msgid "grading rules may not expire"
 msgstr "评分规则不会过期"
 
-msgid "invalid rule kind: "
-msgstr "无效的规则类型："
-
-msgid "invalid existing_session_rules: "
-msgstr "无效的existing_session_rules:"
+msgid "invalid existing_session_rules"
+msgstr "无效的existing_session_rules"
 
 msgid "Flow rule exception"
 msgstr "flow rule破例"
@@ -2788,6 +2802,12 @@ msgstr "无效的评分改变状态 \"%s\""
 #, python-format
 msgid "invalid grade aggregation strategy '%s'"
 msgstr "无效的多session评分累积策略 \"%s\""
+
+msgid "(exempt)"
+msgstr "剔除"
+
+msgid "(other state)"
+msgstr "(其它状态)"
 
 #. Translators: display the name of a flow
 #, python-format
@@ -2924,10 +2944,14 @@ msgid "no title found in body or title attribute"
 msgstr "没有在body中找到title，也没有title属性"
 
 msgid "the rendered title is an empty string"
-msgstr "渲染得到的title为空值"
+msgstr "生成的title为空"
 
 msgid "Attribute 'value' should be removed when 'is_optional_page' is True."
 msgstr "当'is_optional_page'为True时，不允许设定'value'."
+
+#, python-format
+msgid "Attribute 'value' expects a non-negative value, got %s instead"
+msgstr "'value'属性应为非负数，得到的却是%s"
 
 msgid "Grade assigned, in percent"
 msgstr "给予的评分（百分比）"
@@ -3216,7 +3240,7 @@ msgstr "未知的嵌入型问题类型\"%(type)s\""
 
 #, python-format
 msgid "Embedded question '%s' must be a struct"
-msgstr "嵌入问题 '%s' 必须是一个struct."
+msgstr "嵌入问题%s必须是一个struct类型"
 
 #, python-format
 msgid "unrecogonized width attribute string: '%(width_attr)s'"
@@ -3229,6 +3253,10 @@ msgid ""
 msgstr ""
 "不支持的长度单位'%(length_unit)s', 可使用的长度单位包"
 "括%(allowed_length_unit)s"
+
+#, python-format
+msgid "'weight' must be a non-negative value, got '%s' instead"
+msgstr "'weight'必须为非负数，得到的却是'%s'"
 
 msgid "at least one answer must be provided"
 msgstr "至少要提供一个回答"
@@ -3279,8 +3307,8 @@ msgstr "page必须是\"%s\"类型"
 msgid "unknown validator type"
 msgstr "未知的验证器类型"
 
-msgid "must be struct or string"
-msgstr "必须是一个struct或string型的数据"
+msgid "must be struct"
+msgstr "必须是一个struct型的数据"
 
 #, python-format
 msgid "regex '%(pattern)s' did not compile"
@@ -3385,6 +3413,9 @@ msgstr "无法确定匹配(match)类型"
 msgid "uses deprecated 'matcher:answer' style"
 msgstr "使用了已淘汰了的(deprecated) \"matcher:answer\" 类型"
 
+msgid "must be struct or string"
+msgstr "必须是一个struct或string型的数据"
+
 msgid "matcher must supply 'type'"
 msgstr "matcher必须提供\"type\""
 
@@ -3405,6 +3436,10 @@ msgstr "上传的文档不是pdf文件. "
 
 msgid "unrecognized mime types"
 msgstr "无法识别的文件类型(mime type)"
+
+#, python-format
+msgid "'maximum_megabytes' expects a positive value, got %(value)s instead"
+msgstr "'maximum_megabytes'应该是一个正数，得到的却是%(value)s"
 
 msgid "upload question does not have assigned point value"
 msgstr "上传问题未设定分值"
@@ -4102,6 +4137,21 @@ msgstr ""
 "如果上面的步骤都无法完成，请从 <b><a href=\"%(relate-home)s\">主页</a></b> 浏"
 "览回您的课程页面，并联系课务人员。"
 
+msgid "Git Source URL"
+msgstr "Git源URL"
+
+msgid "Public active git SHA"
+msgstr "公开运行的git SHA"
+
+msgid "Current git HEAD"
+msgstr "当前的git HEAD"
+
+msgid "Current preview git SHA"
+msgstr "当前预览的git SHA"
+
+msgid "None"
+msgstr "无"
+
 msgid "Grading"
 msgstr "评分"
 
@@ -4729,11 +4779,6 @@ msgstr "该过程进行失败，并报告了以下错误:"
 msgid "grading rule determination was unable to find a grading rule"
 msgstr "无法为评分找到规则"
 
-#, python-format
-msgid ""
-"Preview revision '%s' does not exist--showing active course content instead."
-msgstr "预览 '%s' 不存在 -- 所以这里显示课程的内容"
-
 msgid "Press F9 to toggle full-screen mode. "
 msgstr "按F9以打开/关闭全屏模式. "
 
@@ -4997,13 +5042,13 @@ msgstr ""
 msgid "'generates_grade' is true, but no 'grade_identifier'is given."
 msgstr "'generates_grade'设为true, 但没有设置'grade_identifier'."
 
+msgid "'rules' block does not have a grade_identifier attribute."
+msgstr "'rules'块中未找到'grade_identifier'属性."
+
 msgid ""
-"'rules' block does not have a grade_identifier attribute. This attribute "
-"needs to be moved out of the lower-level 'grading' rules block and into the "
-"'rules' block itself."
-msgstr ""
-"'rules'块没有'grade_identifier'属性. 该属性应移出低一级的'grading'规则块，并"
-"移入'rule'块中."
+" This attribute needs to be moved out of the lower-level 'grading' rules "
+"block and into the 'rules' block itself."
+msgstr "该属性应移出低一级的'grading'规则块，并移入'rule'块中."
 
 #, python-format
 msgid ""
@@ -5099,6 +5144,16 @@ msgstr ""
 "%(loc)s, group '%(group)s', page '%(page)s': page type ('%(type_new)s') 与数"
 "据库中使用的type不同 ('%(type_old)s')"
 
+msgid ""
+"invalid flow name. Flow names may only contain (roman) letters, numbers, "
+"dashes and underscores."
+msgstr "无效的flow名称. flow的名称只能有英文字母、数字、减号和下划线. "
+
+msgid ""
+"invalid page name. Page names may only contain alphanumeric characters (any "
+"language) and hyphens."
+msgstr "无效的page名称. page的名称只能有英文字母、数字、减号. "
+
 #, python-format
 msgid "Your course repository does not have an events file named '%s'."
 msgstr "您课程的仓库中并不包含一个名为'%s'的事件文件."
@@ -5111,18 +5166,8 @@ msgstr ""
 "你课程的仓库中有一个'media/'目录. 不建议使用'media:'来链接到媒体文件. 建议改"
 "为使用'repo:'和'repocur:'来链接到你的方案(schemes)."
 
-msgid ""
-"invalid flow name. Flow names may only contain (roman) letters, numbers, "
-"dashes and underscores."
-msgstr "无效的flow名称. flow的名称只能有英文字母、数字、减号和下划线. "
-
 msgid "flow uses the same grade_identifier as another flow"
 msgstr "本flow使用了与另一个flow相同的grade_identifier"
-
-msgid ""
-"invalid page name. Page names may only contain alphanumeric characters (any "
-"language) and hyphens."
-msgstr "无效的page名称. page的名称只能有英文字母、数字、减号. "
 
 msgid "WARNINGS: "
 msgstr "警告："
@@ -5148,8 +5193,8 @@ msgstr "无法删除未使用的代码仓库目录\"%s\"."
 msgid "Course creation failed"
 msgstr "课程创建失败"
 
-msgid "no git source URL specified"
-msgstr "未设定git源的URL"
+msgid "invalid command"
+msgstr "无效的命令"
 
 msgid "fetch would discard commits, refusing"
 msgstr "fetch将会放弃修改, 拒绝fetch"
@@ -5161,8 +5206,8 @@ msgid "Preview ended."
 msgstr "预览已结束. "
 
 #, python-format
-msgid "Course content did not validate successfully. (%s) Update not applied."
-msgstr "课程内容有效性验证不成功, (%s) 未应用更新. "
+msgid "Course content did not validate successfully: '%s' Update not applied."
+msgstr "课程内容有效性验证不成功: %s 未应用更新. "
 
 msgid "Course content validated successfully."
 msgstr "课程内容有效性验证成功. "
@@ -5175,9 +5220,6 @@ msgstr "预览状态已激活. "
 
 msgid "Update applied. "
 msgstr "更新已应用. "
-
-msgid "invalid command"
-msgstr "无效的命令"
 
 msgctxt "new git SHA for revision of course contents"
 msgid "New git SHA"
@@ -5201,23 +5243,11 @@ msgstr ""
 msgid "- not found -"
 msgstr "- 未找到 -"
 
-msgid "Git Source URL"
-msgstr "Git源URL"
-
-msgid "Public active git SHA"
-msgstr "公开运行的git SHA"
-
-msgid "Current git HEAD"
-msgstr "当前的git HEAD"
-
-msgid "Current preview git SHA"
-msgstr "当前预览的git SHA"
-
-msgid "None"
-msgstr "无"
-
 msgid "Update Course Revision"
 msgstr "更新对课程内容的修订"
+
+msgid "NONE"
+msgstr "无"
 
 msgid "course page is currently hidden"
 msgstr "课程页面当前被隐藏. "
@@ -5331,8 +5361,12 @@ msgstr "给予破例"
 
 #. Translators: %s is the string of the start time of a session.
 #, python-format
-msgid "started at %(start_time)s"
-msgstr "开始于%(start_time)s"
+msgid "started at %s"
+msgstr "开始于%s"
+
+#, python-format
+msgid " tagged '%s'"
+msgstr "(标签为'%s')"
 
 msgid ""
 "If you click 'Create session', this tag will be applied to the new session."
@@ -5356,15 +5390,17 @@ msgstr "选定session所采用的rule将为作为下一个page所采用rule的�
 msgid "Granting exception to '%(participation)s' for '%(flow_id)s'."
 msgstr "对%(participation)s的%(flow_id)s给予破例."
 
-msgid "NONE"
-msgstr "无"
-
 msgid ""
 "Creating a new session is (technically) not allowed by course rules. "
 "Clicking 'Create Session' anyway will override this rule."
 msgstr ""
 "根据课程的设定, (从技术上)不允许创建一个新的session. 点击\"创建session\"将覆"
 "盖掉这个规则. "
+
+#, python-format
+msgid ""
+"A new session%(tag)s was created for '%(participation)s' for '%(flow_id)s'."
+msgstr "为'%(participation)s'的'%(flow_id)s'创建了一个新的session%(tag)s. "
 
 msgid "Exception only applies to sessions with the above tag"
 msgstr "只有有以上tag的session才能采取破例措施. "
@@ -5397,7 +5433,7 @@ msgstr "如果设定，将创建一个属于该评分规则下的例外. "
 msgid "Create grading rule exception"
 msgstr "创建评分规则的破例"
 
-msgid "If set, the 'Due' field will be disregarded."
+msgid "If set, the 'Due time' field will be disregarded."
 msgstr "如果选定, 则“截止时间”的设定将不被考虑. "
 
 msgid "Due same as access expiration"
@@ -5438,6 +5474,13 @@ msgstr ""
 msgid "newly created exception"
 msgstr "新创建的破例"
 
+#, python-format
+msgid "Access rules tag of the selected session updated to '%s'."
+msgstr "选定session的访问规则tag已经被更新为'%s'. "
+
+msgid "Removed access rules tag of the selected session."
+msgstr "选定session的访问规则tag已经被移除. "
+
 msgid "Granted excecption"
 msgstr "已给予破例"
 
@@ -5447,6 +5490,18 @@ msgstr "应得分"
 #, python-format
 msgid "Exception granted to '%(participation)s' for '%(flow_id)s'."
 msgstr "已对%(participation)s的%(flow_id)s给予破例. "
+
+#, python-format
+msgid ""
+"No other exception granted to the given flow session of '%(participation)s' "
+"for '%(flow_id)s'."
+msgstr "对%(participation)s的%(flow_id)s的指定session没有其它的破例. "
+
+#, python-format
+msgid ""
+"No exception granted to the given flow session of '%(participation)s' for "
+"'%(flow_id)s'."
+msgstr "对%(participation)s的%(flow_id)s的指定session并未给予破例. "
 
 #, python-format
 msgid ""

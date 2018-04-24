@@ -71,8 +71,7 @@ class RelateCriticalCheckMessage(Critical):
     def __init__(self, *args, **kwargs):
         # type: (*Any, **Any) -> None
         super(RelateCriticalCheckMessage, self).__init__(*args, **kwargs)
-        if not self.obj:  # type: ignore
-            self.obj = ImproperlyConfigured  # type: Any
+        self.obj = self.obj or ImproperlyConfigured.__name__
 
 
 class DeprecatedException(Exception):
@@ -528,7 +527,7 @@ def register_startup_checks_extra():
     executed after self.ready() is done.
     """
     startup_checks_extra = getattr(settings, RELATE_STARTUP_CHECKS_EXTRA, None)
-    if startup_checks_extra:
+    if startup_checks_extra is not None:
         if not isinstance(startup_checks_extra, (list, tuple)):
             raise ImproperlyConfigured(
                 INSTANCE_ERROR_PATTERN

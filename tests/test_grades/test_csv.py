@@ -26,34 +26,34 @@ import six
 import csv
 import os
 from six import StringIO
-from django.conf import settings
 from django.test import TestCase
-from django.test.utils import override_settings
-from django.utils.timezone import now
-from unittest import skipIf
+import unittest
 
-from course import models
-
+from course import models, grades, constants
 from course.constants import (
     grade_state_change_types as g_state)
 
-from tests.base_test_mixins import SingleCoursePageTestMixin
-from tests import factories as fctr  # noqa
+from tests.base_test_mixins import CoursesTestMixinBase
+
+from tests.test_grades.test_grades import GradesTestMixin
+
+from tests import factories
 from tests.factories import GradeChangeFactory as gc_factory  # noqa
 from tests.utils import mock
+from tests.constants import CSV_PATH
 
 
-class ExportGradebook(SingleCoursePageTestMixin, TestCase):
+class ExportGradebook(GradesTestMixin, TestCase):
     @classmethod
     def setUpTestData(cls):  # noqa
         super(ExportGradebook, cls).setUpTestData()
-        cls.gopp = fctr.GradingOpportunityFactory(course=cls.course)
+        cls.gopp = factories.GradingOpportunityFactory(course=cls.course)
         cls.student_participation.user.institutional_id = "1234"
         cls.student_participation.user.save()
 
-        cls.session1 = fctr.FlowSessionFactory.create(
+        cls.session1 = factories.FlowSessionFactory.create(
             participation=cls.instructor_participation)
-        cls.ta_session = fctr.FlowSessionFactory.create(
+        cls.ta_session = factories.FlowSessionFactory.create(
             participation=cls.ta_participation)
         cls.instructor_gc = gc_factory.create(
             **(cls.gc(participation=cls.instructor_participation, points=90)))
@@ -63,35 +63,12 @@ class ExportGradebook(SingleCoursePageTestMixin, TestCase):
         assert models.GradingOpportunity.objects.count() == 1
         assert models.GradeChange.objects.count() == 2
 
-    @classmethod
-    def gc(cls, participation=None, state=None, attempt_id=None, points=None,
-           max_points=None, comment=None, due_time=None,
-           grade_time=None, flow_session=None, **kwargs):
-        gc_kwargs = {
-            "opportunity": cls.gopp,
-            "participation": participation or cls.student_participation,
-            "state": state or g_state.graded,
-            "attempt_id": attempt_id,
-            "points": points,
-            "max_points": max_points or 100,
-            "comment": comment,
-            "due_time": due_time,
-            "grade_time": grade_time or now(),
-            "flow_session": flow_session,
-        }
-        gc_kwargs.update(kwargs)
-        return gc_kwargs
-
     def setUp(self):
         super(ExportGradebook, self).setUp()
         self.gopp.refresh_from_db()
         self.ta_session.refresh_from_db()
         self.instructor_gc.refresh_from_db()
         self.student_gc.refresh_from_db()
-
-        # clear cached_property
-        from course.grades import csv_settings
-        csv_settings.__dict__ = {}
 
     def assertResponseCsvResultEqual(self, resp, expected_result):  # noqa
         file_contents = StringIO(resp.content.decode())
@@ -117,205 +94,187 @@ class ExportGradebook(SingleCoursePageTestMixin, TestCase):
         with self.temporarily_switch_to_user(user):
             return self.c.get(self.get_export_gradebook_csv_url())
 
-    def post_export_gradebook_csv(self, post_data=None, force_login_instructor=True,
-                                  **kwargs):
-        if post_data is None:
-            post_data = {
-                "user_info_fields": "username,last_name,first_name",
-                "percentage_mode": "graded_percentage",
-                "exclude_course_staff": True,
-                "zero_for_state_none": False,
-                "zero_for_graded_none": True,
-                "maximum_percentage": 100,
-                "minimum_percentage": 0,
-                "round_digits": 2,
-                "encoding_used": 'utf-8'
-            }
 
-        post_data.update(kwargs)
-        if force_login_instructor:
-            user = self.instructor_participation.user
-        else:
-            user = self.get_logged_in_user()
-        with self.temporarily_switch_to_user(user):
-            return self.c.post(self.get_export_gradebook_csv_url(), data=post_data)
+class FindParticipantFromIdTest(CoursesTestMixinBase, TestCase):
+    # test grades.find_participant_from_id
+    @classmethod
+    def setUpTestData(cls):  # noqa
+        super(FindParticipantFromIdTest, cls).setUpTestData()
+        cls.course = factories.CourseFactory()
+        cls.student_participation = factories.ParticipationFactory(
+            course=cls.course)
 
-    @override_settings()
-    def test_vew_export_gradebook_csv_no_setting(self):
-        del settings.RELATE_CSV_SETTINGS
-        resp = self.post_export_gradebook_csv()
-        self.assertEqual(resp.status_code, 200)
-        self.assertResponseHasCsv(resp)
+    def test_found_iexact(self):
+        self.assertEqual(grades.find_participant_from_id(
+            self.course, self.student_participation.user.email.upper()),
+            self.student_participation)
 
-        expected_result = [
-            ['username', 'last name', 'first name', 'la_quiz'],
-            ['test_student', 'Student', 'Test_stu', '86.67']]
+    def test_not_found_across_course(self):
+        # This ensure course is filtered
+        another_participation = factories.ParticipationFactory(
+            course=factories.CourseFactory(identifier="another-course"))
 
-        self.assertResponseCsvResultEqual(resp, expected_result)
+        with self.assertRaises(grades.ParticipantNotFound):
+            grades.find_participant_from_id(
+                self.course,
+                another_participation.user.email)
 
-    @override_settings()
-    def test_vew_export_gradebook_csv_no_setting_round_digits(self):
-        del settings.RELATE_CSV_SETTINGS
-        resp = self.post_export_gradebook_csv(round_digits=0)
-        self.assertEqual(resp.status_code, 200)
-        self.assertResponseHasCsv(resp)
+    def test_skip_not_active(self):
+        dropped_participation = factories.ParticipationFactory(
+            course=self.course, status=constants.participation_status.dropped)
 
-        expected_result = [
-            ['username', 'last name', 'first name', 'la_quiz'],
-            ['test_student', 'Student', 'Test_stu', '87']]
+        with self.assertRaises(grades.ParticipantNotFound) as cm:
+            grades.find_participant_from_id(self.course,
+                                            dropped_participation.user.email)
+        expected_error_msg = (
+                "no participant found for '%s'" % dropped_participation.user.email)
+        self.assertIn(expected_error_msg, str(cm.exception))
 
-        self.assertResponseCsvResultEqual(resp, expected_result)
+    def test_found_by_id(self):
+        email = self.student_participation.user.email
+        at_index = email.index("@")
+        uid = email[:at_index].upper()
+        self.assertEqual(grades.find_participant_from_id(
+            self.course, uid),
+            self.student_participation)
 
-        resp = self.post_export_gradebook_csv(round_digits=1)
-        self.assertEqual(resp.status_code, 200)
-        self.assertResponseHasCsv(resp)
+    def test_not_found(self):
+        with self.assertRaises(grades.ParticipantNotFound) as cm:
+            grades.find_participant_from_id(self.course, "blahblah@blah.com")
+        expected_error_msg = "no participant found for 'blahblah@blah.com'"
+        self.assertIn(expected_error_msg, str(cm.exception))
 
-        expected_result = [
-            ['username', 'last name', 'first name', 'la_quiz'],
-            ['test_student', 'Student', 'Test_stu', '86.7']]
+    def test_not_found_email_not_match_exactly(self):
+        idstr = self.student_participation.user.email.replace(".com", "")
+        with self.assertRaises(grades.ParticipantNotFound) as cm:
+            grades.find_participant_from_id(self.course, idstr)
+        expected_error_msg = "no participant found for '%s'" % idstr
+        self.assertIn(expected_error_msg, str(cm.exception))
 
-        self.assertResponseCsvResultEqual(resp, expected_result)
+    def test_found_multiple(self):
+        email = self.student_participation.user.email
+        at_index = email.index("@")
+        uid = email[:at_index]
 
-    @override_settings()
-    def test_vew_export_gradebook_csv_no_setting_export_course_staff(self):
-        del settings.RELATE_CSV_SETTINGS
-        resp = self.post_export_gradebook_csv(
-            exclude_course_staff=False
-        )
-        self.assertEqual(resp.status_code, 200)
-        self.assertResponseHasCsv(resp)
+        # create another participation with the same uid
+        factories.ParticipationFactory(
+            course=self.course, user=factories.UserFactory(
+                email="%s@somewhere.com" % uid.upper()))
 
-        expected_result = [
-            ['username', 'last name', 'first name', 'la_quiz'],
-            ['test_instructor', 'Instructor', 'Test_ins', '90.00'],
-            ['test_ta', 'TA', 'Test_ta', 'NONE'],
-            ['test_student', 'Student', 'Test_stu', '86.67']]
+        with self.assertRaises(grades.ParticipantNotFound) as cm:
+            grades.find_participant_from_id(self.course, uid)
 
-        self.assertResponseCsvResultEqual(resp, expected_result)
-
-    def test_vew_export_gradebook_csv_zero_for_state_none(self):
-        del settings.RELATE_CSV_SETTINGS
-
-        resp = self.post_export_gradebook_csv(
-            exclude_course_staff=False,
-            zero_for_state_none=True,
-        )
-        self.assertEqual(resp.status_code, 200)
-        self.assertResponseHasCsv(resp)
-
-        expected_result = [
-            ['username', 'last name', 'first name', 'la_quiz'],
-            ['test_instructor', 'Instructor', 'Test_ins', '90.00'],
-            ['test_ta', 'TA', 'Test_ta', '0'],
-            ['test_student', 'Student', 'Test_stu', '86.67']]
-
-        self.assertResponseCsvResultEqual(resp, expected_result)
-
-    # FIXME: this currently failed with:
-    # TypeError: '>' not supported between instances of 'NoneType' and 'float'
-    # https://github.com/inducer/relate/issues/457
-    # def test_vew_export_gradebook_csv_zero_for_graded_none(self):
-    #     del settings.RELATE_CSV_SETTINGS
-    #
-    #     gc_factory.create(
-    #         **(self.gc(
-    #             participation=self.ta_participation, flow_session=self.ta_session,
-    #             state=g_state.graded
-    #         )))
-    #     resp = self.post_export_gradebook_csv(
-    #         exclude_tas=False,
-    #         zero_for_graded_none=True,
-    #         zero_for_state_none=False,
-    #     )
-    #     self.assertEqual(resp.status_code, 200)
-    #     self.assertResponseHasCsv(resp)
-    #
-    #     expected_result = [
-    #         ['username', 'last name', 'first name', 'la_quiz'],
-    #         ['test_ta', 'TA', 'Test', '0'],
-    #         ['test_student', 'Student', 'Test', '86.67']]
-    #
-    #     self.assertResponseCsvResultEqual(resp, expected_result)
-
-    @override_settings()
-    def test_vew_export_gradebook_csv_max_min_invalid(self):
-        del settings.RELATE_CSV_SETTINGS
-        resp = self.post_export_gradebook_csv(
-            maximum_percentage=70,
-            minimum_percentage=71,
-        )
-        self.assertEqual(resp.status_code, 200)
-        self.assertFormError(resp, "form", "maximum_percentage",
-                             "'maximum_percentage' must be greater than "
-                             "'minimum_percentage'.")
-
-    @override_settings()
-    def test_vew_export_gradebook_csv_max_min(self):
-        del settings.RELATE_CSV_SETTINGS
-        resp = self.post_export_gradebook_csv(
-            maximum_percentage=70,
-            exclude_course_staff=False
-        )
-        self.assertEqual(resp.status_code, 200)
-        self.assertResponseHasCsv(resp)
-
-        expected_result = [
-            ['username', 'last name', 'first name', 'la_quiz'],
-            ['test_instructor', 'Instructor', 'Test_ins', '70.00'],
-            ['test_ta', 'TA', 'Test_ta', 'NONE'],
-            ['test_student', 'Student', 'Test_stu', '70.00']]
-
-        self.assertResponseCsvResultEqual(resp, expected_result)
-
-        resp = self.post_export_gradebook_csv(
-            minimum_percentage=95,
-            exclude_course_staff=False
-        )
-        self.assertEqual(resp.status_code, 200)
-        self.assertResponseHasCsv(resp)
-
-        expected_result = [
-            ['username', 'last name', 'first name', 'la_quiz'],
-            ['test_instructor', 'Instructor', 'Test_ins', '95.00'],
-            ['test_ta', 'TA', 'Test_ta', 'NONE'],
-            ['test_student', 'Student', 'Test_stu', '95.00']]
-
-        self.assertResponseCsvResultEqual(resp, expected_result)
-
-    @override_settings(RELATE_CSV_SETTINGS={
-        "GRADEBOOK_EXPORT": {
-            "fields_choices": (
-                    ['username', 'last_name', 'first_name'],
-                    ['username', 'last_name', 'first_name', 'institutional_id'],
-            ),
-            "encodings": ["utf_8_sig", "cp273"]}
-    })
-    def test_vew_export_gradebook_csv_customized_setting(self):
-        resp = self.post_export_gradebook_csv(
-            user_info_fields='username,last_name,first_name,institutional_id'
-        )
-        self.assertFormErrorLoose(resp, None)
-        self.assertEqual(resp.status_code, 200)
-        self.assertResponseHasCsv(resp)
-
-        expected_result = [
-            ['username', 'last name', 'first name', 'Institutional ID', 'la_quiz'],
-            ['test_student', 'Student', 'Test_stu', '1234', '86.67']]
-
-        self.assertResponseCsvResultEqual(resp, expected_result)
+        expected_error_msg = "more than one participant found for '%s'" % uid
+        self.assertIn(expected_error_msg, str(cm.exception))
 
 
-class ImportGradesTest(SingleCoursePageTestMixin, TestCase):
+class FindParticipantFromUserAttrTest(CoursesTestMixinBase, TestCase):
+    # test grades.find_participant_from_user_attr
+
+    @classmethod
+    def setUpTestData(cls):  # noqa
+        super(FindParticipantFromUserAttrTest, cls).setUpTestData()
+        cls.course = factories.CourseFactory()
+        cls.student_participation = factories.ParticipationFactory(
+            course=cls.course)
+
+    def test_found_strip_inst_id(self):
+        self.assertEqual(grades.find_participant_from_user_attr(
+            self.course, "institutional_id",
+            "  %s  " % self.student_participation.user.institutional_id),
+            self.student_participation)
+
+    def test_found_iexact_by_inst_id(self):
+        if (self.student_participation.user.institutional_id
+                == self.student_participation.user.institutional_id.upper()):
+            raise unittest.SkipTest(
+                "The created user should have lower cased character to "
+                "make the test meaningful.")
+
+        self.assertEqual(grades.find_participant_from_user_attr(
+            self.course, "institutional_id",
+            self.student_participation.user.institutional_id.upper()),
+            self.student_participation)
+
+    def test_found_strip_username(self):
+        self.assertEqual(grades.find_participant_from_user_attr(
+            self.course, "username",
+            "  %s " % self.student_participation.user.username),
+            self.student_participation)
+
+    def test_found_exact_by_username(self):
+        self.assertEqual(grades.find_participant_from_user_attr(
+            self.course, "username",
+            self.student_participation.user.username),
+            self.student_participation)
+
+    def test_not_found_by_username_case_sensitive(self):
+        if (self.student_participation.user.institutional_id
+                == self.student_participation.user.institutional_id.upper()):
+            raise unittest.SkipTest(
+                "The created user should have lower cased character to "
+                "make the test meaningful.")
+        upper_user_name = self.student_participation.user.username.upper()
+        with self.assertRaises(grades.ParticipantNotFound) as cm:
+            grades.find_participant_from_user_attr(
+                self.course, "username", upper_user_name)
+
+        expected_error_msg = (
+                "no participant found with username '%s'" % upper_user_name)
+        self.assertIn(expected_error_msg, str(cm.exception))
+
+    def test_not_found_across_course(self):
+        # This ensure course is filtered
+        another_participation = factories.ParticipationFactory(
+            course=factories.CourseFactory(identifier="another-course"))
+
+        with self.assertRaises(grades.ParticipantNotFound) as cm:
+            grades.find_participant_from_user_attr(
+                self.course, "username", another_participation.user.username)
+
+            expected_error_msg = (
+                    "no participant found with username '%s'"
+                    % another_participation.user.username)
+            self.assertIn(expected_error_msg, str(cm.exception))
+
+    def test_skip_not_active(self):
+        dropped_participation = factories.ParticipationFactory(
+            course=self.course, status=constants.participation_status.dropped)
+
+        with self.assertRaises(grades.ParticipantNotFound) as cm:
+            grades.find_participant_from_user_attr(
+                self.course, "username", dropped_participation.user.username)
+
+        expected_error_msg = (
+                "no participant found with username '%s'"
+                % dropped_participation.user.username)
+        self.assertIn(expected_error_msg, str(cm.exception))
+
+    def test_multiple_found(self):
+        exist_inst_id = self.student_participation.user.institutional_id
+        another_student_participation = factories.ParticipationFactory(
+            course=self.course,
+            user=factories.UserFactory(institutional_id=exist_inst_id.upper()))
+
+        with self.assertRaises(grades.ParticipantNotFound) as cm:
+            grades.find_participant_from_user_attr(
+                self.course, "institutional_id",
+                another_student_participation.user.institutional_id)
+
+        expected_error_msg = (
+                "more than one participant found with Institutional ID '%s'"
+                % another_student_participation.user.institutional_id)
+        self.assertIn(expected_error_msg, str(cm.exception))
+
+
+class ImportGradesTest(GradesTestMixin, TestCase):
     @classmethod
     def setUpTestData(cls):  # noqa
         super(ImportGradesTest, cls).setUpTestData()
-        cls.gopp = fctr.GradingOpportunityFactory(course=cls.course)
+        cls.gopp = factories.GradingOpportunityFactory(course=cls.course)
         cls.student_participation.user.institutional_id = "1234"
         cls.student_participation.user.save()
         assert models.GradeChange.objects.count() == 0
-
-    def setUp(self):
-        super(ImportGradesTest, self).setUp()
 
     def get_import_grades_url(self):
         return self.get_course_view_url("relate-import_grades")
@@ -358,29 +317,80 @@ class ImportGradesTest(SingleCoursePageTestMixin, TestCase):
 
     def test_preview_success(self):
         with open(
-                os.path.join(os.path.dirname(__file__),
-                             '../fixtures', 'csv', 'test_import_csv.csv'),
-                'rb') as csv_file:
+                os.path.join(CSV_PATH, 'test_import_csv.csv'), 'rb') as csv_file:
             resp = self.post_import_grades(csv_file, post_type="preview")
             self.assertEqual(resp.status_code, 200)
             self.assertEqual(models.GradeChange.objects.count(), 0)
             self.assertContains(resp, "This is the feedback for test_student")
             self.assertNotContains(resp, "This is the not imported feedback")
 
+    def test_preview_not_importing_feedback(self):
+        with open(
+                os.path.join(CSV_PATH, 'test_import_csv.csv'), 'rb') as csv_file:
+            resp = self.post_import_grades(csv_file, post_type="preview",
+                                           feedback_column="")
+            self.assertEqual(resp.status_code, 200)
+            self.assertEqual(models.GradeChange.objects.count(), 0)
+            self.assertNotContains(resp, "This is the feedback for test_student")
+            self.assertNotContains(resp, "This is the not imported feedback")
+
     def test_import_success(self):
         with open(
-                os.path.join(os.path.dirname(__file__),
-                             '../fixtures', 'csv', 'test_import_csv.csv'),
+                os.path.join(CSV_PATH, 'test_import_csv.csv'), 'rb') as csv_file:
+            resp = self.post_import_grades(csv_file)
+            self.assertEqual(resp.status_code, 200)
+            gchanges = models.GradeChange.objects.all()
+            self.assertEqual(gchanges.count(), 1)
+            gchange, = gchanges
+            self.assertEqual(float(gchange.points), float(86.66))
+
+    def test_import_success_by_username(self):
+        with open(
+                os.path.join(CSV_PATH, 'test_import_csv.csv'), 'rb') as csv_file:
+            resp = self.post_import_grades(csv_file, attr_type="username")
+            self.assertEqual(resp.status_code, 200)
+            gchanges = models.GradeChange.objects.all()
+            self.assertEqual(gchanges.count(), 1)
+            gchange, = gchanges
+            self.assertEqual(float(gchange.points), float(86.66))
+
+    def test_import_success_by_inst_id(self):
+        with open(
+                os.path.join(CSV_PATH, 'test_import_csv.csv'), 'rb') as csv_file:
+            resp = self.post_import_grades(
+                csv_file,
+                attr_type="institutional_id",
+                attr_column=2)
+            self.assertEqual(resp.status_code, 200)
+            gchanges = models.GradeChange.objects.all()
+            self.assertEqual(gchanges.count(), 1)
+            gchange, = gchanges
+            self.assertEqual(float(gchange.points), float(86.66))
+
+    def test_import_success_not_importing_feedback(self):
+        with open(
+                os.path.join(CSV_PATH, 'test_import_csv.csv'), 'rb') as csv_file:
+            resp = self.post_import_grades(csv_file, feedback_column="")
+            self.assertEqual(resp.status_code, 200)
+            gchanges = models.GradeChange.objects.all()
+            self.assertEqual(gchanges.count(), 1)
+            gchange, = gchanges
+            self.assertEqual(float(gchange.points), float(86.66))
+
+    def test_import_success_none_points(self):
+        with open(
+                os.path.join(CSV_PATH, 'test_import_csv_none_points.csv'),
                 'rb') as csv_file:
             resp = self.post_import_grades(csv_file)
             self.assertEqual(resp.status_code, 200)
-            self.assertEqual(models.GradeChange.objects.count(), 1)
+            gchanges = models.GradeChange.objects.all()
+            self.assertEqual(gchanges.count(), 1)
+            gchange, = gchanges
+            self.assertEqual(gchange.points, None)
 
     def test_preview_success_no_header(self):
         with open(
-                os.path.join(
-                    os.path.dirname(__file__),
-                    '../fixtures', 'csv', 'test_import_csv_no_header.csv'),
+                os.path.join(CSV_PATH, 'test_import_csv_no_header.csv'),
                 'rb') as csv_file:
             resp = self.post_import_grades(csv_file, format="csv",
                                            post_type='preview')
@@ -390,9 +400,7 @@ class ImportGradesTest(SingleCoursePageTestMixin, TestCase):
 
     def test_import_success_no_header(self):
         with open(
-                os.path.join(
-                    os.path.dirname(__file__),
-                    '../fixtures', 'csv', 'test_import_csv_no_header.csv'),
+                os.path.join(CSV_PATH, 'test_import_csv_no_header.csv'),
                 'rb') as csv_file:
             resp = self.post_import_grades(csv_file, format="csv")
             self.assertEqual(resp.status_code, 200)
@@ -404,25 +412,23 @@ class ImportGradesTest(SingleCoursePageTestMixin, TestCase):
             "CSV file other than a Microsoft Excel file?")
 
         with open(
-                os.path.join(os.path.dirname(__file__),
-                             '../fixtures', 'csv',
-                             'test_import_excel_failed.xlsx'), 'rb') as csv_file:
+                os.path.join(CSV_PATH, 'test_import_excel_failed.xlsx'),
+                'rb') as csv_file:
             resp = self.post_import_grades(csv_file, format="csv")
             self.assertEqual(resp.status_code, 200)
             self.assertFormError(resp, "form", "file", expected_file_error_msg)
             self.assertEqual(models.GradeChange.objects.count(), 0)
 
-    @skipIf(six.PY2, "csv for py2 seems won't raise expected error when "
-                     "import an excel file.")
+    @unittest.skipIf(
+        six.PY2, "csv for py2 seems won't raise expected error when "
+                 "import an excel file.")
     def test_import_csv_reader_next_error(self):
         error_msg = "This is a faked error"
         expected_file_error_msg = (
             "Error: TypeError: %s" % error_msg)
 
         with open(
-                os.path.join(os.path.dirname(__file__),
-                             '../fixtures', 'csv', 'test_import_csv.csv'),
-                'rb') as csv_file:
+                os.path.join(CSV_PATH, 'test_import_csv.csv'), 'rb') as csv_file:
             with mock.patch("csv.reader") as mock_csv_reader:
                 def sf():
                     raise TypeError(error_msg)
@@ -441,9 +447,7 @@ class ImportGradesTest(SingleCoursePageTestMixin, TestCase):
             "Error: %s" % error_msg)
 
         with open(
-                os.path.join(os.path.dirname(__file__),
-                             '../fixtures', 'csv', 'test_import_csv.csv'),
-                'rb') as csv_file:
+                os.path.join(CSV_PATH, 'test_import_csv.csv'), 'rb') as csv_file:
             with mock.patch(
                     "course.utils.get_col_contents_or_empty") as mock_get_col:
                 def sf(row, index):
@@ -462,9 +466,7 @@ class ImportGradesTest(SingleCoursePageTestMixin, TestCase):
             "Error: TypeError: %s" % error_msg)
 
         with open(
-                os.path.join(os.path.dirname(__file__),
-                             '../fixtures',
-                             'csv', 'test_import_csv.csv'), 'rb') as csv_file:
+                os.path.join(CSV_PATH, 'test_import_csv.csv'), 'rb') as csv_file:
             with mock.patch(
                     "course.utils.get_col_contents_or_empty") as mock_get_col:
                 def sf(row, index):
@@ -475,3 +477,121 @@ class ImportGradesTest(SingleCoursePageTestMixin, TestCase):
                 self.assertEqual(resp.status_code, 200)
                 self.assertFormError(resp, "form", "file", expected_file_error_msg)
                 self.assertEqual(models.GradeChange.objects.count(), 0)
+
+    def test_used_preserved_attempt_id(self):
+        attempt_id = "flow-session-blabla"
+        error_msg = '"%s" as a prefix is not allowed' % "flow-session-"
+
+        with open(
+                os.path.join(CSV_PATH, 'test_import_csv.csv'), 'rb') as csv_file:
+            resp = self.post_import_grades(csv_file, format="csv",
+                                           attempt_id=attempt_id)
+            self.assertEqual(resp.status_code, 200)
+            self.assertFormError(resp, "form", "attempt_id", error_msg)
+            self.assertEqual(models.GradeChange.objects.count(), 0)
+
+    def test_has_last_grades_points_updated(self):
+        factories.GradeChangeFactory(
+            **self.gc(opportunity=self.gopp, points=86.66))
+        factories.GradeChangeFactory(
+            **self.gc(opportunity=self.gopp, points=88))
+        gchanges = models.GradeChange.objects.all()
+        self.assertEqual(gchanges.count(), 2)
+
+        with open(
+                os.path.join(CSV_PATH, 'test_import_csv.csv'), 'rb') as csv_file:
+            resp = self.post_import_grades(csv_file, feedback_column="")
+            self.assertContains(
+                resp,
+                "test_student in test-course as student: points updated")
+
+            self.assertEqual(resp.status_code, 200)
+            gchanges = models.GradeChange.objects.all()
+            self.assertEqual(gchanges.count(), 3)
+            gchange = gchanges.last()
+            self.assertEqual(float(gchange.points), float(86.66))
+
+    def test_has_last_grades_max_points_updated(self):
+        factories.GradeChangeFactory(
+            **self.gc(opportunity=self.gopp, points=86.66, max_points=90))
+        gchanges = models.GradeChange.objects.all()
+        self.assertEqual(gchanges.count(), 1)
+
+        with open(
+                os.path.join(CSV_PATH, 'test_import_csv.csv'), 'rb') as csv_file:
+            resp = self.post_import_grades(csv_file, feedback_column="")
+            self.assertContains(
+                resp,
+                "test_student in test-course as student: max_points updated")
+
+            self.assertEqual(resp.status_code, 200)
+            gchanges = models.GradeChange.objects.all()
+            self.assertEqual(gchanges.count(), 2)
+            gchange = gchanges.last()
+            self.assertEqual(float(gchange.points), float(86.66))
+
+    def test_has_last_grades_multiple_attrs_updated(self):
+        factories.GradeChangeFactory(
+            **self.gc(opportunity=self.gopp, points=85,
+                      max_points=90, comment="first grades"))
+        gchanges = models.GradeChange.objects.all()
+        self.assertEqual(gchanges.count(), 1)
+
+        with open(
+                os.path.join(CSV_PATH, 'test_import_csv.csv'), 'rb') as csv_file:
+            resp = self.post_import_grades(csv_file)
+            self.assertContains(
+                resp,
+                "test_student in test-course as student: points, max_points, "
+                "comment updated")
+
+            self.assertEqual(resp.status_code, 200)
+            gchanges = models.GradeChange.objects.all()
+            self.assertEqual(gchanges.count(), 2)
+            gchange = gchanges.last()
+            self.assertEqual(float(gchange.points), float(86.66))
+
+    def test_has_last_grades_state_not_graded(self):
+        factories.GradeChangeFactory(
+            **self.gc(opportunity=self.gopp, points=None,
+                      max_points=100, comment="not grades",
+                      state=g_state.grading_started))
+        gchanges = models.GradeChange.objects.all()
+        self.assertEqual(gchanges.count(), 1)
+
+        with open(
+                os.path.join(CSV_PATH, 'test_import_csv.csv'), 'rb') as csv_file:
+            resp = self.post_import_grades(csv_file)
+
+            self.assertEqual(resp.status_code, 200)
+            gchanges = models.GradeChange.objects.all()
+            self.assertEqual(gchanges.count(), 2)
+            gchange = gchanges.last()
+            self.assertEqual(float(gchange.points), float(86.66))
+
+    def test_re_import_same(self):
+        with open(
+                os.path.join(CSV_PATH, 'test_import_csv.csv'), 'rb') as csv_file:
+            self.post_import_grades(csv_file)
+            gchanges = models.GradeChange.objects.all()
+            self.assertEqual(gchanges.count(), 1)
+
+        # re-import
+        with open(
+                os.path.join(CSV_PATH, 'test_import_csv.csv'), 'rb') as csv_file:
+            self.post_import_grades(csv_file)
+            gchanges = models.GradeChange.objects.all()
+            self.assertEqual(gchanges.count(), 1)
+
+    def test_unexpected_error_for_csv_to_grade_changes(self):
+        with mock.patch(
+                "course.grades.csv_to_grade_changes") as mock_csv_to_grade_changes:
+            mock_csv_to_grade_changes.side_effect = RuntimeError("my import error")
+            with open(
+                    os.path.join(CSV_PATH, 'test_import_csv.csv'), 'rb') as csv_file:
+                self.post_import_grades(csv_file)
+                gchanges = models.GradeChange.objects.all()
+                self.assertEqual(gchanges.count(), 0)
+
+        self.assertIn("Error: RuntimeError my import error",
+                      self.mock_add_message.call_args[0])
