@@ -153,7 +153,6 @@ class FlowSessionGradingRule(FlowSessionRuleBase):
             self,
             grade_identifier,  # type: Optional[Text]
             grade_aggregation_strategy,  # type: Text
-
             due,  # type: Optional[datetime.datetime]
             generates_grade,  # type: bool
             description=None,  # type: Optional[Text]
@@ -478,8 +477,7 @@ def get_session_start_rule(
 
     return FlowSessionStartRule(
             may_list_existing_sessions=False,
-            may_start_new_session=False,
-            )
+            may_start_new_session=False)
 
 
 def _get_session_access_rules(

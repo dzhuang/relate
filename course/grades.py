@@ -810,23 +810,21 @@ def view_grades_by_opportunity(pctx, opp_id):
 
                     return redirect("relate-monitor_task", async_res.id)
 
-                else:
-                    assert op == "recalculate"
+                elif op == "recalculate":
                     async_res = recalculate_ended_sessions.delay(
                             pctx.course.id, opportunity.flow_id,
                             rule_tag)
 
                     return redirect("relate-monitor_task", async_res.id)
 
-                elif op == "update_credit_percentage":
+                else:
+                    assert op == "update_credit_percentage"
                     async_res = update_credit_percentage_of_ended_sessions.delay(
                             pctx.course.id, opportunity.flow_id,
                             rule_tag)
 
                     return redirect("relate-monitor_task", async_res.id)
 
-                else:
-                    raise SuspiciousOperation("invalid operation")
 
         else:
             batch_session_ops_form = ModifySessionsForm(session_rule_tags)

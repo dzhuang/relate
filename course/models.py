@@ -24,9 +24,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-import six
-import json
 from typing import cast
+import json
+import six
 
 from django.db import models
 from django.utils.timezone import now

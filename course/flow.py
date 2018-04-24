@@ -1499,9 +1499,6 @@ def view_start_flow(pctx, flow_id):
         past_sessions_and_properties = []
 
     may_start = session_start_rule.may_start_new_session
-    new_session_grading_rule = None
-    start_may_decrease_grade = False
-    grade_aggregation_strategy_descr = None
 
     potential_session = FlowSession(
         course=pctx.course,

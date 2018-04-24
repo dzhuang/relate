@@ -66,7 +66,7 @@ from course.docker.config import (  # noqa
 )
 from tests.utils import mock
 from tests.base_test_mixins import SingleCoursePageTestMixin
-from tests.contants import QUIZ_FLOW_ID
+from tests.constants import QUIZ_FLOW_ID
 
 # Switch for test locally
 Debug = False

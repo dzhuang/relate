@@ -61,7 +61,7 @@ from tests.test_pages.test_generic import (
     MESSAGE_ANSWER_SAVED_TEXT, MESSAGE_ANSWER_FAILED_SAVE_TEXT)
 from tests.test_sandbox import (
     SingleCoursePageSandboxTestBaseMixin)
-from tests.contants import PAGE_WARNINGS, PAGE_ERRORS
+from tests.constants import PAGE_WARNINGS, PAGE_ERRORS
 from tests.test_my_local.sources import latex_sandbox
 from tests.test_my_local.test_imageupload import MY_SINGLE_COURSE_SETUP_LIST
 
