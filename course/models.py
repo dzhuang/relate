@@ -1901,7 +1901,7 @@ class GradeStateMachine(object):
                                    if p is not None]
             numeric_actual_percentages = [
                 p.actual_percentage for p in self.valid_percentage_infos
-                if p is not None]
+                if p.actual_percentage is not None]
 
             if numeric_percentages:
                 assert numeric_actual_percentages
