@@ -498,13 +498,18 @@ class HomeTest(CoursesTestMixinBase, TestCase):
         with self.temporarily_switch_to_user(None):
             resp = self.c.get("/")
         self.assertResponseContextEqual(resp, "current_courses", [course1])
-        self.assertResponseContextEqual(resp, "past_courses", [course4])
+
+        # This is deifferent from upstream, anonymous won't see past course
+        self.assertResponseContextEqual(resp, "past_courses", [])
 
         with self.temporarily_switch_to_user(user):
             resp = self.c.get("/")
             self.assertResponseContextEqual(
                 resp, "current_courses", [course1, course2])
-            self.assertResponseContextEqual(resp, "past_courses", [course4])
+
+            # This is deifferent from upstream, no participation user won't
+            # see past course he didn't attend
+            self.assertResponseContextEqual(resp, "past_courses", [])
 
 
 class CheckCourseStateTest(SingleCourseTestMixin, TestCase):
