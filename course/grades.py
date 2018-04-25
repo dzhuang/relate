@@ -181,17 +181,17 @@ def view_participant_grades(pctx, participation_id=None):
     idx = 0
 
     grade_table = []
-    may_view_result = []
-    zipped_grade_info = []
     for opp in grading_opps:
         if not is_privileged_view:
             if not (opp.shown_in_grade_book
                     and opp.shown_in_participant_grade_book):
                 continue
 
-        access_rule = get_session_access_rule_by_opp(pctx, opp)
-        if not may_view_opp_by_access_rule(access_rule):
-            continue
+        access_rule = None
+        if opp.flow_id is not None:
+            access_rule = get_session_access_rule_by_opp(pctx, opp)
+            if not may_view_opp_by_access_rule(access_rule):
+                continue
 
         while (
                 idx < len(grade_changes)
@@ -209,18 +209,19 @@ def view_participant_grades(pctx, participation_id=None):
         state_machine = GradeStateMachine()
         state_machine.consume(my_grade_changes)
 
+        may_view_result = True
+        if opp.flow_id is not None:
+            assert access_rule is not None
+            may_view_result = may_view_opp_result_by_access_rule(access_rule)
+
         grade_table.append(
                 GradeInfo(
                     opportunity=opp,
-                    grade_state_machine=state_machine))
-        may_view_result.append(
-                may_view_opp_result_by_access_rule(access_rule)
-        )
-
-        zipped_grade_info = zip(grade_table, may_view_result)
+                    grade_state_machine=state_machine,
+                    may_view_result=may_view_result))
 
     return render_course_page(pctx, "course/gradebook-participant.html", {
-        "grade_table": zipped_grade_info,
+        "grade_table": grade_table,
         "grade_participation": grade_participation,
         "grading_opportunities": grading_opps,
         "grade_state_change_types": grade_state_change_types,
@@ -301,10 +302,11 @@ def view_grading_opportunity_list(pctx):
 # {{{ teacher grade book
 
 class GradeInfo:
-    def __init__(self, opportunity, grade_state_machine):
+    def __init__(self, opportunity, grade_state_machine, may_view_result=None):
         # type: (GradingOpportunity, GradeStateMachine) -> None
         self.opportunity = opportunity
         self.grade_state_machine = grade_state_machine
+        self.may_view_result = may_view_result
 
 
 def get_grade_table(course, excluded_pperm=None):
@@ -914,7 +916,8 @@ def view_grades_by_opportunity(pctx, opp_id):
                         flow_not_completed = False
                 fsess_idx += 1
 
-            if not my_flow_sessions:
+            # When view_page_grades, this should this record should not be appended
+            if not my_flow_sessions and not view_page_grades:
                 grade_table.append(
                         (participation, OpportunitySessionGradeInfo(
                             grade_state_machine=state_machine,
@@ -1188,13 +1191,16 @@ def view_single_grade(pctx, participation_id, opportunity_id):
         if not my_grade:
             raise PermissionDenied(_("may not view other people's grades"))
 
-        access_rule = get_session_access_rule_by_opp(pctx, opportunity)
-        if not (opportunity.shown_in_grade_book
+        may_view_result = True
+        if opportunity.flow_id is not None:
+            access_rule = get_session_access_rule_by_opp(pctx, opportunity)
+            if not (may_view_opp_by_access_rule(access_rule)
+                    and may_view_opp_result_by_access_rule(access_rule)):
+                may_view_result = False
+
+        if not (may_view_result and opportunity.shown_in_grade_book
                 and opportunity.shown_in_participant_grade_book
-                and opportunity.result_shown_in_participant_grade_book
-                and may_view_opp_by_access_rule(access_rule)
-                and may_view_opp_result_by_access_rule(access_rule)
-                ):
+                and opportunity.result_shown_in_participant_grade_book):
             raise PermissionDenied(_("grade has not been released"))
 
     # {{{ modify sessions buttons
@@ -1268,7 +1274,7 @@ def view_single_grade(pctx, participation_id, opportunity_id):
 
                 recalculate_session_grade(
                         pctx.repo, pctx.course, session,
-                    update_credit_percentage_only=True)
+                        update_credit_percentage_only=True)
                 messages.add_message(pctx.request, messages.SUCCESS,
                         _("Session credit percentage updated."))
             else:

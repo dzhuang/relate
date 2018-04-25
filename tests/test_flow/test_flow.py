@@ -2570,16 +2570,17 @@ class FinishFlowSessionStandaloneTest(SingleCourseTestMixin, TestCase):
         self.mock_get_session_grading_rule.return_value = fake_grading_rule
 
         with mock.patch(
-                "django.utils.timezone.now") as mock_now:
+                "django.utils.timezone.now") as mock_now, mock.patch(
+                "course.utils.FlowSessionGradingRule.__eq__"):
             fake_now = mock.MagicMock()
             mock_now.return_value = fake_now
             self.assertTrue(flow.finish_flow_session_standalone(
                 self.repo, self.course, flow_session
             ))
 
-        self.assertEqual(self.mock_finish_flow_session.call_count, 1)
-        for arg in [self.fctx, fake_grading_rule]:
-            self.assertIn(arg, self.mock_finish_flow_session.call_args[0])
+            self.assertEqual(self.mock_finish_flow_session.call_count, 1)
+            for arg in [self.fctx, fake_grading_rule]:
+                self.assertIn(arg, self.mock_finish_flow_session.call_args[0])
 
         self.assertEqual(
             self.mock_finish_flow_session.call_args[1]["now_datetime"],
@@ -2597,8 +2598,11 @@ class FinishFlowSessionStandaloneTest(SingleCourseTestMixin, TestCase):
         ))
 
         self.assertEqual(self.mock_finish_flow_session.call_count, 1)
-        for arg in [self.fctx, fake_grading_rule]:
-            self.assertIn(arg, self.mock_finish_flow_session.call_args[0])
+
+        with mock.patch(
+                "course.utils.FlowSessionGradingRule.__eq__"):
+            for arg in [self.fctx, fake_grading_rule]:
+                self.assertIn(arg, self.mock_finish_flow_session.call_args[0])
 
         self.assertEqual(
             self.mock_finish_flow_session.call_args[1]["now_datetime"],
@@ -2722,8 +2726,10 @@ class ExpireFlowSessionStandaloneTest(SingleCourseTestMixin, TestCase):
 
         self.assertEqual(self.mock_expire_flow_session.call_count, 1)
 
-        for arg in [fake_grading_rule, self.default_now_datetime]:
-            self.assertIn(arg, self.mock_expire_flow_session.call_args[0])
+        with mock.patch(
+                "course.utils.FlowSessionGradingRule.__eq__"):
+            for arg in [fake_grading_rule, self.default_now_datetime]:
+                self.assertIn(arg, self.mock_expire_flow_session.call_args[0])
 
         self.assertEqual(
             self.mock_expire_flow_session.call_args[1]["past_due_only"],
@@ -2746,8 +2752,10 @@ class ExpireFlowSessionStandaloneTest(SingleCourseTestMixin, TestCase):
 
         self.assertEqual(self.mock_expire_flow_session.call_count, 1)
 
-        for arg in [fake_grading_rule, self.default_now_datetime]:
-            self.assertIn(arg, self.mock_expire_flow_session.call_args[0])
+        with mock.patch(
+                "course.utils.FlowSessionGradingRule.__eq__"):
+            for arg in [fake_grading_rule, self.default_now_datetime]:
+                self.assertIn(arg, self.mock_expire_flow_session.call_args[0])
 
         self.assertEqual(
             self.mock_expire_flow_session.call_args[1]["past_due_only"],
@@ -3148,7 +3156,10 @@ class ViewStartFlowTest(SingleCourseTestMixin, TestCase):
 
             self.assertEqual(len(past_sessions_and_properties), 0)
 
-        self.assertEqual(self.mock_get_session_grading_rule.call_count, 0)
+        # Note: This is different with upstream, we'll evalue the grading rule
+        # to generate human readable grading rules
+        self.assertEqual(self.mock_get_session_grading_rule.call_count, 1)
+
         self.assertEqual(self.mock_get_session_access_rule.call_count, 0)
 
 

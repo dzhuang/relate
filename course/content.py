@@ -1276,12 +1276,11 @@ def parse_date_spec(
 
     if datespec is None:
         return None
-    if course is None:
-        return now()
+
     if vctx is not None:
         return _parse_date_spec(course, datespec, vctx, location)
 
-    if isinstance(datespec, six.text_type):
+    if isinstance(datespec, six.text_type) and course is not None:
         from six.moves.urllib.parse import quote_plus
         from course.constants import DATESPECT_CACHE_KEY_PATTERN
         cache_key = DATESPECT_CACHE_KEY_PATTERN % {
@@ -1302,8 +1301,6 @@ def parse_date_spec(
 
     if cache_key is None:
         result = _parse_date_spec(course, datespec)
-        if result:
-            assert isinstance(result, datetime.datetime)
         return result
 
     from bson import json_util
@@ -1325,9 +1322,6 @@ def parse_date_spec(
 
     if len(result_json) <= getattr(settings, "RELATE_CACHE_MAX_BYTES", 0):
         def_cache.add(cache_key, result_json, None)
-
-    if result:
-        assert isinstance(result, datetime.datetime)
 
     return result
 

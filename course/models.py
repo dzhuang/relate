@@ -1691,6 +1691,10 @@ class GradeChange(models.Model):
             cast(float, self.max_points),
             cast(float, self.credit_percentage))
 
+    def percentage(self):
+        # This is used in upstream
+        return self.percentage_info().percentage
+
     def get_state_desc(self):
         return dict(GRADE_STATE_CHANGE_CHOICES).get(
                 self.state)
@@ -1722,6 +1726,11 @@ class GradeStateMachine(object):
         self._last_grade_change_time = None
 
         self.percentage_info = GradeChangePercentageInfo(None, None)
+
+        self.valid_percentage_info_count = 0
+
+        # for testing to be the same with upstream
+        self.valid_percentages = []
 
     def _clear_grades(self):
         # type: () -> None
@@ -1830,6 +1839,9 @@ class GradeStateMachine(object):
             key=lambda x: (x.grade_time, x.pk))
         del self.attempt_id_to_gchange
 
+        self.valid_percentage_info_count = (len(self.valid_percentage_infos)
+                                            + len(valid_gchanges_with_attempt_id))
+
         # {{{ Calculate the earliest percentage and latest percentage, instead of
         # get them from self.valid_percentage_infos, so as to avoid inconsistent
         # results.
@@ -1884,8 +1896,12 @@ class GradeStateMachine(object):
             # }}}
 
         self._calulate_percentage()
+        self.valid_percentages = [p.percentage for p in self.valid_percentage_infos]
 
         return self
+
+    def percentage(self):
+        return self.percentage_info.percentage
 
     def _calulate_percentage(self):
         # type: () -> None
@@ -1956,7 +1972,7 @@ class GradeStateMachine(object):
                         self.percentage_info.actual_percentage
                 )
             has_multiple_valid_percentages = (
-                bool(len(self.valid_percentage_infos) > 1))
+                bool(self.valid_percentage_info_count > 1))
             if has_multiple_valid_percentages or has_different_actual_percentage:
                 result += " ("
                 if has_different_actual_percentage:
@@ -1964,7 +1980,7 @@ class GradeStateMachine(object):
                     if has_multiple_valid_percentages:
                         result += " "
                 if has_multiple_valid_percentages:
-                    result += "/%d" % len(self.valid_percentage_infos)
+                    result += "/%d" % self.valid_percentage_info_count
                 result += ")"
             return result
         else:

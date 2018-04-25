@@ -1526,10 +1526,13 @@ def view_start_flow(pctx, flow_id):
     grade_aggregation_strategy_descr = (
         dict(GRADE_AGGREGATION_STRATEGY_CHOICES).get(
             new_session_grading_rule.grade_aggregation_strategy))
+
     # {{{ added by zd
+
     from course.utils import (
         get_human_readable_flow_may_start_desc_list,
         get_human_readable_session_grading_rule_desc_or_list)
+
     human_readable_flow_may_start_desc_list = (
         get_human_readable_flow_may_start_desc_list(
             pctx.course, pctx.participation,
@@ -1562,7 +1565,6 @@ def view_start_flow(pctx, flow_id):
         "new_session_grading_rule": new_session_grading_rule,
         "grade_aggregation_strategy_descr": grade_aggregation_strategy_descr,
         "start_may_decrease_grade": start_may_decrease_grade,
-
         "past_sessions_and_properties": past_sessions_and_properties,
         },
         allow_instant_flow_requests=False)

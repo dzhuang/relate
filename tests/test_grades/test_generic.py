@@ -90,14 +90,6 @@ class GradeGenericTestMixin(SingleCoursePageTestMixin):
                                   args=[self.course.identifier]))
         self.assertEqual(resp.status_code, 200)
 
-    # todo: move to test_csv
-    def test_view_export_gradebook_csv(self):
-        resp = self.c.get(reverse("relate-export_gradebook_csv",
-                                  args=[self.course.identifier]))
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp["Content-Disposition"],
-                         'attachment; filename="grades-test-course.csv"')
-
     def test_view_grades_by_opportunity(self):
         # Check attributes
         self.assertEqual(GradingOpportunity.objects.all().count(), 1)

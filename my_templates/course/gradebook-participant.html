@@ -53,14 +53,14 @@
       <th>{% trans "Date" %}</th>
     </thead>
     <tbody>
-      {% for grade_info, may_view_result in grade_table %}
+      {% for grade_info in grade_table %}
       {% with grade_info.grade_state_machine as gsm %}
       <tr>
         <td data-order="{{ grade_info.opportunity.identifier }}">{{ grade_info.opportunity.name }}</td>
-        {% if grade_info.opportunity.result_shown_in_participant_grade_book and may_view_result %}
-          <td data-order="{{ gsm.stringify_percentage }}">
+        {% if grade_info.opportunity.result_shown_in_participant_grade_book or pperm.view_gradebook %}
+          <td data-order="{% if grade_info.may_view_result %}{{ gsm.stringify_percentage }}{% endif %}">
             <a href="{% url "relate-view_single_grade" course.identifier grade_participation.id grade_info.opportunity.id %}"
-             ><span class="sensitive">{{ gsm.stringify_state }}</span></a>
+             ><span class="sensitive">{% if grade_info.may_view_result %}{{ gsm.stringify_state }}{% endif %}{% if not grade_info.opportunity.result_shown_in_participant_grade_book and pperm.view_gradebook %}{% trans "(not released)" %}{% endif %}</span></a>
           </td>
           <td
            {% if  gsm.last_graded_time %}
@@ -69,7 +69,7 @@
                data-order=""
             {% endif %}
             >
-            {{ grade_info.grade_state_machine.last_graded_time|compact_datetime }}
+            {% if grade_info.may_view_result %}{{ grade_info.grade_state_machine.last_graded_time|compact_datetime }}{% endif %}{% if not grade_info.opportunity.result_shown_in_participant_grade_book and pperm.view_gradebook %}{% trans "(not released)" %}{% endif %}
           </td>
         {% else %}
           <td>{% trans "(not released)" %}</td>

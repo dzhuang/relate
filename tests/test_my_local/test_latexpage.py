@@ -1874,7 +1874,7 @@ class LatexPageSandboxFlowCombineTest(
         self.assertNotEqual(current_commit_sha, new_commit_sha)
 
         self.post_update_course_content(COMMIT_SHA_WITH_SAME_CONTENT,
-                                        fetch_update=True, assert_success=False)
+                                        command="fetch_update")
         new_commit_sha = self.get_course_commit_sha(
             self.instructor_participation)
 
@@ -1896,8 +1896,7 @@ class LatexPageSandboxFlowCombineTest(
             latex_sandbox.LATEX_BLANK_FILLING_PAGE_WARMUP_BY_SANDBOX)
 
         self.post_update_course_content(COMMIT_SHA_WITH_SAME_CONTENT,
-                                        fetch_update=True,
-                                        assert_success=False)
+                                        command="fetch_update")
 
         self.start_flow(self.flow_id)
 

@@ -72,7 +72,7 @@ SINGLE_COURSE_SETUP_LIST = [
             "hidden": False,
             "listed": True,
             "accepts_enrollment": True,
-            "git_source": "https://code.aliyun.com/dzhuang/my_learningwhat_test_repo.git",  # noqa
+            "git_source": "git://github.com/inducer/relate-sample",  # noqa
             "course_file": "course.yml",
             "events_file": "events.yml",
             "enrollment_approval_required": False,
@@ -1194,7 +1194,7 @@ class CoursesTestMixinBase(SuperuserCreateMixin):
                 cls.get_view_start_flow_url(flow_id, course_identifier))
 
         if assume_success:
-            assert resp.status_code == 302, resp.content
+            assert resp.status_code == 302, resp.content.decode()
             new_session_count = FlowSession.objects.all().count()
             assert new_session_count == existing_session_count + 1
             _, _, params = resolve(resp.url)
