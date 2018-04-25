@@ -1030,7 +1030,7 @@ class GetSessionRuleMixin(object):
     def get_result(self, **extra_kwargs):
         raise NotImplementedError()
 
-    def assertRuleEqual(self, rule, expected_rule):  # noqa
+    def assertRuleEqual(self, rule, expected_rule, exclude_keys=None):  # noqa
         self.assertIsInstance(rule, self.rule_klass)
         rule_dict = struct_to_dict(rule)
 
@@ -1039,6 +1039,14 @@ class GetSessionRuleMixin(object):
         else:
             self.assertIsInstance(expected_rule, self.rule_klass)
             expected_rule_dict = struct_to_dict(expected_rule)
+
+        if exclude_keys:
+            for key in exclude_keys:
+                for d in [rule_dict, expected_rule_dict]:
+                    try:
+                        del d[key]
+                    except KeyError:
+                        pass
 
         self.assertDictEqual(rule_dict, expected_rule_dict)
 
@@ -1210,7 +1218,8 @@ class GetSessionStartRuleTest(GetSessionRuleMixin, SingleCourseTestMixin, TestCa
         self.mock_eval_generic_conditions.return_value = True
         self.mock_eval_participation_tags_conditions.return_value = True
         result = self.get_result()
-        self.assertRuleEqual(self.fallback_rule, result)
+        self.assertRuleEqual(self.fallback_rule, result,
+                             exclude_keys=["sessions_available_count"])
 
     def test_passing_not_for_rollover_and_if_has_fewer_tagged_sessions_than(self):  # noqa
         factories.FlowSessionFactory.create_batch(size=2,
@@ -1224,9 +1233,10 @@ class GetSessionStartRuleTest(GetSessionRuleMixin, SingleCourseTestMixin, TestCa
         self.assertRuleEqual(
             result,
             {"tag_session": None,
-            "may_start_new_session": True,
-            "may_list_existing_sessions": True,
-            "default_expiration_mode": None}
+             "may_start_new_session": True,
+             "may_list_existing_sessions": True,
+             "default_expiration_mode": None},
+            exclude_keys=["sessions_available_count"]
         )
 
     def test_passing_not_for_rollover(self):
@@ -1240,9 +1250,10 @@ class GetSessionStartRuleTest(GetSessionRuleMixin, SingleCourseTestMixin, TestCa
         self.assertRuleEqual(
             result,
             {"tag_session": None,
-            "may_start_new_session": True,
-            "may_list_existing_sessions": True,
-            "default_expiration_mode": None}
+             "may_start_new_session": True,
+             "may_list_existing_sessions": True,
+             "default_expiration_mode": None},
+            exclude_keys=["sessions_available_count"]
         )
 
     def test_passing_for_rollover(self):
@@ -1256,9 +1267,10 @@ class GetSessionStartRuleTest(GetSessionRuleMixin, SingleCourseTestMixin, TestCa
         self.assertRuleEqual(
             result,
             {"tag_session": None,
-            "may_start_new_session": True,
-            "may_list_existing_sessions": True,
-            "default_expiration_mode": None}
+             "may_start_new_session": True,
+             "may_list_existing_sessions": True,
+             "default_expiration_mode": None},
+            exclude_keys=["sessions_available_count"]
         )
 
     def test_get_expected_rule(self):
@@ -1283,7 +1295,8 @@ class GetSessionStartRuleTest(GetSessionRuleMixin, SingleCourseTestMixin, TestCa
             {"tag_session": tag_session,
              "may_start_new_session": may_start_new_session,
              "may_list_existing_sessions": may_list_existing_sessions,
-             "default_expiration_mode": default_expiration_mode}
+             "default_expiration_mode": default_expiration_mode},
+            exclude_keys = ["sessions_available_count"]
         )
 
 
@@ -1669,7 +1682,8 @@ class GetSessionGradingRuleTest(GetSessionRuleMixin,
             dict_to_struct({"if_completed_before": "my_test_event 2"}),
         ]
         result = self.get_result(flow_desc=self.get_hacked_flow_desc())
-        self.assertRuleEqual(result, self.get_default_rule())
+        self.assertRuleEqual(result, self.get_default_rule(),
+                             exclude_keys=["completed_before"])
 
     def test_if_completed_before_using_last_activity_with_last_activity_none_skipped(self):  # noqa
         self.mock_get_flow_rules.return_value = [
@@ -1717,7 +1731,8 @@ class GetSessionGradingRuleTest(GetSessionRuleMixin,
         result = self.get_result(flow_desc=self.get_hacked_flow_desc())
         self.assertRuleEqual(
             result, self.get_default_rule(
-                use_last_activity_as_completion_time=True))
+                use_last_activity_as_completion_time=True),
+            exclude_keys=["completed_before"])
 
     def test_params_in_passed_to_result(self):
         # rule params
