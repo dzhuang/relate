@@ -119,7 +119,7 @@ class SetFakeTimeTest(SingleCourseTestMixin, TestCase):
             resp = self.get_set_fake_time()
             self.assertEqual(resp.status_code, 200)
 
-            self.post_impersonate(impersonatee=self.student_participation.user)
+            self.post_impersonate_view(impersonatee=self.student_participation.user)
             # the faking url is rendered in template
             resp = self.c.get(self.course_page_url)
             self.assertContains(resp, self.get_fake_time_url())
@@ -238,7 +238,7 @@ class TestSetPretendFacilities(SingleCourseTestMixin, TestCase):
     def test_pretend_facilities_by_instructor_when_impersonating(self):
         with self.temporarily_switch_to_user(self.instructor_participation.user):
 
-            self.post_impersonate(impersonatee=self.student_participation.user)
+            self.post_impersonate_view(impersonatee=self.student_participation.user)
 
             # the pretending url is rendered in template
             resp = self.c.get(self.course_page_url)
@@ -271,7 +271,6 @@ class TestSetPretendFacilities(SingleCourseTestMixin, TestCase):
 
 
 class TestEditCourse(SingleCourseTestMixin, MockAddMessageMixing, TestCase):
-    django_messages_imported_path = "course.views.messages"
 
     def setUp(self):
         super(TestEditCourse, self).setUp()
@@ -556,7 +555,6 @@ class StaticPageTest(SingleCourseTestMixin, TestCase):
 
 class CoursePageTest(SingleCourseTestMixin, MockAddMessageMixing, TestCase):
     # test views.course_page
-    django_messages_imported_path = "course.views.messages"
 
     # {{{ test show enroll button
     def test_student_no_enroll_button(self):
@@ -1111,7 +1109,6 @@ class TestFlowTest(SingleCoursePageTestMixin, TestCase):
 
 
 class GrantExceptionTestMixin(MockAddMessageMixing, SingleCoursePageTestMixin):
-    django_messages_imported_path = "course.views.messages"
 
     @classmethod
     def setUpTestData(cls):  # noqa
@@ -1734,7 +1731,7 @@ class GrantExceptionStage3Test(GrantExceptionTestMixin, TestCase):
             self.assertAddMessageCalledWith(
                 ["Access rules tag of the selected session updated "
                  "to '%s'." % flow_desc_access_rule_tags[1],
-                 "Exception granted to "], reset=True)
+                 "'Session Access' exception granted to "], reset=True)
             self.fs.refresh_from_db()
             self.assertEqual(self.fs.access_rules_tag, flow_desc_access_rule_tags[1])
             self.assertEqual(self.mock_validate_session_access_rule.call_count, 1)
@@ -1763,7 +1760,7 @@ class GrantExceptionStage3Test(GrantExceptionTestMixin, TestCase):
             self.assertAddMessageCallCount(2)
             self.assertAddMessageCalledWith(
                 ["Removed access rules tag of the selected session.",
-                 "Exception granted to "], reset=True)
+                 "'Session Access' exception granted to "], reset=True)
             self.fs.refresh_from_db()
             self.assertEqual(self.fs.access_rules_tag, None)
             self.assertEqual(self.mock_validate_session_access_rule.call_count, 1)
@@ -1838,7 +1835,8 @@ class GrantExceptionStage3Test(GrantExceptionTestMixin, TestCase):
                     kind=constants.flow_rule_kind.access).count(), 1)
 
             self.assertAddMessageCallCount(1)
-            self.assertAddMessageCalledWith("Exception granted to ", reset=True)
+            self.assertAddMessageCalledWith(
+                "'Session Access' exception granted to ")
             another_fs.refresh_from_db()
             self.assertEqual(another_fs.access_rules_tag, another_fs_tag)
 
@@ -1944,7 +1942,7 @@ class GrantExceptionStage3Test(GrantExceptionTestMixin, TestCase):
         self.assertIsNone(if_completed_before)
 
         self.assertAddMessageCallCount(1)
-        self.assertAddMessageCalledWith("Exception granted to ", reset=True)
+        self.assertAddMessageCalledWith("'Grading' exception granted to ")
 
     def test_create_grading_exception_due(self):
         due = as_local_time(now() + timedelta(days=5))
@@ -1972,7 +1970,7 @@ class GrantExceptionStage3Test(GrantExceptionTestMixin, TestCase):
         self.assertEqual(if_completed_before.minute, due_naive.minute)
 
         self.assertAddMessageCallCount(1)
-        self.assertAddMessageCalledWith("Exception granted to ", reset=True)
+        self.assertAddMessageCalledWith("'Grading' exception granted to ")
 
     def test_create_grading_exception_due_same_as_access_expiration(self):
         due = as_local_time(now() + timedelta(days=5))
@@ -2006,7 +2004,7 @@ class GrantExceptionStage3Test(GrantExceptionTestMixin, TestCase):
         self.assertEqual(if_completed_before.minute, expiration_time_naive.minute)
 
         self.assertAddMessageCallCount(1)
-        self.assertAddMessageCalledWith("Exception granted to ", reset=True)
+        self.assertAddMessageCalledWith("'Grading' exception granted to ")
 
     def test_create_grading_exception_due_same_as_access_expiration_while_expiration_not_set(self):  # noqa
         due = as_local_time(now() + timedelta(days=5))
@@ -2045,7 +2043,7 @@ class GrantExceptionStage3Test(GrantExceptionTestMixin, TestCase):
         self.assertIn("89.1%", description)
 
         self.assertAddMessageCallCount(1)
-        self.assertAddMessageCalledWith("Exception granted to ", reset=True)
+        self.assertAddMessageCalledWith("'Grading' exception granted to ")
 
     def test_grading_rule_generates_grade(self):
         # not generates_grade
@@ -2066,7 +2064,8 @@ class GrantExceptionStage3Test(GrantExceptionTestMixin, TestCase):
         self.assertFalse(generates_grade)
 
         self.assertAddMessageCallCount(1)
-        self.assertAddMessageCalledWith("Exception granted to ", reset=True)
+        self.assertAddMessageCalledWith("'Grading' exception granted to ",
+                                        reset=True)
 
         # second, generates_grade
         self.post_grant_exception_stage_3_view(
@@ -2084,7 +2083,7 @@ class GrantExceptionStage3Test(GrantExceptionTestMixin, TestCase):
         self.assertTrue(generates_grade)
 
         self.assertAddMessageCallCount(1)
-        self.assertAddMessageCalledWith("Exception granted to ", reset=True)
+        self.assertAddMessageCalledWith("'Grading' exception granted to ")
 
     @unittest.skipIf(six.PY2, "PY2 doesn't support subTest")
     def test_grading_rule_item_set(self):
@@ -2181,7 +2180,7 @@ class GrantExceptionStage3Test(GrantExceptionTestMixin, TestCase):
                     kind=constants.flow_rule_kind.grading).count(), 1)
 
             self.assertAddMessageCallCount(1)
-            self.assertAddMessageCalledWith("Exception granted to ", reset=True)
+            self.assertAddMessageCalledWith("'Grading' exception granted to ")
             another_fs.refresh_from_db()
             self.assertEqual(another_fs.access_rules_tag, another_fs_tag)
 
