@@ -9,14 +9,16 @@ from tests.test_my_local.utils import get_test_media_folder
 
 class ImageUploadStorageTestMixin(object):
     def setUp(self):  # noqa
+        super(ImageUploadStorageTestMixin, self).setUp()
         self.media_root = get_test_media_folder()
         self.image_storage_settings_override = override_settings(
             MEDIA_ROOT=self.media_root
         )
         self.image_storage_settings_override.enable()
+        self.addCleanup(self.image_storage_settings_override.disable)
+        self.addCleanup(self._tearDown)
 
-    def tearDown(self):  # noqa
-        self.image_storage_settings_override.disable()
+    def _tearDown(self):
         force_remove_path(self.media_root)
         sendfile_root_dir_name = os.path.split(settings.SENDFILE_ROOT)[-1]
         if sendfile_root_dir_name == "test_protected":

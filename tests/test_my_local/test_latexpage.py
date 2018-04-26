@@ -52,7 +52,7 @@ from image_upload.page.latexpage import (
     get_latex_page_commitsha_template_pair_collection as page_sha_collection)
 
 from tests.base_test_mixins import (
-    SingleCoursePageTestMixin, FallBackStorageMessageTestMixin,
+    SingleCoursePageTestMixin, MockAddMessageMixing,
     SubprocessRunpyContainerMixin, improperly_configured_cache_patch)
 
 from tests.utils import LocmemBackendTestsMixin, mock
@@ -82,7 +82,7 @@ COMMIT_SHA_WITH_SAME_CONTENT = b"bec3b0ecd020bb8a4a105c3132c1c7f77acfda23"
 COMMIT_SHA_WITH_DIFFERENT_CONTENT = b"ee23f686d5e650fcdd590205d66e18800ae3a3f6"
 
 
-class LatexPageMixin(SingleCoursePageTestMixin, FallBackStorageMessageTestMixin):
+class LatexPageMixin(SingleCoursePageTestMixin, MockAddMessageMixing):
     courses_setup_list = MY_SINGLE_COURSE_SETUP_LIST
     flow_id = RANDOM_FLOW
 
@@ -178,7 +178,7 @@ class LatexPageTest(SubprocessRunpyContainerMixin, LatexPageMixin, TestCase):
         resp = self.c.get(self.get_page_url_by_page_id(page_id))
         self.assertEqual(resp.status_code, 200)
         resp = self.post_answer_by_page_id(page_id, {"blank1": ["9"]})
-        self.assertResponseMessagesContains(resp, MESSAGE_ANSWER_SAVED_TEXT)
+        self.assertAddMessageCalledWith(MESSAGE_ANSWER_SAVED_TEXT)
         self.assertEqual(resp.status_code, 200)
 
         self.end_flow()
@@ -194,7 +194,7 @@ class LatexPageTest(SubprocessRunpyContainerMixin, LatexPageMixin, TestCase):
         page_id = "rand1"
         resp = self.post_answer_by_page_id(
             page_id, {"blank1": ["9.1"]})
-        self.assertResponseMessagesContains(resp, MESSAGE_ANSWER_SAVED_TEXT)
+        self.assertAddMessageCalledWith(MESSAGE_ANSWER_SAVED_TEXT)
         self.assertEqual(resp.status_code, 200)
 
         self.end_flow()
@@ -205,7 +205,7 @@ class LatexPageTest(SubprocessRunpyContainerMixin, LatexPageMixin, TestCase):
 
         resp = self.post_answer_by_page_id(
             page_id, {"blank1": ["1, 2, 3"]})
-        self.assertResponseMessagesContains(resp, MESSAGE_ANSWER_FAILED_SAVE_TEXT)
+        self.assertAddMessageCalledWith(MESSAGE_ANSWER_FAILED_SAVE_TEXT)
         self.assertEqual(resp.status_code, 200)
 
         self.end_flow()
@@ -218,7 +218,7 @@ class LatexPageTest(SubprocessRunpyContainerMixin, LatexPageMixin, TestCase):
 
         resp = self.post_answer_by_page_id(
             page_id, {"blank1": ["90"]})
-        self.assertResponseMessagesContains(resp, MESSAGE_ANSWER_SAVED_TEXT)
+        self.assertAddMessageCalledWith(MESSAGE_ANSWER_SAVED_TEXT)
         self.assertEqual(resp.status_code, 200)
 
         self.end_flow()
@@ -229,7 +229,7 @@ class LatexPageTest(SubprocessRunpyContainerMixin, LatexPageMixin, TestCase):
 
         resp = self.post_answer_by_page_id(
             page_id, {"blank1": ["91"]})
-        self.assertResponseMessagesContains(resp, MESSAGE_ANSWER_SAVED_TEXT)
+        self.assertAddMessageCalledWith(MESSAGE_ANSWER_SAVED_TEXT)
         self.assertEqual(resp.status_code, 200)
 
         self.end_flow()
@@ -239,7 +239,7 @@ class LatexPageTest(SubprocessRunpyContainerMixin, LatexPageMixin, TestCase):
         page_id = "rand2"
         resp = self.post_answer_by_page_id(
             page_id, {"blank1": ["1, 2, 3"]})
-        self.assertResponseMessagesContains(resp, MESSAGE_ANSWER_FAILED_SAVE_TEXT)
+        self.assertAddMessageCalledWith(MESSAGE_ANSWER_FAILED_SAVE_TEXT)
         self.assertEqual(resp.status_code, 200)
 
         self.end_flow()
@@ -312,7 +312,7 @@ class LatexPageOldStyleFullTest(SubprocessRunpyContainerMixin, LatexPageMixin,
 
         resp = self.post_answer_by_page_id(
             page_id, {"blank1": ["9"]})
-        self.assertResponseMessagesContains(resp, MESSAGE_ANSWER_SAVED_TEXT)
+        self.assertAddMessageCalledWith(MESSAGE_ANSWER_SAVED_TEXT)
         self.assertEqual(resp.status_code, 200)
 
         self.end_flow()
@@ -325,7 +325,7 @@ class LatexPageOldStyleFullTest(SubprocessRunpyContainerMixin, LatexPageMixin,
 
         resp = self.post_answer_by_page_id(
             page_id, {"blank1": ["9.1"]})
-        self.assertResponseMessagesContains(resp, MESSAGE_ANSWER_SAVED_TEXT)
+        self.assertAddMessageCalledWith(MESSAGE_ANSWER_SAVED_TEXT)
         self.assertEqual(resp.status_code, 200)
 
         self.end_flow()
@@ -338,7 +338,7 @@ class LatexPageOldStyleFullTest(SubprocessRunpyContainerMixin, LatexPageMixin,
 
         resp = self.post_answer_by_page_id(
             page_id, {"blank1": ["1, 2, 3"]})
-        self.assertResponseMessagesContains(resp, MESSAGE_ANSWER_FAILED_SAVE_TEXT)
+        self.assertAddMessageCalledWith(MESSAGE_ANSWER_FAILED_SAVE_TEXT)
         self.assertEqual(resp.status_code, 200)
 
         self.end_flow()
@@ -408,7 +408,7 @@ class LatexPageOldStylePartsTest(SubprocessRunpyContainerMixin, LatexPageMixin,
 
         resp = self.post_answer_by_page_id(
             page_id, {"blank1": ["9"]})
-        self.assertResponseMessagesContains(resp, MESSAGE_ANSWER_SAVED_TEXT)
+        self.assertAddMessageCalledWith(MESSAGE_ANSWER_SAVED_TEXT)
         self.assertEqual(resp.status_code, 200)
 
         self.end_flow()
@@ -438,7 +438,7 @@ class LatexPageOldStylePartsTest(SubprocessRunpyContainerMixin, LatexPageMixin,
 
         resp = self.post_answer_by_page_id(
             page_id, {"blank1": ["9.1"]})
-        self.assertResponseMessagesContains(resp, MESSAGE_ANSWER_SAVED_TEXT)
+        self.assertAddMessageCalledWith(MESSAGE_ANSWER_SAVED_TEXT)
         self.assertEqual(resp.status_code, 200)
 
         self.end_flow()
@@ -451,7 +451,7 @@ class LatexPageOldStylePartsTest(SubprocessRunpyContainerMixin, LatexPageMixin,
 
         resp = self.post_answer_by_page_id(
             page_id, {"blank1": ["1, 2, 3"]})
-        self.assertResponseMessagesContains(resp, MESSAGE_ANSWER_FAILED_SAVE_TEXT)
+        self.assertAddMessageCalledWith(MESSAGE_ANSWER_FAILED_SAVE_TEXT)
         self.assertEqual(resp.status_code, 200)
 
         self.end_flow()
@@ -1112,7 +1112,7 @@ class LatexPageInitalPageDataTest(SubprocessRunpyContainerMixin, LatexPageMixin,
 
         resp = self.post_answer_by_page_id(
             self.page_id, {"blank1": ["9"]})
-        self.assertResponseMessagesContains(resp, MESSAGE_ANSWER_SAVED_TEXT)
+        self.assertAddMessageCalledWith(MESSAGE_ANSWER_SAVED_TEXT)
         self.assertEqual(resp.status_code, 200)
         self.end_flow()
         self.assertSessionScoreEqual(3)

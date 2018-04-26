@@ -46,7 +46,7 @@ from image_upload.models import FlowPageImage
 from tests.test_my_local.utils import skip_test, SKIP_LOCAL_TEST_REASON
 from tests.base_test_mixins import (
     SINGLE_COURSE_SETUP_LIST, SingleCoursePageTestMixin,
-    FallBackStorageMessageTestMixin, NONE_PARTICIPATION_USER_CREATE_KWARG_LIST,
+    MockAddMessageMixing, NONE_PARTICIPATION_USER_CREATE_KWARG_LIST,
 )
 from tests.utils import mock
 
@@ -66,7 +66,7 @@ TEST_IMAGE_TRUNCATED = os.path.join(TEST_IMAGE_FOLDER, "test_truncated.jpg")
 
 
 class ImageUploadViewMixin(ImageUploadStorageTestMixin,
-                           FallBackStorageMessageTestMixin,
+                           MockAddMessageMixing,
                            SingleCoursePageTestMixin):
     def get_upload_url_by_page_id(self, page_id, course_identifier=None,
                                   flow_session_id=None):
@@ -541,8 +541,7 @@ class ImageUploadPageTest(ImageUploadQuizMixin, TestCase):
             page_id, {"hidden_answer": [image_pks_str]})
         self.assertEqual(FlowPageImage.objects.all().count(), 1)
         self.assertTrue(resp.status_code, 200)
-        self.assertResponseMessagesEqual(resp, [MESSAGE_ANSWER_SAVED_TEXT])
-        self.assertResponseMessageLevelsEqual(resp, [messages.SUCCESS])
+        self.assertAddMessageCalledWith([MESSAGE_ANSWER_SAVED_TEXT])
         self.assertEqual(
             FlowPageImage.objects.filter(is_temp_image=True).count(), 0)
         self.assertEqual(
@@ -567,8 +566,7 @@ class ImageUploadPageTest(ImageUploadQuizMixin, TestCase):
         expected_form_error = FORM_ERROR_FORM_DATA_BROKEN_TEXT
         self.assertTrue(resp.status_code, 200)
         self.assertFormError(resp, "form", None, expected_form_error)
-        self.assertResponseMessagesEqual(resp, [MESSAGE_ANSWER_FAILED_SAVE_TEXT])
-        self.assertResponseMessageLevelsEqual(resp, [messages.ERROR])
+        self.assertAddMessageCalledWith([MESSAGE_ANSWER_FAILED_SAVE_TEXT])
         self.assertEqual(
             FlowPageImage.objects.filter(is_temp_image=True).count(), 1)
 
@@ -595,8 +593,7 @@ class ImageUploadPageTest(ImageUploadQuizMixin, TestCase):
         expected_form_error = FORM_ERROR_SUBMITTING_OTHERS_IMAGE_TEXT
         self.assertTrue(resp.status_code, 200)
         self.assertFormError(resp, "form", None, expected_form_error)
-        self.assertResponseMessagesEqual(resp, [MESSAGE_ANSWER_FAILED_SAVE_TEXT])
-        self.assertResponseMessageLevelsEqual(resp, [messages.ERROR])
+        self.assertAddMessageCalledWith([MESSAGE_ANSWER_FAILED_SAVE_TEXT])
         self.assertEqual(
             FlowPageImage.objects.filter(is_temp_image=False).count(), 0)
 
@@ -612,8 +609,7 @@ class ImageUploadPageTest(ImageUploadQuizMixin, TestCase):
             page_id, {"hidden_answer": [image_pks_str]})
         self.assertEqual(FlowPageImage.objects.all().count(), 2)
         self.assertTrue(resp.status_code, 200)
-        self.assertResponseMessagesEqual(resp, [MESSAGE_ANSWER_SAVED_TEXT])
-        self.assertResponseMessageLevelsEqual(resp, [messages.SUCCESS])
+        self.assertAddMessageCalledWith([MESSAGE_ANSWER_SAVED_TEXT])
         self.assertEqual(
             FlowPageImage.objects.filter(is_temp_image=True).count(), 0)
         self.assertEqual(
@@ -629,8 +625,7 @@ class ImageUploadPageTest(ImageUploadQuizMixin, TestCase):
             page_id, {"hidden_answer": [image_pks_str]})
         self.assertEqual(FlowPageImage.objects.all().count(), 1)
         self.assertTrue(resp.status_code, 200)
-        self.assertResponseMessagesEqual(resp, [MESSAGE_ANSWER_SAVED_TEXT])
-        self.assertResponseMessageLevelsEqual(resp, [messages.SUCCESS])
+        self.assertAddMessageCalledWith([MESSAGE_ANSWER_SAVED_TEXT])
         self.assertEqual(
             FlowPageImage.objects.filter(is_temp_image=True).count(), 0)
         self.assertEqual(
@@ -650,8 +645,7 @@ class ImageUploadPageTest(ImageUploadQuizMixin, TestCase):
         resp = self.post_answer_by_page_id(
             page_id, {"hidden_answer": [image_pks_str]})
         self.assertTrue(resp.status_code, 200)
-        self.assertResponseMessagesEqual(resp, [MESSAGE_ANSWER_SAVED_TEXT])
-        self.assertResponseMessageLevelsEqual(resp, [messages.SUCCESS])
+        self.assertAddMessageCalledWith([MESSAGE_ANSWER_SAVED_TEXT])
         # the unknown image is removed when submit
         self.assertEqual(
             FlowPageImage.objects.filter(is_temp_image=True).count(), 0)
@@ -672,8 +666,7 @@ class ImageUploadPageTest(ImageUploadQuizMixin, TestCase):
         self.assertEqual(FlowPageImage.objects.all().count(), 1)
         self.assertTrue(resp.status_code, 200)
         self.assertFormError(resp, "form", None, expected_form_error)
-        self.assertResponseMessagesEqual(resp, [MESSAGE_ANSWER_FAILED_SAVE_TEXT])
-        self.assertResponseMessageLevelsEqual(resp, [messages.ERROR])
+        self.assertAddMessageCalledWith([MESSAGE_ANSWER_FAILED_SAVE_TEXT])
         self.assertEqual(
             FlowPageImage.objects.filter(is_temp_image=True).count(), 1)
 
@@ -685,8 +678,7 @@ class ImageUploadPageTest(ImageUploadQuizMixin, TestCase):
         self.assertTrue(resp.status_code, 200)
         expected_form_error = MESSAGE_IMAGE_NOT_UPLOADED_TEXT
         self.assertFormError(resp, 'form', None, expected_form_error)
-        self.assertResponseMessagesEqual(resp, [MESSAGE_ANSWER_FAILED_SAVE_TEXT])
-        self.assertResponseMessageLevelsEqual(resp, [messages.ERROR])
+        self.assertAddMessageCalledWith([MESSAGE_ANSWER_FAILED_SAVE_TEXT])
         self.assertEqual(
             FlowPageImage.objects.filter(is_temp_image=True).count(), 0)
         self.assertEqual(
@@ -698,8 +690,7 @@ class ImageUploadPageTest(ImageUploadQuizMixin, TestCase):
             page_id, {"hidden_answer": [""]})
         self.assertEqual(FlowPageImage.objects.all().count(), 0)
         self.assertTrue(resp.status_code, 200)
-        self.assertResponseMessagesEqual(resp, [MESSAGE_ANSWER_SAVED_TEXT])
-        self.assertResponseMessageLevelsEqual(resp, [messages.SUCCESS])
+        self.assertAddMessageCalledWith([MESSAGE_ANSWER_SAVED_TEXT])
         self.assertEqual(
             FlowPageImage.objects.filter(is_temp_image=True).count(), 0)
         self.assertEqual(
@@ -716,11 +707,10 @@ class ImageUploadPageTest(ImageUploadQuizMixin, TestCase):
             page_id, {"hidden_answer": [image_pks_str]})
         self.assertEqual(FlowPageImage.objects.all().count(), 2)
         self.assertTrue(resp.status_code, 200)
-        self.assertResponseMessagesEqual(resp, [MESSAGE_ANSWER_FAILED_SAVE_TEXT])
+        self.assertAddMessageCalledWith([MESSAGE_ANSWER_FAILED_SAVE_TEXT])
         expected_form_error = (
             FORM_ERROR_IMAGE_NUMBER_EXCEEDED_PATTERN % (1, 2))
         self.assertFormError(resp, 'form', None, expected_form_error)
-        self.assertResponseMessageLevelsEqual(resp, [messages.ERROR])
         self.assertEqual(
             FlowPageImage.objects.filter(is_temp_image=True).count(), 2)
         self.assertEqual(
@@ -1258,7 +1248,7 @@ class ImageUploadSandboxViewTest(ImageUploadViewMixin,
 
         # success render
         self.assertEqual(resp.status_code, 200)
-        self.assertResponseMessagesCount(resp, 0)
+        self.assertAddMessageCallCount(0)
         self.assertContains(resp, "<h1>allow upload two images</h1>")
 
     def test_sandbox_create_image(self):
