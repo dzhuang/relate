@@ -649,17 +649,31 @@ def export_gradebook_csv(pctx):
 
 class OpportunitySessionGradeInfo(object):
     def __init__(self,
-                 grade_state_machine,  # type: GradeStateMachine
-                 flow_session,  # type: Optional[FlowSession]
-                 grades=None,  # type: Optional[Any]
-                 flow_not_completed=False  # type: Optional[bool]
+                 grade_state_machine,  # Optional[GradeStateMachine]
+                 flow_session,  # Optional[FlowSession]
+                 flow_id=None,  # Optional[Text]
+                 grades=None,  # Optional[Any]
+                 has_finished_session=False,  # bool
                  ):
         # type: (...) ->  None
-
+        """
+        :param grade_state_machine: a :class:`GradeStateMachine:` or None.
+        :param flow_session: a :class:`FlowSession:` or None.
+        :param flow_id: optional, a :class:`str:` or None. This is used to determine
+        whether the instance is created by a flow-session-related opportunity.
+        :param grades: optional, a :class:`list:` of float or None, representing the
+        percentage grades of each page in the flow session.
+        :param has_finished_session:  a :class:`bool:`, respresent whether
+        the related participation has finished a flow-session, if the opportunity
+        is a flow-session related one. This is used to correctly order flow state,
+        if the participation has at least one finished flow session, the in-progress
+        flow session won't be ordered to top of the session state column.
+        """
         self.grade_state_machine = grade_state_machine
         self.flow_session = flow_session
+        self.flow_id = flow_id
         self.grades = grades
-        self.flow_not_completed = flow_not_completed
+        self.has_finished_session = has_finished_session
 
 
 class ModifySessionsForm(StyledForm):
@@ -905,45 +919,44 @@ def view_grades_by_opportunity(pctx, opp_id):
                 fsess_idx += 1
 
             my_flow_sessions = []
-            flow_not_completed = True
+
             while (
                     fsess_idx < len(flow_sessions) and
                     flow_sessions[fsess_idx].participation is not None and
                     flow_sessions[fsess_idx].participation.pk == participation.pk):
                 my_flow_sessions.append(flow_sessions[fsess_idx])
-                if flow_not_completed:
-                    if not flow_sessions[fsess_idx].in_progress:
-                        flow_not_completed = False
                 fsess_idx += 1
 
             # When view_page_grades, this should this record should not be appended
             if not my_flow_sessions and not view_page_grades:
                 grade_table.append(
                         (participation, OpportunitySessionGradeInfo(
-                            grade_state_machine=state_machine,
+                            grade_state_machine=None,
+                            flow_id=opportunity.flow_id,
                             flow_session=None)))
 
             for fsession in my_flow_sessions:
                 total_sessions += 1
 
-                if fsession is None:
-                    continue
+                assert fsession is not None
 
                 if not fsession.in_progress:
                     finished_sessions += 1
 
                 grade_table.append(
-                    (participation, OpportunitySessionGradeInfo(
-                        grade_state_machine=state_machine,
-                        flow_session=fsession,
-                        flow_not_completed=flow_not_completed)))
+                        (participation, OpportunitySessionGradeInfo(
+                            grade_state_machine=state_machine,
+                            flow_id=opportunity.flow_id,
+                            flow_session=fsession,
+                            has_finished_session=bool(finished_sessions))))
 
-    if view_page_grades and len(grade_table) > 0 and all(
-            info.flow_session is not None for _dummy1, info in grade_table):
+    if view_page_grades and len(grade_table) > 0 and opportunity.flow_id is not None:
         # Query grades for flow pages
         all_flow_sessions = [
                 cast(FlowSession, info.flow_session)
                 for _dummy1, info in grade_table]
+
+        assert all(all_flow_sessions)
         max_page_count = max(fsess.page_count for fsess in all_flow_sessions)
         page_numbers = list(range(1, 1 + max_page_count))
 
