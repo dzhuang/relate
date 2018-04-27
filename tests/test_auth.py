@@ -272,7 +272,17 @@ class ImpersonateTest(SingleCoursePageTestMixin, MockAddMessageMixing, TestCase)
             self.assertEqual(second_visit.impersonated_by,
                              self.ta_participation.user)
 
-    def test_stop_impersonate_by_non_ajax_post_or_get(self):
+    def test_stop_impersonate_by_get_or_non_ajax_post_while_not_impersonating(self):
+        with self.temporarily_switch_to_user(self.instructor_participation.user):
+            # request by get
+            resp = self.get_stop_impersonate()
+            self.assertEqual(resp.status_code, 403)
+
+            # post not using ajax
+            resp = self.post_stop_impersonate(using_ajax=False)
+            self.assertEqual(resp.status_code, 403)
+
+    def test_stop_impersonate_by_get_or_non_ajax_post_while_impersonating(self):
         with self.temporarily_switch_to_user(self.instructor_participation.user):
             # first impersonate a user
             self.post_impersonate_view(
