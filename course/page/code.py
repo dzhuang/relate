@@ -91,8 +91,9 @@ class InvalidPingResponse(RuntimeError):
     pass
 
 
-def request_python_run(run_req, run_timeout, image=None):
-    # type: (Dict, int, Optional[Text]) -> Dict
+def request_python_run(run_req, run_timeout, image=None,
+                       spawn_containers_for_runpy=None):
+    # type: (Dict, int, Optional[Text], Optional[bool]) -> Dict
     import json
     from six.moves import http_client
     import socket
@@ -114,8 +115,10 @@ def request_python_run(run_req, run_timeout, image=None):
     port = RUNPY_PORT
 
     client_config = None
+    if spawn_containers_for_runpy is None:
+        spawn_containers_for_runpy = SPAWN_CONTAINERS_FOR_RUNPY
 
-    if SPAWN_CONTAINERS_FOR_RUNPY:
+    if spawn_containers_for_runpy:
         from course.docker.config import get_relate_runpy_docker_client_config
         silence_for_not_usable = getattr(
             settings, "SILENCE_RUNPY_DOCKER_NOT_USABLE_ERROR", False)
@@ -282,10 +285,18 @@ def is_nuisance_failure(result):
     return False
 
 
-def request_python_run_with_retries(run_req, run_timeout, image=None, retry_count=3):
+def request_python_run_with_retries(
+        run_req, run_timeout, image=None, retry_count=3,
+        spawn_containers_for_runpy=None):
     # type: (Dict, int, Optional[Text], int) -> Dict[Text, Any]
+
+    if spawn_containers_for_runpy is None:
+        spawn_containers_for_runpy = SPAWN_CONTAINERS_FOR_RUNPY
+
     while True:
-        result = request_python_run(run_req, run_timeout, image=image)
+        result = request_python_run(
+            run_req, run_timeout, image=image,
+            spawn_containers_for_runpy=spawn_containers_for_runpy)
 
         if retry_count and is_nuisance_failure(result):
             retry_count -= 1

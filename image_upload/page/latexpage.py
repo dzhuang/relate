@@ -24,6 +24,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+import os
 import six
 from copy import deepcopy
 from io import BytesIO
@@ -1127,8 +1128,10 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                                                code_name, **kwargs)
 
         try:
-            response_dict = request_python_run_with_retries(run_jinja_req,
-                    run_timeout=self.docker_run_timeout)
+            response_dict = request_python_run_with_retries(
+                run_jinja_req,
+                run_timeout=self.docker_run_timeout,
+                spawn_containers_for_runpy=not bool(six.PY3))
         except:
             response_dict = {
                     "result": "uncaught_error",
