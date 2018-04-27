@@ -1,0 +1,23 @@
+[Unit]
+Description=In process runpy server for RELATE
+After=network.target
+
+[Service]
+Type=forking
+User=www-data
+Group=www-data
+
+WorkingDirectory=/home/course/relate/docker-image-run-py/
+
+PermissionsStartOnly=true
+ExecStartPre=/bin/mkdir -p /var/run/runpy
+ExecStartPre=/bin/chown -R www-data:www-data /var/run/runpy/
+ExecStartPre=-/bin/rm -f /var/run/runpy/runpy.pid
+
+ExecStart=/home/course/relate/docker-image-run-py/runpy --pidfile=/var/run/runpy/runpy.pid
+
+Restart=on-failure
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target
