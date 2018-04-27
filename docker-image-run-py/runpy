@@ -162,7 +162,7 @@ def main():
 
             while True:
                 server.handle_request()
-                print("SERVED REQUEST", file=sys.stderr)
+                # print("SERVED REQUEST", file=sys.stderr)
                 if TEST_COUNT > 0 and serve_single_test:
                     break
 
