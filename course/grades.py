@@ -927,7 +927,8 @@ def view_grades_by_opportunity(pctx, opp_id):
                 my_flow_sessions.append(flow_sessions[fsess_idx])
                 fsess_idx += 1
 
-            # When view_page_grades, this should this record should not be appended
+            # When view_page_grades, participations with no started flow sessions
+            # should not be included
             if not my_flow_sessions and not view_page_grades:
                 grade_table.append(
                         (participation, OpportunitySessionGradeInfo(
