@@ -78,7 +78,9 @@ if [[ "$PY_EXE" = python3* ]]; then
     ${PY_EXE} manage.py compilemessages
 fi
 
-$PIP install codecov factory_boy
-coverage run manage.py test tests/
+export COVERAGE_PROCESS_START=.coveragerc
+$PIP install codecov factory_boy coverage-enable-subprocess
+coverage run manage.py test tests.test_pages
+coverage combine
 coverage report -m
 codecov
