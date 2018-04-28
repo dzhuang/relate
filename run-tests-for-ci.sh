@@ -79,6 +79,6 @@ if [[ "$PY_EXE" = python3* ]]; then
 fi
 
 $PIP install codecov factory_boy
-coverage run manage.py test tests/
+coverage run manage.py test tests --parallel
 coverage report -m
 codecov
