@@ -68,3 +68,6 @@ mongomock
 
 # site brand and slogan
 django-settings-export
+
+# daemon support
+python-daemon

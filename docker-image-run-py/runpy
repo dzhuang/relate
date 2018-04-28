@@ -133,22 +133,26 @@ class RunRequestHandler(BaseHTTPRequestHandler):
 
 
 def main():
+    print("STARTING, LISTENING ON %d" % PORT, file=sys.stderr)
+    server = socketserver.TCPServer(("", PORT), RunRequestHandler)
+
+    serve_single_test = len(sys.argv) > 1 and sys.argv[1] == "-1"
+
+    while True:
+        server.handle_request()
+        print("SERVED REQUEST", file=sys.stderr)
+        if TEST_COUNT > 0 and serve_single_test:
+            break
+
+    server.server_close()
+    print("FINISHED server_close()", file=sys.stderr)
+
+    print("EXITING", file=sys.stderr)
+
+
+if __name__ == "__main__":
     if sys.platform.lower().startswith("win"):
-        print("STARTING, LISTENING ON %d" % PORT, file=sys.stderr)
-        server = socketserver.TCPServer(("", PORT), RunRequestHandler)
-
-        serve_single_test = len(sys.argv) > 1 and sys.argv[1] == "-1"
-
-        while True:
-            server.handle_request()
-            print("SERVED REQUEST", file=sys.stderr)
-            if TEST_COUNT > 0 and serve_single_test:
-                break
-
-        server.server_close()
-        print("FINISHED server_close()", file=sys.stderr)
-
-        print("EXITING", file=sys.stderr)
+        main()
     else:
         import daemon
         from daemon import pidfile
@@ -156,20 +160,6 @@ def main():
         with daemon.DaemonContext(
                 pidfile=pidf,
                 working_directory="/home/course/relate/docker-image-run-py/"):
-            server = socketserver.TCPServer(("", PORT), RunRequestHandler)
-
-            serve_single_test = len(sys.argv) > 1 and sys.argv[1] == "-1"
-
-            while True:
-                server.handle_request()
-                # print("SERVED REQUEST", file=sys.stderr)
-                if TEST_COUNT > 0 and serve_single_test:
-                    break
-
-            server.server_close()
-
-
-if __name__ == "__main__":
-    main()
+            main()
 
 # vim: foldmethod=marker

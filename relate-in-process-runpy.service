@@ -3,7 +3,7 @@ Description=In process runpy server for RELATE
 After=network.target
 
 [Service]
-Type=forking
+Type=simple
 User=www-data
 Group=www-data
 
@@ -14,7 +14,8 @@ ExecStartPre=/bin/mkdir -p /var/run/runpy
 ExecStartPre=/bin/chown -R www-data:www-data /var/run/runpy/
 ExecStartPre=-/bin/rm -f /var/run/runpy/runpy.pid
 
-ExecStart=/home/course/my-relate-env3/bin/python3 -m runpy
+ExecStart=/home/course/my-relate-env3/bin/python3 runpy start
+ExecStop=/home/course/my-relate-env3/bin/python3 runpy stop
 
 Restart=on-failure
 RestartSec=10s
