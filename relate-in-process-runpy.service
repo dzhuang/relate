@@ -3,6 +3,7 @@ Description=In process runpy server for RELATE
 After=network.target
 
 [Service]
+# https://stackoverflow.com/questions/13069634/python-daemon-and-systemd-service
 Type=simple
 User=www-data
 Group=www-data
@@ -14,8 +15,7 @@ ExecStartPre=/bin/mkdir -p /var/run/runpy
 ExecStartPre=/bin/chown -R www-data:www-data /var/run/runpy/
 ExecStartPre=-/bin/rm -f /var/run/runpy/runpy.pid
 
-ExecStart=/home/course/my-relate-env3/bin/python3 runpy start
-ExecStop=/home/course/my-relate-env3/bin/python3 runpy stop
+ExecStart=/home/course/my-relate-env3/bin/python3 runpy
 
 Restart=on-failure
 RestartSec=10s
