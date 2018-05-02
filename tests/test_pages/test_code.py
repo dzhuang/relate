@@ -1249,7 +1249,7 @@ class RequestPythonRunWithRetriesTest(unittest.TestCase):
                 }}
 
             with self.subTest(
-                    case="Docker ping passed by runpy timed out"):
+                    case="Docker ping passed by runpy.py timed out"):
 
                 # first request is ping, second request raise socket.timeout
                 mock_ctn_request.side_effect = [None, sock_timeout]

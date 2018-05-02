@@ -37,7 +37,7 @@ except ImportError:
         from course.page.code_runpy_backend import (
             Struct, run_code, package_exception)
     except ImportError:
-        # When debugging, i.e., run "python runpy" command line
+        # When debugging, i.e., run "python runpy.py" command line
         import os
         sys.path.insert(0, os.path.abspath(
             os.path.join(os.path.dirname(__file__), os.pardir)))

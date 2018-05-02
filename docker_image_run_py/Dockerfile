@@ -22,7 +22,7 @@ RUN apt-get -y -o APT::Install-Recommends=0 -o APT::Install-Suggests=0 install \
 RUN fc-cache
 
 RUN mkdir -p /opt/runpy
-ADD runpy /opt/runpy/
+ADD runpy.py /opt/runpy/runpy
 COPY code_feedback.py /opt/runpy/
 COPY code_runpy_backend.py /opt/runpy/
 

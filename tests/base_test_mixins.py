@@ -2424,7 +2424,7 @@ class SubprocessRunpyContainerMixin(object):
                 os.path.abspath(
                     os.path.join(
                         os.path.dirname(__file__), os.pardir,
-                        "docker-image-run-py", "runpy")),
+                        "docker_image_run_py", "runpy.py")),
                 ]
         cls.faked_container_process = subprocess.Popen(
             args,
