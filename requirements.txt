@@ -101,4 +101,7 @@ typing>=3.6.1
 nbconvert>=5.2.1
 IPython
 
+# detecting slowest tests
+django-slowtests
+
 # vim: foldmethod=marker

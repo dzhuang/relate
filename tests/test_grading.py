@@ -34,7 +34,7 @@ from course.constants import participation_permission as pperm
 from tests.base_test_mixins import (
     SingleCourseQuizPageTestMixin, MockAddMessageMixing)
 from tests import factories
-from tests.utils import mock
+from tests.utils import mock, may_run_expensive_tests, SKIP_EXPENSIVE_TESTS_REASON
 
 
 class SingleCourseQuizPageGradeInterfaceTestMixin(SingleCourseQuizPageTestMixin):
@@ -43,6 +43,10 @@ class SingleCourseQuizPageGradeInterfaceTestMixin(SingleCourseQuizPageTestMixin)
 
     @classmethod
     def setUpTestData(cls):  # noqa
+        if not may_run_expensive_tests():
+            from unittest import SkipTest
+            raise SkipTest(SKIP_EXPENSIVE_TESTS_REASON)
+
         super(SingleCourseQuizPageGradeInterfaceTestMixin, cls).setUpTestData()
         cls.start_flow(cls.flow_id)
         cls.this_flow_session_id = cls.default_flow_params["flow_session_id"]

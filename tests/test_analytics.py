@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+import unittest
 from django.test import TestCase
 from django.core.exceptions import ObjectDoesNotExist
 from django.urls import reverse
@@ -31,14 +32,14 @@ from relate.utils import dict_to_struct
 from course.models import FlowSession
 from course import analytics
 
-
 from tests.base_test_mixins import (  # noqa
     SingleCourseTestMixin, CoursesTestMixinBase, SingleCoursePageTestMixin,
     SingleCourseQuizPageTestMixin, MockAddMessageMixing, HackRepoMixin)
-from tests.utils import mock
+from tests.utils import mock, may_run_expensive_tests, SKIP_EXPENSIVE_TESTS_REASON
 from tests import factories
 
 
+@unittest.skipUnless(may_run_expensive_tests(), SKIP_EXPENSIVE_TESTS_REASON)
 class FlowListTest(SingleCourseTestMixin, TestCase):
     """test analytics.flow_list"""
     def get_flow_list_url(self, course_identifier=None):
@@ -129,6 +130,7 @@ class HistogramTest(CoursesTestMixinBase, TestCase):
             self.assertTemplateUsed("course/histogram.html")
 
 
+@unittest.skipUnless(may_run_expensive_tests(), SKIP_EXPENSIVE_TESTS_REASON)
 class IsFlowMultipleSubmitTest(SingleCourseTestMixin, TestCase):
     """test course.analytics.is_flow_multiple_submit"""
     def test_flow_desc_has_no_rule(self):
@@ -244,6 +246,7 @@ class PageAnalyticsTest(SingleCourseTestMixin, TestCase):
         self.assertEqual(resp.status_code, 403)
 
 
+@unittest.skipUnless(may_run_expensive_tests(), SKIP_EXPENSIVE_TESTS_REASON)
 class FlowAnalyticsTest(SingleCourseQuizPageTestMixin, HackRepoMixin,
                         MockAddMessageMixing, TestCase):
     """analytics.flow_analytics"""
