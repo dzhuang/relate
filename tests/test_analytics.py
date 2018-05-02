@@ -154,6 +154,7 @@ class IsFlowMultipleSubmitTest(SingleCourseTestMixin, TestCase):
         self.assertTrue(analytics.is_flow_multiple_submit(flow_desc))
 
 
+@unittest.skipUnless(may_run_expensive_tests(), SKIP_EXPENSIVE_TESTS_REASON)
 class IsPageMultipleSubmitTest(SingleCoursePageTestMixin, HackRepoMixin, TestCase):
     """test course.analytics.is_page_multiple_submit"""
     @classmethod

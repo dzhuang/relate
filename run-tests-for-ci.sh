@@ -99,6 +99,7 @@ if [[ "$RL_TRAVIS_TEST" = "test_expensive" ]]; then
                                 tests.test_analytics.FlowAnalyticsTest \
                                 tests.test_analytics.FlowListTest \
                                 tests.test_analytics.IsFlowMultipleSubmitTest \
+                                tests.test_analytics.IsPageMultipleSubmitTest \
                                 tests.test_versioning.ParamikoSSHVendorTest \
                                 tests.test_receivers.UpdateCouresOrUserSignalTest
 
