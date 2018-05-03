@@ -31,6 +31,7 @@ from typing import cast
 
 from django.utils.translation import (
         ugettext_lazy as _, pgettext_lazy, ugettext)
+from django.utils.encoding import force_text
 from django.shortcuts import (  # noqa
         render, redirect, get_object_or_404)
 from django.contrib import messages  # noqa
@@ -1135,7 +1136,6 @@ def find_participant_from_user_attr(course, attr_type, attr_str):
     matches_count = matches.count()
     if not matches_count or matches_count > 1:
         from django.contrib.auth import get_user_model
-        from django.utils.encoding import force_text
         attr_verbose_name = force_text(
             get_user_model()._meta.get_field(attr_type).verbose_name)
 
@@ -1568,7 +1568,8 @@ def download_all_submissions(pctx, flow_id):
                                 "grade %i: score: %s" % (i+1, grade.correctness))
                             afb = AnswerFeedback.from_json(grade.feedback, None)
                             if afb is not None:
-                                feedback_lines.append(afb.feedback)
+                                feedback_lines.append(
+                                    force_text(afb.get_feedback_text()))
 
                         subm_zip.writestr(
                                 basename + "-feedback.txt",

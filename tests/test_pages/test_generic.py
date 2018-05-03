@@ -477,7 +477,17 @@ class AnswerFeedBackTest(unittest.TestCase):
         }
         af = AnswerFeedback.from_json(json, None)
         self.assertEqual(af.correctness, 0.5)
-        self.assertEqual(af.feedback, "what ever")
+        self.assertEqual(af.get_feedback_text(), "what ever")
+        self.assertEqual(af.bulk_feedback, None)
+
+    def test_from_json_feedback_is_a_list(self):
+        json = {
+            "correctness": 0.5,
+            "feedback": ["what ever", " ", "(50%)"]
+        }
+        af = AnswerFeedback.from_json(json, None)
+        self.assertEqual(af.correctness, 0.5)
+        self.assertEqual(af.get_feedback_text(), "what ever (50%)")
         self.assertEqual(af.bulk_feedback, None)
 
     def test_from_json_none(self):
@@ -525,48 +535,60 @@ class GetAutoFeedbackTest(unittest.TestCase):
     test course.page.base.get_auto_feedback
     """
 
+    def assertInFeedbackText(self, expected_literal, auto_feedback):  # noqa
+        if isinstance(auto_feedback, list):
+            self.assertIn(expected_literal, "".join(auto_feedback))
+        else:
+            self.assertIn(expected_literal, auto_feedback)
+
+    def assertNotInFeedbackText(self, expected_literal, auto_feedback):  # noqa
+        if isinstance(auto_feedback, list):
+            self.assertNotIn(expected_literal, "".join(auto_feedback))
+        else:
+            self.assertNotIn(expected_literal, auto_feedback)
+
     def test_none(self):
-        self.assertIn("No information", get_auto_feedback(None))
+        self.assertInFeedbackText("No information", get_auto_feedback(None))
 
     def test_not_correct(self):
-        self.assertIn("not correct", get_auto_feedback(0.000001))
-        self.assertIn("not correct", get_auto_feedback(-0.000001))
+        self.assertInFeedbackText("not correct", get_auto_feedback(0.000001))
+        self.assertInFeedbackText("not correct", get_auto_feedback(-0.000001))
 
     def test_correct(self):
         result = get_auto_feedback(0.999999)
-        self.assertIn("is correct", result)
-        self.assertNotIn("bonus", result)
+        self.assertInFeedbackText("is correct", result)
+        self.assertNotInFeedbackText("bonus", result)
 
         result = get_auto_feedback(1)
-        self.assertIn("is correct", result)
-        self.assertNotIn("bonus", result)
+        self.assertInFeedbackText("is correct", result)
+        self.assertNotInFeedbackText("bonus", result)
 
         result = get_auto_feedback(1.000001)
-        self.assertIn("is correct", result)
-        self.assertNotIn("bonus", result)
+        self.assertInFeedbackText("is correct", result)
+        self.assertNotInFeedbackText("bonus", result)
 
     def test_correct_with_bonus(self):
         result = get_auto_feedback(1.01)
-        self.assertIn("is correct", result)
-        self.assertIn("bonus", result)
+        self.assertInFeedbackText("is correct", result)
+        self.assertInFeedbackText("bonus", result)
 
         result = get_auto_feedback(2)
-        self.assertIn("is correct", result)
-        self.assertIn("bonus", result)
+        self.assertInFeedbackText("is correct", result)
+        self.assertInFeedbackText("bonus", result)
 
         result = get_auto_feedback(9.99999)
-        self.assertIn("is correct", result)
-        self.assertIn("bonus", result)
+        self.assertInFeedbackText("is correct", result)
+        self.assertInFeedbackText("bonus", result)
 
     def test_with_mostly_correct(self):
-        self.assertIn("mostly correct", get_auto_feedback(0.51))
-        self.assertIn("mostly correct", get_auto_feedback(0.999))
+        self.assertInFeedbackText("mostly correct", get_auto_feedback(0.51))
+        self.assertInFeedbackText("mostly correct", get_auto_feedback(0.999))
 
     def test_with_somewhat_correct(self):
-        self.assertIn("somewhat correct", get_auto_feedback(0.5))
-        self.assertIn("somewhat correct", get_auto_feedback(0.5000001))
-        self.assertIn("somewhat correct", get_auto_feedback(0.001))
-        self.assertIn("somewhat correct", get_auto_feedback(0.2))
+        self.assertInFeedbackText("somewhat correct", get_auto_feedback(0.5))
+        self.assertInFeedbackText("somewhat correct", get_auto_feedback(0.5000001))
+        self.assertInFeedbackText("somewhat correct", get_auto_feedback(0.001))
+        self.assertInFeedbackText("somewhat correct", get_auto_feedback(0.2))
 
     def test_correctness_negative(self):
         correctness = -0.1

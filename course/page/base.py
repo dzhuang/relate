@@ -239,7 +239,7 @@ class AnswerFeedback(object):
     """
 
     def __init__(self, correctness, feedback=None, bulk_feedback=None):
-        # type: (Optional[float], Optional[Text], Optional[Text]) -> None
+        # type: (Optional[float], Optional[Union[Text, List[List[Text]]]], Optional[Text]) -> None  # noqa
 
         correctness = validate_point_count(correctness)
 

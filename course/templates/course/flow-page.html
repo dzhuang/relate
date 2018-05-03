@@ -373,7 +373,7 @@
         alert-info
       {% endif %}
       ">
-        <p>{% trans feedback.feedback|safe %}</p>
+        <p>{{ feedback.get_feedback_text|safe }}</p>
         {% if feedback.bulk_feedback %}
           <p>{% trans feedback.bulk_feedback|safe %}</p>
         {% endif %}

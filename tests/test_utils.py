@@ -288,6 +288,11 @@ class LanguageOverrideTest(SingleCoursePageTestMixin,
                 ugettext_noop("Here is some feedback on your code"),
             ]},
         "anyup": {"literals": [ugettext_noop("No answer provided.")]},
+        "matrix_props": {
+            "answer": {"choices": [0]},
+            "literals":
+                [ugettext_noop("Your answer is mostly correct."),
+                 "(60.0 %)"]},
     }
 
     def feedback_test(self, course_force_lang):
@@ -306,11 +311,13 @@ class LanguageOverrideTest(SingleCoursePageTestMixin,
                 resp = self.c.get(self.get_page_url_by_page_id(page_id))
                 for literal in v["literals"]:
                     if not course_force_lang:
-                        self.assertContains(resp, literal)
+                        self.assertContains(resp, literal,
+                                            msg_prefix=resp.content.decode())
                     else:
                         with translation.override(course_force_lang):
                             translated_literal = translation.ugettext(literal)
-                        self.assertContains(resp, translated_literal)
+                        self.assertContains(resp, translated_literal,
+                                            msg_prefix=resp.content.decode())
 
     @override_settings(RELATE_ADMIN_EMAIL_LOCALE="en-us")
     def test_course_no_force_lang_feedback(self):

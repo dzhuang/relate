@@ -652,7 +652,8 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
             try:
                 feedback_bits.append(
                         "<p><b>%s</b></p>"
-                        % _(get_auto_feedback(correctness)))
+                        % string_concat(
+                            *[_(s) for s in get_auto_feedback(correctness)]))
             except Exception as e:
                 correctness = None
                 response_dict["result"] = "setup_error"
