@@ -23,7 +23,7 @@
            </b>
         </p>
       {% endif %}
-      {{ code_feedback.feedback|safe }}
+      {{ code_feedback.get_feedback_text|safe }}
     </div>
   </div>
 {% endif %}

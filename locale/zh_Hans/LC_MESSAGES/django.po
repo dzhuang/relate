@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2018-04-20 16:43+0800\n"
+"POT-Creation-Date: 2018-05-04 11:52+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language: \n"
@@ -451,10 +451,6 @@ msgstr "次数"
 msgid "'%(event_kind)s %(event_ordinal)d' already exists"
 msgstr "%(event_kind)s %(event_ordinal)d' 已经存在"
 
-msgctxt "Unkown time interval"
-msgid "unknown interval"
-msgstr "未知的时间间隔"
-
 msgid "may not edit events"
 msgstr "不允许编辑event"
 
@@ -846,10 +842,6 @@ msgstr "未找到资源\"%s\""
 
 msgid "I have no idea what a processing instruction is."
 msgstr "我也不知道处理的指令是什么"
-
-#, python-format
-msgid "invalid period: %s"
-msgstr "无效的周期：%s"
 
 #, python-format
 msgid "unrecognized date/time specification: '%s' (interpreted as 'now')"
@@ -2641,14 +2633,14 @@ msgstr "您的回答不正确. "
 msgid "Your answer is correct."
 msgstr "您的回答是正确的. "
 
-msgid "Your answer is correct and earned bonus points."
-msgstr "您的回答是正确的, 并且得到了加分. "
+msgid "Your answer is correct and earned bonus points. ({:.1%})"
+msgstr "您的回答是正确的, 并且得到了加分. ({:.1%})"
 
-msgid "Your answer is mostly correct."
-msgstr "您的回答基本正确. "
+msgid "Your answer is mostly correct. ({:.1%})"
+msgstr "您的回答基本正确. ({:.1%})"
 
-msgid "Your answer is somewhat correct. "
-msgstr "您的回答在一定程度上正确. "
+msgid "Your answer is somewhat correct. ({:.1%})"
+msgstr "您的回答在一定程度上正确. ({:.1%})"
 
 msgid "Not passing page_desc to PageBase.__init__ is deprecated"
 msgstr "不将page_desc传递到PageBase.__init__的作法已经淘汰了."
@@ -2837,6 +2829,10 @@ msgid "choice %(idx)d: unable to convert to string"
 msgstr "选项%(idx)d: 无法转换为字符串"
 
 #, python-format
+msgid "Execution time: %(exec_time).1f s -- Time limit: %(time_limit).1f s"
+msgstr "运行时长: %(exec_time).1f s -- 允许时长:  %(time_limit).1f s"
+
+#, python-format
 msgid "data file '%(file)s' not found"
 msgstr "data file '%(file)s' 未找到"
 
@@ -2861,13 +2857,14 @@ msgstr ""
 "您的代码错误和通知课务人员的邮件尝试都未成功. 请与课程或网站人员联系, 并告知"
 "全部的错误信息。"
 
+#, python-format
 msgid ""
 "Sending an email to the course staff about the following failure failed with "
-"the following error message:"
-msgstr "向课管人员发送电子邮件，在邮件中包含以下的代码失败信息."
-
-msgid "The original failure message follows:"
-msgstr "错误发生时的信息如下:"
+"the following error message:<pre>%s</pre>The original failure message "
+"follows:"
+msgstr ""
+"向课管人员发送电子邮件，在邮件中包含以下的代码失败信息<pre>%s</pre>原始的错误"
+"信息如下:"
 
 msgid ""
 "It looks like you submitted code that is identical to the reference "
@@ -2884,12 +2881,11 @@ msgstr ""
 "分的代码引起的，我们将尽快地修复它。同时，你也可以在下面查看traceback信息，它"
 "将帮助你了解是哪里出了问题。"
 
-#, python-format
 msgid ""
 "Your code took too long to execute. The problem specifies that your code may "
-"take at most %s seconds to run. It took longer than that and was aborted."
+"take at most {} seconds to run. It took longer than that and was aborted."
 msgstr ""
-"你的代码执行时间过长。本问题要求你的代码执行时间不得超过%s秒钟，由于超时所以"
+"你的代码执行时间过长。本问题要求你的代码执行时间不得超过{}秒钟，由于超时所以"
 "代码执行被取消。"
 
 msgid "Your code failed to compile. An error message is below."
@@ -2898,30 +2894,32 @@ msgstr "你的代码编译失败，下面是错误信息。"
 msgid "Your code failed with an exception. A traceback is below."
 msgstr "你的代码执行失败且有一条exception，下面是traceback信息。"
 
-msgid "Here is some feedback on your code"
-msgstr "这是关于你的代码的反馈"
+msgid "Here is some feedback on your code:<ul>{}</ul>"
+msgstr "这是关于你的代码的反馈:<ul>{}</ul>"
 
-msgid "This is the exception traceback"
-msgstr "这是exception traceback"
+msgid "This is the exception traceback:<pre>{}</pre>"
+msgstr "这是exception traceback:<pre>{}</pre>"
 
-#, python-format
-msgid "Your code ran on %s."
-msgstr "运行你的代码的主机实例为: %s"
+msgid "Your code ran on {}."
+msgstr "运行你的代码的主机实例为: {}"
 
-msgid "Your code printed the following output"
-msgstr "你的代码打印出以下的输出结果"
+msgid "Your code printed the following output:<pre>{}</pre>"
+msgstr "你的代码打印出以下的输出结果:<pre>{}</pre>"
 
-msgid "Your code printed the following error messages"
-msgstr "你的代码打印出以下的错误信息"
-
-msgid "Your code produced the following plots"
-msgstr "你的代码得到以下的图"
+msgid "Your code printed the following error messages:<pre>{}</pre>"
+msgstr "你的代码打印出以下的错误信息:<pre>{}</pre>"
 
 msgid "Figure"
 msgstr "图"
 
+msgid "Your code produced the following plots:"
+msgstr "你的代码得到以下的图:"
+
 msgid "(Non-string in 'HTML' output filtered out)"
 msgstr "(非HTML的输出已被过滤)"
+
+msgid "Your code produced the following html:"
+msgstr "你的代码得到以下的HTML:"
 
 msgid "The following code is a valid answer"
 msgstr "以下的代码是一个有效的回答"
@@ -4857,6 +4855,9 @@ msgid ""
 "facility, as a reminder that this pretending is in progress."
 msgstr "为所有虚拟教学设备的页面添加header，以提示目前正在虚拟过程中."
 
+msgid "may not pretend facilities"
+msgstr "不允许伪装教学设施"
+
 msgid "Pretend to be in Facilities"
 msgstr "假装置身于教学设施中"
 
@@ -5024,8 +5025,10 @@ msgid "credit"
 msgstr "应得分"
 
 #, python-format
-msgid "Exception granted to '%(participation)s' for '%(flow_id)s'."
-msgstr "已对%(participation)s的%(flow_id)s给予破例. "
+msgid ""
+"'%(exception_type)s' exception granted to '%(participation)s' for "
+"'%(flow_id)s'."
+msgstr "已对%(participation)s的%(flow_id)s给予'%(exception_type)s'类型的破例. "
 
 #, python-format
 msgid ""

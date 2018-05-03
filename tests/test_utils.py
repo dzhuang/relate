@@ -34,7 +34,7 @@ from django.utils.timezone import now, timedelta
 from django.test.utils import override_settings
 from django import VERSION as DJANGO_VERSION
 from django.utils import translation
-from django.utils.translation import ugettext_noop
+from django.utils.encoding import force_text
 from django.conf import settings
 
 from relate.utils import (
@@ -261,38 +261,37 @@ class LanguageOverrideTest(SingleCoursePageTestMixin,
         self.assertEqual(translation.get_language(), "en-us")
 
     page_id_literal_dict = {
-        "half": {"literals": [ugettext_noop("No answer provided.")]},
-        "krylov": {"literals": [ugettext_noop("No answer provided."), ]},
+        "half": {"literals": [force_text("No answer provided.")]},
+        "krylov": {"literals": [force_text("No answer provided."), ]},
         "ice_cream_toppings": {
-            "literals": [ugettext_noop("No answer provided."), ]},
+            "literals": [force_text("No answer provided."), ]},
         "inlinemulti": {
             "literals":
-                [ugettext_noop("No answer provided."), ]},
+                [force_text("No answer provided."), ]},
         "hgtext": {
-            "literals": [ugettext_noop("No answer provided.")]},
+            "literals": [force_text("No answer provided.")]},
         "quarter": {
-            "literals": [ugettext_noop("No answer provided."), ]},
+            "literals": [force_text("No answer provided."), ]},
         "pymult": {
             "answer": {"answer": "c = ..."},
             "literals": [
-                ugettext_noop("Autograder feedback"),
-                ugettext_noop("Your answer is not correct.")
+                force_text("Autograder feedback"),
+                force_text("Your answer is not correct.")
             ]},
         "addition": {
             "answer": {"answer": "c = a + b"},
             "literals": [
-                ugettext_noop("Your answer is correct."),
-                ugettext_noop("It looks like you submitted code that is "
+                force_text("Your answer is correct."),
+                force_text("It looks like you submitted code that is "
                               "identical to the reference solution. "
                               "This is not allowed."),
-                ugettext_noop("Here is some feedback on your code"),
             ]},
-        "anyup": {"literals": [ugettext_noop("No answer provided.")]},
+        "anyup": {"literals": [force_text("No answer provided.")]},
         "matrix_props": {
             "answer": {"choices": [0]},
             "literals":
-                [ugettext_noop("Your answer is mostly correct."),
-                 "(60.0 %)"]},
+                [(force_text("Your answer is mostly correct. ({:.1%})"
+                               )).format(0.6)]},
     }
 
     def feedback_test(self, course_force_lang):
@@ -311,13 +310,11 @@ class LanguageOverrideTest(SingleCoursePageTestMixin,
                 resp = self.c.get(self.get_page_url_by_page_id(page_id))
                 for literal in v["literals"]:
                     if not course_force_lang:
-                        self.assertContains(resp, literal,
-                                            msg_prefix=resp.content.decode())
+                        self.assertContains(resp, literal, msg_prefix=resp.content.decode())
                     else:
                         with translation.override(course_force_lang):
                             translated_literal = translation.ugettext(literal)
-                        self.assertContains(resp, translated_literal,
-                                            msg_prefix=resp.content.decode())
+                        self.assertContains(resp, translated_literal, msg_prefix=resp.content.decode())
 
     @override_settings(RELATE_ADMIN_EMAIL_LOCALE="en-us")
     def test_course_no_force_lang_feedback(self):

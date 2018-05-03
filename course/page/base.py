@@ -43,7 +43,7 @@ from django.conf import settings
 # {{{ mypy
 
 if False:
-    from typing import Text, Optional, Any, Tuple, Dict, Callable, FrozenSet, Union  # noqa
+    from typing import Text, Optional, Any, List, Tuple, Dict, Callable, FrozenSet, Union  # noqa
     from django import http  # noqa
     from course.models import (  # noqa
             Course,
@@ -184,38 +184,66 @@ def validate_point_count(correctness, atol=1e-5):
     return round_point_count_to_quarters(correctness, atol)
 
 
-def get_auto_feedback(correctness):
-    # type: (Optional[float]) -> Text
+class _FeedbackMessage(object):
+    def __init__(self, message, args=None, formatted_by=None):
+        self.message = message
+        self.args = args
+        self.formatted_by = formatted_by
+
+    def as_dict(self):
+        return self.__dict__
+
+    def as_text(self):
+        from django.utils.encoding import force_text
+        result = _(self.message)
+        if self.args:
+            result = force_text(_(result).format(
+                *[force_text(arg, strings_only=True) for arg in self.args]))
+
+        if self.formatted_by:
+            result = self.formatted_by.format(result)
+
+        return force_text(result)
+
+    def __str__(self):
+        return self.as_text()
+
+    def __unicode__(self):
+        return self.as_text()
+
+
+def get_auto_feedback(correctness, formatted_by=None):
+    # type: (Optional[float]) -> _FeedbackMessage
 
     correctness = validate_point_count(correctness)
 
+    kwargs = {}
+
     if correctness is None:
-        return six.text_type(
-            ugettext_noop("No information on correctness of answer."))
+        return _FeedbackMessage(six.text_type(
+            ugettext_noop("No information on correctness of answer.")),
+            formatted_by=formatted_by)
 
     if correctness == 0:
-        return six.text_type(ugettext_noop("Your answer is not correct."))
+        return _FeedbackMessage(
+            six.text_type(ugettext_noop("Your answer is not correct.")),
+            formatted_by=formatted_by)
     elif correctness == 1:
-        return six.text_type(ugettext_noop("Your answer is correct."))
+        return _FeedbackMessage(
+            six.text_type(ugettext_noop("Your answer is correct.")),
+            formatted_by=formatted_by)
     elif correctness > 1:
-        return six.text_type(
-                string_concat(
-                    ugettext_noop(
-                        "Your answer is correct and earned bonus points."),
-                    " (%.1f %%)")
-                % (100*correctness))
+        return _FeedbackMessage(ugettext_noop(
+            "Your answer is correct and earned bonus points."
+            " ({:.1%})"), args=[correctness], formatted_by=formatted_by)
     elif correctness > 0.5:
-        return six.text_type(
-                string_concat(
-                    ugettext_noop("Your answer is mostly correct."),
-                    " (%.1f %%)")
-                % (100*correctness))
+        return _FeedbackMessage(
+            ugettext_noop("Your answer is mostly correct. ({:.1%})"),
+            args=[correctness], formatted_by=formatted_by)
     else:
-        return six.text_type(
-                string_concat(
-                    ugettext_noop("Your answer is somewhat correct. "),
-                    "(%.1f%%)")
-                % (100*correctness))
+        return _FeedbackMessage(
+            ugettext_noop("Your answer is somewhat correct. ({:.1%})"),
+            args=[correctness], formatted_by=formatted_by)
 
 
 class AnswerFeedback(object):
@@ -239,25 +267,50 @@ class AnswerFeedback(object):
     """
 
     def __init__(self, correctness, feedback=None, bulk_feedback=None):
-        # type: (Optional[float], Optional[Union[Text, List[List[Text]]]], Optional[Text]) -> None  # noqa
+        # type: (Optional[float], Optional[Union[Text, List[_FeedbackMessage]]], Optional[Union[Text, List[_FeedbackMessage]]]) -> None  # noqa
 
         correctness = validate_point_count(correctness)
 
         if feedback is None:
-            feedback = get_auto_feedback(correctness)
+            feedback = [get_auto_feedback(correctness)]
 
         self.correctness = correctness
         self.feedback = feedback
         self.bulk_feedback = bulk_feedback
 
+    def get_feedback_text(self):
+        if not isinstance(self.feedback, list):
+            # backward compatibility
+            return _(self.feedback)
+
+        fbs = [fb.as_text() for fb in self.feedback]
+        return "\n".join(fbs)
+
+    def get_bulk_feedback_text(self):
+        if not isinstance(self.bulk_feedback, list):
+            # backward compatibility
+            return _(self.bulk_feedback)
+
+        fbs = [fb.as_text() for fb in self.bulk_feedback]
+        return "\n".join(fbs)
+
     def as_json(self):
         # type: () -> Tuple[Dict[Text, Any], Dict[Text, Any]]
+        if not isinstance(self.feedback, list):
+            feedback = self.feedback
+        else:
+            feedback = [fb.as_dict() for fb in self.feedback]
         result = {
                 "correctness": self.correctness,
-                "feedback": self.feedback,
+                "feedback": feedback,
                 }
+
+        if not isinstance(self.bulk_feedback, list):
+            bulk_feedback = self.bulk_feedback
+        else:
+            bulk_feedback = [fb.as_dict() for fb in self.bulk_feedback]
         bulk_result = {
-                "bulk_feedback": self.bulk_feedback,
+                "bulk_feedback": bulk_feedback,
                 }
 
         return result, bulk_result
@@ -270,13 +323,23 @@ class AnswerFeedback(object):
             return json
 
         if bulk_json is not None:
-            bulk_feedback = bulk_json.get("bulk_feedback")
+            bulk_feedbacks = bulk_json.get("bulk_feedback")
+            if not isinstance(bulk_feedbacks, list):
+                bulk_feedback = bulk_feedbacks
+            else:
+                bulk_feedback = [_FeedbackMessage(**fb) for fb in bulk_feedbacks]
         else:
             bulk_feedback = None
 
+        feedbacks = json["feedback"]
+        if not isinstance(feedbacks, list):
+            feedback = feedbacks
+        else:
+            feedback = [_FeedbackMessage(**fb) for fb in feedbacks]
+
         return AnswerFeedback(
                 correctness=json["correctness"],
-                feedback=json["feedback"],
+                feedback=feedback,
                 bulk_feedback=bulk_feedback,
                 )
 
@@ -284,7 +347,7 @@ class AnswerFeedback(object):
         # type: () -> Optional[float]
 
         if self.correctness is not None:
-            return 100*self.correctness
+            return 100 * self.correctness
         else:
             return None
 

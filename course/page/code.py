@@ -30,16 +30,16 @@ from course.validation import ValidationError
 import django.forms as forms
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.html import escape
-from django.utils.translation import ugettext as _
+from django.utils.translation import ugettext as _, ugettext_noop
 from django.conf import settings
 
 from relate.utils import StyledForm, string_concat
 from course.page.base import (
-        PageBaseWithTitle, markup_to_html, PageBaseWithValue,
-        PageBaseWithHumanTextFeedback,
-        AnswerFeedback, get_auto_feedback,
+    PageBaseWithTitle, markup_to_html, PageBaseWithValue,
+    PageBaseWithHumanTextFeedback,
+    AnswerFeedback, get_auto_feedback, _FeedbackMessage,
 
-        get_editor_interaction_mode)
+    get_editor_interaction_mode)
 from course.constants import flow_permission
 
 # DEBUGGING SWITCH:
@@ -227,8 +227,11 @@ def request_python_run(run_req, run_timeout, image=None):
             result = json.loads(response_data)
 
             result["feedback"] = (result.get("feedback", [])
-                    + ["Execution time: %.1f s -- Time limit: %.1f s"
-                        % (end_time - start_time, run_timeout)])
+                    + [_(
+                        "Execution time: %(exec_time).1f s -- "
+                        "Time limit: %(time_limit).1f s")
+                        % {"exec_time": end_time - start_time,
+                           "time_limit": run_timeout}])
 
             result["exec_host"] = connect_host_ip
 
@@ -599,7 +602,8 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
     def grade(self, page_context, page_data, answer_data, grade_data):
         if answer_data is None:
             return AnswerFeedback(correctness=0,
-                    feedback=_("No answer provided."))
+                                  feedback=[
+                                      _FeedbackMessage(_("No answer provided."))])
 
         user_code = answer_data["answer"]
 
@@ -651,9 +655,8 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
             correctness = response_dict["points"]
             try:
                 feedback_bits.append(
-                        "<p><b>%s</b></p>"
-                        % string_concat(
-                            *[_(s) for s in get_auto_feedback(correctness)]))
+                    get_auto_feedback(
+                        correctness, formatted_by="<p><b>{}</b></p>"))
             except Exception as e:
                 correctness = None
                 response_dict["result"] = "setup_error"
@@ -724,25 +727,21 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                     except Exception:
                         from traceback import format_exc
                         feedback_bits.append(
-                            six.text_type(string_concat(
-                                "<p>",
-                                _(
-                                    "Both the grading code and the attempt to "
-                                    "notify course staff about the issue failed. "
-                                    "Please contact the course or site staff and "
-                                    "inform them of this issue, mentioning this "
-                                    "entire error message:"),
-                                "</p>",
-                                "<p>",
-                                _(
-                                    "Sending an email to the course staff about the "
-                                    "following failure failed with "
-                                    "the following error message:"),
-                                "<pre>",
-                                "".join(format_exc()),
-                                "</pre>",
-                                _("The original failure message follows:"),
-                                "</p>")))
+                            _FeedbackMessage(ugettext_noop(
+                                "Both the grading code and the attempt to "
+                                "notify course staff about the issue failed. "
+                                "Please contact the course or site staff and "
+                                "inform them of this issue, mentioning this "
+                                "entire error message:"), formatted_by="<p>{}</p>"))
+
+                        feedback_bits.append(
+                            _FeedbackMessage(ugettext_noop(
+                                "Sending an email to the course staff about the "
+                                "following failure failed with "
+                                "the following error message:<pre>%s</pre>"
+                                "The original failure message follows:"),
+                                args=["".join(format_exc())],
+                                formatted_by="<p>{}</p>"))
 
         # }}}
 
@@ -757,9 +756,10 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
             if (normalize_code(user_code)
                     == normalize_code(self.page_desc.correct_code)):
                 feedback_bits.append(
-                        "<p><b>%s</b></p>"
-                        % _("It looks like you submitted code that is identical to "
-                            "the reference solution. This is not allowed."))
+                    _FeedbackMessage(ugettext_noop(
+                        "It looks like you submitted code that is identical to "
+                        "the reference solution. This is not allowed."),
+                        formatted_by="<p><b>{}</b></p>"))
 
         from relate.utils import dict_to_struct
         response = dict_to_struct(response_dict)
@@ -774,44 +774,38 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                 "setup_error",
                 "test_compile_error",
                 "test_error"]:
-            feedback_bits.append("".join([
-                "<p>",
-                _(
+            feedback_bits.append(
+                _FeedbackMessage(ugettext_noop(
                     "The grading code failed. Sorry about that. "
                     "The staff has been informed, and if this problem is "
                     "due to an issue with the grading code, "
                     "it will be fixed as soon as possible. "
                     "In the meantime, you'll see a traceback "
-                    "below that may help you figure out what went wrong."
-                    ),
-                "</p>"]))
+                    "below that may help you figure out what went wrong."),
+                    formatted_by="<p>{}</p>"))
+
         elif response.result == "timeout":
-            feedback_bits.append("".join([
-                "<p>",
-                _(
+            feedback_bits.append(
+                _FeedbackMessage(ugettext_noop(
                     "Your code took too long to execute. The problem "
-                    "specifies that your code may take at most %s seconds "
+                    "specifies that your code may take at most {} seconds "
                     "to run. "
-                    "It took longer than that and was aborted."
-                    ),
-                "</p>"])
-                    % self.page_desc.timeout)
+                    "It took longer than that and was aborted."),
+                    args=[self.page_desc.timeout], formatted_by="<p>{}</p>"))
 
             correctness = 0
         elif response.result == "user_compile_error":
-            feedback_bits.append("".join([
-                "<p>",
-                _("Your code failed to compile. An error message is "
-                    "below."),
-                "</p>"]))
+            feedback_bits.append(
+                _FeedbackMessage(ugettext_noop(
+                    "Your code failed to compile. An error message is "
+                    "below."), formatted_by="<p>{}</p>"))
 
             correctness = 0
         elif response.result == "user_error":
-            feedback_bits.append("".join([
-                "<p>",
-                _("Your code failed with an exception. "
-                    "A traceback is below."),
-                "</p>"]))
+            feedback_bits.append(
+                _FeedbackMessage(ugettext_noop(
+                    "Your code failed with an exception. "
+                    "A traceback is below."), formatted_by="<p>{}</p>"))
 
             correctness = 0
         else:
@@ -821,20 +815,18 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
             def sanitize(s):
                 import bleach
                 return bleach.clean(s, tags=["p", "pre"])
-            feedback_bits.append("".join([
-                "<p>",
-                _("Here is some feedback on your code"),
-                ":"
-                "<ul>%s</ul></p>"]) %
-                        "".join(
-                            "<li>%s</li>" % sanitize(fb_item)
-                            for fb_item in response.feedback))
+
+            feedback_bits.append(
+                _FeedbackMessage(ugettext_noop(
+                    "Here is some feedback on your code:<ul>{}</ul>"), args=["".join(
+                    "<li>{}</li>".format(sanitize(fb_item))
+                    for fb_item in response.feedback)], formatted_by="<p>{}</p>"))
+
         if hasattr(response, "traceback") and response.traceback:
-            feedback_bits.append("".join([
-                "<p>",
-                _("This is the exception traceback"),
-                ":"
-                "<pre>%s</pre></p>"]) % escape(response.traceback))
+            feedback_bits.append(
+                _FeedbackMessage(ugettext_noop(
+                    "This is the exception traceback:<pre>{}</pre>"),
+                    args=[escape(response.traceback)], formatted_by="<p>{}</p>"))
         if hasattr(response, "exec_host") and response.exec_host != "localhost":
             import socket
             try:
@@ -843,32 +835,25 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
             except socket.error:
                 exec_host_name = response.exec_host
 
-            feedback_bits.append("".join([
-                "<p>",
-                _("Your code ran on %s.") % exec_host_name,
-                "</p>"]))
+            feedback_bits.append(
+                _FeedbackMessage(ugettext_noop(
+                    "Your code ran on {}."), args=[exec_host_name],
+                    formatted_by="<p>{}</p>"))
 
         if hasattr(response, "stdout") and response.stdout:
-            bulk_feedback_bits.append("".join([
-                "<p>",
-                _("Your code printed the following output"),
-                ":"
-                "<pre>%s</pre></p>"])
-                    % escape(response.stdout))
+            bulk_feedback_bits.append(
+                _FeedbackMessage(ugettext_noop(
+                    "Your code printed the following output:<pre>{}</pre>"),
+                    args=["\n".join([escape(response.stdout)])],
+                    formatted_by="<p>{}</p>"))
         if hasattr(response, "stderr") and response.stderr:
-            bulk_feedback_bits.append("".join([
-                "<p>",
-                _("Your code printed the following error messages"),
-                ":"
-                "<pre>%s</pre></p>"]) % escape(response.stderr))
+            bulk_feedback_bits.append(
+                _FeedbackMessage(ugettext_noop(
+                    "Your code printed the following error messages:<pre>{}</pre>"),
+                    args=["\n".join([escape(response.stderr)])],
+                    formatted_by="<p>{}</p>"))
         if hasattr(response, "figures") and response.figures:
-            fig_lines = ["".join([
-                "<p>",
-                _("Your code produced the following plots"),
-                ":</p>"]),
-                '<dl class="result-figure-list">',
-                ]
-
+            fig_lines = []
             for nr, mime_type, b64data in response.figures:
                 if mime_type in ["image/jpeg", "image/png"]:
                     fig_lines.extend([
@@ -877,9 +862,11 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                             _("Figure"), "%d<dt>"]) % nr,
                         '<dd><img alt="Figure %d" src="data:%s;base64,%s"></dd>'
                         % (nr, mime_type, b64data)])
-
-            fig_lines.append("</dl>")
-            bulk_feedback_bits.extend(fig_lines)
+            fig_str = '<dl class="result-figure-list">%s</dl>' % "\n".join(fig_lines)
+            bulk_feedback_bits.append(
+                _FeedbackMessage(ugettext_noop(
+                    "Your code produced the following plots:"),
+                    formatted_by="<p>{}</p>" + fig_str))
 
         # {{{ html output / santization
 
@@ -937,15 +924,20 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                             "img": filter_img_attributes,
                             })
 
-            bulk_feedback_bits.extend(
-                    sanitize(snippet) for snippet in response.html)
+            bulk_feedback_bits.append(
+                _FeedbackMessage(ugettext_noop(
+                    "Your code produced the following html:"),
+                    formatted_by=(
+                            "<p>{}</p>"
+                            + "\n".join([sanitize(snippet)
+                                         for snippet in response.html]))))
 
         # }}}
 
         return AnswerFeedback(
                 correctness=correctness,
-                feedback="\n".join(feedback_bits),
-                bulk_feedback="\n".join(bulk_feedback_bits))
+                feedback=feedback_bits,
+                bulk_feedback=bulk_feedback_bits)
 
     def correct_answer(self, page_context, page_data, answer_data, grade_data):
         result = ""
@@ -1109,7 +1101,8 @@ class PythonCodeQuestionWithHumanTextFeedback(
     def grade(self, page_context, page_data, answer_data, grade_data):
         if answer_data is None:
             return AnswerFeedback(correctness=0,
-                    feedback=_("No answer provided."))
+                                  feedback=[
+                                      _FeedbackMessage(_("No answer provided."))])
 
         if grade_data is not None and not grade_data["released"]:
             grade_data = None
@@ -1164,17 +1157,17 @@ class PythonCodeQuestionWithHumanTextFeedback(
             code_feedback_points = code_feedback.correctness*code_points
 
         from django.template.loader import render_to_string
-        feedback = render_to_string(
-                "course/feedback-code-with-human.html",
-                {
-                    "percentage": percentage,
-                    "code_feedback": code_feedback,
-                    "code_feedback_points": code_feedback_points,
-                    "code_points": code_points,
-                    "human_feedback_text": human_feedback_text,
-                    "human_feedback_points": human_feedback_points,
-                    "human_points": human_points,
-                    })
+        feedback = [_FeedbackMessage(render_to_string(
+            "course/feedback-code-with-human.html",
+            {
+                "percentage": percentage,
+                "code_feedback": code_feedback,
+                "code_feedback_points": code_feedback_points,
+                "code_points": code_points,
+                "human_feedback_text": human_feedback_text,
+                "human_feedback_points": human_feedback_points,
+                "human_points": human_points,
+            }))]
 
         return AnswerFeedback(
                 correctness=correctness,
