@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+import unittest
 from django.test import TestCase
 from django.core.exceptions import ObjectDoesNotExist
 from django.urls import reverse
@@ -31,14 +32,14 @@ from relate.utils import dict_to_struct
 from course.models import FlowSession
 from course import analytics
 
-
 from tests.base_test_mixins import (  # noqa
     SingleCourseTestMixin, CoursesTestMixinBase, SingleCoursePageTestMixin,
     SingleCourseQuizPageTestMixin, MockAddMessageMixing, HackRepoMixin)
-from tests.utils import mock
+from tests.utils import mock, may_run_expensive_tests, SKIP_EXPENSIVE_TESTS_REASON
 from tests import factories
 
 
+@unittest.skipUnless(may_run_expensive_tests(), SKIP_EXPENSIVE_TESTS_REASON)
 class FlowListTest(SingleCourseTestMixin, TestCase):
     """test analytics.flow_list"""
     def get_flow_list_url(self, course_identifier=None):
@@ -129,6 +130,7 @@ class HistogramTest(CoursesTestMixinBase, TestCase):
             self.assertTemplateUsed("course/histogram.html")
 
 
+@unittest.skipUnless(may_run_expensive_tests(), SKIP_EXPENSIVE_TESTS_REASON)
 class IsFlowMultipleSubmitTest(SingleCourseTestMixin, TestCase):
     """test course.analytics.is_flow_multiple_submit"""
     def test_flow_desc_has_no_rule(self):
@@ -152,6 +154,7 @@ class IsFlowMultipleSubmitTest(SingleCourseTestMixin, TestCase):
         self.assertTrue(analytics.is_flow_multiple_submit(flow_desc))
 
 
+@unittest.skipUnless(may_run_expensive_tests(), SKIP_EXPENSIVE_TESTS_REASON)
 class IsPageMultipleSubmitTest(SingleCoursePageTestMixin, HackRepoMixin, TestCase):
     """test course.analytics.is_page_multiple_submit"""
     @classmethod
@@ -229,21 +232,25 @@ class IsPageMultipleSubmitTest(SingleCoursePageTestMixin, HackRepoMixin, TestCas
             self.flow_desc, page_desc))
 
 
+@unittest.skipUnless(may_run_expensive_tests(), SKIP_EXPENSIVE_TESTS_REASON)
 class PageAnalyticsTest(SingleCourseTestMixin, TestCase):
     """test analytics.page_analytics, (for cases not covered by other tests)"""
     def test_not_authenticated(self):
         with self.temporarily_switch_to_user(None):
             resp = self.get_flow_page_analytics(
-                flow_id="blabla", group_id="foo", page_id="bar")
+                flow_id="blabla", group_id="foo", page_id="bar",
+                force_login_instructor=False)
             self.assertEqual(resp.status_code, 302)
 
     def test_no_pperm(self):
         # student user is logged in
         resp = self.get_flow_page_analytics(
-            flow_id="blabla", group_id="foo", page_id="bar")
+            flow_id="blabla", group_id="foo", page_id="bar",
+            force_login_instructor=False)
         self.assertEqual(resp.status_code, 403)
 
 
+@unittest.skipUnless(may_run_expensive_tests(), SKIP_EXPENSIVE_TESTS_REASON)
 class FlowAnalyticsTest(SingleCourseQuizPageTestMixin, HackRepoMixin,
                         MockAddMessageMixing, TestCase):
     """analytics.flow_analytics"""
@@ -276,32 +283,6 @@ class FlowAnalyticsTest(SingleCourseQuizPageTestMixin, HackRepoMixin,
         with cls.temporarily_switch_to_user(another_partcpt.user):
             cls.start_flow(cls.flow_id)
             cls.end_flow()
-
-    def get_flow_analytics_url(self, flow_id, course_identifier,
-                               restrict_to_first_attempt=None):
-        course_identifier = course_identifier or self.get_default_course_identifier()
-        kwargs = {
-            "flow_id": flow_id,
-            "course_identifier": course_identifier}
-        result = reverse("relate-flow_analytics", kwargs=kwargs)
-        if restrict_to_first_attempt:
-            result += "?restrict_to_first_attempt=%s" % restrict_to_first_attempt
-        return result
-
-    def get_flow_analytics_view(self, flow_id, course_identifier=None,
-                                restrict_to_first_attempt=None,
-                                force_login_instructor=True):
-        course_identifier = course_identifier or self.get_default_course_identifier()
-        if not force_login_instructor:
-            user = self.get_logged_in_user()
-        else:
-            user = self.instructor_participation.user
-
-        with self.temporarily_switch_to_user(user):
-            return self.c.get(
-                self.get_flow_analytics_url(
-                    flow_id, course_identifier=course_identifier,
-                    restrict_to_first_attempt=restrict_to_first_attempt))
 
     def test_not_authenticated(self):
         with self.temporarily_switch_to_user(None):

@@ -29,7 +29,7 @@ if [[ $PY == true ]]; then
 fi
 
 # run ci according to env variables
-if [[ $RL_TRAVIS_TEST == test ]]; then
+if [[ $RL_TRAVIS_TEST == test* ]]; then
   . ./run-tests-for-ci.sh
 elif [[ $RL_TRAVIS_TEST == cmdline ]]; then
   . ./test-command-line-tool.sh python3.6

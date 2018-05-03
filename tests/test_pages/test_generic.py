@@ -44,10 +44,11 @@ from tests.constants import (
 
 from tests.base_test_mixins import (
     SingleCourseQuizPageTestMixin, MockAddMessageMixing)
-from tests.utils import mock
+from tests.utils import mock, may_run_expensive_tests, SKIP_EXPENSIVE_TESTS_REASON
 from tests import factories
 
 
+@unittest.skipUnless(may_run_expensive_tests(), SKIP_EXPENSIVE_TESTS_REASON)
 class SingleCourseQuizPageTest(SingleCourseQuizPageTestMixin,
                                MockAddMessageMixing, TestCase):
     @classmethod
@@ -92,7 +93,7 @@ class SingleCourseQuizPageTest(SingleCourseQuizPageTestMixin,
                     # todo: make more assertions in terms of content
                     resp = self.get_flow_page_analytics(
                         flow_id=self.flow_id, group_id=group_id,
-                        page_id=page_id)
+                        page_id=page_id, force_login_instructor=False)
                     self.assertEqual(resp.status_code, 200)
 
                 with self.subTest(page_id=page_id,

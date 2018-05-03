@@ -30,13 +30,19 @@ import unittest
 import datetime
 from django.test import TestCase, RequestFactory
 from django.test.utils import override_settings
+from django.utils.formats import date_format, get_format
+from django.utils.dateformat import format
 from django.utils.translation import ugettext_lazy as _
+from django.core.management import CommandError
 
 from course.models import Course
 from course.views import EditCourseForm
 from course.versioning import CourseCreationForm
 from relate.utils import (
-    is_maintenance_mode, render_email_template, get_outbound_mail_connection)
+    is_maintenance_mode, render_email_template, get_outbound_mail_connection,
+    format_datetime_local)
+
+from manage import get_local_test_settings_file
 
 from tests.base_test_mixins import SingleCourseTestMixin
 from tests.utils import LocmemBackendTestsMixin, mail, mock
@@ -521,5 +527,97 @@ class GetOutboundMailConnectionTest(unittest.TestCase):
         self.assertIsInstance(
             get_outbound_mail_connection(None), BaseEmailBackend)
 
+
+# {{{ test relate.utils.format_datetime_local
+
+def date_format_side_effect(value, format=None, use_l10n=None):
+    """mock django.utils.formats.date_format"""
+    if format == "foo":
+        raise AttributeError
+    else:
+        return date_format(value, format, use_l10n)
+
+
+def format_side_effectformat(value, format_string):
+    """mock django.utils.dateformat.format"""
+    if format_string == "foo":
+        raise AttributeError
+    else:
+        return format(value, format_string)
+
+
+class FormatDatetimeLocalTest(unittest.TestCase):
+    """test relate.utils.format_datetime_local"""
+
+    def test_success(self):
+        dtime = datetime.datetime(2019, 1, 1)
+        format_str = "SHORT_DATETIME_FORMAT"
+        self.assertEqual(
+            format_datetime_local(dtime, format=format_str),
+            date_format(dtime, format=format_str))
+
+    def test_attribute_error1(self):
+        dtime = datetime.datetime(2019, 1, 1)
+        with mock.patch("django.utils.formats.date_format") as mock_date_format:
+            mock_date_format.side_effect = date_format_side_effect
+            result = format_datetime_local(
+                dtime, format="foo")
+        self.assertEqual(
+            result, date_format(dtime, format="foo"))
+
+    def test_attribute_error2(self):
+        dtime = datetime.datetime(2019, 1, 1)
+        with mock.patch(
+                "django.utils.formats.date_format"
+        ) as mock_date_format, mock.patch(
+            "django.utils.dateformat.format"
+        ) as mock_format:
+            mock_date_format.side_effect = date_format_side_effect
+            mock_format.side_effect = format_side_effectformat
+            result = format_datetime_local(
+                dtime, format="foo")
+        self.assertEqual(
+            result, date_format(dtime, format=get_format("DATETIME_FORMAT")))
+
+# }}}
+
+
+class GetLocalTestSettingsFileTest(unittest.TestCase):
+    """test manage.get_local_test_settings_file"""
+
+    def test_use_default_local_settings_example(self):
+        self.assertEqual(get_local_test_settings_file(
+                ["manage.py", "test", "foo"]), "local_settings_example.py")
+
+    def test_error_use_local_settings(self):
+        """test error when use local_settings.py as test settings"""
+        with self.assertRaises(CommandError) as cm:
+            get_local_test_settings_file(
+                ["manage.py", "test", "--local_test_settings",
+                 "local_settings.py"])
+
+        self.assertIn(
+            "Using production local_settings for tests is not "
+            "allowed due to security reason.", str(cm.exception))
+
+    def test_error_local_test_setting_file_does_not_exist(self):
+        """test error when use local_settings.py as test settings"""
+        invalid_file = "foo/local_test_settings.py"
+        with self.assertRaises(CommandError) as cm:
+            get_local_test_settings_file(
+                ["manage.py", "test", "--local_test_settings",
+                 invalid_file])
+
+        self.assertIn(
+            "file '%s' does not exist" % invalid_file, str(cm.exception))
+
+    def test_custom_local_test_setting_file(self):
+        settings_file = "foo/local_test_settings.py"
+        with mock.patch("os.path.isfile") as mock_is_file:
+            mock_is_file.return_value = True
+            self.assertEqual(get_local_test_settings_file(
+                    ["manage.py", "test", "foo",
+                     "--local_test_settings", settings_file]),
+                settings_file)
 
 # vim: foldmethod=marker
