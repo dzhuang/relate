@@ -28,16 +28,22 @@
   <script type="text/javascript">
     $(document).ready(function() {
         $('#coursecal').fullCalendar({
-          header: {
-            left: 'prev,next today',
-            center: 'title',
-            right: 'month,agendaWeek,agendaDay'
-          },
-          defaultDate: '{{ default_date }}',
-          timezone: "local",
-
-          events: {{ events_json|safe }}
-        })
+            header: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'month,agendaWeek,agendaDay'
+            },
+            defaultDate: '{{ default_date }}',
+            timezone: "local",
+            selectable: true,
+            droppable: true,
+            events: {{ events_json|safe }}
+        });
+        $(".fc-event-container").draggable({
+            zIndex: 999,
+            revert: true,
+            revertDuration: 0
+        });
     });
   </script>
 

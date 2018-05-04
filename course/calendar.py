@@ -29,6 +29,7 @@ from six.moves import range
 
 from django.utils.translation import (
         ugettext_lazy as _, pgettext_lazy)
+from django.http import Http404
 from django.contrib.auth.decorators import login_required
 from course.utils import course_view, render_course_page
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
@@ -50,11 +51,39 @@ from course.models import Event
 
 # {{{ creation
 
-class RecurringEventForm(StyledForm):
+class RecurringEventBaseForm(StyledForm):
+
     kind = forms.CharField(required=True,
-            help_text=_("Should be lower_case_with_underscores, no spaces "
-                        "allowed."),
-            label=pgettext_lazy("Kind of event", "Kind of event"))
+           label=pgettext_lazy("Kind of event", "Kind of event"),
+           help_text=_("Should be lower_case_with_underscores, no spaces "
+                       "allowed."))
+
+    shown_in_calendar = forms.BooleanField(
+            required=False,
+            initial=True,
+            label=_('Shown in calendar'))
+    starting_ordinal = forms.IntegerField(required=False,
+            label=pgettext_lazy(
+                "Starting ordinal of recurring events", "Starting ordinal"))
+
+    def __init__(self, course, *args, **kwargs):
+        super(RecurringEventBaseForm, self).__init__(*args, **kwargs)
+
+        existing_events_name = Event.objects.filter(course=course).values_list(
+            "kind", flat=True)
+
+        if existing_events_name:
+            self.fields["kind"].help_text = string_concat(
+                self.fields["kind"].help_text,
+                " ",
+                _("As a hint, existing events include %s.")
+                % ", ".join(["'%s'" % name for name in existing_events_name]))
+
+        self.helper.add_input(
+                Submit("submit", _("Create")))
+
+
+class RecurringEventForm(RecurringEventBaseForm):
     time = forms.DateTimeField(
             widget=DateTimePicker(
                 options={"format": "YYYY-MM-DD HH:mm", "sideBySide": True}),
@@ -67,34 +96,61 @@ class RecurringEventForm(StyledForm):
                 label=_("All-day event"),
                 help_text=_("Only affects the rendering in the class calendar, "
                 "in that a start time is not shown"))
-    shown_in_calendar = forms.BooleanField(
-            required=False,
-            initial=True,
-            label=_('Shown in calendar'))
     interval = forms.ChoiceField(required=True,
             choices=(
                 ("weekly", _("Weekly")),
                 ("biweekly", _("Bi-Weekly")),
                 ),
             label=pgettext_lazy("Interval of recurring events", "Interval"))
-    starting_ordinal = forms.IntegerField(required=False,
-            label=pgettext_lazy(
-                "Starting ordinal of recurring events", "Starting ordinal"))
     count = forms.IntegerField(required=True,
             label=pgettext_lazy("Count of recurring events", "Count"))
 
-    def __init__(self, *args, **kwargs):
-        super(RecurringEventForm, self).__init__(*args, **kwargs)
+    field_order = ("kind", "time", "duration_in_minutes", "all_day",
+                   "shown_in_calendar", "interval", "starting_ordinal", "count")
 
-        self.helper.add_input(
-                Submit("submit", _("Create")))
+
+class RecurringEventTwicePerWeekForm(RecurringEventBaseForm):
+    time_run1 = forms.DateTimeField(
+            widget=DateTimePicker(
+                options={"format": "YYYY-MM-DD HH:mm", "sideBySide": True}),
+            label=pgettext_lazy("Starting time of event",
+                                "Starting time for 1st run"))
+    duration_in_minutes_run1 = forms.FloatField(required=False,
+            label=_("Duration in minutes for 1st run"))
+    all_day_run1 = forms.BooleanField(
+                required=False,
+                initial=False,
+                label=_("All-day event for 1st run"),
+                help_text=_("Only affects the rendering in the class calendar, "
+                "in that a start time is not shown"))
+    time_for_run2 = forms.DateTimeField(
+            widget=DateTimePicker(
+                options={"format": "YYYY-MM-DD HH:mm", "sideBySide": True}),
+            label=pgettext_lazy("Starting time of event",
+                                "Starting time for 2nd run"))
+    duration_in_minutes_for_run2 = forms.FloatField(required=False,
+            label=_("Duration in minutes for 2nd run"))
+    all_day_for_run2 = forms.BooleanField(
+                required=False,
+                initial=False,
+                label=_("All-day event for 2nd run"),
+                help_text=_("Only affects the rendering in the class calendar, "
+                "in that a start time is not shown"))
+
+    week_count = forms.IntegerField(required=True,
+            label=pgettext_lazy("Count of recurring events", "Week count"))
+
+    field_order = (
+        "kind", "time_run1", "duration_in_minutes_run1",
+        "all_day_run1", "time_for_run2",
+        "duration_in_minutes_for_run2", "all_day_for_run2",
+        "shown_in_calendar", "starting_ordinal", "week_count")
 
 
 class EventAlreadyExists(Exception):
     pass
 
 
-@transaction.atomic
 def _create_recurring_events_backend(course, time, kind, starting_ordinal, interval,
         count, duration_in_minutes, all_day, shown_in_calendar):
     ordinal = starting_ordinal
@@ -136,16 +192,44 @@ def _create_recurring_events_backend(course, time, kind, starting_ordinal, inter
         ordinal += 1
 
 
+def _renumber_events_backend(events, course, kind, starting_ordinal):
+    queryset = (Event.objects
+                .filter(course=course, kind=kind))
+    queryset.delete()
+
+    ordinal = starting_ordinal
+    for event in events:
+        new_event = Event()
+        new_event.course = course
+        new_event.kind = kind
+        new_event.ordinal = ordinal
+        new_event.time = event.time
+        new_event.end_time = event.end_time
+        new_event.all_day = event.all_day
+        new_event.shown_in_calendar = event.shown_in_calendar
+        new_event.save()
+
+        ordinal += 1
+
+
 @login_required
 @course_view
-def create_recurring_events(pctx):
+def create_recurring_events(pctx, run_per_week=1):
     if not pctx.has_permission(pperm.edit_events):
         raise PermissionDenied(_("may not edit events"))
+
+    run_per_week = int(run_per_week)
+
+    if run_per_week not in [1, 2]:
+        raise Http404()
+
+    form_klass = (
+        RecurringEventForm if run_per_week == 1 else RecurringEventTwicePerWeekForm)
 
     request = pctx.request
 
     if request.method == "POST":
-        form = RecurringEventForm(request.POST, request.FILES)
+        form = form_klass(pctx.course, request.POST, request.FILES)
         if form.is_valid():
             if form.cleaned_data["starting_ordinal"] is not None:
                 starting_ordinal = form.cleaned_data["starting_ordinal"]
@@ -156,19 +240,20 @@ def create_recurring_events(pctx):
 
             while True:
                 try:
-                    _create_recurring_events_backend(
-                            course=pctx.course,
-                            time=form.cleaned_data["time"],
-                            kind=form.cleaned_data["kind"],
-                            starting_ordinal=starting_ordinal,
-                            interval=form.cleaned_data["interval"],
-                            count=form.cleaned_data["count"],
-                            duration_in_minutes=(
-                                form.cleaned_data["duration_in_minutes"]),
-                            all_day=form.cleaned_data["all_day"],
-                            shown_in_calendar=(
-                                form.cleaned_data["shown_in_calendar"])
-                            )
+                    with transaction.atomic():
+                        _create_recurring_events_backend(
+                                course=pctx.course,
+                                time=form.cleaned_data["time"],
+                                kind=form.cleaned_data["kind"],
+                                starting_ordinal=starting_ordinal,
+                                interval=form.cleaned_data["interval"],
+                                count=form.cleaned_data["count"],
+                                duration_in_minutes=(
+                                    form.cleaned_data["duration_in_minutes"]),
+                                all_day=form.cleaned_data["all_day"],
+                                shown_in_calendar=(
+                                    form.cleaned_data["shown_in_calendar"])
+                                )
                 except EventAlreadyExists as e:
                     if starting_ordinal_specified:
                         messages.add_message(request, messages.ERROR,
@@ -196,11 +281,12 @@ def create_recurring_events(pctx):
 
                 break
     else:
-        form = RecurringEventForm()
+        form = form_klass(pctx.course)
 
-    return render_course_page(pctx, "course/generic-course-form.html", {
+    return render_course_page(pctx, "course/create-event-form.html", {
         "form": form,
         "form_description": _("Create recurring events"),
+        "run_per_week": run_per_week
     })
 
 
@@ -220,7 +306,6 @@ class RenumberEventsForm(StyledForm):
                 Submit("submit", _("Renumber")))
 
 
-@transaction.atomic
 @login_required
 @course_view
 def renumber_events(pctx):
@@ -237,25 +322,13 @@ def renumber_events(pctx):
                     .order_by('time'))
 
             if events:
-                queryset = (Event.objects
-                    .filter(course=pctx.course, kind=form.cleaned_data["kind"]))
-
-                queryset.delete()
-
-                ordinal = form.cleaned_data["starting_ordinal"]
-                for event in events:
-                    new_event = Event()
-                    new_event.course = pctx.course
-                    new_event.kind = form.cleaned_data["kind"]
-                    new_event.ordinal = ordinal
-                    new_event.time = event.time
-                    new_event.end_time = event.end_time
-                    new_event.all_day = event.all_day
-                    new_event.shown_in_calendar = event.shown_in_calendar
-                    new_event.save()
-
-                    ordinal += 1
-
+                with transaction.atomic():
+                    _renumber_events_backend(
+                        events=events,
+                        course=pctx.course,
+                        kind=form.cleaned_data["kind"],
+                        starting_ordinal=form.cleaned_data["starting_ordinal"],
+                    )
                 messages.add_message(request, messages.SUCCESS,
                         _("Events renumbered."))
             else:

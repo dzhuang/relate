@@ -335,6 +335,13 @@ urlpatterns = [
         "/create-recurring-events/$",
         course.calendar.create_recurring_events,
         name="relate-create_recurring_events"),
+
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/create-recurring-events/(?P<run_per_week>[1-9])/$",
+        course.calendar.create_recurring_events,
+        name="relate-create_recurring_events"),
+
     url(r"^course"
         "/" + COURSE_ID_REGEX +
         "/renumber-events/$",
