@@ -27,9 +27,9 @@
           {% if edit_view %}
             href="{% url "relate-view_calendar" course.identifier %}"
           {% else %}
-            href="{% url "relate-edit_calendar" course.identifier %}"
+            href="{% url "relate-edit_calendar" course.identifier "edit" %}"
           {% endif %}
-          type="button" class="btn btn-primary">
+          type="button" class="btn btn-primary relate-calendar">
         {% if edit_view %}
           {% trans "Switch to Student View" %}
         {% else %}
@@ -106,8 +106,9 @@
 
 {% block page_bottom_javascript_extra %}
   <script type="text/javascript">
+    var coursecal = $('#coursecal');
     $(document).ready(function() {
-      $('#coursecal').fullCalendar({
+      coursecal.fullCalendar({
         header: {
           left: 'prev,next today',
           center: 'title',

@@ -348,8 +348,8 @@ urlpatterns = [
 
     url(r"^course"
         "/" + COURSE_ID_REGEX +
-        "/calendar-edit/$",
-        course.calendar.edit_calendar,
+        "/calendar/(?P<operation>edit)/$",
+        course.calendar.view_calendar,
         name="relate-edit_calendar"),
 
     # }}}

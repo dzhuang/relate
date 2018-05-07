@@ -286,7 +286,7 @@ class EventInfo(object):
 
 
 @course_view
-def view_calendar(pctx):
+def view_calendar(pctx, operation=None):
     if not pctx.has_permission(pperm.view_calendar):
         raise PermissionDenied(_("may not view calendar"))
 
@@ -395,7 +395,16 @@ def view_calendar(pctx):
 
         events_json.append(event_json)
 
-    default_date = now.date()
+    default_date = None
+    default_date_str = pctx.request.GET.get("default_date")
+    if default_date_str is not None:
+        try:
+            default_date = datetime.datetime.strptime(default_date_str, "%Y-%m-%d").date()
+        except Exception as e:
+            print(e)
+            pass
+    if not default_date:
+        default_date = now.date()
     if pctx.course.end_date is not None and default_date > pctx.course.end_date:
         default_date = pctx.course.end_date
 
@@ -404,7 +413,7 @@ def view_calendar(pctx):
         "events_json": dumps(events_json),
         "event_info_list": event_info_list,
         "default_date": default_date.isoformat(),
-        "edit_view": False
+        "edit_view": operation == "edit"
     })
 
 
@@ -434,7 +443,16 @@ def edit_calendar(pctx):
     edit_existing_event_flag = False
     id_to_edit = None
     edit_event_form = EditEventForm()
-    default_date = now.date()
+    default_date = None
+    default_date_str = pctx.request.GET.get("default_date")
+    if default_date_str is not None:
+        try:
+            default_date = datetime.datetime.strptime(default_date_str, "%Y-%m-%d").date()
+        except Exception as e:
+            print(e)
+            pass
+    if not default_date:
+        default_date = now.date()
 
     if request.method == "POST":
         if 'id_to_delete' in request.POST:
@@ -608,6 +626,16 @@ def edit_calendar(pctx):
 
         events_json.append(event_json)
 
+    default_date = None
+    default_date_str = pctx.request.GET.get("default_date")
+    if default_date_str is not None:
+        try:
+            default_date = datetime.datetime.strptime(default_date_str, "%Y-%m-%d").date()
+        except Exception as e:
+            print(e)
+            pass
+    if not default_date:
+        default_date = now.date()
     if pctx.course.end_date is not None and default_date > pctx.course.end_date:
         default_date = pctx.course.end_date
 
