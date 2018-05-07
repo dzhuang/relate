@@ -141,3 +141,9 @@ def may_set_pretend_facility(user):
 def commit_message_as_html(commit_sha, repo):
     from course.versioning import _get_commit_message_as_html
     return _get_commit_message_as_html(repo, commit_sha)
+
+
+@register.filter
+def loadjson(data):
+    import json
+    return json.loads(data)

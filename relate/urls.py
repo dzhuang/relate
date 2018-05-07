@@ -352,6 +352,12 @@ urlpatterns = [
         course.calendar.view_calendar,
         name="relate-edit_calendar"),
 
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/calendar/toggle/(?P<is_edit_view>[01])/$",
+        course.calendar.toggle_calendar_view,
+        name="relate-toggle_calendar_view"),
+
     # }}}
 
     # {{{ versioning

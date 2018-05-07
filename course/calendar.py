@@ -285,37 +285,39 @@ class EventInfo(object):
         self.description = description
 
 
-@course_view
-def view_calendar(pctx, operation=None):
-    if not pctx.has_permission(pperm.view_calendar):
-        raise PermissionDenied(_("may not view calendar"))
-
-    from course.views import get_now_or_fake_time
-    now = get_now_or_fake_time(pctx.request)
-
+def get_events_info(pctx, now_datetime=None, is_edit_view=False):
     events_json = []
 
     from course.content import (
         get_raw_yaml_from_repo, markup_to_html, parse_date_spec)
     try:
         event_descr = get_raw_yaml_from_repo(pctx.repo,
-                pctx.course.events_file, pctx.course_commit_sha)
+                                             pctx.course.events_file,
+                                             pctx.course_commit_sha)
     except ObjectDoesNotExist:
         event_descr = {}
 
+    if not now_datetime:
+        from course.views import get_now_or_fake_time
+        now_datetime = get_now_or_fake_time(pctx.request)
+
     event_kinds_desc = event_descr.get("event_kinds", {})
     event_info_desc = event_descr.get("events", {})
+    events_info = []
 
-    event_info_list = []
+    filter_kwargs = {"course": pctx.course}
+    if not is_edit_view:
+        filter_kwargs["shown_in_calendar"] = True
+
+    print(is_edit_view, filter_kwargs)
 
     events = sorted(
-            Event.objects
-            .filter(
-                course=pctx.course,
-                shown_in_calendar=True),
-            key=lambda evt: (
-                -evt.time.year, -evt.time.month, -evt.time.day,
-                evt.time.hour, evt.time.minute, evt.time.second))
+        Event.objects.filter(**filter_kwargs),
+        key=lambda evt: (
+            -evt.time.year, -evt.time.month, -evt.time.day,
+            evt.time.hour, evt.time.minute, evt.time.second))
+
+    print(len(events))
 
     for event in events:
         kind_desc = event_kinds_desc.get(event.kind)
@@ -323,10 +325,11 @@ def view_calendar(pctx, operation=None):
         human_title = six.text_type(event)
 
         event_json = {
-                "id": event.id,
-                "start": event.time.isoformat(),
-                "allDay": event.all_day,
-                }
+            "id": event.id,
+            "start": event.time.isoformat(),
+            "allDay": event.all_day,
+            "editable": is_edit_view,
+        }
         if event.end_time is not None:
             event_json["end"] = event.end_time.isoformat()
 
@@ -345,8 +348,8 @@ def view_calendar(pctx, operation=None):
         if event_desc is not None:
             if "description" in event_desc:
                 description = markup_to_html(
-                        pctx.course, pctx.repo, pctx.course_commit_sha,
-                        event_desc["description"])
+                    pctx.course, pctx.repo, pctx.course_commit_sha,
+                    event_desc["description"])
 
             if "title" in event_desc:
                 human_title = event_desc["title"]
@@ -356,15 +359,18 @@ def view_calendar(pctx, operation=None):
 
             if "show_description_from" in event_desc:
                 ds = parse_date_spec(
-                        pctx.course, event_desc["show_description_from"])
-                if now < ds:
+                    pctx.course, event_desc["show_description_from"])
+                if now_datetime < ds:
                     show_description = False
 
             if "show_description_until" in event_desc:
                 ds = parse_date_spec(
-                        pctx.course, event_desc["show_description_until"])
-                if now > ds:
+                    pctx.course, event_desc["show_description_until"])
+                if now_datetime > ds:
                     show_description = False
+
+            if is_edit_view:
+                show_description = True
 
         event_json["title"] = human_title
 
@@ -384,37 +390,74 @@ def view_calendar(pctx, operation=None):
                     else:
                         end_time = end_time.date()
 
-            event_info_list.append(
-                    EventInfo(
-                        id=event.id,
-                        human_title=human_title,
-                        start_time=start_time,
-                        end_time=end_time,
-                        description=description
-                        ))
+            events_info.append(
+                EventInfo(
+                    id=event.id,
+                    human_title=human_title,
+                    start_time=start_time,
+                    end_time=end_time,
+                    description=description
+                ))
 
         events_json.append(event_json)
 
-    default_date = None
-    default_date_str = pctx.request.GET.get("default_date")
-    if default_date_str is not None:
-        try:
-            default_date = datetime.datetime.strptime(default_date_str, "%Y-%m-%d").date()
-        except Exception as e:
-            print(e)
-            pass
-    if not default_date:
-        default_date = now.date()
+    from django.template.loader import render_to_string
+    events_info = render_to_string(
+        "course/events_info.html",
+        context={"events_info": events_info,
+                 "is_edit_view": is_edit_view},
+        request=pctx.request)
+
+    return events_info, events_json
+
+
+@course_view
+def view_calendar(pctx, operation=None):
+    if not pctx.has_permission(pperm.view_calendar):
+        raise PermissionDenied(_("may not view calendar"))
+
+    is_edit_view = bool(operation == "edit")
+    may_edit_calendar = pctx.has_permission(pperm.edit_events)
+    if is_edit_view and not may_edit_calendar:
+        raise PermissionDenied(_("may not edit calendar"))
+
+    from course.views import get_now_or_fake_time
+    now = get_now_or_fake_time(pctx.request)
+
+    events_info, events_json = get_events_info(pctx, now, is_edit_view)
+
+    default_date = now.date()
     if pctx.course.end_date is not None and default_date > pctx.course.end_date:
         default_date = pctx.course.end_date
 
     from json import dumps
+
+    print(is_edit_view)
+
     return render_course_page(pctx, "course/calendar.html", {
         "events_json": dumps(events_json),
-        "event_info_list": event_info_list,
+        "events_info": events_info,
         "default_date": default_date.isoformat(),
-        "edit_view": operation == "edit"
+        "is_edit_mode": is_edit_view,
     })
+
+
+@course_view
+def toggle_calendar_view(pctx, is_edit_view):
+    if not pctx.has_permission(pperm.view_calendar):
+        raise PermissionDenied(_("may not view calendar"))
+
+    if not pctx.has_permission(pperm.edit_events):
+        raise PermissionDenied(_("may not toggle calendar view"))
+
+    events_info, events_json = get_events_info(
+        pctx, now_datetime=None, is_edit_view=bool(int(is_edit_view)))
+
+    from django.http import JsonResponse
+    from json import dumps
+    return JsonResponse({
+        "events": dumps(events_json),
+        "events_info": events_info})
 
 
 class EditEventForm(StyledModelForm):
@@ -447,7 +490,8 @@ def edit_calendar(pctx):
     default_date_str = pctx.request.GET.get("default_date")
     if default_date_str is not None:
         try:
-            default_date = datetime.datetime.strptime(default_date_str, "%Y-%m-%d").date()
+            default_date = datetime.datetime.strptime(
+                default_date_str, "%Y-%m-%d").date()
         except Exception as e:
             print(e)
             pass
