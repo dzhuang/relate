@@ -309,15 +309,11 @@ def get_events_info(pctx, now_datetime=None, is_edit_view=False):
     if not is_edit_view:
         filter_kwargs["shown_in_calendar"] = True
 
-    print(is_edit_view, filter_kwargs)
-
     events = sorted(
         Event.objects.filter(**filter_kwargs),
         key=lambda evt: (
             -evt.time.year, -evt.time.month, -evt.time.day,
             evt.time.hour, evt.time.minute, evt.time.second))
-
-    print(len(events))
 
     for event in events:
         kind_desc = event_kinds_desc.get(event.kind)
@@ -431,14 +427,17 @@ def view_calendar(pctx, operation=None):
         default_date = pctx.course.end_date
 
     from json import dumps
-
-    print(is_edit_view)
-
     return render_course_page(pctx, "course/calendar.html", {
         "events_json": dumps(events_json),
         "events_info": events_info,
         "default_date": default_date.isoformat(),
         "is_edit_mode": is_edit_view,
+        "new_event_form": CreateEventModalForm(pctx.course.identifier),
+
+        # Wrappers used by JavaScript template (tmpl) so as not to
+        # conflict with Django template's tag wrapper
+        "JQ_OPEN": '{%',
+        'JQ_CLOSE': '%}',
     })
 
 
@@ -458,6 +457,85 @@ def toggle_calendar_view(pctx, is_edit_view):
     return JsonResponse({
         "events": dumps(events_json),
         "events_info": events_info})
+
+
+class CreateEventModalForm(StyledModelForm):
+    class Meta:
+        model = Event
+        fields = ['kind', 'ordinal', 'time',
+                  'end_time', 'all_day', 'shown_in_calendar']
+        widgets = {
+            "time": DateTimePicker(options={"format": "YYYY-MM-DD HH:mm"}),
+            "end_time": DateTimePicker(options={"format": "YYYY-MM-DD HH:mm"}),
+        }
+
+    def __init__(self, course_identifier, *args, **kwargs):
+        super(CreateEventModalForm, self).__init__(*args, **kwargs)
+
+        self.course_identifier = course_identifier
+        from crispy_forms.layout import Layout, Div, ButtonHolder, Button
+        self.fields["shown_in_calendar"].help_text = _("Shown in students' calendar")
+
+        from django.urls import reverse
+
+        self.helper.form_id = "new_event"
+        self.helper.form_action = reverse(
+            "relate-post_add_new_event", args=[course_identifier])
+
+        self.helper.layout = Layout(
+            Div(*self.fields, css_class="modal-body"),
+            ButtonHolder(
+                Submit("save", _("Save"),
+                       css_class="btn btn-md btn-success", css_id="relate-submit"),
+                Button("cancel", _("Cancel"),
+                       css_class="btn btn-md btn-default", data_dismiss="modal"),
+                css_class="modal-footer"
+            )
+        )
+
+    def clean(self):
+        kind = self.cleaned_data.get("kind")
+        ordinal = self.cleaned_data.get('ordinal')
+        if kind is not None:
+            filter_kwargs = {"course__identifier": self.course_identifier,
+                             "kind": kind}
+            if ordinal is not None:
+                filter_kwargs["ordinal"] = ordinal
+            else:
+                filter_kwargs["ordinal__isnull"] = True
+
+            if Event.objects.filter(**filter_kwargs).count():
+                from django.forms import ValidationError
+                raise ValidationError(
+                    "'%(event_kind)s %(event_ordinal)s' already exists"
+                    % {'event_kind': kind,
+                       'event_ordinal': ordinal})
+
+
+@course_view
+def post_add_new_event(pctx):
+    if not pctx.has_permission(pperm.edit_events):
+        print("here")
+        raise PermissionDenied(_("may not edit events"))
+
+    request = pctx.request
+    if not request.is_ajax() or request.method != "POST":
+        print("here2")
+        raise PermissionDenied(_("only AJAX POST is allowed"))
+
+    form = CreateEventModalForm(pctx.course.identifier, request.POST, request.FILES)
+
+    from django.http import JsonResponse
+
+    if form.is_valid():
+        instance = form.save(commit=False)
+        instance.course = pctx.course
+        instance.save()
+
+        message = _("Event created.")
+        return JsonResponse({"message": message})
+    else:
+        return JsonResponse(form.errors, status=400)
 
 
 class EditEventForm(StyledModelForm):
@@ -493,7 +571,6 @@ def edit_calendar(pctx):
             default_date = datetime.datetime.strptime(
                 default_date_str, "%Y-%m-%d").date()
         except Exception as e:
-            print(e)
             pass
     if not default_date:
         default_date = now.date()
@@ -676,7 +753,6 @@ def edit_calendar(pctx):
         try:
             default_date = datetime.datetime.strptime(default_date_str, "%Y-%m-%d").date()
         except Exception as e:
-            print(e)
             pass
     if not default_date:
         default_date = now.date()

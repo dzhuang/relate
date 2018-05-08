@@ -358,6 +358,12 @@ urlpatterns = [
         course.calendar.toggle_calendar_view,
         name="relate-toggle_calendar_view"),
 
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/calendar/new/$",
+        course.calendar.post_add_new_event,
+        name="relate-post_add_new_event"),
+
     # }}}
 
     # {{{ versioning

@@ -1,5 +1,6 @@
 {% extends "course/course-base.html" %}
 {% load i18n %}
+{% load crispy_forms_tags %}
 
 {% load static %}
 
@@ -18,6 +19,9 @@
     <script
         src='{% static "fullcalendar/dist/lang/" %}{{ LANGUAGE_CODE |js_lang_fallback:"fullcalendar" }}.js'></script>
   {% endif %}
+  {% if pperm.edit_events %}
+    <script src='{%  static "blueimp-tmpl/js/tmpl.min.js" %}'></script>
+  {% endif %}
 {% endblock %}
 
 {% block content %}
@@ -30,18 +34,19 @@
         <span data-edit-mode="false"
               {% if is_edit_mode %}hidden{% endif %}>{% trans "Switch to Edit View" %}</span>
       </button>
-      <button id="create-new-event" type="button" class="btn btn-danger btn-md" data-toggle="modal"
-              data-target="#editModal" data-edit-mode="true"
-              onclick="remove_event_id_field();"
+      <button id="create-new-event" class="btn btn-danger btn-md" data-toggle="modal"
+              data-target="#myModalHorizontal" data-edit-mode="true"
+
               title="create a new event" {% if not is_edit_mode %}style="display:none;"{% endif %}
       >{% trans "Create a new event" %}</button>
-      <button id="new-event" type="button" class="btn btn-danger btn-md" data-toggle="modal"
-         role="button" data-target="#newEventModal" data-edit-mode="true"
-         title="create a new event" {% if not is_edit_mode %}style="display:none;"{% endif %}
+      <button id="new-event" class="btn btn-danger btn-md" data-toggle="modal"
+              data-target="#myModalNorm" data-edit-mode="true"
+              title="create a new event" {% if not is_edit_mode %}style="display:none;"{% endif %}
       >{% trans "New events" %}</button>
     </div>
   {% endif %}
-  <div id="coursecal" data-mode="{% if is_edit_mode %}edit{% else %}view{% endif %}" style="margin-top:3em"></div>
+  <div id="coursecal" data-mode="{% if is_edit_mode %}edit{% else %}view{% endif %}"
+       style="margin-top:3em"></div>
 
   <b class="relate-calendar-notes">{% trans "Note" %}:</b>
   {% trans "Some calendar entries are clickable and link to entries below." %}
@@ -53,62 +58,92 @@
   <div id="relate-event-info" style="margin-top:3ex">{{ events_info }}</div>
 
   {% if pperm.edit_events %}
-    <div id="editModal" class="modal fade" role="dialog">
-      <div class="modal-dialog modal-lg modal-sm">
-        <form method="POST" class="form-horizontal">
-          <div class="modal-content">
-            <div class="modal-body">
-              <br>
-              {% load crispy_forms_tags %}
-              {% if form_description %}
-                <h1>{{ form_description }}</h1>
-              {% endif %}
-              {{ form_text|safe }}
-              {% if form %}
-                {% crispy form %}
-              {% endif %}
-              {% if forms %}
-                {% for sub_form in forms %}
-                  <div class="well">
-                    {% crispy sub_form %}
+    <div class="modal fade" id="myModalHorizontal" tabindex="-1" role="dialog"
+         aria-labelledby="myModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <!-- Modal Header -->
+          <div class="modal-header">
+            <button type="button" class="close"
+                    data-dismiss="modal">
+              <span aria-hidden="true">&times;</span>
+              <span class="sr-only">Close</span>
+            </button>
+            <h4 class="modal-title" id="myModalLabel">
+              Modal title
+            </h4>
+          </div>
+
+          <!-- Modal Body -->
+          <div class="modal-body">
+
+            <form class="form-horizontal" role="form">
+              <div class="form-group">
+                <label class="col-sm-2 control-label"
+                       for="inputEmail3">Email</label>
+                <div class="col-sm-10">
+                  <input type="email" class="form-control"
+                         id="inputEmail3" placeholder="Email"/>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="col-sm-2 control-label"
+                       for="inputPassword3">Password</label>
+                <div class="col-sm-10">
+                  <input type="password" class="form-control"
+                         id="inputPassword3" placeholder="Password"/>
+                </div>
+              </div>
+              <div class="form-group">
+                <div class="col-sm-offset-2 col-sm-10">
+                  <div class="checkbox">
+                    <label>
+                      <input type="checkbox"/> Remember me
+                    </label>
                   </div>
-                {% endfor %}
-              {% endif %}
-              {% if edit_existing_event_flag %}
-                <input type="hidden" name="existing_event_to_save" id="existing_event_to_save" value='{{ id_to_edit }}'
-                       readonly>
-              {% endif %}
-            </div>
-            <div class="modal-footer">
-              <button class="btn btn-md btn-default" data-dismiss="modal" type="button">{% trans "Cancel" %}</button>
-              <button class="btn btn-md btn-success" type="submit">{% trans "Save" %}</button>
-            </div>
-        </form>
+                </div>
+              </div>
+              <div class="form-group">
+                <div class="col-sm-offset-2 col-sm-10">
+                  <button type="submit" class="btn btn-default">Sign in</button>
+                </div>
+              </div>
+            </form>
+
+          </div>
+
+          <!-- Modal Footer -->
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default"
+                    data-dismiss="modal">
+              Close
+            </button>
+            <button type="button" class="btn btn-primary">
+              Save changes
+            </button>
+          </div>
+        </div>
       </div>
     </div>
-    <form method='post' name='existing_event_edit_form'>
-      {% csrf_token %}
-      <input type='Hidden' name='id_to_edit' id="id_to_edit" value=''>
-    </form>
-    <form method='post' name='existing_event_delete_form'>
-      {% csrf_token %}
-      <input type='Hidden' name='id_to_delete' id="id_to_delete" value=''>
-    </form>
-  {% endif %}
 
-  {% if pperm.edit_events %}
-    <div id="newEventModal" class="modal fade" role="dialog">
-      <div class="modal-dialog modal-lg modal-sm">
-        <form method="POST" class="form-horizontal">
-          <div class="modal-content">
-            <div class="modal-body">
-
-            </div>
-            <div class="modal-footer">
-              <button class="btn btn-md btn-default" data-dismiss="modal" type="button">{% trans "Cancel" %}</button>
-              <button class="btn btn-md btn-success" type="submit">{% trans "Save" %}</button>
-            </div>
-        </form>
+    <!-- Modal -->
+    <div class="modal fade" id="myModalNorm" tabindex="-1" role="dialog"
+         aria-labelledby="myModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <!-- Modal Header -->
+          <div class="modal-header">
+            <button type="button" class="close"
+                    data-dismiss="modal">
+              <span aria-hidden="true">&times;</span>
+              <span class="sr-only">Close</span>
+            </button>
+            <h4 class="modal-title" id="myModalLabel">
+              {% trans "New event" %}
+            </h4>
+          </div>
+          {% crispy new_event_form %}
+        </div>
       </div>
     </div>
   {% endif %}
@@ -181,7 +216,6 @@
         {% if is_edit_mode %}
           coursecal.data("mode", "edit");
         {% endif %}
-        initialize_ui();
       {% endif %}
     });
 
@@ -196,12 +230,8 @@
         }
       }
 
-      function toggle_view_mode() {
-        var mode, url, new_mode;
-        url = coursecal.data("mode") === "edit" ? student_view_url: edit_view_url;
-        new_mode = coursecal.data("mode") === "edit" ? "view": "edit";
-
-        var jqxhr = $.ajax({
+      function refetch_events_data(url, mode) {
+        $.ajax({
           url: url,
           dataType: "json"
         })
@@ -211,22 +241,62 @@
               coursecal.fullCalendar('addEventSource', $.parseJSON(result.events));
             }
             $('#relate-event-info').html(result.events_info);
-            coursecal.data("mode", new_mode);
+            coursecal.data("mode", mode);
             initialize_ui();
           });
       }
 
-      $("")
-
-
-
-
+      function toggle_view_mode() {
+        var url, mode;
+        url = coursecal.data("mode") === "edit" ? student_view_url : edit_view_url;
+        mode = coursecal.data("mode") === "edit" ? "view" : "edit";
+        refetch_events_data(url, mode);
+      }
 
       {% if edit_existing_event_flag %}
         $('#editModal').modal('show');
       {% endif %}
 
       $("#toggle-calendar-view").on('click', toggle_view_mode);
+
+      $('#myModalNorm').on('hidden.bs.modal', function () {
+        var this_form = $(this).find('form');
+        this_form.trigger('reset');
+        clear_form_field_errors(this_form);
+      });
+
+      $("#new_event").on('submit', function (e) {
+        e.preventDefault();
+        var self = $(this),
+          jqxhr = $.ajax({
+            url: self.attr("action"),
+            type: "POST",
+            data: $("#new_event").serialize(),
+            beforeSend: function (xhr, settings) {
+              var csrftoken = get_cookie('csrftoken');
+              xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            },
+            success: function (data, textStatus, jqXHR) {
+              refetch_events_data(edit_view_url, "edit");
+              initialize_ui();
+              $('#myModalNorm').modal("hide");
+              if (data.message)
+                django_message(data.message, "success");
+            },
+            error: function (data, textStatus, jqXHR) {
+              clear_form_field_errors(self);
+              var errors = data.responseJSON;
+              $.each(errors, function(index, value) {
+                    if (index === "__all__") {
+                      apply_form_non_field_error(self, value[0]);
+                        {#django_message(value[0], "error");#}
+                    } else {
+                        apply_form_field_error(index, value);
+                    }
+                });
+            }
+          })
+      });
 
       function edit_existing_event(event_id) {
         $('#id_to_edit').val(event_id);
@@ -241,8 +311,58 @@
       function remove_event_id_field() {
         $('#existing_event_to_save').remove()
       }
+
+      function apply_form_field_error(fieldname, error) {
+        var input = $("#id_" + fieldname),
+          container = $("#div_id_" + fieldname),
+          error_msg = $("<span />").addClass("text-danger help-inline ajax-error").text(error[0]);
+
+        container.addClass("has-error error");
+        error_msg.insertAfter(input);
+      }
+
+      function apply_form_non_field_error(form, error) {
+        var form_group_last = $(".form-group:last", $(form)),
+          error_msg = $("<div />").addClass("alert alert-danger ajax-error").text(error);
+        error_msg.insertAfter(form_group_last);
+      }
+      function clear_form_field_errors(form) {
+        $(".ajax-error", $(form)).remove();
+        $(".error", $(form)).removeClass("has-error");
+      }
+
+      function django_message(msg, level) {
+        var levels = {
+            warning: 'alert',
+            error: 'error',
+            success: 'success',
+            info: 'info'
+          },
+          fontawesome_class = {
+            warning: 'warning',
+            error: 'ban',
+            success: 'check',
+            info: 'info-circle'
+          },
+          html = tmpl("django-message-template", {
+            "message": msg, "tags": levels[level],
+            "icon_class": fontawesome_class[level],
+          });
+        $("#message_area").append(html);
+      }
     {% endif %}
 
   </script>
+
+  {% if pperm.edit_events %}
+    <script type="text/x-tmpl" id="django-message-template">
+      <div class="alert alert-{{ JQ_OPEN }}=o.tags{{ JQ_CLOSE }} fade in" data-alert="{{ JQ_OPEN }}=o.tags{{ JQ_CLOSE }}">
+        <a class="close" title="Close" href="#" data-dismiss="alert">&times;</a>
+        <i class="fa fa-{{ JQ_OPEN }}=o.icon_class{{ JQ_CLOSE }}"></i>
+        {{ JQ_OPEN }}=o.message{{ JQ_CLOSE }}
+      </div>
+    </script>
+  {% endif %}
+
   {{ block.super }}
 {% endblock %}
