@@ -861,7 +861,7 @@ MENU_VIEW_EVENTS_CALENDAR = "Edit events (calendar)"
 MENU_CREATE_RECURRING_EVENTS = "Create recurring events"
 MENU_RENUMBER_EVENTS = "Renumber events"
 
-HTML_SWITCH_TO_STUDENT_VIEW = "Switch to Student View"
+HTML_SWITCH_TO_STUDENT_VIEW = "Switch to normal view"
 HTML_SWITCH_TO_EDIT_VIEW = "Switch to Edit View"
 HTML_CREATE_NEW_EVENT_BUTTON_TITLE = "create a new event"
 

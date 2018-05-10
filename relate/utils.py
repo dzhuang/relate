@@ -45,41 +45,35 @@ def string_concat(*strings):
     return format_lazy("{}" * len(strings), *strings)
 
 
-class StyledForm(forms.Form):
-    def __init__(self, *args, **kwargs):
-        # type: (...) -> None
-        from crispy_forms.helper import FormHelper
-        self.helper = FormHelper()
-        self.helper.form_class = "form-horizontal"
-        self.helper.label_class = "col-lg-2"
-        self.helper.field_class = "col-lg-8"
+class styledFormMixin(object):
+    styled_form_class = "form-horizontal"
+    styled_label_class = "col-lg-2"
+    styled_field_class = "col-lg-8"
 
-        super(StyledForm, self).__init__(*args, **kwargs)
-
-
-class StyledInlineForm(forms.Form):
     def __init__(self, *args, **kwargs):
         # type: (...) -> None
 
         from crispy_forms.helper import FormHelper
         self.helper = FormHelper()
-        self.helper.form_class = "form-inline"
-        self.helper.label_class = "sr-only"
+        self.helper.form_class = self.styled_form_class
+        self.helper.label_class = self.styled_label_class
+        self.helper.field_class = self.styled_field_class
 
-        super(StyledInlineForm, self).__init__(*args, **kwargs)
+        super(styledFormMixin, self).__init__(*args, **kwargs)
 
 
-class StyledModelForm(forms.ModelForm):
-    def __init__(self, *args, **kwargs):
-        # type: (...) -> None
+class StyledForm(styledFormMixin, forms.Form):
+    pass
 
-        from crispy_forms.helper import FormHelper
-        self.helper = FormHelper()
-        self.helper.form_class = "form-horizontal"
-        self.helper.label_class = "col-lg-2"
-        self.helper.field_class = "col-lg-8"
 
-        super(StyledModelForm, self).__init__(*args, **kwargs)
+class StyledInlineForm(styledFormMixin, forms.Form):
+    styled_field_class = ''
+    styled_label_class = "sr-only"
+    styled_form_class = "form-inline"
+
+
+class StyledModelForm(styledFormMixin, forms.ModelForm):
+    pass
 
 
 # {{{ repo-ish types

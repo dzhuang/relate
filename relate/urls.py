@@ -361,8 +361,32 @@ urlpatterns = [
     url(r"^course"
         "/" + COURSE_ID_REGEX +
         "/calendar/new/$",
-        course.calendar.post_add_new_event,
-        name="relate-post_add_new_event"),
+        course.calendar.create_event,
+        name="relate-create_event"),
+
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/calendar/delete/(?P<event_id>[0-9]+)$",
+        course.calendar.delete_event,
+        name="relate-delete_event"),
+
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/calendar/delete-form/(?P<event_id>[0-9]+)$",
+        course.calendar.get_delete_event_form,
+        name="relate-get_delete_event_form"),
+
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/calendar/update-form/(?P<event_id>[0-9]+)$",
+        course.calendar.get_update_event_form,
+        name="relate-get_update_event_form"),
+
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/calendar/update/(?P<event_id>[0-9]+)$",
+        course.calendar.update_event,
+        name="relate-update_event"),
 
     # }}}
 
