@@ -224,6 +224,16 @@
         if (coursecal.data("mode") === "edit") {
           $("[data-edit-mode='true']").show();
           $("[data-edit-mode='false']").hide();
+          coursecal.fullCalendar('option', 'eventMouseover',
+            function (event, jsEvent, view) {
+              var remove_html = '<span class="relate-event-hover fc-title glyphicon glyphicon-remove-circle" style="float:right;cursor:pointer" id="remove" title="{% trans 'Remove this event'%}" data-confirm="{% trans "Are you sure you want to delete this event?" %}" data-event-id="' + event.id + '"></span>',
+                edit_html = '<span class="relate-event-hover fc-title glyphicon glyphicon-pencil" style="float:right; cursor:pointer" id="edit" title="{% trans 'Edit this event'%}"> </span>'
+              $('.fc-content', $(this)).append(remove_html).append(edit_html);
+            });
+          coursecal.fullCalendar('option', 'eventMouseout',
+            function (event, jsEvent, view) {
+              $(".relate-event-hover", $(this)).remove();
+            });
         } else {
           $("[data-edit-mode='true']").hide();
           $("[data-edit-mode='false']").show();
