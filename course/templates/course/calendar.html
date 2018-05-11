@@ -24,12 +24,11 @@
   {% endif %}
 
   <style>
-    [data-edit-mode=false] {
+    {#.mode-toggle {#}
+    {#  opacity: 0.7;#}
+    {#}#}
+    .mode-toggle[data-edit-mode=off] {
       display: none;
-    }
-    button[data-edit-mode=true] {
-      {#display: inherit;#}
-      {#background: red;#}
     }
   </style>
 
@@ -41,48 +40,35 @@
     <div>
       <button class="btn btn-primary" id="toggle-calendar-view2">
         <span>toggle old</span>
-{#        <span data-edit-mode="true" {% if not is_edit_mode %}hidden{% endif %}>#}
-{#          {% trans "Switch to normal view" %}</span>#}
-{#        <span data-edit-mode="false" {% if is_edit_mode %}hidden{% endif %}>#}
-{#          {% trans "Switch to Edit View" %}</span>#}
       </button>
 
       <button class="btn btn-primary" id="toggle-calendar-view">
         <span>toggle</span>
-        {#        <span data-edit-mode="true" {% if not is_edit_mode %}hidden{% endif %}>#}
-        {#          {% trans "Switch to normal view" %}</span>#}
-        {#        <span data-edit-mode="false" {% if is_edit_mode %}hidden{% endif %}>#}
-        {#          {% trans "Switch to Edit View" %}</span>#}
       </button>
 
       <button class="btn btn-default btn-md mode-toggle" data-toggle="modal"
-              data-target='#{{ new_event_form.modal_id }}' data-edit-mode="true"
-              {% if not is_edit_mode %}style="display:none;"{% endif %}
+              data-target='#{{ new_event_form.modal_id }}' data-edit-mode="{{ is_edit_mode|yesno:"on,off" }}"
       >{% trans "New event" %}</button>
 
       <button class="btn btn-default btn-md mode-toggle" data-toggle="modal"
-              data-target="#{{ recurring_events_form.modal_id }}" data-edit-mode="true"
-              {% if not is_edit_mode %}style="display:none;"{% endif %}
+              data-target="#{{ recurring_events_form.modal_id }}" data-edit-mode="{{ is_edit_mode|yesno:"on,off" }}"
       >{% trans "Create recurring events" %}</button>
 
       <button class="btn btn-default btn-md mode-toggle" data-toggle="modal"
-              data-target="#{{ renumber_events_form.modal_id }}" data-edit-mode="true"
-              {% if not is_edit_mode %}style="display:none;"{% endif %}
+              data-target="#{{ renumber_events_form.modal_id }}" data-edit-mode="{{ is_edit_mode|yesno:"on,off" }}"
       >{% trans "Renumber events" %}</button>
     </div>
   {% endif %}
-  <div id="coursecal"
-       {% if pperm.edit_events %}data-mode="{% if is_edit_mode %}edit{% else %}view{% endif %}{% endif %}"
-       style="margin-top:3em"></div>
+  <div id="course-cal" style="margin-top:3em"></div>
 
   <b class="relate-calendar-notes">{% trans "Note" %}:</b>
   {% trans "Some calendar entries are clickable and link to entries below." %}
   {% if pperm.edit_events %}
-    <span data-edit-mode="true" class="mode-toggle">
+    <span data-edit-mode="{{ is_edit_mode|yesno:"on,off" }}" class="mode-toggle">
       ({% trans "Different from normal view, this calender shows <b>all</b> events. " %})</span>
   {% endif %}
 
-  <div class="relate-event__toggle" id="relate-event-info" style="margin-top:3ex"></div>
+  <div id="relate-event-info" style="margin-top:3ex"></div>
 
   {% if pperm.edit_events %}
     {{ new_event_form.render_modal_form_html }}
@@ -97,29 +83,12 @@
 
 {% block page_bottom_javascript_extra %}
   <script type="text/javascript">
-    var toggleButton = document.getElementById("toggle-calendar-view");
-    var toggleMode = function (elem, one, two) {
-      var nodeList = document.querySelectorAll(elem), i;
-      for (i = 0; i < nodeList.length; i++) {
-        var node = nodeList[i];
-        node.setAttribute('data-edit-mode', node.getAttribute('data-edit-mode') === one ? two : one);
-      }
-    };
-    toggleButton.onclick = function (e) {
-      toggleMode('.mode-toggle', 'true', 'false');
-      e.preventDefault();
-    };
-
-    var coursecal = $('#coursecal'),
-      original_mouse_over_option, original_mouse_out_option,
-      fetch_url = '{% url "relate-fetch_event_json" course.identifier pperm.edit_events|yesno:"1,0" %}';
-
-    {% if pperm.edit_events %}
-      var edit_view_url = fetch_url;
-    {% endif %}
+    var $courseCal = $('#course-cal'),
+      $relateEventInfo = $('#relate-event-info'),
+      fetchUrl = '{% url "relate-fetch_event_json" course.identifier is_edit_mode|yesno:"1,0" %}';
 
     $(document).ready(function () {
-      coursecal.fullCalendar({
+      $courseCal.fullCalendar({
         header: {
           left: 'prev,next today',
           center: 'title',
@@ -129,42 +98,35 @@
         defaultDate: '{{ default_date }}',
         defaultView: $(window).width() < 765 ? 'agendaWeek' : 'month',
         timezone: "local",
-        events: fetch_url
-      });
+        events: fetchUrl,
+        eventRender: function (event, element, view) {
+          console.log(event);
+          if (event.description) {
+            var content = event.description,
+              contentDom = $(content);
+            {% if pperm.edit_events %}
+              {# Make sure events which don't show description are hidden when toggled to normal view.#}
+              if (!event.show_description){
+                contentDom.addClass("mode-toggle");
+                contentDom.attr("data-edit-mode", getCurrentMode());}
+            {% endif %}
+            contentDom.appendTo($relateEventInfo);
+            }
+          },
 
-      {% if pperm.edit_events %}
-        original_mouse_out_option = coursecal.fullCalendar('option', 'eventMouseout') || function () {
-        };
-        original_mouse_over_option = coursecal.fullCalendar('option', 'eventMouseover') || function () {
-        };
-
-        {% if is_edit_mode %}
-          enable_event_edit();
-        {% endif %}
-      {% endif %}
-    });
-
-    {% if pperm.edit_events %}
-      function initialize_ui() {
-        if (coursecal.data("mode") === "edit") {
-          enable_event_edit();
-        } else {
-          disable_event_edit();
-        }
-      }
-
-      function enable_event_edit() {
-        $("[data-edit-mode='true']").show();
-        $("[data-edit-mode='false']").hide();
-
-        coursecal.fullCalendar('option', 'eventMouseover',
-          function (event, jsEvent, view) {
-            var remove_html, edit_html;
-            remove_html = tmpl("delete-event-icon-template");
-            edit_html = tmpl("edit-event-icon-template");
-            $('.fc-content', $(this)).append(remove_html).append(edit_html);
+        {% if pperm.edit_events %}
+          eventDestroy: function(event, element, view) {
+            {# Clear #relate-event-info before rerendering / refetching events #}
+            $relateEventInfo.empty();
+          },
+          eventMouseover: function (event, jsEvent, view) {
+            if (!isEditMode())
+              return;
+            var deleteIconHtml = tmpl("delete-event-icon-template"),
+              editIconHtml = tmpl("edit-event-icon-template");
+            $('.fc-content', $(this)).append(deleteIconHtml).append(editIconHtml);
             $('.relate-delete-event', $(this)).on('click', function () {
-              console.log("here", event.delete_form_url);
+              {# use ajax to get the HTML of delete event form #}
               $.ajax({
                 url: event.delete_form_url,
                 success: function (data, textStatus, jqXHR) {
@@ -178,20 +140,17 @@
                     .on('submit', function (e) {
                       e.preventDefault();
                       var form = $(this);
-                      post_modal_form(form);
+                      postModalForm(form);
                     });
                 },
                 error: function (data, textStatus, jqXHR) {
-                  django_message(data.error, "error")
+                  djangoMessage(data.error, "error")
                 }
               });
-              {#$("#deleteEventModal")#}
-              {#  .find("form")#}
-              {#  .prop("action", event.delete_url)#}
-              {#  .end()#}
-              {#  .modal('show');#}
             });
+
             $('.relate-update-event', $(this)).on('click', function () {
+              {# use ajax to get the HTML of update event form #}
               $.ajax({
                 url: event.update_form_url,
                 success: function (data, textStatus, jqXHR) {
@@ -205,50 +164,55 @@
                     .on('submit', function (e) {
                       e.preventDefault();
                       var form = $(this);
-                      post_modal_form(form);
+                      postModalForm(form);
                     });
-                  },
+                },
                 error: function (data, textStatus, jqXHR) {
-                  django_message(data.error, "error")
+                  djangoMessage(data.error, "error")
                 }
               });
             });
-          });
-        coursecal.fullCalendar('option', 'eventMouseout',
-          function (event, jsEvent, view) {
+          },
+          eventMouseout: function (event, jsEvent, view) {
+            if (!getCurrentMode())
+              return;
             $(".relate-event-hover", $(this)).remove();
-          });
-        coursecal.fullCalendar('option', 'selectable', true);
+          },
+        {% endif %}
+      });
+    });
+
+    {% if pperm.edit_events %}
+      var toggleButton = document.getElementById("toggle-calendar-view"),
+        toggleMode = function (elem, one, two) {
+          var nodeList = document.querySelectorAll(elem), i, newMode;
+          for (i = 0; i < nodeList.length; i++) {
+            var node = nodeList[i];
+            if (newMode === undefined)
+              newMode = node.getAttribute('data-edit-mode') === one ? two : one;
+            node.setAttribute('data-edit-mode', newMode);
+          }
+          return newMode
+        };
+      toggleButton.onclick = function (e) {
+
+        var editMode = toggleMode('.mode-toggle', "on", "off");
+        $courseCal.fullCalendar('option', {
+          editable: editMode === "on",
+          selectable: editMode === "on"
+        });
+        e.preventDefault();
+      };
+
+      function isEditMode(){
+        return $('.mode-toggle[data-edit-mode=on]').length > 0
       }
 
-      function disable_event_edit() {
-        $("[data-edit-mode='true']").hide();
-        $("[data-edit-mode='false']").show();
-
-        coursecal.fullCalendar('option', 'selectable', false);
-        coursecal.fullCalendar('option', 'eventMouseover', original_mouse_over_option);
-        coursecal.fullCalendar('option', 'eventMouseout', original_mouse_out_option);
+      function getCurrentMode(){
+        return isEditMode() ? "on" : "off";
       }
 
-      function rerender_events(url, mode) {
-        coursecal.fullCalendar('refetchEvents');
-        {#coursecal.fullCalendar('rerenderEvents');#}
-        {#$('#relate-event-info').html(result.events_info);#}
-        coursecal.data("mode", mode);
-        initialize_ui();
-      }
-
-      function toggle_view_mode() {
-        var url, mode;
-        url = coursecal.data("mode") === "edit" ? fetch_url : edit_view_url;
-        mode = coursecal.data("mode") === "edit" ? "view" : "edit";
-        rerender_events(url, mode);
-        return mode
-      }
-
-      $("#toggle-calendar-view2").on('click', toggle_view_mode);
-
-      function post_modal_form(form) {
+      function postModalForm(form) {
         var self = form,
           url = self.attr("action"),
           form_data = self.serialize();
@@ -261,21 +225,19 @@
             xhr.setRequestHeader("X-CSRFToken", csrftoken);
           },
           success: function (data, textStatus, jqXHR) {
-            coursecal.fullCalendar('refetchEvents');
-            {#rerender_events(edit_view_url, "edit");#}
-            initialize_ui();
+            $courseCal.fullCalendar('refetchEvents');
             self.closest('.modal').modal("hide");
             if (data.message)
-              django_message(data.message, "success");
+              djangoMessage(data.message, "success");
           },
           error: function (data, textStatus, jqXHR) {
-            clear_form_field_errors(self);
+            clearFormErrors(self);
             var errors = data.responseJSON;
             $.each(errors, function (index, value) {
               if (index === "__all__") {
-                apply_form_non_field_error(self, value[0]);
+                applyFormNonFieldError(self, value[0]);
               } else {
-                apply_form_field_error(index, value);
+                applyFormFieldError(index, value);
               }
             });
           }
@@ -286,49 +248,51 @@
       $('.modal form')
         .closest(".modal")
         .on('hidden.bs.modal', function () {
-          var this_form = $(this).find('form');
-          this_form.trigger('reset');
-          clear_form_field_errors(this_form);
+          var thisForm = $(this).find('form');
+          thisForm.trigger('reset');
+          clearFormErrors(thisForm);
         })
         .end()
         .on('submit', function (e) {
           e.preventDefault();
-          var form = $(this);
-          post_modal_form(form);
+          postModalForm($(this));
         });
 
-      function apply_form_field_error(fieldname, error) {
+      function applyFormFieldError(fieldname, error) {
         var input = $("#id_" + fieldname),
           container = $("#div_id_" + fieldname),
-          error_msg = $("<span />").addClass("text-danger help-inline ajax-error").text(error[0]);
+          errorMsg = $("<span />").addClass("text-danger help-inline ajax-error").text(error[0]);
 
         container.addClass("has-error error");
-        error_msg.insertAfter(input);
+        errorMsg.insertAfter(input);
       }
 
-      function apply_form_non_field_error(form, error) {
-        var form_group_last = $(".form-group:last", $(form)),
-          error_msg = $("<div />")
+      function applyFormNonFieldError(form, error) {
+        var formGroupLast = $(".form-group:last", $(form)),
+          errorMsg = $("<div />")
             .addClass("alert alert-danger ajax-error")
             .html('<i class="fa fa-ban"></i> ' + error);
-        if (form_group_last.length)
-          error_msg.insertAfter(form_group_last);
-        else error_msg.insertAfter($(form).children().first());
+        if (formGroupLast.length)
+          {# in sert non-field errors after last form field #}
+          errorMsg.insertAfter(formGroupLast);
+
+        {# in case no fields are rendered (delete form) #}
+        else errorMsg.insertAfter($(form).children().first());
       }
 
-      function clear_form_field_errors(form) {
+      function clearFormErrors(form) {
         $(".ajax-error", $(form)).remove();
         $(".error", $(form)).removeClass("has-error");
       }
 
-      function django_message(msg, level) {
+      function djangoMessage(msg, level) {
         var levels = {
             warning: 'alert',
             error: 'error',
             success: 'success',
             info: 'info'
           },
-          fontawesome_class = {
+          fontAwesomeClass = {
             warning: 'warning',
             error: 'ban',
             success: 'check',
@@ -336,9 +300,9 @@
           },
           html = tmpl("django-message-template", {
             "message": msg, "tags": levels[level],
-            "icon_class": fontawesome_class[level]
+            "icon_class": fontAwesomeClass[level]
           });
-        $("#message_area").append(html);
+        $("#message-area").append(html);
       }
     {% endif %}
 
@@ -356,7 +320,7 @@
 
     <script type="text/x-tmpl" id="delete-event-icon-template">
       <span class="relate-event-hover fc-title glyphicon glyphicon-remove-circle relate-delete-event"
-        style="float:right;cursor:pointer" title="{% trans 'Remove event' %}"</span>
+        style="float:right;cursor:pointer" title="{% trans 'Delete event' %}"</span>
 
     </script>
 

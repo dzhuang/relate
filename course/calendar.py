@@ -161,7 +161,7 @@ def _create_recurring_events_backend(course, time, kind, starting_ordinal, inter
             evt.save()
         except IntegrityError:
             raise EventAlreadyExists(
-                        _("'%(exist_event)s' already exists")
+                        _("'%(exist_event)s' already exists.")
                         % {'exist_event': evt})
 
         date = time.date()
@@ -191,7 +191,7 @@ def create_recurring_events(pctx):
     message_level = None
 
     if request.method == "GET" and request.is_ajax():
-        raise PermissionDenied(_("may not get by ajax"))
+        raise PermissionDenied(_("may not GET by AJAX"))
 
     if request.method == "POST":
         form = RecurringEventForm(
@@ -314,7 +314,7 @@ def renumber_events(pctx):
     request = pctx.request
 
     if request.method == "GET" and request.is_ajax():
-        raise PermissionDenied(_("may not get via AJAX"))
+        raise PermissionDenied(_("may not GET by AJAX"))
 
     message = None
     message_level = None
@@ -407,10 +407,12 @@ def get_event_json(pctx, now_datetime=None, is_edit_view=False):
 
     event_kinds_desc = event_descr.get("event_kinds", {})
     event_info_desc = event_descr.get("events", {})
-    events_info = []
+
+    may_edit_events = pctx.has_permission(pperm.edit_events)
 
     filter_kwargs = {"course": pctx.course}
-    if not is_edit_view:
+    if not may_edit_events:
+        # exclude hidden events when no edit permission
         filter_kwargs["shown_in_calendar"] = True
 
     events = sorted(
@@ -427,8 +429,7 @@ def get_event_json(pctx, now_datetime=None, is_edit_view=False):
         event_json = {
             "id": event.id,
             "start": event.time.isoformat(),
-            "allDay": event.all_day,
-            "editable": is_edit_view}
+            "allDay": event.all_day}
 
         if event.end_time is not None:
             event_json["end"] = event.end_time.isoformat()
@@ -442,7 +443,8 @@ def get_event_json(pctx, now_datetime=None, is_edit_view=False):
                 else:
                     human_title = kind_desc["title"].rstrip("{nr}").strip()
 
-        if is_edit_view:
+        if may_edit_events:
+            event_json["shown_in_calendar"] = event.shown_in_calendar
             event_json["delete_form_url"] = reverse(
                 "relate-get_delete_event_form",
                 args=[pctx.course.identifier, event.id])
@@ -452,7 +454,7 @@ def get_event_json(pctx, now_datetime=None, is_edit_view=False):
             event_json["str"] = str(event)
 
         description = None
-        show_description = True
+        show_description = True and event.shown_in_calendar
         event_desc = event_info_desc.get(six.text_type(event))
         if event_desc is not None:
             if "description" in event_desc:
@@ -478,15 +480,15 @@ def get_event_json(pctx, now_datetime=None, is_edit_view=False):
                 if now_datetime > ds:
                     show_description = False
 
-            # if is_edit_view:
-            #     show_description = True
-
         event_json["title"] = human_title
-        event_json['show_description'] = show_description
-        event_json['description'] = ''
+        if may_edit_events:
+            event_json['show_description'] = show_description
 
         if description:
-            event_json["url"] = "#event-%d" % event.id
+            if show_description or may_edit_events:
+                # Fixme: participation with pperm.edit_events will
+                # always see the url (both edit view and normal view)
+                event_json["url"] = "#event-%d" % event.id
 
             start_time = event.time
             end_time = event.end_time
@@ -511,11 +513,10 @@ def get_event_json(pctx, now_datetime=None, is_edit_view=False):
 
             event_json["description"] = render_to_string(
                 "course/event_info.html",
-                context={"events_info": event_info,
+                context={"event_info": event_info,
+                         "may_edit_events": may_edit_events,
                          "is_edit_view": is_edit_view},
                 request=pctx.request)
-
-            events_info.append(event_info)
 
         events_json.append(event_json)
 
@@ -588,7 +589,8 @@ class CreateEventModalForm(ModalStyledFormMixin, StyledModelForm):
         super(CreateEventModalForm, self).__init__(*args, **kwargs)
 
         self.course_identifier = course_identifier
-        self.fields["shown_in_calendar"].help_text = _("Shown in students' calendar")
+        self.fields["shown_in_calendar"].help_text = (
+            _("Shown in students' calendar"))
 
         self.helper.form_action = reverse(
             "relate-create_event", args=[course_identifier])
@@ -620,7 +622,7 @@ class CreateEventModalForm(ModalStyledFormMixin, StyledModelForm):
             if qset.count():
                 from django.forms import ValidationError
                 raise ValidationError(
-                        _("'%(exist_event)s' already exists")
+                        _("'%(exist_event)s' already exists.")
                         % {'exist_event': qset[0]})
 
 
@@ -643,7 +645,7 @@ def create_event(pctx):
             instance.course = pctx.course
             instance.save()
 
-            message = (_("Event created: '%s'") % str(instance))
+            message = (_("Event created: '%s'.") % str(instance))
             return JsonResponse({"message": message})
         except Exception as e:
             return JsonResponse(
@@ -657,34 +659,31 @@ class DeleteEventForm(ModalStyledFormMixin, StyledForm):
     modal_id = "delete-event-modal"
     prefix = "delete"
 
-    def __init__(self, course_identifier, event_id, event_kind, event_ordinal=None,
+    def __init__(self, course_identifier, instance,
                  *args, **kwargs):
         super(DeleteEventForm, self).__init__(*args, **kwargs)
 
         self.course_identifier = course_identifier
 
-        event_str = ("'%s %s'" % (event_kind, event_ordinal)
-                     if event_ordinal is not None
-                     else "'%s'" % event_kind)
-        hint = _("Are you sure to delete event '%s'?") % event_str
+        hint = _("Are you sure to delete event '%s'?") % str(instance)
 
-        if event_ordinal is not None:
+        if instance.ordinal is not None:
             choices = (
-                ("single", _("Delete event '%s'") % event_str),
-                ('following', _("Delete this and following events with "
-                                "kind '%s'") % event_kind),
-                ('all', _("Delete all events with "
-                          "kind '%s'") % event_kind),
+                ("delete_single", _("Delete event '%s'") % str(instance)),
+                ('delete_following', _("Delete this and following events with "
+                                       "kind '%s'") % instance.kind),
+                ('delete_all', _("Delete all events with "
+                                 "kind '%s'") % instance.kind),
             )
             self.fields["operation"] = (
                 forms.ChoiceField(
                     choices=choices, widget=forms.RadioSelect(), required=True,
-                    initial="single",
+                    initial="delete_single",
                     label=_("Operation")))
             hint = _("Select your operation:")
 
         self.helper.form_action = reverse(
-            "relate-delete_event", args=[course_identifier, event_id])
+            "relate-delete_event", args=[course_identifier, instance.pk])
 
         self.helper.layout = Layout(
             Div(*self.fields, css_class="modal-body"),
@@ -707,13 +706,11 @@ def get_delete_event_form(pctx, event_id):
     if not (request.is_ajax() and request.method == "GET"):
         raise PermissionDenied(_("only AJAX GET is allowed"))
 
-    try:
-        instance = Event.objects.get(course=pctx.course, id=int(event_id))
-        form = DeleteEventForm(
-            pctx.course.identifier, event_id, instance.kind, instance.ordinal)
-    except ObjectDoesNotExist:
-        return JsonResponse(
-            {"error": _("Event does not exist")}, status=400)
+    event_id = int(event_id)
+    instance = get_object_or_404(Event, course=pctx.course, id=event_id)
+
+    form = DeleteEventForm(
+        pctx.course.identifier, instance)
 
     return JsonResponse(
         {"form_html": form.render_modal_form_html(request=pctx.request)})
@@ -729,28 +726,31 @@ def delete_event(pctx, event_id):
     if not request.is_ajax() or request.method != "POST":
         raise PermissionDenied(_("only AJAX POST is allowed"))
 
+    event_id = int(event_id)
     event_qs = Event.objects.filter(course=pctx.course, pk=event_id)
     if not event_qs.count():
-        message = _("Event does not exist.")
-        return JsonResponse({"__all__": [message]}, status=400)
+        from django.http import Http404
+        raise Http404()
     else:
-        event, = event_qs
-        form = DeleteEventForm(pctx.course.identifier, event_id, event.kind,
-                               event.ordinal, request.POST, request.FILES)
+        instance, = event_qs
+        form = DeleteEventForm(
+            pctx.course.identifier, instance, request.POST)
 
         if form.is_valid():
             operation = form.cleaned_data.get("operation")
-            if operation is None or operation == "single":
+            if operation is None or operation == "delete_single":
                 qset = event_qs
-                message = _("Event deleted.")
-            elif operation == "following":
+                message = _("Event '%s' deleted.") % str(instance)
+            elif operation in "delete_following":
                 qset = Event.objects.filter(
-                    course=pctx.course, kind=event.kind, time__gte=event.time)
-                message = _("Events deleted.")
-            elif operation == "all":
+                    course=pctx.course, kind=instance.kind, time__gte=instance.time)
+                message = _("%(number)d events of kind '%(kind)s' deleted."
+                            ) % {"number": qset.count(), "kind": instance.kind}
+            elif operation == "delete_all":
                 qset = Event.objects.filter(
-                    course=pctx.course, kind=event.kind, ordinal__isnull=False)
-                message = _("Events deleted.")
+                    course=pctx.course, kind=instance.kind, ordinal__isnull=False)
+                message = _("All events of kind '%(kind)s' deleted."
+                            ) % {"kind": instance.kind}
             else:
                 raise NotImplementedError()
 
@@ -820,7 +820,7 @@ class UpdateEventForm(ModalStyledFormMixin, StyledModelForm):
                 if exist_event.pk != self.event_id:
                     from django.forms import ValidationError
                     raise ValidationError(
-                        _("'%(exist_event)s' already exists")
+                        _("'%(exist_event)s' already exists.")
                         % {'exist_event': exist_event})
 
 
@@ -834,14 +834,10 @@ def get_update_event_form(pctx, event_id):
         raise PermissionDenied(_("only AJAX GET is allowed"))
 
     event_id = int(event_id)
+    instance = get_object_or_404(Event, course=pctx.course, id=event_id)
 
-    try:
-        instance = Event.objects.get(course=pctx.course, id=event_id)
-        form = UpdateEventForm(
-            pctx.course.identifier, event_id, instance=instance)
-    except ObjectDoesNotExist:
-        return JsonResponse(
-            {"error": _("Event does not exist")}, status=400)
+    form = UpdateEventForm(
+        pctx.course.identifier, event_id, instance=instance)
 
     return JsonResponse(
         {"form_html": form.render_modal_form_html(request=pctx.request)})
@@ -858,6 +854,7 @@ def update_event(pctx, event_id):
         raise PermissionDenied(_("only AJAX POST is allowed"))
 
     event_id = int(event_id)
+    get_object_or_404(Event, course=pctx.course, id=event_id)
 
     form = UpdateEventForm(
         pctx.course.identifier, event_id, request.POST, request.FILES)
@@ -869,7 +866,7 @@ def update_event(pctx, event_id):
             instance.pk = event_id
             instance.save()
 
-            message = _("Event updated.")
+            message = _("Event '%s' updated.") % str(instance)
             return JsonResponse({"message": message})
         except Exception as e:
             return JsonResponse(
