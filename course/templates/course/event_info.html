@@ -1,5 +1,5 @@
 {% if may_edit_events or event_info.show_description %}
-  <div id="event-{{ event_info.id }}" class="panel panel-default relate-calendar-event">
+  <div id="event-{{ event_info.id }}" class="panel panel-default relate-calendar-event {% if not event_info.show_description %}mode-toggle{% endif %}">
     <div class="panel-heading">
       <b>{{ event_info.human_title }}</b>
       ({{ event_info.start_time }}{% if event_info.end_time %} -

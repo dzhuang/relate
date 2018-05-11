@@ -536,14 +536,27 @@ def view_calendar(pctx, operation=None):
     from course.views import get_now_or_fake_time
     now = get_now_or_fake_time(pctx.request)
 
-    events_json = get_event_json(pctx, now, is_edit_view)
-
     default_date = now.date()
     if pctx.course.end_date is not None and default_date > pctx.course.end_date:
         default_date = pctx.course.end_date
 
+    events_json = get_event_json(pctx, now, is_edit_view=is_edit_view)
+    event_info_list = []
+    for event_json in events_json:
+        description = event_json.get("description")
+        if description:
+            event_info_list.append(description)
+
+    if not may_edit_calendar:
+        # for normal user, we dump the events json as fullCalendar event source.
+        return render_course_page(pctx, "course/calendar.html", {
+            "events_json": dumps(events_json),
+            "event_info_list": event_info_list,
+            "default_date": default_date.isoformat(),
+        })
+
     return render_course_page(pctx, "course/calendar.html", {
-        "events_json": dumps(events_json),
+        "event_info_list": dumps(event_info_list),
         "default_date": default_date.isoformat(),
         "is_edit_mode": is_edit_view,
         "new_event_form": CreateEventModalForm(pctx.course.identifier),
@@ -561,7 +574,6 @@ def view_calendar(pctx, operation=None):
 
 @course_view
 def fetch_event_json(pctx, is_edit_view):
-    print("here")
     if not pctx.has_permission(pperm.view_calendar):
         raise PermissionDenied(_("may not view calendar"))
 

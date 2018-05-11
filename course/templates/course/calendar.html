@@ -39,8 +39,12 @@
   {% if pperm.edit_events %}
     <div>
       <button class="btn btn-primary" id="toggle-calendar-view">
-        <span id="switch-to-normal" class=" mode-toggle" data-edit-mode="{{ is_edit_mode|yesno:"on,off" }}">{% trans "Switch to normal view" %}</span>
-        <span id="switch-to-edit" class="mode-toggle" data-edit-mode="{{ is_edit_mode|yesno:"off,on" }}">{% trans "Switch to edit view" %}</span>
+          <span id="switch-to-normal" {{ is_edit_mode|yesno:"on,hidden" }}>
+            {% trans "Switch to normal view" %}
+          </span>
+          <span id="switch-to-edit" {{ is_edit_mode|yesno:"hidden,on" }}>
+            {% trans "Switch to edit view" %}
+          </span>
       </button>
 
       <button class="btn btn-default btn-md mode-toggle" data-toggle="modal"
@@ -65,7 +69,13 @@
       ({% trans "Different from normal view, this calender shows <b>all</b> events. " %})</span>
   {% endif %}
 
-  <div id="relate-event-info" style="margin-top:3ex"></div>
+  <div id="relate-event-info" style="margin-top:3ex">
+    {% if not pperm.edit_events %}
+      {% for event_info in event_info_list %}
+        {{ event_info|safe }}
+      {% endfor %}
+    {% endif %}
+  </div>
 
   {% if pperm.edit_events %}
     {{ new_event_form.render_modal_form_html }}
@@ -81,12 +91,26 @@
 {% block page_bottom_javascript_extra %}
   <script type="text/javascript">
     var $courseCal = $('#course-cal'),
-      $relateEventInfo = $('#relate-event-info'),
-      fetchUrl = '{% url "relate-fetch_event_json" course.identifier is_edit_mode|yesno:"1,0" %}';
+      $relateEventInfo = $('#relate-event-info');
 
-    {% if pperm.edit_events %}
+
+    {% if not pperm.edit_events %}
+      var events = {{ events_json |safe }};
+    {% else %}
       var switchToNormalModeButtonText = $("#switch-to-normal").text(),
-        switchToEditViewModeButtonText = $("#switch-to-edit").text();
+        switchToEditViewModeButtonText = $("#switch-to-edit").text(),
+        fetchUrl = '{% url "relate-fetch_event_json" course.identifier is_edit_mode|yesno:"1,0" %}',
+        events = fetchUrl;
+
+      {% if event_info_list %}
+        var event_info_list ={{ event_info_list|safe }}, i;
+
+        for (i = 0; i < event_info_list.length; i++) {
+          var info = $(event_info_list[i]);
+          info.attr("data-edit-mode", getCurrentMode());
+          info.appendTo($relateEventInfo);
+        }
+      {% endif %}
     {% endif %}
 
     $(document).ready(function () {
@@ -100,25 +124,12 @@
         defaultDate: '{{ default_date }}',
         defaultView: $(window).width() < 765 ? 'agendaWeek' : 'month',
         timezone: "local",
-        events: fetchUrl,
-        eventRender: function (event, element, view) {
-          if (event.description) {
-            var content = event.description,
-              contentDom = $(content);
-            {% if pperm.edit_events %}
-              {# Make sure events which don't show description are hidden when toggled to normal view.#}
-              if (!event.show_description){
-                contentDom.addClass("mode-toggle");
-                contentDom.attr("data-edit-mode", getCurrentMode());}
-            {% endif %}
-            contentDom.appendTo($relateEventInfo);
-            }
-          },
-
+        events: events,
         {% if pperm.edit_events %}
-          eventDestroy: function(event, element, view) {
-            {# Clear #relate-event-info before rerendering / refetching events #}
-            $relateEventInfo.empty();
+          {# https://stackoverflow.com/a/47955237/3437454 #}
+          eventRender: function (event, element, view) {
+           if (!event.shown_in_calendar && !isEditMode())
+            {return false;}
           },
           eventMouseover: function (event, jsEvent, view) {
             if (!isEditMode())
@@ -155,10 +166,20 @@
               $.ajax({
                 url: event.update_form_url,
                 success: function (data, textStatus, jqXHR) {
-                  $("#div-id-relate-update-event-form").html(data.form_html);
+                  $("#div-id-relate-update-event-form")
+                    .html(data.form_html);
                   $("#update-event-modal")
                     .find("form")
                     .prop("action", event.update_url)
+                    .end()
+                    // intialize datetime picker
+                    .find("#id_update-time_pickers").datetimepicker({
+                      format: "YYYY-MM-DD HH:mm"}
+                      )
+                    .end()
+                    .find("#id_update-end_time_pickers").datetimepicker({
+                      format: "YYYY-MM-DD HH:mm"}
+                      )
                     .end()
                     .modal('show')
                     .find("form")
@@ -175,7 +196,7 @@
             });
           },
           eventMouseout: function (event, jsEvent, view) {
-            if (!getCurrentMode())
+            if (!isEditMode())
               return;
             $(".relate-event-hover", $(this)).remove();
           },
@@ -307,6 +328,7 @@
           });
         $("#message-area").append(html);
       }
+
     {% endif %}
 
   </script>
