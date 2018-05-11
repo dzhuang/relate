@@ -354,9 +354,9 @@ urlpatterns = [
 
     url(r"^course"
         "/" + COURSE_ID_REGEX +
-        "/calendar/toggle/(?P<is_edit_view>[01])/$",
-        course.calendar.toggle_calendar_view,
-        name="relate-toggle_calendar_view"),
+        "/calendar/fetch/(?P<is_edit_view>[01])/$",
+        course.calendar.fetch_event_json,
+        name="relate-fetch_event_json"),
 
     url(r"^course"
         "/" + COURSE_ID_REGEX +

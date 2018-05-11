@@ -28,6 +28,7 @@ import six
 from six.moves import range
 from json import dumps
 
+from django.template.loader import render_to_string
 from django.utils.translation import (
         ugettext_lazy as _, pgettext_lazy)
 from django.contrib.auth.decorators import login_required
@@ -40,7 +41,7 @@ from django.http import JsonResponse
 import django.forms as forms
 
 from crispy_forms.layout import (  # noqa
-    Layout, Div, ButtonHolder, Button, Submit, HTML, Fieldset)
+    Layout, Div, ButtonHolder, Button, Submit, HTML, Field)
 
 import datetime
 from bootstrap3_datetime.widgets import DateTimePicker
@@ -64,9 +65,9 @@ class ModalStyledFormMixin(object):
     def modal_id(self):
         raise NotImplementedError()
 
-    def render_modal_form_html(self):
-        from django.template.loader import render_to_string
-        return render_to_string(self.modal_form_template, {"form": self})
+    def render_modal_form_html(self, request=None):
+        return render_to_string(
+            self.modal_form_template, {"form": self}, request=request)
 
 # {{{ creation
 
@@ -160,8 +161,8 @@ def _create_recurring_events_backend(course, time, kind, starting_ordinal, inter
             evt.save()
         except IntegrityError:
             raise EventAlreadyExists(
-                _("'%(event_kind)s %(event_ordinal)d' already exists") %
-                {'event_kind': kind, 'event_ordinal': ordinal})
+                        _("'%(exist_event)s' already exists")
+                        % {'exist_event': evt})
 
         date = time.date()
         if interval == "weekly":
@@ -379,15 +380,16 @@ def renumber_events(pctx):
 # {{{ calendar
 
 class EventInfo(object):
-    def __init__(self, id, human_title, start_time, end_time, description):
+    def __init__(self, id, human_title, start_time, end_time, description, show_description):
         self.id = id
         self.human_title = human_title
         self.start_time = start_time
         self.end_time = end_time
         self.description = description
+        self.show_description = show_description
 
 
-def get_events_info(pctx, now_datetime=None, is_edit_view=False):
+def get_event_json(pctx, now_datetime=None, is_edit_view=False):
     events_json = []
 
     from course.content import (
@@ -476,12 +478,14 @@ def get_events_info(pctx, now_datetime=None, is_edit_view=False):
                 if now_datetime > ds:
                     show_description = False
 
-            if is_edit_view:
-                show_description = True
+            # if is_edit_view:
+            #     show_description = True
 
         event_json["title"] = human_title
+        event_json['show_description'] = show_description
+        event_json['description'] = ''
 
-        if show_description and description:
+        if description:
             event_json["url"] = "#event-%d" % event.id
 
             start_time = event.time
@@ -497,25 +501,25 @@ def get_events_info(pctx, now_datetime=None, is_edit_view=False):
                     else:
                         end_time = end_time.date()
 
-            events_info.append(
-                EventInfo(
-                    id=event.id,
-                    human_title=human_title,
-                    start_time=start_time,
-                    end_time=end_time,
-                    description=description
-                ))
+            event_info = EventInfo(
+                id=event.id,
+                human_title=human_title,
+                start_time=start_time,
+                end_time=end_time,
+                description=description,
+                show_description=show_description)
+
+            event_json["description"] = render_to_string(
+                "course/event_info.html",
+                context={"events_info": event_info,
+                         "is_edit_view": is_edit_view},
+                request=pctx.request)
+
+            events_info.append(event_info)
 
         events_json.append(event_json)
 
-    from django.template.loader import render_to_string
-    events_info = render_to_string(
-        "course/events_info.html",
-        context={"events_info": events_info,
-                 "is_edit_view": is_edit_view},
-        request=pctx.request)
-
-    return events_info, events_json
+    return events_json
 
 
 @course_view
@@ -531,7 +535,7 @@ def view_calendar(pctx, operation=None):
     from course.views import get_now_or_fake_time
     now = get_now_or_fake_time(pctx.request)
 
-    events_info, events_json = get_events_info(pctx, now, is_edit_view)
+    events_json = get_event_json(pctx, now, is_edit_view)
 
     default_date = now.date()
     if pctx.course.end_date is not None and default_date > pctx.course.end_date:
@@ -539,7 +543,6 @@ def view_calendar(pctx, operation=None):
 
     return render_course_page(pctx, "course/calendar.html", {
         "events_json": dumps(events_json),
-        "events_info": events_info,
         "default_date": default_date.isoformat(),
         "is_edit_mode": is_edit_view,
         "new_event_form": CreateEventModalForm(pctx.course.identifier),
@@ -556,19 +559,15 @@ def view_calendar(pctx, operation=None):
 
 
 @course_view
-def toggle_calendar_view(pctx, is_edit_view):
+def fetch_event_json(pctx, is_edit_view):
+    print("here")
     if not pctx.has_permission(pperm.view_calendar):
         raise PermissionDenied(_("may not view calendar"))
 
-    if not pctx.has_permission(pperm.edit_events):
-        raise PermissionDenied(_("may not toggle calendar view"))
-
-    events_info, events_json = get_events_info(
+    events_json = get_event_json(
         pctx, now_datetime=None, is_edit_view=bool(int(is_edit_view)))
 
-    return JsonResponse({
-        "events": dumps(events_json),
-        "events_info": events_info})
+    return JsonResponse(events_json, safe=False)
 
 
 class CreateEventModalForm(ModalStyledFormMixin, StyledModelForm):
@@ -617,12 +616,12 @@ class CreateEventModalForm(ModalStyledFormMixin, StyledModelForm):
             else:
                 filter_kwargs["ordinal__isnull"] = True
 
-            if Event.objects.filter(**filter_kwargs).count():
+            qset = Event.objects.filter(**filter_kwargs)
+            if qset.count():
                 from django.forms import ValidationError
                 raise ValidationError(
-                    "'%(event_kind)s %(event_ordinal)s' already exists"
-                    % {'event_kind': kind,
-                       'event_ordinal': ordinal})
+                        _("'%(exist_event)s' already exists")
+                        % {'exist_event': qset[0]})
 
 
 @course_view
@@ -644,7 +643,7 @@ def create_event(pctx):
             instance.course = pctx.course
             instance.save()
 
-            message = _("Event created.")
+            message = (_("Event created: '%s'") % str(instance))
             return JsonResponse({"message": message})
         except Exception as e:
             return JsonResponse(
@@ -667,12 +666,12 @@ class DeleteEventForm(ModalStyledFormMixin, StyledForm):
         event_str = ("'%s %s'" % (event_kind, event_ordinal)
                      if event_ordinal is not None
                      else "'%s'" % event_kind)
-        legend = _("Are you sure to delete event '%s'?") % event_str
+        hint = _("Are you sure to delete event '%s'?") % event_str
 
         if event_ordinal is not None:
             choices = (
                 ("single", _("Delete event '%s'") % event_str),
-                ('upcomming', _("Delete this and upcomming events with "
+                ('following', _("Delete this and following events with "
                                 "kind '%s'") % event_kind),
                 ('all', _("Delete all events with "
                           "kind '%s'") % event_kind),
@@ -680,20 +679,15 @@ class DeleteEventForm(ModalStyledFormMixin, StyledForm):
             self.fields["operation"] = (
                 forms.ChoiceField(
                     choices=choices, widget=forms.RadioSelect(), required=True,
+                    initial="single",
                     label=_("Operation")))
-            legend = _("Select your operation")
+            hint = _("Select your operation:")
 
         self.helper.form_action = reverse(
             "relate-delete_event", args=[course_identifier, event_id])
 
-        print(self.fields)
-
         self.helper.layout = Layout(
-            Fieldset(
-                legend,
-                Div(*self.fields),
-                css_class="modal-body"
-            ),
+            Div(*self.fields, css_class="modal-body"),
             ButtonHolder(
                 Submit("submit", _("Delete"),
                        css_class="btn btn-md btn-success"),
@@ -701,6 +695,7 @@ class DeleteEventForm(ModalStyledFormMixin, StyledForm):
                        css_class="btn btn-md btn-default",
                        data_dismiss="modal"),
                 css_class="modal-footer"))
+        self.helper.layout[0].insert(0, HTML(hint))
 
 
 @course_view
@@ -720,7 +715,8 @@ def get_delete_event_form(pctx, event_id):
         return JsonResponse(
             {"error": _("Event does not exist")}, status=400)
 
-    return JsonResponse({"form_html": form.render_modal_form_html()})
+    return JsonResponse(
+        {"form_html": form.render_modal_form_html(request=pctx.request)})
 
 
 @course_view
@@ -744,11 +740,10 @@ def delete_event(pctx, event_id):
 
         if form.is_valid():
             operation = form.cleaned_data.get("operation")
-            print(operation)
             if operation is None or operation == "single":
                 qset = event_qs
                 message = _("Event deleted.")
-            elif operation == "upcomming":
+            elif operation == "following":
                 qset = Event.objects.filter(
                     course=pctx.course, kind=event.kind, time__gte=event.time)
                 message = _("Events deleted.")
@@ -825,9 +820,8 @@ class UpdateEventForm(ModalStyledFormMixin, StyledModelForm):
                 if exist_event.pk != self.event_id:
                     from django.forms import ValidationError
                     raise ValidationError(
-                        "'%(event_kind)s %(event_ordinal)s' already exists"
-                        % {'event_kind': kind,
-                           'event_ordinal': ordinal})
+                        _("'%(exist_event)s' already exists")
+                        % {'exist_event': exist_event})
 
 
 @course_view
@@ -839,15 +833,18 @@ def get_update_event_form(pctx, event_id):
     if not (request.is_ajax() and request.method == "GET"):
         raise PermissionDenied(_("only AJAX GET is allowed"))
 
+    event_id = int(event_id)
+
     try:
-        instance = Event.objects.get(course=pctx.course, id=int(event_id))
+        instance = Event.objects.get(course=pctx.course, id=event_id)
         form = UpdateEventForm(
             pctx.course.identifier, event_id, instance=instance)
     except ObjectDoesNotExist:
         return JsonResponse(
             {"error": _("Event does not exist")}, status=400)
 
-    return JsonResponse({"form_html": form.render_modal_form_html()})
+    return JsonResponse(
+        {"form_html": form.render_modal_form_html(request=pctx.request)})
 
 
 @course_view
@@ -859,6 +856,8 @@ def update_event(pctx, event_id):
     request = pctx.request
     if not request.is_ajax() or request.method != "POST":
         raise PermissionDenied(_("only AJAX POST is allowed"))
+
+    event_id = int(event_id)
 
     form = UpdateEventForm(
         pctx.course.identifier, event_id, request.POST, request.FILES)

@@ -22,30 +22,50 @@
   {% if pperm.edit_events %}
     <script src='{% static "blueimp-tmpl/js/tmpl.min.js" %}'></script>
   {% endif %}
+
+  <style>
+    [data-edit-mode=false] {
+      display: none;
+    }
+    button[data-edit-mode=true] {
+      {#display: inherit;#}
+      {#background: red;#}
+    }
+  </style>
+
 {% endblock %}
 
 {% block content %}
   <h1>{{ course.number }} {% trans "Calendar" %}</h1>
   {% if pperm.edit_events %}
     <div>
-      <button class="btn btn-primary" id="toggle-calendar-view">
-        <span data-edit-mode="true" {% if not is_edit_mode %}hidden{% endif %}>
-          {% trans "Switch to normal view" %}</span>
-        <span data-edit-mode="false" {% if is_edit_mode %}hidden{% endif %}>
-          {% trans "Switch to Edit View" %}</span>
+      <button class="btn btn-primary" id="toggle-calendar-view2">
+        <span>toggle old</span>
+{#        <span data-edit-mode="true" {% if not is_edit_mode %}hidden{% endif %}>#}
+{#          {% trans "Switch to normal view" %}</span>#}
+{#        <span data-edit-mode="false" {% if is_edit_mode %}hidden{% endif %}>#}
+{#          {% trans "Switch to Edit View" %}</span>#}
       </button>
 
-      <button class="btn btn-default btn-md" data-toggle="modal"
+      <button class="btn btn-primary" id="toggle-calendar-view">
+        <span>toggle</span>
+        {#        <span data-edit-mode="true" {% if not is_edit_mode %}hidden{% endif %}>#}
+        {#          {% trans "Switch to normal view" %}</span>#}
+        {#        <span data-edit-mode="false" {% if is_edit_mode %}hidden{% endif %}>#}
+        {#          {% trans "Switch to Edit View" %}</span>#}
+      </button>
+
+      <button class="btn btn-default btn-md mode-toggle" data-toggle="modal"
               data-target='#{{ new_event_form.modal_id }}' data-edit-mode="true"
               {% if not is_edit_mode %}style="display:none;"{% endif %}
       >{% trans "New event" %}</button>
 
-      <button class="btn btn-default btn-md" data-toggle="modal"
+      <button class="btn btn-default btn-md mode-toggle" data-toggle="modal"
               data-target="#{{ recurring_events_form.modal_id }}" data-edit-mode="true"
               {% if not is_edit_mode %}style="display:none;"{% endif %}
       >{% trans "Create recurring events" %}</button>
 
-      <button class="btn btn-default btn-md" data-toggle="modal"
+      <button class="btn btn-default btn-md mode-toggle" data-toggle="modal"
               data-target="#{{ renumber_events_form.modal_id }}" data-edit-mode="true"
               {% if not is_edit_mode %}style="display:none;"{% endif %}
       >{% trans "Renumber events" %}</button>
@@ -58,11 +78,11 @@
   <b class="relate-calendar-notes">{% trans "Note" %}:</b>
   {% trans "Some calendar entries are clickable and link to entries below." %}
   {% if pperm.edit_events %}
-    <span data-edit-mode="true">
+    <span data-edit-mode="true" class="mode-toggle">
       ({% trans "Different from normal view, this calender shows <b>all</b> events. " %})</span>
   {% endif %}
 
-  <div id="relate-event-info" style="margin-top:3ex">{{ events_info }}</div>
+  <div class="relate-event__toggle" id="relate-event-info" style="margin-top:3ex"></div>
 
   {% if pperm.edit_events %}
     {{ new_event_form.render_modal_form_html }}
@@ -71,42 +91,31 @@
 
     <div id="div-id-relate-delete-event-form"></div>
     <div id="div-id-relate-update-event-form"></div>
-
-    <div class="modal fade" id="deleteEventModal" tabindex="-1" role="dialog"
-         aria-labelledby="delete_event_modal_label" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal">
-              <span aria-hidden="true">&times;</span>
-              <span class="sr-only">{% trans "Close" %}</span>
-            </button>
-            <h3 class="modal-title">{% trans "Delete event" %}</h3>
-          </div>
-          <form>
-            <div class="modal-body">
-              {% trans "Do you want to delete this event?" %}
-            </div>
-            <div class="modal-footer">
-              <button type="submit" class="btn btn-danger">{% trans "Delete" %}</button>
-              <button type="button" class="btn btn-default" data-dismiss="modal">{% trans "Cancel" %}</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
   {% endif %}
 
 {% endblock %}
 
 {% block page_bottom_javascript_extra %}
   <script type="text/javascript">
+    var toggleButton = document.getElementById("toggle-calendar-view");
+    var toggleMode = function (elem, one, two) {
+      var nodeList = document.querySelectorAll(elem), i;
+      for (i = 0; i < nodeList.length; i++) {
+        var node = nodeList[i];
+        node.setAttribute('data-edit-mode', node.getAttribute('data-edit-mode') === one ? two : one);
+      }
+    };
+    toggleButton.onclick = function (e) {
+      toggleMode('.mode-toggle', 'true', 'false');
+      e.preventDefault();
+    };
+
     var coursecal = $('#coursecal'),
       original_mouse_over_option, original_mouse_out_option,
-      normal_view_url = '{% url "relate-toggle_calendar_view" course.identifier 0 %}';
+      fetch_url = '{% url "relate-fetch_event_json" course.identifier pperm.edit_events|yesno:"1,0" %}';
 
     {% if pperm.edit_events %}
-      var edit_view_url = '{% url "relate-toggle_calendar_view" course.identifier 1 %}';
+      var edit_view_url = fetch_url;
     {% endif %}
 
     $(document).ready(function () {
@@ -120,7 +129,7 @@
         defaultDate: '{{ default_date }}',
         defaultView: $(window).width() < 765 ? 'agendaWeek' : 'month',
         timezone: "local",
-        events: {{ events_json|safe }}
+        events: fetch_url
       });
 
       {% if pperm.edit_events %}
@@ -221,31 +230,23 @@
         coursecal.fullCalendar('option', 'eventMouseout', original_mouse_out_option);
       }
 
-      function refetch_events_data(url, mode) {
-        $.ajax({
-          url: url,
-          dataType: "json"
-        })
-          .done(function (result) {
-            coursecal.fullCalendar('removeEventSources');
-            if (result.events) {
-              coursecal.fullCalendar('addEventSource', $.parseJSON(result.events));
-            }
-            $('#relate-event-info').html(result.events_info);
-            coursecal.data("mode", mode);
-            initialize_ui();
-          });
+      function rerender_events(url, mode) {
+        coursecal.fullCalendar('refetchEvents');
+        {#coursecal.fullCalendar('rerenderEvents');#}
+        {#$('#relate-event-info').html(result.events_info);#}
+        coursecal.data("mode", mode);
+        initialize_ui();
       }
 
       function toggle_view_mode() {
         var url, mode;
-        url = coursecal.data("mode") === "edit" ? normal_view_url : edit_view_url;
+        url = coursecal.data("mode") === "edit" ? fetch_url : edit_view_url;
         mode = coursecal.data("mode") === "edit" ? "view" : "edit";
-        refetch_events_data(url, mode);
+        rerender_events(url, mode);
         return mode
       }
 
-      $("#toggle-calendar-view").on('click', toggle_view_mode);
+      $("#toggle-calendar-view2").on('click', toggle_view_mode);
 
       function post_modal_form(form) {
         var self = form,
@@ -260,7 +261,8 @@
             xhr.setRequestHeader("X-CSRFToken", csrftoken);
           },
           success: function (data, textStatus, jqXHR) {
-            refetch_events_data(edit_view_url, "edit");
+            coursecal.fullCalendar('refetchEvents');
+            {#rerender_events(edit_view_url, "edit");#}
             initialize_ui();
             self.closest('.modal').modal("hide");
             if (data.message)
