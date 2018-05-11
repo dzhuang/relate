@@ -38,12 +38,9 @@
   <h1>{{ course.number }} {% trans "Calendar" %}</h1>
   {% if pperm.edit_events %}
     <div>
-      <button class="btn btn-primary" id="toggle-calendar-view2">
-        <span>toggle old</span>
-      </button>
-
       <button class="btn btn-primary" id="toggle-calendar-view">
-        <span>toggle</span>
+        <span id="switch-to-normal" class=" mode-toggle" data-edit-mode="{{ is_edit_mode|yesno:"on,off" }}">{% trans "Switch to normal view" %}</span>
+        <span id="switch-to-edit" class="mode-toggle" data-edit-mode="{{ is_edit_mode|yesno:"off,on" }}">{% trans "Switch to edit view" %}</span>
       </button>
 
       <button class="btn btn-default btn-md mode-toggle" data-toggle="modal"
@@ -87,6 +84,11 @@
       $relateEventInfo = $('#relate-event-info'),
       fetchUrl = '{% url "relate-fetch_event_json" course.identifier is_edit_mode|yesno:"1,0" %}';
 
+    {% if pperm.edit_events %}
+      var switchToNormalModeButtonText = $("#switch-to-normal").text(),
+        switchToEditViewModeButtonText = $("#switch-to-edit").text();
+    {% endif %}
+
     $(document).ready(function () {
       $courseCal.fullCalendar({
         header: {
@@ -100,7 +102,6 @@
         timezone: "local",
         events: fetchUrl,
         eventRender: function (event, element, view) {
-          console.log(event);
           if (event.description) {
             var content = event.description,
               contentDom = $(content);
@@ -195,8 +196,10 @@
           return newMode
         };
       toggleButton.onclick = function (e) {
-
         var editMode = toggleMode('.mode-toggle', "on", "off");
+
+        $(this).text(editMode==="on"? switchToNormalModeButtonText: switchToEditViewModeButtonText);
+
         $courseCal.fullCalendar('option', {
           editable: editMode === "on",
           selectable: editMode === "on"

@@ -481,7 +481,6 @@ class ViewCalendarTest(SingleCourseTestMixin, HackRepoMixin, TestCase):
         resp = self.get_course_calender_view()
         self.assertEqual(resp.status_code, 200)
         self.assertResponseContextEqual(resp, "events_json", '[]')
-        self.assertResponseContextEqual(resp, "event_info_list", [])
         self.assertResponseContextEqual(
             resp, "default_date", self.default_faked_now.date().isoformat())
 
@@ -510,8 +509,6 @@ class ViewCalendarTest(SingleCourseTestMixin, HackRepoMixin, TestCase):
              'allDay': False,
              'title': 'lecture 1'})
 
-        self.assertResponseContextEqual(resp, "event_info_list", [])
-
     def test_hidden_event_not_shown(self):
         factories.EventFactory(
             kind=self.default_event_kind, course=self.course,
@@ -531,7 +528,6 @@ class ViewCalendarTest(SingleCourseTestMixin, HackRepoMixin, TestCase):
             {'id': 1, 'start': self.default_event_time.isoformat(),
              'allDay': False,
              'title': 'lecture 0'})
-        self.assertResponseContextEqual(resp, "event_info_list", [])
 
     def test_event_has_end_time(self):
         factories.EventFactory(
@@ -552,8 +548,6 @@ class ViewCalendarTest(SingleCourseTestMixin, HackRepoMixin, TestCase):
              'end': (self.default_event_time + timedelta(hours=1)).isoformat(),
              })
 
-        self.assertResponseContextEqual(resp, "event_info_list", [])
-
     def test_event_course_finished(self):
         self.mock_get_now_or_fake_time.return_value = self.default_faked_now
         self.course.end_date = (self.default_faked_now - timedelta(weeks=1)).date()
@@ -563,7 +557,6 @@ class ViewCalendarTest(SingleCourseTestMixin, HackRepoMixin, TestCase):
         self.assertEqual(resp.status_code, 200)
 
         self.assertResponseContextEqual(resp, "events_json", '[]')
-        self.assertResponseContextEqual(resp, "event_info_list", [])
         self.assertResponseContextEqual(
             resp, "default_date", self.course.end_date.isoformat())
 
@@ -576,7 +569,6 @@ class ViewCalendarTest(SingleCourseTestMixin, HackRepoMixin, TestCase):
         self.assertEqual(resp.status_code, 200)
 
         self.assertResponseContextEqual(resp, "events_json", '[]')
-        self.assertResponseContextEqual(resp, "event_info_list", [])
         self.assertResponseContextEqual(
             resp, "default_date", self.default_faked_now.date().isoformat())
 
@@ -587,7 +579,6 @@ class ViewCalendarTest(SingleCourseTestMixin, HackRepoMixin, TestCase):
         resp = self.get_course_calender_view()
 
         self.assertResponseContextEqual(resp, "events_json", '[]')
-        self.assertResponseContextEqual(resp, "event_info_list", [])
 
     def test_events_file_with_events_test1(self):
         self.switch_to_fake_commit_sha()
@@ -716,7 +707,6 @@ class ViewCalendarTest(SingleCourseTestMixin, HackRepoMixin, TestCase):
 
         # no EventInfo object
         resp = self.get_course_calender_view()
-        self.assertResponseContextEqual(resp, "event_info_list", [])
 
     def test_events_file_with_events_test3(self):
         self.switch_to_fake_commit_sha()
@@ -741,8 +731,6 @@ class ViewCalendarTest(SingleCourseTestMixin, HackRepoMixin, TestCase):
              'title': 'Exam',
              'color': 'red',
              'end': exam_end_time.isoformat()})
-
-        self.assertResponseContextEqual(resp, "event_info_list", [])
 
     def test_all_day_event(self):
         self.switch_to_fake_commit_sha()
@@ -922,6 +910,40 @@ class CalendarTestMixin(object):
 class CalendarTest(CalendarTestMixin, SingleCourseTestMixin,
                    MockAddMessageMixing, TestCase):
 
+    def get_edit_calendar_url(self, course_identifier=None):
+        course_identifier = (
+                course_identifier or self.get_default_course_identifier())
+        return reverse(
+            "relate-edit_calendar",
+            args=[course_identifier, "edit"])
+
+    def get_edit_calendar_view(self, course_identifier=None,
+                               force_login_instructor=True):
+        course_identifier = (
+                course_identifier or self.get_default_course_identifier())
+        if force_login_instructor:
+            switch_to = self.get_default_instructor_user(course_identifier)
+        else:
+            switch_to = self.get_logged_in_user()
+
+        with self.temporarily_switch_to_user(switch_to):
+            return self.c.get(self.get_edit_calendar_url(
+                course_identifier=course_identifier))
+
+    def post_edit_calendar_view(self, data, course_identifier=None,
+                               force_login_instructor=True):
+        course_identifier = (
+                course_identifier or self.get_default_course_identifier())
+        if force_login_instructor:
+            switch_to = self.get_default_instructor_user(course_identifier)
+        else:
+            switch_to = self.get_logged_in_user()
+
+        with self.temporarily_switch_to_user(switch_to):
+            return self.c.post(self.get_edit_calendar_url(
+                course_identifier=course_identifier), data=data)
+
+
     def test_superuser_instructor_calendar_get(self):
         self.c.force_login(self.superuser)
         resp = self.c.get(
@@ -973,7 +995,6 @@ class CalendarTest(CalendarTestMixin, SingleCourseTestMixin,
         self.assertNotContains(resp, MENU_VIEW_EVENTS_CALENDAR)
         self.assertNotContains(resp, MENU_CREATE_RECURRING_EVENTS)
         self.assertNotContains(resp, MENU_RENUMBER_EVENTS)
-        self.assertRegexpMatches
 
         # rendered page html
         self.assertNotContains(resp, HTML_SWITCH_TO_STUDENT_VIEW)
@@ -984,9 +1005,9 @@ class CalendarTest(CalendarTestMixin, SingleCourseTestMixin,
         self.assertShownEventsCountEqual(resp, N_SHOWN_EVENTS)
 
     def test_superuser_instructor_calendar_edit_get(self):
-        self.c.force_login(self.superuser)
-        resp = self.c.get(
-            reverse("relate-edit_calendar", args=[self.course.identifier]))
+        with self.temporarily_switch_to_user(self.superuser):
+            resp = self.get_edit_calendar_view(force_login_instructor=False)
+
         self.assertEqual(resp.status_code, 200)
 
         # menu items
@@ -1004,9 +1025,7 @@ class CalendarTest(CalendarTestMixin, SingleCourseTestMixin,
         self.assertShownEventsCountEqual(resp, N_TEST_EVENTS)
 
     def test_non_superuser_instructor_calendar_edit_get(self):
-        self.c.force_login(self.instructor_participation.user)
-        resp = self.c.get(
-            reverse("relate-edit_calendar", args=[self.course.identifier]))
+        resp = self.get_edit_calendar_view()
         self.assertEqual(resp.status_code, 200)
 
         # menu items
@@ -1024,13 +1043,11 @@ class CalendarTest(CalendarTestMixin, SingleCourseTestMixin,
         self.assertShownEventsCountEqual(resp, N_TEST_EVENTS)
 
     def test_student_calendar_edit_get(self):
-        self.c.force_login(self.student_participation.user)
-        resp = self.c.get(
-            reverse("relate-edit_calendar", args=[self.course.identifier]))
+        with self.temporarily_switch_to_user(self.student_participation.user):
+            resp = self.get_edit_calendar_view(force_login_instructor=False)
         self.assertEqual(resp.status_code, 403)
 
     def test_instructor_calendar_edit_create_exist_failure(self):
-        self.c.force_login(self.instructor_participation.user)
         # Failing to create event already exist
         post_data = {
             "kind": SHOWN_EVENT_KIND,
