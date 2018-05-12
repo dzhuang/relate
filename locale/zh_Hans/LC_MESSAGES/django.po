@@ -3316,7 +3316,7 @@ msgid "Switch to edit view"
 msgstr "切换至编辑视图"
 
 msgid "New event"
-msgstr "新event"
+msgstr "新建event"
 
 msgid "Note"
 msgstr "注意"

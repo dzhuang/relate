@@ -69,13 +69,7 @@
       ({% trans "Different from normal view, this calender shows <b>all</b> events. " %})</span>
   {% endif %}
 
-  <div id="relate-event-info" style="margin-top:3ex">
-    {% if not pperm.edit_events %}
-      {% for event_info in event_info_list %}
-        {{ event_info|safe }}
-      {% endfor %}
-    {% endif %}
-  </div>
+  <div id="relate-event-info" style="margin-top:3ex"></div>
 
   {% if pperm.edit_events %}
     {{ new_event_form.render_modal_form_html }}
@@ -94,23 +88,10 @@
       $relateEventInfo = $('#relate-event-info');
 
 
-    {% if not pperm.edit_events %}
-      var events = {{ events_json |safe }};
-    {% else %}
+    {% if pperm.edit_events %}
       var switchToNormalModeButtonText = $("#switch-to-normal").text(),
         switchToEditViewModeButtonText = $("#switch-to-edit").text(),
-        fetchUrl = '{% url "relate-fetch_event_json" course.identifier is_edit_mode|yesno:"1,0" %}',
-        events = fetchUrl;
-
-      {% if event_info_list %}
-        var event_info_list ={{ event_info_list|safe }}, i;
-
-        for (i = 0; i < event_info_list.length; i++) {
-          var info = $(event_info_list[i]);
-          info.attr("data-edit-mode", getCurrentMode());
-          info.appendTo($relateEventInfo);
-        }
-      {% endif %}
+        fetchUrl = '{% url "relate-fetch_event_json" course.identifier is_edit_mode|yesno:"1,0" %}';
     {% endif %}
 
     $(document).ready(function () {
@@ -124,13 +105,32 @@
         defaultDate: '{{ default_date }}',
         defaultView: $(window).width() < 765 ? 'agendaWeek' : 'month',
         timezone: "local",
-        events: events,
-        {% if pperm.edit_events %}
-          {# https://stackoverflow.com/a/47955237/3437454 #}
-          eventRender: function (event, element, view) {
-           if (!event.shown_in_calendar && !isEditMode())
-            {return false;}
+        events: function (start, end, timezone, callback) {
+          $.ajax({
+            url: fetchUrl,
+            success: function (result) {
+              $relateEventInfo.empty();
+              var events_info_html = result.events_info_html;
+              {% if pperm.edit_events %}
+                {# Add data-edit-mode attribute to event_info #}
+                {# which are not expected to display in normal view #}
+                {# so that they will be hidden when not in edit mode #}
+                var div= document.createElement('div'), infoList, i;
+                div.innerHTML= events_info_html;
+                infoList = div.querySelectorAll(".mode-toggle");
+                for (i = 0; i < infoList.length; i++) {
+                  infoList[i].setAttribute('data-edit-mode', getCurrentMode());
+                }
+                events_info_html = div.innerHTML;
+              {% endif %}
+                $relateEventInfo.html(events_info_html);
+
+                {# use events_json as eventSource #}
+                callback(result.events_json);
+              }
+            })
           },
+        {% if pperm.edit_events %}
           eventMouseover: function (event, jsEvent, view) {
             if (!isEditMode())
               return;
@@ -173,12 +173,16 @@
                     .prop("action", event.update_url)
                     .end()
                     // intialize datetime picker
+                    // Fixme: locale is disbled here, we can not set
+                    // locale currently, because some language code are not
+                    // supported by moment_js, need to add fall back to
+                    // js_lang_fallback for "momentjs"
                     .find("#id_update-time_pickers").datetimepicker({
-                      format: "YYYY-MM-DD HH:mm"}
+                      format: "YYYY-MM-DD HH:mm"},
                       )
                     .end()
                     .find("#id_update-end_time_pickers").datetimepicker({
-                      format: "YYYY-MM-DD HH:mm"}
+                      format: "YYYY-MM-DD HH:mm"},
                       )
                     .end()
                     .modal('show')

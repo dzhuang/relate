@@ -407,6 +407,7 @@ def get_event_json(pctx, now_datetime=None, is_edit_view=False):
 
     event_kinds_desc = event_descr.get("event_kinds", {})
     event_info_desc = event_descr.get("events", {})
+    events_info = []
 
     may_edit_events = pctx.has_permission(pperm.edit_events)
 
@@ -484,11 +485,10 @@ def get_event_json(pctx, now_datetime=None, is_edit_view=False):
         if may_edit_events:
             event_json['show_description'] = show_description
 
-        if description:
-            if show_description or may_edit_events:
-                # Fixme: participation with pperm.edit_events will
-                # always see the url (both edit view and normal view)
-                event_json["url"] = "#event-%d" % event.id
+        if description and (show_description or may_edit_events):
+            # Fixme: participation with pperm.edit_events will
+            # always see the url (both edit view and normal view)
+            event_json["url"] = "#event-%d" % event.id
 
             start_time = event.time
             end_time = event.end_time
@@ -503,24 +503,27 @@ def get_event_json(pctx, now_datetime=None, is_edit_view=False):
                     else:
                         end_time = end_time.date()
 
-            event_info = EventInfo(
-                id=event.id,
-                human_title=human_title,
-                start_time=start_time,
-                end_time=end_time,
-                description=description,
-                show_description=show_description)
-
-            event_json["description"] = render_to_string(
-                "course/event_info.html",
-                context={"event_info": event_info,
-                         "may_edit_events": may_edit_events,
-                         "is_edit_view": is_edit_view},
-                request=pctx.request)
+            events_info.append(
+                EventInfo(
+                    id=event.id,
+                    human_title=human_title,
+                    start_time=start_time,
+                    end_time=end_time,
+                    description=description,
+                    show_description=show_description
+                ))
 
         events_json.append(event_json)
 
-    return events_json
+    from django.template.loader import render_to_string
+    events_info_html = render_to_string(
+        "course/events_info.html",
+        context={"events_info": events_info,
+                 "may_edit_events": may_edit_events,
+                 "is_edit_view": is_edit_view},
+        request=pctx.request)
+
+    return events_info_html, events_json
 
 
 @course_view
@@ -540,23 +543,7 @@ def view_calendar(pctx, operation=None):
     if pctx.course.end_date is not None and default_date > pctx.course.end_date:
         default_date = pctx.course.end_date
 
-    events_json = get_event_json(pctx, now, is_edit_view=is_edit_view)
-    event_info_list = []
-    for event_json in events_json:
-        description = event_json.get("description")
-        if description:
-            event_info_list.append(description)
-
-    if not may_edit_calendar:
-        # for normal user, we dump the events json as fullCalendar event source.
-        return render_course_page(pctx, "course/calendar.html", {
-            "events_json": dumps(events_json),
-            "event_info_list": event_info_list,
-            "default_date": default_date.isoformat(),
-        })
-
     return render_course_page(pctx, "course/calendar.html", {
-        "event_info_list": dumps(event_info_list),
         "default_date": default_date.isoformat(),
         "is_edit_mode": is_edit_view,
         "new_event_form": CreateEventModalForm(pctx.course.identifier),
@@ -577,10 +564,13 @@ def fetch_event_json(pctx, is_edit_view):
     if not pctx.has_permission(pperm.view_calendar):
         raise PermissionDenied(_("may not view calendar"))
 
-    events_json = get_event_json(
+    events_info_html, events_json = get_event_json(
         pctx, now_datetime=None, is_edit_view=bool(int(is_edit_view)))
 
-    return JsonResponse(events_json, safe=False)
+    return JsonResponse(
+        {"events_json": events_json,
+         "events_info_html": events_info_html},
+        safe=False)
 
 
 class CreateEventModalForm(ModalStyledFormMixin, StyledModelForm):
