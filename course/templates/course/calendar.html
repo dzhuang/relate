@@ -115,10 +115,10 @@
                 {# Add data-edit-mode attribute to event_info #}
                 {# which are not expected to display in normal view #}
                 {# so that they will be hidden when not in edit mode #}
-                var div= document.createElement('div'), infoList, i;
+                var div= document.createElement('div'), infoList;
                 div.innerHTML= events_info_html;
                 infoList = div.querySelectorAll(".mode-toggle");
-                for (i = 0; i < infoList.length; i++) {
+                for (var i = 0; i < infoList.length; i++) {
                   infoList[i].setAttribute('data-edit-mode', getCurrentMode());
                 }
                 events_info_html = div.innerHTML;
@@ -151,8 +151,7 @@
                     .find("form")
                     .on('submit', function (e) {
                       e.preventDefault();
-                      var form = $(this);
-                      postModalForm(form);
+                      postModalForm($(this));
                     });
                 },
                 error: function (data, textStatus, jqXHR) {
@@ -173,24 +172,21 @@
                     .prop("action", event.update_url)
                     .end()
                     // intialize datetime picker
-                    // Fixme: locale is disbled here, we can not set
-                    // locale currently, because some language code are not
-                    // supported by moment_js, need to add fall back to
-                    // js_lang_fallback for "momentjs"
+                    // Fixme: the script inserted dynamically won't work
+                    // so we currently hard code the option here.
                     .find("#id_update-time_pickers").datetimepicker({
-                      format: "YYYY-MM-DD HH:mm"},
+                      format: "YYYY-MM-DD HH:mm", locale: '{{ LANGUAGE_CODE |js_lang_fallback:"momentjs" }}'},
                       )
                     .end()
                     .find("#id_update-end_time_pickers").datetimepicker({
-                      format: "YYYY-MM-DD HH:mm"},
+                      format: "YYYY-MM-DD HH:mm", locale: '{{ LANGUAGE_CODE |js_lang_fallback:"momentjs" }}'},
                       )
                     .end()
                     .modal('show')
                     .find("form")
                     .on('submit', function (e) {
                       e.preventDefault();
-                      var form = $(this);
-                      postModalForm(form);
+                      postModalForm($(this));
                     });
                 },
                 error: function (data, textStatus, jqXHR) {
@@ -211,8 +207,8 @@
     {% if pperm.edit_events %}
       var toggleButton = document.getElementById("toggle-calendar-view"),
         toggleMode = function (elem, one, two) {
-          var nodeList = document.querySelectorAll(elem), i, newMode;
-          for (i = 0; i < nodeList.length; i++) {
+          var nodeList = document.querySelectorAll(elem), newMode;
+          for (var i = 0; i < nodeList.length; i++) {
             var node = nodeList[i];
             if (newMode === undefined)
               newMode = node.getAttribute('data-edit-mode') === one ? two : one;
