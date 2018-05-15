@@ -72,9 +72,9 @@
   <div id="relate-event-info" style="margin-top:3ex"></div>
 
   {% if pperm.edit_events %}
-    {{ new_event_form.render_modal_form_html }}
-    {{ recurring_events_form.render_modal_form_html }}
-    {{ renumber_events_form.render_modal_form_html }}
+    {{ new_event_form_ajax_html }}
+    {{ recurring_events_form_ajax_html }}
+    {{ renumber_events_form_ajax_html }}
 
     <div id="div-id-relate-delete-event-form"></div>
     <div id="div-id-relate-update-event-form"></div>
@@ -105,6 +105,10 @@
         defaultDate: '{{ default_date }}',
         defaultView: $(window).width() < 765 ? 'agendaWeek' : 'month',
         timezone: "local",
+        {% if pperm.edit_events and is_edit_mode %}
+          editable: true,
+          selectable: true,
+        {% endif %}
         events: function (start, end, timezone, callback) {
           $.ajax({
             url: fetchUrl,
@@ -172,7 +176,7 @@
                     .prop("action", event.update_url)
                     .end()
                     // intialize datetime picker
-                    // Fixme: the script inserted dynamically won't work
+                    // Fixme: the script inserted dynamically won't add the callback
                     // so we currently hard code the option here.
                     .find("#id_update-time_pickers").datetimepicker({
                       format: "YYYY-MM-DD HH:mm", locale: '{{ LANGUAGE_CODE |js_lang_fallback:"momentjs" }}'},
@@ -241,7 +245,7 @@
           url = self.attr("action"),
           form_data = self.serialize();
         $.ajax({
-          url: self.attr("action"),
+          url: url,
           type: "POST",
           data: form_data,
           beforeSend: function (xhr, settings) {

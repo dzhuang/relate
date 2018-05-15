@@ -52,14 +52,16 @@ class styledFormMixin(object):
 
     def __init__(self, *args, **kwargs):
         # type: (...) -> None
-
-        from crispy_forms.helper import FormHelper
-        self.helper = FormHelper()
-        self.helper.form_class = self.styled_form_class
-        self.helper.label_class = self.styled_label_class
-        self.helper.field_class = self.styled_field_class
-
         super(styledFormMixin, self).__init__(*args, **kwargs)
+        self.helper = self.get_form_helper()
+
+    def get_form_helper(self):
+        from crispy_forms.helper import FormHelper
+        helper = FormHelper()
+        helper.form_class = self.styled_form_class
+        helper.label_class = self.styled_label_class
+        helper.field_class = self.styled_field_class
+        return helper
 
 
 class StyledForm(styledFormMixin, forms.Form):

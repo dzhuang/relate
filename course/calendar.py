@@ -55,7 +55,7 @@ from django.shortcuts import get_object_or_404
 
 
 class ModalStyledFormMixin(object):
-    modal_form_template = "modal-form.html"
+    ajax_modal_form_template = "modal-form.html"
 
     @property
     def form_description(self):
@@ -65,9 +65,20 @@ class ModalStyledFormMixin(object):
     def modal_id(self):
         raise NotImplementedError()
 
-    def render_modal_form_html(self, request=None):
-        return render_to_string(
-            self.modal_form_template, {"form": self}, request=request)
+    def get_ajax_form_helper(self):
+        return self.get_form_helper()
+
+    def render_ajax_modal_form_html(self, request, context=None):
+        self.helper.inputs = []
+
+        from crispy_forms.utils import render_crispy_form
+        from django.template.context_processors import csrf
+        helper = self.get_ajax_form_helper()
+        helper.template = self.ajax_modal_form_template
+        if context is None:
+            context = {}
+        context.update(csrf(request))
+        return render_crispy_form(self, helper, context)
 
 # {{{ creation
 
@@ -112,26 +123,27 @@ class RecurringEventForm(ModalStyledFormMixin, StyledForm):
             label=pgettext_lazy("Count of recurring events", "Count"))
 
     def __init__(self, course_identifier, *args, **kwargs):
-        is_ajax = kwargs.pop("is_ajax", False)
         super(RecurringEventForm, self).__init__(*args, **kwargs)
+        self.course_identifier = course_identifier
 
-        if not is_ajax:
-            self.helper.add_input(
-                    Submit("submit", _("Create")))
+        self.helper.add_input(
+                Submit("submit", _("Create")))
 
-        else:
-            self.helper.form_action = reverse(
-                "relate-create_recurring_events", args=[course_identifier])
+    def get_ajax_form_helper(self):
+        helper = self.get_form_helper()
+        self.helper.form_action = reverse(
+            "relate-create_recurring_events", args=[self.course_identifier])
 
-            self.helper.layout = Layout(
-                Div(*self.fields, css_class="modal-body"),
-                ButtonHolder(
-                    Submit("submit", _("Create"),
-                           css_class="btn btn-md btn-success"),
-                    Button("cancel", _("Cancel"),
-                           css_class="btn btn-md btn-default",
-                           data_dismiss="modal"),
-                    css_class="modal-footer"))
+        helper.layout = Layout(
+            Div(*self.fields, css_class="modal-body"),
+            ButtonHolder(
+                Submit("submit", _("Create"),
+                       css_class="btn btn-md btn-success"),
+                Button("cancel", _("Cancel"),
+                       css_class="btn btn-md btn-default",
+                       data_dismiss="modal"),
+                css_class="modal-footer"))
+        return helper
 
 
 class EventAlreadyExists(Exception):
@@ -195,8 +207,7 @@ def create_recurring_events(pctx):
 
     if request.method == "POST":
         form = RecurringEventForm(
-            pctx.course.identifier, request.POST, request.FILES,
-            is_ajax=request.is_ajax())
+            pctx.course.identifier, request.POST, request.FILES)
         if form.is_valid():
             if form.cleaned_data["starting_ordinal"] is not None:
                 starting_ordinal = form.cleaned_data["starting_ordinal"]
@@ -283,25 +294,27 @@ class RenumberEventsForm(ModalStyledFormMixin, StyledForm):
                 "Starting ordinal of recurring events", "Starting ordinal"))
 
     def __init__(self, course_identifier, *args, **kwargs):
-        is_ajax = kwargs.pop("is_ajax", False)
         super(RenumberEventsForm, self).__init__(*args, **kwargs)
+        self.course_identifier = course_identifier
 
-        if not is_ajax:
-            self.helper.add_input(
-                    Submit("submit", _("Renumber")))
-        else:
-            self.helper.form_action = reverse(
-                "relate-renumber_events", args=[course_identifier])
+        self.helper.add_input(
+                Submit("submit", _("Renumber")))
 
-            self.helper.layout = Layout(
-                Div(*self.fields, css_class="modal-body"),
-                ButtonHolder(
-                    Submit("submit", _("Renumber"),
-                           css_class="btn btn-md btn-success"),
-                    Button("cancel", _("Cancel"),
-                           css_class="btn btn-md btn-default",
-                           data_dismiss="modal"),
-                    css_class="modal-footer"))
+    def get_ajax_form_helper(self):
+        helper = self.get_form_helper()
+        self.helper.form_action = reverse(
+            "relate-renumber_events", args=[self.course_identifier])
+
+        helper.layout = Layout(
+            Div(*self.fields, css_class="modal-body"),
+            ButtonHolder(
+                Submit("submit", _("Renumber"),
+                       css_class="btn btn-md btn-success"),
+                Button("cancel", _("Cancel"),
+                       css_class="btn btn-md btn-default",
+                       data_dismiss="modal"),
+                css_class="modal-footer"))
+        return helper
 
 
 @transaction.atomic
@@ -543,14 +556,29 @@ def view_calendar(pctx, operation=None):
     if pctx.course.end_date is not None and default_date > pctx.course.end_date:
         default_date = pctx.course.end_date
 
+    new_event_form = CreateEventModalForm(pctx.course.identifier)
+    new_event_form_ajax_html = (
+        new_event_form.render_ajax_modal_form_html(pctx.request))
+
+    recurring_events_form = RecurringEventForm(pctx.course.identifier)
+    recurring_events_form_ajax_html = (
+        recurring_events_form.render_ajax_modal_form_html(pctx.request))
+
+    renumber_events_form = RenumberEventsForm(pctx.course.identifier)
+    renumber_events_form_ajax_html = (
+        renumber_events_form.render_ajax_modal_form_html(pctx.request))
+
     return render_course_page(pctx, "course/calendar.html", {
         "default_date": default_date.isoformat(),
         "is_edit_mode": is_edit_view,
-        "new_event_form": CreateEventModalForm(pctx.course.identifier),
-        "recurring_events_form": RecurringEventForm(
-            pctx.course.identifier, is_ajax=True),
-        "renumber_events_form": RenumberEventsForm(
-            pctx.course.identifier, is_ajax=True),
+        "new_event_form": new_event_form,
+        "new_event_form_ajax_html": new_event_form_ajax_html,
+
+        "recurring_events_form": RecurringEventForm(pctx.course.identifier),
+        "recurring_events_form_ajax_html": recurring_events_form_ajax_html,
+
+        "renumber_events_form": renumber_events_form,
+        "renumber_events_form_ajax_html": renumber_events_form_ajax_html,
 
         # Wrappers used by JavaScript template (tmpl) so as not to
         # conflict with Django template's tag wrapper
@@ -589,15 +617,18 @@ class CreateEventModalForm(ModalStyledFormMixin, StyledModelForm):
 
     def __init__(self, course_identifier, *args, **kwargs):
         super(CreateEventModalForm, self).__init__(*args, **kwargs)
-
-        self.course_identifier = course_identifier
         self.fields["shown_in_calendar"].help_text = (
             _("Shown in students' calendar"))
 
-        self.helper.form_action = reverse(
-            "relate-create_event", args=[course_identifier])
+        self.course_identifier = course_identifier
 
-        self.helper.layout = Layout(
+    def get_ajax_form_helper(self):
+        helper = self.get_form_helper()
+
+        self.helper.form_action = reverse(
+            "relate-create_event", args=[self.course_identifier])
+
+        helper.layout = Layout(
             Div(*self.fields, css_class="modal-body"),
             ButtonHolder(
                 Submit("save", _("Save"),
@@ -608,6 +639,7 @@ class CreateEventModalForm(ModalStyledFormMixin, StyledModelForm):
                 css_class="modal-footer"
             )
         )
+        return helper
 
     def clean(self):
         kind = self.cleaned_data.get("kind")
@@ -656,26 +688,29 @@ def create_event(pctx):
         return JsonResponse(form.errors, status=400)
 
 
-class DeleteEventForm(ModalStyledFormMixin, StyledForm):
+class DeleteEventForm(ModalStyledFormMixin, StyledModelForm):
     form_description = _("Delete event")
     modal_id = "delete-event-modal"
     prefix = "delete"
 
-    def __init__(self, course_identifier, instance,
-                 *args, **kwargs):
+    class Meta:
+        model = Event
+        fields = []
+
+    def __init__(self, course_identifier, instance_to_delete, *args, **kwargs):
         super(DeleteEventForm, self).__init__(*args, **kwargs)
 
         self.course_identifier = course_identifier
 
-        hint = _("Are you sure to delete event '%s'?") % str(instance)
+        hint = _("Are you sure to delete event '%s'?") % str(instance_to_delete)
 
-        if instance.ordinal is not None:
+        if instance_to_delete.ordinal is not None:
             choices = (
-                ("delete_single", _("Delete event '%s'") % str(instance)),
+                ("delete_single", _("Delete event '%s'") % str(instance_to_delete)),
                 ('delete_following', _("Delete this and following events with "
-                                       "kind '%s'") % instance.kind),
+                                       "kind '%s'") % instance_to_delete.kind),
                 ('delete_all', _("Delete all events with "
-                                 "kind '%s'") % instance.kind),
+                                 "kind '%s'") % instance_to_delete.kind),
             )
             self.fields["operation"] = (
                 forms.ChoiceField(
@@ -684,19 +719,27 @@ class DeleteEventForm(ModalStyledFormMixin, StyledForm):
                     label=_("Operation")))
             hint = _("Select your operation:")
 
-        self.helper.form_action = reverse(
-            "relate-delete_event", args=[course_identifier, instance.pk])
+        self.instance_to_delete = instance_to_delete
+        self.hint = hint
 
-        self.helper.layout = Layout(
+    def get_ajax_form_helper(self):
+        helper = super(DeleteEventForm, self).get_ajax_form_helper()
+
+        self.helper.form_action = reverse(
+            "relate-delete_event", args=[
+                self.course_identifier, self.instance_to_delete.pk])
+
+        helper.layout = Layout(
             Div(*self.fields, css_class="modal-body"),
             ButtonHolder(
                 Submit("submit", _("Delete"),
-                       css_class="btn btn-md btn-success"),
+                       css_class="btn btn-md btn-danger"),
                 Button("cancel", _("Cancel"),
                        css_class="btn btn-md btn-default",
                        data_dismiss="modal"),
                 css_class="modal-footer"))
-        self.helper.layout[0].insert(0, HTML(hint))
+        helper.layout[0].insert(0, HTML(self.hint))
+        return helper
 
 
 @course_view
@@ -709,13 +752,13 @@ def get_delete_event_form(pctx, event_id):
         raise PermissionDenied(_("only AJAX GET is allowed"))
 
     event_id = int(event_id)
-    instance = get_object_or_404(Event, course=pctx.course, id=event_id)
+    instance_to_delete = get_object_or_404(Event, course=pctx.course, id=event_id)
 
     form = DeleteEventForm(
-        pctx.course.identifier, instance)
+        pctx.course.identifier, instance_to_delete, instance=instance_to_delete)
 
     return JsonResponse(
-        {"form_html": form.render_modal_form_html(request=pctx.request)})
+        {"form_html": form.render_ajax_modal_form_html(pctx.request)})
 
 
 @course_view
@@ -734,25 +777,28 @@ def delete_event(pctx, event_id):
         from django.http import Http404
         raise Http404()
     else:
-        instance, = event_qs
+        instance_to_delete, = event_qs
         form = DeleteEventForm(
-            pctx.course.identifier, instance, request.POST)
+            pctx.course.identifier, instance_to_delete,
+            request.POST, instance=instance_to_delete)
 
         if form.is_valid():
             operation = form.cleaned_data.get("operation")
             if operation is None or operation == "delete_single":
                 qset = event_qs
-                message = _("Event '%s' deleted.") % str(instance)
+                message = _("Event '%s' deleted.") % str(instance_to_delete)
             elif operation in "delete_following":
                 qset = Event.objects.filter(
-                    course=pctx.course, kind=instance.kind, time__gte=instance.time)
+                    course=pctx.course, kind=instance_to_delete.kind,
+                    time__gte=instance_to_delete.time)
                 message = _("%(number)d events of kind '%(kind)s' deleted."
-                            ) % {"number": qset.count(), "kind": instance.kind}
+                            ) % {"number": qset.count(),
+                                 "kind": instance_to_delete.kind}
             elif operation == "delete_all":
                 qset = Event.objects.filter(
-                    course=pctx.course, kind=instance.kind, ordinal__isnull=False)
+                    course=pctx.course, kind=instance_to_delete.kind, ordinal__isnull=False)
                 message = _("All events of kind '%(kind)s' deleted."
-                            ) % {"kind": instance.kind}
+                            ) % {"kind": instance_to_delete.kind}
             else:
                 raise NotImplementedError()
 
@@ -790,10 +836,12 @@ class UpdateEventForm(ModalStyledFormMixin, StyledModelForm):
         self.course_identifier = course_identifier
         self.event_id = event_id
 
+    def get_ajax_form_helper(self):
+        helper = super(UpdateEventForm, self).get_ajax_form_helper()
         self.helper.form_action = reverse(
-            "relate-update_event", args=[course_identifier, event_id])
+            "relate-update_event", args=[self.course_identifier, self.event_id])
 
-        self.helper.layout = Layout(
+        helper.layout = Layout(
             Div(*self.fields, css_class="modal-body"),
             ButtonHolder(
                 Submit("submit", _("Update"),
@@ -802,6 +850,7 @@ class UpdateEventForm(ModalStyledFormMixin, StyledModelForm):
                        css_class="btn btn-md btn-default",
                        data_dismiss="modal"),
                 css_class="modal-footer"))
+        return helper
 
     def clean(self):
         kind = self.cleaned_data.get("kind")
@@ -842,7 +891,7 @@ def get_update_event_form(pctx, event_id):
         pctx.course.identifier, event_id, instance=instance)
 
     return JsonResponse(
-        {"form_html": form.render_modal_form_html(request=pctx.request)})
+        {"form_html": form.render_ajax_modal_form_html(pctx.request)})
 
 
 @course_view
