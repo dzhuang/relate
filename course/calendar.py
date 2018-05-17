@@ -705,19 +705,63 @@ class DeleteEventForm(ModalStyledFormMixin, StyledModelForm):
         hint = _("Are you sure to delete event '%s'?") % str(instance_to_delete)
 
         if instance_to_delete.ordinal is not None:
-            choices = (
-                ("delete_single", _("Delete event '%s'") % str(instance_to_delete)),
-                ('delete_following', _("Delete this and following events with "
-                                       "kind '%s'") % instance_to_delete.kind),
-                ('delete_all', _("Delete all events with "
-                                 "kind '%s'") % instance_to_delete.kind),
-            )
-            self.fields["operation"] = (
-                forms.ChoiceField(
-                    choices=choices, widget=forms.RadioSelect(), required=True,
-                    initial="delete_single",
-                    label=_("Operation")))
-            hint = _("Select your operation:")
+            events_of_same_kind = Event.objects.filter(
+                    course__identifier=course_identifier,
+                    kind=instance_to_delete.kind, ordinal__isnull=False)
+            if events_of_same_kind.count() > 1:
+                choices = [
+                    ("delete_single",
+                     _("Delete event '%s'") % str(instance_to_delete)),
+                    ('delete_all',
+                     _("Delete all events with "
+                       "kind '%s'") % instance_to_delete.kind),
+                ]
+
+                if events_of_same_kind.filter(
+                        time__gt=instance_to_delete.time).count():
+                    choices.append(
+                        ('delete_following',
+                         _("Delete this and following events with "
+                           "kind '%s'") % instance_to_delete.kind),
+                    )
+
+                week_day = instance_to_delete.time.weekday()
+                hour = instance_to_delete.time.hour
+                minute = instance_to_delete.time.minute
+
+                events_of_same_kind_and_weekday_time = (
+                    Event.objects.filter(
+                        course__identifier=course_identifier,
+                        # kind=instance_to_delete.kind,
+                        time__hour=hour,
+                    # events_of_same_kind.filter(
+                    #     # time__week_day=week_day,
+                    #     time__hour=hour,
+                    #     # time__minute=minute
+                    ))
+
+                print(events_of_same_kind_and_weekday_time.count(), "here!!!")
+                print(Event.objects.filter(time__hour=hour).count())
+
+                if (events_of_same_kind.count() > events_of_same_kind_and_weekday_time.count() > 1):
+
+                    from relate.utils import format_datetime_local
+
+                    choices.append(
+                        ("delete_all_of_same_series",
+                         _("Delete this and following events with "
+                           "kind '%(kind)s' at '%(time)s'")
+                         % {"kind": instance_to_delete.kind,
+                            "time": format_datetime_local(
+                                instance_to_delete.time, format="D, HH:mm")}),
+                    )
+
+                self.fields["operation"] = (
+                    forms.ChoiceField(
+                        choices=choices, widget=forms.RadioSelect(), required=True,
+                        initial="delete_single",
+                        label=_("Operation")))
+                hint = _("Select your operation:")
 
         self.instance_to_delete = instance_to_delete
         self.hint = hint

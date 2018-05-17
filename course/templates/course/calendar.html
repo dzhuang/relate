@@ -92,6 +92,8 @@
       var switchToNormalModeButtonText = $("#switch-to-normal").text(),
         switchToEditViewModeButtonText = $("#switch-to-edit").text(),
         fetchUrl = '{% url "relate-fetch_event_json" course.identifier is_edit_mode|yesno:"1,0" %}';
+    {% else %}
+      var fetchUrl = '{% url "relate-fetch_event_json" course.identifier "0" %}';
     {% endif %}
 
     $(document).ready(function () {
