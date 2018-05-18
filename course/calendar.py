@@ -725,25 +725,30 @@ class DeleteEventForm(ModalStyledFormMixin, StyledModelForm):
                            "kind '%s'") % instance_to_delete.kind),
                     )
 
-                week_day = instance_to_delete.time.weekday()
-                hour = instance_to_delete.time.hour
-                minute = instance_to_delete.time.minute
+                from relate.utils import as_local_time
+                # The date time need to use localized datetime before query
+                local_time = as_local_time(instance_to_delete.time)
+
+                # https://docs.djangoproject.com/en/dev/ref/models/querysets/#week-day
+                # Sunday = 1
+                week_day = local_time.weekday() + 2
+                print(week_day, local_time.weekday())
+                hour = local_time.hour
+                minute = local_time.minute
 
                 events_of_same_kind_and_weekday_time = (
                     Event.objects.filter(
                         course__identifier=course_identifier,
-                        # kind=instance_to_delete.kind,
+                        kind=instance_to_delete.kind,
+                        time__week_day=week_day,
                         time__hour=hour,
-                    # events_of_same_kind.filter(
-                    #     # time__week_day=week_day,
-                    #     time__hour=hour,
-                    #     # time__minute=minute
+                        time__minute=minute
                     ))
 
-                print(events_of_same_kind_and_weekday_time.count(), "here!!!")
-                print(Event.objects.filter(time__hour=hour).count())
+                if (events_of_same_kind.count()
+                        > events_of_same_kind_and_weekday_time.count() > 1):
 
-                if (events_of_same_kind.count() > events_of_same_kind_and_weekday_time.count() > 1):
+                    print("here!!")
 
                     from relate.utils import format_datetime_local
 
@@ -753,7 +758,7 @@ class DeleteEventForm(ModalStyledFormMixin, StyledModelForm):
                            "kind '%(kind)s' at '%(time)s'")
                          % {"kind": instance_to_delete.kind,
                             "time": format_datetime_local(
-                                instance_to_delete.time, format="D, HH:mm")}),
+                                local_time, format="D, H:i")}),
                     )
 
                 self.fields["operation"] = (
