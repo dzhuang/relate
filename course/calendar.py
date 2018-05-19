@@ -30,7 +30,7 @@ from json import dumps
 
 from django.template.loader import render_to_string
 from django.utils.translation import (
-        ugettext_lazy as _, pgettext_lazy)
+    ugettext_lazy as _, pgettext_lazy)
 from django.contrib.auth.decorators import login_required
 from course.utils import course_view, render_course_page
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
@@ -46,10 +46,11 @@ from crispy_forms.layout import (  # noqa
 import datetime
 from bootstrap3_datetime.widgets import DateTimePicker
 
-from relate.utils import StyledForm, as_local_time, string_concat, StyledModelForm
+from relate.utils import (
+    StyledForm, as_local_time, format_datetime_local, string_concat, StyledModelForm)
 from course.constants import (
-        participation_permission as pperm,
-        )
+    participation_permission as pperm,
+)
 from course.models import Event
 from django.shortcuts import get_object_or_404
 
@@ -80,10 +81,10 @@ class ModalStyledFormMixin(object):
         context.update(csrf(request))
         return render_crispy_form(self, helper, context)
 
+
 # {{{ creation
 
 class RecurringEventForm(ModalStyledFormMixin, StyledForm):
-
     form_description = _("Create recurring events")
     modal_id = "create-recurring-events-modal"
 
@@ -91,43 +92,47 @@ class RecurringEventForm(ModalStyledFormMixin, StyledForm):
     prefix = "recurring"
 
     kind = forms.CharField(required=True,
-            help_text=_("Should be lower_case_with_underscores, no spaces "
-                        "allowed."),
-            label=pgettext_lazy("Kind of event", "Kind of event"))
+                           help_text=_(
+                               "Should be lower_case_with_underscores, no spaces "
+                               "allowed."),
+                           label=pgettext_lazy("Kind of event", "Kind of event"))
     time = forms.DateTimeField(
-            widget=DateTimePicker(
-                options={"format": "YYYY-MM-DD HH:mm", "sideBySide": True}),
-            label=pgettext_lazy("Starting time of event", "Starting time"))
+        widget=DateTimePicker(
+            options={"format": "YYYY-MM-DD HH:mm", "sideBySide": True}),
+        label=pgettext_lazy("Starting time of event", "Starting time"))
     duration_in_minutes = forms.FloatField(required=False,
-            label=_("Duration in minutes"))
+                                           label=_("Duration in minutes"))
     all_day = forms.BooleanField(
-                required=False,
-                initial=False,
-                label=_("All-day event"),
-                help_text=_("Only affects the rendering in the class calendar, "
-                "in that a start time is not shown"))
+        required=False,
+        initial=False,
+        label=_("All-day event"),
+        help_text=_("Only affects the rendering in the class calendar, "
+                    "in that a start time is not shown"))
     shown_in_calendar = forms.BooleanField(
-            required=False,
-            initial=True,
-            label=_('Shown in calendar'))
+        required=False,
+        initial=True,
+        label=_('Shown in calendar'))
     interval = forms.ChoiceField(required=True,
-            choices=(
-                ("weekly", _("Weekly")),
-                ("biweekly", _("Bi-Weekly")),
-                ),
-            label=pgettext_lazy("Interval of recurring events", "Interval"))
+                                 choices=(
+                                     ("weekly", _("Weekly")),
+                                     ("biweekly", _("Bi-Weekly")),
+                                 ),
+                                 label=pgettext_lazy("Interval of recurring events",
+                                                     "Interval"))
     starting_ordinal = forms.IntegerField(required=False,
-            label=pgettext_lazy(
-                "Starting ordinal of recurring events", "Starting ordinal"))
+                                          label=pgettext_lazy(
+                                              "Starting ordinal of recurring events",
+                                              "Starting ordinal"))
     count = forms.IntegerField(required=True,
-            label=pgettext_lazy("Count of recurring events", "Count"))
+                               label=pgettext_lazy("Count of recurring events",
+                                                   "Count"))
 
     def __init__(self, course_identifier, *args, **kwargs):
         super(RecurringEventForm, self).__init__(*args, **kwargs)
         self.course_identifier = course_identifier
 
         self.helper.add_input(
-                Submit("submit", _("Create")))
+            Submit("submit", _("Create")))
 
     def get_ajax_form_helper(self):
         helper = self.get_form_helper()
@@ -152,7 +157,8 @@ class EventAlreadyExists(Exception):
 
 @transaction.atomic
 def _create_recurring_events_backend(course, time, kind, starting_ordinal, interval,
-        count, duration_in_minutes, all_day, shown_in_calendar):
+                                     count, duration_in_minutes, all_day,
+                                     shown_in_calendar):
     ordinal = starting_ordinal
 
     import datetime
@@ -168,13 +174,13 @@ def _create_recurring_events_backend(course, time, kind, starting_ordinal, inter
 
         if duration_in_minutes:
             evt.end_time = evt.time + datetime.timedelta(
-                    minutes=duration_in_minutes)
+                minutes=duration_in_minutes)
         try:
             evt.save()
         except IntegrityError:
             raise EventAlreadyExists(
-                        _("'%(exist_event)s' already exists.")
-                        % {'exist_event': evt})
+                _("'%(exist_event)s' already exists.")
+                % {'exist_event': evt})
 
         date = time.date()
         if interval == "weekly":
@@ -185,8 +191,8 @@ def _create_recurring_events_backend(course, time, kind, starting_ordinal, inter
             raise NotImplementedError()
 
         time = time.tzinfo.localize(
-                datetime.datetime(date.year, date.month, date.day,
-                    time.hour, time.minute, time.second))
+            datetime.datetime(date.year, date.month, date.day,
+                              time.hour, time.minute, time.second))
         del date
 
         ordinal += 1
@@ -219,18 +225,18 @@ def create_recurring_events(pctx):
             while True:
                 try:
                     _create_recurring_events_backend(
-                            course=pctx.course,
-                            time=form.cleaned_data["time"],
-                            kind=form.cleaned_data["kind"],
-                            starting_ordinal=starting_ordinal,
-                            interval=form.cleaned_data["interval"],
-                            count=form.cleaned_data["count"],
-                            duration_in_minutes=(
-                                form.cleaned_data["duration_in_minutes"]),
-                            all_day=form.cleaned_data["all_day"],
-                            shown_in_calendar=(
-                                form.cleaned_data["shown_in_calendar"])
-                            )
+                        course=pctx.course,
+                        time=form.cleaned_data["time"],
+                        kind=form.cleaned_data["kind"],
+                        starting_ordinal=starting_ordinal,
+                        interval=form.cleaned_data["interval"],
+                        count=form.cleaned_data["count"],
+                        duration_in_minutes=(
+                            form.cleaned_data["duration_in_minutes"]),
+                        all_day=form.cleaned_data["all_day"],
+                        shown_in_calendar=(
+                            form.cleaned_data["shown_in_calendar"])
+                    )
                 except EventAlreadyExists as e:
                     if starting_ordinal_specified:
                         message = (
@@ -285,20 +291,29 @@ class RenumberEventsForm(ModalStyledFormMixin, StyledForm):
     # This is to avoid field name conflict
     prefix = "renumber"
 
-    kind = forms.CharField(required=True,
-            help_text=_("Should be lower_case_with_underscores, no spaces "
-                        "allowed."),
-            label=pgettext_lazy("Kind of event", "Kind of event"))
-    starting_ordinal = forms.IntegerField(required=True, initial=1,
-            label=pgettext_lazy(
-                "Starting ordinal of recurring events", "Starting ordinal"))
-
     def __init__(self, course_identifier, *args, **kwargs):
         super(RenumberEventsForm, self).__init__(*args, **kwargs)
         self.course_identifier = course_identifier
 
+        renumberable_event_kinds = set(Event.objects.filter(
+            course__identifier=self.course_identifier,
+            ordinal__isnull=False).values_list("kind", flat=True))
+
+        self.fields["kind"] = forms.ChoiceField(
+            choices=((kind, kind) for kind in renumberable_event_kinds),
+            required=True,
+            label=pgettext_lazy("Kind of event",
+                                "Kind of event"))
+
+        self.fields["starting_ordinal"] = forms.IntegerField(
+            required=True,
+            initial=1,
+            label=pgettext_lazy(
+                "Starting ordinal of recurring events",
+                "Starting ordinal"))
+
         self.helper.add_input(
-                Submit("submit", _("Renumber")))
+            Submit("submit", _("Renumber")))
 
     def get_ajax_form_helper(self):
         helper = self.get_form_helper()
@@ -337,12 +352,13 @@ def renumber_events(pctx):
             pctx.course.identifier, request.POST, request.FILES)
         if form.is_valid():
             events = list(Event.objects
-                    .filter(course=pctx.course, kind=form.cleaned_data["kind"])
-                    .order_by('time'))
+                          .filter(course=pctx.course, kind=form.cleaned_data["kind"])
+                          .order_by('time'))
 
             if events:
                 queryset = (Event.objects
-                    .filter(course=pctx.course, kind=form.cleaned_data["kind"]))
+                            .filter(course=pctx.course,
+                                    kind=form.cleaned_data["kind"]))
 
                 queryset.delete()
 
@@ -366,7 +382,7 @@ def renumber_events(pctx):
                 message = _("No events found.")
                 message_level = messages.SUCCESS
                 messages.add_message(request, messages.ERROR,
-                        _("No events found."))
+                                     _("No events found."))
         else:
             if request.is_ajax():
                 return JsonResponse(form.errors, status=400)
@@ -387,13 +403,15 @@ def renumber_events(pctx):
         "form_description": _("Renumber events"),
     })
 
+
 # }}}
 
 
 # {{{ calendar
 
 class EventInfo(object):
-    def __init__(self, id, human_title, start_time, end_time, description, show_description):
+    def __init__(self, id, human_title, start_time, end_time, description,
+                 show_description):
         self.id = id
         self.human_title = human_title
         self.start_time = start_time
@@ -656,8 +674,8 @@ class CreateEventModalForm(ModalStyledFormMixin, StyledModelForm):
             if qset.count():
                 from django.forms import ValidationError
                 raise ValidationError(
-                        _("'%(exist_event)s' already exists.")
-                        % {'exist_event': qset[0]})
+                    _("'%(exist_event)s' already exists.")
+                    % {'exist_event': qset[0]})
 
 
 @course_view
@@ -706,8 +724,8 @@ class DeleteEventForm(ModalStyledFormMixin, StyledModelForm):
 
         if instance_to_delete.ordinal is not None:
             events_of_same_kind = Event.objects.filter(
-                    course__identifier=course_identifier,
-                    kind=instance_to_delete.kind, ordinal__isnull=False)
+                course__identifier=course_identifier,
+                kind=instance_to_delete.kind, ordinal__isnull=False)
             if events_of_same_kind.count() > 1:
                 choices = [
                     ("delete_single",
@@ -725,14 +743,12 @@ class DeleteEventForm(ModalStyledFormMixin, StyledModelForm):
                            "kind '%s'") % instance_to_delete.kind),
                     )
 
-                from relate.utils import as_local_time
                 # The date time need to use localized datetime before query
                 local_time = as_local_time(instance_to_delete.time)
 
                 # https://docs.djangoproject.com/en/dev/ref/models/querysets/#week-day
                 # Sunday = 1
                 week_day = local_time.weekday() + 2
-                print(week_day, local_time.weekday())
                 hour = local_time.hour
                 minute = local_time.minute
 
@@ -748,18 +764,25 @@ class DeleteEventForm(ModalStyledFormMixin, StyledModelForm):
                 if (events_of_same_kind.count()
                         > events_of_same_kind_and_weekday_time.count() > 1):
 
-                    print("here!!")
-
-                    from relate.utils import format_datetime_local
-
                     choices.append(
                         ("delete_all_of_same_series",
-                         _("Delete this and following events with "
-                           "kind '%(kind)s' at '%(time)s'")
+                         _("Delete all events with "
+                           "kind '%(kind)s' on '%(time)s'")
                          % {"kind": instance_to_delete.kind,
                             "time": format_datetime_local(
                                 local_time, format="D, H:i")}),
                     )
+
+                    if events_of_same_kind_and_weekday_time.filter(
+                            time__gt=instance_to_delete.time).count():
+                        choices.append(
+                            ("delete_this_and_following_of_same_series",
+                             _("Delete this and following events with "
+                               "kind '%(kind)s' on '%(time)s'")
+                             % {"kind": instance_to_delete.kind,
+                                "time": format_datetime_local(
+                                    local_time, format="D, H:i")}),
+                        )
 
                 self.fields["operation"] = (
                     forms.ChoiceField(
@@ -831,6 +854,14 @@ def delete_event(pctx, event_id):
             pctx.course.identifier, instance_to_delete,
             request.POST, instance=instance_to_delete)
 
+        local_time = as_local_time(instance_to_delete.time)
+
+        # https://docs.djangoproject.com/en/dev/ref/models/querysets/#week-day
+        # Sunday = 1
+        week_day = local_time.weekday() + 2
+        hour = local_time.hour
+        minute = local_time.minute
+
         if form.is_valid():
             operation = form.cleaned_data.get("operation")
             if operation is None or operation == "delete_single":
@@ -845,11 +876,40 @@ def delete_event(pctx, event_id):
                                  "kind": instance_to_delete.kind}
             elif operation == "delete_all":
                 qset = Event.objects.filter(
-                    course=pctx.course, kind=instance_to_delete.kind, ordinal__isnull=False)
+                    course=pctx.course, kind=instance_to_delete.kind,
+                    ordinal__isnull=False)
                 message = _("All events of kind '%(kind)s' deleted."
                             ) % {"kind": instance_to_delete.kind}
+            elif operation == "delete_all_of_same_series":
+                qset = Event.objects.filter(
+                    course=pctx.course, kind=instance_to_delete.kind,
+                    time__week_day=week_day,
+                    time__hour=hour,
+                    time__minute=minute,
+                    ordinal__isnull=False)
+                message = _(
+                    "All events of kind '%(kind)s' on '%(time)s' deleted."
+                    % {"time": format_datetime_local(
+                        local_time, format="D, H:i"),
+                        "kind": instance_to_delete.kind})
+            elif operation == "delete_this_and_following_of_same_series":
+                qset = Event.objects.filter(
+                    course=pctx.course, kind=instance_to_delete.kind,
+                    time__week_day=week_day,
+                    time__hour=hour,
+                    time__minute=minute,
+                    time__gte=instance_to_delete.time,
+                    ordinal__isnull=False)
+                message = _("%(number)d events of kind '%(kind)s' on "
+                            "'%(time)s' deleted."
+                            ) % {"number": qset.count(),
+                                 "kind": instance_to_delete.kind,
+                                 "time": format_datetime_local(
+                                     local_time, format="D, H:i"),
+                                 }
             else:
-                raise NotImplementedError()
+                from django.core.exceptions import SuspiciousOperation
+                raise SuspiciousOperation(_("unknown operation"))
 
             try:
                 qset.delete()
@@ -867,6 +927,7 @@ class UpdateEventForm(ModalStyledFormMixin, StyledModelForm):
     @property
     def form_description(self):
         return _("Update event")
+
     modal_id = "update-event-modal"
     prefix = "update"
 
