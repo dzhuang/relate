@@ -157,8 +157,9 @@
                     .modal('show')
                     .find("form")
                     .on('submit', function (e) {
+                      var submitButton = $("input[type=submit][clicked=true]").attr("name");
                       e.preventDefault();
-                      postModalForm($(this));
+                      postModalForm($(this), submitButton);
                     });
                 },
                 error: function (data, textStatus, jqXHR) {
@@ -175,26 +176,23 @@
                 success: function (data, textStatus, jqXHR) {
                   $("#div-id-relate-update-event-form")
                     .html(data.form_html);
+
+                  // https://stackoverflow.com/a/5721762/3437454
+                  $("#div-id-relate-update-event-form input[type=submit]").click(function () {
+                    $("input[type=submit]", $(this).parents("form")).removeAttr("clicked");
+                    $(this).attr("clicked", "true");
+                  });
+
                   $("#update-event-modal")
                     .find("form")
                     .prop("action", event.update_url)
                     .end()
-                    // intialize datetime picker
-                    // Fixme: the script inserted dynamically won't add the callback
-                    // so we currently hard code the option here.
-                    .find("#id_update-time_pickers").datetimepicker({
-                      format: "YYYY-MM-DD HH:mm", locale: '{{ LANGUAGE_CODE |js_lang_fallback:"momentjs" }}'},
-                      )
-                    .end()
-                    .find("#id_update-end_time_pickers").datetimepicker({
-                      format: "YYYY-MM-DD HH:mm", locale: '{{ LANGUAGE_CODE |js_lang_fallback:"momentjs" }}'},
-                      )
-                    .end()
                     .modal('show')
                     .find("form")
                     .on('submit', function (e) {
+                      var submitButton = $("input[type=submit][clicked=true]").attr("name");
                       e.preventDefault();
-                      postModalForm($(this));
+                      postModalForm($(this), submitButton);
                     });
                 },
                 error: function (data, textStatus, jqXHR) {
@@ -244,10 +242,12 @@
         return isEditMode() ? "on" : "off";
       }
 
-      function postModalForm(form) {
+      function postModalForm(form, submitButton) {
         var self = form,
           url = self.attr("action"),
           form_data = self.serialize();
+          if(submitButton)
+            form_data = form_data + "&" + submitButton + "=''";
         $.ajax({
           url: url,
           type: "POST",
@@ -286,9 +286,17 @@
         })
         .end()
         .on('submit', function (e) {
+          var submitButton = $("input[type=submit][clicked=true]").attr("name");
           e.preventDefault();
-          postModalForm($(this));
+          postModalForm($(this), submitButton);
         });
+
+      // https://stackoverflow.com/a/5721762/3437454
+      $("form input[type=submit]").click(function () {
+        $("input[type=submit]", $(this).parents("form")).removeAttr("clicked");
+        console.log("here!!!");
+        $(this).attr("clicked", "true");
+      });
 
       function applyFormFieldError(fieldname, error) {
         var input = $("#id_" + fieldname),

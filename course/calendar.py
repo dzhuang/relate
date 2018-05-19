@@ -33,7 +33,8 @@ from django.utils.translation import (
     ugettext_lazy as _, pgettext_lazy)
 from django.contrib.auth.decorators import login_required
 from course.utils import course_view, render_course_page
-from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
+from django.core.exceptions import (
+    PermissionDenied, ObjectDoesNotExist, SuspiciousOperation)
 from django.db import transaction, IntegrityError
 from django.contrib import messages  # noqa
 from django.urls import reverse
@@ -308,9 +309,17 @@ class RenumberEventsForm(ModalStyledFormMixin, StyledForm):
         self.fields["starting_ordinal"] = forms.IntegerField(
             required=True,
             initial=1,
+            help_text=_("The starting ordinal of this kind of events"),
             label=pgettext_lazy(
                 "Starting ordinal of recurring events",
                 "Starting ordinal"))
+
+        self.fields["preserve_ordinal_order"] = forms.BooleanField(
+            required=False,
+            initial=False,
+            help_text=_("Tick this box if you want to preserve the order of "
+                        "ordinals of existing event."),
+            label=_("Preserve order"))
 
         self.helper.add_input(
             Submit("submit", _("Renumber")))
@@ -351,14 +360,19 @@ def renumber_events(pctx):
         form = RenumberEventsForm(
             pctx.course.identifier, request.POST, request.FILES)
         if form.is_valid():
-            events = list(Event.objects
-                          .filter(course=pctx.course, kind=form.cleaned_data["kind"])
-                          .order_by('time'))
+            kind = form.cleaned_data["kind"]
+            order_field = "time"
+            if form.cleaned_data["preserve_ordinal_order"]:
+                order_field = "ordinal"
+            events = list(
+                Event.objects
+                    .filter(
+                        course=pctx.course, kind=kind)
+                    .order_by(order_field))
 
             if events:
-                queryset = (Event.objects
-                            .filter(course=pctx.course,
-                                    kind=form.cleaned_data["kind"]))
+                queryset = (
+                    Event.objects.filter(course=pctx.course, kind=kind))
 
                 queryset.delete()
 
@@ -366,7 +380,7 @@ def renumber_events(pctx):
                 for event in events:
                     new_event = Event()
                     new_event.course = pctx.course
-                    new_event.kind = form.cleaned_data["kind"]
+                    new_event.kind = kind
                     new_event.ordinal = ordinal
                     new_event.time = event.time
                     new_event.end_time = event.end_time
@@ -749,6 +763,8 @@ class DeleteEventForm(ModalStyledFormMixin, StyledModelForm):
                 # https://docs.djangoproject.com/en/dev/ref/models/querysets/#week-day
                 # Sunday = 1
                 week_day = local_time.weekday() + 2
+                if week_day == 8:
+                    week_day = 1
                 hour = local_time.hour
                 minute = local_time.minute
 
@@ -859,6 +875,8 @@ def delete_event(pctx, event_id):
         # https://docs.djangoproject.com/en/dev/ref/models/querysets/#week-day
         # Sunday = 1
         week_day = local_time.weekday() + 2
+        if week_day == 8:
+            week_day = 1
         hour = local_time.hour
         minute = local_time.minute
 
@@ -908,7 +926,6 @@ def delete_event(pctx, event_id):
                                      local_time, format="D, H:i"),
                                  }
             else:
-                from django.core.exceptions import SuspiciousOperation
                 raise SuspiciousOperation(_("unknown operation"))
 
             try:
@@ -951,15 +968,91 @@ class UpdateEventForm(ModalStyledFormMixin, StyledModelForm):
         self.helper.form_action = reverse(
             "relate-update_event", args=[self.course_identifier, self.event_id])
 
+        update_button = Submit("update", _("Update"),
+                               css_class="btn btn-md btn-success")
+
+        update_all_button = Submit(
+            "update_all", _("Update all"),
+            css_class="btn btn-md btn-success")
+
+        update_this_and_following_button = Submit(
+            "update_following", _("Update following"),
+            css_class="btn btn-md btn-success")
+
+        update_series = Submit("update_series",
+               _("Update series"),
+               css_class="btn btn-md btn-success")
+
+        update_this_and_following_in_series_button = Submit(
+            "update_this_and_following_in_series",
+            _("Update this and following in series"),
+            css_class="btn btn-md btn-success")
+
+        cancel_button = Button("cancel", _("Cancel"),
+                               css_class="btn btn-md btn-default",
+                               data_dismiss="modal")
+
+        instance_to_update = Event.objects.get(id=self.event_id)
+        may_update_all = False
+        may_update_following = False
+        may_update_series = False
+        may_update_following_in_series = False
+
+        if instance_to_update.ordinal is not None:
+            events_of_same_kind = Event.objects.filter(
+                course__identifier=self.course_identifier,
+                kind=instance_to_update.kind, ordinal__isnull=False)
+            if events_of_same_kind.count() > 1:
+                # The date time need to use localized datetime before query
+                local_time = as_local_time(instance_to_update.time)
+
+                # https://docs.djangoproject.com/en/dev/ref/models/querysets/#week-day
+                # Sunday = 1
+                week_day = local_time.weekday() + 2
+                if week_day == 8:
+                    week_day = 1
+                hour = local_time.hour
+                minute = local_time.minute
+
+                events_of_same_kind_and_weekday_time = (
+                    Event.objects.filter(
+                        course__identifier=self.course_identifier,
+                        kind=instance_to_update.kind,
+                        time__week_day=week_day,
+                        time__hour=hour,
+                        time__minute=minute
+                    ))
+
+                if (events_of_same_kind.count()
+                        > events_of_same_kind_and_weekday_time.count() > 1):
+                    may_update_series = True
+                    if events_of_same_kind_and_weekday_time.filter(
+                            time__gt=instance_to_update.time).count():
+                        may_update_following_in_series = True
+                elif (events_of_same_kind.count() == events_of_same_kind_and_weekday_time.count() > 1):
+                    may_update_all = True
+                    if events_of_same_kind_and_weekday_time.filter(
+                            time__gt=instance_to_update.time).count():
+                        may_update_following = True
+
+        button_holder = ButtonHolder()
+        if may_update_all:
+            button_holder.append(update_all_button)
+            if may_update_following:
+                button_holder.append(update_this_and_following_button)
+        elif may_update_series:
+            button_holder.append(update_series)
+            if may_update_following_in_series:
+                button_holder.append(update_this_and_following_in_series_button)
+
+        button_holder.append(update_button)
+        button_holder.append(cancel_button)
+
+        button_holder.css_class = "modal-footer"
+
         helper.layout = Layout(
             Div(*self.fields, css_class="modal-body"),
-            ButtonHolder(
-                Submit("submit", _("Update"),
-                       css_class="btn btn-md btn-success"),
-                Button("cancel", _("Cancel"),
-                       css_class="btn btn-md btn-default",
-                       data_dismiss="modal"),
-                css_class="modal-footer"))
+            button_holder)
         return helper
 
     def clean(self):
@@ -1015,7 +1108,16 @@ def update_event(pctx, event_id):
         raise PermissionDenied(_("only AJAX POST is allowed"))
 
     event_id = int(event_id)
-    get_object_or_404(Event, course=pctx.course, id=event_id)
+    original_event = get_object_or_404(Event, course=pctx.course, id=event_id)
+
+    # https://docs.djangoproject.com/en/dev/ref/models/querysets/#week-day
+    # Sunday = 1
+    original_event_local_time = as_local_time(original_event.time)
+    week_day = original_event_local_time.weekday() + 2
+    if week_day == 8:
+        week_day = 1
+    hour = original_event_local_time.hour
+    minute = original_event_local_time.minute
 
     form = UpdateEventForm(
         pctx.course.identifier, event_id, request.POST, request.FILES)
@@ -1024,14 +1126,85 @@ def update_event(pctx, event_id):
         try:
             instance = form.save(commit=False)
             instance.course = pctx.course
-            instance.pk = event_id
-            instance.save()
+            new_event_time_delta = instance.time - original_event.time
 
-            message = _("Event '%s' updated.") % str(instance)
+            events_of_same_kind_and_weekday_time = (
+                Event.objects.filter(
+                    course__identifier=pctx.course.identifier,
+                    kind=original_event.kind,
+                    time__week_day=week_day,
+                    time__hour=hour,
+                    time__minute=minute
+                ))
+
+            message = None
+            if "update" in request.POST:
+                instance.pk = event_id
+                instance.save()
+                message = _("Event '%s' updated.") % str(instance)
+            elif "update_all" in request.POST:
+                for event in Event.objects.filter(kind=original_event.kind):
+                    event_duration = None
+                    if event.end_time is not None:
+                        event_duration = event.end_time - event.time
+
+                    event.time = (
+                            event.time + new_event_time_delta)
+                    event.all_day = instance.all_day
+                    event.shown_in_calendar = instance.shown_in_calendar
+                    if event_duration is not None:
+                        event.end_time = event.time + event_duration
+                    event.save()
+
+            elif "update_following" in request.POST:
+                for event in Event.objects.filter(
+                        kind=original_event.kind, time__gte=original_event.time):
+                    event_duration = None
+                    if event.end_time is not None:
+                        event_duration = event.end_time - event.time
+
+                    event.time = (
+                            event.time + new_event_time_delta)
+                    event.all_day = instance.all_day
+                    event.shown_in_calendar = instance.shown_in_calendar
+                    if event_duration is not None:
+                        event.end_time = event.time + event_duration
+                    event.save()
+            elif "update_series" in request.POST:
+                for event in events_of_same_kind_and_weekday_time:
+                    event_duration = None
+                    if event.end_time is not None:
+                        event_duration = event.end_time - event.time
+
+                    event.time = (
+                            event.time + new_event_time_delta)
+                    event.all_day = instance.all_day
+                    event.shown_in_calendar = instance.shown_in_calendar
+                    if event_duration is not None:
+                        event.end_time = event.time + event_duration
+                    event.save()
+            elif "update_this_and_following_in_series" in request.POST:
+                for event in events_of_same_kind_and_weekday_time.filter(
+                        time__gte=original_event.time):
+                    event_duration = None
+                    if event.end_time is not None:
+                        event_duration = event.end_time - event.time
+
+                    event.time = (
+                            event.time + new_event_time_delta)
+                    event.all_day = instance.all_day
+                    event.shown_in_calendar = instance.shown_in_calendar
+                    if event_duration is not None:
+                        event.end_time = event.time + event_duration
+                    event.save()
+            else:
+                print(form.data)
+                raise SuspiciousOperation(_("unknown operation"))
+
             return JsonResponse({"message": message})
         except Exception as e:
             return JsonResponse(
-                {"__all__": ["%s: %s" % type(e).__name__, str(e)]}, status=400)
+                {"__all__": ["%s: %s" % (type(e).__name__, str(e))]}, status=400)
     else:
         return JsonResponse(form.errors, status=400)
 
