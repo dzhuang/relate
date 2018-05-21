@@ -23,14 +23,16 @@
     <script src='{% static "blueimp-tmpl/js/tmpl.min.js" %}'></script>
   {% endif %}
 
-  <style>
-    {#.mode-toggle {#}
-    {#  opacity: 0.7;#}
-    {#}#}
-    .mode-toggle[data-edit-mode=off] {
-      display: none;
-    }
-  </style>
+  {% if pperm.edit_events %}
+    <style>
+      .mode-toggle[data-edit-mode=off] {
+        display: none;
+      }
+      .fc-content[data-drop-or-resize=off] {
+        display: none;
+      }
+    </style>
+  {% endif %}
 
 {% endblock %}
 
@@ -105,8 +107,14 @@
         },
         contentHeight: "auto",
         defaultDate: '{{ default_date }}',
-        defaultView: $(window).width() < 765 ? 'agendaWeek' : 'month',
+        defaultView: $(window).width() < 765 ? 'agendaWeek': 'agendaWeek', //'month',
         timezone: "local",
+        snapDuration: "00:05:00",  // 5 minutes as time interval when resizing event (dragging end_time)
+        views: {
+          month: {
+            displayEventEnd: $(window).width() < 765 ? false: true
+          }
+        },
         {% if pperm.edit_events and is_edit_mode %}
           editable: true,
           selectable: true,
@@ -137,8 +145,102 @@
             })
           },
         {% if pperm.edit_events %}
+          eventDrop: function (event, delta, revertFunc, jsEvent, ui, view) {
+            if (!confirm('{% trans "Are you sure about this change?" %}')) {
+              revertFunc();
+            } else {
+                $.ajax({
+                url: event.update_form_url,
+                type: "POST",
+                data: {"drop_timedelta_hours": delta.as("hours")},
+                beforeSend: function (xhr, settings) {
+                    var csrftoken = get_cookie('csrftoken');
+                    xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                  },
+                success: function (data, textStatus, jqXHR) {
+                  $("#div-id-relate-update-event-form")
+                    .html(data.form_html);
+
+                  {# Mark the clicked button when submit event update form #}
+                  {# ref: https://stackoverflow.com/a/5721762/3437454 #}
+                  $("#div-id-relate-update-event-form input[type=submit]").click(function () {
+                    $("input[type=submit]", $(this).parents("form")).removeAttr("clicked");
+                    $(this).attr("clicked", "true");
+                  });
+
+                  $("#update-event-modal")
+                    .find("form")
+                    .prop("action", event.update_url)
+                    .end()
+                    .modal('show')
+                    .find("form")
+                    .on('submit', function (e) {
+                      var submitButton = $("input[type=submit][clicked=true]").attr("name");
+                      e.preventDefault();
+                      postModalForm($(this), submitButton);
+                    });
+
+                  $('[data-dismiss="modal"]', $("#update-event-modal")).click(function () {
+                    revertFunc();
+                  });
+                },
+                error: function (data, textStatus, jqXHR) {
+                  djangoMessage(data.error, "error");
+                  revertFunc();
+                }
+              });
+            }
+          },
+          eventResize: function(event, delta, revertFunc, jsEvent, ui, view) {
+            if (!confirm('{% trans "Are you sure about this change?" %}')) {
+              revertFunc();
+            } else {
+                $.ajax({
+                url: event.update_form_url,
+                type: "POST",
+                data: {"resize_timedelta_hours": delta.as("hours")},
+                beforeSend: function (xhr, settings) {
+                    var csrftoken = get_cookie('csrftoken');
+                    xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                  },
+                success: function (data, textStatus, jqXHR) {
+                  $("#div-id-relate-update-event-form")
+                    .html(data.form_html);
+
+                  // collect the clicked button when submit event update form
+                  // https://stackoverflow.com/a/5721762/3437454
+                  $("#div-id-relate-update-event-form input[type=submit]").click(function () {
+                    $("input[type=submit]", $(this).parents("form")).removeAttr("clicked");
+                    $(this).attr("clicked", "true");
+                  });
+
+                  $("#update-event-modal")
+                    .find("form")
+                    .prop("action", event.update_url)
+                    .end()
+                    .modal('show')
+                    .find("form")
+                    .on('submit', function (e) {
+                      var submitButton = $("input[type=submit][clicked=true]").attr("name");
+                      e.preventDefault();
+                      postModalForm($(this), submitButton);
+                    });
+
+                  $('[data-dismiss="modal"]', $("#update-event-modal")).click(function () {
+                    revertFunc();
+                  });
+                },
+                error: function (data, textStatus, jqXHR) {
+                  djangoMessage(data.error, "error");
+                  revertFunc();
+                }
+              });
+            }
+          },
           eventMouseover: function (event, jsEvent, view) {
             if (!isEditMode())
+              return;
+            if ($(this).hasClass("editing"))
               return;
             var deleteIconHtml = tmpl("delete-event-icon-template"),
               editIconHtml = tmpl("edit-event-icon-template");
@@ -203,6 +305,8 @@
           },
           eventMouseout: function (event, jsEvent, view) {
             if (!isEditMode())
+              return;
+            if ($(this).hasClass("editing"))
               return;
             $(".relate-event-hover", $(this)).remove();
           },
@@ -291,6 +395,8 @@
           postModalForm($(this), submitButton);
         });
 
+      $('.editing', $('.fc-content')).on();
+
       // https://stackoverflow.com/a/5721762/3437454
       $("form input[type=submit]").click(function () {
         $("input[type=submit]", $(this).parents("form")).removeAttr("clicked");
@@ -367,9 +473,20 @@
 
     <script type="text/x-tmpl" id="edit-event-icon-template">
       <span class="relate-event-hover fc-title glyphicon glyphicon-pencil relate-update-event"
-        style="float:right; cursor:pointer" id="edit" title="{% trans 'Edit this event' %}"> </span>
+        style="float:right; cursor:pointer" id="edit" title="{% trans 'Edit event' %}"> </span>
 
     </script>
+
+    <script type="text/x-tmpl" id="drop-edit-event-icon-template">
+      <span class="fc-title glyphicon glyphicon-pencil"
+        style="float:right; cursor:pointer" id="edit" title="{% trans 'Confirm Edit event' %}"> </span>
+    </script>
+
+    <script type="text/x-tmpl" id="drop-cancel-edit-icon-template">
+      <span class="fc-title glyphicon glyphicon-pencil"
+        style="float:right; cursor:pointer" id="edit" title="{% trans 'Cancel edit event' %}"> </span>
+    </script>
+
   {% endif %}
 
   {{ block.super }}
