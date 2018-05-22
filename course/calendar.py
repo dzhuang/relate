@@ -26,13 +26,15 @@ THE SOFTWARE.
 
 import six
 from six.moves import range
-from json import dumps
+import datetime
+from bootstrap3_datetime.widgets import DateTimePicker
+from crispy_forms.layout import (
+    Layout, Div, ButtonHolder, Button, Submit, HTML)
 
-from django.template.loader import render_to_string
 from django.utils.translation import (
     ugettext_lazy as _, pgettext_lazy)
+from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
-from course.utils import course_view, render_course_page
 from django.core.exceptions import (
     PermissionDenied, ObjectDoesNotExist, SuspiciousOperation)
 from django.db import transaction, IntegrityError
@@ -41,19 +43,14 @@ from django.urls import reverse
 from django.http import JsonResponse
 import django.forms as forms
 
-from crispy_forms.layout import (  # noqa
-    Layout, Div, ButtonHolder, Button, Submit, HTML, Field)
-
-import datetime
-from bootstrap3_datetime.widgets import DateTimePicker
-
 from relate.utils import (
     StyledForm, as_local_time, format_datetime_local, string_concat, StyledModelForm)
+
 from course.constants import (
     participation_permission as pperm,
 )
 from course.models import Event
-from django.shortcuts import get_object_or_404
+from course.utils import course_view, render_course_page
 
 
 class ModalStyledFormMixin(object):
@@ -84,7 +81,7 @@ class ModalStyledFormMixin(object):
 
 
 class ListTextWidget(forms.TextInput):
-    # Widget which allow free text and choices
+    # Widget which allow free text and choices for CharField
     def __init__(self, data_list, name, *args, **kwargs):
         super(ListTextWidget, self).__init__(*args, **kwargs)
         self._name = name
@@ -117,6 +114,7 @@ def get_local_time_weekday_hour_minute(dt):
     minute = local_time.minute
 
     return local_time, week_day, hour, minute
+
 
 # {{{ creation
 
@@ -543,10 +541,10 @@ def get_event_json(pctx, now_datetime=None, is_edit_view=False):
         if may_edit_events:
             event_json["shown_in_calendar"] = event.shown_in_calendar
             event_json["delete_form_url"] = reverse(
-                "relate-get_delete_event_form",
+                "relate-get_delete_event_modal_form",
                 args=[pctx.course.identifier, event.id])
             event_json["update_form_url"] = reverse(
-                "relate-get_update_event_form",
+                "relate-get_update_event_modal_form",
                 args=[pctx.course.identifier, event.id])
             event_json["str"] = str(event)
 
@@ -654,14 +652,6 @@ def view_calendar(pctx, operation=None):
     return render_course_page(pctx, "course/calendar.html", {
         "default_date": default_date.isoformat(),
         "is_edit_mode": is_edit_view,
-        "new_event_form": new_event_form,
-        "new_event_form_ajax_html": new_event_form_ajax_html,
-
-        "recurring_events_form": RecurringEventForm(pctx.course.identifier),
-        "recurring_events_form_ajax_html": recurring_events_form_ajax_html,
-
-        "renumber_events_form": renumber_events_form,
-        "renumber_events_form_ajax_html": renumber_events_form_ajax_html,
 
         # Wrappers used by JavaScript template (tmpl) so as not to
         # conflict with Django template's tag wrapper
@@ -813,16 +803,15 @@ class DeleteEventForm(ModalStyledFormMixin, StyledModelForm):
                     ("delete_single",
                      _("Delete event '%s'") % str(instance_to_delete)),
                     ('delete_all',
-                     _("Delete all events with "
-                       "kind '%s'") % instance_to_delete.kind),
+                     _("Delete all '%s' events") % instance_to_delete.kind),
                 ]
 
                 if events_of_same_kind.filter(
                         time__gt=instance_to_delete.time).count():
                     choices.append(
                         ('delete_following',
-                         _("Delete this and following events with "
-                           "kind '%s'") % instance_to_delete.kind),
+                         _("Delete this and following '%s' events")
+                         % instance_to_delete.kind),
                     )
 
                 local_time, week_day, hour, minute = (
@@ -891,7 +880,57 @@ class DeleteEventForm(ModalStyledFormMixin, StyledModelForm):
 
 
 @course_view
-def get_delete_event_form(pctx, event_id):
+def get_create_event_modal_form(pctx):
+    if not pctx.has_permission(pperm.edit_events):
+        raise PermissionDenied(_("may not edit events"))
+
+    request = pctx.request
+    if not (request.is_ajax() and request.method == "GET"):
+        raise PermissionDenied(_("only AJAX GET is allowed"))
+
+    new_event_form = CreateEventModalForm(pctx.course.identifier)
+
+    return JsonResponse(
+        {"modal_id": new_event_form.modal_id,
+         "form_html": new_event_form.render_ajax_modal_form_html(pctx.request)})
+
+
+@course_view
+def get_recurring_events_modal_form(pctx):
+    if not pctx.has_permission(pperm.edit_events):
+        raise PermissionDenied(_("may not edit events"))
+
+    request = pctx.request
+    if not (request.is_ajax() and request.method == "GET"):
+        raise PermissionDenied(_("only AJAX GET is allowed"))
+
+    recurring_events_form = RecurringEventForm(pctx.course.identifier)
+
+    return JsonResponse(
+        {"modal_id": recurring_events_form.modal_id,
+         "form_html":
+             recurring_events_form.render_ajax_modal_form_html(pctx.request)})
+
+
+@course_view
+def get_renumber_events_modal_form(pctx):
+    if not pctx.has_permission(pperm.edit_events):
+        raise PermissionDenied(_("may not edit events"))
+
+    request = pctx.request
+    if not (request.is_ajax() and request.method == "GET"):
+        raise PermissionDenied(_("only AJAX GET is allowed"))
+
+    renumber_events_form = RenumberEventsForm(pctx.course.identifier)
+
+    return JsonResponse(
+        {"modal_id": renumber_events_form.modal_id,
+         "form_html":
+             renumber_events_form.render_ajax_modal_form_html(pctx.request)})
+
+
+@course_view
+def get_delete_event_modal_form(pctx, event_id):
     if not pctx.has_permission(pperm.edit_events):
         raise PermissionDenied(_("may not edit events"))
 
@@ -942,14 +981,14 @@ def delete_event(pctx, event_id):
                 qset = Event.objects.filter(
                     course=pctx.course, kind=instance_to_delete.kind,
                     time__gte=instance_to_delete.time)
-                message = _("%(number)d events of kind '%(kind)s' deleted."
+                message = _("%(number)d '%(kind)s' events deleted."
                             ) % {"number": qset.count(),
                                  "kind": instance_to_delete.kind}
             elif operation == "delete_all":
                 qset = Event.objects.filter(
                     course=pctx.course, kind=instance_to_delete.kind,
                     ordinal__isnull=False)
-                message = _("All events of kind '%(kind)s' deleted."
+                message = _("All '%(kind)s' events deleted."
                             ) % {"kind": instance_to_delete.kind}
             elif operation == "delete_all_in_same_series":
                 qset = Event.objects.filter(
@@ -959,7 +998,7 @@ def delete_event(pctx, event_id):
                     time__minute=minute,
                     ordinal__isnull=False)
                 message = _(
-                    "All events of kind '%(kind)s' on '%(time)s' deleted."
+                    "All '%(kind)s' events on '%(time)s' deleted."
                     % {"time": format_datetime_local(
                         local_time, format="D, H:i"),
                         "kind": instance_to_delete.kind})
@@ -971,13 +1010,12 @@ def delete_event(pctx, event_id):
                     time__minute=minute,
                     time__gte=instance_to_delete.time,
                     ordinal__isnull=False)
-                message = _("%(number)d events of kind '%(kind)s' on "
+                message = _("%(number)d '%(kind)s' events on "
                             "'%(time)s' deleted."
-                            ) % {"number": qset.count(),
-                                 "kind": instance_to_delete.kind,
-                                 "time": format_datetime_local(
-                                     local_time, format="D, H:i"),
-                                 }
+                            % {"number": qset.count(),
+                               "kind": instance_to_delete.kind,
+                               "time": format_datetime_local(
+                                   local_time, format="D, H:i")})
             else:
                 raise SuspiciousOperation(_("unknown operation"))
 
@@ -1137,7 +1175,7 @@ class UpdateEventForm(ModalStyledFormMixin, StyledModelForm):
 
 
 @course_view
-def get_update_event_form(pctx, event_id):
+def get_update_event_modal_form(pctx, event_id):
     if not pctx.has_permission(pperm.edit_events):
         raise PermissionDenied(_("may not edit events"))
 
@@ -1203,9 +1241,20 @@ def update_event(pctx, event_id):
     if form.is_valid():
         try:
             instance = form.save(commit=False)
+            if (instance.time == instance_to_update.time
+                    and instance.end_time == instance_to_update.end_time
+                    and instance.kind == instance_to_update.kind
+                    and instance.ordinal == instance_to_update.ordinal
+                    and instance.all_day == instance_to_update.all_day
+                    and instance.shown_in_calendar
+                    == instance_to_update.shown_in_calendar):
+                return JsonResponse(
+                    {"message": _(
+                        "No change was made to event '%s'."
+                        % str(instance_to_update))})
+
             instance.course = pctx.course
             new_event_timedelta = instance.time - instance_to_update.time
-            new_event_ordianl_delta = instance.ordinal - instance_to_update.ordinal
             new_duration = None
             if instance.end_time is not None:
                 new_duration = instance.end_time - instance.time
@@ -1231,11 +1280,17 @@ def update_event(pctx, event_id):
                         end_time__hour=end_hour,
                         end_time__minute=end_minute))
 
-            message = None
             if "update" in request.POST:
                 instance.pk = event_id
                 instance.save()
-                message = _("Event '%s' updated.") % str(instance)
+                if str(instance_to_update) == str(instance):
+                    message = _("Event '%s' updated.") % str(instance_to_update)
+                else:
+                    message = string_concat(
+                        _("Event updated"),
+                        ": '%(original_event)s' -> '%(new_event)s'"
+                        % {"original_event": str(instance_to_update),
+                           "new_event": str(instance)})
             else:
                 if "update_all" in request.POST:
                     events_to_update = (
@@ -1259,11 +1314,14 @@ def update_event(pctx, event_id):
                     raise RuntimeError(
                         _("May not do bulk update when ordinal is None"))
 
+                new_event_ordinal_delta = (
+                    instance.ordinal - instance_to_update.ordinal)
+
                 for event in events_to_update:
                     event.kind = instance.kind
 
                     # This might result in IntegrityError
-                    event.ordinal += new_event_ordianl_delta
+                    event.ordinal += new_event_ordinal_delta
 
                     event.time = (
                             event.time + new_event_timedelta)
@@ -1274,6 +1332,19 @@ def update_event(pctx, event_id):
                     else:
                         event.end_time = None
                     event.save()
+
+                if str(instance_to_update) == str(instance):
+                    message = (
+                        _("%(number)d '%(kind)s' events updated."
+                        % {"number": events_to_update.count(),
+                           "kind": instance.kind}))
+                else:
+                    message = string_concat(
+                        _("%(number)d events updated."
+                          % {"number": events_to_update.count()}),
+                        ": '%(original_kind)s' -> '%(new_kind)s'"
+                          % {"original_kind": instance_to_update.kind,
+                             "new_kind": instance.kind})
 
             return JsonResponse({"message": message})
         except Exception as e:

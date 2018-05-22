@@ -372,15 +372,33 @@ urlpatterns = [
 
     url(r"^course"
         "/" + COURSE_ID_REGEX +
+        "/calendar/new-event-modal-form/$",
+        course.calendar.get_create_event_modal_form,
+        name="relate-get_create_event_modal_form"),
+
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/calendar/renumber-events-ajax-form/$",
+        course.calendar.get_renumber_events_modal_form,
+        name="relate-get_renumber_events_modal_form"),
+
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/calendar/recurring-events-modal-form/$",
+        course.calendar.get_recurring_events_modal_form,
+        name="relate-get_recurring_events_modal_form"),
+
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
         "/calendar/delete-form/(?P<event_id>[0-9]+)$",
-        course.calendar.get_delete_event_form,
-        name="relate-get_delete_event_form"),
+        course.calendar.get_delete_event_modal_form,
+        name="relate-get_delete_event_modal_form"),
 
     url(r"^course"
         "/" + COURSE_ID_REGEX +
         "/calendar/update-form/(?P<event_id>[0-9]+)$",
-        course.calendar.get_update_event_form,
-        name="relate-get_update_event_form"),
+        course.calendar.get_update_event_modal_form,
+        name="relate-get_update_event_modal_form"),
 
     url(r"^course"
         "/" + COURSE_ID_REGEX +
