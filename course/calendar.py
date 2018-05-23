@@ -86,7 +86,7 @@ class ListTextWidget(forms.TextInput):
         super(ListTextWidget, self).__init__(*args, **kwargs)
         self._name = name
         self._list = data_list
-        self.attrs.update({'list':'list__%s' % self._name})
+        self.attrs.update({'list': 'list__%s' % self._name})
 
     def render(self, name, value, attrs=None, renderer=None):
         text_html = super(ListTextWidget, self).render(
@@ -312,7 +312,8 @@ def create_recurring_events(pctx):
                 break
         else:
             if request.is_ajax():
-                return JsonResponse(form.errors, status=400)
+                return JsonResponse(
+                    {"errors": form.errors, "form_prefix": form.prefix}, status=400)
 
         if request.is_ajax():
             if message_level == messages.ERROR:
@@ -413,7 +414,7 @@ def renumber_events(pctx):
             events = list(
                 Event.objects
                     .filter(
-                        course=pctx.course, kind=kind)
+                    course=pctx.course, kind=kind)
                     .order_by(order_field))
 
             if events:
@@ -445,7 +446,8 @@ def renumber_events(pctx):
                                      _("No events found."))
         else:
             if request.is_ajax():
-                return JsonResponse(form.errors, status=400)
+                return JsonResponse(
+                    {"errors": form.errors, "form_prefix": form.prefix}, status=400)
 
         if request.is_ajax():
             if message_level == messages.ERROR:
@@ -637,18 +639,6 @@ def view_calendar(pctx, operation=None):
     if pctx.course.end_date is not None and default_date > pctx.course.end_date:
         default_date = pctx.course.end_date
 
-    new_event_form = CreateEventModalForm(pctx.course.identifier)
-    new_event_form_ajax_html = (
-        new_event_form.render_ajax_modal_form_html(pctx.request))
-
-    recurring_events_form = RecurringEventForm(pctx.course.identifier)
-    recurring_events_form_ajax_html = (
-        recurring_events_form.render_ajax_modal_form_html(pctx.request))
-
-    renumber_events_form = RenumberEventsForm(pctx.course.identifier)
-    renumber_events_form_ajax_html = (
-        renumber_events_form.render_ajax_modal_form_html(pctx.request))
-
     return render_course_page(pctx, "course/calendar.html", {
         "default_date": default_date.isoformat(),
         "is_edit_mode": is_edit_view,
@@ -732,8 +722,12 @@ class CreateEventModalForm(ModalStyledFormMixin, StyledModelForm):
         return helper
 
     def clean(self):
+        super(CreateEventModalForm, self).clean()
+
         kind = self.cleaned_data.get("kind")
         ordinal = self.cleaned_data.get('ordinal')
+        start_time = self.cleaned_data.get('time')
+        end_time = self.cleaned_data.get('end_time')
         if kind is not None:
             filter_kwargs = {"course__identifier": self.course_identifier,
                              "kind": kind}
@@ -775,7 +769,8 @@ def create_event(pctx):
             return JsonResponse(
                 {"__all__": ["%s: %s" % type(e).__name__, str(e)]}, status=400)
     else:
-        return JsonResponse(form.errors, status=400)
+        return JsonResponse(
+            {"errors": form.errors, "form_prefix": form.prefix}, status=400)
 
 
 class DeleteEventForm(ModalStyledFormMixin, StyledModelForm):
@@ -1028,7 +1023,8 @@ def delete_event(pctx, event_id):
                     status=400)
 
         else:
-            return JsonResponse(form.errors, status=400)
+            return JsonResponse(
+                {"errors": form.errors, "form_prefix": form.prefix}, status=400)
 
 
 class UpdateEventForm(ModalStyledFormMixin, StyledModelForm):
@@ -1071,8 +1067,8 @@ class UpdateEventForm(ModalStyledFormMixin, StyledModelForm):
             css_class="btn btn-md btn-success")
 
         update_series = Submit("update_series",
-               _("Update series"),
-               css_class="btn btn-md btn-success")
+                               _("Update series"),
+                               css_class="btn btn-md btn-success")
 
         update_this_and_following_in_series_button = Submit(
             "update_this_and_following_in_series",
@@ -1113,7 +1109,7 @@ class UpdateEventForm(ModalStyledFormMixin, StyledModelForm):
                     events_of_same_kind_and_weekday_time = (
                         events_of_same_kind_and_weekday_time
                             .filter(end_time__isnull=False)
-                        .filter(
+                            .filter(
                             end_time__week_day=end_week_day,
                             end_time__hour=end_hour,
                             end_time__minute=end_minute))
@@ -1209,7 +1205,7 @@ def get_update_event_modal_form(pctx, event_id):
         form = UpdateEventForm(
             pctx.course.identifier, event_id, instance=instance_to_update)
         for field_name, __ in form.fields.items():
-            if field_name not in  ["time", "end_time"]:
+            if field_name not in ["time", "end_time"]:
                 form.fields[field_name].widget = forms.HiddenInput()
     else:
         form = UpdateEventForm(
@@ -1274,8 +1270,8 @@ def update_event(pctx, event_id):
                         instance_to_update.end_time))
                 events_of_same_kind_and_weekday_time = (
                     events_of_same_kind_and_weekday_time
-                    .filter(end_time__isnull=False)
-                    .filter(
+                        .filter(end_time__isnull=False)
+                        .filter(
                         end_time__week_day=end_week_day,
                         end_time__hour=end_hour,
                         end_time__minute=end_minute))
@@ -1306,7 +1302,7 @@ def update_event(pctx, event_id):
 
                 elif "update_this_and_following_in_series" in request.POST:
                     events_to_update = events_of_same_kind_and_weekday_time.filter(
-                            time__gte=instance_to_update.time)
+                        time__gte=instance_to_update.time)
                 else:
                     raise SuspiciousOperation(_("unknown operation"))
 
@@ -1315,7 +1311,7 @@ def update_event(pctx, event_id):
                         _("May not do bulk update when ordinal is None"))
 
                 new_event_ordinal_delta = (
-                    instance.ordinal - instance_to_update.ordinal)
+                        instance.ordinal - instance_to_update.ordinal)
 
                 for event in events_to_update:
                     event.kind = instance.kind
@@ -1336,21 +1332,22 @@ def update_event(pctx, event_id):
                 if str(instance_to_update) == str(instance):
                     message = (
                         _("%(number)d '%(kind)s' events updated."
-                        % {"number": events_to_update.count(),
-                           "kind": instance.kind}))
+                          % {"number": events_to_update.count(),
+                             "kind": instance.kind}))
                 else:
                     message = string_concat(
                         _("%(number)d events updated."
                           % {"number": events_to_update.count()}),
                         ": '%(original_kind)s' -> '%(new_kind)s'"
-                          % {"original_kind": instance_to_update.kind,
-                             "new_kind": instance.kind})
+                        % {"original_kind": instance_to_update.kind,
+                           "new_kind": instance.kind})
 
             return JsonResponse({"message": message})
         except Exception as e:
             return JsonResponse(
                 {"__all__": ["%s: %s" % (type(e).__name__, str(e))]}, status=400)
     else:
-        return JsonResponse(form.errors, status=400)
+        return JsonResponse(
+            {"errors": form.errors, "form_prefix": form.prefix}, status=400)
 
 # vim: foldmethod=marker

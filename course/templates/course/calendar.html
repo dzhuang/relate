@@ -17,7 +17,7 @@
   {% get_current_language as LANGUAGE_CODE %}
   {% if LANGUAGE_CODE != "en" %}
     <script
-        src='{% static "fullcalendar/dist/lang/" %}{{ LANGUAGE_CODE |js_lang_fallback:"fullcalendar" }}.js?version=3.9.0'></script>
+        src='{% static "fullcalendar/dist/locale/" %}{{ LANGUAGE_CODE |js_lang_fallback:"fullcalendar" }}.js?version=3.9.0'></script>
   {% endif %}
   {% if pperm.edit_events %}
     <script src='{% static "blueimp-tmpl/js/tmpl.min.js" %}'></script>
@@ -303,12 +303,14 @@
           },
           error: function (data, textStatus, jqXHR) {
             clearFormErrors(self);
-            var errors = data.responseJSON;
+            var result = data.responseJSON,
+              errors = result.errors,
+              form_profix = result.form_prefix;
             $.each(errors, function (index, value) {
               if (index === "__all__") {
                 applyFormNonFieldError(self, value[0]);
               } else {
-                applyFormFieldError(index, value);
+                applyFormFieldError(index, value, form_profix);
               }
             });
           }
@@ -418,9 +420,11 @@
         });
       }
 
-      function applyFormFieldError(fieldname, error) {
-        var input = $("#id_" + fieldname),
-          container = $("#div_id_" + fieldname),
+      function applyFormFieldError(fieldname, error, form_prefix="") {
+        if (form_prefix)
+          form_prefix = form_prefix + "-";
+        var input = $("#id_" + form_prefix + fieldname),
+          container = $("#div_id_" + form_prefix + fieldname),
           errorMsg = $("<span />").addClass("text-danger help-inline ajax-error").text(error[0]);
 
         container.addClass("has-error error");

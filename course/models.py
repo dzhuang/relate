@@ -328,6 +328,15 @@ class Event(models.Model):
         else:
             return self.kind
 
+    def clean(self):
+        super(Event, self).clean()
+
+        if self.end_time:
+            if self.end_time < self.time:
+                raise ValidationError(
+                    {"end_time":
+                         _("End time must not be ahead of start time.")})
+
     def save(self, *args, **kwargs):
         # When ordinal is Null, unique_together failed to identify duplicate entries
         if not self.ordinal:
@@ -339,9 +348,6 @@ class Event(models.Model):
                     from django.db import IntegrityError
                     raise IntegrityError()
 
-        if self.end_time:
-            if self.end_time < self.time:
-                raise ValueError(_("End time must not be ahead of start time."))
         super(Event, self).save(*args, **kwargs)
 
     if six.PY3:
