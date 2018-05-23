@@ -52,7 +52,7 @@ from course.constants import (  # noqa
         exam_ticket_states, EXAM_TICKET_STATE_CHOICES,
         participation_permission, PARTICIPATION_PERMISSION_CHOICES,
 
-        COURSE_ID_REGEX, GRADING_OPP_ID_REGEX, NAME_VALID_REGEX
+        COURSE_ID_REGEX, GRADING_OPP_ID_REGEX, NAME_VALID_REGEX, EVENT_KIND_REGEX
         )
 
 from course.page.base import AnswerFeedback
@@ -291,7 +291,14 @@ class Event(models.Model):
             # Translators: format of event kind in Event model
             help_text=_("Should be lower_case_with_underscores, no spaces "
             "allowed."),
-            verbose_name=_('Kind of event'))
+            verbose_name=_('Kind of event'),
+            validators=[
+                RegexValidator(
+                    "^" + EVENT_KIND_REGEX + "$",
+                    message=_("Should be lower_case_with_underscores, no spaces "
+                              "allowed.")),
+                ]
+            )
     ordinal = models.IntegerField(blank=True, null=True,
             # Translators: ordinal of event of the same kind
             verbose_name=_('Ordinal of event'))
@@ -331,6 +338,10 @@ class Event(models.Model):
                 if object_exist:
                     from django.db import IntegrityError
                     raise IntegrityError()
+
+        if self.end_time:
+            if self.end_time < self.time:
+                raise ValueError(_("End time must not be ahead of start time."))
         super(Event, self).save(*args, **kwargs)
 
     if six.PY3:
