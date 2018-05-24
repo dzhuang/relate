@@ -28,7 +28,7 @@ from typing import cast
 
 import six
 
-from django.db import models
+from django.db import models, IntegrityError
 from django.utils.timezone import now
 from django.urls import reverse
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
@@ -52,7 +52,7 @@ from course.constants import (  # noqa
         exam_ticket_states, EXAM_TICKET_STATE_CHOICES,
         participation_permission, PARTICIPATION_PERMISSION_CHOICES,
 
-        COURSE_ID_REGEX, GRADING_OPP_ID_REGEX, NAME_VALID_REGEX
+        COURSE_ID_REGEX, GRADING_OPP_ID_REGEX, NAME_VALID_REGEX, EVENT_KIND_REGEX
         )
 
 from course.page.base import AnswerFeedback
@@ -291,7 +291,14 @@ class Event(models.Model):
             # Translators: format of event kind in Event model
             help_text=_("Should be lower_case_with_underscores, no spaces "
             "allowed."),
-            verbose_name=_('Kind of event'))
+            verbose_name=_('Kind of event'),
+            validators=[
+                RegexValidator(
+                    "^" + EVENT_KIND_REGEX + "$",
+                    message=_("Should be lower_case_with_underscores, no spaces "
+                              "allowed.")),
+                ]
+            )
     ordinal = models.IntegerField(blank=True, null=True,
             # Translators: ordinal of event of the same kind
             verbose_name=_('Ordinal of event'))
@@ -320,6 +327,30 @@ class Event(models.Model):
             return "%s %s" % (self.kind, self.ordinal)
         else:
             return self.kind
+
+    def clean(self):
+        super(Event, self).clean()
+
+        if self.end_time:
+            if self.end_time < self.time:
+                raise ValidationError(
+                    {"end_time":
+                         _("End time must not be ahead of start time.")})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+
+        if self.ordinal is None:
+            null_ordinal_qset = Event.objects.filter(
+                kind=self.kind, ordinal__isnull=True)
+
+            if self.pk:
+                null_ordinal_qset = null_ordinal_qset.exclude(id=self.pk)
+
+            if null_ordinal_qset.exists():
+                raise IntegrityError()
+
+        super(Event, self).save(*args, **kwargs)
 
     if six.PY3:
         __str__ = __unicode__
