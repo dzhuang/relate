@@ -28,10 +28,12 @@ import datetime
 
 from django.test import TestCase
 from django.utils.timezone import now, timedelta
+from django.core.exceptions import ValidationError
 
 from relate.utils import as_local_time
 
 from course.models import Event
+from course import calendar
 
 from tests.base_test_mixins import (
     SingleCourseTestMixin, MockAddMessageMixing, HackRepoMixin)
@@ -182,12 +184,10 @@ class CreateRecurringEventsTest(SingleCourseTestMixin,
         self.assertAddMessageCallCount(1)
         self.assertAddMessageCalledWith("Events created.")
 
-    def test_unknown_error(self):
+    def test_event_save_unknown_error(self):
         error_msg = "my unknown error"
-        with mock.patch(
-                "course.calendar._create_recurring_events_backend"
-        ) as mock_create_evt_backend:
-            mock_create_evt_backend.side_effect = RuntimeError(error_msg)
+        with mock.patch("course.models.Event.save") as mock_event_save:
+            mock_event_save.side_effect = RuntimeError(error_msg)
             resp = self.post_create_recurring_events_view(
                 data=self.get_post_create_recur_evt_data(starting_ordinal=4))
             self.assertEqual(resp.status_code, 200)
@@ -197,6 +197,23 @@ class CreateRecurringEventsTest(SingleCourseTestMixin,
         self.assertAddMessageCallCount(1)
         self.assertAddMessageCalledWith(
             "RuntimeError: %s. No events created." % error_msg)
+
+    def test_event_save_other_validation_error(self):
+        error_msg = "my unknown validation error for end_time"
+        with mock.patch("course.models.Event.save") as mock_event_save:
+            # mock error raised by event.end_time
+            mock_event_save.side_effect = (
+                ValidationError({"end_time": error_msg}))
+            resp = self.post_create_recurring_events_view(
+                data=self.get_post_create_recur_evt_data(starting_ordinal=4))
+            self.assertEqual(resp.status_code, 200)
+
+        # form error was raised instead of add_message
+        self.assertFormErrorLoose(resp, error_msg)
+        self.assertAddMessageCallCount(0)
+
+        # not created
+        self.assertEqual(Event.objects.count(), 0)
 
     def test_duration_in_minutes(self):
         resp = self.post_create_recurring_events_view(
@@ -236,6 +253,38 @@ class CreateRecurringEventsTest(SingleCourseTestMixin,
             else:
                 self.assertEqual(evt.time - t, datetime.timedelta(weeks=2))
                 t = evt.time
+
+
+class RecurringEventFormTest(SingleCourseTestMixin, TestCase):
+    """test course.calendar.RecurringEventForm"""
+    def test_negative_duration_in_minutes(self):
+        form_data = {
+            "kind": "some_kind",
+            "time": now().replace(tzinfo=None).strftime(
+                DATE_TIME_PICKER_TIME_FORMAT),
+            "duration_in_minutes": -1,
+            "interval": "weekly",
+            "count": 5
+        }
+        form = calendar.RecurringEventForm(data=form_data)
+        self.assertFalse(form.is_valid())
+        self.assertIn(
+            "Ensure this value is greater than or equal to 0.",
+            form.errors["duration_in_minutes"])
+
+    def test_negative_event_count(self):
+        form_data = {
+            "kind": "some_kind",
+            "time": now().replace(tzinfo=None).strftime(
+                DATE_TIME_PICKER_TIME_FORMAT),
+            "interval": "weekly",
+            "count": -1
+        }
+        form = calendar.RecurringEventForm(data=form_data)
+        self.assertFalse(form.is_valid())
+        self.assertIn(
+            "Ensure this value is greater than or equal to 0.",
+            form.errors["count"])
 
 
 class RenumberEventsTest(SingleCourseTestMixin,

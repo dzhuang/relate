@@ -31,9 +31,10 @@ from django.utils.translation import (
         ugettext_lazy as _, pgettext_lazy)
 from django.contrib.auth.decorators import login_required
 from course.utils import course_view, render_course_page
-from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
-from django.db import transaction, IntegrityError
-from django.contrib import messages  # noqa
+from django.core.exceptions import (
+    PermissionDenied, ObjectDoesNotExist, ValidationError)
+from django.db import transaction
+from django.contrib import messages
 import django.forms as forms
 
 from crispy_forms.layout import Submit
@@ -59,7 +60,9 @@ class RecurringEventForm(StyledForm):
             widget=DateTimePicker(
                 options={"format": "YYYY-MM-DD HH:mm", "sideBySide": True}),
             label=pgettext_lazy("Starting time of event", "Starting time"))
-    duration_in_minutes = forms.FloatField(required=False,
+    duration_in_minutes = forms.FloatField(
+            required=False,
+            min_value=0,
             label=_("Duration in minutes"))
     all_day = forms.BooleanField(
                 required=False,
@@ -81,6 +84,7 @@ class RecurringEventForm(StyledForm):
             label=pgettext_lazy(
                 "Starting ordinal of recurring events", "Starting ordinal"))
     count = forms.IntegerField(required=True,
+            min_value=0,
             label=pgettext_lazy("Count of recurring events", "Count"))
 
     def __init__(self, *args, **kwargs):
@@ -115,10 +119,12 @@ def _create_recurring_events_backend(course, time, kind, starting_ordinal, inter
                     minutes=duration_in_minutes)
         try:
             evt.save()
-        except IntegrityError:
-            raise EventAlreadyExists(
-                _("'%(event_kind)s %(event_ordinal)d' already exists") %
-                {'event_kind': kind, 'event_ordinal': ordinal})
+        except Exception as e:
+            if isinstance(e, ValidationError) and "already exists" in str(e):
+                raise EventAlreadyExists(
+                    _("'%(exist_event)s' already exists")
+                    % {'exist_event': evt})
+            raise e
 
         date = time.date()
         if interval == "weekly":
@@ -183,13 +189,24 @@ def create_recurring_events(pctx):
                         continue
 
                 except Exception as e:
-                    messages.add_message(request, messages.ERROR,
-                            string_concat(
-                                "%(err_type)s: %(err_str)s. ",
-                                _("No events created."))
-                            % {
-                                "err_type": type(e).__name__,
-                                "err_str": str(e)})
+                    if isinstance(e, ValidationError):
+                        for field, error in e.error_dict.items():
+                            try:
+                                form.add_error(field, error)
+                            except ValueError:
+                                # This happens when ValidationError were
+                                # raised for fields which don't exist in
+                                # RecurringEventForm
+                                form.add_error(
+                                    "__all__", "'%s': %s" % (field, error))
+                    else:
+                        messages.add_message(request, messages.ERROR,
+                                string_concat(
+                                    "%(err_type)s: %(err_str)s. ",
+                                    _("No events created."))
+                                % {
+                                    "err_type": type(e).__name__,
+                                    "err_str": str(e)})
                 else:
                     messages.add_message(request, messages.SUCCESS,
                             _("Events created."))
