@@ -52,19 +52,19 @@
           </span>
       </button>
 
-      <button class="btn btn-default btn-md mode-toggle relate-get-modal-form"
+      <button class="btn btn-default btn-md mode-toggle relate-off-calendar-modal-form"
               data-url="{% url 'relate-get_create_event_modal_form' course.identifier %}"
               data-form-div="#div-id-relate-new-event-form"
               data-edit-mode="{{ is_edit_mode|yesno:"on,off" }}"
       >{% trans "New event" %}</button>
 
-      <button class="btn btn-default btn-md mode-toggle relate-get-modal-form"
+      <button class="btn btn-default btn-md mode-toggle relate-off-calendar-modal-form"
               data-url="{% url 'relate-get_recurring_events_modal_form' course.identifier %}"
               data-form-div="#div-id-relate-recurring-events-form"
               data-edit-mode="{{ is_edit_mode|yesno:"on,off" }}"
       >{% trans "Create recurring events" %}</button>
 
-      <button class="btn btn-default btn-md mode-toggle relate-get-modal-form"
+      <button class="btn btn-default btn-md mode-toggle relate-off-calendar-modal-form"
               data-url="{% url 'relate-get_renumber_events_modal_form' course.identifier %}"
               data-form-div="#div-id-relate-renumber-events-form"
               data-edit-mode="{{ is_edit_mode|yesno:"on,off" }}"
@@ -93,383 +93,393 @@
 {% endblock %}
 
 {% block page_bottom_javascript_extra %}
-  <script type="text/x-tmpl" id="django-message-template">
-    <div class="alert alert-{{ JQ_OPEN }}=o.tags{{ JQ_CLOSE }} fade in" data-alert="{{ JQ_OPEN }}=o.tags{{ JQ_CLOSE }}">
-      <a class="close" title="Close" href="#" data-dismiss="alert">&times;</a>
-      <i class="fa fa-{{ JQ_OPEN }}=o.icon_class{{ JQ_CLOSE }}"></i>
-      {{ JQ_OPEN }}=o.message{{ JQ_CLOSE }}
-    </div>
-  </script>
+  {% if pperm.edit_events %}
+    <script type="text/x-tmpl" id="django-message-template">
+      <div class="alert alert-{{ JQ_OPEN }}=o.tags{{ JQ_CLOSE }} fade in" data-alert="{{ JQ_OPEN }}=o.tags{{ JQ_CLOSE }}">
+        <a class="close" title="Close" href="#" data-dismiss="alert">&times;</a>
+        <i class="fa fa-{{ JQ_OPEN }}=o.icon_class{{ JQ_CLOSE }}"></i>
+        {{ JQ_OPEN }}=o.message{{ JQ_CLOSE }}
+      </div>
+    </script>
 
-  <script type="text/x-tmpl" id="delete-event-icon-template">
-    <span class="relate-event-hover fc-title glyphicon glyphicon-remove-circle relate-delete-event"
-      style="float:right;cursor:pointer" title="{% trans 'Delete event' %}"</span>
-  </script>
+    <script type="text/x-tmpl" id="delete-event-icon-template">
+      <span class="relate-event-hover fc-title glyphicon glyphicon-remove-circle relate-delete-event"
+        style="float:right;cursor:pointer" title="{% trans 'Delete event' %}"</span>
+    </script>
 
-  <script type="text/x-tmpl" id="edit-event-icon-template">
-    <span class="relate-event-hover fc-title glyphicon glyphicon-pencil relate-update-event"
-      style="float:right; cursor:pointer" title="{% trans 'Edit event' %}"> </span>
-  </script>
+    <script type="text/x-tmpl" id="edit-event-icon-template">
+      <span class="relate-event-hover fc-title glyphicon glyphicon-pencil relate-update-event"
+        style="float:right; cursor:pointer" title="{% trans 'Edit event' %}"> </span>
+    </script>
+  {% endif %}
 
   <script type="text/javascript">
-    var $courseCal = $('#course-cal'),
-      $relateEventInfo = $('#relate-event-info');
+    (function(){
+      var $courseCal = $('#course-cal'),
+        $relateEventInfo = $('#relate-event-info');
 
-    {% if pperm.edit_events %}
+      {% if pperm.edit_events %}
+        var switchToNormalModeButtonText = $("#switch-to-normal").text(),
+          switchToEditViewModeButtonText = $("#switch-to-edit").text(),
+          fetchUrl = '{% url "relate-fetch_event_json" course.identifier is_edit_mode|yesno:"1,0" %}',
+          deleteIconHtml = tmpl("delete-event-icon-template")(),
+          editIconHtml = tmpl("edit-event-icon-template")();
+      {% else %}
+        var fetchUrl = '{% url "relate-fetch_event_json" course.identifier "0" %}';
+      {% endif %}
 
-      var switchToNormalModeButtonText = $("#switch-to-normal").text(),
-        switchToEditViewModeButtonText = $("#switch-to-edit").text(),
-        fetchUrl = '{% url "relate-fetch_event_json" course.identifier is_edit_mode|yesno:"1,0" %}',
-        deleteIconHtml = tmpl("delete-event-icon-template"),
-        editIconHtml = tmpl("edit-event-icon-template");
-    {% else %}
-      var fetchUrl = '{% url "relate-fetch_event_json" course.identifier "0" %}';
-    {% endif %}
+      $(document).ready(function () {
+        $courseCal.fullCalendar({
+          header: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'month,agendaWeek,agendaDay,listMonth'
+          },
+          contentHeight: "auto",
+          defaultDate: '{{ default_date }}',
+          defaultView: $(window).width() < 765 ? 'listMonth': 'month',
+          timezone: "local",
+          nowIndicator: true,
+          views: {
+            month: {
+              displayEventEnd: $(window).width() < 765 ? false: true
+            }
+          },
+          minTime: "06:00:00",
+          maxTime: "24:00:00",
+          {% if pperm.edit_events %}
+            {# 5 minutes as time interval when resizing event (dragging end_time) #}
+            snapDuration: "00:05:00",
 
-    $(document).ready(function () {
-      $courseCal.fullCalendar({
-        header: {
-          left: 'prev,next today',
-          center: 'title',
-          right: 'month,agendaWeek,agendaDay,listMonth'
-        },
-        contentHeight: "auto",
-        defaultDate: '{{ default_date }}',
-        defaultView: $(window).width() < 765 ? 'listMonth': 'month',
-        timezone: "local",
-        nowIndicator: true,
-        snapDuration: "00:05:00",  // 5 minutes as time interval when resizing event (dragging end_time)
-        views: {
-          month: {
-            displayEventEnd: $(window).width() < 765 ? false: true
-          }
-        },
-        minTime: "06:00:00",
-        maxTime: "24:00:00",
-        {% if pperm.edit_events and is_edit_mode %}
-          editable: true,
-          selectable: true,
-        {% endif %}
-        events: function (start, end, timezone, callback) {
-          $.ajax({
-            url: fetchUrl,
-            success: function (result) {
-              $relateEventInfo.empty();
-              var eventsInfoHtml = result.events_info_html;
-              {% if pperm.edit_events %}
-                {# Add data-edit-mode attribute to event_info which are not expected to be visible in normal view #}
-                var infoDiv= document.createElement('div'), infoList;
-                infoDiv.innerHTML= eventsInfoHtml;
-                infoList = infoDiv.querySelectorAll(".mode-toggle");
-                for (var i = 0; i < infoList.length; i++) {
-                  infoList[i].setAttribute('data-edit-mode', getCurrentMode());
+            {% if is_edit_mode %}
+              editable: true,
+              selectable: true,
+            {% endif %}
+          {% endif %}
+          events: function (start, end, timezone, callback) {
+            $.ajax({
+              url: fetchUrl,
+              success: function (result) {
+                $relateEventInfo.empty();
+                var eventsInfoHtml = result.events_info_html;
+                {% if pperm.edit_events %}
+                  {# Add data-edit-mode attribute to event_info which are not expected to be visible in normal view #}
+                  var infoDiv= document.createElement('div'), infoList;
+                  infoDiv.innerHTML= eventsInfoHtml;
+                  infoList = infoDiv.querySelectorAll(".mode-toggle");
+                  for (var i = 0; i < infoList.length; i++) {
+                    infoList[i].setAttribute('data-edit-mode', getCurrentMode());
+                  }
+                  eventsInfoHtml = infoDiv.innerHTML;
+                {% endif %}
+                  $relateEventInfo.html(eventsInfoHtml);
+
+                  {# use events_json as eventSource #}
+                  callback(result.events_json);
                 }
-                eventsInfoHtml = infoDiv.innerHTML;
-              {% endif %}
-                $relateEventInfo.html(eventsInfoHtml);
-
-                {# use events_json as eventSource #}
-                callback(result.events_json);
-              }
-            })
-          },
-        {% if pperm.edit_events %}
-          eventRender: function(event, element, view) {
-            if (view.name !== "listMonth")
-              return;
-            if (!isEditMode())
-              return;
-            element.find('.fc-list-item-title').append(deleteIconHtml()).append(editIconHtml());
-            element.find('.relate-delete-event').on('click', function (eve) {
-              eve.preventDefault();
-              deleteEventHandler(event, view);
-            });
-            element.find('.relate-update-event', $(this)).on('click', function (eve) {
-              eve.preventDefault();
-              updateEventHandler(event, view);
-            });
-          },
-          eventDrop: function (event, delta, revertFunc, jsEvent, ui, view) {
-            if (!confirm('{% trans "Are you sure about this change?" %}')) {
-              revertFunc();
-            } else {
-              updateEventHandler(event, view, "eventDrop", delta, revertFunc);
-            }
-          },
-          eventResize: function (event, delta, revertFunc, jsEvent, ui, view) {
-            if (!confirm('{% trans "Are you sure about this change?" %}')) {
-              revertFunc();
-            } else {
-              updateEventHandler(event, view, "eventResize", delta, revertFunc);
-            }
-          },
-          eventMouseover: function (event, jsEvent, view) {
-            if (!isEditMode())
-              return;
-            if (view.name === "listMonth")
-              return;
-            $('.fc-content', $(this)).append(deleteIconHtml()).append(editIconHtml());
-            $('.relate-delete-event', $(this)).on('click', function (eve) {
-              eve.preventDefault();
-              deleteEventHandler(event, view);
-            });
-
-            $('.relate-update-event', $(this)).on('click', function (eve) {
-              eve.preventDefault();
-              updateEventHandler(event, view);
-            });
-          },
-          eventMouseout: function (event, jsEvent, view) {
-            if (!isEditMode())
-              return;
-            if (view.name === "listMonth")
-              return;
-            $(".relate-event-hover", $(this)).remove();
-          },
-        {% endif %}
-      });
-    });
-
-    {% if pperm.edit_events %}
-      var toggleButton = document.getElementById("toggle-calendar-view"),
-        toggleMode = function (elem, one, two) {
-          var nodeList = document.querySelectorAll(elem), newMode;
-          for (var i = 0; i < nodeList.length; i++) {
-            var node = nodeList[i];
-            if (newMode === undefined)
-              newMode = node.getAttribute('data-edit-mode') === one ? two : one;
-            node.setAttribute('data-edit-mode', newMode);
-          }
-          return newMode
-        };
-      toggleButton.onclick = function (e) {
-        var editMode = toggleMode('.mode-toggle', "on", "off");
-
-        $(this).text(editMode==="on"? switchToNormalModeButtonText: switchToEditViewModeButtonText);
-
-        $courseCal.fullCalendar('option', {
-          editable: editMode === "on",
-          selectable: editMode === "on"
-        });
-        e.preventDefault();
-      };
-
-      $('.relate-get-modal-form').click(function () {
-        var self = $(this);
-        $.ajax({
-          url: self.data("url")
-        })
-          .done(function (data) {
-            var modalSelector = "#" + data.modal_id;
-            $(self.data("form-div")).html(data.form_html);
-
-            $(modalSelector)
-              .modal('show')
-              .find("form")
-              .on('submit', function (e) {
-                e.preventDefault();
-                postModalForm($(this));
               })
-          })
+            },
+          {% if pperm.edit_events %}
+            eventRender: function(event, element, view) {
+              if (view.name !== "listMonth") return;
+              if (!isEditMode()) return;
+
+              {# Add update and delete event buttion in listMonth view #}
+              element
+                .find('.fc-list-item-title').append(deleteIconHtml).append(editIconHtml).end()
+                .find('.relate-delete-event').on('click', function (e) {
+                  e.preventDefault();
+                  deleteEventHandler(event, view);}).end()
+                .find('.relate-update-event', $(this)).on('click', function (e) {
+                  e.preventDefault();
+                  updateEventHandler(event, view);
+                });
+              },
+            eventDrop: function (event, delta, revertFunc, jsEvent, ui, view) {
+              if (!confirm('{% trans "Are you sure about this change?" %}')) {
+                revertFunc();
+              } else {
+                updateEventHandler(event, view, "eventDrop", delta, revertFunc);
+              }
+            },
+            eventResize: function (event, delta, revertFunc, jsEvent, ui, view) {
+              if (!confirm('{% trans "Are you sure about this change?" %}')) {
+                revertFunc();
+              } else {
+                updateEventHandler(event, view, "eventResize", delta, revertFunc);
+              }
+            },
+            eventMouseover: function (event, jsEvent, view) {
+              if (!isEditMode()) return;
+              if (view.name === "listMonth") return;
+
+              $(this)
+                .find('.fc-content').append(deleteIconHtml).append(editIconHtml).end()
+                .find('.relate-delete-event').on('click', function (e) {
+                  e.preventDefault();
+                  deleteEventHandler(event, view);
+                }).end()
+                .find('.relate-update-event').on('click', function (e) {
+                  e.preventDefault();
+                  updateEventHandler(event, view);
+                });
+              },
+            eventMouseout: function (event, jsEvent, view) {
+              if (!isEditMode())
+                return;
+              if (view.name === "listMonth")
+                return;
+              $(this).find(".relate-event-hover").remove();
+            },
+          {% endif %}
+        });
       });
 
-      function isEditMode(){
-        return $('.mode-toggle[data-edit-mode=on]').length > 0
-      }
+      {% if pperm.edit_events %}
 
-      function getCurrentMode(){
-        return isEditMode() ? "on" : "off";
-      }
+        {# {{{ toggle calendar edit mode between "on" and "off" #}
 
-      function postModalForm(form, submitButton) {
-        var self = form,
-          url = self.attr("action"),
-          form_data = self.serialize();
-          if(submitButton)
-            form_data = form_data + "&" + submitButton + "=''";
-        $.ajax({
-          url: url,
-          type: "POST",
-          data: form_data,
-          beforeSend: function (xhr, settings) {
-            var csrftoken = get_cookie('csrftoken');
-            xhr.setRequestHeader("X-CSRFToken", csrftoken);
-          },
-          success: function (data, textStatus, jqXHR) {
-            $courseCal.fullCalendar('refetchEvents');
-            self.closest('.modal').modal("hide");
-            if (data.message)
-              djangoMessage(data.message, "success");
-          },
-          error: function (data, textStatus, jqXHR) {
-            clearFormErrors(self);
-            var result = data.responseJSON,
-              errors = result.errors,
-              form_profix = result.form_prefix;
-            $.each(errors, function (index, value) {
-              if (index === "__all__") {
-                applyFormNonFieldError(self, value[0]);
-              } else {
-                applyFormFieldError(index, value, form_profix);
-              }
-            });
-          }
-        })
-      }
-
-      {# reset modal form after close #}
-      $('.modal form')
-        .closest(".modal")
-        .on('hidden.bs.modal', function () {
-          var thisForm = $(this).find('form');
-          thisForm.trigger('reset');
-          clearFormErrors(thisForm);
-        })
-        .end()
-        .on('submit', function (e) {
-          var submitButton = $("input[type=submit][clicked=true]").attr("name");
-          e.preventDefault();
-          postModalForm($(this), submitButton);
-        });
-
-      function deleteEventHandler(event, view){
-        {# use ajax to get the HTML of update event form #}
-        $.ajax({
-          url: event.delete_form_url,
-          success: function (data, textStatus, jqXHR) {
-            $("#div-id-relate-delete-event-form").html(data.form_html);
-            $("#delete-event-modal")
-              .find("form")
-              .prop("action", event.delete_url)
-              .end()
-              .modal('show')
-              .find("form")
-              .on('submit', function (e) {
-                var submitButton = $("input[type=submit][clicked=true]").attr("name");
-                e.preventDefault();
-                postModalForm($(this), submitButton);
-              });
-          },
-          error: function (data, textStatus, jqXHR) {
-            djangoMessage(data.error, "error")
-          }
-        });
-      }
-
-      function updateEventHandler(event, view, updateType, delta, revertFunc) {
-        var updateEventModal = "#update-event-modal",
-          updateEventFormDiv = "#div-id-relate-update-event-form",
-          ajaxType = "GET", ajaxData, eventUpdated = false,
-          beforeSend = function () {};
-
-        if (updateType === "eventDrop" || updateType === "eventResize"){
-          ajaxType = "POST";
-
-          beforeSend = function (xhr, settings) {
-            var csrftoken = get_cookie('csrftoken');
-            xhr.setRequestHeader("X-CSRFToken", csrftoken);
+        var toggleViewModeButton = document.getElementById("toggle-calendar-view"),
+          toggleMode = function (element, one, two) {
+            var nodeList = document.querySelectorAll(element), newMode;
+            for (var i = 0; i < nodeList.length; i++) {
+              var node = nodeList[i];
+              if (newMode === undefined)
+                newMode = node.getAttribute('data-edit-mode') === one ? two : one;
+              node.setAttribute('data-edit-mode', newMode);
+            }
+            return newMode
           };
 
-          if (updateType === "eventDrop")
-            ajaxData = {"drop_timedelta_hours": delta.as("hours")};
-          else
-            ajaxData = {"resize_timedelta_hours": delta.as("hours")};
+        toggleViewModeButton.onclick = function (e) {
+          var editMode = toggleMode('.mode-toggle', "on", "off");
+
+          {# change toggleViewModeButton button text #}
+          $(this).text(editMode==="on"? switchToNormalModeButtonText: switchToEditViewModeButtonText);
+
+          $courseCal.fullCalendar('option', {
+            editable: editMode === "on",
+            selectable: editMode === "on"
+          });
+          e.preventDefault();
+        };
+
+        {# }}} #}
+
+        {# Get and handle ajax modal form above calendar #}
+        $('.relate-off-calendar-modal-form').click(function () {
+          var self = $(this);
+          $.ajax({
+            url: self.data("url"),
+            success: function (data, textStatus, jqXHR) {
+              $(self.data("form-div")).html(data.form_html);
+              $("#" + data.modal_id)
+                .modal('show')
+                .find("form")
+                .on('submit', function (e) {
+                  e.preventDefault();
+                  postModalForm($(this));
+                })
+            }
+          })
+        });
+
+        function isEditMode(){
+          return $('.mode-toggle[data-edit-mode=on]').length > 0
         }
 
-        if (!revertFunc)
-          revertFunc = function () {};
+        function getCurrentMode(){
+          return isEditMode() ? "on" : "off";
+        }
 
-        {# use ajax to get the HTML of update event form #}
-        $.ajax({
-          url: event.update_form_url,
-          type: ajaxType,
-          data: ajaxData,
-          beforeSend: beforeSend,
-          success: function (data, textStatus, jqXHR) {
-            $(updateEventFormDiv).html(data.form_html);
+        function postModalForm(form, submitButton) {
+          var self = form,
+            url = self.attr("action"),
+            form_data = self.serialize();
 
-            {# identify which button was clicked when update event form was submitted #}
-            {# ref: https://stackoverflow.com/a/5721762/3437454 #}
-            $(updateEventFormDiv + " input[type=submit]").click(function () {
-              $("input[type=submit]", $(this).parents("form")).removeAttr("clicked");
-              $(this).attr("clicked", "true");
-            });
-            $(updateEventModal)
-              .find("form")
-              .prop("action", event.update_url)
-              .end()
-              .modal('show')
-              .find("form")
-              .on('submit', function (e) {
-                var submitButton = $("input[type=submit][clicked=true]").attr("name");
-                e.preventDefault();
-                postModalForm($(this), submitButton);
-                eventUpdated = true;
-              })
-              .end()
-              .on('hidden.bs.modal', function () {
-                {# reset event when canceled update #}
-                if (!eventUpdated)
-                  revertFunc();
+            {# add submitButton to serialized form_data #}
+            if(submitButton)
+              form_data = form_data + "&" + submitButton + "=''";
+
+          $.ajax({
+            url: url,
+            type: "POST",
+            data: form_data,
+            beforeSend: function (xhr, settings) {
+              var csrftoken = get_cookie('csrftoken');
+              xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            },
+            success: function (data, textStatus, jqXHR) {
+              $courseCal.fullCalendar('refetchEvents');
+              self.closest('.modal').modal("hide");
+              if (data.message)
+                djangoMessage(data.message, "success");
+            },
+            error: function (data, textStatus, jqXHR) {
+              clearFormErrors(self);
+              var result = data.responseJSON,
+                errors = result.errors,
+                form_profix = result.form_prefix;
+              $.each(errors, function (index, value) {
+                if (index === "__all__") {
+                  applyFormNonFieldError(self, value[0]);
+                } else {
+                  applyFormFieldError(index, value, form_profix);
+                }
               });
-          },
-          error: function (data, textStatus, jqXHR) {
-            djangoMessage(data.error, "error");
-            revertFunc();
-          }
-        });
-      }
+            }
+          })
+        }
 
-      function applyFormFieldError(fieldname, error, form_prefix="") {
-        if (form_prefix)
-          form_prefix = form_prefix + "-";
-        var input = $("#id_" + form_prefix + fieldname),
-          container = $("#div_id_" + form_prefix + fieldname),
-          errorMsg = $("<span />").addClass("text-danger help-inline ajax-error").text(error[0]);
-
-        container.addClass("has-error error");
-        errorMsg.insertAfter(input);
-      }
-
-      function applyFormNonFieldError(form, error) {
-        var formGroupLast = $(".form-group:last", $(form)),
-          errorMsg = $("<div />")
-            .addClass("alert alert-danger ajax-error")
-            .html('<i class="fa fa-ban"></i> ' + error);
-        if (formGroupLast.length)
-          {# in sert non-field errors after last form field #}
-          errorMsg.insertAfter(formGroupLast);
-
-        {# in case no fields are rendered (delete form) #}
-        else errorMsg.insertAfter($(form).children().first());
-      }
-
-      function clearFormErrors(form) {
-        $(".ajax-error", $(form)).remove();
-        $(".error", $(form)).removeClass("has-error");
-      }
-
-      function djangoMessage(msg, level) {
-        var levels = {
-            warning: 'alert',
-            error: 'error',
-            success: 'success',
-            info: 'info'
-          },
-          fontAwesomeClass = {
-            warning: 'warning',
-            error: 'ban',
-            success: 'check',
-            info: 'info-circle'
-          },
-          html = tmpl("django-message-template", {
-            "message": msg, "tags": levels[level],
-            "icon_class": fontAwesomeClass[level]
+        {# reset modal form after close #}
+        $('.modal form')
+          .closest(".modal")
+          .on('hidden.bs.modal', function () {
+            var thisForm = $(this).find('form');
+            thisForm.trigger('reset');
+            clearFormErrors(thisForm);
+          })
+          .end()
+          .on('submit', function (e) {
+            var submitButton = $("input[type=submit][clicked=true]").attr("name");
+            e.preventDefault();
+            postModalForm($(this), submitButton);
           });
-        $("#message-area").append(html);
-      }
 
-    {% endif %}
+        function deleteEventHandler(event, view){
+          {# use ajax to get the HTML of delete_event_form and handle form action #}
+          $.ajax({
+            url: event.delete_form_url,
+            success: function (data, textStatus, jqXHR) {
+              $("#div-id-relate-delete-event-form").html(data.form_html);
+              $("#delete-event-modal")
+                .find("form")
+                .prop("action", event.delete_url)
+                .end()
+                .modal('show')
+                .find("form")
+                .on('submit', function (e) {
+                  var submitButton = $("input[type=submit][clicked=true]").attr("name");
+                  e.preventDefault();
+                  postModalForm($(this), submitButton);
+                });
+            },
+            error: function (data, textStatus, jqXHR) {
+              djangoMessage(data.error, "error")
+            }
+          });
+        }
+
+        function updateEventHandler(event, view, updateType, delta, revertFunc) {
+          {# use ajax to get the HTML of update_event_form and handle form action #}
+          var updateEventModal = "#update-event-modal",
+            updateEventFormDiv = "#div-id-relate-update-event-form",
+            ajaxType = "GET", ajaxData, eventUpdated = false,
+            beforeSend = function () {};
+
+          if (updateType === "eventDrop" || updateType === "eventResize"){
+            ajaxType = "POST";
+
+            beforeSend = function (xhr, settings) {
+              var csrftoken = get_cookie('csrftoken');
+              xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            };
+
+            if (updateType === "eventDrop")
+              ajaxData = {"drop_timedelta_hours": delta.as("hours")};
+            else
+              ajaxData = {"resize_timedelta_hours": delta.as("hours")};
+          }
+
+          if (!revertFunc)
+            revertFunc = function () {};
+
+          {# use ajax to get the HTML of update event form #}
+          $.ajax({
+            url: event.update_form_url,
+            type: ajaxType,
+            data: ajaxData,
+            beforeSend: beforeSend,
+            success: function (data, textStatus, jqXHR) {
+              $(updateEventFormDiv).html(data.form_html);
+
+              {# for identifying which button was clicked when update_event_form was submitted #}
+              {# ref: https://stackoverflow.com/a/5721762/3437454 #}
+              $(updateEventFormDiv + " input[type=submit]").click(function () {
+                $("input[type=submit]", $(this).parents("form")).removeAttr("clicked");
+                $(this).attr("clicked", "true");
+              });
+
+              $(updateEventModal)
+                .find("form").prop("action", event.update_url).end()
+                .modal('show').find("form").on('submit', function (e) {
+                  var submitButton = $("input[type=submit][clicked=true]").attr("name");
+                  e.preventDefault();
+                  postModalForm($(this), submitButton);
+                  eventUpdated = true;
+                }).end()
+                .on('hidden.bs.modal', function () {
+                  {# reset event when canceled updating #}
+                  if (!eventUpdated) revertFunc();
+                });
+            },
+            error: function (data, textStatus, jqXHR) {
+              djangoMessage(data.error, "error");
+              revertFunc();
+            }
+          });
+        }
+
+        function applyFormFieldError(fieldname, error, form_prefix) {
+          if (form_prefix)
+            form_prefix = form_prefix + "-";
+          var input = $("#id_" + form_prefix + fieldname),
+            container = $("#div_id_" + form_prefix + fieldname),
+            errorMsg = $("<span />").addClass("text-danger help-inline ajax-error").text(error[0]);
+
+          container.addClass("has-error error");
+          errorMsg.insertAfter(input);
+        }
+
+        function applyFormNonFieldError(form, error) {
+          var formGroupLast = $(".form-group:last", $(form)),
+            errorMsg = $("<div />")
+              .addClass("alert alert-danger ajax-error")
+              .html('<i class="fa fa-ban"></i> ' + error);
+          if (formGroupLast.length)
+            {# in sert non-field errors after last form field #}
+            errorMsg.insertAfter(formGroupLast);
+
+          {# in case the form as no fields (e.g., delete_event_form) #}
+          else errorMsg.insertAfter($(form).children().first());
+        }
+
+        function clearFormErrors(form) {
+          $(".ajax-error", $(form)).remove();
+          $(".error", $(form)).removeClass("has-error");
+        }
+
+        function djangoMessage(msg, level) {
+          var levels = {
+              warning: 'alert',
+              error: 'error',
+              success: 'success',
+              info: 'info'
+            },
+            fontAwesomeClass = {
+              warning: 'warning',
+              error: 'ban',
+              success: 'check',
+              info: 'info-circle'
+            },
+            html = tmpl("django-message-template", {
+              "message": msg, "tags": levels[level],
+              "icon_class": fontAwesomeClass[level]
+            });
+          $("#message-area").append(html);
+        }
+      {% endif %}
+    })();
 
   </script>
 

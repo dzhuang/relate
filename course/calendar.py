@@ -57,7 +57,7 @@ class ModalStyledFormMixin(object):
     ajax_modal_form_template = "modal-form.html"
 
     @property
-    def form_description(self):
+    def form_title(self):
         raise NotImplementedError()
 
     @property
@@ -68,6 +68,7 @@ class ModalStyledFormMixin(object):
         return self.get_form_helper()
 
     def render_ajax_modal_form_html(self, request, context=None):
+        # remove possbily added buttons by non-AJAX form
         self.helper.inputs = []
 
         from crispy_forms.utils import render_crispy_form
@@ -119,7 +120,7 @@ def get_local_time_weekday_hour_minute(dt):
 # {{{ creation
 
 class RecurringEventForm(ModalStyledFormMixin, StyledForm):
-    form_description = _("Create recurring events")
+    form_title = _("Create recurring events")
     modal_id = "create-recurring-events-modal"
 
     # This is to avoid field name conflict
@@ -332,7 +333,7 @@ def create_recurring_events(pctx):
 
 
 class RenumberEventsForm(ModalStyledFormMixin, StyledForm):
-    form_description = _("Renumber events")
+    form_title = _("Renumber events")
     modal_id = "renumber-events-modal"
 
     # This is to avoid field name conflict
@@ -665,7 +666,7 @@ def fetch_event_json(pctx, is_edit_view):
 
 
 class CreateEventModalForm(ModalStyledFormMixin, StyledModelForm):
-    form_description = _("Create a event")
+    form_title = _("Create a event")
     modal_id = "create-event-modal"
     prefix = "create"
 
@@ -774,7 +775,7 @@ def create_event(pctx):
 
 
 class DeleteEventForm(ModalStyledFormMixin, StyledModelForm):
-    form_description = _("Delete event")
+    form_title = _("Delete event")
     modal_id = "delete-event-modal"
     prefix = "delete"
 
@@ -1029,7 +1030,7 @@ def delete_event(pctx, event_id):
 
 class UpdateEventForm(ModalStyledFormMixin, StyledModelForm):
     @property
-    def form_description(self):
+    def form_title(self):
         return _("Update event '%s'" % str(Event.objects.get(id=self.event_id)))
 
     modal_id = "update-event-modal"
