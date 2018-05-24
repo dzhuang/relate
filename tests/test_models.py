@@ -185,11 +185,9 @@ class EventTest(RelateModelTestMixin, unittest.TestCase):
         event.time = now() - timedelta(days=1)
         event.save()
 
-        with self.assertRaises(ValidationError) as cm:
+        from django.db import IntegrityError
+        with self.assertRaises(IntegrityError):
             factories.EventFactory(**kwargs)
-
-        expected_error_msg = "'some_kind' already exists"
-        self.assertIn(expected_error_msg, str(cm.exception))
 
 
 class ParticipationTagTest(RelateModelTestMixin, unittest.TestCase):
