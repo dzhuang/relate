@@ -38,7 +38,7 @@ from django.contrib.auth.decorators import login_required
 from course.utils import course_view, render_course_page
 from django.core.exceptions import (
     PermissionDenied, ObjectDoesNotExist, ValidationError, SuspiciousOperation)
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.contrib import messages
 from django.urls import reverse
 from django.http import JsonResponse
@@ -170,6 +170,7 @@ class RecurringEventForm(ModalStyledFormMixin, StyledForm):
             Event.objects.filter(
                 course__identifier=course_identifier)
                 .values_list("kind", flat=True))]
+        print(exist_event_choices)
         self.fields['kind'].widget = ListTextWidget(data_list=exist_event_choices,
                                                     name="event_choices")
 
@@ -219,7 +220,12 @@ def _create_recurring_events_backend(course, time, kind, starting_ordinal, inter
         try:
             evt.save()
         except Exception as e:
+            event_already_exist = False
+            if isinstance(e, IntegrityError):
+                event_already_exist = True
             if isinstance(e, ValidationError) and "already exists" in str(e):
+                event_already_exist = True
+            if event_already_exist:
                 raise EventAlreadyExists(
                     _("'%(exist_event)s' already exists")
                     % {'exist_event': evt})
@@ -305,6 +311,11 @@ def create_recurring_events(pctx):
                                 # RecurringEventForm
                                 form.add_error(
                                     "__all__", "'%s': %s" % (field, error))
+
+                        if request.is_ajax():
+                            return JsonResponse(
+                                {"errors": form.errors, "form_prefix": form.prefix},
+                                status=400)
                     else:
                         messages.add_message(request, messages.ERROR,
                                 string_concat(
@@ -319,6 +330,7 @@ def create_recurring_events(pctx):
 
                 break
         else:
+            print("here", form.errors)
             if request.is_ajax():
                 return JsonResponse(
                     {"errors": form.errors, "form_prefix": form.prefix}, status=400)
@@ -326,7 +338,10 @@ def create_recurring_events(pctx):
         if request.is_ajax():
             if message_level == messages.ERROR:
                 # Rendered as a non-field error in AJAX view
-                return JsonResponse({"__all__": [message]}, status=400)
+                return JsonResponse(
+                    {"errors": {"__all__": [message]},
+                     "form_prefix": form.prefix},
+                    status=400)
             return JsonResponse({"message": message})
 
     form = RecurringEventForm(pctx.course.identifier)
