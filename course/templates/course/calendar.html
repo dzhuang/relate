@@ -292,7 +292,7 @@
           return isEditMode() ? "on" : "off";
         }
 
-        function postModalForm(form, submitButton) {
+        function postModalForm(form, submitButton, revertFunc) {
           var self = form,
             url = self.attr("action"),
             form_data = self.serialize();
@@ -300,6 +300,9 @@
             {# add submitButton to serialized form_data #}
             if(submitButton)
               form_data = form_data + "&" + submitButton + "=''";
+
+            if (!revertFunc)
+              revertFunc = function () {};
 
           $.ajax({
             url: url,
@@ -316,6 +319,7 @@
                 djangoMessage(data.message, "success");
             },
             error: function (data, textStatus, jqXHR) {
+              revertFunc();
               clearFormErrors(self);
               var result = data.responseJSON,
                 errors = result.errors,
@@ -415,7 +419,7 @@
                 .modal('show').find("form").on('submit', function (e) {
                   var submitButton = $("input[type=submit][clicked=true]").attr("name");
                   e.preventDefault();
-                  postModalForm($(this), submitButton);
+                  postModalForm($(this), submitButton, revertFunc);
                   eventUpdated = true;
                 }).end()
                 .on('hidden.bs.modal', function () {

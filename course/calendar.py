@@ -37,7 +37,7 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
 from course.utils import course_view, render_course_page
 from django.core.exceptions import (
-    PermissionDenied, ObjectDoesNotExist, ValidationError)
+    PermissionDenied, ObjectDoesNotExist, ValidationError, SuspiciousOperation)
 from django.db import transaction
 from django.contrib import messages
 from django.urls import reverse
@@ -127,10 +127,8 @@ class RecurringEventForm(ModalStyledFormMixin, StyledForm):
     # This is to avoid field name conflict
     prefix = "recurring"
 
-    kind = forms.CharField(
-        required=True,
-        help_text=_(
-            "Should be lower_case_with_underscores, no spaces "
+    kind = forms.CharField(required=True,
+            help_text=_("Should be lower_case_with_underscores, no spaces "
                         "allowed."),
             label=pgettext_lazy("Kind of event", "Kind of event"))
     time = forms.DateTimeField(
@@ -151,16 +149,13 @@ class RecurringEventForm(ModalStyledFormMixin, StyledForm):
             required=False,
             initial=True,
             label=_('Shown in calendar'))
-    interval = forms.ChoiceField(
-        required=True,
+    interval = forms.ChoiceField(required=True,
             choices=(
                 ("weekly", _("Weekly")),
                 ("biweekly", _("Bi-Weekly")),
                 ),
-        label=pgettext_lazy("Interval of recurring events",
-                            "Interval"))
-    starting_ordinal = forms.IntegerField(
-        required=False,
+            label=pgettext_lazy("Interval of recurring events", "Interval"))
+    starting_ordinal = forms.IntegerField(required=False,
             label=pgettext_lazy(
                 "Starting ordinal of recurring events", "Starting ordinal"))
     count = forms.IntegerField(required=True,
@@ -204,8 +199,7 @@ class EventAlreadyExists(Exception):
 
 @transaction.atomic
 def _create_recurring_events_backend(course, time, kind, starting_ordinal, interval,
-                                     count, duration_in_minutes, all_day,
-                                     shown_in_calendar):
+        count, duration_in_minutes, all_day, shown_in_calendar):
     ordinal = starting_ordinal
 
     import datetime
@@ -324,7 +318,7 @@ def create_recurring_events(pctx):
                     message = _("Events created.")
 
                 break
-    else:
+        else:
             if request.is_ajax():
                 return JsonResponse(
                     {"errors": form.errors, "form_prefix": form.prefix}, status=400)
@@ -352,25 +346,21 @@ class RenumberEventsForm(ModalStyledFormMixin, StyledForm):
     # This is to avoid field name conflict
     prefix = "renumber"
 
-    kind = forms.ChoiceField(
-        required=True,
-        label=pgettext_lazy("Kind of event",
-                            "Kind of event"))
-
-    starting_ordinal = forms.IntegerField(
-        required=True,
-        initial=1,
-        help_text=_("The starting ordinal of this kind of events"),
+    kind = forms.CharField(required=True,
+            help_text=_("Should be lower_case_with_underscores, no spaces "
+                        "allowed."),
+            label=pgettext_lazy("Kind of event", "Kind of event"))
+    starting_ordinal = forms.IntegerField(required=True, initial=1,
+            help_text=_("The starting ordinal of this kind of events"),
             label=pgettext_lazy(
-            "Starting ordinal of recurring events",
-            "Starting ordinal"))
+                "Starting ordinal of recurring events", "Starting ordinal"))
 
     preserve_ordinal_order = forms.BooleanField(
-        required=False,
-        initial=False,
-        help_text=_("Tick this box if you want to preserve the order of "
-                    "ordinals of existing event."),
-        label=_("Preserve order"))
+           required=False,
+            initial=False,
+            help_text=_("Tick this box if you want to preserve the order of "
+                        "ordinals of existing event."),
+            label=_("Preserve order"))
 
     def __init__(self, course_identifier, *args, **kwargs):
         super(RenumberEventsForm, self).__init__(*args, **kwargs)
@@ -1161,28 +1151,6 @@ class UpdateEventForm(ModalStyledFormMixin, StyledModelForm):
             button_holder)
         return helper
 
-    def clean(self):
-        kind = self.cleaned_data.get("kind")
-        ordinal = self.cleaned_data.get('ordinal')
-
-        if kind is not None:
-            filter_kwargs = {"course__identifier": self.course_identifier,
-                             "kind": kind}
-            if ordinal is not None:
-                filter_kwargs["ordinal"] = ordinal
-            else:
-                filter_kwargs["ordinal__isnull"] = True
-
-            qset = Event.objects.filter(**filter_kwargs)
-            if qset.exists():
-                assert qset.count() == 1
-                exist_event, = qset
-                if exist_event.pk != self.event_id:
-                    from django.forms import ValidationError
-                    raise ValidationError(
-                        _("'%(exist_event)s' already exists.")
-                        % {'exist_event': exist_event})
-
 
 @course_view
 def get_update_event_modal_form(pctx, event_id):
@@ -1250,24 +1218,24 @@ def update_event(pctx, event_id):
 
     if form.is_valid():
         try:
-            instance = form.save(commit=False)
-            if (instance.time == instance_to_update.time
-                    and instance.end_time == instance_to_update.end_time
-                    and instance.kind == instance_to_update.kind
-                    and instance.ordinal == instance_to_update.ordinal
-                    and instance.all_day == instance_to_update.all_day
-                    and instance.shown_in_calendar
+            temp_instance = form.save(commit=False)
+            if (temp_instance.time == instance_to_update.time
+                    and temp_instance.end_time == instance_to_update.end_time
+                    and temp_instance.kind == instance_to_update.kind
+                    and temp_instance.ordinal == instance_to_update.ordinal
+                    and temp_instance.all_day == instance_to_update.all_day
+                    and temp_instance.shown_in_calendar
                     == instance_to_update.shown_in_calendar):
                 return JsonResponse(
                     {"message": _(
                         "No change was made to event '%s'."
                         % str(instance_to_update))})
 
-            instance.course = pctx.course
-            new_event_timedelta = instance.time - instance_to_update.time
+            temp_instance.course = pctx.course
+            new_event_timedelta = temp_instance.time - instance_to_update.time
             new_duration = None
-            if instance.end_time is not None:
-                new_duration = instance.end_time - instance.time
+            if temp_instance.end_time is not None:
+                new_duration = temp_instance.end_time - temp_instance.time
 
             events_of_same_kind_and_weekday_time = (
                 Event.objects.filter(
@@ -1291,16 +1259,24 @@ def update_event(pctx, event_id):
                         end_time__minute=end_minute))
 
             if "update" in request.POST:
-                instance.pk = event_id
-                instance.save()
-                if str(instance_to_update) == str(instance):
+                instance_to_update.time = temp_instance.time
+                instance_to_update.end_time = temp_instance.end_time
+                instance_to_update.kind = temp_instance.kind
+                instance_to_update.ordinal = temp_instance.ordinal
+                instance_to_update.all_day = temp_instance.all_day
+                instance_to_update.shown_in_calendar = (
+                    temp_instance.shown_in_calendar)
+
+                instance_to_update.save()
+
+                if str(instance_to_update) == str(temp_instance):
                     message = _("Event '%s' updated.") % str(instance_to_update)
                 else:
                     message = string_concat(
                         _("Event updated"),
                         ": '%(original_event)s' -> '%(new_event)s'"
                         % {"original_event": str(instance_to_update),
-                           "new_event": str(instance)})
+                           "new_event": str(temp_instance)})
             else:
                 if "update_all" in request.POST:
                     events_to_update = (
@@ -1320,41 +1296,41 @@ def update_event(pctx, event_id):
                 else:
                     raise SuspiciousOperation(_("unknown operation"))
 
-                if instance.ordinal is None and events_to_update.count() > 1:
+                if temp_instance.ordinal is None and events_to_update.count() > 1:
                     raise RuntimeError(
                         _("May not do bulk update when ordinal is None"))
 
                 new_event_ordinal_delta = (
-                        instance.ordinal - instance_to_update.ordinal)
+                        temp_instance.ordinal - instance_to_update.ordinal)
 
                 for event in events_to_update:
-                    event.kind = instance.kind
+                    event.kind = temp_instance.kind
 
                     # This might result in IntegrityError
                     event.ordinal += new_event_ordinal_delta
 
                     event.time = (
                             event.time + new_event_timedelta)
-                    event.all_day = instance.all_day
-                    event.shown_in_calendar = instance.shown_in_calendar
+                    event.all_day = temp_instance.all_day
+                    event.shown_in_calendar = temp_instance.shown_in_calendar
                     if new_duration is not None:
                         event.end_time = event.time + new_duration
                     else:
                         event.end_time = None
                     event.save()
 
-                if str(instance_to_update) == str(instance):
+                if str(instance_to_update) == str(temp_instance):
                     message = (
                         _("%(number)d '%(kind)s' events updated."
                           % {"number": events_to_update.count(),
-                             "kind": instance.kind}))
+                             "kind": temp_instance.kind}))
                 else:
                     message = string_concat(
                         _("%(number)d events updated."
                           % {"number": events_to_update.count()}),
                         ": '%(original_kind)s' -> '%(new_kind)s'"
                         % {"original_kind": instance_to_update.kind,
-                           "new_kind": instance.kind})
+                           "new_kind": temp_instance.kind})
 
             return JsonResponse({"message": message})
         except Exception as e:
