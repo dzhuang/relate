@@ -103,7 +103,7 @@ class ListTextWidget(forms.TextInput):
 
 def get_local_time_weekday_hour_minute(dt):
     """Takes a timezone-aware datetime and applies the server timezone, and return
-    the week_day, hour and minute"""
+    the local_time, week_day, hour and minute"""
 
     local_time = as_local_time(dt)
 
@@ -170,7 +170,6 @@ class RecurringEventForm(ModalStyledFormMixin, StyledForm):
             Event.objects.filter(
                 course__identifier=course_identifier)
                 .values_list("kind", flat=True))]
-        print(exist_event_choices)
         self.fields['kind'].widget = ListTextWidget(data_list=exist_event_choices,
                                                     name="event_choices")
 
@@ -286,6 +285,8 @@ def create_recurring_events(pctx):
                             shown_in_calendar=(
                                 form.cleaned_data["shown_in_calendar"])
                             )
+                    message = _("Events created.")
+                    message_level = messages.SUCCESS
                 except EventAlreadyExists as e:
                     if starting_ordinal_specified:
                         message = (
@@ -317,20 +318,17 @@ def create_recurring_events(pctx):
                                 {"errors": form.errors, "form_prefix": form.prefix},
                                 status=400)
                     else:
-                        messages.add_message(request, messages.ERROR,
+                        message = (
                                 string_concat(
                                     "%(err_type)s: %(err_str)s. ",
                                     _("No events created."))
                                 % {
                                     "err_type": type(e).__name__,
                                     "err_str": str(e)})
-                    message_level = messages.ERROR
-                else:
-                    message = _("Events created.")
-
+                        message_level = messages.ERROR
                 break
+
         else:
-            print("here", form.errors)
             if request.is_ajax():
                 return JsonResponse(
                     {"errors": form.errors, "form_prefix": form.prefix}, status=400)
@@ -344,7 +342,8 @@ def create_recurring_events(pctx):
                     status=400)
             return JsonResponse({"message": message})
 
-    form = RecurringEventForm(pctx.course.identifier)
+    else:
+        form = RecurringEventForm(pctx.course.identifier)
 
     if message and message_level:
         messages.add_message(request, message_level, message)
@@ -361,7 +360,7 @@ class RenumberEventsForm(ModalStyledFormMixin, StyledForm):
     # This is to avoid field name conflict
     prefix = "renumber"
 
-    kind = forms.CharField(required=True,
+    kind = forms.ChoiceField(required=True,
             help_text=_("Should be lower_case_with_underscores, no spaces "
                         "allowed."),
             label=pgettext_lazy("Kind of event", "Kind of event"))
@@ -461,8 +460,6 @@ def renumber_events(pctx):
             else:
                 message = _("No events found.")
                 message_level = messages.SUCCESS
-                messages.add_message(request, messages.ERROR,
-                        _("No events found."))
         else:
             if request.is_ajax():
                 return JsonResponse(
