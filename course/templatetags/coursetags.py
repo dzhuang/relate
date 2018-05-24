@@ -83,6 +83,10 @@ def js_lang_fallback(lang_name, js_name=None):
             "zh-hant": "zh-tw"}
         return known_fallback_mapping.get(lang_name.lower(), lang_name).lower()
 
+    if js_name == "momentjs":
+        from bootstrap3_datetime.widgets import get_momentjs_supported_locale
+        return get_momentjs_supported_locale() or "en"
+
     return lang_name
 
 # }}}
@@ -141,3 +145,9 @@ def may_set_pretend_facility(user):
 def commit_message_as_html(commit_sha, repo):
     from course.versioning import _get_commit_message_as_html
     return _get_commit_message_as_html(repo, commit_sha)
+
+
+@register.filter
+def loadjson(data):
+    import json
+    return json.loads(data)

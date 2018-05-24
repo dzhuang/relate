@@ -27,6 +27,7 @@ import json
 import datetime
 
 from django.test import TestCase
+from django.urls import reverse
 from django.utils.timezone import now, timedelta
 from django.core.exceptions import ValidationError
 
@@ -529,7 +530,6 @@ class ViewCalendarTest(SingleCourseTestMixin, HackRepoMixin, TestCase):
         resp = self.get_course_calender_view()
         self.assertEqual(resp.status_code, 200)
         self.assertResponseContextEqual(resp, "events_json", '[]')
-        self.assertResponseContextEqual(resp, "event_info_list", [])
         self.assertResponseContextEqual(
             resp, "default_date", self.default_faked_now.date().isoformat())
 
@@ -558,8 +558,6 @@ class ViewCalendarTest(SingleCourseTestMixin, HackRepoMixin, TestCase):
              'allDay': False,
              'title': 'lecture 1'})
 
-        self.assertResponseContextEqual(resp, "event_info_list", [])
-
     def test_hidden_event_not_shown(self):
         factories.EventFactory(
             kind=self.default_event_kind, course=self.course,
@@ -579,7 +577,6 @@ class ViewCalendarTest(SingleCourseTestMixin, HackRepoMixin, TestCase):
             {'id': 1, 'start': self.default_event_time.isoformat(),
              'allDay': False,
              'title': 'lecture 0'})
-        self.assertResponseContextEqual(resp, "event_info_list", [])
 
     def test_event_has_end_time(self):
         factories.EventFactory(
@@ -600,8 +597,6 @@ class ViewCalendarTest(SingleCourseTestMixin, HackRepoMixin, TestCase):
              'end': (self.default_event_time + timedelta(hours=1)).isoformat(),
              })
 
-        self.assertResponseContextEqual(resp, "event_info_list", [])
-
     def test_event_course_finished(self):
         self.mock_get_now_or_fake_time.return_value = self.default_faked_now
         self.course.end_date = (self.default_faked_now - timedelta(weeks=1)).date()
@@ -611,7 +606,6 @@ class ViewCalendarTest(SingleCourseTestMixin, HackRepoMixin, TestCase):
         self.assertEqual(resp.status_code, 200)
 
         self.assertResponseContextEqual(resp, "events_json", '[]')
-        self.assertResponseContextEqual(resp, "event_info_list", [])
         self.assertResponseContextEqual(
             resp, "default_date", self.course.end_date.isoformat())
 
@@ -624,7 +618,6 @@ class ViewCalendarTest(SingleCourseTestMixin, HackRepoMixin, TestCase):
         self.assertEqual(resp.status_code, 200)
 
         self.assertResponseContextEqual(resp, "events_json", '[]')
-        self.assertResponseContextEqual(resp, "event_info_list", [])
         self.assertResponseContextEqual(
             resp, "default_date", self.default_faked_now.date().isoformat())
 
@@ -635,7 +628,6 @@ class ViewCalendarTest(SingleCourseTestMixin, HackRepoMixin, TestCase):
         resp = self.get_course_calender_view()
 
         self.assertResponseContextEqual(resp, "events_json", '[]')
-        self.assertResponseContextEqual(resp, "event_info_list", [])
 
     def test_events_file_with_events_test1(self):
         self.switch_to_fake_commit_sha()
@@ -764,7 +756,6 @@ class ViewCalendarTest(SingleCourseTestMixin, HackRepoMixin, TestCase):
 
         # no EventInfo object
         resp = self.get_course_calender_view()
-        self.assertResponseContextEqual(resp, "event_info_list", [])
 
     def test_events_file_with_events_test3(self):
         self.switch_to_fake_commit_sha()
@@ -789,8 +780,6 @@ class ViewCalendarTest(SingleCourseTestMixin, HackRepoMixin, TestCase):
              'title': 'Exam',
              'color': 'red',
              'end': exam_end_time.isoformat()})
-
-        self.assertResponseContextEqual(resp, "event_info_list", [])
 
     def test_all_day_event(self):
         self.switch_to_fake_commit_sha()
@@ -868,4 +857,530 @@ class ViewCalendarTest(SingleCourseTestMixin, HackRepoMixin, TestCase):
              'end': lecture2_end_time.isoformat()
              })
 
-# vim: fdm=marker
+
+SHOWN_EVENT_KIND = "test_open_event"
+HIDDEN_EVENT_KIND = "test_secret_event"
+OPEN_EVENT_NO_ORDINAL_KIND = "test_open_no_ordinal"
+HIDDEN_EVENT_NO_ORDINAL_KIND = "test_secret_no_ordinal"
+FAILURE_EVENT_KIND = "never_created_event_kind"
+
+TEST_EVENTS = (
+    {"kind": SHOWN_EVENT_KIND, "ordinal": "1",
+        "shown_in_calendar": True, "time": now()},
+    {"kind": SHOWN_EVENT_KIND, "ordinal": "2",
+        "shown_in_calendar": True, "time": now()},
+    {"kind": SHOWN_EVENT_KIND, "ordinal": "3",
+     "shown_in_calendar": True, "time": now()},
+    {"kind": HIDDEN_EVENT_KIND, "ordinal": "1",
+        "shown_in_calendar": False, "time": now()},
+    {"kind": HIDDEN_EVENT_KIND, "ordinal": "2",
+        "shown_in_calendar": False, "time": now()},
+    {"kind": OPEN_EVENT_NO_ORDINAL_KIND,
+        "shown_in_calendar": True, "time": now()},
+    {"kind": HIDDEN_EVENT_NO_ORDINAL_KIND,
+        "shown_in_calendar": False, "time": now()},
+)
+
+TEST_NOT_EXIST_EVENT = {
+    "pk": 1000,
+    "kind": "DOES_NOT_EXIST_KIND", "ordinal": "1",
+    "shown_in_calendar": True, "time": now()}
+
+N_TEST_EVENTS = len(TEST_EVENTS)  # 7 events
+N_HIDDEN_EVENTS = len([event
+                       for event in TEST_EVENTS
+                       if not event["shown_in_calendar"]])  # 3 events
+N_SHOWN_EVENTS = N_TEST_EVENTS - N_HIDDEN_EVENTS  # 4 events
+
+# html literals (from template)
+MENU_EDIT_EVENTS_ADMIN = "Edit events (admin)"
+MENU_VIEW_EVENTS_CALENDAR = "Edit events (calendar)"
+MENU_CREATE_RECURRING_EVENTS = "Create recurring events"
+MENU_RENUMBER_EVENTS = "Renumber events"
+
+HTML_SWITCH_TO_STUDENT_VIEW = "Switch to normal view"
+HTML_SWITCH_TO_EDIT_VIEW = "Switch to Edit View"
+HTML_CREATE_NEW_EVENT_BUTTON_TITLE = "create a new event"
+
+MESSAGE_EVENT_CREATED_TEXT = "Event created."
+MESSAGE_EVENT_NOT_CREATED_TEXT = "No event created."
+MESSAGE_PREFIX_EVENT_ALREADY_EXIST_FAILURE_TEXT = "EventAlreadyExists:"
+MESSAGE_PREFIX_EVENT_NOT_DELETED_FAILURE_TEXT = "No event deleted:"
+MESSAGE_EVENT_DELETED_TEXT = "Event deleted."
+MESSAGE_EVENT_UPDATED_TEXT = "Event updated."
+MESSAGE_EVENT_NOT_UPDATED_TEXT = "Event not updated."
+
+
+def get_object_or_404_side_effect(klass, *args, **kwargs):
+    """
+    Delete an existing object from db after get
+    """
+    from django.shortcuts import get_object_or_404
+    obj = get_object_or_404(klass, *args, **kwargs)
+    obj.delete()
+    return obj
+
+
+class CalendarTestMixin(object):
+    @classmethod
+    def setUpTestData(cls):  # noqa
+        super(CalendarTestMixin, cls).setUpTestData()
+
+        # superuser was previously removed from participation, now we add him back
+        from course.constants import participation_status
+
+        cls.create_participation(
+            cls.course,
+            cls.superuser,
+            role_identifier="instructor",
+            status=participation_status.active)
+
+        for event in TEST_EVENTS:
+            event.update({
+                "course": cls.course,
+            })
+            Event.objects.create(**event)
+        assert Event.objects.count() == N_TEST_EVENTS
+
+    def set_course_end_date(self):
+        from datetime import timedelta
+        self.course.end_date = now() + timedelta(days=120)
+        self.course.save()
+
+    def assertShownEventsCountEqual(self, resp, expected_shown_events_count):  # noqa
+        self.assertEqual(
+            len(json.loads(resp.context["events_json"])),
+            expected_shown_events_count)
+
+    def assertTotalEventsCountEqual(self, expected_total_events_count):  # noqa
+        self.assertEqual(Event.objects.count(), expected_total_events_count)
+
+
+class CalendarTest(CalendarTestMixin, SingleCourseTestMixin,
+                   MockAddMessageMixing, TestCase):
+
+    def get_edit_calendar_url(self, course_identifier=None):
+        course_identifier = (
+                course_identifier or self.get_default_course_identifier())
+        return reverse(
+            "relate-edit_calendar",
+            args=[course_identifier, "edit"])
+
+    def get_edit_calendar_view(self, course_identifier=None,
+                               force_login_instructor=True):
+        course_identifier = (
+                course_identifier or self.get_default_course_identifier())
+        if force_login_instructor:
+            switch_to = self.get_default_instructor_user(course_identifier)
+        else:
+            switch_to = self.get_logged_in_user()
+
+        with self.temporarily_switch_to_user(switch_to):
+            return self.c.get(self.get_edit_calendar_url(
+                course_identifier=course_identifier))
+
+    def post_edit_calendar_view(self, data, course_identifier=None,
+                               force_login_instructor=True):
+        course_identifier = (
+                course_identifier or self.get_default_course_identifier())
+        if force_login_instructor:
+            switch_to = self.get_default_instructor_user(course_identifier)
+        else:
+            switch_to = self.get_logged_in_user()
+
+        with self.temporarily_switch_to_user(switch_to):
+            return self.c.post(self.get_edit_calendar_url(
+                course_identifier=course_identifier), data=data)
+
+
+    def test_superuser_instructor_calendar_get(self):
+        self.c.force_login(self.superuser)
+        resp = self.c.get(
+            reverse("relate-view_calendar", args=[self.course.identifier]))
+        self.assertEqual(resp.status_code, 200)
+
+        # menu items
+        self.assertContains(resp, MENU_EDIT_EVENTS_ADMIN)
+        self.assertContains(resp, MENU_VIEW_EVENTS_CALENDAR)
+        self.assertContains(resp, MENU_CREATE_RECURRING_EVENTS)
+        self.assertContains(resp, MENU_RENUMBER_EVENTS)
+
+        # rendered page html
+        self.assertNotContains(resp, HTML_SWITCH_TO_STUDENT_VIEW)
+        self.assertContains(resp, HTML_SWITCH_TO_EDIT_VIEW)
+        self.assertNotContains(resp, HTML_CREATE_NEW_EVENT_BUTTON_TITLE)
+
+        # see only shown events
+        self.assertShownEventsCountEqual(resp, N_SHOWN_EVENTS)
+
+    def test_non_superuser_instructor_calendar_get(self):
+        self.c.force_login(self.instructor_participation.user)
+        resp = self.c.get(
+            reverse("relate-view_calendar", args=[self.course.identifier]))
+        self.assertEqual(resp.status_code, 200)
+
+        # menu items
+        self.assertNotContains(resp, MENU_EDIT_EVENTS_ADMIN)
+        self.assertContains(resp, MENU_VIEW_EVENTS_CALENDAR)
+        self.assertContains(resp, MENU_CREATE_RECURRING_EVENTS)
+        self.assertContains(resp, MENU_RENUMBER_EVENTS)
+
+        # rendered page html
+        self.assertNotContains(resp, HTML_SWITCH_TO_STUDENT_VIEW)
+        self.assertContains(resp, HTML_SWITCH_TO_EDIT_VIEW)
+        self.assertNotContains(resp, HTML_CREATE_NEW_EVENT_BUTTON_TITLE)
+
+        # see only shown events
+        self.assertShownEventsCountEqual(resp, N_SHOWN_EVENTS)
+
+    def test_student_calendar_get(self):
+        self.c.force_login(self.student_participation.user)
+        resp = self.c.get(
+            reverse("relate-view_calendar", args=[self.course.identifier]))
+        self.assertEqual(resp.status_code, 200)
+
+        # menu items
+        self.assertNotContains(resp, MENU_EDIT_EVENTS_ADMIN)
+        self.assertNotContains(resp, MENU_VIEW_EVENTS_CALENDAR)
+        self.assertNotContains(resp, MENU_CREATE_RECURRING_EVENTS)
+        self.assertNotContains(resp, MENU_RENUMBER_EVENTS)
+
+        # rendered page html
+        self.assertNotContains(resp, HTML_SWITCH_TO_STUDENT_VIEW)
+        self.assertNotContains(resp, HTML_SWITCH_TO_EDIT_VIEW)
+        self.assertNotContains(resp, HTML_CREATE_NEW_EVENT_BUTTON_TITLE)
+
+        # see only shown events
+        self.assertShownEventsCountEqual(resp, N_SHOWN_EVENTS)
+
+    def test_superuser_instructor_calendar_edit_get(self):
+        with self.temporarily_switch_to_user(self.superuser):
+            resp = self.get_edit_calendar_view(force_login_instructor=False)
+
+        self.assertEqual(resp.status_code, 200)
+
+        # menu items
+        self.assertContains(resp, MENU_EDIT_EVENTS_ADMIN)
+        self.assertContains(resp, MENU_VIEW_EVENTS_CALENDAR)
+        self.assertContains(resp, MENU_CREATE_RECURRING_EVENTS)
+        self.assertContains(resp, MENU_RENUMBER_EVENTS)
+
+        # rendered page html
+        self.assertNotContains(resp, HTML_SWITCH_TO_EDIT_VIEW)
+        self.assertContains(resp, HTML_SWITCH_TO_STUDENT_VIEW)
+        self.assertContains(resp, HTML_CREATE_NEW_EVENT_BUTTON_TITLE)
+
+        # see all events (including hidden ones)
+        self.assertShownEventsCountEqual(resp, N_TEST_EVENTS)
+
+    def test_non_superuser_instructor_calendar_edit_get(self):
+        resp = self.get_edit_calendar_view()
+        self.assertEqual(resp.status_code, 200)
+
+        # menu items
+        self.assertNotContains(resp, MENU_EDIT_EVENTS_ADMIN)
+        self.assertContains(resp, MENU_VIEW_EVENTS_CALENDAR)
+        self.assertContains(resp, MENU_CREATE_RECURRING_EVENTS)
+        self.assertContains(resp, MENU_RENUMBER_EVENTS)
+
+        # rendered page html
+        self.assertNotContains(resp, HTML_SWITCH_TO_EDIT_VIEW)
+        self.assertContains(resp, HTML_SWITCH_TO_STUDENT_VIEW)
+        self.assertContains(resp, HTML_CREATE_NEW_EVENT_BUTTON_TITLE)
+
+        # see all events (including hidden ones)
+        self.assertShownEventsCountEqual(resp, N_TEST_EVENTS)
+
+    def test_student_calendar_edit_get(self):
+        with self.temporarily_switch_to_user(self.student_participation.user):
+            resp = self.get_edit_calendar_view(force_login_instructor=False)
+        self.assertEqual(resp.status_code, 403)
+
+    def test_instructor_calendar_edit_create_exist_failure(self):
+        # Failing to create event already exist
+        post_data = {
+            "kind": SHOWN_EVENT_KIND,
+            "ordinal": "3",
+            "time": now().strftime(DATE_TIME_PICKER_TIME_FORMAT),
+            "shown_in_calendar": True,
+            'submit': ['']
+        }
+
+        resp = self.c.post(
+            reverse("relate-edit_calendar", args=[self.course.identifier]),
+            post_data
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertAddMessageCalledWith(
+                [MESSAGE_PREFIX_EVENT_ALREADY_EXIST_FAILURE_TEXT,
+                MESSAGE_EVENT_NOT_CREATED_TEXT])
+        self.assertTotalEventsCountEqual(N_TEST_EVENTS)
+        self.assertShownEventsCountEqual(resp, N_TEST_EVENTS)
+
+    def test_instructor_calendar_edit_create_exist_no_ordinal_event_faliure(self):
+        self.c.force_login(self.instructor_participation.user)
+        # Failing to create event (no ordinal) already exist
+        post_data = {
+            "kind": OPEN_EVENT_NO_ORDINAL_KIND,
+            "time": now().strftime(DATE_TIME_PICKER_TIME_FORMAT),
+            "shown_in_calendar": True,
+            'submit': ['']
+        }
+
+        resp = self.c.post(
+            reverse("relate-edit_calendar", args=[self.course.identifier]),
+            post_data
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertAddMessageCalledWith(
+                [MESSAGE_PREFIX_EVENT_ALREADY_EXIST_FAILURE_TEXT,
+                MESSAGE_EVENT_NOT_CREATED_TEXT])
+        self.assertTotalEventsCountEqual(N_TEST_EVENTS)
+        self.assertShownEventsCountEqual(resp, N_TEST_EVENTS)
+
+    def test_instructor_calendar_edit_post_create_success(self):
+        # Successfully create new event
+        self.c.force_login(self.instructor_participation.user)
+        post_data = {
+            "kind": SHOWN_EVENT_KIND,
+            "ordinal": "4",
+            "time": now().strftime(DATE_TIME_PICKER_TIME_FORMAT),
+            "shown_in_calendar": True,
+            'submit': ['']
+        }
+        resp = self.c.post(
+            reverse("relate-edit_calendar", args=[self.course.identifier]),
+            post_data
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertAddMessageCalledWith([MESSAGE_EVENT_CREATED_TEXT])
+        self.assertTotalEventsCountEqual(N_TEST_EVENTS + 1)
+        self.assertShownEventsCountEqual(resp, N_TEST_EVENTS + 1)
+
+    def test_instructor_calendar_edit_post_create_for_course_has_end_date(self):
+        # Successfully create new event
+        self.set_course_end_date()
+        self.c.force_login(self.instructor_participation.user)
+        post_data = {
+            "kind": SHOWN_EVENT_KIND,
+            "ordinal": "4",
+            "time": now().strftime(DATE_TIME_PICKER_TIME_FORMAT),
+            "shown_in_calendar": True,
+            'submit': ['']
+        }
+        resp = self.c.post(
+            reverse("relate-edit_calendar", args=[self.course.identifier]),
+            post_data
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertAddMessageCalledWith([MESSAGE_EVENT_CREATED_TEXT])
+        self.assertTotalEventsCountEqual(N_TEST_EVENTS + 1)
+        self.assertShownEventsCountEqual(resp, N_TEST_EVENTS + 1)
+
+    def test_instructor_calendar_edit_delete_success(self):
+        # Successfully remove an existing event
+        self.c.force_login(self.instructor_participation.user)
+        id_to_delete = Event.objects.filter(kind=SHOWN_EVENT_KIND).first().id
+        post_data = {
+            "id_to_delete": id_to_delete,
+            'submit': ['']
+        }
+        resp = self.c.post(
+            reverse("relate-edit_calendar", args=[self.course.identifier]),
+            post_data
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertAddMessageCalledWith([MESSAGE_EVENT_DELETED_TEXT])
+        self.assertTotalEventsCountEqual(N_TEST_EVENTS - 1)
+        self.assertShownEventsCountEqual(resp, N_TEST_EVENTS - 1)
+
+    def test_instructor_calendar_edit_delete_for_course_has_end_date(self):
+        # Successfully remove an existing event
+        self.set_course_end_date()
+        self.c.force_login(self.instructor_participation.user)
+        id_to_delete = Event.objects.filter(kind=SHOWN_EVENT_KIND).first().id
+        post_data = {
+            "id_to_delete": id_to_delete,
+            'submit': ['']
+        }
+        resp = self.c.post(
+            reverse("relate-edit_calendar", args=[self.course.identifier]),
+            post_data
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertAddMessageCalledWith([MESSAGE_EVENT_DELETED_TEXT])
+        self.assertTotalEventsCountEqual(N_TEST_EVENTS - 1)
+        self.assertShownEventsCountEqual(resp, N_TEST_EVENTS - 1)
+
+    def test_instructor_calendar_edit_delete_non_exist(self):
+        # Successfully remove an existing event
+        self.c.force_login(self.instructor_participation.user)
+        post_data = {
+            "id_to_delete": 1000,  # forgive me
+            'submit': ['']
+        }
+        resp = self.c.post(
+            reverse("relate-edit_calendar", args=[self.course.identifier]),
+            post_data
+        )
+        self.assertEqual(resp.status_code, 404)
+        self.assertTotalEventsCountEqual(N_TEST_EVENTS)
+
+    @mock.patch("course.calendar.get_object_or_404",
+                side_effect=get_object_or_404_side_effect)
+    def test_instructor_calendar_edit_delete_deleted_event_before_transaction(
+            self, mocked_get_object_or_404):
+        # Deleting event which exist when get and was deleted before transaction
+        self.c.force_login(self.instructor_participation.user)
+        id_to_delete = Event.objects.filter(kind=SHOWN_EVENT_KIND).first().id
+        post_data = {
+            "id_to_delete": id_to_delete,
+            'submit': ['']
+        }
+        resp = self.c.post(
+            reverse("relate-edit_calendar", args=[self.course.identifier]),
+            post_data
+        )
+        self.assertAddMessageCalledWith(
+            MESSAGE_PREFIX_EVENT_NOT_DELETED_FAILURE_TEXT)
+        self.assertEqual(resp.status_code, 200)
+        self.assertTotalEventsCountEqual(N_TEST_EVENTS - 1)
+
+    def test_instructor_calendar_edit_update_success(self):
+        # Successfully update an existing event
+        self.c.force_login(self.instructor_participation.user)
+        all_hidden_events = Event.objects.filter(kind=HIDDEN_EVENT_KIND)
+        hidden_count_before_update = all_hidden_events.count()
+        shown_count_before_update = (
+            Event.objects.filter(kind=SHOWN_EVENT_KIND).count())
+        event_to_edit = all_hidden_events.first()
+        id_to_edit = event_to_edit.id
+        post_data = {
+            "existing_event_to_save": id_to_edit,
+            "kind": SHOWN_EVENT_KIND,
+            "ordinal": 10,
+            "time": now().strftime(DATE_TIME_PICKER_TIME_FORMAT),
+            "shown_in_calendar": True,
+            'submit': ['']
+        }
+        resp = self.c.post(
+            reverse("relate-edit_calendar", args=[self.course.identifier]),
+            post_data
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertAddMessageCalledWith([MESSAGE_EVENT_UPDATED_TEXT])
+        self.assertTotalEventsCountEqual(N_TEST_EVENTS)
+        self.assertShownEventsCountEqual(resp, N_TEST_EVENTS)
+        self.assertEqual(
+            Event.objects.filter(kind=HIDDEN_EVENT_KIND).count(),
+            hidden_count_before_update - 1)
+        self.assertEqual(
+            Event.objects.filter(kind=SHOWN_EVENT_KIND).count(),
+            shown_count_before_update + 1)
+
+    def test_instructor_calendar_edit_update_no_ordinal_event_success(self):
+        # Failure to update an existing event to overwrite and existing event
+        self.c.force_login(self.instructor_participation.user)
+        event_to_edit = Event.objects.filter(kind=HIDDEN_EVENT_KIND).first()
+        id_to_edit = event_to_edit.id  # forgive me
+        post_data = {
+            "existing_event_to_save": id_to_edit,
+            "kind": HIDDEN_EVENT_NO_ORDINAL_KIND,
+            "ordinal": "",
+            "time": now().strftime(DATE_TIME_PICKER_TIME_FORMAT),
+            "shown_in_calendar": False,
+            'submit': ['']
+        }
+        resp = self.c.post(
+            reverse("relate-edit_calendar", args=[self.course.identifier]),
+            post_data
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertAddMessageCalledWith([MESSAGE_EVENT_UPDATED_TEXT])
+        self.assertTotalEventsCountEqual(N_TEST_EVENTS)
+
+    def test_instructor_calendar_edit_update_non_exist_id_to_edit_failure(self):
+        self.c.force_login(self.instructor_participation.user)
+        id_to_edit = 1000  # forgive me
+        post_data = {
+            "id_to_edit": id_to_edit,
+        }
+        resp = self.c.post(
+            reverse("relate-edit_calendar", args=[self.course.identifier]),
+            post_data
+        )
+        self.assertEqual(resp.status_code, 404)
+
+        post_data = {
+            "existing_event_to_save": id_to_edit,
+            "kind": SHOWN_EVENT_KIND,
+            "ordinal": 1000,
+            "time": now().strftime(DATE_TIME_PICKER_TIME_FORMAT),
+            "shown_in_calendar": True,
+            'submit': ['']
+        }
+        resp = self.c.post(
+            reverse("relate-edit_calendar", args=[self.course.identifier]),
+            post_data
+        )
+        self.assertEqual(resp.status_code, 404)
+
+    def test_no_pperm_edit_event_post_create_fail(self):
+        self.c.force_login(self.student_participation.user)
+        post_data = {
+            "kind": FAILURE_EVENT_KIND,
+            "ordinal": "1",
+            "time": now().strftime(DATE_TIME_PICKER_TIME_FORMAT),
+            "shown_in_calendar": True,
+            'submit': ['']
+        }
+
+        resp = self.c.post(
+            reverse("relate-edit_calendar", args=[self.course.identifier]),
+            post_data
+        )
+        self.assertEqual(resp.status_code, 403)
+        self.assertTotalEventsCountEqual(N_TEST_EVENTS)
+        self.assertEqual(Event.objects.filter(kind=FAILURE_EVENT_KIND).count(), 0)
+
+    def test_no_pperm_edit_event_post_delete_fail(self):
+        self.c.force_login(self.student_participation.user)
+        id_to_delete = Event.objects.filter(kind=SHOWN_EVENT_KIND).first().id
+        post_data = {
+            "id_to_delete": id_to_delete,
+            'submit': ['']
+        }
+        resp = self.c.post(
+            reverse("relate-edit_calendar", args=[self.course.identifier]),
+            post_data
+        )
+        self.assertEqual(resp.status_code, 403)
+        self.assertTotalEventsCountEqual(N_TEST_EVENTS)
+
+    def test_no_pperm_edit_event_post_edit(self):
+        self.c.force_login(self.student_participation.user)
+        id_to_edit = 1
+        self.assertIsNotNone(Event.objects.get(id=id_to_edit))
+        post_data = {
+            "id_to_edit": id_to_edit,
+        }
+        resp = self.c.post(
+            reverse("relate-edit_calendar", args=[self.course.identifier]),
+            post_data
+        )
+        self.assertEqual(resp.status_code, 403)
+
+        post_data = {
+            "existing_event_to_save": id_to_edit,
+            "kind": FAILURE_EVENT_KIND,
+            "ordinal": 1000,
+            "time": now().strftime(DATE_TIME_PICKER_TIME_FORMAT),
+            "shown_in_calendar": True,
+            'submit': ['']
+        }
+        resp = self.c.post(
+            reverse("relate-edit_calendar", args=[self.course.identifier]),
+            post_data
+        )
+        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(Event.objects.filter(kind=FAILURE_EVENT_KIND).count(), 0)

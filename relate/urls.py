@@ -346,6 +346,66 @@ urlpatterns = [
         course.calendar.view_calendar,
         name="relate-view_calendar"),
 
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/calendar/(?P<operation>edit)/$",
+        course.calendar.view_calendar,
+        name="relate-edit_calendar"),
+
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/calendar/fetch/(?P<is_edit_view>[01])/$",
+        course.calendar.fetch_event_json,
+        name="relate-fetch_event_json"),
+
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/calendar/new/$",
+        course.calendar.create_event,
+        name="relate-create_event"),
+
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/calendar/delete/(?P<event_id>[0-9]+)$",
+        course.calendar.delete_event,
+        name="relate-delete_event"),
+
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/calendar/new-event-modal-form/$",
+        course.calendar.get_create_event_modal_form,
+        name="relate-get_create_event_modal_form"),
+
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/calendar/renumber-events-ajax-form/$",
+        course.calendar.get_renumber_events_modal_form,
+        name="relate-get_renumber_events_modal_form"),
+
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/calendar/recurring-events-modal-form/$",
+        course.calendar.get_recurring_events_modal_form,
+        name="relate-get_recurring_events_modal_form"),
+
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/calendar/delete-form/(?P<event_id>[0-9]+)$",
+        course.calendar.get_delete_event_modal_form,
+        name="relate-get_delete_event_modal_form"),
+
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/calendar/update-form/(?P<event_id>[0-9]+)$",
+        course.calendar.get_update_event_modal_form,
+        name="relate-get_update_event_modal_form"),
+
+    url(r"^course"
+        "/" + COURSE_ID_REGEX +
+        "/calendar/update/(?P<event_id>[0-9]+)$",
+        course.calendar.update_event,
+        name="relate-update_event"),
+
     # }}}
 
     # {{{ versioning

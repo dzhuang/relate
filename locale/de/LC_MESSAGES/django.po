@@ -8,15 +8,18 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2018-01-09 11:03+0800\n"
+"POT-Creation-Date: 2018-05-12 01:40+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: \n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Course"
+msgstr "Kurs"
 
 #, fuzzy
 #| msgid "Counts"
@@ -119,6 +122,9 @@ msgstr "(leer)"
 msgid "User"
 msgstr "Benutzer"
 
+msgid "That email address is already in use."
+msgstr ""
+
 msgid "Tags must belong to same course as participation."
 msgstr "Tags müssen zum selben Kurs gehören wie die Teilnahme"
 
@@ -132,6 +138,9 @@ msgstr "Tags müssen zum selben Kurs gehören wie die Teilnahme"
 msgid "Roles"
 msgstr "Rolle"
 
+msgid "Tags"
+msgstr ""
+
 msgctxt "real name of a user"
 msgid "Name"
 msgstr ""
@@ -139,8 +148,13 @@ msgstr ""
 msgid "Participant"
 msgstr "Teilnehmer"
 
-msgid "Course"
-msgstr "Kurs"
+msgid "Yes"
+msgstr ""
+
+#, fuzzy
+#| msgid "None"
+msgid "No"
+msgstr "Kein"
 
 msgid "Flow ID"
 msgstr "Flow-ID"
@@ -229,13 +243,18 @@ msgstr "Sich-ausgeben-als"
 msgid "Already impersonating someone."
 msgstr "Sie geben sich bereits als jemand anders aus."
 
-msgid "Impersonating that user is not allowed."
-msgstr ""
-
 msgid "Impersonate user"
 msgstr "Sich ausgeben als anderer Benutzer"
 
-msgid "Stop impersonating"
+msgid "only AJAX POST is allowed"
+msgstr ""
+
+msgid "odd POST parameters"
+msgstr ""
+
+#, fuzzy
+#| msgid "Stop impersonating"
+msgid "may not stop impersonating"
 msgstr "Nicht mehr als anderer Benutzer ausgeben"
 
 msgid "Not currently impersonating anyone."
@@ -243,9 +262,6 @@ msgstr "Sie geben sich gegenwärtig nicht als jemand anders aus."
 
 msgid "No longer impersonating anyone."
 msgstr "Sie geben sich nicht mehr als jemand anders aus."
-
-msgid "Stop impersonating user"
-msgstr "Nicht mehr als jemand anders ausgeben"
 
 msgid "Sign in"
 msgstr "Anmelden"
@@ -264,6 +280,13 @@ msgstr "Email senden"
 msgid "self-registration is not enabled"
 msgstr ""
 
+msgid "Verify your email"
+msgstr "Email bestätigen"
+
+msgid "Email sent. Please check your email and click the link."
+msgstr ""
+"Email gesendet. Bitte schauen Sie in Ihre Email und klicken sie auf den Link."
+
 #, python-format
 msgid ""
 "That email address is already in use. Would you like to <a href='%s'>reset "
@@ -272,17 +295,15 @@ msgstr ""
 "Diese Emailadresse wird bereits verwendet. Möchten Sie statt dessen Ihr <a "
 "href='%s'>Passwort zurücksetzen</a>?"
 
-msgid "Verify your email"
-msgstr "Email bestätigen"
-
-msgid "Email sent. Please check your email and click the link."
-msgstr ""
-"Email gesendet. Bitte schauen Sie in Ihre Email und klicken sie auf den Link."
-
 msgid "Sign up"
 msgstr "Registrieren"
 
 msgid "Email"
+msgstr ""
+
+msgid ""
+"Failed to send an email: multiple users were unexpectedly using that same "
+"email address. Please contact site staff."
 msgstr ""
 
 #, fuzzy
@@ -335,6 +356,11 @@ msgstr ""
 msgid "invalid sign-in token"
 msgstr "Ungültiges Anmelde-Token"
 
+#, fuzzy
+#| msgid "Account disabled."
+msgid "Account does not exist."
+msgstr "Konto nicht verwendbar"
+
 msgid "Account disabled."
 msgstr "Konto nicht verwendbar"
 
@@ -364,16 +390,6 @@ msgstr "Ihr %(relate_site_name)s Amelde-Link"
 msgid "Institutional ID Confirmation"
 msgstr "Institutionelle ID"
 
-#, fuzzy
-#| msgid "Institutional ID"
-msgid "I have no Institutional ID"
-msgstr "Institutionelle ID"
-
-msgid ""
-"Check the checkbox if you are not a student or you forget your institutional "
-"id."
-msgstr ""
-
 #, python-format
 msgid ""
 "The unique ID your university or school provided, which may be used by some "
@@ -387,14 +403,28 @@ msgstr "geprüft"
 msgid "submitted"
 msgstr "eingereicht"
 
+msgid "Sign out"
+msgstr "Abmelden"
+
 msgid "This field is required."
 msgstr "Dieses Feld ist erforderlich."
 
 msgid "Inputs do not match."
 msgstr "Eingaben stimmen nicht überein."
 
-msgid "Profile data saved."
+#, fuzzy
+#| msgid "Profile data saved."
+msgid "Profile data updated."
 msgstr "Profildaten gesichert."
+
+msgid "No change was made on your profile."
+msgstr ""
+
+msgid "User Profile"
+msgstr "Benutzerprofil"
+
+msgid "You've already signed out."
+msgstr ""
 
 msgid "Create"
 msgstr "Erstellen"
@@ -407,6 +437,9 @@ msgstr ""
 
 msgid "Could not find which button was pressed."
 msgstr ""
+
+msgid "Create recurring events"
+msgstr "Wiederkehrende Ereignisse erstellen"
 
 #. Translators: format of event kind in Event model
 msgid "Should be lower_case_with_underscores, no spaces allowed."
@@ -458,18 +491,24 @@ msgctxt "Count of recurring events"
 msgid "Count"
 msgstr "Anzahl"
 
-#, python-format
-msgid "'%(event_kind)s %(event_ordinal)d' already exists"
-msgstr "%(event_kind)s %(event_ordinal)d' existiert bereits"
+#, fuzzy
+#| msgctxt "Cancel all instant flow(s)"
+#| msgid "Cancel all"
+msgid "Cancel"
+msgstr "Alle abbrechen"
 
-msgctxt "Unkown time interval"
-msgid "unknown interval"
-msgstr "unbekanntes Intervall"
+#, fuzzy, python-format
+#| msgid "'%(event_kind)s %(event_ordinal)d' already exists"
+msgid "'%(exist_event)s' already exists."
+msgstr "%(event_kind)s %(event_ordinal)d' existiert bereits"
 
 #, fuzzy
 #| msgid "Edit events"
 msgid "may not edit events"
 msgstr "Ereignisse bearbeiten"
+
+msgid "may not GET by AJAX"
+msgstr ""
 
 msgid "No events created."
 msgstr "Keine Ereignisse erstellt."
@@ -477,8 +516,8 @@ msgstr "Keine Ereignisse erstellt."
 msgid "Events created."
 msgstr "Ereignisse erstellt."
 
-msgid "Create recurring events"
-msgstr "Wiederkehrende Ereignisse erstellen"
+msgid "Renumber events"
+msgstr "Ereignisse neu numerieren"
 
 msgid "Renumber"
 msgstr "Neu numerieren"
@@ -489,13 +528,89 @@ msgstr "Ereignisse neu numeriert"
 msgid "No events found."
 msgstr "Keine Ereignisse gefunden."
 
-msgid "Renumber events"
-msgstr "Ereignisse neu numerieren"
-
 #, fuzzy
 #| msgid "View calendar"
 msgid "may not view calendar"
 msgstr "Kalender ansehen"
+
+#, fuzzy
+#| msgid "View calendar"
+msgid "may not edit calendar"
+msgstr "Kalender ansehen"
+
+#, fuzzy
+#| msgid "Create recurring events"
+msgid "Create a event"
+msgstr "Wiederkehrende Ereignisse erstellen"
+
+msgid "Shown in students' calendar"
+msgstr ""
+
+msgid "Save"
+msgstr "Sichern"
+
+#, fuzzy, python-format
+#| msgid "Events created."
+msgid "Event created: '%s'."
+msgstr "Ereignisse erstellt."
+
+#, fuzzy
+#| msgid "Edit events"
+msgid "Delete event"
+msgstr "Ereignisse bearbeiten"
+
+#, python-format
+msgid "Are you sure to delete event '%s'?"
+msgstr ""
+
+#, python-format
+msgid "Delete event '%s'"
+msgstr ""
+
+#, python-format
+msgid "Delete this and following events with kind '%s'"
+msgstr ""
+
+#, python-format
+msgid "Delete all events with kind '%s'"
+msgstr ""
+
+msgid "Operation"
+msgstr "Vorgang"
+
+#, fuzzy
+#| msgid "Select user to impersonate."
+msgid "Select your operation:"
+msgstr "Benutzer auswählen, als den/die Sie sich ausgeben möchten"
+
+msgid "Delete"
+msgstr ""
+
+msgid "only AJAX GET is allowed"
+msgstr ""
+
+#, fuzzy, python-format
+#| msgid "Events created."
+msgid "Event '%s' deleted."
+msgstr "Ereignisse erstellt."
+
+#, python-format
+msgid "%(number)d events of kind '%(kind)s' deleted."
+msgstr ""
+
+#, python-format
+msgid "All events of kind '%(kind)s' deleted."
+msgstr ""
+
+#, fuzzy
+#| msgid "date joined"
+msgid "Update event"
+msgstr "Beitrittsdatum"
+
+#, fuzzy, python-format
+#| msgid "Events created."
+msgid "Event '%s' updated."
+msgstr "Ereignisse erstellt."
 
 msgctxt "User status"
 msgid "Unconfirmed"
@@ -948,10 +1063,6 @@ msgid "I have no idea what a processing instruction is."
 msgstr ""
 
 #, python-format
-msgid "invalid period: %s"
-msgstr "Ungültiges Zeitintervall: %s"
-
-#, python-format
 msgid "unrecognized date/time specification: '%s' (interpreted as 'now')"
 msgstr ""
 
@@ -965,6 +1076,11 @@ msgstr ""
 
 #, python-format
 msgid "repo page class must conist of two dotted components (invalid: '%s')"
+msgstr ""
+
+#, python-format
+msgid ""
+"Preview revision '%s' does not exist--showing active course content instead."
 msgstr ""
 
 msgid ""
@@ -1001,6 +1117,9 @@ msgstr ""
 "Einschreibung nicht erlaubt. Bitte benutzen Sie Ihre Email '%s' um sich "
 "einzuschreiben."
 
+msgid "Successfully enrolled."
+msgstr "Erfolgreich eingeschrieben"
+
 msgid "New enrollment request"
 msgstr "Neue Einschreibe-Anforderung"
 
@@ -1008,9 +1127,6 @@ msgid ""
 "Enrollment request sent. You will receive notifcation by email once your "
 "request has been acted upon."
 msgstr ""
-
-msgid "Successfully enrolled."
-msgstr "Erfolgreich eingeschrieben"
 
 msgid "A participation already exists. Enrollment attempt aborted."
 msgstr ""
@@ -1054,8 +1170,8 @@ msgstr "Teilnahmen durchsuchen"
 
 #, python-format
 msgid ""
-"%(n_created)d preapprovals created, %(n_exist)d already existed, %"
-"(n_requested_approved)d pending requests approved."
+"%(n_created)d preapprovals created, %(n_exist)d already existed, "
+"%(n_requested_approved)d pending requests approved."
 msgstr ""
 
 msgid "Create Participation Preapprovals"
@@ -1079,9 +1195,6 @@ msgstr "Tag entfernen"
 msgid "Drop"
 msgstr "Abmelden"
 
-msgid "Operation"
-msgstr "Vorgang"
-
 msgid "Tag"
 msgstr "Tag"
 
@@ -1093,6 +1206,9 @@ msgstr "Liste"
 
 msgid "Apply operation"
 msgstr "Operation anwenden"
+
+msgid "Name contains invalid characters."
+msgstr "Name enthält ungültige Zeichen."
 
 #, fuzzy
 #| msgctxt "menu item"
@@ -1178,8 +1294,8 @@ msgstr ""
 
 #, python-format
 msgid ""
-"Ticket issued for <b>%(participation)s</b>. The ticket code is <b>%"
-"(ticket_code)s</b>."
+"Ticket issued for <b>%(participation)s</b>. The ticket code is <b>"
+"%(ticket_code)s</b>."
 msgstr ""
 
 msgid "Issue Exam Ticket"
@@ -1230,9 +1346,9 @@ msgid ""
 "Enter <a href=\"http://documen.tician.de/relate/content.html#relate-markup"
 "\">RELATE markup</a> containing Django template statements to render your "
 "exam tickets. <tt>tickets</tt> contains a list of data structures containing "
-"ticket information. For each entry <tt>tkt</tt>  in this list, use <tt>"
-"{{ tkt.participation.user.user_name }}</tt>, <tt>{{ tkt.code }}</tt>, <tt>"
-"{{ tkt.exam.description }}</tt>, and <tt>{{ checkin_uri }}</tt> as "
+"ticket information. For each entry <tt>tkt</tt>  in this list, use "
+"<tt>{{ tkt.participation.user.user_name }}</tt>, <tt>{{ tkt.code }}</tt>, "
+"<tt>{{ tkt.exam.description }}</tt>, and <tt>{{ checkin_uri }}</tt> as "
 "placeholders. See the example for how to use this."
 msgstr ""
 
@@ -1358,8 +1474,8 @@ msgstr ""
 
 #, python-format
 msgid ""
-"Session reopened at %(now)s, previous completion time was '%(complete_time)"
-"s'."
+"Session reopened at %(now)s, previous completion time was "
+"'%(complete_time)s'."
 msgstr ""
 
 #, python-format
@@ -1395,11 +1511,6 @@ msgstr "Antwort speichern und weiter"
 
 msgid "Save answer and finish"
 msgstr "Antwort speichern und abschließen"
-
-msgid ""
-"No in-progress session record found for this flow. Redirected to flow start "
-"page."
-msgstr ""
 
 msgid "not allowed to view flow"
 msgstr ""
@@ -1488,9 +1599,6 @@ msgstr ""
 msgid "invalid expiration mode"
 msgstr ""
 
-msgid "odd POST parameters"
-msgstr ""
-
 msgid "Cannot end a session that's already ended"
 msgstr ""
 
@@ -1551,12 +1659,6 @@ msgstr ""
 msgid "Re-allow changes"
 msgstr "Noten-Änderungen"
 
-#, fuzzy
-#| msgctxt "Cancel all instant flow(s)"
-#| msgid "Cancel all"
-msgid "Cancel"
-msgstr "Alle abbrechen"
-
 msgid "No prior answers found that could be un-submitted."
 msgstr ""
 
@@ -1566,6 +1668,9 @@ msgid "Flow page changes reallowed. "
 msgstr "Flow-Seite hat keine ID"
 
 msgid "Re-allow Changes to Flow Page"
+msgstr ""
+
+msgid "Purge Page View Data"
 msgstr ""
 
 msgid "must be enrolled to view grades"
@@ -1640,8 +1745,8 @@ msgstr ""
 
 #, python-format
 msgid ""
-"Session reopened at %(now)s by %(user)s, previous completion time was '%"
-"(completion_time)s': %(comment)s."
+"Session reopened at %(now)s by %(user)s, previous completion time was "
+"'%(completion_time)s': %(comment)s."
 msgstr ""
 
 msgid "Reopen session"
@@ -1745,15 +1850,16 @@ msgstr "Vorschau"
 msgid "Import"
 msgstr "Importieren"
 
-#. Translators: use institutional_id_string to find user
-#. (participant).
 #, python-format
-msgid "no participant found with institutional ID '%(inst_id_string)s'"
+msgid "\"%s\" as a prefix is not allowed"
 msgstr ""
 
 #, python-format
-msgid ""
-"more than one participant found with institutional ID '%(inst_id_string)s'"
+msgid "no participant found with %(user_attr)s '%(user_attr_str)s'"
+msgstr ""
+
+#, python-format
+msgid "more than one participant found with %(user_attr)s '%(user_attr_str)s'"
 msgstr ""
 
 #. Translators: use id_string to find user (participant).
@@ -1763,10 +1869,6 @@ msgstr ""
 
 #, python-format
 msgid "more than one participant found for '%(id_string)s'"
-msgstr ""
-
-#, python-format
-msgid "Unknown user attribute '%(attr_type)s'"
 msgstr ""
 
 #, fuzzy
@@ -2129,7 +2231,9 @@ msgstr ""
 msgid "Shown to pariticpant"
 msgstr "Wird Teilnehmern angezeigt"
 
-msgid "Name contains invalid characters."
+#, fuzzy, python-format
+#| msgid "Name contains invalid characters."
+msgid "'%s' contains invalid characters."
 msgstr "Name enthält ungültige Zeichen."
 
 msgid "Participation tag"
@@ -2185,6 +2289,12 @@ msgstr ""
 msgid "Role"
 msgstr "Rolle"
 
+#. Translators: permissions for roles
+#, fuzzy, python-format
+#| msgid "%(user)s in %(course)s as %(role)s"
+msgid "%(permission)s for %(role)s"
+msgstr "%(user)s in %(course)s als %(role)s"
+
 #, fuzzy
 #| msgid "Participation role"
 msgid "Participation role permission"
@@ -2214,9 +2324,6 @@ msgid "Time factor"
 msgstr "Zeit-Faktor"
 
 msgid "Preview git commit SHA"
-msgstr ""
-
-msgid "Tags"
 msgstr ""
 
 msgid "Notes"
@@ -2256,6 +2363,11 @@ msgstr "%(user)s in %(course)s als %(role)s"
 #, python-format
 msgid "Institutional ID %(inst_id)s in %(course)s"
 msgstr ""
+
+#, fuzzy, python-format
+#| msgid "%(user)s in %(course)s as %(role)s"
+msgid "Preapproval with pk %(pk)s in %(course)s"
+msgstr "%(user)s in %(course)s als %(role)s"
 
 msgid "Participation preapproval"
 msgstr "Teilnahmen-Vorab-Bestätigung"
@@ -2312,6 +2424,18 @@ msgstr ""
 
 msgid "Hash of git authentication token"
 msgstr ""
+
+#, python-format
+msgid "Token %(id)d for %(participation)s: %(description)s"
+msgstr ""
+
+msgid "Authentication token"
+msgstr ""
+
+#, fuzzy
+#| msgid "Participation role"
+msgid "Authentication tokens"
+msgstr "Teilnahme-Rolle"
 
 msgid "Cancelled"
 msgstr ""
@@ -2404,8 +2528,8 @@ msgstr "Flow-Seiten-Daten"
 
 #, python-format
 msgid ""
-"Data for page '%(group_id)s/%(page_id)s' (page ordinal %(page_ordinal)s) in %"
-"(flow_session)s"
+"Data for page '%(group_id)s/%(page_id)s' (page ordinal %(page_ordinal)s) in "
+"%(flow_session)s"
 msgstr ""
 
 msgid "Page data"
@@ -2566,16 +2690,19 @@ msgstr ""
 
 #. Translators: For FlowRuleException
 #, python-format
-msgid "%(kind)s exception for '%(user)s' to '%(flow_id)s'in '%(course)s'"
+msgid ""
+"%(kind)s exception %(exception_id)s for '%(user)s' to '%(flow_id)s' in "
+"'%(course)s'"
+msgstr ""
+
+#. Translators: the rule refers to FlowRuleException rule
+msgid "invalid exception rule kind"
 msgstr ""
 
 msgid "grading rules may not expire"
 msgstr ""
 
-msgid "invalid rule kind: "
-msgstr ""
-
-msgid "invalid existing_session_rules: "
+msgid "invalid existing_session_rules"
 msgstr ""
 
 msgid "Flow rule exception"
@@ -2682,6 +2809,15 @@ msgstr ""
 msgid "invalid grade aggregation strategy '%s'"
 msgstr ""
 
+#, fuzzy
+#| msgctxt "Grade state change"
+#| msgid "Exempt"
+msgid "(exempt)"
+msgstr "Ausgenommen"
+
+msgid "(other state)"
+msgstr ""
+
 #. Translators: display the name of a flow
 #, python-format
 msgid "Flow: %(flow_desc_title)s"
@@ -2774,6 +2910,12 @@ msgstr ""
 msgid "Participation and exam must live in the same course"
 msgstr ""
 
+#, python-format
+msgid ""
+"'correctness' is invalid: expecting a value within [0, "
+"%(max_extra_credit_factor)s] or None, got %(invalid_value)s."
+msgstr ""
+
 msgid "No information on correctness of answer."
 msgstr ""
 
@@ -2790,9 +2932,6 @@ msgid "Your answer is mostly correct."
 msgstr ""
 
 msgid "Your answer is somewhat correct. "
-msgstr ""
-
-msgid "Invalid correctness value"
 msgstr ""
 
 msgid "Not passing page_desc to PageBase.__init__ is deprecated"
@@ -2814,13 +2953,20 @@ msgstr ""
 
 #, python-format
 msgid ""
-"PageBaseWithTitle subclass '%s' does not implement markdown_body_for_title()"
+"PageBaseWithTitle subclass '%s' does not implement markup_body_for_title()"
 msgstr ""
 
 msgid "no title found in body or title attribute"
 msgstr ""
 
+msgid "the rendered title is an empty string"
+msgstr ""
+
 msgid "Attribute 'value' should be removed when 'is_optional_page' is True."
+msgstr ""
+
+#, python-format
+msgid "Attribute 'value' expects a non-negative value, got %s instead"
 msgstr ""
 
 msgid "Grade assigned, in percent"
@@ -2910,7 +3056,15 @@ msgid "Select all that apply:"
 msgstr ""
 
 #, python-format
-msgid "choice %(idx)d: unable to convert to string"
+msgid "%(location)s: unable to convert to string"
+msgstr ""
+
+#, python-format
+msgid "%(location)s: more than one choice modes set: '%(modes)s'"
+msgstr ""
+
+#, python-format
+msgid "%(location)s, choice %(idx)d"
 msgstr ""
 
 msgid ""
@@ -2954,6 +3108,15 @@ msgstr ""
 
 msgid "Additional acceptable options are"
 msgstr ""
+
+#, python-format
+msgid "choice %(idx)d: unable to convert to string"
+msgstr ""
+
+#, fuzzy, python-format
+#| msgid "resource '%s' not found"
+msgid "data file '%(file)s' not found"
+msgstr "Ressource '%s' nicht gefunden"
 
 msgid ""
 "code question does not explicitly allow multiple submission. Either add "
@@ -3028,6 +3191,9 @@ msgstr ""
 msgid "Figure"
 msgstr ""
 
+msgid "(Non-string in 'HTML' output filtered out)"
+msgstr ""
+
 msgid "The following code is a valid answer"
 msgstr ""
 
@@ -3061,7 +3227,8 @@ msgstr ""
 msgid "unknown embedded question type '%(type)s'"
 msgstr ""
 
-msgid "must be struct"
+#, python-format
+msgid "Embedded question '%s' must be a struct"
 msgstr ""
 
 #, python-format
@@ -3070,8 +3237,12 @@ msgstr ""
 
 #, python-format
 msgid ""
-"unsupported length unit '%(length_unit)s', expected length unit can be %"
-"(allowed_length_unit)s"
+"unsupported length unit '%(length_unit)s', expected length unit can be "
+"%(allowed_length_unit)s"
+msgstr ""
+
+#, python-format
+msgid "'weight' must be a non-negative value, got '%s' instead"
 msgstr ""
 
 msgid "at least one answer must be provided"
@@ -3088,8 +3259,8 @@ msgstr ""
 
 #, python-format
 msgid ""
-"one or more correct answer(s) expected  for question '%(question_name)s', %"
-"(n_correct)d found"
+"one or more correct answer(s) expected  for question '%(question_name)s', "
+"%(n_correct)d found"
 msgstr ""
 
 msgid "InlineMultiQuestion requires at least one answer field to be defined."
@@ -3105,15 +3276,7 @@ msgid ""
 msgstr ""
 
 #, python-format
-msgid "invalid embedded question name %s. "
-msgstr ""
-
-#, python-format
 msgid "embedded question name %s not unique."
-msgstr ""
-
-#, python-format
-msgid "correct answer(s) not provided for question %s."
 msgstr ""
 
 #, python-format
@@ -3121,7 +3284,7 @@ msgid "redundant answers %s provided for non-existing question(s)."
 msgstr ""
 
 #, python-format
-msgid "have unpaired '%s'."
+msgid "question has unpaired '%s'."
 msgstr ""
 
 #, python-format
@@ -3131,7 +3294,7 @@ msgstr ""
 msgid "unknown validator type"
 msgstr ""
 
-msgid "must be struct or string"
+msgid "must be struct"
 msgstr ""
 
 #, python-format
@@ -3174,6 +3337,9 @@ msgstr ""
 msgid "uses deprecated 'matcher:answer' style"
 msgstr ""
 
+msgid "must be struct or string"
+msgstr ""
+
 msgid "matcher must supply 'type'"
 msgstr ""
 
@@ -3185,14 +3351,18 @@ msgstr "Hochgeladene Datei"
 
 #, python-format
 msgid ""
-"Please keep file size under %(allowedsize)s. Current filesize is %"
-"(uploadedsize)s."
+"Please keep file size under %(allowedsize)s. Current filesize is "
+"%(uploadedsize)s."
 msgstr ""
 
 msgid "Uploaded file is not a PDF."
 msgstr ""
 
 msgid "unrecognized mime types"
+msgstr ""
+
+#, python-format
+msgid "'maximum_megabytes' expects a positive value, got %(value)s instead"
 msgstr ""
 
 msgid "upload question does not have assigned point value"
@@ -3245,6 +3415,10 @@ msgstr ""
 #, python-format
 msgid "%d sessions regraded."
 msgstr "%d Sitzungen neu benotet."
+
+#, python-format
+msgid "%d page views purged."
+msgstr ""
 
 msgid "Analytics"
 msgstr ""
@@ -3332,9 +3506,32 @@ msgstr ""
 msgid "Calendar"
 msgstr "Kalender"
 
-msgid ""
-"<b>Note:</b> Some calendar entries are clickable and link to entries below."
+msgid "Switch to normal view"
 msgstr ""
+
+msgid "Switch to edit view"
+msgstr ""
+
+#, fuzzy
+#| msgid "Edit events"
+msgid "New event"
+msgstr "Ereignisse bearbeiten"
+
+#, fuzzy
+#| msgid " Notes:"
+msgid "Note"
+msgstr " Notizen:"
+
+msgid "Some calendar entries are clickable and link to entries below."
+msgstr ""
+
+msgid "Different from normal view, this calender shows <b>all</b> events. "
+msgstr ""
+
+#, fuzzy
+#| msgid "Edit events"
+msgid "Edit this event"
+msgstr "Ereignisse bearbeiten"
 
 #. Translators: The following are names for menu items in course page
 #, fuzzy
@@ -3422,7 +3619,14 @@ msgstr "Markup-Sandkasten"
 msgid "Test flow"
 msgstr "Flow testen"
 
-msgid "Edit events"
+#, fuzzy
+#| msgid "Edit events"
+msgid "Edit events (admin)"
+msgstr "Ereignisse bearbeiten"
+
+#, fuzzy
+#| msgid "Edit events"
+msgid "Edit events (calendar)"
 msgstr "Ereignisse bearbeiten"
 
 msgctxt "menu item"
@@ -3477,8 +3681,8 @@ msgstr ""
 
 #, python-format
 msgid ""
-"We're sorry to let you know that your request to join the course '%"
-"(course_identifier)s' has been denied. Please get in touch with the course "
+"We're sorry to let you know that your request to join the course "
+"'%(course_identifier)s' has been denied. Please get in touch with the course "
 "staff (for example by replying to this email) to state your case.\n"
 "One common reason for this may be that you may have used your personal email "
 "(such as a GMail or Yahoo account) rather than your official university "
@@ -3571,17 +3775,17 @@ msgstr "(Das sind <b>%(points_percent)s%%</b>.)"
 
 #, fuzzy, python-format
 #| msgid ""
-#| "You have answered %(fully_correct_count)s questions correctly, %"
-#| "(partially_correct_count)s questions partially correctly, and %"
-#| "(incorrect_count)s questions incorrectly."
+#| "You have answered %(fully_correct_count)s questions correctly, "
+#| "%(partially_correct_count)s questions partially correctly, and "
+#| "%(incorrect_count)s questions incorrectly."
 msgid ""
-"You have answered %(fully_correct_count)s grading questions correctly, %"
-"(partially_correct_count)s questions partially correctly, and %"
-"(incorrect_count)s questions incorrectly."
+"You have answered %(fully_correct_count)s grading questions correctly, "
+"%(partially_correct_count)s questions partially correctly, and "
+"%(incorrect_count)s questions incorrectly."
 msgstr ""
-"Sie haben answered %(fully_correct_count)s Fragen korrekt bentwortet, %"
-"(partially_correct_count)s Fragen teilweise korrekt, und %(incorrect_count)s "
-"Fragen inkorrekt."
+"Sie haben answered %(fully_correct_count)s Fragen korrekt bentwortet, "
+"%(partially_correct_count)s Fragen teilweise korrekt, und "
+"%(incorrect_count)s Fragen inkorrekt."
 
 #, python-format
 msgid "The grade for %(unknown_count)s questions is not yet known."
@@ -3589,17 +3793,17 @@ msgstr "Die Note für %(unknown_count)s Fragen ist noch nicht verfügbar."
 
 #, fuzzy, python-format
 #| msgid ""
-#| "You have answered %(fully_correct_count)s questions correctly, %"
-#| "(partially_correct_count)s questions partially correctly, and %"
-#| "(incorrect_count)s questions incorrectly."
+#| "You have answered %(fully_correct_count)s questions correctly, "
+#| "%(partially_correct_count)s questions partially correctly, and "
+#| "%(incorrect_count)s questions incorrectly."
 msgid ""
 "There are %(total_count)s optional questions (not for grading). You have "
 "answered %(fully_correct_count)s correctly, %(partially_correct_count)s "
 "partially correctly, and %(incorrect_count)s incorrectly."
 msgstr ""
-"Sie haben answered %(fully_correct_count)s Fragen korrekt bentwortet, %"
-"(partially_correct_count)s Fragen teilweise korrekt, und %(incorrect_count)s "
-"Fragen inkorrekt."
+"Sie haben answered %(fully_correct_count)s Fragen korrekt bentwortet, "
+"%(partially_correct_count)s Fragen teilweise korrekt, und "
+"%(incorrect_count)s Fragen inkorrekt."
 
 #, fuzzy, python-format
 #| msgid "The grade for %(unknown_count)s questions is not yet known."
@@ -3659,9 +3863,9 @@ msgstr "Ich bin sicher"
 #, python-format
 msgid ""
 "Hi there,\n"
-"I have some question with the flow page with ID \"%(page_id)s\" in flow \"%"
-"(flow_session_id)s\" of  \"%(course_identifier)s\". Details of the question "
-"follows:\n"
+"I have some question with the flow page with ID \"%(page_id)s\" in flow "
+"\"%(flow_session_id)s\" of  \"%(course_identifier)s\". Details of the "
+"question follows:\n"
 "-------------------------------------------------------------------\n"
 "%(question_text)s\n"
 "-------------------------------------------------------------------\n"
@@ -3784,6 +3988,11 @@ msgid "(submitted)"
 msgstr ""
 
 #, fuzzy
+#| msgid "Started"
+msgid "not started"
+msgstr "Begonnen"
+
+#, fuzzy
 #| msgid "finished"
 msgid "unfinished"
 msgstr "fertig"
@@ -3887,6 +4096,21 @@ msgid ""
 "If none of the above steps help, please navigate back to your course from "
 "the <a href=\"%(relate-home)s\">home page</a> and contact your course staff."
 msgstr ""
+
+msgid "Git Source URL"
+msgstr "Git Quell-URL"
+
+msgid "Public active git SHA"
+msgstr "Öffentlich sichtbare git SHA"
+
+msgid "Current git HEAD"
+msgstr "Aktueller git HEAD"
+
+msgid "Current preview git SHA"
+msgstr "Aktuelle git Vorschau-SHA"
+
+msgid "None"
+msgstr "Kein"
 
 msgid "Grading"
 msgstr "Benotung"
@@ -3997,8 +4221,8 @@ msgstr "(keine Note)"
 msgid ""
 "Hi there,\n"
 "I am sending you the internal grading notes regarding %(username)s's work on "
-"the page with title '%(page_title)s' in '%(flow_id)s' of '%"
-"(course_identifier)s'. The full text of the notes follows.\n"
+"the page with title '%(page_title)s' in '%(flow_id)s' of "
+"'%(course_identifier)s'. The full text of the notes follows.\n"
 "-------------------------------------------------------------------\n"
 "%(notes_text)s\n"
 "-------------------------------------------------------------------\n"
@@ -4015,9 +4239,9 @@ msgstr "Benutzer"
 #, python-format
 msgid ""
 "\n"
-"You have a new notification regarding your work on the page with title '%"
-"(page_title)s' in '%(flow_id)s' of '%(course_identifier)s'. The full text of "
-"the feedback follows.\n"
+"You have a new notification regarding your work on the page with title "
+"'%(page_title)s' in '%(flow_id)s' of '%(course_identifier)s'. The full text "
+"of the feedback follows.\n"
 "-------------------------------------------------------------------\n"
 "%(feedback_text)s\n"
 "-------------------------------------------------------------------\n"
@@ -4314,8 +4538,8 @@ msgstr ""
 
 #, python-format
 msgid ""
-"Copy and paste this block of text into the 'private key' field in %"
-"(relate_site_name)s."
+"Copy and paste this block of text into the 'private key' field in "
+"%(relate_site_name)s."
 msgstr ""
 
 msgid "Public key:"
@@ -4344,8 +4568,9 @@ msgstr "Anmelden oder Konto erstellen"
 
 #, python-format
 msgid ""
-"If you cannot or would not like to sign in by email, <a href=\"%(relate-"
-"sign_in_choice)s\">please choose a different method to sign in</a>."
+"If you cannot or would not like to sign in by email, <a href="
+"\"%(relate-sign_in_choice)s\">please choose a different method to sign in</"
+"a>."
 msgstr ""
 
 #. Translators: For courses which require specific email suffix for enrollment, translate the following literals
@@ -4360,8 +4585,8 @@ msgstr ""
 #, python-format
 msgid ""
 "If you cannot or would not like to sign in using a %(relate_site_name)s-"
-"specific user name or password, <a href='%(relate-sign_in_choice)s%(next_uri)"
-"s'>please choose a different method to sign in</a>."
+"specific user name or password, <a href='%(relate-sign_in_choice)s"
+"%(next_uri)s'>please choose a different method to sign in</a>."
 msgstr ""
 
 msgid ""
@@ -4413,6 +4638,11 @@ msgstr "Widerrufen"
 
 msgid "Indefinitely"
 msgstr ""
+
+#, fuzzy
+#| msgid "(no grade)"
+msgid "(never used)"
+msgstr "(keine Note)"
 
 #, fuzzy
 #| msgid "State"
@@ -4523,17 +4753,15 @@ msgstr ""
 msgid "grading rule determination was unable to find a grading rule"
 msgstr ""
 
-#, python-format
-msgid ""
-"Preview revision '%s' does not exist--showing active course content instead."
-msgstr ""
-
 msgid "Press F9 to toggle full-screen mode. "
 msgstr "F9 für Vollbild. "
 
 #, python-format
 msgid "Set editor mode in <a href='%s'>user profile</a>."
 msgstr "Editor-Modus im <a href='%s'>Benutzerprofil</a> einstellen."
+
+msgid "Are you sure the file is a CSV file other than a Microsoft Excel file?"
+msgstr ""
 
 msgid ""
 "Error: Columns to be imported contain non-ASCII characters. Please save your "
@@ -4554,8 +4782,8 @@ msgstr ""
 
 #, python-format
 msgid ""
-"Name of facility not recognized: '%(fac_name)s'. Known facility names: '%"
-"(known_fac_names)s'"
+"Name of facility not recognized: '%(fac_name)s'. Known facility names: "
+"'%(known_fac_names)s'"
 msgstr ""
 
 #, python-format
@@ -4598,6 +4826,18 @@ msgstr "Chunk-ID '%(chunkid)s' ist nicht eindeutig"
 
 msgid "flow page has no ID"
 msgstr "Flow-Seite hat keine ID"
+
+#, python-format
+msgid ""
+"Custom page type '%(page_type)s' specified. Custom page types were no longer "
+"supported in %(relate_site_name)s since %(date_time)s."
+msgstr ""
+
+#, python-format
+msgid ""
+"Custom page type '%(page_type)s' specified. Custom page types will stop "
+"being supported in %(relate_site_name)s at %(date_time)s."
+msgstr ""
 
 msgid "could not instantiate flow page"
 msgstr "Konnte Flow-Seite nicht instantiieren"
@@ -4655,10 +4895,12 @@ msgstr ""
 msgid "'generates_grade' is true, but no 'grade_identifier'is given."
 msgstr ""
 
+msgid "'rules' block does not have a grade_identifier attribute."
+msgstr ""
+
 msgid ""
-"'rules' block does not have a grade_identifier attribute. This attribute "
-"needs to be moved out of the lower-level 'grading' rules block and into the "
-"'rules' block itself."
+" This attribute needs to be moved out of the lower-level 'grading' rules "
+"block and into the 'rules' block itself."
 msgstr ""
 
 #, python-format
@@ -4730,6 +4972,7 @@ msgid ""
 "%s: access classes 'public' and 'unenrolled' may not exist simultaneously."
 msgstr ""
 
+#, python-brace-format
 msgid ""
 "{location}: existing grading opportunity with identifier "
 "'{grade_identifier}' refers to flow '{other_flow_id}', however flow code in "
@@ -4743,6 +4986,16 @@ msgid ""
 "differs from type used in database ('%(type_old)s')"
 msgstr ""
 
+msgid ""
+"invalid flow name. Flow names may only contain (roman) letters, numbers, "
+"dashes and underscores."
+msgstr ""
+
+msgid ""
+"invalid page name. Page names may only contain alphanumeric characters (any "
+"language) and hyphens."
+msgstr ""
+
 #, python-format
 msgid "Your course repository does not have an events file named '%s'."
 msgstr ""
@@ -4753,17 +5006,7 @@ msgid ""
 "instead."
 msgstr ""
 
-msgid ""
-"invalid flow name. Flow names may only contain (roman) letters, numbers, "
-"dashes and underscores."
-msgstr ""
-
 msgid "flow uses the same grade_identifier as another flow"
-msgstr ""
-
-msgid ""
-"invalid page name. Page names may only contain alphanumeric characters (any "
-"language) and hyphens."
 msgstr ""
 
 msgid "WARNINGS: "
@@ -4788,8 +5031,8 @@ msgstr "Konnte nicht mehr benutztes Repository-Verzeichnis '%s' nicht löschen."
 msgid "Course creation failed"
 msgstr "Kurs-Erstellung fehlgeschlagen"
 
-msgid "no git source URL specified"
-msgstr ""
+msgid "invalid command"
+msgstr "ungültiger Befehl"
 
 msgid "fetch would discard commits, refusing"
 msgstr "Abholen würde Commits wegwerfen, abgelehnt"
@@ -4800,8 +5043,10 @@ msgstr "Abholen erfolgreich."
 msgid "Preview ended."
 msgstr "Vorschau beendet."
 
-#, python-format
-msgid "Course content did not validate successfully. (%s) Update not applied."
+#, fuzzy, python-format
+#| msgid ""
+#| "Course content did not validate successfully. (%s) Update not applied."
+msgid "Course content did not validate successfully: '%s' Update not applied."
 msgstr ""
 "Kurs-Inhalt nicht erfolgreich validiert. (%s) Aktualisierung nicht "
 "angewendet."
@@ -4817,9 +5062,6 @@ msgstr "Vorschau aktiviert."
 
 msgid "Update applied. "
 msgstr "Aktualisierung angewendet."
-
-msgid "invalid command"
-msgstr "ungültiger Befehl"
 
 msgctxt "new git SHA for revision of course contents"
 msgid "New git SHA"
@@ -4845,23 +5087,11 @@ msgstr "Abholen"
 msgid "- not found -"
 msgstr "Keine Ereignisse gefunden."
 
-msgid "Git Source URL"
-msgstr "Git Quell-URL"
-
-msgid "Public active git SHA"
-msgstr "Öffentlich sichtbare git SHA"
-
-msgid "Current git HEAD"
-msgstr "Aktueller git HEAD"
-
-msgid "Current preview git SHA"
-msgstr "Aktuelle git Vorschau-SHA"
-
-msgid "None"
-msgstr "Kein"
-
 msgid "Update Course Revision"
 msgstr "Kurs-Version aktualisieren"
+
+msgid "NONE"
+msgstr ""
 
 msgid "course page is currently hidden"
 msgstr ""
@@ -4923,6 +5153,11 @@ msgid ""
 "facility, as a reminder that this pretending is in progress."
 msgstr ""
 
+#, fuzzy
+#| msgid "Set fake time"
+msgid "may not pretend facilities"
+msgstr "Eine andere Zeit vorgeben"
+
 msgid "Pretend to be in Facilities"
 msgstr "Vorgeben, in Einrichtungen zu sein"
 
@@ -4968,6 +5203,10 @@ msgstr "Ausnahme gewähren"
 msgid "started at %s"
 msgstr "begonnen am %s"
 
+#, python-format
+msgid " tagged '%s'"
+msgstr ""
+
 msgid ""
 "If you click 'Create session', this tag will be applied to the new session."
 msgstr ""
@@ -4990,12 +5229,14 @@ msgstr ""
 msgid "Granting exception to '%(participation)s' for '%(flow_id)s'."
 msgstr ""
 
-msgid "NONE"
-msgstr ""
-
 msgid ""
 "Creating a new session is (technically) not allowed by course rules. "
 "Clicking 'Create Session' anyway will override this rule."
+msgstr ""
+
+#, python-format
+msgid ""
+"A new session%(tag)s was created for '%(participation)s' for '%(flow_id)s'."
 msgstr ""
 
 msgid "Exception only applies to sessions with the above tag"
@@ -5029,7 +5270,7 @@ msgstr ""
 msgid "Create grading rule exception"
 msgstr "Flow-Regel-Ausnahme"
 
-msgid "If set, the 'Due' field will be disregarded."
+msgid "If set, the 'Due time' field will be disregarded."
 msgstr ""
 
 msgid "Due same as access expiration"
@@ -5059,14 +5300,18 @@ msgstr ""
 msgid "Maximum number of points (enforced cap)"
 msgstr ""
 
-msgid "Save"
-msgstr "Sichern"
-
 msgid ""
 "Must specify access expiration if 'due same as access expiration' is set."
 msgstr ""
 
 msgid "newly created exception"
+msgstr ""
+
+#, python-format
+msgid "Access rules tag of the selected session updated to '%s'."
+msgstr ""
+
+msgid "Removed access rules tag of the selected session."
 msgstr ""
 
 msgid "Granted excecption"
@@ -5076,13 +5321,27 @@ msgid "credit"
 msgstr ""
 
 #, python-format
-msgid "Exception granted to '%(participation)s' for '%(flow_id)s'."
+msgid ""
+"'%(exception_type)s' exception granted to '%(participation)s' for "
+"'%(flow_id)s'."
 msgstr ""
 
 #, python-format
 msgid ""
-"Granting exception to '%(participation)s' for '%(flow_id)s' (session %"
-"(session)s)."
+"No other exception granted to the given flow session of '%(participation)s' "
+"for '%(flow_id)s'."
+msgstr ""
+
+#, python-format
+msgid ""
+"No exception granted to the given flow session of '%(participation)s' for "
+"'%(flow_id)s'."
+msgstr ""
+
+#, python-format
+msgid ""
+"Granting exception to '%(participation)s' for '%(flow_id)s' (session "
+"%(session)s)."
 msgstr ""
 
 msgid "only staff may use this tool"
@@ -5124,8 +5383,8 @@ msgstr ""
 msgid ""
 "You're not currently signed in. Access to the resource is restricted, and "
 "since the site has no way of knowing who you are, it denied you accesss. "
-"Once you're signed in, navigate back to your course from the <a href=\"%"
-"(relate-home)s\"> home page </a> and retry your last action."
+"Once you're signed in, navigate back to your course from the <a href="
+"\"%(relate-home)s\"> home page </a> and retry your last action."
 msgstr ""
 
 msgid " Sorry, and thanks for your patience! "
@@ -5168,8 +5427,8 @@ msgstr ""
 
 #, python-format
 msgid ""
-"You are currently seeing a preview of what the site would look like at %"
-"(fake_time)s."
+"You are currently seeing a preview of what the site would look like at "
+"%(fake_time)s."
 msgstr ""
 
 #, python-format
@@ -5177,8 +5436,8 @@ msgid ""
 "You are currently seeing a preview of what the site would look like from "
 "inside the facilities  <b>%(facilities)s</b>."
 msgstr ""
-"Sie sehen eine Vorschau davon, wie die Seite aus den Eichrichtungen <b>%"
-"(facilities)s</b> aussehen würde."
+"Sie sehen eine Vorschau davon, wie die Seite aus den Eichrichtungen <b>"
+"%(facilities)s</b> aussehen würde."
 
 msgid "Pretend to be in facilities"
 msgstr "Vorgeben in Einrichtungen zu sein"
@@ -5188,11 +5447,23 @@ msgstr "Vorgeben in Einrichtungen zu sein"
 msgid "Now impersonating"
 msgstr "Nicht mehr als anderer Benutzer ausgeben"
 
+msgid "Stop impersonating"
+msgstr "Nicht mehr als anderer Benutzer ausgeben"
+
+msgid ""
+"This website may not be compatible with your outdated Internet Explorer "
+"version. If you want use Internet Explorer, please install one with version "
+"10 or higher."
+msgstr ""
+
 msgid "Staff"
 msgstr "Mitarbeiter"
 
 msgid "Admin site"
 msgstr "Verwaltungs-Site"
+
+msgid "Purge page view data"
+msgstr ""
 
 msgid "Issue exam tickets"
 msgstr "Prüfungstickets ausgeben"
@@ -5222,6 +5493,9 @@ msgid ""
 "we'll be back shortly."
 msgstr ""
 
+msgid "Close"
+msgstr ""
+
 #, fuzzy, python-format
 #| msgid "Signed in as %(username)s"
 msgid "Sign in to %(relate_site_name)s"
@@ -5244,17 +5518,52 @@ msgstr "Mit Prüfungsticket anmelden"
 msgid "Sign in with a %(relate_site_name)s-specific user name and password"
 msgstr "Mit einem RELATE-spezifischen Benutzernamen anmelden"
 
-msgid "You're already signed in"
+msgid "You've already signed in"
 msgstr ""
 
 msgid "Would you like to sign out and proceed with your previous operation?"
 msgstr ""
 
-msgid "Sign out"
-msgstr "Abmelden"
+#, fuzzy
+#| msgid "Institutional ID"
+msgid "I have no Institutional ID"
+msgstr "Institutionelle ID"
 
-msgid "User Profile"
-msgstr "Benutzerprofil"
+msgid ""
+"Check the checkbox if you are not a student or you forget your institutional "
+"id."
+msgstr ""
+
+msgid "my English"
+msgstr ""
+
+msgid "Simplified Chinese"
+msgstr ""
+
+msgid "German"
+msgstr ""
+
+msgid "English"
+msgstr ""
+
+msgid "Korean"
+msgstr ""
+
+msgid "French"
+msgstr ""
+
+msgid "whatever"
+msgstr ""
+
+#~ msgid "Stop impersonating user"
+#~ msgstr "Nicht mehr als jemand anders ausgeben"
+
+#~ msgctxt "Unkown time interval"
+#~ msgid "unknown interval"
+#~ msgstr "unbekanntes Intervall"
+
+#~ msgid "invalid period: %s"
+#~ msgstr "Ungültiges Zeitintervall: %s"
 
 #~ msgid ""
 #~ "Enter a valid username. This value may contain only letters, numbers and "
@@ -5331,8 +5640,8 @@ msgstr "Benutzerprofil"
 #~ msgid ""
 #~ "Now impersonating %(full_name)s (user: %(username)s, email: %(email)s)."
 #~ msgstr ""
-#~ "Jetzt als %(last_name)s, %(first_name)s (Benutzer: %(username)s, E-Mail: %"
-#~ "(email)s) ausgegeben."
+#~ "Jetzt als %(last_name)s, %(first_name)s (Benutzer: %(username)s, E-Mail: "
+#~ "%(email)s) ausgegeben."
 
 #~ msgid "Emails"
 #~ msgstr "Email-Adressen"
