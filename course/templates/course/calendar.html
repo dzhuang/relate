@@ -121,11 +121,11 @@
       {% if pperm.edit_events %}
         var switchToNormalModeButtonText = $("#switch-to-normal").text(),
           switchToEditViewModeButtonText = $("#switch-to-edit").text(),
-          fetchUrl = '{% url "relate-fetch_event_json" course.identifier is_edit_mode|yesno:"1,0" %}',
+          fetchUrl = '{% url "relate-fetch_events" course.identifier is_edit_mode|yesno:"1,0" %}',
           deleteIconHtml = tmpl("delete-event-icon-template")(),
           editIconHtml = tmpl("edit-event-icon-template")();
       {% else %}
-        var fetchUrl = '{% url "relate-fetch_event_json" course.identifier "0" %}';
+        var fetchUrl = '{% url "relate-fetch_events" course.identifier "0" %}';
       {% endif %}
 
       $(document).ready(function () {

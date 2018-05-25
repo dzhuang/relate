@@ -47,9 +47,10 @@ import django.forms as forms
 from relate.utils import (
     StyledForm, as_local_time, format_datetime_local, string_concat, StyledModelForm)
 
+from course.views import get_now_or_fake_time
 from course.constants import (
         participation_permission as pperm,
-)
+        )
 from course.models import Event
 from course.utils import course_view, render_course_page
 
@@ -135,8 +136,7 @@ class RecurringEventForm(ModalStyledFormMixin, StyledForm):
             widget=DateTimePicker(
                 options={"format": "YYYY-MM-DD HH:mm", "sideBySide": True}),
             label=pgettext_lazy("Starting time of event", "Starting time"))
-    duration_in_minutes = forms.FloatField(
-            required=False,
+    duration_in_minutes = forms.FloatField(required=False,
             min_value=0,
             label=_("Duration in minutes"))
     all_day = forms.BooleanField(
@@ -169,7 +169,7 @@ class RecurringEventForm(ModalStyledFormMixin, StyledForm):
         exist_event_choices = [(choice, choice) for choice in set(
             Event.objects.filter(
                 course__identifier=course_identifier)
-                .values_list("kind", flat=True))]
+            .values_list("kind", flat=True))]
         self.fields['kind'].widget = ListTextWidget(data_list=exist_event_choices,
                                                     name="event_choices")
 
@@ -219,12 +219,7 @@ def _create_recurring_events_backend(course, time, kind, starting_ordinal, inter
         try:
             evt.save()
         except Exception as e:
-            event_already_exist = False
-            if isinstance(e, IntegrityError):
-                event_already_exist = True
             if isinstance(e, ValidationError) and "already exists" in str(e):
-                event_already_exist = True
-            if event_already_exist:
                 raise EventAlreadyExists(
                     _("'%(exist_event)s' already exists")
                     % {'exist_event': evt})
@@ -368,13 +363,12 @@ class RenumberEventsForm(ModalStyledFormMixin, StyledForm):
             help_text=_("The starting ordinal of this kind of events"),
             label=pgettext_lazy(
                 "Starting ordinal of recurring events", "Starting ordinal"))
-
     preserve_ordinal_order = forms.BooleanField(
-           required=False,
+            required=False,
             initial=False,
-            help_text=_("Tick this box if you want to preserve the order of "
-                        "ordinals of existing event."),
-            label=_("Preserve order"))
+            help_text=_("Tick to preserve the order of ordinals of "
+                        "existing events."),
+            label=_("Preserve ordinal order"))
 
     def __init__(self, course_identifier, *args, **kwargs):
         super(RenumberEventsForm, self).__init__(*args, **kwargs)
@@ -430,40 +424,40 @@ def renumber_events(pctx):
             if form.cleaned_data["preserve_ordinal_order"]:
                 order_field = "ordinal"
             events = list(
-                Event.objects
-                    .filter(
-                    course=pctx.course, kind=kind)
-                    .order_by(order_field))
+                Event.objects.filter(
+                    course=pctx.course, kind=kind,
 
-            if events:
-                queryset = (
-                    Event.objects.filter(course=pctx.course, kind=kind))
+                    # there might be event with the same kind but no ordinal,
+                    # we don't renumber that
+                    ordinal__isnull=False)
+                .order_by(order_field))
 
-                queryset.delete()
+            assert events
+            queryset = (Event.objects.filter(
+                course=pctx.course, kind=kind,
 
-                ordinal = form.cleaned_data["starting_ordinal"]
-                for event in events:
-                    new_event = Event()
-                    new_event.course = pctx.course
-                    new_event.kind = kind
-                    new_event.ordinal = ordinal
-                    new_event.time = event.time
-                    new_event.end_time = event.end_time
-                    new_event.all_day = event.all_day
-                    new_event.shown_in_calendar = event.shown_in_calendar
-                    new_event.save()
+                # there might be event with the same kind but no ordinal,
+                # we don't renumber that
+                ordinal__isnull=False))
 
-                    ordinal += 1
+            queryset.delete()
 
-                message = _("Events renumbered.")
-                message_level = messages.SUCCESS
-            else:
-                message = _("No events found.")
-                message_level = messages.SUCCESS
-        else:
-            if request.is_ajax():
-                return JsonResponse(
-                    {"errors": form.errors, "form_prefix": form.prefix}, status=400)
+            ordinal = form.cleaned_data["starting_ordinal"]
+            for event in events:
+                new_event = Event()
+                new_event.course = pctx.course
+                new_event.kind = kind
+                new_event.ordinal = ordinal
+                new_event.time = event.time
+                new_event.end_time = event.end_time
+                new_event.all_day = event.all_day
+                new_event.shown_in_calendar = event.shown_in_calendar
+                new_event.save()
+
+                ordinal += 1
+
+            message = _("Events renumbered.")
+            message_level = messages.SUCCESS
 
         if request.is_ajax():
             if message_level == messages.ERROR:
@@ -481,7 +475,6 @@ def renumber_events(pctx):
         "form_description": _("Renumber events"),
     })
 
-
 # }}}
 
 
@@ -498,29 +491,54 @@ class EventInfo(object):
         self.show_description = show_description
 
 
-def get_event_json(pctx, now_datetime=None, is_edit_view=False):
+@course_view
+def view_calendar(pctx, operation=None):
+    if not pctx.has_permission(pperm.view_calendar):
+        raise PermissionDenied(_("may not view calendar"))
+
+    is_edit_view = bool(operation == "edit")
+    if is_edit_view and not pctx.has_permission(pperm.edit_events):
+        raise PermissionDenied(_("may not edit calendar"))
+
+    from course.views import get_now_or_fake_time
+    now = get_now_or_fake_time(pctx.request)
+
+    default_date = now.date()
+    if pctx.course.end_date is not None and default_date > pctx.course.end_date:
+        default_date = pctx.course.end_date
+
+    return render_course_page(pctx, "course/calendar.html", {
+        "default_date": default_date.isoformat(),
+        "is_edit_mode": is_edit_view,
+
+        # Wrappers used by JavaScript template (tmpl) so as not to
+        # conflict with Django template's tag wrapper
+        "JQ_OPEN": '{%',
+        'JQ_CLOSE': '%}',
+    })
+
+
+def _get_events(pctx, now_datetime=None, is_edit_view=False):
     events_json = []
 
     from course.content import (
         get_raw_yaml_from_repo, markup_to_html, parse_date_spec)
     try:
         event_descr = get_raw_yaml_from_repo(pctx.repo,
-                                             pctx.course.events_file,
-                                             pctx.course_commit_sha)
+                pctx.course.events_file, pctx.course_commit_sha)
     except ObjectDoesNotExist:
         event_descr = {}
 
-    if not now_datetime:
-        from course.views import get_now_or_fake_time
-        now_datetime = get_now_or_fake_time(pctx.request)
+    now = now_datetime or get_now_or_fake_time(pctx.request)
 
     event_kinds_desc = event_descr.get("event_kinds", {})
     event_info_desc = event_descr.get("events", {})
-    events_info = []
 
-    may_edit_events = pctx.has_permission(pperm.edit_events)
+    event_info_list = []
 
     filter_kwargs = {"course": pctx.course}
+
+    may_edit_events = pctx.has_permission(pperm.edit_events)
     if not may_edit_events:
         # exclude hidden events when no edit permission
         filter_kwargs["shown_in_calendar"] = True
@@ -539,8 +557,8 @@ def get_event_json(pctx, now_datetime=None, is_edit_view=False):
         event_json = {
                 "id": event.id,
                 "start": event.time.isoformat(),
-            "allDay": event.all_day}
-
+                "allDay": event.all_day,
+                }
         if event.end_time is not None:
             event_json["end"] = event.end_time.isoformat()
         else:
@@ -584,13 +602,13 @@ def get_event_json(pctx, now_datetime=None, is_edit_view=False):
             if "show_description_from" in event_desc:
                 ds = parse_date_spec(
                         pctx.course, event_desc["show_description_from"])
-                if now_datetime < ds:
+                if now < ds:
                     show_description = False
 
             if "show_description_until" in event_desc:
                 ds = parse_date_spec(
                         pctx.course, event_desc["show_description_until"])
-                if now_datetime > ds:
+                if now > ds:
                     show_description = False
 
         event_json["title"] = human_title
@@ -615,14 +633,14 @@ def get_event_json(pctx, now_datetime=None, is_edit_view=False):
                     else:
                         end_time = end_time.date()
 
-            events_info.append(
+            event_info_list.append(
                     EventInfo(
                         id=event.id,
                         human_title=human_title,
                         start_time=start_time,
                         end_time=end_time,
-                    description=description,
-                    show_description=show_description
+                        description=description,
+                        show_description=show_description
                         ))
 
         events_json.append(event_json)
@@ -630,7 +648,7 @@ def get_event_json(pctx, now_datetime=None, is_edit_view=False):
     from django.template.loader import render_to_string
     events_info_html = render_to_string(
         "course/events_info.html",
-        context={"events_info": events_info,
+        context={"event_info_list": event_info_list,
                  "may_edit_events": may_edit_events,
                  "is_edit_view": is_edit_view},
         request=pctx.request)
@@ -639,39 +657,11 @@ def get_event_json(pctx, now_datetime=None, is_edit_view=False):
 
 
 @course_view
-def view_calendar(pctx, operation=None):
+def fetch_events(pctx, is_edit_view):
     if not pctx.has_permission(pperm.view_calendar):
         raise PermissionDenied(_("may not view calendar"))
 
-    is_edit_view = bool(operation == "edit")
-    may_edit_calendar = pctx.has_permission(pperm.edit_events)
-    if is_edit_view and not may_edit_calendar:
-        raise PermissionDenied(_("may not edit calendar"))
-
-    from course.views import get_now_or_fake_time
-    now = get_now_or_fake_time(pctx.request)
-
-    default_date = now.date()
-    if pctx.course.end_date is not None and default_date > pctx.course.end_date:
-        default_date = pctx.course.end_date
-
-    return render_course_page(pctx, "course/calendar.html", {
-        "default_date": default_date.isoformat(),
-        "is_edit_mode": is_edit_view,
-
-        # Wrappers used by JavaScript template (tmpl) so as not to
-        # conflict with Django template's tag wrapper
-        "JQ_OPEN": '{%',
-        'JQ_CLOSE': '%}',
-    })
-
-
-@course_view
-def fetch_event_json(pctx, is_edit_view):
-    if not pctx.has_permission(pperm.view_calendar):
-        raise PermissionDenied(_("may not view calendar"))
-
-    events_info_html, events_json = get_event_json(
+    events_info_html, events_json = _get_events(
         pctx, now_datetime=None, is_edit_view=bool(int(is_edit_view)))
 
     return JsonResponse(

@@ -1,4 +1,4 @@
-{% for event_info in events_info %}
+{% for event_info in event_info_list %}
   {% if may_edit_events or event_info.show_description %}
     <div id="event-{{ event_info.id }}" class="panel panel-default relate-calendar-event {% if not event_info.show_description %}mode-toggle{% endif %}">
       <div class="panel-heading">
