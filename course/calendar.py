@@ -205,16 +205,24 @@ def create_recurring_events(pctx):
 
 
 class RenumberEventsForm(StyledForm):
-    kind = forms.CharField(required=True,
+    kind = forms.ChoiceField(required=True,
             help_text=_("Should be lower_case_with_underscores, no spaces "
                         "allowed."),
             label=pgettext_lazy("Kind of event", "Kind of event"))
     starting_ordinal = forms.IntegerField(required=True, initial=1,
+            help_text=_("The starting ordinal of this kind of events"),
             label=pgettext_lazy(
                 "Starting ordinal of recurring events", "Starting ordinal"))
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, course_identifier, *args, **kwargs):
         super(RenumberEventsForm, self).__init__(*args, **kwargs)
+        self.course_identifier = course_identifier
+
+        renumberable_event_kinds = set(Event.objects.filter(
+            course__identifier=self.course_identifier,
+            ordinal__isnull=False).values_list("kind", flat=True))
+        self.fields['kind'].choices = tuple(
+            (kind, kind) for kind in renumberable_event_kinds)
 
         self.helper.add_input(
                 Submit("submit", _("Renumber")))
@@ -230,40 +238,50 @@ def renumber_events(pctx):
     request = pctx.request
 
     if request.method == "POST":
-        form = RenumberEventsForm(request.POST, request.FILES)
+        form = RenumberEventsForm(
+            pctx.course.identifier, request.POST, request.FILES)
         if form.is_valid():
-            events = list(Event.objects
-                    .filter(course=pctx.course, kind=form.cleaned_data["kind"])
-                    .order_by('time'))
+            kind = form.cleaned_data["kind"]
+            order_field = "time"
+            events = list(
+                Event.objects
+                    .filter(
+                    course=pctx.course, kind=kind,
 
-            if events:
-                queryset = (Event.objects
-                    .filter(course=pctx.course, kind=form.cleaned_data["kind"]))
+                    # there might be event with the same kind but no ordinal,
+                    # we don't renumber that
+                    ordinal__isnull=False)
+                    .order_by(order_field))
 
-                queryset.delete()
+            assert events
+            queryset = (Event.objects
+                .filter(course=pctx.course, kind=kind,
 
-                ordinal = form.cleaned_data["starting_ordinal"]
-                for event in events:
-                    new_event = Event()
-                    new_event.course = pctx.course
-                    new_event.kind = form.cleaned_data["kind"]
-                    new_event.ordinal = ordinal
-                    new_event.time = event.time
-                    new_event.end_time = event.end_time
-                    new_event.all_day = event.all_day
-                    new_event.shown_in_calendar = event.shown_in_calendar
-                    new_event.save()
+                        # there might be event with the same kind but no ordinal,
+                        # we don't renumber that
+                        ordinal__isnull=False))
 
-                    ordinal += 1
+            queryset.delete()
 
-                messages.add_message(request, messages.SUCCESS,
-                        _("Events renumbered."))
-            else:
-                messages.add_message(request, messages.ERROR,
-                        _("No events found."))
+            ordinal = form.cleaned_data["starting_ordinal"]
+            for event in events:
+                new_event = Event()
+                new_event.course = pctx.course
+                new_event.kind = kind
+                new_event.ordinal = ordinal
+                new_event.time = event.time
+                new_event.end_time = event.end_time
+                new_event.all_day = event.all_day
+                new_event.shown_in_calendar = event.shown_in_calendar
+                new_event.save()
+
+                ordinal += 1
+
+            messages.add_message(request, messages.SUCCESS,
+                    _("Events renumbered."))
 
     else:
-        form = RenumberEventsForm()
+        form = RenumberEventsForm(pctx.course.identifier)
 
     return render_course_page(pctx, "course/generic-course-form.html", {
         "form": form,

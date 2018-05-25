@@ -418,27 +418,9 @@ class RenumberEventsTest(SingleCourseTestMixin,
             data=self.get_post_renumber_evt_data(
                 kind="foo_kind", starting_ordinal=3))
         self.assertEqual(resp.status_code, 200)
-
-        # nothing changed
-        all_default_evts = Event.objects.filter(kind=self.default_event_kind)
-        self.assertListEqual(
-            list(all_default_evts.values_list("ordinal", flat=True)),
-            [1, 3, 5, 7, 9])
-
-        # no new objects created
-        self.assertListEqual(
-            list(Event.objects.values_list("pk", flat=True)), all_pks)
-
-        # other events also not affected
-        self.evt_another_kind1.refresh_from_db()
-        self.evt_another_kind2.refresh_from_db()
-        self.assertEqual(
-            self.evt_another_kind1.ordinal, self.evt_another_kind1_ordinal)
-        self.assertEqual(
-            self.evt_another_kind2.ordinal, self.evt_another_kind2_ordinal)
-
-        self.assertAddMessageCallCount(1)
-        self.assertAddMessageCalledWith("No events found.")
+        expected_errors = ["Select a valid choice. foo_kind is "
+                           "not one of the available choices."]
+        self.assertFormError(resp, "form", "kind", expected_errors)
 
 
 class ViewCalendarTest(SingleCourseTestMixin, HackRepoMixin, TestCase):
