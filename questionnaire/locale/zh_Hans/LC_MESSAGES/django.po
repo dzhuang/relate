@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2018-02-26 11:50+0800\n"
+"POT-Creation-Date: 2018-05-29 01:55+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language: \n"
@@ -19,7 +19,6 @@ msgstr ""
 
 msgid "Only one questionnaire is allowed to be copied per request"
 msgstr "每次请求只能复制1份问卷"
-
 
 msgid "Make a copy of this questionnaire"
 msgstr "复制一份该问卷"
