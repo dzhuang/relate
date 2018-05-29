@@ -11,7 +11,10 @@
 
 {% block head_assets_extra %}
   <link rel='stylesheet' href='{% static "fullcalendar/dist/fullcalendar.css" %}?version=3.9.0'/>
+  <link rel='stylesheet' href='{% static "bootstrap3_datetime/css/bootstrap-datetimepicker.min.css" %}'/>
   <script src='{% static "moment/moment.js" %}'></script>
+  <script src='{% static "/bootstrap3_datetime/js/moment-with-locales.min.js" %}'></script>
+  <script src='{% static "bootstrap3_datetime/js/bootstrap-datetimepicker.min.js" %}'></script>
   <script src='{% static "fullcalendar/dist/fullcalendar.min.js" %}?version=3.9.0'></script>
   {# load calendar with local language #}
   {% get_current_language as LANGUAGE_CODE %}
