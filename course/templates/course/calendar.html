@@ -104,7 +104,7 @@
   {% if pperm.edit_events %}
     <script type="text/x-tmpl" id="django-message-template">
       <div class="alert alert-{{ JQ_OPEN }}=o.tags{{ JQ_CLOSE }} fade in" data-alert="{{ JQ_OPEN }}=o.tags{{ JQ_CLOSE }}">
-        <a class="close" title="Close" href="#" data-dismiss="alert">&times;</a>
+        <button class="close" title="{% trans 'Close' %}" data-dismiss="alert">&times;</button>
         <i class="fa fa-{{ JQ_OPEN }}=o.icon_class{{ JQ_CLOSE }}"></i>
         {{ JQ_OPEN }}=o.message{{ JQ_CLOSE }}
       </div>
