@@ -214,6 +214,9 @@ class RecurringEventForm(ModalStyledFormMixin, StyledForm):
         self.helper.form_action = reverse(
             "relate-create_recurring_events", args=[self.course_identifier])
 
+        # Form media (FullCalendar and mement js) are manually added to page head
+        self.helper.include_media = False
+
         helper.layout = Layout(
             Div(*self.fields, css_class="modal-body"),
             ButtonHolder(
@@ -808,6 +811,9 @@ class CreateEventModalForm(ModalStyledFormMixin, StyledModelForm):
 
         self.helper.form_action = reverse(
             "relate-create_event", args=[self.course_identifier])
+
+        # Form media (FullCalendar and mement js) are manually added to page head
+        self.helper.include_media = False
 
         helper.layout = Layout(
             Div(*self.fields, css_class="modal-body"),
