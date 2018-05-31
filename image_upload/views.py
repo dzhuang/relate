@@ -434,8 +434,14 @@ class ImageListView(LoginRequiredMixin, ImageListPermissionTestMixin,
     def render_to_response(self, context, **response_kwargs):
         queryset = self.get_queryset()
         if queryset:
-            files = [serialize(self.request, p, 'image')
-                    for p in queryset]
+            files = []
+            for p in queryset:
+                try:
+                    files.append(serialize(self.request, p, 'image'))
+                except OSError as e:
+                    # fail silently
+                    from warnings import warn
+                    warn("Ignored error: %s: %s" % (type(e).__name__, str(e)))
             data = {'files': files}
         else:
             data = {}

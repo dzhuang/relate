@@ -204,16 +204,17 @@
                         $editModal.modal('hide');
                         options.cropperButtonSelector.prop("disabled", true);
                         template.find(".btn").prop("disabled", true);
+
+                        // cheat maxNumberOfFiles count minus 1
+                        data.context.addClass('processing');
                         result.toBlob(function (blob) {
                             blob.name = mod.name;
-                            options.maxNumberOfFiles ++;
                             $fileupload.fileupload(
                                 'add', {
                                     files: [blob],
                                     replaceChild: $(data.context)
                                 }
                             );
-                            options.maxNumberOfFiles --;
                         }, orig.type);
                     };
                 }
