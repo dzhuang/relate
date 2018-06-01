@@ -54,7 +54,7 @@ def get_prefixed_form_data(form_klass, form_data):
 
 
 def get_object_dict(obj):
-    return dict((k,v) for (k, v) in six.iteritems(obj.__dict__)
+    return dict((k, v) for (k, v) in six.iteritems(obj.__dict__)
                 if not k.startswith("_"))
 
 
@@ -2244,10 +2244,9 @@ class UpdateEventTest(CalendarTestMixin, TestCase):
 
         # an event in another course, which should not be edited
         self.another_course_event = factories.EventFactory(
-            course=factories.CourseFactory(
-                identifier="another-course"),
-                kind=self.default_event_kind,
-                time=self.default_faked_now)
+            course=factories.CourseFactory(identifier="another-course"),
+            kind=self.default_event_kind,
+            time=self.default_faked_now)
 
         # an event with another kind, which should not be edited
         self.another_kind_event = factories.EventFactory(
@@ -2503,7 +2502,6 @@ class UpdateEventTest(CalendarTestMixin, TestCase):
                          % instance_to_update.kind)
 
         self.assertOtherEventNotAffected()
-        self.another_course_event.refresh_from_db()
 
     def test_update_all_success(self):
         instance_to_update, another_event = self.create_recurring_events(2)
