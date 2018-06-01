@@ -158,7 +158,10 @@
     $(document).ready(function () {
       var isWeixinBrowser = (/micromessenger/i).test(navigator.userAgent);
       if (isWeixinBrowser)
-        $('.relate-image-upload-input').removeAttr('multiple');
+        $('.relate-image-upload-input')
+          .removeAttr('multiple')
+          {# https://www.zhihu.com/question/21452742/answer/131244812 #}
+          .attr("accept", "image/*");
     })
   </script>
 
