@@ -151,6 +151,17 @@
     </script>
     {% endif %}
 
+  <script>
+    {# Remove 'multiple' attribute from file input when uploading from wechat (Weixin) built-in browser #}
+    {# https://blog.csdn.net/candy_home/article/details/74440519 #}
+    {# https://gist.github.com/wjp2013/fff34c063cf0cf227d65#gistcomment-1705685 #}
+    $(document).ready(function () {
+      var isWeixinBrowser = (/micromessenger/i).test(navigator.userAgent);
+      if (isWeixinBrowser)
+        $('.relate-image-upload-input').removeAttr('multiple');
+    })
+  </script>
+
 {% endblock %}
 
 {% block JS_UPLOAD_TEMPLATE %}{% endblock %}
