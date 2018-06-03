@@ -27,6 +27,7 @@
         <script src="{% static 'jstree/dist/jstree.min.js' %}"></script>
 
         {% if pperm.set_fake_time %}
+          <link rel='stylesheet' href='{% static "bootstrap3_datetime/css/bootstrap-datetimepicker.min.css" %}'/>
           <script src='{% static "/bootstrap3_datetime/js/moment-with-locales.min.js" %}'></script>
           <script src='{% static "bootstrap3_datetime/js/bootstrap-datetimepicker.min.js" %}'></script>
         {% endif %}
