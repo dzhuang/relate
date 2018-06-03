@@ -442,7 +442,7 @@ class FakeTimeForm(ModalStyledFormMixin, StyledForm):
         self.helper.form_action = reverse("relate-set_fake_time")
 
         # Form media (FullCalendar and mement js) are manually added to page head
-        #self.helper.include_media = False
+        self.helper.include_media = False
 
         helper.layout = Layout(
             Div(*self.fields, css_class="modal-body"),
