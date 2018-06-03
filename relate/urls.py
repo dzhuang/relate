@@ -103,13 +103,21 @@ urlpatterns = [
     url(r'^user/impersonate/$',
         course.auth.impersonate,
         name="relate-impersonate"),
-    url(r'^user/stop_impersonating/$',
+    url(r'^user/stop-impersonating/$',
         course.auth.stop_impersonating,
         name="relate-stop_impersonating"),
+
+    url(r'^user/show-impersonation-control/$',
+        course.auth.display_impersonation_control,
+        name="relate-display_impersonation_control"),
 
     url(r'^time/set-fake-time/$',
         course.views.set_fake_time,
         name="relate-set_fake_time"),
+
+    url(r'^time/show-fake-time-control/$',
+        course.views.display_fake_time_control,
+        name="relate-display_fake_time_control"),
 
     url(r'^time/set-pretend-facilities/$',
         course.views.set_pretend_facilities,

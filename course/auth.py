@@ -34,7 +34,7 @@ import django.forms as forms
 from django.core.exceptions import (PermissionDenied, SuspiciousOperation,
         ObjectDoesNotExist, MultipleObjectsReturned)
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Submit, Layout, Div, Button
+from crispy_forms.layout import Submit, Layout, Div, Button, ButtonHolder
 from django.conf import settings
 from django.contrib.auth import (get_user_model, REDIRECT_FIELD_NAME,
         login as auth_login, logout as auth_logout)
@@ -64,7 +64,8 @@ from course.models import Participation, ParticipationRole, AuthenticationToken 
 from accounts.models import User
 from course.utils import render_course_page, course_view
 
-from relate.utils import StyledForm, StyledModelForm, string_concat, get_site_name
+from relate.utils import (
+    StyledForm, StyledModelForm, ModalStyledFormMixin, string_concat, get_site_name)
 from django_select2.forms import ModelSelect2Widget
 
 if False:
@@ -185,7 +186,10 @@ class UserSearchWidget(ModelSelect2Widget):
                         }))
 
 
-class ImpersonateForm(StyledForm):
+class ImpersonateForm(ModalStyledFormMixin, StyledForm):
+    form_title = _("Impersonate user")
+    modal_id = "impersonate-user-modal"
+
     def __init__(self, *args, **kwargs):
         # type:(*Any, **Any) -> None
 
@@ -209,20 +213,43 @@ class ImpersonateForm(StyledForm):
 
         self.helper.add_input(Submit("submit", _("Impersonate")))
 
+    def get_ajax_form_helper(self):
+        helper = self.get_form_helper()
+        self.helper.form_action = reverse("relate-impersonate")
+
+        # Form media (FullCalendar and mement js) are manually added to page head
+        #self.helper.include_media = False
+
+        self.fields["user"].widget.attrs['data-width'] = '100%'
+
+        helper.layout = Layout(
+            Div(*self.fields, css_class="modal-body"),
+            ButtonHolder(
+                Submit("submit", _("Impersonate"),
+                       css_class="btn btn-md btn-success"),
+                Button("cancel", _("Cancel"),
+                       css_class="btn btn-md btn-default",
+                       data_dismiss="modal"),
+                css_class="modal-footer"))
+        return helper
+
 
 def impersonate(request):
     # type: (http.HttpRequest) -> http.HttpResponse
     if not request.user.is_authenticated:
         raise PermissionDenied()
 
-    impersonable_user_qset = get_impersonable_user_qset(cast(User, request.user))
+    user = get_pre_impersonation_user(request) or request.user
+
+    impersonable_user_qset = get_impersonable_user_qset(cast(User, user))
     if not impersonable_user_qset.count():
         raise PermissionDenied()
 
     if hasattr(request, "relate_impersonate_original_user"):
-        messages.add_message(request, messages.ERROR,
-                _("Already impersonating someone."))
-        return redirect("relate-home")
+        if not request.is_ajax():
+            messages.add_message(request, messages.ERROR,
+                    _("Already impersonating someone."))
+            return redirect("relate-home")
 
     # Remove duplicate and sort
     # order_by().distinct() directly on impersonable_user_qset will not work
@@ -237,12 +264,18 @@ def impersonate(request):
             request.session['impersonate_id'] = impersonee.id
             request.session['relate_impersonation_header'] = form.cleaned_data[
                     "add_impersonation_header"]
+            request.session['relate_show_impersonation_control'] = "true"
 
             # Because we'll likely no longer have access to this page.
             return redirect("relate-home")
 
     else:
         form = ImpersonateForm(impersonable_qset=qset)
+
+    if request.is_ajax():
+        return http.JsonResponse(
+            {"modal_id": form.modal_id,
+             "form_html": form.render_ajax_modal_form_html(request)})
 
     return render(request, "generic-form.html", {
         "form_description": _("Impersonate user"),
@@ -290,12 +323,38 @@ def stop_impersonating(request):
     return http.JsonResponse({"result": "success"})
 
 
+def display_impersonation_control(request):
+    # type: (http.HttpRequest) -> http.JsonResponse
+    if not request.is_ajax() or request.method != "POST":
+        raise PermissionDenied(_("only AJAX POST is allowed"))
+
+    if not request.user.is_authenticated:
+        raise PermissionDenied()
+
+    if "show_control" in request.POST:
+        if request.session.get("relate_show_impersonation_control"):
+            raise SuspiciousOperation(_("impersonation control already shown"))
+
+        request.session['relate_show_impersonation_control'] = "true"
+
+    elif "remove_control" in request.POST:
+        if not request.session.get("relate_show_impersonation_control"):
+            raise SuspiciousOperation(_("impersonation control not shown"))
+        del request.session['relate_show_impersonation_control']
+    else:
+        raise SuspiciousOperation(_("odd POST parameters"))
+
+    return http.JsonResponse({"result": "success"})
+
+
 def impersonation_context_processor(request):
     return {
             "currently_impersonating":
             hasattr(request, "relate_impersonate_original_user"),
             "add_impersonation_header":
             request.session.get("relate_impersonation_header", True),
+            "show_impersonation_control":
+            request.session.get("relate_show_impersonation_control", False),
             }
 
 # }}}

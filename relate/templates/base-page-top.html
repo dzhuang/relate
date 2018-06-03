@@ -1,4 +1,5 @@
 {% load i18n %}
+{% load static %}
 
 {% if site_announcement %}
   <div class="alert alert-warning">
@@ -14,7 +15,10 @@
     {% else %}
       alert-{{ message.tags }}
     {% endif %}
-    ">
+    alert-dismissible">
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+      </button>
       {% if message.tags == "error" %}
         <i class="fa fa-ban"></i>
       {% elif message.tags == "success" %}
@@ -31,18 +35,143 @@
   {% endfor %}
 </div>
 
-{% if fake_time %}
-  <div class="alert alert-info">
-    <i class="fa fa-info-circle"></i>
-    {% blocktrans trimmed %}
-    You are currently seeing a preview of what the site
-    would look like at {{ fake_time }}.
-    {% endblocktrans %}
-    {% if user.is_staff %}
-    <a class="btn btn-default btn-sm" href="{% url "relate-set_fake_time" %}" role="button" target="_blank">
-        {% trans "Set fake time" %} &raquo;</a>
+{% if pperm.set_fake_time or request.relate_impersonate_original_user|may_set_fake_time %}
+  <div id="relate-fake-time-control"
+       class="alert alert-info
+      {% if not show_fake_time_control %}hidden{% endif %}
+      {% if not fake_time %} alert-dismissible{% endif %}">
+    {% if not fake_time %}
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+      </button>
     {% endif %}
+
+    <i class="fa fa-info-circle"></i>
+    {% if fake_time %}
+      {% blocktrans trimmed %}
+        You are currently seeing a preview of what the site
+        would look like at {{ fake_time }}.
+      {% endblocktrans %}
+
+    {% else %}
+      {% trans "Currently not faking time." %}
+    {% endif %}
+    <a id="relate-fake-time-button" class="btn btn-default btn-sm" onclick="fakeTime();" role="button">
+      {% if fake_time %}
+        {% trans "Change faked time" %}
+      {% else %}
+        {% trans "Set fake time" %}
+      {% endif %}
+      &raquo;
+    </a>
   </div>
+  <div id="relate-fake-time-form"></div>
+
+  <script>
+    $("#show-fake-time-control").on("click", function (e) {
+      e.preventDefault();
+      var that = $(this),
+        jqxhr = $.ajax(
+          "{% url "relate-display_fake_time_control" %}",
+          {
+            type: "POST",
+            data: {"show_control": true},
+            beforeSend: function (xhr, settings) {
+              var csrftoken = get_cookie('csrftoken');
+              xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
+          })
+          .done(function () {
+            that.closest("li").addClass("hidden");
+            $("#relate-fake-time-control").removeClass("hidden");
+          });
+    });
+
+    $("#relate-fake-time-control").on("close.bs.alert", function (e) {
+      e.preventDefault();
+      var that = $(this),
+        jqxhr = $.ajax(
+          "{% url "relate-display_fake_time_control" %}",
+          {
+            type: "POST",
+            data: {"remove_control": true},
+            beforeSend: function (xhr, settings) {
+              var csrftoken = get_cookie('csrftoken');
+              xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
+          })
+          .done(function () {
+            that.addClass("hidden");
+            $("#show-fake-time-control").closest("li").removeClass("hidden");
+          });
+    });
+
+    function fakeTime() {
+      var jqxhr = $.ajax(
+        {
+          url: "{% url "relate-set_fake_time" %}",
+          success: function (data, textStatus, jqXHR) {
+            $("#relate-fake-time-form").html(data.form_html);
+            {# for identifying which button was clicked when update_event_form was submitted #}
+            {# ref: https://stackoverflow.com/a/5721762/3437454 #}
+            $("#relate-fake-time-form, input[type=submit]").click(function () {
+              $("input[type=submit]", $(this).parents("form")).removeAttr("clicked");
+              $(this).attr("clicked", "true");
+            });
+            $("#" + data.modal_id)
+              .modal('show')
+              .find("form")
+              .on('submit', function (e) {
+                var submitButton = $("input[type=submit][clicked=true]").attr("name");
+                e.preventDefault();
+                postFakeTimeModalForm($(this), submitButton);
+              })
+          }
+        })
+    }
+
+    function postFakeTimeModalForm(form, submitButton) {
+      var self = form,
+        url = self.attr("action"),
+        form_data = self.serialize();
+
+      {# add submitButton to serialized form_data #}
+      if (submitButton)
+        form_data = form_data + "&" + submitButton + "=''";
+
+      $.ajax({
+        url: url,
+        type: "POST",
+        data: form_data,
+        beforeSend: function (xhr, settings) {
+          var csrftoken = get_cookie('csrftoken');
+          xhr.setRequestHeader("X-CSRFToken", csrftoken);
+
+          {# disable inputs #}
+          $("input", form).attr("disabled", "disabled");
+        },
+        success: function (data, textStatus, jqXHR) {
+          self.closest('.modal').modal("hide");
+          $("#relate-fake-time-button").attr("disabled", "disabled").append('<img src="{% static "images/busy.gif" %}" alt="Busy indicator">');
+          window.location.reload();
+        },
+        error: function (data, textStatus, jqXHR) {
+          clearFormErrors(self);
+          var result = data.responseJSON,
+            errors = result.errors,
+            form_profix = result.form_prefix;
+          $.each(errors, function (index, value) {
+            if (index === "__all__") {
+              applyFormNonFieldError(self, value[0]);
+            } else {
+              applyFormFieldError(index, value, form_profix);
+            }
+            $("input", form).removeAttr("disabled");
+          });
+        }
+      });
+    }
+  </script>
 {% endif %}
 
 {% if pretend_facilities and add_pretend_facilities_header %}
@@ -59,10 +188,187 @@
   </div>
 {% endif %}
 
-{% if currently_impersonating and add_impersonation_header %}
-  <div class="alert alert-info">
+{% if currently_impersonating or pperm.impersonate_role or relate_impersonate_original_user %}
+  <div id="relate-imperonation-control"
+       class="alert alert-info
+      {% if not show_impersonation_control %} hidden{% endif %}
+      {% if not currently_impersonating  %} alert-dismissible {% endif %}">
+    {% if not currently_impersonating  %}
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    {% endif %}
     <i class="fa fa-info-circle"></i>
-    {% trans "Now impersonating" %} {{ user.get_full_name }} ({{ user.username }} - {{ user.email }}).
-    <a class="btn btn-default btn-sm" onclick=stop_impersonate() role="button" target="_blank">{% trans "Stop impersonating" %} &raquo;</a>
+    {% if add_impersonation_header and currently_impersonating %}
+      {% trans "Now impersonating" %} {{ user.get_full_name }} ({{ user.username }} - {{ user.email }}).
+    {% else %}
+      {% trans "Not impersonating any one" %}.
+    {% endif %}
+
+    <a class="btn btn-default btn-sm" onclick="impersonate();" role="button">
+      {% if currently_impersonating %}
+        {% trans "Change impersonator" %}
+      {% else %}
+        {% trans "Impersonate" %}
+      {% endif %}
+      &raquo;
+    </a>
+
+    {% if add_impersonation_header and currently_impersonating %}
+      <a class="btn btn-default btn-sm" onclick="stop_impersonate();" role="button" target="_blank">{% trans "Stop impersonating" %} &raquo;</a>
+    {% endif %}
   </div>
+  <div id="relate-impersonate-form"></div>
+
+  <script type="text/javascript">
+    $("#show-impersonate-control").on("click", function (e) {
+      e.preventDefault();
+      var that = $(this),
+        jqxhr = $.ajax(
+          "{% url "relate-display_impersonation_control" %}",
+          {
+            type: "POST",
+            data: {"show_control": true},
+            beforeSend: function (xhr, settings) {
+              var csrftoken = get_cookie('csrftoken');
+              xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
+          })
+          .done(function () {
+            that.closest("li").addClass("hidden");
+            $("#relate-imperonation-control").removeClass("hidden");
+          });
+    });
+    $("#relate-imperonation-control").on("close.bs.alert", function (e) {
+      e.preventDefault();
+      var that = $(this),
+        jqxhr = $.ajax(
+          "{% url "relate-display_impersonation_control" %}",
+          {
+            type: "POST",
+            data: {"remove_control": true},
+            beforeSend: function (xhr, settings) {
+              var csrftoken = get_cookie('csrftoken');
+              xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
+          })
+          .done(function () {
+            that.addClass("hidden");
+            $("#show-impersonate-control").closest("li").removeClass("hidden");
+          });
+    });
+
+    function impersonate() {
+      var jqxhr = $.ajax(
+        {
+          url: "{% url "relate-impersonate" %}",
+          success: function (data, textStatus, jqXHR) {
+            $("#relate-impersonate-form").html(data.form_html);
+            $("#" + data.modal_id)
+              .modal('show')
+              .find("form")
+              .on('submit', function (e) {
+                e.preventDefault();
+                postImpersonateModalForm($(this));
+              })
+          }
+        })
+    }
+
+    function postImpersonateModalForm(form, submitButton) {
+      var self = form,
+        url = self.attr("action"),
+        form_data = self.serialize();
+
+      {# add submitButton to serialized form_data #}
+      if (submitButton)
+        form_data = form_data + "&" + submitButton + "=''";
+
+      $.ajax({
+        url: url,
+        type: "POST",
+        data: form_data,
+        beforeSend: function (xhr, settings) {
+          var csrftoken = get_cookie('csrftoken');
+          xhr.setRequestHeader("X-CSRFToken", csrftoken);
+
+          {# disable inputs #}
+          $("input", form).attr("disabled", "disabled");
+        },
+        success: function (data, textStatus, jqXHR) {
+          self.closest('.modal').modal("hide");
+          window.location.href = '{% url "relate-home" %}';
+        },
+        error: function (data, textStatus, jqXHR) {
+          clearFormErrors(self);
+          var result = data.responseJSON,
+            errors = result.errors,
+            form_profix = result.form_prefix;
+          $.each(errors, function (index, value) {
+            if (index === "__all__") {
+              applyFormNonFieldError(self, value[0]);
+            } else {
+              applyFormFieldError(index, value, form_profix);
+            }
+            $("input", form).removeAttr("disabled");
+          });
+        }
+      });
+    }
+  </script>
+
+{% endif %}
+
+{% if pperm.set_fake_time or request.relate_impersonate_original_user|may_set_fake_time or currently_impersonating or pperm.impersonate_role or relate_impersonate_original_user %}
+
+  <script>
+    function applyFormFieldError(fieldname, error, form_prefix) {
+      if (form_prefix)
+        form_prefix = form_prefix + "-";
+      var input = $("#id_" + form_prefix + fieldname),
+        container = $("#div_id_" + form_prefix + fieldname),
+        errorMsg = $("<span />").addClass("text-danger help-inline ajax-error").text(error[0]);
+
+      container.addClass("has-error error");
+      errorMsg.insertAfter(input);
+    }
+
+    function applyFormNonFieldError(form, error) {
+      var formGroupLast = $(".form-group:last", $(form)),
+        errorMsg = $("<div />")
+          .addClass("alert alert-danger ajax-error")
+          .html('<i class="fa fa-ban"></i> ' + error);
+      if (formGroupLast.length)
+        {# in sert non-field errors after last form field #}
+        errorMsg.insertAfter(formGroupLast);
+
+      {# in case the form as no fields (e.g., delete_event_form) #}
+      else errorMsg.insertAfter($(form).children().first());
+    }
+
+    function clearFormErrors(form) {
+      $(".ajax-error", $(form)).remove();
+      $(".error", $(form)).removeClass("has-error");
+    }
+
+    function djangoMessage(msg, level) {
+      var levels = {
+          warning: 'warning',
+          error: 'error',
+          success: 'success',
+          info: 'info'
+        },
+        fontAwesomeClass = {
+          warning: 'warning',
+          error: 'ban',
+          success: 'check',
+          info: 'info-circle'
+        },
+        html = tmpl("django-message-template", {
+          "message": msg, "tags": levels[level],
+          "icon_class": fontAwesomeClass[level]
+        });
+      $("#message-area").append(html);
+    }
+  </script>
 {% endif %}

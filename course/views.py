@@ -54,9 +54,10 @@ mark_safe_lazy = lazy(mark_safe, six.text_type)
 
 from django.views.decorators.cache import cache_control
 
-from crispy_forms.layout import Submit, Layout, Div
+from crispy_forms.layout import Submit, Layout, Div, Button, ButtonHolder
 
-from relate.utils import StyledForm, StyledModelForm, string_concat
+from relate.utils import (
+    StyledForm, StyledModelForm, ModalStyledFormMixin, string_concat)
 from bootstrap3_datetime.widgets import DateTimePicker
 
 from course.auth import get_pre_impersonation_user
@@ -413,7 +414,11 @@ def get_repo_file_response(repo, path, commit_sha):
 
 # {{{ time travel
 
-class FakeTimeForm(StyledForm):
+class FakeTimeForm(ModalStyledFormMixin, StyledForm):
+    prefix = "faketime"
+    form_title = _("Set fake time")
+    modal_id = "fake-time-modal"
+
     time = forms.DateTimeField(
             widget=DateTimePicker(
                 options={"format": "YYYY-MM-DD HH:mm", "sideBySide": True}),
@@ -428,6 +433,29 @@ class FakeTimeForm(StyledForm):
         self.helper.add_input(
                 # Translators: "unset" fake time.
                 Submit("unset", _("Unset")))
+
+    def get_ajax_form_helper(self):
+
+        helper = self.get_form_helper()
+
+        from django.urls import reverse
+        self.helper.form_action = reverse("relate-set_fake_time")
+
+        # Form media (FullCalendar and mement js) are manually added to page head
+        #self.helper.include_media = False
+
+        helper.layout = Layout(
+            Div(*self.fields, css_class="modal-body"),
+            ButtonHolder(
+                Submit("set", _("Set"),
+                       css_class="btn btn-md btn-success"),
+                Submit("unset", _("Unset"),
+                       css_class="btn btn-md btn-success"),
+                Button("cancel", _("Cancel"),
+                       css_class="btn btn-md btn-default",
+                       data_dismiss="modal"),
+                css_class="modal-footer"))
+        return helper
 
 
 def get_fake_time(request):
@@ -467,14 +495,24 @@ def may_set_fake_time(user):
             ).count() > 0
 
 
-@login_required
-def set_fake_time(request):
+def request_may_set_fake_time(request):
+    # type: (Optional[http.HttpRequest]) -> bool
+
     # allow staff to set fake time when impersonating
     pre_imp_user = get_pre_impersonation_user(request)
     if not (
             may_set_fake_time(request.user) or (
                 pre_imp_user is not None
                 and may_set_fake_time(pre_imp_user))):
+        return False
+
+    return True
+
+
+@login_required
+def set_fake_time(request):
+    # allow staff to set fake time when impersonating
+    if not request_may_set_fake_time(request):
         raise PermissionDenied(_("may not set fake time"))
 
     if request.method == "POST":
@@ -486,16 +524,29 @@ def set_fake_time(request):
                 import time
                 request.session["relate_fake_time"] = \
                         time.mktime(fake_time.timetuple())
+                request.session["relate_show_fake_time_control"] = "true"
             else:
                 request.session.pop("relate_fake_time", None)
 
+            if request.is_ajax():
+                return http.JsonResponse({"result": "success"})
+        else:
+            return http.JsonResponse(
+                {"errors": form.errors, "form_prefix": form.prefix}, status=400)
     else:
         if "relate_fake_time" in request.session:
+            time_field_name_prefix = (
+                "%s-" % FakeTimeForm.prefix if FakeTimeForm.prefix else "")
             form = FakeTimeForm({
-                "time": get_fake_time(request)
+                time_field_name_prefix + "time": get_fake_time(request)
                 })
         else:
             form = FakeTimeForm()
+
+    if request.is_ajax():
+        return http.JsonResponse(
+            {"modal_id": form.modal_id,
+             "form_html": form.render_ajax_modal_form_html(request)})
 
     return render(request, "generic-form.html", {
         "form": form,
@@ -503,9 +554,37 @@ def set_fake_time(request):
     })
 
 
+def display_fake_time_control(request):
+    # type: (http.HttpRequest) -> http.JsonResponse
+    if not request.is_ajax() or request.method != "POST":
+        raise PermissionDenied(_("only AJAX POST is allowed"))
+
+    if not request.user.is_authenticated:
+        raise PermissionDenied()
+
+    if not request_may_set_fake_time(request):
+        raise PermissionDenied(_("may not set fake time"))
+
+    if "show_control" in request.POST:
+        if request.session.get("relate_show_fake_time_control"):
+            raise SuspiciousOperation(_("fake time control already shown"))
+
+        request.session['relate_show_fake_time_control'] = "true"
+    elif "remove_control" in request.POST:
+        if not request.session.get("relate_show_fake_time_control"):
+            raise SuspiciousOperation(_("fake time control not shown"))
+        del request.session['relate_show_fake_time_control']
+    else:
+        raise SuspiciousOperation(_("odd POST parameters"))
+
+    return http.JsonResponse({"result": "success"})
+
+
 def fake_time_context_processor(request):
     return {
             "fake_time": get_fake_time(request),
+            "show_fake_time_control":
+                request.session.get("relate_show_fake_time_control", False),
             }
 
 # }}}
