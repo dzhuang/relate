@@ -26,10 +26,12 @@
         <script src="{% static 'bootstrap/dist/js/bootstrap.min.js' %}"></script>
         <script src="{% static 'jstree/dist/jstree.min.js' %}"></script>
 
-        {% if pperm.set_fake_time %}
-          <link rel='stylesheet' href='{% static "bootstrap3_datetime/css/bootstrap-datetimepicker.min.css" %}'/>
-          <script src='{% static "/bootstrap3_datetime/js/moment-with-locales.min.js" %}'></script>
-          <script src='{% static "bootstrap3_datetime/js/bootstrap-datetimepicker.min.js" %}'></script>
+        {% if pperm.set_fake_time or request.relate_impersonate_original_user|may_set_fake_time or pperm.edit_event %}
+          {{ fake_time_form_media }}
+        {% endif %}
+
+        {% if pperm.impersonate_role or relate_impersonate_original_user %}
+          {{ impersonate_form_media }}
         {% endif %}
 
       {% endblock %}

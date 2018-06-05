@@ -17,3 +17,11 @@
     </div>
   </div>
 </div>
+
+{% if extra_js %}
+  <script>
+    (function() {
+      {{ extra_js |safe }}
+    })();
+  </script>
+{% endif %}

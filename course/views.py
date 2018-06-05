@@ -585,6 +585,7 @@ def fake_time_context_processor(request):
             "fake_time": get_fake_time(request),
             "show_fake_time_control":
                 request.session.get("relate_show_fake_time_control", False),
+            "fake_time_form_media": FakeTimeForm().media
             }
 
 # }}}

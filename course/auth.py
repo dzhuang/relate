@@ -193,7 +193,7 @@ class ImpersonateForm(ModalStyledFormMixin, StyledForm):
     def __init__(self, *args, **kwargs):
         # type:(*Any, **Any) -> None
 
-        qset = kwargs.pop("impersonable_qset")
+        qset = kwargs.pop("impersonable_qset", get_user_model().objects.none())
         super(ImpersonateForm, self).__init__(*args, **kwargs)
 
         self.fields["user"] = forms.ModelChoiceField(
@@ -217,8 +217,8 @@ class ImpersonateForm(ModalStyledFormMixin, StyledForm):
         helper = self.get_form_helper()
         self.helper.form_action = reverse("relate-impersonate")
 
-        # Form media (FullCalendar and mement js) are manually added to page head
-        #self.helper.include_media = False
+        # Form media are manually added to page head
+        self.helper.include_media = False
 
         self.fields["user"].widget.attrs['data-width'] = '100%'
 
@@ -273,9 +273,13 @@ def impersonate(request):
         form = ImpersonateForm(impersonable_qset=qset)
 
     if request.is_ajax():
+        # Insert forms after page load for django-select2 fields
+        # http://django-select2.readthedocs.io/en/latest/django_select2.html#javascript  # noqa
+        extra_js = "$('.django-select2').djangoSelect2()"
         return http.JsonResponse(
             {"modal_id": form.modal_id,
-             "form_html": form.render_ajax_modal_form_html(request)})
+             "form_html": form.render_ajax_modal_form_html(
+                 request, context={"extra_js": extra_js})})
 
     return render(request, "generic-form.html", {
         "form_description": _("Impersonate user"),
@@ -355,6 +359,7 @@ def impersonation_context_processor(request):
             request.session.get("relate_impersonation_header", True),
             "show_impersonation_control":
             request.session.get("relate_show_impersonation_control", False),
+            "impersonate_form_media": ImpersonateForm().media
             }
 
 # }}}

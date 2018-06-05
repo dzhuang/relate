@@ -321,7 +321,7 @@
 
 {% endif %}
 
-{% if pperm.set_fake_time or request.relate_impersonate_original_user|may_set_fake_time or currently_impersonating or pperm.impersonate_role or relate_impersonate_original_user %}
+{% if pperm.set_fake_time or request.relate_impersonate_original_user|may_set_fake_time or pperm.impersonate_role or relate_impersonate_original_user %}
 
   <script>
     function applyFormFieldError(fieldname, error, form_prefix) {
