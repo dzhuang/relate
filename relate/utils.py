@@ -95,7 +95,7 @@ class ModalStyledFormMixin(object):
         return self.get_form_helper()  # type: ignore
 
     def render_ajax_modal_form_html(self, request, context=None):
-        # type: (http.HttpRequest, Optional[Dict]) -> Text
+        # type: (HttpRequest, Optional[Dict]) -> Text
 
         # remove possbily added buttons by non-AJAX form
         self.helper.inputs = []  # type: ignore
