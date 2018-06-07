@@ -275,7 +275,17 @@ def impersonate(request):
     if request.is_ajax():
         # Insert forms after page load for django-select2 fields
         # http://django-select2.readthedocs.io/en/latest/django_select2.html#javascript  # noqa
-        extra_js = "$('.django-select2').djangoSelect2()"
+        options = {}
+        try:
+            from django.contrib.admin.widgets import SELECT2_TRANSLATIONS
+            from django.utils.translation import get_language
+            i18n_name = SELECT2_TRANSLATIONS.get(get_language())
+            if i18n_name:
+                options["language"] = i18n_name
+        except ImportError:
+            pass
+
+        extra_js = "$('.django-select2').djangoSelect2(%s)" % repr(options)
         return http.JsonResponse(
             {"modal_id": form.modal_id,
              "form_html": form.render_ajax_modal_form_html(
