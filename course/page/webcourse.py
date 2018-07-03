@@ -197,8 +197,10 @@ class CourseraHTMLPage(CourseraPageBase):
         from six.moves.urllib import request
         htmls = []
         for resource in self.page_desc.resources:
+            from lxml.html.clean import Cleaner
+            cleaner = Cleaner(style=True, scripts=True)
             with request.urlopen(self.build_resource_url(resource.url)) as response:
-                htmls.append(response.read().decode())
+                htmls.append(cleaner.clean_html(response.read().decode()))
 
         from django.template import loader
         context = {"htmls": htmls}
