@@ -116,16 +116,17 @@ class CourseraVideoSubtitle(object):
 
 
 class CourseraVideo(object):
-    def __init__(self, url, subtitles=None):
+    def __init__(self, url, subtitle_urls=None):
         self.url = url
 
         self.subtitles = []
-        if subtitles:
-            for i, subtitle in enumerate(subtitles):
+        if subtitle_urls:
+            for i, subtitle_url in enumerate(subtitle_urls):
                 is_default = False
                 if i == 0:
                     is_default = True
-                self.subtitles.append(CourseraVideoSubtitle(url, is_default))
+                self.subtitles.append(
+                    CourseraVideoSubtitle(subtitle_url, is_default))
 
 
 class CourseraVideoPage(CourseraPageBase):
@@ -133,6 +134,7 @@ class CourseraVideoPage(CourseraPageBase):
         content = "# %s\n" % self.title(page_context, page_data)
         if getattr(self.page_desc, "content", ""):
             content += self.page_desc.content + "\n"
+        print(self.get_coursera_page_html())
         return (
             markup_to_html(page_context, content) + self.get_coursera_page_html())
 
@@ -158,11 +160,12 @@ class CourseraVideoPage(CourseraPageBase):
                 set(getattr(video, "subtitle_urls", [])).difference(set(subtitle_urls)))
             subtitle_urls.extend(extra_subtitle_urls)
             subtitle_urls = [self.build_resource_url(url) for url in subtitle_urls]
+            print(subtitle_urls)
             videos.append(
                 CourseraVideo(self.build_resource_url(video.url), subtitle_urls))
 
         from django.template import loader
-        context = {"videos": videos, "title": self.page_desc.title}
+        context = {"videos": videos}
 
         return loader.render_to_string(
             "course/coursera-dl/coursera-dl-video-with-subtitle.html",

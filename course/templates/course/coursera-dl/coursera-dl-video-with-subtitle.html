@@ -1,9 +1,9 @@
 {% for video in videos %}
   <div align="center">
     <video class="video-js vjs-default-skin" controls preload="auto" data-setup='[]'>
-     <source src={{ video.url}} type='video/mp4' />
+     <source src='{{ video.url }}' type='video/mp4' />
       {% for subtitle in video.subtitles %}
-        <track kind='captions' src={{ subtitle.url }} srclang={{ subtitle.lang }} label={{ subtitle.lang_name}} {% if subtitle.is_default %} default {% endif %} />
+        <track kind='captions' src='{{ subtitle.url }}' srclang='{{ subtitle.lang }}' label='{{ subtitle.lang_name}}' {% if subtitle.is_default %} default {% endif %} />
       {% endfor %}
     </video>
   </div>
