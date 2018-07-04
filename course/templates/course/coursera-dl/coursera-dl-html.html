@@ -1,4 +1,17 @@
 {% for html in htmls %}
   {{ html|safe }}
   <br>
+  {% if asset_ids %}
+    <script>
+      $("asset").each(function () {
+        var data = {{ asset_ids }},
+          file_name = $(this).attr("name") + "." + $(this).attr("assettype"),
+          id = $(this).attr("id");
+        if (data.hasOwnProperty(id)) {
+          var url = $("<a>").prop("href", data[id]).prop("target", "_blank").text(file_name);
+          url.insertAfter($(this));
+        }
+      });
+    </script>
+  {% endif %}
 {% endfor %}

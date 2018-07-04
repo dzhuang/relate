@@ -31,6 +31,7 @@ from course.validation import validate_struct
 from course.page.base import (
         PageBaseWithCorrectAnswer, PageBaseWithTitle, markup_to_html)
 from django.conf.global_settings import LANGUAGES
+from relate.utils import Struct
 
 
 class CourseraPageBase(PageBaseWithCorrectAnswer, PageBaseWithTitle):
@@ -147,7 +148,8 @@ class CourseraVideoPage(CourseraPageBase):
                 ),
             allowed_attrs=(
                 ("subtitle_urls", list),
-                ("default_subtitle_url", str)
+                ("default_subtitle_url", str),
+                ("asset_ids", Struct)
                 ),
             )
 
@@ -173,7 +175,7 @@ class CourseraVideoPage(CourseraPageBase):
 class CourseraHTMLPage(CourseraPageBase):
 
     def body(self, page_context, page_data):
-        content = ""
+        content = "# %s\n" % self.title(page_context, page_data)
         if getattr(self.page_desc, "content", ""):
             content += self.page_desc.content + "\n"
         return (
@@ -188,7 +190,9 @@ class CourseraHTMLPage(CourseraPageBase):
             required_attrs=(
                 ("url", str),
                 ),
-            allowed_attrs=(),
+            allowed_attrs=(
+                ("asset_ids", Struct),
+            ),
             )
 
     def get_coursera_page_html(self):
@@ -196,12 +200,17 @@ class CourseraHTMLPage(CourseraPageBase):
         htmls = []
         for resource in self.page_desc.resources:
             from lxml.html.clean import Cleaner
-            cleaner = Cleaner(style=True, scripts=True)
+            cleaner = Cleaner(
+                style=True, scripts=True, forms=False,
+                remove_unknown_tags=False, safe_attrs_only=False)
             with request.urlopen(self.build_resource_url(resource.url)) as response:
                 htmls.append(cleaner.clean_html(response.read().decode()))
 
         from django.template import loader
-        context = {"htmls": htmls}
+        import json
+        context = {"htmls": htmls,
+                   "asset_ids":
+                       json.dumps(getattr(self.page_desc.resources, "asset_ids", {}))}
 
         return loader.render_to_string(
             "course/coursera-dl/coursera-dl-html.html",
