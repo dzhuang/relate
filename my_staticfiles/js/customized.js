@@ -89,7 +89,7 @@ function embed_viewer(item) {
     } else {
 
         var hrefID = item.id + "_download_link";
-        var viewpath = $("#" + hrefID).attr("href");
+        var viewpath = encodeURI($("#" + hrefID).attr("href"));
         //var filename = viewpath.substring(viewpath.lastIndexOf('/')+1);
         var display_DIV_ID = item.id + "_pdfviewer_div";
 
@@ -104,7 +104,7 @@ function embed_viewer(item) {
 
         $("#" + display_DIV_ID).html(
             // The src should be changed if the domain of the CDN for statics are changed.
-            "<iframe class='embed-responsive-item' src = PdfWebPath + 'viewer.html?file=" + viewpath + "' width='100%' allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe>"
+            "<iframe class='embed-responsive-item' src=" + PdfWebPath + "viewer.html?file=" + viewpath + " width='100%' allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe>"
         );
 
 
