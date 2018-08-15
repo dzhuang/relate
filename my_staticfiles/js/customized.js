@@ -43,10 +43,12 @@ function generate_download_pdf_view() {
         //            $(this).parent().parent().addClass("pdf_list_block")
         //        }
         //console.log(file_id);
-        if ($(file_id).length == 0) {
-            $('<a href="#" onclick="embed_viewer(this)" id="' + file_id + '"><i class="fa fa-eye" title="在线查看"></i></a> <div class="row"> <div class="embed-responsive col-md-8" id="' + file_id + '_pdfviewer_div"></div><div class="col-md-4"></div></div>').insertAfter($(element_i));
+        var formal_file_id = file_id.replace(/\s+/g, '-').toLowerCase();
+
+        if ($(formal_file_id).length == 0) {
+            $('<a href="#" onclick="embed_viewer(this)" id="' + formal_file_id + '"><i class="fa fa-eye" title="在线查看"></i></a> <div class="row"> <div class="embed-responsive col-md-8" id="' + formal_file_id + '_pdfviewer_div"></div><div class="col-md-4"></div></div>').insertAfter($(element_i));
             $(element_i)
-                .attr("id", file_id + "_download_link")
+                .attr("id", formal_file_id + "_download_link")
                 .after(" &middot; ");
         }
     }
@@ -77,6 +79,7 @@ function get_file_name(url) {
 }
 
 function embed_viewer(item) {
+    // This is customized for learningwhat.com
     // alert on browser which is below IE 9
     var div = document.createElement("div");
     div.innerHTML = "<!--[if lt IE 9]><i></i><![endif]-->";
@@ -98,7 +101,8 @@ function embed_viewer(item) {
         }
 
         $("#" + display_DIV_ID).html(
-            "<iframe class='embed-responsive-item' src = '/static/pdf.js/web/viewer.html?file=" + viewpath + "' width='100%' allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe>"
+            // The src should be changed if the domain of the CDN for statics are changed.
+            "<iframe class='embed-responsive-item' src = 'https://staticssl.learningwhat.com/pdf.js/web/viewer.html?file=" + viewpath + "' width='100%' allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe>"
         );
 
 
@@ -293,5 +297,5 @@ $(document).ready(function(){
         {
             $("#"+panels[i]).collapse("show");
         }
-    }  
+    }
 });
