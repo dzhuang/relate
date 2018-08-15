@@ -100,9 +100,11 @@ function embed_viewer(item) {
             $("#" + display_DIV_ID).addClass("embed-responsive-4by3");
         }
 
+        var PdfWebPath = (typeof PDF_JS_WEB_PATH === 'undefined') ? '/static/pdf.js/web/' : PDF_JS_WEB_PATH;
+
         $("#" + display_DIV_ID).html(
             // The src should be changed if the domain of the CDN for statics are changed.
-            "<iframe class='embed-responsive-item' src = 'https://staticssl.learningwhat.com/pdf.js/web/viewer.html?file=" + viewpath + "' width='100%' allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe>"
+            "<iframe class='embed-responsive-item' src = PdfWebPath + 'viewer.html?file=" + viewpath + "' width='100%' allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe>"
         );
 
 
