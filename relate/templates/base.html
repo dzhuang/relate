@@ -55,7 +55,9 @@
           videojs.hook('setup', function (player) {
             var settings = player.textTrackSettings;
             settings.setValues({
-              "backgroundOpacity": "0.5",
+              "backgroundColor": "#000",
+              "backgroundOpacity": "0",
+              "edgeStyle": "uniform",
             });
             settings.updateDisplay();
           });
