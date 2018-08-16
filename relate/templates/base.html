@@ -53,6 +53,11 @@
         <script type="text/javascript">
             videojs.options.flash.swf = "{% static 'video.js/dist/video-js/video-js.swf' %}"
         </script>
+
+        {% get_current_language as LANGUAGE_CODE %}
+        {% if LANGUAGE_CODE != "en" %}
+          <script src='{% static "video.js/dist/lang/" %}{{ LANGUAGE_CODE |js_lang_fallback:"video.js" }}.js'></script>
+        {% endif %}
       {% endblock %}
 
       {% block head_assets_extra %}{% endblock %}

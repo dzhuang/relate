@@ -82,6 +82,11 @@ def js_lang_fallback(lang_name, js_name=None):
             "zh-hans": "zh-cn",
             "zh-hant": "zh-tw"}
         return known_fallback_mapping.get(lang_name.lower(), lang_name).lower()
+    elif js_name == "video.js":
+        known_fallback_mapping = {
+            "zh-cn": "zh-CN",
+            "zh-tw": "zh-TW"}
+        return known_fallback_mapping.get(lang_name.lower(), lang_name)
 
     return lang_name
 

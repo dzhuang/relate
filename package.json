@@ -28,6 +28,6 @@
     "pdf.js": "git://github.com/mozilla/pdf.js.git#v1.3.91",
     "select2": "^4.0.5",
     "select2-bootstrap-theme": "^0.1.0-beta.10",
-    "video.js": "^5.20.5"
+    "video.js": "^7.2.2"
   }
 }
