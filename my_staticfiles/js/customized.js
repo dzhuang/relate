@@ -50,7 +50,7 @@ function generate_download_pdf_view() {
     if ($(formal_file_id).length == 0) {
       $('<a href="javascript:;" onclick="embed_viewer(this)" id="' + formal_file_id + '"><i class="fa fa-eye" title="在线查看"></i></a> <div class="row"> <div class="embed-responsive col-md-8" id="' + formal_file_id + '_pdfviewer_div"></div><div class="col-md-4"></div></div>').insertAfter($(element_i));
       $(element_i)
-        .attr("id", formal_file_id + "_download_link")
+        .attr("id", formal_file_id + "_download_link").attr("target", "_blank")
         .after(" &middot; ");
     }
   }
