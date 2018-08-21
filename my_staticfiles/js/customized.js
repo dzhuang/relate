@@ -43,7 +43,7 @@ function generate_download_pdf_view() {
         //            $(this).parent().parent().addClass("pdf_list_block")
         //        }
         //console.log(file_id);
-        var formal_file_id = file_id.replace(/\s+/g, '-').toLowerCase();
+        var formal_file_id = file_id.replace(/\s+/g, '-').replace(/\./g, '_').toLowerCase();
 
         if ($(formal_file_id).length == 0) {
             $('<a href="#" onclick="embed_viewer(this)" id="' + formal_file_id + '"><i class="fa fa-eye" title="在线查看"></i></a> <div class="row"> <div class="embed-responsive col-md-8" id="' + formal_file_id + '_pdfviewer_div"></div><div class="col-md-4"></div></div>').insertAfter($(element_i));
