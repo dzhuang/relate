@@ -34,24 +34,26 @@ $.fn.smallscreen_pdf_indent = function () {
 $(document).ready(generate_download_pdf_view());
 
 function generate_download_pdf_view() {
-    var all_li = $(".file_download_view");
-    for (var i = 0; i < all_li.length; i++) {
-        var element_i = all_li[i];
-        var url_i = $(element_i).attr("href");
-        var file_id = get_file_name(url_i);
-        //        if ($(this).parent().is("li")) {
-        //            $(this).parent().parent().addClass("pdf_list_block")
-        //        }
-        //console.log(file_id);
-        var formal_file_id = file_id.replace(/\s+/g, '-').replace(/\./g, '_').toLowerCase();
+  var all_li = $(".file_download_view");
+  for (var i = 0; i < all_li.length; i++) {
+    var element_i = all_li[i];
+    var url_i = $(element_i).attr("href");
+    var file_id = get_file_name(url_i);
+    //        if ($(this).parent().is("li")) {
+    //            $(this).parent().parent().addClass("pdf_list_block")
+    //        }
+    //console.log(file_id);
 
-        if ($(formal_file_id).length == 0) {
-            $('<a href="#" onclick="embed_viewer(this)" id="' + formal_file_id + '"><i class="fa fa-eye" title="在线查看"></i></a> <div class="row"> <div class="embed-responsive col-md-8" id="' + formal_file_id + '_pdfviewer_div"></div><div class="col-md-4"></div></div>').insertAfter($(element_i));
-            $(element_i)
-                .attr("id", formal_file_id + "_download_link")
-                .after(" &middot; ");
-        }
+    // replace spaces and dots in file_id
+    var formal_file_id = file_id.replace(/\s+/g, '-').replace(/\./g, '_').toLowerCase();
+
+    if ($(formal_file_id).length == 0) {
+      $('<a href="javascript:;" onclick="embed_viewer(this)" id="' + formal_file_id + '"><i class="fa fa-eye" title="在线查看"></i></a> <div class="row"> <div class="embed-responsive col-md-8" id="' + formal_file_id + '_pdfviewer_div"></div><div class="col-md-4"></div></div>').insertAfter($(element_i));
+      $(element_i)
+        .attr("id", formal_file_id + "_download_link")
+        .after(" &middot; ");
     }
+  }
 }
 
 
