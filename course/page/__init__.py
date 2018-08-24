@@ -39,7 +39,6 @@ from course.page.choice import (
 from course.page.code import (
         PythonCodeQuestion, PythonCodeQuestionWithHumanTextFeedback)
 from course.page.upload import FileUploadQuestion
-from course.page.webcourse import CourseraVideoPage, CourseraHTMLPage
 
 try:
     settings_custom_page_classes = getattr(
