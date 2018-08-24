@@ -801,7 +801,21 @@ class LinkFixerTreeprocessor(Treeprocessor):
                             args=(self.get_course_identifier(),))
 
             else:
-                return None
+                custom_process_url_func = (
+                    getattr(settings, "CUSTOM_PROCESS_URL_FUNC", None))
+                if not custom_process_url_func:
+                    return None
+                if not callable(custom_process_url_func):
+                    raise RuntimeError(
+                        "CUSTOM_PROCESS_URL_FUNC must be a callable")
+
+                result = custom_process_url_func(self, url)
+                if not isinstance(result, str):
+                    if result is not None:
+                        raise RuntimeError(
+                            "CUSTOM_PROCESS_URL_FUNC must return "
+                            "a string or a NoneType")
+                return result
 
         except NoReverseMatch:
             from base64 import b64encode
@@ -820,7 +834,7 @@ class LinkFixerTreeprocessor(Treeprocessor):
             if new_href is not None:
                 changed_attrs["href"] = new_href
 
-        elif tag_name == "img" and "src" in attrs:
+        elif tag_name in ["img", "source", "track"] and "src" in attrs:
             new_src = self.process_url(attrs["src"])
 
             if new_src is not None:
