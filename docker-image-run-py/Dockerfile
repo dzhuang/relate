@@ -22,7 +22,8 @@ RUN apt-get -y -o APT::Install-Recommends=0 -o APT::Install-Suggests=0 install \
   glpk-utils \
   python3-pulp \
   python3-jinja2 \
-  python3-networkx
+  python3-networkx \
+  gcc
 RUN fc-cache
 
 RUN mkdir -p /opt/runpy
