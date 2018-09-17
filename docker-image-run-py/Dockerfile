@@ -19,6 +19,9 @@ RUN apt-get -y -o APT::Install-Recommends=0 -o APT::Install-Suggests=0 install \
   python3-pip \
   python3-dev \
   python3-setuptools \
+  glpk-utils \
+  python3-pulp \
+  python3-jinja2 \
   gcc
 RUN fc-cache
 
@@ -31,4 +34,5 @@ RUN sed -i s/TkAgg/Agg/ /etc/matplotlibrc
 RUN echo "savefig.dpi : 80" >> /etc/matplotlibrc
 RUN echo "savefig.bbox : tight" >> /etc/matplotlibrc
 
-#RUN pip3 install --upgrade tensorflow
+RUN pip3 install --upgrade tensorflow
+RUN pip3 install https://github.com/networkx/networkx/zipball/master
