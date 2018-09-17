@@ -153,6 +153,8 @@ class CourseCreationForm(StyledModelForm):
         widgets = {
                 "start_date": DateTimePicker(options={"format": "YYYY-MM-DD"}),
                 "end_date": DateTimePicker(options={"format": "YYYY-MM-DD"}),
+                "enroll_deadline":
+                    DateTimePicker(options={"format": "YYYY-MM-DD"}), # added by zd
                 "force_lang": forms.Select(
                     choices=get_course_specific_language_choices()),
                 }
