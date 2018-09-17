@@ -615,6 +615,13 @@ class RunpyDockerMixinBase(object):
     def check_image(self, cli):
         # type: (docker.Client) -> List[CheckMessage]
         errors = super(RunpyDockerMixinBase, self).check_image(cli)  # type: ignore  # noqa
+
+        from django.conf import settings
+        use_exernal_docker = getattr(
+            settings, "USE_ANOTHER_ECS_FOR_RUNPY_DOCKER", False)
+        if use_exernal_docker:
+            return errors
+
         assert cli is not None
         try:
             image_exist = bool(cli.images(self.image))  # type: ignore
