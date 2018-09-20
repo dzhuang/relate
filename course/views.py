@@ -566,14 +566,12 @@ def display_fake_time_control(request):
         raise PermissionDenied(_("may not set fake time"))
 
     if "show_control" in request.POST:
-        if request.session.get("relate_show_fake_time_control"):
-            raise SuspiciousOperation(_("fake time control already shown"))
-
         request.session['relate_show_fake_time_control'] = "true"
     elif "remove_control" in request.POST:
-        if not request.session.get("relate_show_fake_time_control"):
-            raise SuspiciousOperation(_("fake time control not shown"))
-        del request.session['relate_show_fake_time_control']
+        try:
+            del request.session['relate_show_fake_time_control']
+        except KeyError:
+            pass
     else:
         raise SuspiciousOperation(_("odd POST parameters"))
 

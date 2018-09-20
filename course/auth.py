@@ -346,15 +346,13 @@ def display_impersonation_control(request):
         raise PermissionDenied()
 
     if "show_control" in request.POST:
-        if request.session.get("relate_show_impersonation_control"):
-            raise SuspiciousOperation(_("impersonation control already shown"))
-
         request.session['relate_show_impersonation_control'] = "true"
 
     elif "remove_control" in request.POST:
-        if not request.session.get("relate_show_impersonation_control"):
-            raise SuspiciousOperation(_("impersonation control not shown"))
-        del request.session['relate_show_impersonation_control']
+        try:
+            del request.session['relate_show_impersonation_control']
+        except KeyError:
+            pass
     else:
         raise SuspiciousOperation(_("odd POST parameters"))
 
