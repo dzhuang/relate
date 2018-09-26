@@ -2784,7 +2784,8 @@ def finish_flow_session_view(pctx, flow_session_id):
 
         if notification_list:
             staff_email = (
-                fctx.flow_desc.notify_on_submit + [fctx.course.notify_email])
+                    getattr(fctx.flow_desc, "notify_on_submit", [])
+                    + [fctx.course.notify_email])
 
             from course.utils import will_use_masked_profile_for_email
             use_masked_profile = will_use_masked_profile_for_email(staff_email)
