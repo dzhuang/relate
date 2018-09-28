@@ -966,6 +966,11 @@ def markup_to_html(
         getattr(settings,
                 "RELATE_DISABLE_CODEHILITE_MARKDOWN_EXTENSION", True))
 
+    cache_str = ""
+    cache_func = getattr(settings, "CACHE_FUNC", "")
+    if callable(cache_func):
+        cache_str = cache_func()
+
     if course is not None and not jinja_env:
         try:
             import django.core.cache as cache
@@ -973,11 +978,12 @@ def markup_to_html(
             cache_key = None
         else:
             import hashlib
-            cache_key = ("markup:v7:%s:%d:%s:%s%s"
+            cache_key = ("markup:v7:%s:%d:%s:%s%s%s"
                     % (CACHE_KEY_ROOT,
                        course.id, str(commit_sha),
                        hashlib.md5(text.encode("utf-8")).hexdigest(),
-                       ":NOCODEHILITE" if disable_codehilite else ""
+                       ":NOCODEHILITE" if disable_codehilite else "",
+                       ":%s" % cache_str if cache_str else ""
                        ))
 
             def_cache = cache.caches["default"]
