@@ -1335,7 +1335,7 @@ msgstr "测验URL"
 msgid ""
 "You should see boxes prompting for your user name and a one-time check-in "
 "code."
-msgstr "您应该会看到一个弹出盒子要求您输入用户名和一次性的登入代码."
+msgstr "您应该会看到一个弹出框要求您输入用户名和一次性的登入代码."
 
 msgid "Enter the following information"
 msgstr "请输入以下信息"
