@@ -1276,10 +1276,10 @@ msgid "Exam"
 msgstr "测验"
 
 msgid "Start validity"
-msgstr "开始的有效时间"
+msgstr "验证开始的时间"
 
 msgid "End validity"
-msgstr "结束的有效时间"
+msgstr "验证结束的时间"
 
 msgid "Restrict to facility"
 msgstr "限制允许访问的设施"
