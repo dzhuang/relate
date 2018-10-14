@@ -1318,7 +1318,7 @@ msgid ""
 "These are personalized instructions for {{ ticket.participation.user."
 "get_full_name }}."
 msgstr ""
-"以下是对 {{ ticket.participation.user.get_full_name }}user.first_name }} 个人"
+"以下是对 {{ ticket.participation.user.get_full_name }} 个人"
 "的说明."
 
 msgid ""
@@ -2955,16 +2955,16 @@ msgid "Currently active, i.e. may be used to log in via an exam ticket"
 msgstr "当前正常，即，可以使用测验ticket登陆"
 
 msgid "Listed"
-msgstr "列出"
+msgstr "已列出"
 
 msgid "Shown in the list of current exams"
 msgstr "在当前的测验列表中显示"
 
 msgid "No exams before"
-msgstr "之前未有测验"
+msgstr "在此之前无测验"
 
 msgid "No exams after"
-msgstr "之后未有测验"
+msgstr "在此之后无测验"
 
 msgid "Exams"
 msgstr "测验"
