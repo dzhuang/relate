@@ -1276,10 +1276,10 @@ msgid "Exam"
 msgstr "测验"
 
 msgid "Start validity"
-msgstr "开始的有效性"
+msgstr "开始的有效时间"
 
 msgid "End validity"
-msgstr "结束的有效性"
+msgstr "结束的有效时间"
 
 msgid "Restrict to facility"
 msgstr "限制允许访问的设施"
@@ -1315,10 +1315,9 @@ msgid "Instructions for {{ ticket.exam.description }}"
 msgstr "对 {{ ticket.exam.description }} 的使用说明"
 
 msgid ""
-"These are personalized instructions for {{ ticket.participation.user."
-"get_full_name }}."
+"These are personalized instructions for {{ ticket.participation.user.get_full_name() }}."
 msgstr ""
-"以下是对 {{ ticket.participation.user.get_full_name }} 个人"
+"以下是对 {{ ticket.participation.user.get_full_name() }} 个人"
 "的说明."
 
 msgid ""
