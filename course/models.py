@@ -2042,6 +2042,10 @@ class GradeStateMachine(object):
             assert self.valid_percentage_infos
             if self.percentage_info.percentage is None:
                 return alias_for_graded_none
+
+            if self.percentage_info.actual_percentage is None:
+                self.percentage_info.actual_percentage = 0
+
             assert self.percentage_info.actual_percentage is not None
             actual_percentage_str= callback_for_percentage(
                 self.percentage_info.actual_percentage)
