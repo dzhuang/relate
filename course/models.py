@@ -1948,7 +1948,7 @@ class GradeStateMachine(object):
                 if p.actual_percentage is not None]
 
             if numeric_percentages:
-                assert numeric_actual_percentages
+                assert numeric_actual_percentages is not None
                 if strategy == grade_aggregation_strategy.max_grade:
                     percentage = max(numeric_percentages)
                     actual_percentage = max(numeric_actual_percentages)
