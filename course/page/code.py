@@ -281,6 +281,31 @@ def is_nuisance_failure(result):
     return False
 
 
+
+def request_python_run_via_http(url, run_req, run_timeout, image=None):
+    # type: (Text, Dict, int, Optional[Text]) -> Dict[Text, Any]
+
+    import json
+    run_req["__runpy_run_timeout"] = run_timeout
+
+    if image:
+        run_req["__runpy_image"] = image
+
+    import requests
+
+    headers = {'content-type': 'application/json'}
+
+    response = requests.post(url,data=json.dumps(run_req), headers=headers)
+
+    response_content = response.content
+    print(response.content)
+
+    result = json.loads(response_content.decode())
+    #result = json.loads(response.read().decode("utf-8"))
+
+    return result
+
+
 def request_python_run_with_retries(
         run_req, run_timeout, image=None, retry_count=3,
         spawn_containers_for_runpy=None):
@@ -636,6 +661,57 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                         and page_data.get("question_data", None)):
                     run_req["data_files"]["question_data"] = (
                                             page_data["question_data"])
+
+        runpy_via_http_url = getattr(settings, "RELATE_RUNPY_HTTP_URL", None)
+
+        debug = False
+        if debug:
+            def debug_print(s):
+                # type: (Text) -> None
+                print(s)
+        else:
+            def debug_print(s):
+                # type: (Text) -> None
+                pass
+
+        def get_runpy_mode():
+            mode = "via_docker"
+            print(getattr(settings, "RELATE_RUNPY_MODE", None))
+            if not runpy_via_http_url:
+                return mode
+
+            configured_mode = getattr(settings, "RELATE_RUNPY_MODE", None)
+            if configured_mode:
+                return configured_mode
+
+            return mode
+
+        runpy_mode = get_runpy_mode()
+
+        assert runpy_mode in ["via_docker", "via_http", "via_docker_as_fallback"]
+
+        debug_print("RUNPY MODE: '%s'" % runpy_mode)
+
+        response_dict = None
+
+        if runpy_mode in ["via_http", "via_docker_as_fallback"]:
+            response_dict = request_python_run_via_http(
+                runpy_via_http_url, run_req, self.page_desc.timeout)
+
+            if runpy_mode == "via_http":
+                debug_print("via_http result: %s" % repr(response_dict))
+                return response_dict
+
+            if not response_dict.get("message") == "Error connecting to container":
+                debug_print("via_docker_as_fallback result: %s" % repr(response_dict))
+
+                return response_dict
+
+        if response_dict is not None:
+            return response_dict
+
+        debug_print("Currently no result")
+
         try:
             response_dict = request_python_run_with_retries(
                 run_req,
@@ -649,6 +725,9 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
             }
 
         # }}}
+
+        assert response_dict
+
         return response_dict
 
     def grade(self, page_context, page_data, answer_data, grade_data):
