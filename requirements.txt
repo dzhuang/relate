@@ -111,4 +111,7 @@ Wand
 nbconvert>=5.2.1
 IPython
 
+# For request/response processing
+requests
+
 # vim: foldmethod=marker

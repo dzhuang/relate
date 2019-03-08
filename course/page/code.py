@@ -281,7 +281,6 @@ def is_nuisance_failure(result):
     return False
 
 
-
 def request_python_run_via_http(url, run_req, run_timeout, image=None):
     # type: (Text, Dict, int, Optional[Text]) -> Dict[Text, Any]
 
@@ -291,17 +290,16 @@ def request_python_run_via_http(url, run_req, run_timeout, image=None):
     if image:
         run_req["__runpy_image"] = image
 
-    import requests
-
     headers = {'content-type': 'application/json'}
 
-    response = requests.post(url,data=json.dumps(run_req), headers=headers)
-
+    import requests
+    response = requests.post(url, data=json.dumps(run_req), headers=headers)
     response_content = response.content
-    print(response.content)
-
     result = json.loads(response_content.decode())
-    #result = json.loads(response.read().decode("utf-8"))
+
+    if result.get("exec_host") == "localhost":
+        alias_dict = getattr(settings, "RELATE_EXECUTION_HOST_ALIAS_DICT", {})
+        result["exec_host"] = alias_dict.get(url, url)
 
     return result
 
@@ -309,7 +307,7 @@ def request_python_run_via_http(url, run_req, run_timeout, image=None):
 def request_python_run_with_retries(
         run_req, run_timeout, image=None, retry_count=3,
         spawn_containers_for_runpy=None):
-    # type: (Dict, int, Optional[Text], int) -> Dict[Text, Any]
+    # type: (Dict, int, Optional[Text], int, bool) -> Dict[Text, Any]
 
     if spawn_containers_for_runpy is None:
         spawn_containers_for_runpy = SPAWN_CONTAINERS_FOR_RUNPY
@@ -676,7 +674,6 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
 
         def get_runpy_mode():
             mode = "via_docker"
-            print(getattr(settings, "RELATE_RUNPY_MODE", None))
             if not runpy_via_http_url:
                 return mode
 
@@ -695,17 +692,21 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
         response_dict = None
 
         if runpy_mode in ["via_http", "via_docker_as_fallback"]:
-            response_dict = request_python_run_via_http(
-                runpy_via_http_url, run_req, self.page_desc.timeout)
+            from requests import ConnectionError, ConnectTimeout
+            try:
+                response_dict = request_python_run_via_http(
+                    runpy_via_http_url, run_req, self.page_desc.timeout)
 
-            if runpy_mode == "via_http":
-                debug_print("via_http result: %s" % repr(response_dict))
-                return response_dict
+                if runpy_mode == "via_http":
+                    debug_print("via_http result: %s" % repr(response_dict))
+                    return response_dict
 
-            if not response_dict.get("message") == "Error connecting to container":
-                debug_print("via_docker_as_fallback result: %s" % repr(response_dict))
+                if not response_dict.get("message") == "Error connecting to container":
+                    debug_print("via_docker_as_fallback result: %s" % repr(response_dict))
 
-                return response_dict
+                    return response_dict
+            except (ConnectionError, ConnectTimeout):
+                response_dict = None
 
         if response_dict is not None:
             return response_dict
