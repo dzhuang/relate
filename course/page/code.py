@@ -282,7 +282,7 @@ def is_nuisance_failure(result):
 
 
 def request_python_run_via_http(url, run_req, run_timeout, image=None):
-    # type: (Text, Dict, int, Optional[Text]) -> Dict[Text, Any]
+    # type: (Text, Dict, int, Optional[Text]) -> Optional[Dict[Text, Any]]
 
     import json
     run_req["__runpy_run_timeout"] = run_timeout
@@ -293,9 +293,16 @@ def request_python_run_via_http(url, run_req, run_timeout, image=None):
     headers = {'content-type': 'application/json'}
 
     import requests
-    response = requests.post(url, data=json.dumps(run_req), headers=headers)
-    response_content = response.content
-    result = json.loads(response_content.decode())
+    from json import JSONDecodeError
+    try:
+        response = requests.post(url, data=json.dumps(run_req), headers=headers)
+        response_content = response.content
+        result = json.loads(response_content.decode())
+    except JSONDecodeError:
+        # This generally happens when the url is not reachable
+        return None
+    except (requests.ConnectionError, requests.ConnectTimeout):
+        return None
 
     if result.get("exec_host") == "localhost":
         alias_dict = getattr(settings, "RELATE_EXECUTION_HOST_ALIAS_DICT", {})
@@ -692,21 +699,20 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
         response_dict = None
 
         if runpy_mode in ["via_http", "via_docker_as_fallback"]:
-            from requests import ConnectionError, ConnectTimeout
-            try:
-                response_dict = request_python_run_via_http(
-                    runpy_via_http_url, run_req, self.page_desc.timeout)
+            response_dict = request_python_run_via_http(
+                runpy_via_http_url, run_req, self.page_desc.timeout)
 
-                if runpy_mode == "via_http":
-                    debug_print("via_http result: %s" % repr(response_dict))
-                    return response_dict
+            if runpy_mode == "via_http":
+                debug_print("via_http result: %s" % repr(response_dict))
+                return response_dict
 
-                if not response_dict.get("message") == "Error connecting to container":
-                    debug_print("via_docker_as_fallback result: %s" % repr(response_dict))
+            if (response_dict is not None
+                    and not response_dict.get("message")
+                            == "Error connecting to container"):
+                debug_print("via_docker_as_fallback result: %s"
+                            % repr(response_dict))
 
-                    return response_dict
-            except (ConnectionError, ConnectTimeout):
-                response_dict = None
+                return response_dict
 
         if response_dict is not None:
             return response_dict
