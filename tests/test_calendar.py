@@ -237,7 +237,16 @@ class CreateRecurringEventsTest(CalendarTestMixin, MockAddMessageMixing, TestCas
                 t = evt.time
                 continue
             else:
-                self.assertEqual(evt.time - t, datetime.timedelta(weeks=1))
+                self.assertTrue(
+                        evt.time - t
+                        >= (
+                            datetime.timedelta(weeks=1)
+                            - datetime.timedelta(hours=1)))
+                self.assertTrue(
+                        evt.time - t
+                        <= (
+                            datetime.timedelta(weeks=1)
+                            + datetime.timedelta(hours=1)))
                 t = evt.time
 
     def test_post_success_starting_ordinal_not_specified(self):
@@ -355,7 +364,11 @@ class CreateRecurringEventsTest(CalendarTestMixin, MockAddMessageMixing, TestCas
                 t = evt.time
                 continue
             else:
-                self.assertEqual(evt.time - t, datetime.timedelta(weeks=1))
+                # One hour slack to avoid failure due to daylight savings.
+                self.assertTrue(evt.time - t >= (
+                    datetime.timedelta(weeks=1) - datetime.timedelta(hours=1)))
+                self.assertTrue(evt.time - t <= (
+                    datetime.timedelta(weeks=1) + datetime.timedelta(hours=1)))
                 t = evt.time
 
     def test_interval_biweekly(self):
@@ -374,7 +387,11 @@ class CreateRecurringEventsTest(CalendarTestMixin, MockAddMessageMixing, TestCas
                 t = evt.time
                 continue
             else:
-                self.assertEqual(evt.time - t, datetime.timedelta(weeks=2))
+                # One hour slack to avoid failure due to daylight savings.
+                self.assertTrue(evt.time - t >= (
+                    datetime.timedelta(weeks=2) - datetime.timedelta(hours=1)))
+                self.assertTrue(evt.time - t <= (
+                    datetime.timedelta(weeks=2) + datetime.timedelta(hours=1)))
                 t = evt.time
 
     # {{{ Ajax part
@@ -1254,6 +1271,8 @@ class GetEventsTest(CalendarTestMixin, TestCase):
 
     def test_events_file_with_events_test1(self):
         self.switch_to_fake_commit_sha()
+        self.mock_get_now_or_fake_time.return_value = (
+                self.default_event_time - timedelta(days=5))
 
         # pctx.course has been update, regenerate the default_pctx
         default_pctx = self.get_instructor_pctx()
@@ -1378,7 +1397,9 @@ class GetEventsTest(CalendarTestMixin, TestCase):
              "start_time": self.default_event_time,
              "end_time": None})
 
-        self.assertIn('Can you see this?', evt_description)
+        self.assertIn(
+            'Can you see this?',
+            evt_description)
 
         # lecture 2's description exceeded show_description_until
         self.mock_get_now_or_fake_time.return_value = (
