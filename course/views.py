@@ -436,7 +436,7 @@ class FakeTimeForm(ModalStyledFormMixin, StyledForm):
 
     def get_ajax_form_helper(self):
 
-        helper = self.get_form_helper()
+        helper = self.get_cloned_form_helper()
 
         from django.urls import reverse
         self.helper.form_action = reverse("relate-set_fake_time")
@@ -1396,7 +1396,7 @@ def grant_exception_stage_3(pctx, participation_id, flow_id, session_id):
                 if form.cleaned_data["due_same_as_access_expiration"]:
                     due = form.cleaned_data["access_expires"]
 
-                descr = ugettext("Granted excecption")
+                descr = ugettext("Granted exception")
                 if form.cleaned_data["credit_percent"] is not None:
                     descr += string_concat(" (%.1f%% ", ugettext('credit'), ")") \
                             % form.cleaned_data["credit_percent"]
@@ -1414,7 +1414,6 @@ def grant_exception_stage_3(pctx, participation_id, flow_id, session_id):
 
                 if due_local_naive is not None:
                     new_grading_rule["due"] = due_local_naive
-                    new_grading_rule["if_completed_before"] = due_local_naive
 
                 for attr_name in ["credit_percent", "bonus_points",
                         "max_points", "max_points_enforced_cap", "generates_grade"]:

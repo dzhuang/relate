@@ -55,7 +55,6 @@ from course.constants import (
         exam_ticket_states,
         participation_status,
         participation_permission as pperm)
-from course.views import get_now_or_fake_time
 
 from relate.utils import StyledForm, string_concat
 
@@ -140,6 +139,8 @@ class IssueTicketForm(StyledForm):
 
 @permission_required("course.can_issue_exam_tickets", raise_exception=True)
 def issue_exam_ticket(request):
+    # must import locally for mock to work
+    from course.views import get_now_or_fake_time
     now_datetime = get_now_or_fake_time(request)
 
     if request.method == "POST":
@@ -318,16 +319,19 @@ class BatchIssueTicketsForm(StyledForm):
                     "given facility"),
                 required=False)
 
+        self.fields["revoke_prior"] = forms.BooleanField(
+                label=_("Revoke prior exam tickets"),
+                required=False,
+                initial=False)
+
         self.fields["format"] = forms.CharField(
                 label=_("Ticket Format"),
                 help_text=help_text,
                 widget=cm_widget,
                 initial=INITIAL_EXAM_TICKET_TEMPLATE,
                 required=True)
-        self.fields["revoke_prior"] = forms.BooleanField(
-                label=_("Revoke prior exam tickets"),
-                required=False,
-                initial=False)
+
+        self.style_codemirror_widget()
 
         self.helper.add_input(
                 Submit(
@@ -471,8 +475,7 @@ def check_exam_ticket(
         return (False, _("Exam has not started yet."))
     if (
             ticket.exam.no_exams_after is not None
-            and
-            ticket.exam.no_exams_after <= now_datetime):
+            and ticket.exam.no_exams_after <= now_datetime):
         return (False, _("Exam has ended."))
 
     if (ticket.restrict_to_facility
@@ -484,13 +487,11 @@ def check_exam_ticket(
                 % ticket.restrict_to_facility)
     if (
             ticket.valid_start_time is not None
-            and
-            now_datetime < ticket.valid_start_time):
+            and now_datetime < ticket.valid_start_time):
         return (False, _("Exam ticket is not yet valid."))
     if (
             ticket.valid_end_time is not None
-            and
-            ticket.valid_end_time < now_datetime):
+            and ticket.valid_end_time < now_datetime):
         return (False, _("Exam ticket has expired."))
 
     return True, _("Ticket is valid.")
@@ -538,6 +539,8 @@ class ExamCheckInForm(StyledForm):
 @csrf_protect
 @never_cache
 def check_in_for_exam(request):
+    # must import locally for mock to work
+    from course.views import get_now_or_fake_time
     now_datetime = get_now_or_fake_time(request)
 
     if request.method == "POST":
@@ -636,8 +639,10 @@ class ExamFacilityMiddleware(object):
         if not exams_only:
             return self.get_response(request)
 
-        if (exams_only and
-                "relate_session_locked_to_exam_flow_session_pk" in request.session):
+        if (exams_only
+                and (
+                    "relate_session_locked_to_exam_flow_session_pk"
+                    in request.session)):
             # ExamLockdownMiddleware is in control.
             return self.get_response(request)
 
@@ -676,10 +681,8 @@ class ExamFacilityMiddleware(object):
 
         elif (
                 (request.user.is_staff
-                    or
-                    request.user.has_perm("course.can_issue_exam_tickets"))
-                and
-                resolver_match.func == issue_exam_ticket):
+                    or request.user.has_perm("course.can_issue_exam_tickets"))
+                and resolver_match.func == issue_exam_ticket):
             ok = True
 
         if not ok:
@@ -760,16 +763,16 @@ class ExamLockdownMiddleware(object):
                         update_expiration_mode,
                         update_page_bookmark_state,
                         finish_flow_session_view]
-                    and
-                    int(resolver_match.kwargs["flow_session_id"])
-                    == exam_flow_session_pk):
+                    and (
+                        int(resolver_match.kwargs["flow_session_id"])
+                        == exam_flow_session_pk)):
                 ok = True
 
             elif (
                     resolver_match.func == view_start_flow
-                    and
-                    resolver_match.kwargs["flow_id"]
-                    == exam_flow_session.flow_id):
+                    and (
+                        resolver_match.kwargs["flow_id"]
+                        == exam_flow_session.flow_id)):
                 ok = True
 
             if not ok:
@@ -790,6 +793,8 @@ class ExamLockdownMiddleware(object):
 # {{{ list available exams
 
 def list_available_exams(request):
+    # must import locally for mock to work
+    from course.views import get_now_or_fake_time
     now_datetime = get_now_or_fake_time(request)
 
     if request.user.is_authenticated:
@@ -810,8 +815,7 @@ def list_available_exams(request):
                 no_exams_before__lt=now_datetime)
             .filter(
                 Q(no_exams_after__isnull=True)
-                |
-                Q(no_exams_after__gt=now_datetime))
+                | Q(no_exams_after__gt=now_datetime))
             .order_by("no_exams_before", "course__number"))
 
     return render(request, "course/list-exams.html", {

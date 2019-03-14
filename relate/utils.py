@@ -53,10 +53,17 @@ class StyledFormMixin(object):
 
     def __init__(self, *args, **kwargs):
         # type: (*Any, **Any) -> None
+        self.helper = FormHelper()
+        self._configure_helper()
         super(StyledFormMixin, self).__init__(*args, **kwargs)  # type: ignore
-        self.helper = self.get_form_helper()
 
-    def get_form_helper(self):
+    def _configure_helper(self):
+        # type: () -> None
+        self.helper.form_class = self.styled_form_class
+        self.helper.label_class = self.styled_label_class
+        self.helper.field_class = self.styled_field_class
+
+    def get_cloned_form_helper(self):
         # type: (...) -> FormHelper
         helper = FormHelper()
         helper.form_class = self.styled_form_class
@@ -66,7 +73,17 @@ class StyledFormMixin(object):
 
 
 class StyledForm(StyledFormMixin, forms.Form):
-    pass
+    def style_codemirror_widget(self):
+        from codemirror import CodeMirrorTextarea
+        from crispy_forms.layout import Div
+
+        if self.helper.layout is None:
+            from crispy_forms.helper import FormHelper
+            self.helper = FormHelper(self)
+            self._configure_helper()
+
+        self.helper.filter_by_widget(CodeMirrorTextarea).wrap(
+                Div, css_class="relate-codemirror-container")
 
 
 class StyledInlineForm(StyledFormMixin, forms.Form):
@@ -92,7 +109,7 @@ class ModalStyledFormMixin(object):
 
     def get_ajax_form_helper(self):
         # type: (...) -> FormHelper
-        return self.get_form_helper()  # type: ignore
+        return self.get_cloned_form_helper()  # type: ignore
 
     def render_ajax_modal_form_html(self, request, context=None):
         # type: (HttpRequest, Optional[Dict]) -> Text

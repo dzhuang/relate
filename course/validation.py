@@ -426,8 +426,7 @@ def validate_staticpage_desc(vctx, location, page_desc):
 
     if (
             (not hasattr(page_desc, "chunks") and not hasattr(page_desc, "content"))
-            or
-            (hasattr(page_desc, "chunks") and hasattr(page_desc, "content"))):
+            or (hasattr(page_desc, "chunks") and hasattr(page_desc, "content"))):
         raise ValidationError(
                 string_concat("%(location)s: ",
                     _("must have either 'chunks' or 'content'"))
@@ -968,9 +967,8 @@ def validate_flow_rules(vctx, location, rules):
     from course.constants import GRADE_AGGREGATION_STRATEGY_CHOICES
     if (
             hasattr(rules, "grade_aggregation_strategy")
-            and
-            rules.grade_aggregation_strategy not in
-            dict(GRADE_AGGREGATION_STRATEGY_CHOICES)):
+            and rules.grade_aggregation_strategy
+            not in dict(GRADE_AGGREGATION_STRATEGY_CHOICES)):
         raise ValidationError(
                 string_concat("%s: ",
                     _("invalid grade aggregation strategy"),
@@ -1072,8 +1070,7 @@ def validate_flow_desc(vctx, location, flow_desc):
 
     if (
             (not hasattr(flow_desc, "groups") and not hasattr(flow_desc, "pages"))
-            or
-            (hasattr(flow_desc, "groups") and hasattr(flow_desc, "pages"))):
+            or (hasattr(flow_desc, "groups") and hasattr(flow_desc, "pages"))):
         raise ValidationError(
                 string_concat("%(location)s: ",
                     _("must have either 'groups' or 'pages'"))
@@ -1555,8 +1552,7 @@ def validate_course_content(repo, course_file, events_file,
 
             if (
                     flow_grade_identifier is not None
-                    and
-                    set([flow_grade_identifier]) & used_grade_identifiers):
+                    and set([flow_grade_identifier]) & used_grade_identifiers):
                 raise ValidationError(
                         string_concat("%s: ",
                                       _("flow uses the same grade_identifier "

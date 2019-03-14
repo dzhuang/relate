@@ -38,7 +38,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import (
     PermissionDenied, ObjectDoesNotExist, ValidationError, SuspiciousOperation)
 from django.db import transaction
-from django.contrib import messages
+from django.contrib import messages  # noqa
 from django.urls import reverse
 from django.http import JsonResponse
 import django.forms as forms
@@ -47,7 +47,6 @@ from relate.utils import (
     StyledForm, as_local_time, format_datetime_local, string_concat,
     StyledModelForm, ModalStyledFormMixin)
 
-from course.views import get_now_or_fake_time
 from course.constants import (
         participation_permission as pperm,
         )
@@ -180,7 +179,7 @@ class RecurringEventForm(ModalStyledFormMixin, StyledForm):
                 Submit("submit", _("Create")))
 
     def get_ajax_form_helper(self):
-        helper = self.get_form_helper()
+        helper = self.get_cloned_form_helper()
         self.helper.form_action = reverse(
             "relate-create_recurring_events", args=[self.course_identifier])
 
@@ -414,7 +413,7 @@ class RenumberEventsForm(ModalStyledFormMixin, StyledForm):
                 Submit("submit", _("Renumber")))
 
     def get_ajax_form_helper(self):
-        helper = self.get_form_helper()
+        helper = self.get_cloned_form_helper()
         self.helper.form_action = reverse(
             "relate-renumber_events", args=[self.course_identifier])
 
@@ -551,6 +550,9 @@ def view_calendar(pctx, mode=None):
     if not pctx.has_permission(pperm.view_calendar):
         raise PermissionDenied(_("may not view calendar"))
 
+    # must import locally for mock to work
+    from course.views import get_now_or_fake_time
+
     is_edit_view = bool(mode == "edit")
     if is_edit_view and not pctx.has_permission(pperm.edit_events):
         raise PermissionDenied(_("may not edit calendar"))
@@ -604,6 +606,9 @@ def get_events(pctx, is_edit_view=False):
             key=lambda evt: (
                 -evt.time.year, -evt.time.month, -evt.time.day,
                 evt.time.hour, evt.time.minute, evt.time.second))
+
+    # must import locally for mock to work
+    from course.views import get_now_or_fake_time
 
     now = get_now_or_fake_time(pctx.request)
 
@@ -782,7 +787,7 @@ class CreateEventModalForm(ModalStyledFormMixin, StyledModelForm):
                                                     name="event_create_choices")
 
     def get_ajax_form_helper(self):
-        helper = self.get_form_helper()
+        helper = self.get_cloned_form_helper()
 
         self.helper.form_action = reverse(
             "relate-create_event", args=[self.course_identifier])

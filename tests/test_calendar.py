@@ -237,7 +237,16 @@ class CreateRecurringEventsTest(CalendarTestMixin, MockAddMessageMixing, TestCas
                 t = evt.time
                 continue
             else:
-                self.assertEqual(evt.time - t, datetime.timedelta(weeks=1))
+                self.assertTrue(
+                        evt.time - t
+                        >= (
+                            datetime.timedelta(weeks=1)
+                            - datetime.timedelta(hours=1)))
+                self.assertTrue(
+                        evt.time - t
+                        <= (
+                            datetime.timedelta(weeks=1)
+                            + datetime.timedelta(hours=1)))
                 t = evt.time
 
     def test_post_success_starting_ordinal_not_specified(self):
@@ -355,7 +364,11 @@ class CreateRecurringEventsTest(CalendarTestMixin, MockAddMessageMixing, TestCas
                 t = evt.time
                 continue
             else:
-                self.assertEqual(evt.time - t, datetime.timedelta(weeks=1))
+                # One hour slack to avoid failure due to daylight savings.
+                self.assertTrue(evt.time - t >= (
+                    datetime.timedelta(weeks=1) - datetime.timedelta(hours=1)))
+                self.assertTrue(evt.time - t <= (
+                    datetime.timedelta(weeks=1) + datetime.timedelta(hours=1)))
                 t = evt.time
 
     def test_interval_biweekly(self):
@@ -374,7 +387,11 @@ class CreateRecurringEventsTest(CalendarTestMixin, MockAddMessageMixing, TestCas
                 t = evt.time
                 continue
             else:
-                self.assertEqual(evt.time - t, datetime.timedelta(weeks=2))
+                # One hour slack to avoid failure due to daylight savings.
+                self.assertTrue(evt.time - t >= (
+                    datetime.timedelta(weeks=2) - datetime.timedelta(hours=1)))
+                self.assertTrue(evt.time - t <= (
+                    datetime.timedelta(weeks=2) + datetime.timedelta(hours=1)))
                 t = evt.time
 
     # {{{ Ajax part
@@ -906,6 +923,9 @@ class GetRenumberEventsModalFormTest(CalendarTestMixin, TestCase):
         return self.get_course_view_url("relate-get_renumber_events_modal_form",
                                         course_identifier)
 
+    def get_course_calendar_view(self, course_identifier=None):
+        course_identifier = course_identifier or self.get_default_course_identifier()
+        return self.c.get(self.get_course_calender_url(course_identifier))
     def get_renumber_events_modal_form_view(self, course_identifier=None,
                                             using_ajax=True):
         kwargs = {}
@@ -946,7 +966,7 @@ class ViewCalendarTest(CalendarTestMixin, TestCase):
                 "course.utils.CoursePageContext.has_permission"
         ) as mock_has_pperm:
             mock_has_pperm.return_value = False
-            resp = self.get_course_calender_view()
+            resp = self.get_course_calendar_view()
             self.assertEqual(resp.status_code, 403)
 
     def test_student_non_edit_view_success(self):
@@ -974,8 +994,7 @@ class ViewCalendarTest(CalendarTestMixin, TestCase):
             self.course.save()
 
         self.mock_get_now_or_fake_time.return_value = self.default_faked_now
-
-        resp = self.get_course_calender_view()
+        resp = self.get_course_calendar_view()
         self.assertEqual(resp.status_code, 200)
         self.assertResponseContextEqual(
             resp, "default_date", self.default_faked_now.date().isoformat())
@@ -1138,7 +1157,10 @@ class GetEventsTest(CalendarTestMixin, TestCase):
             time=self.default_event_time + timedelta(hours=1),
             end_time=self.default_event_time + timedelta(hours=2))
 
-        __, events_json = calendar.get_events(self.default_pctx)
+        resp = self.get_course_calendar_view()
+        self.assertEqual(resp.status_code, 200)
+
+        events_json = json.loads(resp.context["events_json"])
         self.assertEqual(len(events_json), 2)
         self.assertDictEqual(
             events_json[0],
@@ -1208,7 +1230,8 @@ class GetEventsTest(CalendarTestMixin, TestCase):
             shown_in_calendar=False,
             time=self.default_event_time + timedelta(hours=1))
 
-        __, events_json = calendar.get_events(self.default_pctx)
+        resp = self.get_course_calendar_view()
+        self.assertEqual(resp.status_code, 200)
 
         self.assertEqual(len(events_json), 1)
         self.assertDictEqual(
@@ -1226,7 +1249,10 @@ class GetEventsTest(CalendarTestMixin, TestCase):
         self.mock_get_now_or_fake_time.return_value = self.default_faked_now
         factories.EventFactory(
             kind=self.default_event_kind, course=self.course,
-            time=self.default_event_time)
+            time=self.default_event_time,
+            end_time=self.default_event_time + timedelta(hours=1))
+        resp = self.get_course_calendar_view()
+        self.assertEqual(resp.status_code, 200)
         event2 = factories.EventFactory(
             kind=self.default_event_kind, course=self.course,
             shown_in_calendar=False,
@@ -1252,11 +1278,45 @@ class GetEventsTest(CalendarTestMixin, TestCase):
         event_info_list = self.get_event_info_list_rendered()
         self.assertEqual(event_info_list, [])
 
-    def test_events_file_with_events_test1(self):
+    def test_event_course_finished(self):
+        self.mock_get_now_or_fake_time.return_value = self.default_faked_now
+        self.course.end_date = (self.default_faked_now - timedelta(weeks=1)).date()
+        self.course.save()
+
+        resp = self.get_course_calendar_view()
+        self.assertEqual(resp.status_code, 200)
+
+        self.assertResponseContextEqual(resp, "events_json", '[]')
+        self.assertResponseContextEqual(resp, "event_info_list", [])
+        self.assertResponseContextEqual(
+            resp, "default_date", self.course.end_date.isoformat())
+
+    def test_event_course_not_finished(self):
+        self.mock_get_now_or_fake_time.return_value = self.default_faked_now
+        self.course.end_date = (self.default_faked_now + timedelta(weeks=1)).date()
+        self.course.save()
+
+        resp = self.get_course_calendar_view()
+        self.assertEqual(resp.status_code, 200)
+
+        self.assertResponseContextEqual(resp, "events_json", '[]')
+        self.assertResponseContextEqual(resp, "event_info_list", [])
+        self.assertResponseContextEqual(
+            resp, "default_date", self.default_faked_now.date().isoformat())
+
+    def test_events_file_no_events(self):
+        # make sure it works
         self.switch_to_fake_commit_sha()
 
-        # pctx.course has been update, regenerate the default_pctx
-        default_pctx = self.get_instructor_pctx()
+        resp = self.get_course_calendar_view()
+
+        self.assertResponseContextEqual(resp, "events_json", '[]')
+        self.assertResponseContextEqual(resp, "event_info_list", [])
+
+    def test_events_file_with_events_test1(self):
+        self.switch_to_fake_commit_sha()
+        self.mock_get_now_or_fake_time.return_value = (
+                self.default_event_time - timedelta(days=5))
 
         # lecture 1
         lecture1_start_time = self.default_event_time - timedelta(weeks=1)
@@ -1269,7 +1329,7 @@ class GetEventsTest(CalendarTestMixin, TestCase):
             kind=self.default_event_kind, course=self.course,
             time=self.default_event_time, ordinal=2)
 
-        __, events_json = calendar.get_events(default_pctx)
+        resp = self.get_course_calendar_view()
 
         self.assertEqual(len(events_json), 2)
         self.assertDictEqual(
@@ -1337,7 +1397,7 @@ class GetEventsTest(CalendarTestMixin, TestCase):
             time=test_start_time,
             ordinal=None)
 
-        __, events_json = calendar.get_events(default_pctx)
+        resp = self.get_course_calendar_view()
 
         self.assertEqual(len(events_json), 3)
 
@@ -1385,9 +1445,8 @@ class GetEventsTest(CalendarTestMixin, TestCase):
                 lecture3_start_time + timedelta(minutes=5))
 
         # no EventInfo object
-        __, events_json = calendar.get_events(default_pctx)
-        event_info_list = self.get_event_info_list_rendered()
-        self.assertEqual(event_info_list, [])
+        resp = self.get_course_calendar_view()
+        self.assertResponseContextEqual(resp, "event_info_list", [])
 
     def test_events_file_with_events_test3(self):
         self.switch_to_fake_commit_sha()
@@ -1400,7 +1459,7 @@ class GetEventsTest(CalendarTestMixin, TestCase):
             time=self.default_event_time,
             end_time=exam_end_time)
 
-        __, events_json = calendar.get_events(default_pctx)
+        resp = self.get_course_calendar_view()
 
         self.assertEqual(len(events_json), 1)
 
@@ -1437,7 +1496,9 @@ class GetEventsTest(CalendarTestMixin, TestCase):
             kind=self.default_event_kind, course=self.course,
             time=lecture3_start_time, ordinal=3)
 
-        __, events_json = calendar.get_events(default_pctx)
+        resp = self.get_course_calendar_view()
+
+        events_json = json.loads(resp.context["events_json"])
         self.assertEqual(len(events_json), 2)
 
         self.assertDictEqual(
@@ -1453,7 +1514,7 @@ class GetEventsTest(CalendarTestMixin, TestCase):
         lecture2_evt.end_time = lecture2_end_time
         lecture2_evt.save()
 
-        __, events_json = calendar.get_events(default_pctx)
+        resp = self.get_course_calendar_view()
 
         self.assertEqual(len(events_json), 2)
 
@@ -1477,7 +1538,9 @@ class GetEventsTest(CalendarTestMixin, TestCase):
 
             lecture2_end_time += timedelta(hours=1)
 
-        __, events_json = calendar.get_events(default_pctx)
+        resp = self.get_course_calendar_view()
+
+        events_json = json.loads(resp.context["events_json"])
         self.assertEqual(len(events_json), 2)
 
         self.assertDictEqual(

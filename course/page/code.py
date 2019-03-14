@@ -63,20 +63,29 @@ class PythonCodeForm(StyledForm):
     # prevents form submission with codemirror's empty textarea
     use_required_attribute = False
 
-    def __init__(self, read_only, interaction_mode, initial_code, *args, **kwargs):
-        super(PythonCodeForm, self).__init__(*args, **kwargs)
+    def __init__(self, read_only, interaction_mode, initial_code,
+            data=None, *args, **kwargs):
+        super(PythonCodeForm, self).__init__(data, *args, **kwargs)
 
         from course.utils import get_codemirror_widget
         cm_widget, cm_help_text = get_codemirror_widget(
                 language_mode="python",
                 interaction_mode=interaction_mode,
-                read_only=read_only)
+                read_only=read_only,
+
+                # Automatically focus the text field once there has
+                # been some input.
+                autofocus=(
+                    not read_only
+                    and (data is not None and "answer" in data)))
 
         self.fields["answer"] = forms.CharField(required=True,
             initial=initial_code,
             help_text=cm_help_text,
             widget=cm_widget,
             label=_("Answer"))
+
+        self.style_codemirror_widget()
 
     def clean(self):
         # FIXME Should try compilation
@@ -156,16 +165,16 @@ def request_python_run(run_req, run_timeout, image=None,
         # {{{ ping until response received
 
         def check_timeout():
-                if time() - start_time < DOCKER_TIMEOUT:
-                    sleep(0.1)
-                    # and retry
-                else:
-                    return {
-                            "result": "uncaught_error",
-                            "message": "Timeout waiting for container.",
-                            "traceback": "".join(format_exc()),
-                            "exec_host": connect_host_ip,
-                            }
+            if time() - start_time < DOCKER_TIMEOUT:
+                sleep(0.1)
+                # and retry
+            else:
+                return {
+                        "result": "uncaught_error",
+                        "message": "Timeout waiting for container.",
+                        "traceback": "".join(format_exc()),
+                        "exec_host": connect_host_ip,
+                        }
 
         while True:
             try:
@@ -812,21 +821,21 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                         "time": format_datetime_local(local_now())
                     })
 
-                if (not page_context.in_sandbox
+                if (
+                        not page_context.in_sandbox
                         and not is_nuisance_failure(response_dict)):
                     try:
                         from django.core.mail import EmailMessage
                         msg = EmailMessage("".join(["[%s:%s] ",
-                                                    _(
-                                                        "code question execution failed")])  # noqa
-                                           % (
-                                               page_context.course.identifier,
-                                               page_context.flow_session.flow_id
-                                               if page_context.flow_session is not None  # noqa
-                                               else _("<unknown flow>")),
-                                           message,
-                                           settings.ROBOT_EMAIL_FROM,
-                                           [page_context.course.notify_email])
+                            _("code question execution failed")])
+                            % (
+                                page_context.course.identifier,
+                                page_context.flow_session.flow_id
+                                if page_context.flow_session is not None
+                                else _("<unknown flow>")),
+                            message,
+                            settings.ROBOT_EMAIL_FROM,
+                            [page_context.course.notify_email])
 
                         from relate.utils import get_outbound_mail_connection
                         msg.connection = get_outbound_mail_connection("robot")
@@ -856,6 +865,7 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                                 "</p>")))
 
         # }}}
+
         if hasattr(self.page_desc, "correct_code"):
             def normalize_code(s):
                 return (s
@@ -867,12 +877,15 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
             if (normalize_code(user_code)
                     == normalize_code(self.page_desc.correct_code)):
                 feedback_bits.append(
-                    "<p><b>%s</b></p>"
-                    % _("It looks like you submitted code that is identical to "
-                        "the reference solution. This is not allowed."))
+                        "<p><b>%s</b></p>"
+                        % _("It looks like you submitted code that is identical to "
+                            "the reference solution. This is not allowed."))
+
         from relate.utils import dict_to_struct
         response = dict_to_struct(response_dict)
+
         bulk_feedback_bits = []
+
         if response.result == "success":
             pass
         elif response.result == "docker_runpy_not_enabled":
@@ -898,7 +911,7 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                     "it will be fixed as soon as possible. "
                     "In the meantime, you'll see a traceback "
                     "below that may help you figure out what went wrong."
-                ),
+                    ),
                 "</p>"]))
         elif response.result == "timeout":
             feedback_bits.append("".join([
@@ -908,16 +921,16 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                     "specifies that your code may take at most %s seconds "
                     "to run. "
                     "It took longer than that and was aborted."
-                ),
+                    ),
                 "</p>"])
-                                 % self.page_desc.timeout)
+                    % self.page_desc.timeout)
 
             correctness = 0
         elif response.result == "user_compile_error":
             feedback_bits.append("".join([
                 "<p>",
                 _("Your code failed to compile. An error message is "
-                  "below."),
+                    "below."),
                 "</p>"]))
 
             correctness = 0
@@ -925,25 +938,25 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
             feedback_bits.append("".join([
                 "<p>",
                 _("Your code failed with an exception. "
-                  "A traceback is below."),
+                    "A traceback is below."),
                 "</p>"]))
 
             correctness = 0
         else:
             raise RuntimeError("invalid runpy result: %s" % response.result)
+
         if hasattr(response, "feedback") and response.feedback:
             def sanitize(s):
                 import bleach
                 return bleach.clean(s, tags=["p", "pre"])
-
             feedback_bits.append("".join([
                 "<p>",
                 _("Here is some feedback on your code"),
                 ":"
                 "<ul>%s</ul></p>"]) %
-                                 "".join(
-                                     "<li>%s</li>" % sanitize(fb_item)
-                                     for fb_item in response.feedback))
+                        "".join(
+                            "<li>%s</li>" % sanitize(fb_item)
+                            for fb_item in response.feedback))
         if hasattr(response, "traceback") and response.traceback:
             feedback_bits.append("".join([
                 "<p>",
@@ -954,7 +967,7 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
             import socket
             try:
                 exec_host_name, dummy, dummy = socket.gethostbyaddr(
-                    response.exec_host)
+                        response.exec_host)
             except socket.error:
                 exec_host_name = response.exec_host
 
@@ -975,13 +988,14 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                 "<p>",
                 _("Your code ran on %s.") % exec_host_name,
                 "</p>"]))
+
         if hasattr(response, "stdout") and response.stdout:
             bulk_feedback_bits.append("".join([
                 "<p>",
                 _("Your code printed the following output"),
                 ":"
                 "<pre>%s</pre></p>"])
-                                      % escape(response.stdout))
+                    % escape(response.stdout))
         if hasattr(response, "stderr") and response.stderr:
             bulk_feedback_bits.append("".join([
                 "<p>",
@@ -994,7 +1008,7 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                 _("Your code produced the following plots"),
                 ":</p>"]),
                 '<dl class="result-figure-list">',
-            ]
+                ]
 
             for nr, mime_type, b64data in response.figures:
                 if mime_type in ["image/jpeg", "image/png"]:
@@ -1009,6 +1023,7 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
             bulk_feedback_bits.extend(fig_lines)
 
         # {{{ html output / santization
+
         if hasattr(response, "html") and response.html:
             def is_allowed_data_uri(allowed_mimetypes, uri):
                 import re
@@ -1045,7 +1060,7 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                         return is_allowed_data_uri([
                             "image/png",
                             "image/jpeg",
-                        ], value)
+                            ], value)
                     else:
                         return False
 
@@ -1066,7 +1081,7 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
                         protocols=["data"])
 
             bulk_feedback_bits.extend(
-                sanitize(snippet) for snippet in response.html)
+                    sanitize(snippet) for snippet in response.html)
 
         # }}}
         return correctness, feedback_bits, bulk_feedback_bits
@@ -1159,9 +1174,9 @@ class PythonCodeQuestionWithHumanTextFeedback(
                 vctx, location, page_desc)
 
         if vctx is not None:
-            if (hasattr(self.page_desc, "human_feedback_value")
-                and
-                    hasattr(self.page_desc, "human_feedback_percentage")):
+            if (
+                    hasattr(self.page_desc, "human_feedback_value")
+                    and hasattr(self.page_desc, "human_feedback_percentage")):
                 raise ValidationError(
                     string_concat(
                         "%(location)s: ",

@@ -9,6 +9,112 @@ import re
 section_nr = [1]
 
 
+def rewrite_org_element(args, org_el):
+    el_type = org_el[0]
+    org_props = org_el[1]
+    assert org_props is None or isinstance(org_props, dict)
+    contents = org_el[2:]
+
+    had_relate_properties = False
+    promote_to_parent_level = False
+    node_props = {}
+    if el_type == "org-data":
+        title, = [
+                subel[1]["key"]
+                for el in contents
+                if el[0] == "section"
+                for subel in el[2:]
+                if subel[0] == "keyword"
+                if subel[1]["key"] == "TITLE"]
+        node_props["text"] = title
+
+    elif el_type == "headline":
+        node_props["text"] = org_props["raw-value"]
+
+        prop_container = [
+                subel[2:]
+                for el in contents
+                if el[0] == "section"
+                for subel in el[2:]
+                if subel[0] == "property-drawer"]
+
+        if prop_container:
+            prop_kws = prop_container[0]
+        else:
+            prop_kws = []
+
+        properties = {
+                ch[1]["key"]: ch[1]["value"]
+                for ch in prop_kws
+                if ch[0] == "node-property"
+                }
+
+        had_relate_properties = had_relate_properties or any(
+                key.startswith("RELATE_") for key in properties)
+
+        if "RELATE_TREE_SECTION_NAME" in properties:
+            node_props["section"] = properties["RELATE_TREE_SECTION_NAME"]
+        if "RELATE_TREE_SECTION_OPENED" in properties:
+            node_props["opened"] = properties["RELATE_TREE_SECTION_OPENED"]
+        if "RELATE_TREE_ICON" in properties:
+            node_props["icon"] = properties["RELATE_TREE_ICON"]
+        if "RELATE_TREE_LINK" in properties:
+            node_props["link"] = properties["RELATE_TREE_LINK"]
+        if "RELATE_PROMOTE_TO_PARENT_LEVEL" in properties:
+            promote_to_parent_level = True
+
+    if el_type == "org-data":
+        level = 0
+    else:
+        level = org_props.get("level")
+
+    if ("text" in node_props
+            and level is not None
+            and level < len(args.org_level_icon)):
+        node_props["icon"] = args.org_level_icon[level]
+
+    siblings = []
+    children = []
+    node_props["nodes"] = children
+
+    for ch in contents:
+        if isinstance(ch, list):
+            child_props, child_siblings, promote_child_to_parent_level = \
+                    rewrite_org_element(args, ch)
+            if "text" in child_props:
+                if promote_child_to_parent_level:
+                    siblings.append(child_props)
+                else:
+                    children.append(child_props)
+
+            children.extend(child_siblings)
+
+    if args.org_stop_level:
+        if (level is not None
+                and level > args.org_stop_level
+                and not had_relate_properties):
+            node_props = {}
+
+    if el_type == "headline" and org_props["todo-keyword"] is not None:
+        node_props = {}
+
+    return node_props, siblings, promote_to_parent_level
+
+
+def load_org_json(args, infile_name):
+    # https://github.com/ludios/org-to-json
+
+    from json import loads
+    with open(infile_name, "rb") as inf:
+        json = loads(inf.read())
+
+    node_props, siblings, promote_to_parent_level = \
+            rewrite_org_element(args, json)
+    assert not siblings
+    assert not promote_to_parent_level
+    return node_props
+
+
 def normalize_nodes(nodes, text_icon):
     for i in range(len(nodes)):
         node = nodes[i]
@@ -46,9 +152,16 @@ def find_section_nodes(section_dict, node):
 
 
 class RenderSettings:
-    def __init__(self, default_icon, number_sections):
+    def __init__(self, default_icon, number_sections, tree_replacements):
         self.default_icon = default_icon
         self.number_sections = number_sections
+        self.tree_replacements = tree_replacements
+
+    def apply_replacements(self, s):
+        for key, val in self.tree_replacements.items():
+            s = s.replace(key, val)
+
+        return s
 
 
 def render(settings, outf, node, indent=0, skip=1):
@@ -81,11 +194,13 @@ def render(settings, outf, node, indent=0, skip=1):
             print(
                 indent * " ",
                 "<a href=\"%s\">%s</a>" % (
-                    node["link"],
-                    text),
+                    settings.apply_replacements(node["link"]),
+                    settings.apply_replacements(text)),
                 file=outf, sep="")
         else:
-            print(indent * " ", text, file=outf, sep="")
+            print(
+                    indent * " ",
+                    settings.apply_replacements(text), file=outf, sep="")
 
     subnodes = node.get("nodes", [])
     if subnodes:
@@ -156,9 +271,10 @@ def main():
     parser.add_argument("--ipynb-main-link", choices=["static", "binder"],
             default="static")
 
-    parser.add_argument("--py-dir", metavar="DIRECTORY")
-    parser.add_argument("--py-urlroot", metavar="URL",
+    parser.add_argument("--source-dir", metavar="DIRECTORY")
+    parser.add_argument("--source-urlroot", metavar="URL",
             help="(without the trailing slash)")
+    parser.add_argument("--source-wildcard", metavar="WILDCARD", nargs="*")
 
     parser.add_argument("--pdf-dir", metavar="DIRECTORY")
     parser.add_argument("--pdf-urlroot", metavar="URL",
@@ -170,6 +286,11 @@ def main():
             default="fa fa-file-o")
     parser.add_argument("--number-sections", action="store_true")
     parser.add_argument("--blacklist-file", metavar="PATTERN_FILE")
+
+    parser.add_argument("--org-stop-level", metavar="INT", type=int)
+    parser.add_argument("--org-level-icon", metavar="CSS_CLASSES", nargs="*")
+
+    parser.add_argument("--tree-replacement", metavar="KEY=VALUE", nargs="*")
 
     parser.add_argument("input_file", metavar="FILE")
 
@@ -183,11 +304,23 @@ def main():
                 blacklist_regexps.append(
                         re.compile(fnmatch.translate(pattern.strip())))
 
-    from yaml import safe_load
-    with open(args.input_file, "rb") as inf:
-        root_node = safe_load(inf)
+    if args.input_file.endswith(".yml") or args.input_file.endswith(".yml"):
+        from yaml import safe_load
+        with open(args.input_file, "rb") as inf:
+            root_node = safe_load(inf)
+    elif args.input_file.endswith(".org.json"):
+        root_node = load_org_json(args, args.input_file)
+    else:
+        raise ValueError("unknown extension of input file: %s" % args.input_file)
 
     normalize_nodes([root_node], args.text_icon)
+
+    tree_replacements = {}
+    for tr in args.tree_replacement:
+        eq_ind = tr.find("=")
+        if eq_ind < 0:
+            raise ValueError(f"tree replacement '{tr}' contains no equal sign")
+        tree_replacements[tr[:eq_ind]] = tr[eq_ind+1:]
 
     section_dict = {}
     find_section_nodes(section_dict, root_node)
@@ -213,7 +346,7 @@ def main():
                         }]
 
             if args.binder_urlroot:
-                binder_url = args.binder_urlroot + "/" + trunk
+                binder_url = args.binder_urlroot + trunk
 
                 sub_nodes.append({
                     "text": "Run interactively (on mybinder.org)",
@@ -250,22 +383,23 @@ def main():
 
     # }}}
 
-    # {{{ python source
+    # {{{ general source files
 
-    if args.py_dir is not None:
-        for fn in blacklisted_glob(args.py_dir, join("*", "*.py"),
-                blacklist_regexps):
-            trunk = fn[len(args.py_dir)+1:]
-            section_id, display_name = get_section_id_and_display_name(
-                    trunk, include_extension=True)
+    if args.source_dir is not None:
+        for source_wildcard in args.source_wildcard:
+            for fn in blacklisted_glob(args.source_dir, join("*", source_wildcard),
+                    blacklist_regexps):
+                trunk = fn[len(args.source_dir)+1:]
+                section_id, display_name = get_section_id_and_display_name(
+                        trunk, include_extension=True)
 
-            src_node = {
-                "text": "Code: " + display_name,
-                "link": args.py_urlroot + "/" + trunk,
-                "icon": "fa fa-file-text-o",
-            }
-            if section_id in section_dict:
-                section_dict[section_id]["nodes"].append(src_node)
+                src_node = {
+                    "text": "Code: " + display_name,
+                    "link": args.source_urlroot + "/" + trunk,
+                    "icon": "fa fa-file-text-o",
+                }
+                if section_id in section_dict:
+                    section_dict[section_id]["nodes"].append(src_node)
 
     # }}}
 
@@ -296,7 +430,8 @@ def main():
         render(
                 RenderSettings(
                     default_icon=args.default_icon,
-                    number_sections=args.number_sections),
+                    number_sections=args.number_sections,
+                    tree_replacements=tree_replacements),
                 outf, root_node)
 
 

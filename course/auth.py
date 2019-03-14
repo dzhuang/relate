@@ -115,8 +115,7 @@ def get_impersonable_user_qset(impersonator):
         # only when rendering ImpersonateForm
         impersonable_user_qset = (
             impersonable_user_qset
-            |
-            User.objects.filter(pk__in=q.values_list("user__pk", flat=True))
+            | User.objects.filter(pk__in=q.values_list("user__pk", flat=True))
         )
 
     return impersonable_user_qset
@@ -214,7 +213,7 @@ class ImpersonateForm(ModalStyledFormMixin, StyledForm):
         self.helper.add_input(Submit("submit", _("Impersonate")))
 
     def get_ajax_form_helper(self):
-        helper = self.get_form_helper()
+        helper = self.get_cloned_form_helper()
         self.helper.form_action = reverse("relate-impersonate")
 
         # Form media are manually added to page head
@@ -1088,8 +1087,8 @@ def user_profile(request):
         "form_description": _("User Profile"),
         "is_requesting_inst_id": is_requesting_inst_id(),
         "enable_profile_form_js": (
-            not is_inst_id_locked(request.user) and
-            getattr(settings, "RELATE_SHOW_INST_ID_FORM", True))
+            not is_inst_id_locked(request.user)
+            and getattr(settings, "RELATE_SHOW_INST_ID_FORM", True))
         })
 
 # }}}

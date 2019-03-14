@@ -372,7 +372,7 @@ class NbconvertRenderTest(NbconvertRenderTestMixin, TestCase):
 
         # code highlight functions (in terms of rendered ipynb notebook cells only)
         if six.PY3:
-            self.assertRegex(resp.context["body"], 'class="\w*\s*highlight[^\w]')
+            self.assertRegex(resp.context["body"], r'class="\w*\s*highlight[^\w]')
         self.assertContains(resp, " highlight hl-ipython3")
         self.assertContains(resp,
                             '<span class="nb">print</span>'
@@ -690,11 +690,11 @@ class GitTemplateLoaderTest(SingleCourseTestMixin, TestCase):
             with mock.patch(
                     "course.content.get_repo_blob_data_cached",
                     return_value=b"blahblah"):
-                        loader = content.GitTemplateLoader(
-                            repo, self.course.active_git_commit_sha.encode())
-                        _, __, uptodate = loader.get_source(environment=environment,
-                                                            template=template)
-                        self.assertFalse(uptodate())
+                loader = content.GitTemplateLoader(
+                    repo, self.course.active_git_commit_sha.encode())
+                _, __, uptodate = loader.get_source(environment=environment,
+                                                    template=template)
+                self.assertFalse(uptodate())
 
 
 class YamlBlockEscapingFileSystemLoaderTest(SingleCourseTestMixin, TestCase):
