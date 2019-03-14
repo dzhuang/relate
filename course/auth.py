@@ -689,7 +689,7 @@ def reset_password(request, field="email"):
 
                         from relate.utils import render_email_template
                         message = render_email_template(
-                            "course/sign-in-email.txt", {
+                            "course/reset-password-email.txt", {
                                 "user": user,
                                 "sign_in_uri": request.build_absolute_uri(
                                     reverse(
