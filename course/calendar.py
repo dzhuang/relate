@@ -51,7 +51,7 @@ from course.views import get_now_or_fake_time
 from course.constants import (
         participation_permission as pperm,
         )
-from course.models import Event
+from course.models import Event, Course
 from course.utils import course_view, render_course_page
 
 # {{{ for mypy
@@ -752,9 +752,10 @@ class CreateEventModalForm(ModalStyledFormMixin, StyledModelForm):
 
     class Meta:
         model = Event
-        fields = ['kind', 'ordinal', 'time',
+        fields = ['course', 'kind', 'ordinal', 'time',
                   'end_time', 'all_day', 'shown_in_calendar']
         widgets = {
+            "course": forms.HiddenInput(),
             "time": DateTimePicker(options={"format": "YYYY-MM-DD HH:mm"}),
             "end_time": DateTimePicker(options={"format": "YYYY-MM-DD HH:mm"}),
         }
@@ -762,6 +763,9 @@ class CreateEventModalForm(ModalStyledFormMixin, StyledModelForm):
     def __init__(self, course_identifier, *args, **kwargs):
         # type: (Text, *Any, **Any) -> None
         super(CreateEventModalForm, self).__init__(*args, **kwargs)
+        self.fields["course"].disabled = True
+        self.fields["course"].initial = Course.objects.get(
+            identifier=course_identifier)
         self.fields["shown_in_calendar"].help_text = (
             _("Shown in students' calendar"))
 
@@ -1117,9 +1121,10 @@ class UpdateEventForm(ModalStyledFormMixin, StyledModelForm):
 
     class Meta:
         model = Event
-        fields = ['kind', 'ordinal', 'time',
+        fields = ['course', 'kind', 'ordinal', 'time',
                   'end_time', 'all_day', 'shown_in_calendar']
         widgets = {
+            "course": forms.HiddenInput(),
             "time": DateTimePicker(options={"format": "YYYY-MM-DD HH:mm"}),
             "end_time": DateTimePicker(options={"format": "YYYY-MM-DD HH:mm"}),
         }
@@ -1127,6 +1132,9 @@ class UpdateEventForm(ModalStyledFormMixin, StyledModelForm):
     def __init__(self, course_identifier, event_id, *args, **kwargs):
         # type: (Text, int, *Any, **Any) -> None
         super(UpdateEventForm, self).__init__(*args, **kwargs)
+        self.fields["course"].disabled = True
+        self.fields["course"].initial = Course.objects.get(
+            identifier=course_identifier)
 
         self.course_identifier = course_identifier
         self.event_id = event_id
