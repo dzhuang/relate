@@ -67,7 +67,7 @@ class CalendarTestMixin(SingleCourseTestMixin, HackRepoMixin):
     def setUp(self):
         super(CalendarTestMixin, self).setUp()
         fake_get_now_or_fake_time = mock.patch(
-            "course.calendar.get_now_or_fake_time")
+            "course.views.get_now_or_fake_time")
         self.mock_get_now_or_fake_time = fake_get_now_or_fake_time.start()
         self.mock_get_now_or_fake_time.return_value = now()
         self.addCleanup(fake_get_now_or_fake_time.stop)
@@ -1555,6 +1555,7 @@ class CreateEventTest(CalendarTestMixin, TestCase):
 
     def get_default_post_data(self, time=None, end_time=None, **kwargs):
         data = {
+            'course_id': self.course.pk,
             'kind': "some_kind",
             'time': self.default_faked_now.strftime(DATE_TIME_PICKER_TIME_FORMAT),
             'shown_in_calendar': True,
@@ -1573,6 +1574,7 @@ class CreateEventTest(CalendarTestMixin, TestCase):
             data["end_time"] = end_time.strftime(DATE_TIME_PICKER_TIME_FORMAT)
 
         data.update(kwargs)
+        print(get_prefixed_form_data(calendar.CreateEventModalForm, data))
         return get_prefixed_form_data(calendar.CreateEventModalForm, data)
 
     def test_no_pperm(self):
@@ -1624,7 +1626,7 @@ class CreateEventTest(CalendarTestMixin, TestCase):
                          ["'%s' already exists." % str(event)])
 
     def test_post_form_field_error(self):
-        resp = self.post_create_event(data={})
+        resp = self.post_create_event(data=self.get_default_post_data())
         self.assertEqual(resp.status_code, 400)
 
         events_qs = Event.objects.all()
