@@ -1555,7 +1555,7 @@ class CreateEventTest(CalendarTestMixin, TestCase):
 
     def get_default_post_data(self, time=None, end_time=None, **kwargs):
         data = {
-            'course_id': self.course.pk,
+            'course': self.course.pk,
             'kind': "some_kind",
             'time': self.default_faked_now.strftime(DATE_TIME_PICKER_TIME_FORMAT),
             'shown_in_calendar': True,
@@ -1574,7 +1574,7 @@ class CreateEventTest(CalendarTestMixin, TestCase):
             data["end_time"] = end_time.strftime(DATE_TIME_PICKER_TIME_FORMAT)
 
         data.update(kwargs)
-        print(get_prefixed_form_data(calendar.CreateEventModalForm, data))
+        data = dict((k, v) for (k, v) in data.items() if v is not None)
         return get_prefixed_form_data(calendar.CreateEventModalForm, data)
 
     def test_no_pperm(self):
@@ -1623,10 +1623,12 @@ class CreateEventTest(CalendarTestMixin, TestCase):
 
         json_response = json.loads(resp.content.decode())
         self.assertEqual(json_response["errors"]['__all__'],
-                         ["'%s' already exists." % str(event)])
+                         ["'%s' already exists." % str(event),
+                          "Event with this Course, Kind of event and Ordinal "
+                          "of event already exists."])
 
     def test_post_form_field_error(self):
-        resp = self.post_create_event(data=self.get_default_post_data())
+        resp = self.post_create_event(data=self.get_default_post_data(kind=None))
         self.assertEqual(resp.status_code, 400)
 
         events_qs = Event.objects.all()
@@ -2311,6 +2313,7 @@ class UpdateEventTest(CalendarTestMixin, TestCase):
         #Note: to remove ordinal, explicitly set ordinal=None
 
         data = {
+            'course': self.course.id,
             'kind': event.kind,
             'shown_in_calendar': event.shown_in_calendar,
             'all_day': event.all_day,
@@ -2346,7 +2349,7 @@ class UpdateEventTest(CalendarTestMixin, TestCase):
         data = get_prefixed_form_data(calendar.UpdateEventForm, data)
 
         if operation:
-            data[operation] = ''
+            data[operation] = ""
 
         return data
 

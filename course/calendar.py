@@ -768,9 +768,9 @@ class CreateEventModalForm(ModalStyledFormMixin, StyledModelForm):
     def __init__(self, course_identifier, *args, **kwargs):
         # type: (Text, *Any, **Any) -> None
         super(CreateEventModalForm, self).__init__(*args, **kwargs)
-        self.fields["course"].disabled = True
         self.fields["course"].initial = Course.objects.get(
             identifier=course_identifier)
+        self.fields["course"].widget.attrs['readonly'] = True
         self.fields["shown_in_calendar"].help_text = (
             _("Shown in students' calendar"))
 
@@ -1127,19 +1127,20 @@ class UpdateEventForm(ModalStyledFormMixin, StyledModelForm):
     class Meta:
         model = Event
         fields = ['course', 'kind', 'ordinal', 'time',
-                  'end_time', 'all_day', 'shown_in_calendar']
+                  'end_time', 'all_day', 'shown_in_calendar', 'id']
         widgets = {
             "course": forms.HiddenInput(),
             "time": DateTimePicker(options={"format": "YYYY-MM-DD HH:mm"}),
             "end_time": DateTimePicker(options={"format": "YYYY-MM-DD HH:mm"}),
+
         }
 
     def __init__(self, course_identifier, event_id, *args, **kwargs):
         # type: (Text, int, *Any, **Any) -> None
         super(UpdateEventForm, self).__init__(*args, **kwargs)
-        self.fields["course"].disabled = True
         self.fields["course"].initial = Course.objects.get(
             identifier=course_identifier)
+        self.fields["course"].widget.attrs['readonly'] = True
 
         self.course_identifier = course_identifier
         self.event_id = event_id
@@ -1308,7 +1309,15 @@ def update_event(pctx, event_id):
 
     event_id = int(event_id)
     instance_to_update = get_object_or_404(Event, course=pctx.course, id=event_id)
-    original_str = str(instance_to_update)
+
+    original_repr = str(instance_to_update)
+
+    original_time = instance_to_update.time
+    original_end_time = instance_to_update.end_time
+    original_kind = instance_to_update.kind
+    original_ordinal = instance_to_update.ordinal
+    original_shown_in_calendar = instance_to_update.shown_in_calendar
+
     series_time_desc = (
         get_recurring_event_series_time_desc_from_instance(instance_to_update))
 
@@ -1316,44 +1325,38 @@ def update_event(pctx, event_id):
         get_local_time_weekday_hour_minute(instance_to_update.time))
 
     form = UpdateEventForm(
-        pctx.course.identifier, event_id, request.POST, request.FILES)
+        pctx.course.identifier, event_id, request.POST, request.FILES,
+        instance=instance_to_update)
 
     if form.is_valid():
         try:
-            temp_instance = form.save(commit=False)
-            if (temp_instance.time == instance_to_update.time
-                    and temp_instance.end_time == instance_to_update.end_time
-                    and temp_instance.kind == instance_to_update.kind
-                    and temp_instance.ordinal == instance_to_update.ordinal
-                    and temp_instance.all_day == instance_to_update.all_day
-                    and temp_instance.shown_in_calendar
-                    == instance_to_update.shown_in_calendar):
+            form_instance = form.save(commit=False)
+            if not form.has_changed():
                 return JsonResponse(
                     {"message": _("No change was made."),
                      "message_level": messages.DEFAULT_TAGS[messages.WARNING]
                      })
 
-            temp_instance.course = pctx.course
-            new_event_timedelta = temp_instance.time - instance_to_update.time
+            new_event_timedelta = form_instance.time - original_time
             new_duration = None
-            if temp_instance.end_time is not None:
-                new_duration = temp_instance.end_time - temp_instance.time
+            if form_instance.end_time is not None:
+                new_duration = form_instance.end_time - form_instance.time
 
             events_of_same_kind_and_weekday_time = (
                 Event.objects.filter(
                     course__identifier=pctx.course.identifier,
-                    kind=instance_to_update.kind,
+                    kind=original_kind,
                     time__week_day=week_day,
                     time__hour=hour,
                     time__minute=minute,
-                    end_time__isnull=instance_to_update.end_time is None,
-                    shown_in_calendar=instance_to_update.shown_in_calendar
+                    end_time__isnull=original_end_time is None,
+                    shown_in_calendar=original_shown_in_calendar
                 ))
 
-            if instance_to_update.end_time is not None:
+            if original_end_time is not None:
                 end_local_time, end_week_day, end_hour, end_minute = (
                     get_local_time_weekday_hour_minute(
-                        instance_to_update.end_time))
+                        original_end_time))
                 events_of_same_kind_and_weekday_time = (
                     events_of_same_kind_and_weekday_time
                     .filter(end_time__isnull=False)
@@ -1362,50 +1365,41 @@ def update_event(pctx, event_id):
                             end_time__minute=end_minute))
 
             if "update" in request.POST:
-                instance_to_update.time = temp_instance.time
-                instance_to_update.end_time = temp_instance.end_time
-                instance_to_update.kind = temp_instance.kind
-                instance_to_update.ordinal = temp_instance.ordinal
-                instance_to_update.all_day = temp_instance.all_day
-                instance_to_update.shown_in_calendar = (
-                    temp_instance.shown_in_calendar)
+                form_instance.save()
 
-                assert instance_to_update.course == pctx.course
-                instance_to_update.save()
-
-                if original_str == str(temp_instance):
-                    message = _("Event '%s' updated.") % str(instance_to_update)
+                if original_repr == str(form_instance):
+                    message = _("Event '%s' updated.") % original_repr
                 else:
                     message = string_concat(
                         _("Event updated"),
                         ": '%(original_event)s' -> '%(new_event)s'"
-                        % {"original_event": original_str,
-                           "new_event": str(temp_instance)})
+                        % {"original_event": original_repr,
+                           "new_event": str(form_instance)})
             else:
-                if original_str == str(temp_instance):
+                if original_repr == str(form_instance):
                     changes = "."
                 else:
                     changes = (
                             ": '%s' -> '%s'."
-                            % (instance_to_update.kind, temp_instance.kind))
+                            % (original_kind, form_instance.kind))
 
                 if "update_all" in request.POST:
                     events_to_update = (
                         events_of_same_kind_and_weekday_time.filter(
-                            kind=instance_to_update.kind))
+                            kind=original_kind))
                     message = string_concat(
                         _("All '%(kind)s' events updated"
-                          % {"kind": instance_to_update.kind}),
+                          % {"kind": original_kind}),
                         changes)
 
                 elif "update_this_and_following" in request.POST:
                     events_to_update = events_of_same_kind_and_weekday_time.filter(
-                        kind=instance_to_update.kind,
-                        time__gte=instance_to_update.time)
+                        kind=original_kind,
+                        time__gte=original_time)
                     message = string_concat(
                         _("%(number)d '%(kind)s' events updated"
                           % {"number": events_to_update.count(),
-                             "kind": instance_to_update.kind}),
+                             "kind": original_kind}),
                         changes)
 
                 elif "update_series" in request.POST:
@@ -1413,40 +1407,40 @@ def update_event(pctx, event_id):
                     message = string_concat(
                         _("All '%(kind)s' events (%(time)s) updated"
                           % {"time": series_time_desc,
-                              "kind": instance_to_update.kind}),
+                              "kind": original_kind}),
                         changes)
 
                 elif "update_this_and_following_in_series" in request.POST:
                     events_to_update = events_of_same_kind_and_weekday_time.filter(
-                        time__gte=instance_to_update.time)
+                        time__gte=original_time)
                     message = string_concat(
                         _("%(number)d '%(kind)s' events "
                           "(%(time)s) updated"
                           % {"number": events_to_update.count(),
-                             "kind": instance_to_update.kind,
+                             "kind": original_kind,
                              "time": series_time_desc}),
                         changes)
                 else:
                     raise SuspiciousOperation(_("unknown operation"))
 
-                if temp_instance.ordinal is None and events_to_update.count() > 1:
+                if form_instance.ordinal is None and events_to_update.count() > 1:
                     raise RuntimeError(
                         _("May not do bulk update when ordinal is None"))
 
                 new_event_ordinal_delta = (
-                        temp_instance.ordinal - instance_to_update.ordinal)
+                        form_instance.ordinal - original_ordinal)
 
                 for event in events_to_update:
                     assert event.course == pctx.course
-                    event.kind = temp_instance.kind
+                    event.kind = form_instance.kind
 
                     # This might result in IntegrityError
                     event.ordinal += new_event_ordinal_delta
 
                     event.time = (
                             event.time + new_event_timedelta)
-                    event.all_day = temp_instance.all_day
-                    event.shown_in_calendar = temp_instance.shown_in_calendar
+                    event.all_day = form_instance.all_day
+                    event.shown_in_calendar = form_instance.shown_in_calendar
                     if new_duration is not None:
                         event.end_time = event.time + new_duration
                     else:

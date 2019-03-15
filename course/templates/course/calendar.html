@@ -358,6 +358,7 @@
           success: function (data, textStatus, jqXHR) {
             refetchEvents();
             self.closest('.modal').modal("hide");
+            $("#cover").removeClass('spinner');
             var messageLevel = data.message_level;
             if (!messageLevel)
               messageLevel = "success";
@@ -377,6 +378,7 @@
                 applyFormFieldError(index, value, form_profix);
               }
               $("input", form).removeAttr("disabled");
+              $("#cover").removeClass('spinner');
             });
           }
         })
