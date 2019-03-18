@@ -724,7 +724,7 @@ class FlowPageVisitGradeAdmin(admin.ModelAdmin):
     get_flow_id.admin_order_field = "visit__flow_session__flow_id"  # type: ignore
 
     def get_page_id(self, obj):
-        if obj.visit.page_data.ordinal is None:
+        if obj.visit.page_data.page_ordinal is None:
             return string_concat("%s/%s (", _("not in use"), ")") % (
                     obj.visit.page_data.group_id,
                     obj.visit.page_data.page_id)
