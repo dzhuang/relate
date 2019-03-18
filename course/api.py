@@ -119,6 +119,21 @@ def get_flow_session_content(api_ctx, course_identifier):
         raise PermissionDenied(
                 "session's course does not match auth context")
 
+    pages = get_flow_session_pages(api_ctx, flow_session)
+
+    result = {
+        "session": flow_session_to_json(flow_session),
+        "pages": pages,
+        }
+
+    return http.JsonResponse(result, safe=False)
+
+
+def get_flow_session_pages(api_ctx, flow_session,
+                           show_answer_data=True,
+                           generate_content=True, generate_norm_answer=True,
+                           owner_visit_only=False, show_impersonated=True):
+
     from course.content import get_course_repo
     from course.flow import adjust_flow_session_page_data, assemble_answer_visits
 
@@ -127,7 +142,7 @@ def get_flow_session_content(api_ctx, course_identifier):
         fctx = FlowContext(repo, api_ctx.course, flow_session.flow_id)
 
         adjust_flow_session_page_data(repo, flow_session, api_ctx.course.identifier,
-                fctx.flow_desc)
+                                      fctx.flow_desc)
 
         from course.flow import get_all_page_data
         all_page_data = get_all_page_data(flow_session)
@@ -140,50 +155,63 @@ def get_flow_session_content(api_ctx, course_identifier):
             assert i == page_data.page_ordinal
 
             page_data_json = dict(
-                    ordinal=i,
-                    page_type=page_data.page_type,
-                    group_id=page_data.group_id,
-                    page_id=page_data.page_id,
-                    page_data=page_data.data,
-                    title=page_data.title,
-                    bookmarked=page_data.bookmarked,
-                    )
+                ordinal=i,
+                page_type=page_data.page_type,
+                group_id=page_data.group_id,
+                page_id=page_data.page_id,
+                page_data=page_data.data,
+                title=page_data.title,
+                bookmarked=page_data.bookmarked,
+            )
             answer_json = None
             grade_json = None
 
             visit = answer_visits[i]
             if visit is not None:
-                from course.page.base import PageContext
-                pctx = PageContext(api_ctx.course, repo, fctx.course_commit_sha,
-                        flow_session)
-                norm_bytes_answer_tup = page.normalized_bytes_answer(
-                        pctx, page_data.data, visit.answer)
-
-                # norm_answer needs to be JSON-encodable
-                norm_answer = None  # type: Any
-
-                if norm_bytes_answer_tup is not None:
-                    answer_file_ext, norm_bytes_answer = norm_bytes_answer_tup
-
-                    if answer_file_ext in [".txt", ".py"]:
-                        norm_answer = norm_bytes_answer.decode("utf-8")
-                    elif answer_file_ext == ".json":
-                        import json
-                        norm_answer = json.loads(norm_bytes_answer)
-                    else:
-                        from base64 import b64encode
-                        norm_answer = [answer_file_ext, b64encode(norm_bytes_answer)]
-
                 answer_json = dict(
                     visit_time=visit.visit_time.isoformat(),
                     remote_address=repr(visit.remote_address),
-                    user=visit.user.username if visit.user is not None else None,
-                    impersonated_by=(visit.impersonated_by.username
-                        if visit.impersonated_by is not None else None),
                     is_synthetic_visit=visit.is_synthetic,
-                    answer_data=visit.answer,
-                    answer=norm_answer,
-                    )
+                )
+                if show_answer_data:
+                    answer_json["answer_data"] = visit.answer
+
+                if owner_visit_only:
+                    if visit.user != flow_session.participation.user:
+                        continue
+                else:
+                    answer_json["user"] = visit.user.username if visit.user is not None else None
+
+                if not show_impersonated:
+                    if visit.impersonated_by is not None:
+                        continue
+                else:
+                    answer_json["impersonated_by"] = (visit.impersonated_by.username
+                                     if visit.impersonated_by is not None else None)
+
+                if generate_norm_answer:
+                    from course.page.base import PageContext
+                    pctx = PageContext(api_ctx.course, repo, fctx.course_commit_sha,
+                                       flow_session)
+                    norm_bytes_answer_tup = page.normalized_bytes_answer(
+                        pctx, page_data.data, visit.answer)
+
+                    # norm_answer needs to be JSON-encodable
+                    norm_answer = None  # type: Any
+
+                    if norm_bytes_answer_tup is not None:
+                        answer_file_ext, norm_bytes_answer = norm_bytes_answer_tup
+
+                        if answer_file_ext in [".txt", ".py"]:
+                            norm_answer = norm_bytes_answer.decode("utf-8")
+                        elif answer_file_ext == ".json":
+                            import json
+                            norm_answer = json.loads(norm_bytes_answer)
+                        else:
+                            from base64 import b64encode
+                            norm_answer = [answer_file_ext, b64encode(norm_bytes_answer)]
+
+                    answer_json["answer"] = norm_answer
 
                 grade = visit.get_most_recent_grade()
                 if grade is not None:
@@ -199,14 +227,8 @@ def get_flow_session_content(api_ctx, course_identifier):
                 "page": page_data_json,
                 "answer": answer_json,
                 "grade": grade_json,
-                })
-
-    result = {
-        "session": flow_session_to_json(flow_session),
-        "pages": pages,
-        }
-
-    return http.JsonResponse(result, safe=False)
+            })
+    return pages
 
 
 @with_course_api_auth
@@ -217,11 +239,27 @@ def get_flow_page_visits(api_ctx, course_identifier):
         raise PermissionDenied("token role does not have required permissions")
 
     try:
-        session_id_str = api_ctx.request.GET["flow_session_id"]
+        flow_id = api_ctx.request.GET["flow_id"]
     except KeyError:
         raise APIError("must specify flow_id GET parameter")
 
-    session_id = int(session_id_str)
+    filter_kwargs = {"course": api_ctx.course,
+                     "flow_id": flow_id}
+    include_staff_visits = api_ctx.request.GET.get("include_staff_visits", False)
+    if not include_staff_visits:
+        filter_kwargs["participation__roles__permissions__permission"] = (
+            pperm.included_in_grade_statistics)
+
+    flow_sessions = FlowSession.objects.filter(**filter_kwargs)
+
+    if not flow_sessions.count():
+        raise PermissionDenied(
+                "flow_id's course does not match auth context")
+
+    from course.models import FlowPageVisit
+
+    all_visits = FlowPageVisit.objects.filter(
+        flow_session__in=flow_sessions, impersonated_by__isnull=True)
 
     flow_session = get_object_or_404(FlowSession, id=session_id)
 
