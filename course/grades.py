@@ -1812,6 +1812,254 @@ class DownloadAllSubmissionsForm(StyledForm):
                 Submit("download", _("Download")))
 
 
+
+class DownloadFlowSubmissionsForm(StyledForm):
+    def __init__(self, flow_ids, *args, **kwargs):
+        super(DownloadFlowSubmissionsForm, self).__init__(*args, **kwargs)
+
+        self.fields["flow_ids"] = forms.MultipleChoiceField(
+                choices=tuple(
+                    (fid, fid)
+                    for fid in flow_ids),
+                label=_("Flow ID"))
+        self.fields["which_attempt"] = forms.ChoiceField(
+                choices=(
+                    ("first", _("Least recent attempt")),
+                    ("last", _("Most recent attempt")),
+                    ("all", _("All attempts")),
+                    ),
+                label=_("Attempts to include."),
+                help_text=_(
+                    "Every submission to the page counts as an attempt."),
+                initial="last")
+        self.fields["non_in_progress_only"] = forms.BooleanField(
+                required=False,
+                initial=True,
+                help_text=_("Only download submissions from non-in-progress "
+                    "sessions"),
+                label=_("Non-in-progress only"))
+        self.fields["include_feedback"] = forms.BooleanField(
+                required=False,
+                initial=False,
+                help_text=_("Include provided feedback as text file in zip"),
+                label=_("Include feedback"))
+        self.fields["extra_file"] = forms.FileField(
+                label=_("Additional File"),
+                help_text=_(
+                    "If given, the uploaded file will be included "
+                    "in the zip archive. "
+                    "If the produced archive is to be used for plagiarism "
+                    "detection, then this may be used to include the reference "
+                    "solution."),
+                required=False)
+
+        self.fields["include_submission"] = forms.BooleanField(
+                label=_("Include submission report"),
+                initial=False,
+                required=False)
+
+        self.helper.add_input(
+                Submit("download", _("Download")))
+
+
+@course_view
+def download_flow_submissions(pctx):
+    if not pctx.has_permission(pperm.batch_download_submission):
+        raise PermissionDenied(_("may not batch-download submissions"))
+
+    flow_ids = list((GradingOpportunity.objects
+            .filter(
+                course=pctx.course,
+                )
+            .order_by("flow_id").values_list("flow_id", flat=True)))
+
+    from course.content import get_flow_desc
+    from course.page.base import AnswerFeedback
+    from six import BytesIO
+    from zipfile import ZipFile
+
+    request = pctx.request
+    if request.method == "POST":
+        form = DownloadFlowSubmissionsForm(flow_ids, request.POST)
+
+        if form.is_valid():
+            which_attempt = form.cleaned_data["which_attempt"]
+            dl_flow_ids = form.cleaned_data["flow_ids"]
+
+            full_bio = BytesIO()
+            with ZipFile(full_bio, "w") as full_zip:
+                for flow_id in dl_flow_ids:
+                    flow_bio = BytesIO()
+                    with ZipFile(flow_bio, "w") as flow_zip:
+
+                        flow_desc = get_flow_desc(pctx.repo, pctx.course, flow_id,
+                                                  pctx.course_commit_sha)
+
+                        from course.utils import PageInstanceCache
+                        page_cache = PageInstanceCache(pctx.repo, pctx.course, flow_id)
+
+                        for group_desc in flow_desc.groups:
+                            for page_desc in group_desc.pages:
+
+                                answer_expected = False
+
+                                page = page_cache.get_page(group_desc.id, page_desc.id,
+                                        pctx.course_commit_sha)
+
+                                answer_expected = answer_expected or page.expects_answer()
+
+                                if not answer_expected:
+                                    continue
+
+                                visits = (FlowPageVisit.objects
+                                        .filter(
+                                            flow_session__course=pctx.course,
+                                            flow_session__flow_id=flow_id,
+                                            page_data__group_id=group_desc.id,
+                                            page_data__page_id=page_desc.id,
+                                            is_submitted_answer=True,
+                                            flow_session__participation__roles__permissions__permission=(
+                                                pperm.included_in_grade_statistics
+                                            ))
+                                        .select_related("flow_session")
+                                        .select_related("flow_session__participation__user")
+                                        .select_related("page_data")
+
+                                        # We overwrite earlier submissions with later ones
+                                        # in a dictionary below.
+                                        .order_by("visit_time"))
+
+                                if form.cleaned_data["non_in_progress_only"]:
+                                    visits = visits.filter(flow_session__in_progress=False)
+
+                                submissions = {}
+
+                                submission_report_writer = None
+                                has_submission_report = False
+
+                                if form.cleaned_data["include_submission"]:
+                                    from six import StringIO
+                                    csvfile = StringIO()
+
+                                    if six.PY2:
+                                        import unicodecsv as csv
+                                    else:
+                                        import csv
+
+                                    fieldnames = ['full_name', 'institutional_id', 'submission']
+
+                                    submission_report_writer = csv.writer(csvfile)
+                                    submission_report_writer.writerow(fieldnames)
+
+                                for visit in visits:
+                                    page = page_cache.get_page(group_desc.id, page_desc.id,
+                                            pctx.course_commit_sha)
+
+                                    from course.page import PageContext
+                                    grading_page_context = PageContext(
+                                            course=pctx.course,
+                                            repo=pctx.repo,
+                                            commit_sha=pctx.course_commit_sha,
+                                            flow_session=visit.flow_session,
+                                            )
+
+                                    bytes_answer = page.normalized_bytes_answer(
+                                            grading_page_context, visit.page_data.data,
+                                            visit.answer)
+
+                                    username = visit.flow_session.participation.user.get_full_name()
+                                    if not username:
+                                        username = visit.flow_session.participation.user.username
+                                    institutional_id = (
+                                        visit.flow_session.participation.user.institutional_id)
+                                    if not institutional_id:
+                                        institutional_id = ""
+
+                                    if which_attempt in ["first", "last"]:
+                                        key = (username, institutional_id)
+                                    elif which_attempt == "all":
+                                        key = (username, institutional_id,
+                                               str(visit.flow_session.id))
+                                    else:
+                                        raise NotImplementedError()
+
+                                    if bytes_answer is not None:
+                                        if (which_attempt == "first"
+                                                and key in submissions):
+                                            # Already there, disregard further ones
+                                            continue
+
+                                        submissions[key] = (
+                                                bytes_answer, list(visit.grades.all()))
+
+                                        if submission_report_writer is not None:
+                                            submission_report_writer.writerow([username, institutional_id, "True"])
+                                            has_submission_report = True
+
+                                bio = BytesIO()
+                                with ZipFile(bio, "w") as subm_zip:
+                                    for key, ((extension, bytes_answer), visit_grades) in \
+                                            six.iteritems(submissions):
+                                        basename = "-".join(key)
+                                        subm_zip.writestr(
+                                                basename + extension,
+                                                bytes_answer)
+
+                                        if form.cleaned_data["include_feedback"]:
+                                            feedback_lines = []
+
+                                            feedback_lines.append(
+                                                "scores: %s" % (
+                                                    ", ".join(
+                                                        str(g.correctness)
+                                                        for g in visit_grades)))
+
+                                            for i, grade in enumerate(visit_grades):
+                                                feedback_lines.append(75*"-")
+                                                feedback_lines.append(
+                                                    "grade %i: score: %s" % (i+1, grade.correctness))
+                                                afb = AnswerFeedback.from_json(grade.feedback, None)
+                                                if afb is not None:
+                                                    feedback_lines.append(afb.feedback)
+
+                                            subm_zip.writestr(
+                                                    basename + "-feedback.txt",
+                                                    "\n".join(feedback_lines))
+
+                                    if has_submission_report:
+                                        subm_zip.writestr(
+                                            "submit_summary.csv", csvfile.getvalue().encode("utf-8"))
+
+                                    extra_file = request.FILES.get("extra_file")
+                                    if extra_file is not None:
+                                        subm_zip.writestr(extra_file.name, extra_file.read())
+
+                                flow_zip.writestr(
+                                    "%s_%s_%s.zip" % (flow_id, group_desc.id, page_desc.id),
+                                    bio.getvalue())
+
+                    full_zip.writestr(
+                        "%s.zip" % (flow_id, ),
+                        flow_bio.getvalue())
+
+            response = http.HttpResponse(
+                    full_bio.getvalue(),
+                    content_type="application/zip")
+            response['Content-Disposition'] = (
+                    'attachment; filename="submissions_%s_%s.zip"'
+                    % (pctx.course.identifier,
+                        now().date().strftime("%Y-%m-%d")))
+            return response
+
+    else:
+        form = DownloadFlowSubmissionsForm(flow_ids)
+
+    return render_course_page(pctx, "course/generic-course-form.html", {
+        "form": form,
+        "form_description": _("Download Multiple Submissions in Zip file")
+        })
+
+
 @course_view
 def download_all_submissions(pctx, flow_id):
     if not pctx.has_permission(pperm.batch_download_submission):

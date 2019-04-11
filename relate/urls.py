@@ -274,6 +274,13 @@ urlpatterns = [
 
     url(r"^course"
         "/" + COURSE_ID_REGEX
+        + "/grading/download-flow-submissions"
+        + "/$",
+        course.grades.download_flow_submissions,
+        name="relate-download_flow_submissions"),
+
+    url(r"^course"
+        "/" + COURSE_ID_REGEX
         + "/edit-grading-opportunity"
          "/(?P<opportunity_id>[-0-9]+)"
         "/$",
