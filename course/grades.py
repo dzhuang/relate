@@ -1964,9 +1964,12 @@ def download_flow_submissions(pctx):
                                             flow_session=visit.flow_session,
                                             )
 
-                                    bytes_answer = page.normalized_bytes_answer(
-                                            grading_page_context, visit.page_data.data,
-                                            visit.answer)
+                                    try:
+                                        bytes_answer = page.normalized_bytes_answer(
+                                                grading_page_context, visit.page_data.data,
+                                                visit.answer)
+                                    except Exception:
+                                        bytes_answer = None
 
                                     username = visit.flow_session.participation.user.get_full_name()
                                     if not username:
@@ -1993,9 +1996,9 @@ def download_flow_submissions(pctx):
                                         submissions[key] = (
                                                 bytes_answer, list(visit.grades.all()))
 
-                                        if submission_report_writer is not None:
-                                            submission_report_writer.writerow([username, institutional_id, "True"])
-                                            has_submission_report = True
+                                    if submission_report_writer is not None:
+                                        submission_report_writer.writerow([username, institutional_id, "True"])
+                                        has_submission_report = True
 
                                 bio = BytesIO()
                                 with ZipFile(bio, "w") as subm_zip:
