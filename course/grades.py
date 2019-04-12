@@ -1821,6 +1821,7 @@ class DownloadFlowSubmissionsForm(StyledForm):
                 choices=tuple(
                     (fid, fid)
                     for fid in flow_ids),
+                widget=forms.CheckboxSelectMultiple,
                 label=_("Flow ID"))
         self.fields["which_attempt"] = forms.ChoiceField(
                 choices=(
