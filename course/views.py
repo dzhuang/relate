@@ -444,17 +444,20 @@ class FakeTimeForm(ModalStyledFormMixin, StyledForm):
         # Form media (FullCalendar and mement js) are manually added to page head
         self.helper.include_media = False
 
+        buttons = [Submit("set", _("Set"),
+                          css_class="btn btn-md btn-success")]
+        if self.data:
+            buttons.append(
+                   Submit("unset", _("Unset"),
+                          css_class="btn btn-md btn-success"))
+
+        buttons.append(Button("cancel", _("Cancel"),
+                              css_class="btn btn-md btn-default",
+                              data_dismiss="modal"))
+
         helper.layout = Layout(
             Div(*self.fields, css_class="modal-body"),
-            ButtonHolder(
-                Submit("set", _("Set"),
-                       css_class="btn btn-md btn-success"),
-                Submit("unset", _("Unset"),
-                       css_class="btn btn-md btn-success"),
-                Button("cancel", _("Cancel"),
-                       css_class="btn btn-md btn-default",
-                       data_dismiss="modal"),
-                css_class="modal-footer"))
+            ButtonHolder(*buttons, css_class="modal-footer"))
         return helper
 
 
