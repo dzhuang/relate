@@ -2060,7 +2060,7 @@ def download_flow_submissions(pctx):
 
     return render_course_page(pctx, "course/generic-course-form.html", {
         "form": form,
-        "form_description": _("Download Multiple Submissions in Zip file")
+        "form_description": _("Download Multiple Flow Submissions in Zip file")
         })
 
 

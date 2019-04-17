@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-03-14 11:36+0800\n"
+"POT-Creation-Date: 2019-04-17 12:03+0800\n"
 "Last-Translator:  Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language-Team: Dong Zhuang <dzhuang.scut@gmail.com>\n"
 "Language: \n"
@@ -1359,11 +1359,11 @@ msgstr ""
 "<tt>{{ tkt.code }}</tt>, <tt>{{ tkt.exam.description }}</tt>, 以及"
 "<tt>{{ checkin_uri }}</tt> 作为占位符. 请参考以上的例子."
 
-msgid "Ticket Format"
-msgstr "ticket格式"
-
 msgid "Revoke prior exam tickets"
 msgstr "撤回之前的测验ticket"
+
+msgid "Ticket Format"
+msgstr "ticket格式"
 
 msgid "Issue tickets"
 msgstr "发布ticket"
@@ -2021,8 +2021,14 @@ msgid ""
 "used to include the reference solution."
 msgstr ""
 
+msgid "Include submission report"
+msgstr "包含提交报告"
+
 msgid "may not batch-download submissions"
-msgstr "下载批量下载提交的内容"
+msgstr "不允许下载批量下载提交的内容"
+
+msgid "Download Multiple Flow Submissions in Zip file"
+msgstr "以Zip文件下载多个flow的提交"
 
 msgid "ALL"
 msgstr "所有"
@@ -5736,6 +5742,9 @@ msgstr "课程统计"
 
 msgid "Create Course Statistics"
 msgstr "创建课程统计"
+
+msgid "Download flow submissions"
+msgstr "下载flow的提交"
 
 msgid "Batch adjust flow page data"
 msgstr "批量调整flow page的数据"

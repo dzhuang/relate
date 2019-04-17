@@ -1297,6 +1297,33 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         # }}}
 
+    def normalized_bytes_answer(
+            self,
+            page_context,  # type: PageContext
+            page_data,  # type: Any
+            answer_data,  # type: Any
+            ):
+        if answer_data is None:
+            return None
+
+        self.update_page_desc(page_context, page_data)
+        question = self.analytic_view_body(page_context, page_data)
+        extension, bytes_answer = (
+            super(LatexRandomQuestionBase, self). normalized_bytes_answer(
+                page_context, page_data, answer_data))
+
+        from six import BytesIO
+        from zipfile import ZipFile
+        bio = BytesIO()
+        with ZipFile(bio, "w") as question_answer_zip:
+            question_answer_zip.writestr(
+                "question.html", question)
+            question_answer_zip.writestr(
+                "answers" + extension,
+                bytes_answer)
+
+        return (".zip", bio.getvalue())
+
 
 class LatexRandomQuestion(LatexRandomQuestionBase):
     pass
