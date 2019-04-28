@@ -553,7 +553,15 @@ def expand_yaml_macros(repo, commit_sha, yaml_str):
 
     jinja_str = process_yaml_for_expansion(yaml_str)
     template = jinja_env.from_string(jinja_str)
-    yaml_str = template.render()
+
+    kwargs = dict()
+    settings_jinja_macro = getattr(settings, "JINJA2_MACRO", None)
+    if settings_jinja_macro:
+        from django.utils.module_loading import import_string
+        for key, value in settings_jinja_macro.items():
+            kwargs[key] = import_string(value)
+
+    yaml_str = template.render(**kwargs)
 
     return yaml_str
 
