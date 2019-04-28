@@ -65,8 +65,8 @@ class MultipleChoiceAnswerForm(StyledForm):
         self.fields["choice"].label = _("Select all that apply:")
 
 
-def markup_to_html_plain(page_context, s):
-    s = markup_to_html(page_context, s)
+def markup_to_html_plain(page_context, s, use_codehilite=False):
+    s = markup_to_html(page_context, s, use_codehilite=use_codehilite)
     if s.startswith("<p>") and s.endswith("</p>"):
         s = s[3:-4]
     return s
@@ -158,8 +158,8 @@ class ChoiceInfo(object):
 
 class ChoiceQuestionBase(PageBaseWithTitle, PageBaseWithValue):
     @classmethod
-    def process_choice_string(cls, page_context, s):
-        s = markup_to_html_plain(page_context, s)
+    def process_choice_string(cls, page_context, s, use_codehilite=False):
+        s = markup_to_html_plain(page_context, s, use_codehilite=use_codehilite)
         # allow HTML in option
         s = mark_safe(s)
 
@@ -389,7 +389,9 @@ class ChoiceQuestion(ChoiceQuestionBase):
         result = (string_concat(_("A correct answer is"), ": '%s'.")
                 % self.process_choice_string(
                     page_context,
-                    self.choices[corr_idx].text))
+                    self.choices[corr_idx].text,
+                    use_codehilite=True
+                ))
 
         if hasattr(self.page_desc, "answer_explanation"):
             result += markup_to_html(page_context, self.page_desc.answer_explanation)

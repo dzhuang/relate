@@ -124,6 +124,7 @@ def markup_to_html(
         text,  # type: Text
         use_jinja=True,  # type: bool
         reverse_func=None,  # type: Callable
+        use_codehilite=True,
         ):
     # type: (...) -> Text
     from course.content import markup_to_html as mth
@@ -134,7 +135,8 @@ def markup_to_html(
             page_context.commit_sha,
             text,
             use_jinja=use_jinja,
-            reverse_func=reverse_func)
+            reverse_func=reverse_func,
+            use_codehilite=use_codehilite)
 
 
 # {{{ answer feedback type

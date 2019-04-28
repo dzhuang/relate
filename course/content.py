@@ -971,12 +971,14 @@ def markup_to_html(
         validate_only=False,  # type: bool
         use_jinja=True,  # type: bool
         jinja_env={},  # type: Dict
+        use_codehilite=True,
         ):
     # type: (...) -> Text
 
     disable_codehilite = bool(
         getattr(settings,
-                "RELATE_DISABLE_CODEHILITE_MARKDOWN_EXTENSION", True))
+                "RELATE_DISABLE_CODEHILITE_MARKDOWN_EXTENSION", True)
+    ) or not use_codehilite
 
     cache_str = ""
     cache_func = getattr(settings, "CACHE_FUNC", "")
