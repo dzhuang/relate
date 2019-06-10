@@ -1632,6 +1632,7 @@ def csv_to_grade_changes(
             gchange.points = None
         else:
             gchange.points = Decimal(fix_decimal(points_str))
+            gchange.credit_percentage = 100
 
         gchange.max_points = max_points
         if feedback_column is not None:
