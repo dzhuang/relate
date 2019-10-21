@@ -719,7 +719,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
     def initialize_page_data(self, page_context):
         # type: (PageContext) -> Dict
-
         commit_sha = page_context.commit_sha.decode()
         warm_up_by_sandbox = False
         if page_context.in_sandbox:
@@ -1405,3 +1404,7 @@ class LatexRandomChoiceQuestion(LatexRandomQuestion, ChoiceQuestion):
         page_data.update(m_page_data)
         page_data.update(l_page_data)
         return page_data
+
+
+class RandomInlineMultiQuestionFollowedImageUploadQuestion(ImageUploadQuestion):
+    pass
