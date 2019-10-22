@@ -1406,5 +1406,30 @@ class LatexRandomChoiceQuestion(LatexRandomQuestion, ChoiceQuestion):
         return page_data
 
 
-class RandomInlineMultiQuestionFollowedImageUploadQuestion(ImageUploadQuestion):
+class RandomQuestionFollowedImageUploadQuestion(LatexRandomQuestion, ImageUploadQuestion):
+
+    def __init__(self, vctx, location, page_desc):
+        ImageUploadQuestion.__init__(self, vctx, location, page_desc)
+        required_ends = "_followed_imgupload"
+        if vctx is not None:
+            if not self.page_desc.id.endswith("required_ends"):
+                raise ValidationError(
+                    string_concat(
+                        "%s: " % location,
+                        _("'page id' should ends with '%s'"
+                          ) % required_ends))  # type: ignore
+        self.followed_page_id = self.page_desc.id[:len(required_ends)]
+
+    def initialize_page_data(self, page_context):
+        from course.models import FlowPageData
+        fpd = FlowPageData.objects.get(
+            flow_session=page_context.flow_session,
+            course=page_context.course,
+            page_id=self.followed_page_id
+        )
+        assert fpd is not None
+        return fpd.data
+
+
+class RandomInlineMultiQuestionFollowedImageUploadQuestion(RandomQuestionFollowedImageUploadQuestion):
     pass
