@@ -69,7 +69,9 @@ from course.page.code import (
     request_python_run_with_retries)
 
 from image_upload.page.imgupload import ImageUploadQuestion
-from image_upload.utils import deep_eq, deep_convert_ordereddict, deep_np_to_string
+from image_upload.utils import (
+    deep_eq, deep_convert_ordereddict, deep_np_to_string,
+    get_flow_page_ordinal_from_page_id)
 
 
 def _debug_print(s):
@@ -174,8 +176,8 @@ def question_data_equal(data1, data2):
         return deep_eq(data1_decode, data2_decode)
 
 
-class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
-                          PageBaseWithCorrectAnswer):
+class LatexQuestionBase(PageBaseWithTitle, PageBaseWithValue,
+                        PageBaseWithCorrectAnswer):
     grading_sort_by_page_data = True
 
     @property
@@ -186,55 +188,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
     def __init__(self, vctx, location, page_desc):
         # type: (Optional[ValidationContext], Optional[Text], Struct) -> None
-        super(LatexRandomQuestionBase, self).__init__(vctx, location, page_desc)
+        super(LatexQuestionBase, self).__init__(vctx, location, page_desc)
 
         if vctx is not None and hasattr(page_desc, "data_files"):
-            # {{{ validate random_question_data_file
-            if page_desc.random_question_data_file not in page_desc.data_files:  # type: ignore  # noqa
-                raise ValidationError(
-                    string_concat(
-                        "%s: " % location,
-                        _("'%s' should be listed in 'data_files'")
-                        % page_desc.random_question_data_file))  # type: ignore
-
-            repo_bytes_data = get_repo_blob_data_cached(
-                vctx.repo,
-                page_desc.random_question_data_file,  # type: ignore
-                vctx.commit_sha)
-            bio = BytesIO(repo_bytes_data)
-            try:
-                # py3
-                repo_data_loaded = pickle.load(bio, encoding="latin-1")
-            except TypeError:
-                # py2
-                repo_data_loaded = pickle.load(bio)
-            except Exception as e:
-                if isinstance(e, ValueError):
-                    if six.PY2 and "unsupported pickle protocol: 3" in str(e):
-                        raise ValidationError(
-                            string_concat(
-                                "%s: " % location,
-                                _("'%s' was pickle dumped using protocol 3 "
-                                  "(under python3), it should be dumped with "
-                                  "'protocol=2' parameters")
-                                % page_desc.random_question_data_file))  # type: ignore  # noqa
-                raise ValidationError(
-                    "%s: %s: %s" % (location, type(e).__name__, str(e)))
-            if not isinstance(repo_data_loaded, (list, tuple)):
-                raise ValidationError(
-                    string_concat(
-                        "%s: " % location,
-                        _("'%s' must be dumped from a list or tuple")
-                        % page_desc.random_question_data_file))  # type: ignore
-            n_data = len(repo_data_loaded)
-            if n_data == 0:
-                raise ValidationError(
-                    string_concat(
-                        "%s: " % location,
-                        _("'%s' seems to be empty, that's not valid")
-                        % page_desc.random_question_data_file))  # type: ignore
-            # }}}
-
             if hasattr(page_desc, "cache_key_files"):
                 for cf in page_desc.cache_key_files:  # type: ignore
                     if cf not in page_desc.data_files:  # type: ignore
@@ -244,14 +200,6 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                                 ": ",
                                 _("'%s' should be listed in 'data_files'")
                                 % cf))
-                    if (page_desc.random_question_data_file  # type: ignore
-                            in page_desc.cache_key_files):  # type: ignore
-                        vctx.add_warning(
-                            location,
-                            _("'%s' is not expected in "
-                              "'cache_key_files' as it will not "
-                              "be used for building cache")
-                            % page_desc.random_question_data_file)  # type: ignore
 
             if hasattr(page_desc, "excluded_cache_key_files"):
                 for cf in page_desc.excluded_cache_key_files:  # type: ignore
@@ -347,6 +295,11 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         self.error_updating_page_desc = None
         self.is_warming_up = False
 
+    def update_excluded_cache_key_file_set(
+            self, excluded_cache_key_file_set, page_desc):
+        # Exclude question data file for building cache
+        pass
+
     def initialize_cache_key_file_attrs(self, page_desc):
         # type: (Struct) -> List
         # generate file lists that will be used to make cache key
@@ -355,8 +308,9 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         excluded_cache_key_file_set = set(getattr(
             page_desc, "excluded_cache_key_files", []))
 
-        # Exclude question data file for building cache
-        excluded_cache_key_file_set.update([page_desc.random_question_data_file])  # type: ignore  # noqa
+        self.update_excluded_cache_key_file_set(
+            excluded_cache_key_file_set, page_desc)   # type: ignore  # noqa
+
         cache_key_files_set.difference_update(excluded_cache_key_file_set)
 
         # In case order changed across repo and across runs
@@ -408,7 +362,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             new_desc = self.get_updated_page_desc(page_context,
                                                   new_page_desc_dict=result)
 
-            super(LatexRandomQuestionBase, self).__init__(None, None, new_desc)
+            super(LatexQuestionBase, self).__init__(None, None, new_desc)
             self.is_page_desc_updated = True
         else:
             assert result is not None
@@ -439,14 +393,13 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         if self.error_updating_page_desc:
             return None
 
-        return super(LatexRandomQuestionBase, self).make_form(
+        return super(LatexQuestionBase, self).make_form(
             page_context, page_data, answer_data, page_behavior
         )
 
     def required_attrs(self):
-        return super(LatexRandomQuestionBase, self).required_attrs() + (
+        return super(LatexQuestionBase, self).required_attrs() + (
             ("data_files", (list, str)),
-            ("random_question_data_file", str),
         )
 
     def allowed_runpy_attrs(self):
@@ -461,8 +414,8 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
             ("cache_key_attrs", list),
             ("warm_up_by_sandbox", bool),
         ]
-        for attr in (super(LatexRandomQuestionBase, self).allowed_attrs()
-                         + super(LatexRandomQuestionBase, self).required_attrs()):
+        for attr in (super(LatexQuestionBase, self).allowed_attrs()
+                         + super(LatexQuestionBase, self).required_attrs()):
             if attr[0] not in ["type", "access_rules", "value", "title",
                             "widget", "id", "is_optional_page"]:
                 runpy_attrs.append(("%s_process_code" % attr[0], str))
@@ -470,7 +423,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
     def allowed_attrs(self):
         return (
-            super(LatexRandomQuestionBase, self).allowed_attrs()
+            super(LatexQuestionBase, self).allowed_attrs()
             + tuple(self.allowed_runpy_attrs()))
 
     def is_answer_gradable(self):
@@ -719,82 +672,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
     def initialize_page_data(self, page_context):
         # type: (PageContext) -> Dict
-        commit_sha = page_context.commit_sha.decode()
-        warm_up_by_sandbox = False
-        if page_context.in_sandbox:
-            warm_up_by_sandbox = getattr(
-                self.page_desc, "warm_up_by_sandbox", True)
-
-        # get random question_data
-        repo_bytes_data = get_repo_blob_data_cached(
-            page_context.repo,
-            self.page_desc.random_question_data_file,  # type: ignore
-            page_context.commit_sha)
-        bio = BytesIO(repo_bytes_data)
-        try:
-            # py3
-            repo_data_loaded = pickle.load(bio, encoding="latin-1")
-        except TypeError:
-            # py2
-            repo_data_loaded = pickle.load(bio)
-
-        assert isinstance(repo_data_loaded, (list, tuple))
-        all_data = list(repo_data_loaded)
-
-        from random import choice
-
-        question_data = None
-        key_making_string_md5 = None
-
-        # template_string is the string independent of data
-        template_hash = self.generate_template_hash(page_context)
-        _id = self.get_or_create_template_hash_id(commit_sha, template_hash)
-
-        for i in range(len(all_data)):
-            if not page_context.in_sandbox or not warm_up_by_sandbox:
-                random_data = choice(all_data)
-            else:
-                random_data = all_data[i]
-            if isinstance(random_data, dict):
-                random_data = deep_convert_ordereddict(random_data)
-
-            selected_data_bytes = BytesIO()
-            pickle.dump(random_data, selected_data_bytes)
-            question_data = b64encode(selected_data_bytes.getvalue()).decode()
-
-            key_making_string_md5 = get_key_making_string_md5_hash(
-                    template_hash, question_data)
-
-            # this is used to let sandbox do the warm up job for
-            # sequentially ordered data(not random)
-            if not page_context.in_sandbox:
-                break
-
-            if not warm_up_by_sandbox:
-                break
-
-            page_data = {
-                "question_data": question_data,
-                "template_hash": template_hash,
-                "key_making_string_md5": key_making_string_md5
-            }
-
-            # try to do markup_to_html in warmup
-            self.is_page_desc_updated = False
-            self.is_warming_up = True
-
-            self.update_page_desc(page_context, page_data)
-
-            self.body(page_context, page_data)  # type: ignore
-            self.correct_answer(page_context, page_data,  # type: ignore
-                                answer_data=None, grade_data=None)
-
-        self.is_warming_up = False
-        return {"question_data": question_data,
-                "template_hash": template_hash,
-                "template_hash_id": _id,
-                "key_making_string_md5": key_making_string_md5
-                }
+        raise NotImplementedError()
 
     def get_or_create_template_hash_id(self, commit_sha, template_hash):
         # type: (Text, Text) -> Text
@@ -837,7 +715,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         vctx = ValidationContext(
             repo=page_context.repo,
             commit_sha=page_context.commit_sha)
-        super(LatexRandomQuestionBase, self).__init__(vctx, None, new_desc)
+        super(LatexQuestionBase, self).__init__(vctx, None, new_desc)
         return new_desc
 
     def get_updated_page_desc_dict_cached(self, page_context, page_data):
@@ -1020,7 +898,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         self.update_page_desc(page_context, page_data)
         if self.error_updating_page_desc:
             return self.error_updating_page_desc
-        return super(LatexRandomQuestionBase, self).body(page_context, page_data)
+        return super(LatexQuestionBase, self).body(page_context, page_data)
 
     def send_error_notification_email(self, page_context, message):
         # type: (PageContext, Text) -> None
@@ -1066,6 +944,10 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 })
             return message
 
+    def get_files_excluded_from_run_jinja(self):
+        # This determines files that won't be send to runpy.
+        return []
+
     def get_run_jinja_req(self, page_context, question_data, code_name, **kwargs):
         # type: (PageContext, Any, Text, **Any) -> Dict
 
@@ -1105,13 +987,16 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
 
         run_jinja_req["data_files"] = {}  # type: ignore
 
+        files_excluded_from_run_jinja = self.get_files_excluded_from_run_jinja()
+
         for data_file in self.page_desc.data_files:  # type: ignore
-            if data_file != self.page_desc.random_question_data_file:  # type: ignore  # noqa
-                run_jinja_req["data_files"][data_file] = (  # type: ignore
-                    b64encode(
-                        get_repo_blob_data_cached(
-                            page_context.repo, data_file,
-                            page_context.commit_sha)).decode())
+            if data_file in files_excluded_from_run_jinja:  # type: ignore  # noqa
+                continue
+            run_jinja_req["data_files"][data_file] = (  # type: ignore
+                b64encode(
+                    get_repo_blob_data_cached(
+                        page_context.repo, data_file,
+                        page_context.commit_sha)).decode())
 
         run_jinja_req["data_files"]["question_data"] = question_data  # type: ignore  # noqa
         return run_jinja_req
@@ -1308,7 +1193,7 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
         self.update_page_desc(page_context, page_data)
         question = self.analytic_view_body(page_context, page_data)
         extension, bytes_answer = (
-            super(LatexRandomQuestionBase, self). normalized_bytes_answer(
+            super(LatexQuestionBase, self). normalized_bytes_answer(
                 page_context, page_data, answer_data))
 
         from six import BytesIO
@@ -1322,6 +1207,164 @@ class LatexRandomQuestionBase(PageBaseWithTitle, PageBaseWithValue,
                 bytes_answer)
 
         return (".zip", bio.getvalue())
+
+
+class LatexRandomQuestionBase(LatexQuestionBase):
+
+    def __init__(self, vctx, location, page_desc):
+        # type: (Optional[ValidationContext], Optional[Text], Struct) -> None
+        super(LatexRandomQuestionBase, self).__init__(vctx, location, page_desc)
+
+        if vctx is not None and hasattr(page_desc, "data_files"):
+            # {{{ validate random_question_data_file
+            if page_desc.random_question_data_file not in page_desc.data_files:  # type: ignore  # noqa
+                raise ValidationError(
+                    string_concat(
+                        "%s: " % location,
+                        _("'%s' should be listed in 'data_files'")
+                        % page_desc.random_question_data_file))  # type: ignore
+
+            repo_bytes_data = get_repo_blob_data_cached(
+                vctx.repo,
+                page_desc.random_question_data_file,  # type: ignore
+                vctx.commit_sha)
+            bio = BytesIO(repo_bytes_data)
+            try:
+                # py3
+                repo_data_loaded = pickle.load(bio, encoding="latin-1")
+            except TypeError:
+                # py2
+                repo_data_loaded = pickle.load(bio)
+            except Exception as e:
+                if isinstance(e, ValueError):
+                    if six.PY2 and "unsupported pickle protocol: 3" in str(e):
+                        raise ValidationError(
+                            string_concat(
+                                "%s: " % location,
+                                _("'%s' was pickle dumped using protocol 3 "
+                                  "(under python3), it should be dumped with "
+                                  "'protocol=2' parameters")
+                                % page_desc.random_question_data_file))  # type: ignore  # noqa
+                raise ValidationError(
+                    "%s: %s: %s" % (location, type(e).__name__, str(e)))
+            if not isinstance(repo_data_loaded, (list, tuple)):
+                raise ValidationError(
+                    string_concat(
+                        "%s: " % location,
+                        _("'%s' must be dumped from a list or tuple")
+                        % page_desc.random_question_data_file))  # type: ignore
+            n_data = len(repo_data_loaded)
+            if n_data == 0:
+                raise ValidationError(
+                    string_concat(
+                        "%s: " % location,
+                        _("'%s' seems to be empty, that's not valid")
+                        % page_desc.random_question_data_file))  # type: ignore
+            # }}}
+
+            if hasattr(page_desc, "cache_key_files"):
+                if (page_desc.random_question_data_file  # type: ignore
+                        in page_desc.cache_key_files):  # type: ignore
+                    vctx.add_warning(
+                        location,
+                        _("'%s' is not expected in "
+                          "'cache_key_files' as it will not "
+                          "be used for building cache")
+                        % page_desc.random_question_data_file)  # type: ignore
+
+    def initialize_page_data(self, page_context):
+        # type: (PageContext) -> Dict
+
+        commit_sha = page_context.commit_sha.decode()
+        warm_up_by_sandbox = False
+        if page_context.in_sandbox:
+            warm_up_by_sandbox = getattr(
+                self.page_desc, "warm_up_by_sandbox", True)
+
+        # get random question_data
+        repo_bytes_data = get_repo_blob_data_cached(
+            page_context.repo,
+            self.page_desc.random_question_data_file,  # type: ignore
+            page_context.commit_sha)
+        bio = BytesIO(repo_bytes_data)
+        try:
+            # py3
+            repo_data_loaded = pickle.load(bio, encoding="latin-1")
+        except TypeError:
+            # py2
+            repo_data_loaded = pickle.load(bio)
+
+        assert isinstance(repo_data_loaded, (list, tuple))
+        all_data = list(repo_data_loaded)
+
+        from random import choice
+
+        question_data = None
+        key_making_string_md5 = None
+
+        # template_string is the string independent of data
+        template_hash = self.generate_template_hash(page_context)
+        _id = self.get_or_create_template_hash_id(commit_sha, template_hash)
+
+        for i in range(len(all_data)):
+            if not page_context.in_sandbox or not warm_up_by_sandbox:
+                random_data = choice(all_data)
+            else:
+                random_data = all_data[i]
+            if isinstance(random_data, dict):
+                random_data = deep_convert_ordereddict(random_data)
+
+            selected_data_bytes = BytesIO()
+            pickle.dump(random_data, selected_data_bytes)
+            question_data = b64encode(selected_data_bytes.getvalue()).decode()
+
+            key_making_string_md5 = get_key_making_string_md5_hash(
+                    template_hash, question_data)
+
+            # this is used to let sandbox do the warm up job for
+            # sequentially ordered data(not random)
+            if not page_context.in_sandbox:
+                break
+
+            if not warm_up_by_sandbox:
+                break
+
+            page_data = {
+                "question_data": question_data,
+                "template_hash": template_hash,
+                "key_making_string_md5": key_making_string_md5
+            }
+
+            # try to do markup_to_html in warmup
+            self.is_page_desc_updated = False
+            self.is_warming_up = True
+
+            self.update_page_desc(page_context, page_data)
+
+            self.body(page_context, page_data)  # type: ignore
+            self.correct_answer(page_context, page_data,  # type: ignore
+                                answer_data=None, grade_data=None)
+
+        self.is_warming_up = False
+        return {"question_data": question_data,
+                "template_hash": template_hash,
+                "template_hash_id": _id,
+                "key_making_string_md5": key_making_string_md5
+                }
+
+    def update_excluded_cache_key_file_set(
+            self, excluded_cache_key_file_set, page_desc):
+        # Exclude question data file for building cache
+        excluded_cache_key_file_set.update(
+            [page_desc.random_question_data_file])  # type: ignore  # noqa
+
+    def required_attrs(self):
+        return super(LatexRandomQuestionBase, self).required_attrs() + (
+            ("random_question_data_file", str),
+        )
+
+    def get_files_excluded_from_run_jinja(self):
+        return [self.page_desc.random_question_data_file]
 
 
 class LatexRandomQuestion(LatexRandomQuestionBase):
@@ -1406,30 +1449,98 @@ class LatexRandomChoiceQuestion(LatexRandomQuestion, ChoiceQuestion):
         return page_data
 
 
-class RandomQuestionFollowedImageUploadQuestion(LatexRandomQuestion, ImageUploadQuestion):
-
-    def __init__(self, vctx, location, page_desc):
-        ImageUploadQuestion.__init__(self, vctx, location, page_desc)
-        required_ends = "_followed_imgupload"
-        if vctx is not None:
-            if not self.page_desc.id.endswith("required_ends"):
-                raise ValidationError(
-                    string_concat(
-                        "%s: " % location,
-                        _("'page id' should ends with '%s'"
-                          ) % required_ends))  # type: ignore
-        self.followed_page_id = self.page_desc.id[:len(required_ends)]
+class RandomQuestionFollowedImageUpload(LatexQuestionBase, ImageUploadQuestion):
+    def required_attrs(self):
+        return super(RandomQuestionFollowedImageUpload, self
+                     ).required_attrs() + (
+            ("following_page_id", str),
+        )
 
     def initialize_page_data(self, page_context):
         from course.models import FlowPageData
-        fpd = FlowPageData.objects.get(
+        fpds = FlowPageData.objects.filter(
             flow_session=page_context.flow_session,
-            course=page_context.course,
-            page_id=self.followed_page_id
+            page_id=self.page_desc.following_page_id
         )
-        assert fpd is not None
-        return fpd.data
+        assert len(fpds) == 1
+
+        # we need to remove template_hash from the data returned, and preserve
+        # only the question_data
+        data = {"question_data": fpds[0].data["question_data"]}
+        return data
+
+    def grade(
+            self,
+            page_context,  # type: PageContext
+            page_data,  # type: Any
+            answer_data,  # type: Any
+            grade_data,  # type: Any
+            ):
+
+        if answer_data is None:
+            return super(RandomQuestionFollowedImageUpload, self). grade(
+                page_context, page_data, answer_data, grade_data)
+
+        if grade_data is None:
+            followed_page_ordinal = (
+                get_flow_page_ordinal_from_page_id(
+                    page_context.flow_session.id,
+                    self.page_desc.following_page_id))
+            from course.grading import get_prev_visit_grades
+            followed_page_most_recent_grades = get_prev_visit_grades(
+                course_identifier=page_context.course.identifier,
+                flow_session_id=page_context.flow_session.id,
+                page_ordinal=followed_page_ordinal,
+                reversed_on_visit_time_and_grade_time=True
+            )
+            if not followed_page_most_recent_grades.count():
+                return None
+            followed_most_recent_grade = followed_page_most_recent_grades[0]
+            grade_percent = followed_most_recent_grade.percentage()
+            print("followed_most_recent_grade.percentage()", grade_percent)
+            if grade_percent >= 99.9:
+                grade_data = {
+                    "grade_percent": followed_most_recent_grade.percentage(),
+                    "released": True,
+                    "feedback_text": "",
+                    "notify": False,
+                    "may_reply": False,
+                    "notes": "",
+                    "notify_instructor": False,
+                }
+
+            # TODO: fix grading_form not instantiated.
+            # from course.flow import get_prev_answer_visit
+            # from course.models import FlowPageData
+            # page_data_obj = FlowPageData.objects.get(
+            #     flow_session=page_context.flow_session,
+            #     page_id=self.page_desc.id
+            # )
+            # prev_answer_visit = get_prev_answer_visit(page_data_obj)
+
+            # feedback = self.grade(
+            #     page_context, page_data, answer_data, grade_data)
+            #
+            # if feedback is not None:
+            #     feedback_json, bulk_feedback_json = feedback.as_json()
+            # else:
+            #     feedback_json = bulk_feedback_json = None
+            #
+            # from course.models import FlowPageVisitGrade
+            # from django.db import transaction
+            # with transaction.atomic():
+            #     most_recent_grade = FlowPageVisitGrade(
+            #         visit=prev_answer_visit,
+            #         graded_at_git_commit_sha=page_context.commit_sha,
+            #         grade_data=grade_data,
+            #         max_points=self.max_points(page_data),
+            #         correctness=followed_most_recent_grade.correctness,
+            #         feedback=feedback_json)
+            #     most_recent_grade.save()
+
+        return super(RandomQuestionFollowedImageUpload, self).grade(
+            page_context, page_data, answer_data, grade_data)
 
 
-class RandomInlineMultiQuestionFollowedImageUploadQuestion(RandomQuestionFollowedImageUploadQuestion):
+class RandomInlineMultiQuestionFollowedImageUploadQuestion(RandomQuestionFollowedImageUpload):
     pass

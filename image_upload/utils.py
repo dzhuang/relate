@@ -174,6 +174,15 @@ def get_ordinal_from_page_context(page_context):
     return kwargs["page_ordinal"]
 
 
+def get_flow_page_ordinal_from_page_id(flow_session_id, page_id):
+    from course.models import FlowPageData
+    flow_page_data = FlowPageData.objects.get(
+        flow_session__id=flow_session_id,
+        page_id=page_id
+    )
+    return flow_page_data.page_ordinal
+
+
 def minify_python_script(source):
     # type: (Text) -> Text
     from pyminifier import token_utils, minification
