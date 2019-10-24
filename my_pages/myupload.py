@@ -53,7 +53,8 @@ COURSE_STAFF_PERMISSION = (
 
 
 MIMETYPE_EXT_MAP = {
-    "application/msword": ".docx",
+    "application/msword": ".doc",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
     "application/vnd.ms-word.document.macroEnabled.12": ".docm",
     "text/plain": ".txt",
     "application/vnd.ms-excel.sheet.macroEnabled.12": ".xlsm",
@@ -219,6 +220,7 @@ class CustomFileUploadQuestion(FileUploadQuestion):
         "application/vnd.ms-word.document.macroEnabled.12",
         "application/octet-stream",
         "application/zip",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     ]
 
     def __init__(self, vctx, location, page_desc):
