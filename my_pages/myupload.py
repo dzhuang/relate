@@ -269,6 +269,10 @@ class CustomFileUploadQuestion(FileUploadQuestion):
 # }}}
 
 
+class WordUploadPreviewQuestion(CustomFileUploadQuestion):
+    pass
+
+
 class WordUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         PageBaseWithHumanTextFeedback, PageBaseWithCorrectAnswer):
     ALLOWED_MIME_TYPES = [
