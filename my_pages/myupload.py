@@ -53,6 +53,7 @@ COURSE_STAFF_PERMISSION = (
 
 
 MIMETYPE_EXT_MAP = {
+    "application/msword": ".docx",
     "application/vnd.ms-word.document.macroEnabled.12": ".docm",
     "text/plain": ".txt",
     "application/vnd.ms-excel.sheet.macroEnabled.12": ".xlsm",
