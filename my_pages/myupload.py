@@ -273,7 +273,45 @@ class CustomFileUploadQuestion(FileUploadQuestion):
 
 
 class WordUploadPreviewQuestion(CustomFileUploadQuestion):
-    pass
+    ALLOWED_MIME_TYPES = [
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ]
+
+    def doc_data_to_pdf_b64_data(self, word_data, mime_type):
+        from plugins.latex.converter import convert_doc_to_pdf
+        from base64 import b64encode
+        pdf_data = convert_doc_to_pdf(word_data, mime_type)
+        return b64encode(pdf_data).decode()
+
+    def files_data_to_answer_data(self, files_data):
+        files_data = super(WordUploadPreviewQuestion, self
+                           ).files_data_to_answer_data(files_data)
+        from base64 import b64decode
+        word_data = b64decode(files_data["base64_data"])
+        mime_type = files_data["mime_type"]
+        pdf_b64_data = self.doc_data_to_pdf_b64_data(word_data, mime_type)
+        if pdf_b64_data:
+            files_data["pdf_base64_data"] = self.doc_data_to_pdf_b64_data(
+                word_data, mime_type)
+
+        return files_data
+
+    def normalized_bytes_answer(self, page_context, page_data, answer_data):
+        if answer_data is None:
+            return None
+
+        ext = None
+        if len(self.page_desc.mime_types) == 1:
+            mtype, = self.page_desc.mime_types
+            from mimetypes import guess_extension
+            ext = guess_extension(mtype)
+
+        if ext is None:
+            ext = ".dat"
+
+        from base64 import b64decode
+        return (ext, b64decode(answer_data["pdf_base64_data"]))
 
 
 class WordUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
