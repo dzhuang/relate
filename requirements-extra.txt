@@ -71,3 +71,10 @@ django-settings-export
 
 # daemon support
 python-daemon
+
+# python-magic for mime-type
+# for windows: python-magic-win64
+python-magic
+
+# For WordUploadQuestion
+bs4

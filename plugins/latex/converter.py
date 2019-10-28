@@ -871,39 +871,51 @@ def get_number_of_images(image_path, image_ext):
 # }}}
 
 
-def convert_doc_to_pdf(word_data, mime_type):
+def convert_doc_to_pdf_blob(word_data):
     # Use soffice to convert doc/docx to pdf file
 
     from tempfile import mkdtemp
     from os import path
 
-    soffice_path = settings.get("SOFFICE_PATH")
+    soffice_path = getattr(settings, "SOFFICE_PATH")
 
-    # https://github.com/python/mypy/issues/1833
+    try:
+        # windows
+        from winmagic import magic
+    except ImportError:
+        import magic
 
-    if mime_type == "application/msword":
-        extension = ".doc"
-    elif mime_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-        extension = ".docx"
-    elif mime_type == "application/octet-stream":
-        extension = ""
-    else:
+    mime = magic.Magic(mime=True)
+    mime_type = mime.from_buffer(word_data)
+
+    if mime_type not in [
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]:
         return None
 
-    working_dir = mkdtemp(prefix="RELATE_LATEX_")  # type: ignore
-    base_name = "word"
-    file_name = base_name + extension if extension else ""
-    file_path = os.path.join(working_dir, file_name)
-    with open(file_name, "w") as f:
+    # https://github.com/python/mypy/issues/1833
+    working_dir = mkdtemp(prefix="RELATE_DOC_TO_PDF")  # type: ignore
+    file_name = "word_file"
+    file_path = path.join(working_dir, file_name)
+    with open(file_path, "wb") as f:
         f.write(word_data)
-    if not extension:
-        try:
-            file_path = path.join(working_dir, "word")
-            output, error, status = popen_wrapper(
-                [soffice_path, '--headless', '--convert-to', 'pdf', '--outdir', working_dir],
-                cwd=working_dir)
 
+    popen_wrapper(
+        [soffice_path, '--headless', '--convert-to', 'pdf',
+         '--outdir', working_dir, file_path],
+        cwd=working_dir)
 
+    pdf_path = file_path + ".pdf"
+    if not path.exists(pdf_path):
+        return None
+
+    try:
+        with open(pdf_path, "rb") as f:
+            pdf_data = f.read()
+    finally:
+        shutil.rmtree(working_dir)
+
+    return pdf_data
 
 
 # vim: foldmethod=marker

@@ -1626,7 +1626,7 @@ def get_flow_page_class(repo, typename, commit_sha):
     import course.page
     try:
         return getattr(course.page, typename)
-    except AttributeError:
+    except AttributeError as e:
         pass
 
     # try a global dotted-name import
