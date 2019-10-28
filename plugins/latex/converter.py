@@ -888,6 +888,8 @@ def convert_doc_to_pdf_blob(word_data):
     mime = magic.Magic(mime=True)
     mime_type = mime.from_buffer(word_data)
 
+    print(mime_type)
+
     if mime_type not in [
         "application/msword",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]:
@@ -900,10 +902,14 @@ def convert_doc_to_pdf_blob(word_data):
     with open(file_path, "wb") as f:
         f.write(word_data)
 
-    popen_wrapper(
+    out, err, status = popen_wrapper(
         [soffice_path, '--headless', '--convert-to', 'pdf',
          '--outdir', working_dir, file_path],
         cwd=working_dir)
+
+    print(out)
+    print(err)
+    print(status)
 
     pdf_path = file_path + ".pdf"
     if not path.exists(pdf_path):
