@@ -282,7 +282,9 @@ class WordUploadPreviewQuestion(CustomFileUploadQuestion):
         from plugins.latex.converter import convert_doc_to_pdf_blob
         from base64 import b64encode
         pdf_data = convert_doc_to_pdf_blob(word_data)
-        return b64encode(pdf_data).decode()
+        if pdf_data:
+            return b64encode(pdf_data).decode()
+        return None
 
     def files_data_to_answer_data(self, files_data):
         files_data = super(WordUploadPreviewQuestion, self
