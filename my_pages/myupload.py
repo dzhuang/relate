@@ -294,7 +294,23 @@ class WordUploadPreviewQuestion(CustomFileUploadQuestion):
         pdf_b64_data = self.doc_data_to_pdf_b64_data(word_data)
         if pdf_b64_data:
             files_data["pdf_base64_data"] = self.doc_data_to_pdf_b64_data(word_data)
+        # for linux
+        # https://serverfault.com/questions/338087/making-libmagic-file-detect-docx-files
+        try:
+            # windows
+            from winmagic import magic
+        except ImportError:
+            import magic
 
+        mime = magic.Magic(mime=True)
+        mime_type = mime.from_buffer(word_data)
+        if mime_type == "application/msword":
+            files_data["mime_type"] = "application/msword"
+        elif mime_type in [
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            # https://serverfault.com/questions/338087/making-libmagic-file-detect-docx-files
+            "application/zip"]:
+            files_data["mime_type"] = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         return files_data
 
     def form_to_html(self, request, page_context, form, answer_data):
