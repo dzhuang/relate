@@ -58,6 +58,7 @@ RELATE_DISABLE_CODEHILITE_MARKDOWN_EXTENSION = (
     "RELATE_DISABLE_CODEHILITE_MARKDOWN_EXTENSION")
 RELATE_CUSTOM_PAGE_TYPES_REMOVED_DEADLINE = (
     "RELATE_CUSTOM_PAGE_TYPES_REMOVED_DEADLINE")
+RELATE_CUSTOM_PAGE_CLASSES = "RELATE_CUSTOM_PAGE_CLASSES"
 
 # {{{ for mypy
 
@@ -512,6 +513,32 @@ def check_relate_settings(app_configs, **kwargs):
                 id="relate_custom_page_types_removed_deadline.E001"))
 
     # }}}
+
+
+    # {{{ check RELATE_CUSTOM_PAGE_CLASSES
+    relate_settings_custom_page_classes = getattr(
+        settings, RELATE_CUSTOM_PAGE_CLASSES, None)
+
+    if relate_settings_custom_page_classes:
+        from course.utils import get_valiated_custom_page_import_exec_str
+
+        for klass in relate_settings_custom_page_classes:
+            try:
+                exec_string = get_valiated_custom_page_import_exec_str(klass)
+                assert exec_string
+                exec(exec_string)
+            except Exception as e:
+                errors.append(RelateCriticalCheckMessage(
+                    msg=(
+                            GENERIC_ERROR_PATTERN
+                            % {
+                                "location": "%s: %s" % (RELATE_CUSTOM_PAGE_CLASSES, klass[1]),
+                                "error_type": type(e).__name__,
+                                "error_str": str(e)
+                            }),
+                    id="custom_page_classes.E001"))
+    # }}}
+
     return errors
 
 
