@@ -303,12 +303,40 @@ class WordUploadPreviewQuestion(CustomFileUploadQuestion):
                 answer_data["mime_type"],
                 answer_data["base64_data"],
                 )
-            if (answer_data["pdf_base64_data"]
+            if (answer_data.get("pdf_base64_data")
                     and answer_data["mime_type"] != "application/pdf"):
                 ctx["pdf_data_url"] = "data:%s;base64,%s" % (
                     "application/pdf",
                     answer_data["pdf_base64_data"],
                     )
+
+                # generate pdf preview
+
+                page_ordinal = None
+                if not page_context.in_sandbox:
+                    from image_upload.utils import get_ordinal_from_page_context
+                    page_ordinal = get_ordinal_from_page_context(page_context)
+
+                in_grading_page = False
+                try:
+                    from django.urls import reverse, NoReverseMatch
+                    grading_page_uri = reverse(
+                        "relate-grade_flow_page",
+                        args=(
+                            page_context.course.identifier,
+                            page_context.flow_session.id,
+                            page_ordinal)
+                    )
+
+                    in_grading_page = grading_page_uri == request.path
+                except NoReverseMatch:
+                    if page_context.in_sandbox:
+                        pass
+                    else:
+                        raise
+
+                if in_grading_page:
+                    ctx["in_grading_page"] = True
 
         from django.template.loader import render_to_string
         return render_to_string(

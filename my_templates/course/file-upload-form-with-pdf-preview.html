@@ -6,25 +6,37 @@
   </div>
   <div class="col-lg-offset-2" style="margin-bottom:2ex">
     <a href="{{ data_url }}" id="file_upload_download_link">{% trans "Review uploaded file" %}</a>
-    &middot;
-    <a href="javascript:file_upload_embed_viewer()">{% trans "Embed viewer" %}</a>
-    {% if pdf_data_url %}
-      <a class="pdfViewer" href="{{ pdf_data_url }}">{% trans "PDF (preview only, not for grading)" %}</a>
+    {% if not pdf_data_url %}
+      &middot;
+      <a href="javascript:file_upload_embed_viewer()">{% trans "Embed viewer" %}</a>
+    {% else %}
+      &middot;
+      <a href="javascript:file_upload_embed_viewer()" title="{% trans 'Preview only, not for grading' %}">{% trans "PDF" %}</a>
     {% endif %}
   </div>
 
   <script type="text/javascript">
     function file_upload_embed_viewer()
     {
-      var data_url = $("#file_upload_download_link").attr("href");
+      {% if not pdf_data_url %}
+        var data_url = $("#file_upload_download_link").attr("href");
+        var m_type = "{{ mime_type }}";
+      {% else %}
+        var data_url = "{{ pdf_data_url }}";
+        var m_type = "application/pdf";
+      {% endif %}
 
       $("#file_upload_viewer_div").html(
-        "<object data='" + data_url + "' type='{{ mime_type }}' width='100%' height='800px' align='middle'>"
+        "<object data='" + data_url + "' type='" + m_type +"' width='100%' height='800px' align='middle'>"
         + '<p>('
         + "{% blocktrans %} Your browser reported itself unable to render <tt>{{ mime_type }}</tt> inline. {% endblocktrans %}"
         + ')</p>'
         + '</object><hr>');
     }
+
+    {% if in_grading_page and pdf_data_url %}
+        file_upload_embed_viewer();
+    {% endif %}
 
     function file_upload_data_url_to_object_url() {
       // https://code.google.com/p/chromium/issues/detail?id=69227#37
