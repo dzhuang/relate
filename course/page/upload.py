@@ -213,21 +213,10 @@ class FileUploadQuestion(PageBaseWithTitle, PageBaseWithValue,
         files_data["uploaded_file"].seek(0)
         buf = files_data["uploaded_file"].read()
 
-        try:
-            # windows
-            from winmagic import magic
-        except ImportError:
-            import magic
-
-        mime = magic.Magic(mime=True)
-        mime_type = mime.from_buffer(buf)
-
-        if not mime_type:
-            if len(self.page_desc.mime_types) == 1:
-                mime_type, = self.page_desc.mime_types
-            else:
-                mime_type = files_data["uploaded_file"].content_type
-
+        if len(self.page_desc.mime_types) == 1:
+            mime_type, = self.page_desc.mime_types
+        else:
+            mime_type = files_data["uploaded_file"].content_type
         from base64 import b64encode
         return {
                 "base64_data": b64encode(buf).decode(),
