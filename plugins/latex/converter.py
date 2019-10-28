@@ -892,7 +892,11 @@ def convert_doc_to_pdf_blob(word_data):
 
     if mime_type not in [
         "application/msword",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]:
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+
+        # https://serverfault.com/questions/338087/making-libmagic-file-detect-docx-files
+        "application/zip"
+    ]:
         return None
 
     # https://github.com/python/mypy/issues/1833
