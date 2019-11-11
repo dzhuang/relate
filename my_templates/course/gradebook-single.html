@@ -18,7 +18,7 @@
       <td>
         <span class="sensitive">
             {% if not pperm.view_participant_masked_profile %}
-              <a href="{% url "relate-view_participant_grades" course.identifier participation.id %}">
+              <a href="{% url "relate-view_participant_grades" course.identifier grade_participation.id %}">
                 {{ grade_participation.user.get_full_name }} ({{ grade_participation.user.username }})
               </a>
             {% else %}
