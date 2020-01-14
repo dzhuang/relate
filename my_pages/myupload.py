@@ -360,12 +360,11 @@ class WordUploadPreviewQuestion(CustomFileUploadQuestion):
         return render_to_string(
                 "course/file-upload-form-with-pdf-preview.html", ctx, request)
 
-
     def normalized_bytes_answer(self, page_context, page_data, answer_data):
         if answer_data is None:
             return None
 
-        mtype = page_data["mime_types"]
+        mtype = answer_data["mime_type"]
         from mimetypes import guess_extension
         ext = guess_extension(mtype)
 

@@ -30,3 +30,6 @@ git-roots
 /protected
 
 /.env
+webResources.xml
+modules.xml
+vcs.xml
