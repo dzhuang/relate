@@ -2,6 +2,7 @@
 *~
 .*.sw[opn]
 .sw[ophijklm]
+local_settings.py
 *.sqlite3
 *.py[co]
 .sw[opn]
@@ -33,3 +34,5 @@ git-roots
 webResources.xml
 modules.xml
 vcs.xml
+/my_templates/base.html
+
