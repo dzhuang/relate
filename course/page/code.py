@@ -54,7 +54,7 @@ from traceback import format_exc
 # DEBUGGING SWITCH:
 # True for 'spawn containers' (normal operation)
 # False for 'just connect to localhost:RUNPY_PORT' for runpy'
-SPAWN_CONTAINERS_FOR_RUNPY = True
+SPAWN_CONTAINERS_FOR_RUNPY = False
 
 
 # {{{ python code question
@@ -630,6 +630,22 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
     def answer_data(self, page_context, page_data, form, files_data):
         return {"answer": form.cleaned_data["answer"].strip()}
 
+    def process_user_code_for_grade(self, page_context, answer_data):
+        """
+        Allow pre-processing user_code before sending to runpy.
+        :param page_context:
+        :param answer_data:
+        :return: the processed answer， answer_data["answer"] by default
+        """
+        return answer_data["answer"]
+
+    def get_names_from_user(self):
+        """
+        In case more names are added to names from user (for testing),
+        process it here.
+        """
+        return getattr(self.page_desc, "names_from_user", [])
+
     def get_test_code(self, page_context):
         test_code = getattr(self.page_desc, "test_code", None)
         if test_code is None:
@@ -643,7 +659,7 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
         return substitute_correct_code_into_test_code(test_code, correct_code)
 
     def get_request_run_response(self, page_context, page_data, answer_data):
-        user_code = answer_data["answer"]
+        user_code = self.process_user_code_for_grade(page_context, answer_data)
 
         # {{{ request run
         run_req = {"compile_only": False, "user_code": user_code}
@@ -654,7 +670,11 @@ class PythonCodeQuestion(PageBaseWithTitle, PageBaseWithValue):
 
         transfer_attr("setup_code")
         transfer_attr("names_for_user")
-        transfer_attr("names_from_user")
+
+        names_from_user = self.get_names_from_user()
+        if names_from_user:
+            run_req["names_from_user"] = names_from_user
+
         run_req["test_code"] = self.get_test_code(page_context)
 
         if hasattr(self.page_desc, "data_files"):
