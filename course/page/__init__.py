@@ -41,6 +41,7 @@ from course.page.code import (
 from course.page.upload import FileUploadQuestion
 
 try:
+    # Fixme: this won't work when merge upstream
     settings_custom_page_classes = getattr(
         settings, "RELATE_CUSTOM_PAGE_CLASSES", None)
 
