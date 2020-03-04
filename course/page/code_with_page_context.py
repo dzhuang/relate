@@ -55,7 +55,7 @@ class PythonCodeQuestionWithPageContext(PythonCodeQuestion):
     def body(self, page_context, page_data):
         from django.template.loader import render_to_string
         return render_to_string(
-                "course/prompt-code-question.html",
+            "course/prompt-code-question.html",
                 {
                     "prompt_html":
                     markup_to_html(page_context, self.page_desc.prompt),
