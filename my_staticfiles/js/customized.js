@@ -300,3 +300,10 @@ $(document).ready(function(){
         }
     }
 });
+
+
+// To play videos with http url on a https sites were being blocked by Chrome since 2020/03/01
+
+var isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+var _learningwhat_video = $(".video-js")[0];
+_learningwhat_video.player.on('error', function(e){e.stopImmediatePropagation();if(_learningwhat_video.player.error().code===4 && isChrome ){alert("如果您需要使用Chrome浏览器打开此视频，请允许网站使用'不安全'的内容。步骤：点击地址栏左边的'锁'，选择网站设置，将最下方的’不安全内容'设为允许，然后重新加载页面即可。")}});
