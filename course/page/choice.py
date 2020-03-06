@@ -784,6 +784,7 @@ class SurveyChoiceQuestion(PageBaseWithTitle):
     def allowed_attrs(self):
         return super(SurveyChoiceQuestion, self).allowed_attrs() + (
                 ("answer_comment", "markup"),
+                ("multiple_choices", bool),
                 )
 
     def correct_answer(self, page_context, page_data, answer_data, grade_data):
@@ -806,12 +807,23 @@ class SurveyChoiceQuestion(PageBaseWithTitle):
                     page_context, self.page_desc.choices[i]))
                 for i in range(len(self.page_desc.choices)))
 
-        form = ChoiceAnswerForm(
-            forms.TypedChoiceField(
-                choices=tuple(choices),
-                coerce=int,
-                widget=forms.RadioSelect()),
-            *args, **kwargs)
+        is_multiple_choices = getattr(self.page_desc, "multiple_choices", False)
+
+        if not is_multiple_choices:
+            form = ChoiceAnswerForm(
+                forms.TypedChoiceField(
+                    choices=tuple(choices),
+                    coerce=int,
+                    widget=forms.RadioSelect()),
+                *args, **kwargs)
+        else:
+            form = MultipleChoiceAnswerForm(
+                forms.TypedMultipleChoiceField(
+                    choices=tuple(choices),
+                    coerce=int,
+                    widget=forms.CheckboxSelectMultiple(),
+                    required=False),
+                *args, **kwargs)
 
         if not page_behavior.may_change_answer:
             form.fields['choice'].widget.attrs['disabled'] = True
