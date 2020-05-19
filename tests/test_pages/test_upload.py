@@ -125,6 +125,20 @@ rubric: |
 
 """
 
+UPLOAD_JUPYTER_NOTEBOOK = """
+type: JupyterNotebookUploadQuestion
+id: jupyter_sandbox
+access_rules:
+    add_permissions:
+        - change_answer
+value: 5
+maximum_megabytes: 0.5
+prompt: |
+    # Upload your favorite JupterNotebook file
+rubric: |
+    Have they uploaded an .ipynb file?
+"""
+
 
 class FileUploadQuestionSandBoxTest(SingleCoursePageSandboxTestBaseMixin, TestCase):
     def test_size_validation(self):
@@ -174,6 +188,18 @@ class FileUploadQuestionSandBoxTest(SingleCoursePageSandboxTestBaseMixin, TestCa
                 answer_data=answer_data)
             self.assertFormErrorLoose(resp, "Please keep file size under")
             self.assertFormErrorLoose(resp, "Current filesize is")
+
+    def test_upload_jupyter_notebook(self):
+        # This makes sure upload jupyter notebook works in sandbox
+        # in terms of auto_preview context
+        markdown = UPLOAD_JUPYTER_NOTEBOOK
+        from tests.constants import TEST_JUPYTER_NOTEBOOK_FILE_PATH
+        with open(TEST_JUPYTER_NOTEBOOK_FILE_PATH, 'rb') as fp:
+            answer_data = {"uploaded_file": fp}
+            resp = self.get_page_sandbox_submit_answer_response(
+                markdown,
+                answer_data=answer_data)
+            self.assertFormErrorLoose(resp, None)
 
 
 @skipUnless(may_run_expensive_tests(), SKIP_EXPENSIVE_TESTS_REASON)
