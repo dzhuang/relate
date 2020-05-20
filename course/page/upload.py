@@ -391,11 +391,16 @@ class JupyterNotebookUploadQuestion(FileUploadQuestionBase):
         uploaded_file = super(
             JupyterNotebookUploadQuestion, self
         ).form_clean_uploaded_file_callback(uploaded_file)
+        import sys
         from nbformat.reader import read
         try:
-            read(uploaded_file)
+            if sys.version_info < (3, 6):
+                # nbformat.reader.read is assuming Python 3.6+
+                import json
+                json.loads(uploaded_file.read().decode('utf-8'))
+            else:
+                read(uploaded_file)
         except Exception as e:
-            import sys
             tp, e, _ = sys.exc_info()
             raise forms.ValidationError(
                 "%(err_type)s: %(err_str)s"
