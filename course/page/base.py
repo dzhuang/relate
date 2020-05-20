@@ -1022,6 +1022,7 @@ class PageBaseWithHumanTextFeedback(PageBase):
         """Subclasses can override this to make the point value of the human feedback known,
         which will enable grade entry in points.
         """
+        raise RuntimeError("human_feedback_point_value None")
         return None
 
     def make_grading_form(self, page_context, page_data, grade_data):
