@@ -25,7 +25,8 @@ RUN apt-get -y -o APT::Install-Recommends=0 -o APT::Install-Suggests=0 install \
   python3-pulp \
   python3-jinja2 \
   python3-networkx \
-  gcc
+  gcc \
+  curl
 
 # RUN POCL_VER="1.2~rc2-1"; \
 #   apt-get -o APT::Install-Recommends=0 -o APT::Install-Suggests=0 -y install \
