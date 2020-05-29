@@ -43,9 +43,12 @@ RUN apt-get clean
 RUN fc-cache
 
 RUN mkdir -p /opt/runcode
-RUN cd /opt/runcode
 RUN curl -L -O -k https://raw.githubusercontent.com/inducer/relate/master/docker-image-run-py/runcode
 RUN curl -L -O -k https://raw.githubusercontent.com/inducer/relate/master/course/page/code_feedback.py
+RUN curl -L -O -k https://raw.githubusercontent.com/inducer/relate/master/course/page/code_run_backend.py
+RUN mv runcode /opt/runcode/
+RUN mv code_feedback.py /opt/runcode/
+RUN mv code_run_backend.py /opt/runcode/
 # COPY code_feedback.py /opt/runcode/
 # COPY code_run_backend.py /opt/runcode/
 RUN ls /opt/runcode
