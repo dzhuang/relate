@@ -49,6 +49,7 @@ RUN curl -L -O -k https://raw.githubusercontent.com/inducer/relate/master/course
 RUN mv runcode /opt/runcode/
 RUN mv code_feedback.py /opt/runcode/
 RUN mv code_run_backend.py /opt/runcode/
+RUN chmod +x /opt/runcode/runcode
 # COPY code_feedback.py /opt/runcode/
 # COPY code_run_backend.py /opt/runcode/
 RUN ls /opt/runcode
