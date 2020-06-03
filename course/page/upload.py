@@ -89,10 +89,6 @@ class FileUploadFormBase(StyledForm):
 
 
 class FileUploadForm(FileUploadFormBase):
-    show_save_button = False
-    uploaded_file = forms.FileField(required=True,
-            label=ugettext_lazy('Uploaded file'))
-
     @classmethod
     def get_accepting_types(cls, mime_types):
         # 'accept=' doesn't work right for at least application/octet-stream.
@@ -345,21 +341,23 @@ class FileUploadQuestion(FileUploadQuestionBase):
 
 # }}}
 
+# {{{ Jupyter notebook upload question
 
-class JupterNotebookUploadForm(FileUploadFormBase):
+
+class JupyterNotebookUploadForm(FileUploadFormBase):
     def clean_uploaded_file(self):
         uploaded_file = super(
-            JupterNotebookUploadForm, self).clean_uploaded_file()
+            JupyterNotebookUploadForm, self).clean_uploaded_file()
         import sys
-        from nbformat.reader import read
         try:
             if sys.version_info < (3, 6):
                 # nbformat.reader.read is assuming Python 3.6+
                 import json
                 json.loads(uploaded_file.read().decode('utf-8'))
             else:
+                from nbformat.reader import read
                 read(uploaded_file)
-        except Exception as e:
+        except Exception:
             tp, e, _ = sys.exc_info()
             raise forms.ValidationError(
                 "%(err_type)s: %(err_str)s"
@@ -432,7 +430,7 @@ class JupyterNotebookUploadQuestion(FileUploadQuestionBase):
     file_extension = ".ipynb"
     form_template = "course/file-upload-form-with-ipynb-preview.html"
     default_download_name = "my_notebook.ipynb"
-    form_class = JupterNotebookUploadForm
+    form_class = JupyterNotebookUploadForm
 
     def files_data_to_answer_data(self, files_data):
         buf = self._get_uploaded_file_buf(files_data)
@@ -457,5 +455,6 @@ class JupyterNotebookUploadQuestion(FileUploadQuestionBase):
 
         return ctx
 
+# }}}
 
 # vim: foldmethod=marker
