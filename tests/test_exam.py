@@ -27,6 +27,7 @@ THE SOFTWARE.
 import datetime
 import pytz
 
+import pytest
 import unittest
 from django.test import TestCase, override_settings
 from django import http
@@ -654,6 +655,7 @@ class ListAvailableExamsTest(ExamTestMixin, TestCase):
             self.assertEqual(exams.count(), 1)
 
 
+@pytest.mark.django_db(transaction=True, reset_sequences=True)
 class ExamFacilityMiddlewareTest(SingleCoursePageTestMixin,
                                  MockAddMessageMixing, TestCase):
     """Integration tests for exam.ExamFacilityMiddleware"""
@@ -805,6 +807,7 @@ class ExamFacilityMiddlewareTest(SingleCoursePageTestMixin,
             "your flow's access permissions.")
 
 
+@pytest.mark.django_db(transaction=True, reset_sequences=True)
 class ExamLockdownMiddlewareTest(SingleCoursePageTestMixin,
                                  MockAddMessageMixing, TestCase):
     """Integration tests for exam.ExamLockdownMiddleware

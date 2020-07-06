@@ -1690,6 +1690,7 @@ class FinishFlowSessionTest(SingleCourseTestMixin, TestCase):
             self.assertEqual(flow_session.completion_time, answer_visit_time)
 
 
+@pytest.mark.django_db(transaction=True, reset_sequences=True)
 class ExpireFlowSessionTest(SingleCourseTestMixin, TestCase):
     # test flow.expire_flow_session
     def setUp(self):
@@ -4146,6 +4147,7 @@ class CreateFlowPageVisitTest(SingleCourseTestMixin, TestCase):
         self.assertEqual(fpv.impersonated_by, self.instructor_participation.user)
 
 
+@pytest.mark.django_db(transaction=True, reset_sequences=True)
 class ViewFlowPageTest(SingleCourseQuizPageTestMixin, HackRepoMixin, TestCase):
     # test flow.view_flow_page for not covered part by other tests
 
