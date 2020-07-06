@@ -25,6 +25,7 @@ THE SOFTWARE.
 import pytz
 import json
 import datetime
+import pytest
 
 from django.test import TestCase
 from django.utils.timezone import now, timedelta
@@ -585,6 +586,7 @@ class RenumberEventsTest(SingleCourseTestMixin,
         self.assertAddMessageCalledWith("Events renumbered.")
 
 
+@pytest.mark.django_db(transaction=True, reset_sequences=True)
 class ViewCalendarTest(SingleCourseTestMixin, HackRepoMixin, TestCase):
     """test course.calendar.view_calendar"""
 
